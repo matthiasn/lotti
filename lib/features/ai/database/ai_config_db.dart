@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:drift/drift.dart';
 import 'package:lotti/database/common.dart';
@@ -11,13 +12,18 @@ const aiConfigDbFileName = 'ai_config.sqlite';
 
 @DriftDatabase(include: {'ai_config_db.drift'})
 class AiConfigDb extends _$AiConfigDb {
-  AiConfigDb({this.inMemoryDatabase = false})
-    : super(
-        openDbConnection(
-          aiConfigDbFileName,
-          inMemoryDatabase: inMemoryDatabase,
-        ),
-      );
+  AiConfigDb({
+    this.inMemoryDatabase = false,
+    Future<Directory> Function()? documentsDirectoryProvider,
+    Future<Directory> Function()? tempDirectoryProvider,
+  }) : super(
+         openDbConnection(
+           aiConfigDbFileName,
+           inMemoryDatabase: inMemoryDatabase,
+           documentsDirectoryProvider: documentsDirectoryProvider,
+           tempDirectoryProvider: tempDirectoryProvider,
+         ),
+       );
 
   bool inMemoryDatabase = false;
 

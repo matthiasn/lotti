@@ -102,6 +102,7 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_conte
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/daily_os_next/logic/day_agent_models.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
+import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/daily_os_next/services/day_audio_transcript_writer.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
@@ -785,6 +786,8 @@ class MockNotificationService extends Mock implements NotificationService {}
 class MockNotificationsDb extends Mock implements NotificationsDb {}
 
 class MockOnboardingMetricsDb extends Mock implements OnboardingMetricsDb {}
+
+class MockDayProcessingDb extends Mock implements DayProcessingDb {}
 
 class MockConsumptionDatabase extends Mock implements ConsumptionDatabase {}
 

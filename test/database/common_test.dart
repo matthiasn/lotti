@@ -1,9 +1,12 @@
 import 'dart:io';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/common.dart';
 import 'package:lotti/database/editor_db.dart';
+import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/ai/database/ai_config_db.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:path/path.dart' as p;
@@ -337,6 +340,96 @@ void main() {
       // Verify file exists
       expect(File(p.join(testDir.path, editorDbFileName)).existsSync(), isTrue);
     });
+  });
+
+  group('openDbConnection profile-root fallback', () {
+    late Directory testDir;
+
+    setUp(() {
+      testDir = setupTestDirectory();
+      setupTestDirectoryWithGetIt(testDir);
+      // Any path_provider hit means a database bypassed the registered
+      // profile root — make that a hard failure, not a silent fallback.
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('plugins.flutter.io/path_provider'),
+            (MethodCall methodCall) async {
+              throw PlatformException(
+                code: 'forbidden',
+                message:
+                    'path_provider must not be consulted '
+                    'when a profile root is registered',
+              );
+            },
+          );
+    });
+
+    tearDown(() async {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(
+            const MethodChannel('plugins.flutter.io/path_provider'),
+            null,
+          );
+      await cleanupTestDirectoryWithGetIt(testDir);
+    });
+
+    test('EditorDb without provider opens under the registered root', () async {
+      final db = EditorDb();
+      await db.allDrafts().get();
+      await db.close();
+
+      expect(File(p.join(testDir.path, editorDbFileName)).existsSync(), isTrue);
+    });
+
+    test('Fts5Db without provider opens under the registered root', () async {
+      final db = Fts5Db();
+      await db.customSelect('SELECT 1').get();
+      await db.close();
+
+      expect(File(p.join(testDir.path, fts5DbFileName)).existsSync(), isTrue);
+    });
+
+    test(
+      'AiConfigDb without provider opens under the registered root',
+      () async {
+        final db = AiConfigDb();
+        await db.customSelect('SELECT 1').get();
+        await db.close();
+
+        expect(
+          File(p.join(testDir.path, aiConfigDbFileName)).existsSync(),
+          isTrue,
+        );
+      },
+    );
+
+    test(
+      'explicit documentsDirectoryProvider overrides the registered root',
+      () async {
+        final otherDir = setupTestDirectory();
+        try {
+          final db = Fts5Db(
+            documentsDirectoryProvider: () async => otherDir,
+            tempDirectoryProvider: () async => otherDir,
+          );
+          await db.customSelect('SELECT 1').get();
+          await db.close();
+
+          expect(
+            File(p.join(otherDir.path, fts5DbFileName)).existsSync(),
+            isTrue,
+          );
+          expect(
+            File(p.join(testDir.path, fts5DbFileName)).existsSync(),
+            isFalse,
+          );
+        } finally {
+          if (otherDir.existsSync()) {
+            await otherDir.delete(recursive: true);
+          }
+        }
+      },
+    );
   });
 
   group('File Path Construction Tests', () {
