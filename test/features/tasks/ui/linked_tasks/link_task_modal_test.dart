@@ -91,6 +91,15 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
     }
 
+    /// Types [query] and lets the picker settle on it: past the debounce, then
+    /// a frame for the full-text lookup to land and be committed. Rows, the
+    /// create row and the empty state all move together at the end of this.
+    Future<void> search(WidgetTester tester, String query) async {
+      await tester.enterText(find.byType(TextField), query);
+      await tester.pump(entityPickerSearchDebounce);
+      await tester.pump();
+    }
+
     // Drives the relationship dropdown by its own callback. The panel expands
     // inline inside a Wolt-hosted modal, where hit-testing an expanded row is
     // unreliable — this repo's established pattern for such controls.
@@ -208,12 +217,7 @@ void main() {
         );
 
         await openModal(tester);
-        await tester.enterText(find.byType(TextField), 'past');
-        await tester.pump();
-        // A second pump: the create row is withheld until the query's full-text
-        // lookup resolves, so the pool it checks for an exact-title match is
-        // actually complete.
-        await tester.pump();
+        await search(tester, 'past');
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text('Task past the 200th row'), findsOneWidget);
@@ -265,12 +269,7 @@ void main() {
         );
 
         await openModal(tester);
-        await tester.enterText(find.byType(TextField), 'finish');
-        await tester.pump();
-        // A second pump: the create row is withheld until the query's full-text
-        // lookup resolves, so the pool it checks for an exact-title match is
-        // actually complete.
-        await tester.pump();
+        await search(tester, 'finish');
         await tester.pump(const Duration(milliseconds: 400));
 
         expect(find.text('Already finished'), findsOneWidget);
@@ -658,8 +657,7 @@ void main() {
     });
 
     testWidgets(
-      'filters tasks by search query immediately — no debounce, results '
-      'update on the very next pump after typing',
+      'filters the list down to the matching task once the search settles',
       (tester) async {
         final testTasks = [
           buildTask(title: 'Apple Task'),
@@ -704,15 +702,10 @@ void main() {
         expect(find.text('Banana Task'), findsOneWidget);
         expect(find.text('Cherry Task'), findsOneWidget);
 
-        // Enter search query. _onSearchChanged fires per keystroke and awaits
-        // the FTS future directly (no debounce timer), so a single pump after
-        // typing must already show the filtered list.
-        await tester.enterText(find.byType(TextField), 'banana');
-        await tester.pump();
-        // A second pump: the create row is withheld until the query's full-text
-        // lookup resolves, so the pool it checks for an exact-title match is
-        // actually complete.
-        await tester.pump();
+        // Typing settles once: the picker waits out the debounce, resolves the
+        // query, and only then advances the list. Nothing moves before that,
+        // so `search` has to cover the whole wait rather than a single pump.
+        await search(tester, 'banana');
 
         // Only matching task should be visible
         expect(find.text('Apple Task'), findsNothing);
@@ -761,12 +754,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       // Enter search query with no matches
-      await tester.enterText(find.byType(TextField), 'xyz123');
-      await tester.pump();
-      // A second pump: the create row is withheld until the query's full-text
-      // lookup resolves, so the pool it checks for an exact-title match is
-      // actually complete.
-      await tester.pump();
+      await search(tester, 'xyz123');
 
       // No longer a dead end: the query the user typed is offered as a task
       // to create. The "No tasks found" message it replaces still exists for
@@ -791,12 +779,7 @@ void main() {
 
         // A query with no FTS5 match (default stub) and no title-substring
         // match filters the single task out.
-        await tester.enterText(find.byType(TextField), 'xyz123');
-        await tester.pump();
-        // A second pump: the create row is withheld until the query's full-text
-        // lookup resolves, so the pool it checks for an exact-title match is
-        // actually complete.
-        await tester.pump();
+        await search(tester, 'xyz123');
 
         // The list collapses, but to a create offer rather than an apology.
         // Neither empty-state message applies: noTasksToLink is for an empty
@@ -849,12 +832,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       // Enter search text
-      await tester.enterText(find.byType(TextField), 'search text');
-      await tester.pump();
-      // A second pump: the create row is withheld until the query's full-text
-      // lookup resolves, so the pool it checks for an exact-title match is
-      // actually complete.
-      await tester.pump();
+      await search(tester, 'search text');
 
       // Clear button should appear
       expect(find.byIcon(Icons.cancel_rounded), findsOneWidget);
@@ -1477,18 +1455,11 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
 
-      // Enter search that matches via FTS5. Unlike the plain-substring case,
-      // this needs a second pump: the FTS5 fetch is now kicked off as a
-      // build-time side effect of TaskSearchPickerBody's entriesBuilder (one
-      // rebuild hop further from the keystroke than the old direct
-      // onChanged-triggered fetch), so the result lands one frame later.
-      await tester.enterText(find.byType(TextField), 'special');
-      await tester.pump();
-      // A second pump: the create row is withheld until the query's full-text
-      // lookup resolves, so the pool it checks for an exact-title match is
-      // actually complete.
-      await tester.pump();
-      await tester.pump();
+      // Enter a search that matches only via FTS5. The lookup runs in
+      // TaskSearchPickerBody._resolveQuery, which the picker awaits *before*
+      // advancing the settled query — so by the time `search` returns the
+      // match is already in the pool the rows are built from.
+      await search(tester, 'special');
 
       // Task-2 should be visible because FTS5 matched it
       expect(find.text('Banana Task'), findsOneWidget);
@@ -1537,12 +1508,7 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       // Enter search
-      await tester.enterText(find.byType(TextField), 'test');
-      await tester.pump();
-      // A second pump: the create row is withheld until the query's full-text
-      // lookup resolves, so the pool it checks for an exact-title match is
-      // actually complete.
-      await tester.pump();
+      await search(tester, 'test');
 
       // Should fallback to title matching
       expect(find.text('Test Task'), findsOneWidget);
@@ -1575,20 +1541,11 @@ void main() {
 
         await openModal(tester);
 
-        // Type the query whose FTS5 lookup will resolve LATE...
-        await tester.enterText(find.byType(TextField), 'stale');
-        await tester.pump();
-        // A second pump: the create row is withheld until the query's full-text
-        // lookup resolves, so the pool it checks for an exact-title match is
-        // actually complete.
-        await tester.pump();
-        // ...then type a newer query whose lookup resolves immediately.
-        await tester.enterText(find.byType(TextField), 'fresh');
-        await tester.pump();
-        // A second pump: the create row is withheld until the query's full-text
-        // lookup resolves, so the pool it checks for an exact-title match is
-        // actually complete.
-        await tester.pump();
+        // Settle on the query whose lookup never answers, so it is genuinely
+        // in flight rather than cancelled by the debounce...
+        await search(tester, 'stale');
+        // ...then settle on a newer query whose lookup answers immediately.
+        await search(tester, 'fresh');
         await tester.pump();
 
         // Now let the stale lookup resolve, after the fresh one already did.
@@ -1750,12 +1707,7 @@ void main() {
 
           await openWithCategory(tester);
           await pickRelation(tester, 'Blocks');
-          await tester.enterText(find.byType(TextField), 'Write the guide');
-          await tester.pump();
-          // A second pump: the create row is withheld until the query's full-text
-          // lookup resolves, so the pool it checks for an exact-title match is
-          // actually complete.
-          await tester.pump();
+          await search(tester, 'Write the guide');
 
           await tester.tap(createRow());
           await tester.pump();
@@ -1823,9 +1775,7 @@ void main() {
           ).thenAnswer((_) async => true);
 
           await openWithCategory(tester);
-          await tester.enterText(find.byType(TextField), 'Write the guide');
-          await tester.pump();
-          await tester.pump();
+          await search(tester, 'Write the guide');
           await tester.tap(createRow());
           await tester.pump();
 
@@ -1868,12 +1818,7 @@ void main() {
         ).thenAnswer((_) async => null);
 
         await openWithCategory(tester);
-        await tester.enterText(find.byType(TextField), 'Write the guide');
-        await tester.pump();
-        // A second pump: the create row is withheld until the query's full-text
-        // lookup resolves, so the pool it checks for an exact-title match is
-        // actually complete.
-        await tester.pump();
+        await search(tester, 'Write the guide');
         await tester.tap(createRow());
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 400));

@@ -14,6 +14,14 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 /// Whether the picker assigns a single entity or edits a set of entities.
 enum PickerMode { single, multi }
 
+/// Idle time after the last keystroke before an asynchronous picker resolves
+/// the query it was given (see [EntityPickerSheet.onQueryResolve]).
+///
+/// Long enough that a burst of typing costs one lookup instead of one per
+/// character, short enough that a deliberate pause still reads as instant.
+/// Pickers that filter a list they already hold never wait at all.
+const Duration entityPickerSearchDebounce = Duration(milliseconds: 220);
+
 /// A selectable row. The owning feature (categories, labels, …) supplies the
 /// [leading] visual (icon chip, colour dot, …), the [title], an optional
 /// [subtitle], and any decorative [badges] (already semantically labelled).
@@ -70,6 +78,8 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
     this.shouldShowCreate,
     this.createRowKey,
     this.createSemanticsLabel,
+    this.onQueryResolve,
+    this.searchDebounce = entityPickerSearchDebounce,
     this.reserveFooterInset = true,
     this.titleMaxLines = 1,
     this.topInset = true,
@@ -123,6 +133,27 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
   /// result — see [_PickerCreateRow.semanticsLabel].
   final String Function(String query)? createSemanticsLabel;
 
+  /// Loads whatever [entriesBuilder] and [shouldShowCreate] need before they
+  /// can answer for a query — a full-text lookup, in the task picker.
+  ///
+  /// Supplied, the sheet stops recomputing on every keystroke. It waits
+  /// [searchDebounce] after the last one, runs this, and only then advances
+  /// the query the rows, the create row, the empty state and Enter are all
+  /// derived from. Those move together, in one frame, describing one query.
+  ///
+  /// Without it every keystroke rebuilt immediately against results that had
+  /// not caught up yet, so a query mid-flight rendered as "nothing found" with
+  /// no create row — a false dead end that then re-populated a frame later,
+  /// resizing the sheet twice per character.
+  ///
+  /// Null (the default) keeps the picker synchronous: pickers filtering a list
+  /// they already hold apply each keystroke at once.
+  final Future<void> Function(String query)? onQueryResolve;
+
+  /// Idle time after the last keystroke before [onQueryResolve] runs. Ignored
+  /// without it.
+  final Duration searchDebounce;
+
   /// Multi mode: reserve bottom space for the glass Apply footer. Embedded
   /// callers that supply their own action bar pass `false`.
   final bool reserveFooterInset;
@@ -145,7 +176,26 @@ class EntityPickerSheet extends ConsumerStatefulWidget {
 
 class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
   final _searchController = TextEditingController();
+
+  /// The settled query — the single thing every visible part of the sheet is
+  /// derived from: which rows exist, whether the create row is offered, the
+  /// label it carries, the empty state, and what Enter acts on.
+  ///
+  /// With [EntityPickerSheet.onQueryResolve] set it only ever advances to a
+  /// query that hook has finished resolving, which is what keeps those parts
+  /// in agreement instead of showing one query's rows beside another's
+  /// verdict on whether anything matched.
   String _query = '';
+
+  /// What is actually in the field right now. Runs ahead of [_query] while a
+  /// keystroke is inside the debounce window or its resolve is still out.
+  String _typedQuery = '';
+
+  Timer? _debounce;
+
+  /// Guards out-of-order resolves: a slow lookup for a query the user has
+  /// already moved on from must not commit over a newer one that landed first.
+  int _resolveGeneration = 0;
 
   /// A create is in flight. Guards [_create] against re-entry.
   bool _creating = false;
@@ -154,8 +204,118 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
 
   @override
   void dispose() {
+    _debounce?.cancel();
     _searchController.dispose();
     super.dispose();
+  }
+
+  /// Makes [value] the settled query at once, abandoning any pending debounce
+  /// and stranding any resolve still in flight.
+  void _applyImmediately(String value) {
+    _debounce?.cancel();
+    _debounce = null;
+    _resolveGeneration++;
+    setState(() => _query = value);
+  }
+
+  void _onSearchChanged(String value) {
+    _typedQuery = value;
+
+    // Nothing to wait for when the picker filters a list it already holds, and
+    // an emptied field is not a search: the unfiltered list should snap back
+    // rather than linger on the query that was just deleted.
+    if (widget.onQueryResolve == null || value.trim().isEmpty) {
+      _applyImmediately(value);
+      return;
+    }
+
+    // Deliberately no setState: holding the last settled answer on screen
+    // while the next one loads is the whole point.
+    _debounce?.cancel();
+
+    // Supersede any resolve already in flight, here rather than when the next
+    // one starts. Waiting for the timer left the older lookup holding the
+    // current generation for the whole debounce window, so it committed — and
+    // the sheet showed rows and a create row for "al" while the field already
+    // read "alp", which is the stale-query mismatch this all exists to stop.
+    _resolveGeneration++;
+
+    _debounce = Timer(
+      widget.searchDebounce,
+      () => unawaited(_resolveAndCommit(value)),
+    );
+  }
+
+  /// Resolves [value] through [EntityPickerSheet.onQueryResolve], then commits
+  /// it as the settled query.
+  ///
+  /// Commits even when the hook throws. The feature owns reporting its own
+  /// failure; what the sheet must not do is leave the list pinned to a query
+  /// the user has left because an index happened to be unavailable.
+  Future<void> _resolveAndCommit(String value) async {
+    final generation = ++_resolveGeneration;
+    try {
+      await widget.onQueryResolve!(value);
+    } catch (_) {
+      // Deliberately swallowed — see above.
+    }
+    if (!mounted || generation != _resolveGeneration) return;
+    setState(() => _query = value);
+  }
+
+  /// The rows and create-row verdict for the settled query.
+  ///
+  /// Shared by `build` and [_onSubmitted] so Enter can never act on a
+  /// different answer than the one on screen.
+  ({List<PickerItem> items, bool showCreate}) _resolveEntries() {
+    final query = _query.trim();
+    return (
+      items: widget.entriesBuilder(query),
+      showCreate:
+          widget.createFromQuery != null &&
+          (widget.shouldShowCreate?.call(query) ?? false),
+    );
+  }
+
+  Future<void> _onSubmitted() async {
+    // The same exclusivity the rows have. The field stays enabled during a
+    // create — the query is still worth editing — so without this a user could
+    // change it and press Enter, picking an existing item while the create's
+    // own link was still in flight, and land two links or an orphaned new task.
+    if (_creating) return;
+
+    // Enter acts on what was typed, not on whatever the debounce has caught up
+    // with, so flush first. Afterwards the sheet must be settled on *exactly*
+    // the submitted query — both what is on screen and what is in the field —
+    // or this Enter has been overtaken and acting on it would commit an entity
+    // the user did not choose. The two halves catch different races:
+    //   • `_query != submitted`: the field was emptied mid-flush, which strands
+    //     the commit. Both fields move to '', so comparing them to each other
+    //     would find them equal and apply the first row of the unfiltered list.
+    //   • `_typedQuery != submitted`: the user kept typing, so they have moved
+    //     past the query they submitted even though it settled.
+    final submitted = _typedQuery;
+    if (submitted != _query) {
+      _debounce?.cancel();
+      await _resolveAndCommit(submitted);
+      if (!mounted ||
+          _creating ||
+          _query != submitted ||
+          _typedQuery != submitted) {
+        return;
+      }
+    }
+
+    final resolved = _resolveEntries();
+    if (resolved.showCreate) {
+      unawaited(_create());
+    } else if (!_multi && resolved.items.isNotEmpty) {
+      // Single mode: Enter applies the first match, the standard search-box
+      // behaviour.
+      await widget.onPick?.call(resolved.items.first.id);
+    }
+    // Multi mode: Enter is intentionally a no-op — there is no single "submit"
+    // target; selection is toggled per row and committed via the Apply footer.
   }
 
   void _toggle(String id) {
@@ -192,10 +352,12 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
       notifier.value = {...notifier.value, newId};
       // Clear the search so the stale create row for the same query cannot
       // reappear (and re-create a duplicate); the new id is already staged.
-      setState(() {
-        _query = '';
-        _searchController.clear();
-      });
+      // Clearing the controller does not notify `onChanged`, so the settled
+      // query has to be reset here too — otherwise the create row survives
+      // its own query being wiped.
+      _typedQuery = '';
+      _searchController.clear();
+      _applyImmediately('');
     } else {
       // Awaited, so the lock outlives whatever the pick starts.
       await widget.onPick?.call(newId);
@@ -205,13 +367,10 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final query = _query.trim();
-    final entries = widget.entriesBuilder(query);
-    final items = entries.whereType<PickerItem>().toList();
-    final showCreate =
-        widget.createFromQuery != null &&
-        (widget.shouldShowCreate?.call(query) ?? false);
-    final showEmptyState = items.isEmpty && !showCreate;
+    final resolved = _resolveEntries();
+    final entries = resolved.items;
+    final showCreate = resolved.showCreate;
+    final showEmptyState = entries.isEmpty && !showCreate;
 
     final screenHeight = MediaQuery.of(context).size.height;
     final maxHeight = math.min(screenHeight * 0.9, 640).toDouble();
@@ -246,26 +405,9 @@ class _EntityPickerSheetState extends ConsumerState<EntityPickerSheet> {
               controller: _searchController,
               hintText: widget.searchHintText,
               semanticsLabel: widget.searchHintText,
-              onChanged: (value) => setState(() => _query = value),
-              onSubmitted: (_) {
-                // The same exclusivity the rows have. The field stays enabled
-                // during a create — the query is still worth editing — so
-                // without this a user could change it and press Enter, picking
-                // an existing item while the create's own link was still in
-                // flight, and land two links or an orphaned new task.
-                if (_creating) return;
-                if (showCreate) {
-                  _create();
-                } else if (!_multi && items.isNotEmpty) {
-                  // Single mode: Enter applies the first match, the standard
-                  // search-box behaviour.
-                  widget.onPick?.call(items.first.id);
-                }
-                // Multi mode: Enter is intentionally a no-op — there is no
-                // single "submit" target; selection is toggled per row and
-                // committed via the Apply footer.
-              },
-              onClear: () => setState(() => _query = ''),
+              onChanged: _onSearchChanged,
+              onSubmitted: (_) => unawaited(_onSubmitted()),
+              onClear: () => _onSearchChanged(''),
             ),
           ),
           if (showEmptyState)

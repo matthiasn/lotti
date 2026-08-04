@@ -1064,13 +1064,19 @@ void main() {
           query: query,
         );
         final normalizedQuery = query?.trim().toLowerCase();
-        final expected = corpus.where((item) {
-          if (state != TaskCorpusState.all && item.state != state) return false;
-          if (categoryId != null && item.category.id != categoryId) return false;
-          return normalizedQuery == null ||
-              normalizedQuery.isEmpty ||
-              item.title.toLowerCase().contains(normalizedQuery);
-        }).map((item) => item.title);
+        final expected = corpus
+            .where((item) {
+              if (state != TaskCorpusState.all && item.state != state) {
+                return false;
+              }
+              if (categoryId != null && item.category.id != categoryId) {
+                return false;
+              }
+              return normalizedQuery == null ||
+                  normalizedQuery.isEmpty ||
+                  item.title.toLowerCase().contains(normalizedQuery);
+            })
+            .map((item) => item.title);
 
         expect(
           actual.map((item) => item.title),

@@ -16,7 +16,7 @@ lib/widgets/
 ├── modal/       # ModalUtils (the only export), confirmation modal, item animations
 ├── selection/   # selection-modal primitives and the unified toggle family
 ├── settings/    # settings page grid and detail scaffold
-├── picker/      # EntityPickerSheet, shared by categories and labels
+├── picker/      # EntityPickerSheet, shared by categories, labels and task links
 ├── nav_bar/     # bottom navigation shell and FAB clearance
 └── misc/        # sidebar activity summary and similar cross-feature pieces
 ```
