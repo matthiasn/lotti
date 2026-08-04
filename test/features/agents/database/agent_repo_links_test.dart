@@ -145,24 +145,6 @@ void main() {
     );
   });
 
-  group('insertLinkExclusive', () {
-    test('throws DuplicateInsertException on a duplicate id', () async {
-      final link = makeTestImproverTargetLink(
-        id: 'imp-1',
-        fromId: 'improver-1',
-        toId: 'template-1',
-        createdAt: testDate,
-        updatedAt: testDate,
-      );
-      await links.insertLinkExclusive(link);
-
-      await expectLater(
-        () => links.insertLinkExclusive(link),
-        throwsA(isA<DuplicateInsertException>()),
-      );
-    });
-  });
-
   group('wake run log', () {
     test('insert then status update is observable via getWakeRun', () async {
       await links.insertWakeRun(

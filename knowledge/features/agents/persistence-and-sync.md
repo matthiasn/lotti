@@ -5,7 +5,7 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-01T16:15:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-04T00:59:29Z }
 stale_after: 2026-10-12
 sources:
   - id: db
@@ -16,6 +16,10 @@ sources:
     resource: ../../../lib/features/agents/database/agent_repo_core.dart
     title: AgentRepoCore
     last_modified: 2026-08-01
+  - id: repo-links
+    resource: ../../../lib/features/agents/database/agent_repo_links.dart
+    title: AgentRepoLinks
+    last_modified: 2026-08-04
   - id: coalescer
     resource: ../../../lib/features/agents/database/agent_entity_by_id_coalescer.dart
     title: AgentEntityByIdCoalescer
@@ -39,7 +43,7 @@ sources:
   - id: sync-service
     resource: ../../../lib/features/agents/sync/agent_sync_service.dart
     title: AgentSyncService
-    last_modified: 2026-06-13
+    last_modified: 2026-08-04
   - id: sync-processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
@@ -50,7 +54,7 @@ sources:
   - id: retention
     resource: ../../../lib/features/agents/service/agent_retention_policy.dart
     title: AgentRetentionPolicy
-    last_modified: 2026-08-01
+    last_modified: 2026-08-04
   - id: observation-prune-plan
     resource: ../../../lib/features/agents/service/observation_prune_plan.dart
     title: planObservationPrune
@@ -298,9 +302,10 @@ nothing about the rows. The coordinator is long-lived and writes on every wake,
 forever, so the store grew without limit — felt as database size, sync payload,
 backup size and whole-table maintenance long before any indexed query got slow.
 
-`AgentRetentionPolicy` splits the store by **who authored the row**, and the
-split is a declaration in code rather than a shape that falls out of a sweep's
-SQL, so a new entity type forces a decision instead of silently inheriting one.
+`AgentRetentionPolicy` supplies the age windows and sweep limits. Eligibility
+is declared by the type-specific repository operations that the retention
+service invokes; it is not inferred from row authorship or an exhaustive union
+classifier.
 
 | Row | Kept | Why |
 |-----|------|-----|
@@ -313,10 +318,9 @@ SQL, so a new entity type forces a decision instead of silently inheriting one.
 | Observations | **180 days, in ancestor-closed sets only** | See below |
 | `dayStatusEvent` | **90 days, floored at the digest watermark** | See below |
 
-The sweep does not run a generic entity classifier. It invokes explicit,
-type-specific repository operations for observations and day-status events;
-every other entity variant is outside the delete path. Adding a new union
-variant therefore does not make it prunable by default.
+Only observations and day-status events currently have delete paths. Every
+other entity variant remains outside the sweep, so adding a new union variant
+does not make it prunable by default.
 
 ## Age alone is not the bound for status events
 

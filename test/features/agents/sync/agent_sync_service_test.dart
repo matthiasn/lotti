@@ -509,9 +509,6 @@ void main() {
     // to "not yet persisted" so a plain append proceeds to chaining.
     when(() => mockRepository.getEntity(any())).thenAnswer((_) async => null);
     when(
-      () => mockRepository.insertLinkExclusive(any()),
-    ).thenAnswer((_) async {});
-    when(
       () => mockOutboxService.enqueueMessage(any()),
     ).thenAnswer((_) async {});
     when(
