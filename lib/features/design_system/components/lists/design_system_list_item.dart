@@ -133,16 +133,6 @@ class DesignSystemListItem extends StatefulWidget {
   final bool excludeFromSemantics;
   final DesignSystemListItemVisualState? forcedState;
 
-  /// The horizontal inset from the row's left edge to its TITLE column, for
-  /// the medium spec with a step5-sized leading glyph: gutter + glyph + gap.
-  ///
-  /// Surfaces that append non-row content to a list (the Add sheet's closing
-  /// caption) consume this instead of re-deriving the arithmetic, so the
-  /// single-axis alignment is owned here and cannot drift when the spec
-  /// changes.
-  static double titleColumnInset(DsTokens tokens) =>
-      tokens.spacing.step5 + tokens.spacing.step5 + tokens.spacing.step3;
-
   @override
   State<DesignSystemListItem> createState() => _DesignSystemListItemState();
 }

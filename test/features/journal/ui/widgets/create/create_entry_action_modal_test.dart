@@ -4,8 +4,12 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_menu_list_item.dart';
@@ -13,12 +17,32 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../../mocks/mocks.dart';
 import '../../../../../widget_test_utils.dart';
+
+/// Resolves the host id to a Task so the sheet's task-host rows render.
+class _TaskEntryController extends EntryController {
+  _TaskEntryController(this._task);
+
+  final Task _task;
+
+  @override
+  Future<EntryState?> build() async {
+    return EntryState.saved(
+      entryId: id,
+      entry: _task,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+    );
+  }
+}
 
 void main() {
   group('CreateEntryModal', () {
@@ -139,6 +163,58 @@ void main() {
       // Verify Timer item is present (timer icon)
       expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
     });
+
+    testWidgets(
+      'a TASK host adds the checklist row and drops the Timer row — the '
+      "bar's Track time pill is that same action",
+      (tester) async {
+        final now = DateTime(2026, 8, 4);
+        final hostTask = Task(
+          meta: Metadata(
+            id: 'host-task',
+            createdAt: now,
+            updatedAt: now,
+            dateFrom: now,
+            dateTo: now,
+          ),
+          data: TaskData(
+            title: 'Host',
+            status: TaskStatus.open(id: 's', createdAt: now, utcOffset: 0),
+            dateFrom: now,
+            dateTo: now,
+            statusHistory: const [],
+          ),
+        );
+        // The overridden controller still runs EntryController's field
+        // initializers, which resolve these from getIt.
+        getIt.registerSingleton<EditorStateService>(MockEditorStateService());
+        final updates = MockUpdateNotifications();
+        when(
+          () => updates.updateStream,
+        ).thenAnswer((_) => const Stream<Set<String>>.empty());
+        getIt.registerSingleton<UpdateNotifications>(updates);
+
+        await pumpAndOpenModal(
+          tester,
+          linkedFromId: 'host-task',
+          extraOverrides: [
+            entryControllerProvider(
+              'host-task',
+            ).overrideWith(() => _TaskEntryController(hostTask)),
+          ],
+        );
+
+        final context = tester.element(
+          find.byType(CreateMenuListItem).first,
+        );
+        final messages = AppLocalizations.of(context)!;
+        expect(
+          find.text(messages.taskFirstRunAddChecklist),
+          findsOneWidget,
+        );
+        expect(find.byIcon(Icons.timer_outlined), findsNothing);
+      },
+    );
 
     testWidgets('hides Timer item when linkedFromId is null', (tester) async {
       await pumpAndOpenModal(tester, linkedFromId: null);

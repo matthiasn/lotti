@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
@@ -14,6 +15,8 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart'
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/model/entry_state.dart';
+import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
@@ -42,6 +45,30 @@ import '../../../../mocks/mocks.dart';
 import '../../../../test_data/test_data.dart';
 import '../../../../widget_test_utils.dart';
 import 'task_details_page_test_helpers.dart';
+
+/// Serves a fixed entry so a link target resolves without a database.
+class _FixedEntryController extends EntryController {
+  _FixedEntryController(this._entry);
+
+  final JournalEntity _entry;
+
+  @override
+  Future<EntryState?> build() async {
+    return EntryState.saved(
+      entryId: id,
+      entry: _entry,
+      showMap: false,
+      isFocused: false,
+      shouldShowEditorToolBar: false,
+    );
+  }
+}
+
+/// A [FakeLinkedEntriesController] whose links can change mid-test, the way
+/// "Write a note" changes them mid-session.
+class _MutableLinkedEntries extends FakeLinkedEntriesController {
+  void emit(List<EntryLink> next) => state = AsyncData(next);
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -249,6 +276,67 @@ void main() {
           reason:
               'the column adopts the block measure so the field, the chip '
               'lane and the card share one right edge',
+        );
+      },
+    );
+
+    testWidgets(
+      'first content releases the composed fill through the animated exit — '
+      'the measuring branch unmounts after the transition instead of the '
+      'page snapping in one frame',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => blank);
+        final links = _MutableLinkedEntries();
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              linkedEntriesControllerProvider(
+                testTask.meta.id,
+              ).overrideWith(() => links),
+              taskAgentProvider.overrideWith((ref, id) async => null),
+              // The link target must RESOLVE for first-run to end: an
+              // unresolved target reads as unknown, not as content.
+              entryControllerProvider(
+                testTextEntry.meta.id,
+              ).overrideWith(() => _FixedEntryController(testTextEntry)),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+        expect(find.byType(SliverLayoutBuilder), findsWidgets);
+
+        // The first note lands: the page leaves first-run, the measure and
+        // the optical-centre anchoring animate out, and — this is the line
+        // under test — the AnimatedContainer's onEnd swaps the sliver to the
+        // plain adapter so ordinary scrolling stops paying the
+        // layout-builder's rebuild-on-scroll cost.
+        links.emit([
+          EntryLink.basic(
+            id: 'link-1',
+            fromId: blank.meta.id,
+            toId: testTextEntry.meta.id,
+            createdAt: DateTime(2026, 8, 4),
+            updatedAt: DateTime(2026, 8, 4),
+            vectorClock: null,
+          ),
+        ]);
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsNothing);
+        expect(
+          find.byType(SliverLayoutBuilder),
+          findsNothing,
+          reason:
+              'after the release animation completes the measuring branch '
+              'must be gone — it rebuilds on every scroll tick',
         );
       },
     );

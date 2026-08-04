@@ -289,6 +289,44 @@ void main() {
       },
     );
 
+    testWidgets(
+      'a four-offer add-lane breaks a deliberate 2+2 below the balance '
+      'breakpoint instead of stranding the widest chip alone',
+      (tester) async {
+        // No category, no due date, no labels, unset estimate: the full
+        // first-run set of four dashed chips, at a phone-ish lane width
+        // below the 460 balance breakpoint.
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) {},
+            estimateSlot: const Text('Add estimate'),
+            estimateIsSet: false,
+          ),
+          size: const Size(400, 800),
+        );
+
+        final category = tester.getTopLeft(find.text('Set category'));
+        final due = tester.getTopLeft(find.text('Set due date'));
+        final label = tester.getTopLeft(find.text('Add label'));
+        final estimate = tester.getTopLeft(find.text('Add estimate'));
+
+        // Row one: the two Set chips. Row two: the two Add chips. A greedy
+        // wrap packed three chips onto row one and stranded the widest
+        // alone — the raggedness that undermined the two-run grammar on
+        // every phone.
+        expect((category.dy - due.dy).abs(), lessThan(8));
+        expect((label.dy - estimate.dy).abs(), lessThan(8));
+        expect(label.dy, greaterThan(category.dy));
+        expect(
+          label.dx,
+          category.dx,
+          reason: 'the second run starts back on the lane rail',
+        );
+      },
+    );
+
     testWidgets('omits the separator and the project segment', (tester) async {
       await _pumpDesktop(
         tester,

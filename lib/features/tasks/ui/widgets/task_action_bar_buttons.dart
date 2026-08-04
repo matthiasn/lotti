@@ -27,22 +27,10 @@ class TrackTimePill extends StatelessWidget {
     required this.onStartTimer,
     required this.onNavigateToRunningEntry,
     required this.onStop,
-    this.subdued = false,
     super.key,
   });
 
   final bool isTracking;
-
-  /// Drops the idle pill one emphasis step: tonal surface fill with a
-  /// neutral high-emphasis label instead of the solid accent fill.
-  ///
-  /// True while the task page shows its first-run block. On a blank task the
-  /// filled pill was the page's single accent-filled element — maximal weight
-  /// on a tertiary action while the state's actual primary, the focused title
-  /// field, carried only a border. The accent returns the moment the task has
-  /// content. A *running* timer ignores this: the red recording fill is a
-  /// status, not an emphasis choice.
-  final bool subdued;
   final String label;
   final String idleSemanticLabel;
   final String navigateSemanticLabel;
@@ -62,21 +50,14 @@ class TrackTimePill extends StatelessWidget {
     // theme) the heaviest ink on an otherwise near-white page.
     final fillColor = isTracking
         ? tokens.colors.alert.error.defaultColor
-        : (subdued
-              ? tokens.colors.surface.enabled
-              : tokens.colors.interactive.enabled);
+        : tokens.colors.interactive.enabled;
     // The error palette has no dedicated on-color token — its
     // defaultColor is a vivid red across both themes, so a fixed white
     // foreground stays legible on top. The interactive accent does have
-    // one: `text.onInteractiveAlert`. The subdued pill reads in neutral
-    // high-emphasis ink: while the first-run block shows, the page's one
-    // accent belongs to the focused title field, and even an accent *label*
-    // down here competed with it. The teal returns with the ordinary bar.
+    // one: `text.onInteractiveAlert`.
     final foreground = isTracking
         ? Colors.white
-        : (subdued
-              ? tokens.colors.text.highEmphasis
-              : tokens.colors.text.onInteractiveAlert);
+        : tokens.colors.text.onInteractiveAlert;
     final pillRadius = BorderRadius.circular(tokens.radii.badgesPills);
     final textStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
       color: foreground,
@@ -110,13 +91,6 @@ class TrackTimePill extends StatelessWidget {
             decoration: BoxDecoration(
               color: fillColor,
               borderRadius: pillRadius,
-              // The accent and recording fills are solid and bring their own
-              // contrast, so they carry no outline. The subdued tonal fill
-              // sits near the glass strip's own tone and gets the same quiet
-              // boundary the bordered chips use.
-              border: isTracking || !subdued
-                  ? null
-                  : Border.all(color: tokens.colors.decorative.level02),
             ),
             child: ConstrainedBox(
               constraints: BoxConstraints(minWidth: idleContentWidth),
@@ -233,7 +207,7 @@ class _PillStopButton extends StatelessWidget {
   }
 }
 
-/// Labeled "Add" trigger for the action bar, on the subdued pill treatment.
+/// Labeled "Add" trigger for the action bar, on a tonal pill treatment.
 ///
 /// The bare "+" circle was the page's most prominent creation control and
 /// the one that broke the page's own glyph grammar: everywhere else "+"
@@ -269,8 +243,8 @@ class AddMenuPill extends StatelessWidget {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
     final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    // The subdued Track time treatment: tonal surface fill, quiet border,
-    // neutral high-emphasis ink. The bar keeps a single accent budget.
+    // Tonal surface fill, quiet border, neutral high-emphasis ink: the bar
+    // keeps a single accent budget, spent on the Track time primary.
     final style = tokens.typography.styles.subtitle.subtitle2.copyWith(
       color: tokens.colors.text.highEmphasis,
     );

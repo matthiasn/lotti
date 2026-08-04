@@ -2429,6 +2429,80 @@ void main() {
           ),
         ).called(1);
       });
+
+      testWidgets(
+        'on a TASK host the row publishes task focus for the new note — '
+        'the same one-label-one-journey contract as the first-run card row',
+        (tester) async {
+          const taskId = 'host-task-id';
+          const noteId = 'focused-note-id';
+          final hostTask = Task(
+            meta: Metadata(
+              id: taskId,
+              createdAt: testDate,
+              updatedAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
+            ),
+            data: TaskData(
+              title: 'Host',
+              status: TaskStatus.open(
+                id: 's',
+                createdAt: testDate,
+                utcOffset: 0,
+              ),
+              dateFrom: testDate,
+              dateTo: testDate,
+              statusHistory: const [],
+            ),
+          );
+          final note = _makeJournalEntry(noteId);
+
+          final mockEntryCreationService = MockEntryCreationService();
+          when(
+            () => mockEntryCreationService.createTextEntry(
+              linkedId: taskId,
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => note);
+
+          final container = ProviderContainer(
+            overrides: [
+              entryCreationServiceProvider.overrideWithValue(
+                mockEntryCreationService,
+              ),
+              entryControllerProvider(
+                taskId,
+              ).overrideWith(() => _TestEntryController(hostTask)),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: MaterialApp(
+                theme: resolveTestTheme(),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: const Scaffold(
+                  body: CreateTextItem(taskId),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.byType(CreateMenuListItem));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          // Without the publish, the sheet's "Write a note" silently minted
+          // an off-screen empty note — the documented dead-button flow.
+          final focus = container.read(taskFocusControllerProvider(taskId));
+          expect(focus?.entryId, noteId);
+        },
+      );
     });
 
     group('ImportImageItem Widget Integration Tests (modern)', () {
