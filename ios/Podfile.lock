@@ -46,6 +46,8 @@ PODS:
     - Flutter
   - irondash_engine_context (0.0.1):
     - Flutter
+  - is_ios_simulator (0.0.1):
+    - Flutter
   - just_audio (0.0.1):
     - Flutter
     - FlutterMacOS
@@ -89,7 +91,7 @@ PODS:
     - FlutterMacOS
   - permission_handler_apple (9.4.8):
     - Flutter
-  - photo_manager (3.10.0):
+  - photo_manager (3.11.0):
     - Flutter
     - FlutterMacOS
   - quill_native_bridge_ios (0.0.1):
@@ -164,6 +166,7 @@ DEPENDENCIES:
   - image_picker_ios (from `.symlinks/plugins/image_picker_ios/ios`)
   - integration_test (from `.symlinks/plugins/integration_test/ios`)
   - irondash_engine_context (from `.symlinks/plugins/irondash_engine_context/ios`)
+  - is_ios_simulator (from `.symlinks/plugins/is_ios_simulator/ios`)
   - just_audio (from `.symlinks/plugins/just_audio/darwin`)
   - just_waveform (from `.symlinks/plugins/just_waveform/darwin`)
   - location (from `.symlinks/plugins/location/darwin`)
@@ -236,6 +239,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/integration_test/ios"
   irondash_engine_context:
     :path: ".symlinks/plugins/irondash_engine_context/ios"
+  is_ios_simulator:
+    :path: ".symlinks/plugins/is_ios_simulator/ios"
   just_audio:
     :path: ".symlinks/plugins/just_audio/darwin"
   just_waveform:
@@ -296,6 +301,7 @@ SPEC CHECKSUMS:
   image_picker_ios: e0ece4aa2a75771a7de3fa735d26d90817041326
   integration_test: 4a889634ef21a45d28d50d622cf412dc6d9f586e
   irondash_engine_context: 8e58ca8e0212ee9d1c7dc6a42121849986c88486
+  is_ios_simulator: 1125d89fceb232f353d3ec3602c9a67da6e6aada
   just_audio: 4e391f57b79cad2b0674030a00453ca5ce817eed
   just_waveform: be2cb6dec86096cb972bf8b73c893fe16bf1cff4
   libwebp: 02b23773aedb6ff1fd38cec7a77b81414c6842a8
@@ -310,7 +316,7 @@ SPEC CHECKSUMS:
   package_info_plus: af8e2ca6888548050f16fa2f1938db7b5a5df499
   path_provider_foundation: bb55f6dbba17d0dccd6737fe6f7f34fbd0376880
   permission_handler_apple: 92d754bbaa7361d436db2d6c3c1c2a0fdcec462e
-  photo_manager: 93cc83778e33d5fd49dfd7e34b73f8f5a4f10aaf
+  photo_manager: 6ab48c2ce7ec21aa06d59e6cc049f0b6d9ba7f94
   quill_native_bridge_ios: f47af4b14e7757968486641656c5d23250cee521
   record_ios: 390a30c7caaf8b5d0fb1cb1d2fd5064b48b4520c
   SDWebImage: e9fc87c1aab89a8ab1bbd74eba378c6f53be8abf
