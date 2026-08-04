@@ -122,7 +122,7 @@ class CategoryIconStrings {
   static const String fallbackCharacter = '?';
 
   /// Warning message prefix for invalid icon names (log output)
-  // Used by CategoryIcon.safeDeserialize below; DCM fails to connect the
+  // Used by CategoryIcon.fromJson below; DCM fails to connect the
   // static constant read in this file.
   // ignore: unused-code
   static const String invalidIconWarning =
