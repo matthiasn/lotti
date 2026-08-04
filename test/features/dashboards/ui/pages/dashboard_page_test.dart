@@ -94,7 +94,7 @@ void main() {
 
       when(
         mockHealthImport.getWorkoutsHealthDataDelta,
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => const HealthImportResult.imported(0));
 
       when(
         mockTimeService.getStream,

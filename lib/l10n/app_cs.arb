@@ -3770,15 +3770,46 @@
   "settingsHabitsSearchHint": "Hledat návyky",
   "settingsHabitsSubtitle": "Spravovat návyky a rutiny",
   "settingsHabitsTitle": "Návyky",
-  "settingsHealthImportActivity": "Importovat data aktivity",
-  "settingsHealthImportBloodPressure": "Importovat data krevního tlaku",
-  "settingsHealthImportBodyMeasurement": "Importovat data tělesných měr",
+  "settingsHealthImportActivity": "Aktivita",
+  "settingsHealthImportActivityDescription": "Kroky, vyšlapaná patra a ušlá vzdálenost",
+  "settingsHealthImportAll": "Importovat vše",
+  "settingsHealthImportBloodPressure": "Krevní tlak",
+  "settingsHealthImportBloodPressureDescription": "Systolické a diastolické hodnoty",
+  "settingsHealthImportBodyMeasurement": "Tělesné míry",
+  "settingsHealthImportBodyMeasurementDescription": "Váha, tělesný tuk, BMI a výška",
+  "settingsHealthImportDataSectionTitle": "Data k importu",
   "settingsHealthImportFromDate": "Začátek",
-  "settingsHealthImportHeartRate": "Importovat data tepové frekvence",
-  "settingsHealthImportSleep": "Importovat data spánku",
+  "settingsHealthImportHeartRate": "Tepová frekvence",
+  "settingsHealthImportHeartRateDescription": "Klidový tep, tep při chůzi a jeho variabilita",
+  "settingsHealthImportQuickRange": "{days, plural, =1{Poslední den} few{Poslední {days} dny} other{Posledních {days} dnů}}",
+  "@settingsHealthImportQuickRange": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportRangeSectionTitle": "Období",
+  "settingsHealthImportSleep": "Spánek",
+  "settingsHealthImportSleepDescription": "Čas v posteli a fáze spánku",
+  "settingsHealthImportStatusFailed": "Import selhal — zkontroluj protokoly",
+  "settingsHealthImportStatusImported": "{count, plural, =0{Žádné nové hodnoty} =1{1 hodnota importována} few{Importovány {count} hodnoty} other{Importováno {count} hodnot}}",
+  "@settingsHealthImportStatusImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportStatusPermissionDenied": "Přístup odepřen — povol Lotti ve své zdravotní aplikaci",
+  "settingsHealthImportStatusRunning": "Importuje se…",
+  "settingsHealthImportStatusUnsupportedType": "Tento typ dat už není podporován",
+  "settingsHealthImportSubtitle": "Import z Apple Health nebo Health Connect",
   "settingsHealthImportTitle": "Import zdraví",
   "settingsHealthImportToDate": "Konec",
-  "settingsHealthImportWorkout": "Importovat data tréninků",
+  "settingsHealthImportUnavailable": "Zdravotní data jsou dostupná jen na iOS a Androidu",
+  "settingsHealthImportWorkout": "Tréninky",
+  "settingsHealthImportWorkoutDescription": "Tréninky se vzdáleností a spálenou energií",
   "settingsKeyboardShortcutsSubtitle": "Nauč se klávesové kombinace pro rychlejší navigaci a úpravy na počítači",
   "settingsKeyboardShortcutsTitle": "Klávesové zkratky",
   "settingsLabelsCategoriesAdd": "Přidat kategorii",

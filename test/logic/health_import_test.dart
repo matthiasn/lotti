@@ -43,6 +43,7 @@ void main() {
   late MockJournalDb mockJournalDb;
   late MockHealthService mockHealthService;
   late MockDeviceInfoPlugin mockDeviceInfoPlugin;
+  late MockDomainLogger mockDomainLogger;
 
   setUpAll(() {
     registerFallbackValue(FakeQuantitativeData());
@@ -55,6 +56,11 @@ void main() {
     mockJournalDb = MockJournalDb();
     mockHealthService = MockHealthService();
     mockDeviceInfoPlugin = MockDeviceInfoPlugin();
+    mockDomainLogger = MockDomainLogger();
+
+    // Every import path now logs its outcome, so the logger has to resolve.
+    getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+
     healthImport = HealthImport(
       persistenceLogic: mockPersistenceLogic,
       db: mockJournalDb,
@@ -62,6 +68,8 @@ void main() {
       deviceInfo: mockDeviceInfoPlugin,
     );
   });
+
+  tearDown(getIt.reset);
 
   /// Creates a [HealthImport] with [isDesktop] overridden to false and
   /// permissions bypassed. Restores platform flags via [addTearDown].
@@ -107,6 +115,55 @@ void main() {
     );
   }
 
+  /// Grants authorization and returns [dataPoints] from every read.
+  void stubHealthStore({List<HealthDataPoint> dataPoints = const []}) {
+    when(
+      () => mockHealthService.requestAuthorization(any()),
+    ).thenAnswer((_) async => true);
+    when(
+      () => mockHealthService.getHealthDataFromTypes(
+        types: any(named: 'types'),
+        startTime: any(named: 'startTime'),
+        endTime: any(named: 'endTime'),
+      ),
+    ).thenAnswer((_) async => dataPoints);
+    when(
+      () => mockHealthService.getTotalStepsInInterval(any(), any()),
+    ).thenAnswer((_) async => 0);
+    // Returning a real entity, not null: `createQuantitativeEntry` signals
+    // "not stored" with null, and the reported sample count now honours that.
+    when(
+      () => mockPersistenceLogic.createQuantitativeEntry(any()),
+    ).thenAnswer((invocation) async {
+      final data = invocation.positionalArguments.first as QuantitativeData;
+      return QuantitativeEntry(
+        data: data,
+        meta: Metadata(
+          id: 'stored',
+          createdAt: data.dateFrom,
+          updatedAt: data.dateFrom,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+        ),
+      );
+    });
+    when(() => mockPersistenceLogic.createWorkoutEntry(any())).thenAnswer((
+      invocation,
+    ) async {
+      final data = invocation.positionalArguments.first as WorkoutData;
+      return WorkoutEntry(
+        data: data,
+        meta: Metadata(
+          id: 'stored',
+          createdAt: data.dateFrom,
+          updatedAt: data.dateFrom,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+        ),
+      );
+    });
+  }
+
   group('sumNumericHealthValues', () {
     test('should return the sum of numeric health values', () {
       final dataPoints = <HealthDataPoint>[
@@ -124,17 +181,11 @@ void main() {
         ),
       ];
 
-      final result = healthImport.sumNumericHealthValues(dataPoints);
-
-      expect(result, 30);
+      expect(healthImport.sumNumericHealthValues(dataPoints), 30);
     });
 
     test('should return 0 for an empty list', () {
-      final dataPoints = <HealthDataPoint>[];
-
-      final result = healthImport.sumNumericHealthValues(dataPoints);
-
-      expect(result, 0);
+      expect(healthImport.sumNumericHealthValues([]), 0);
     });
 
     test('should ignore non-numeric health values', () {
@@ -163,49 +214,65 @@ void main() {
         ),
       ];
 
-      final result = healthImport.sumNumericHealthValues(dataPoints);
-
-      expect(result, 10);
+      expect(healthImport.sumNumericHealthValues(dataPoints), 10);
     });
   });
 
   group('addActivityEntries', () {
-    test('should add activity entries to the database', () async {
-      final date = DateTime(2024);
-      final data = {date: 100.0};
-      const type = 'cumulative_step_count';
-      const unit = 'count';
+    test('persists one entry per day and counts what was stored', () async {
+      stubHealthStore();
 
-      when(
-        () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      ).thenAnswer((_) async {
-        return null;
-      });
+      final written = await healthImport.addActivityEntries(
+        {DateTime(2024): 100.0, DateTime(2024, 1, 2): 200.0},
+        'cumulative_step_count',
+        'count',
+      );
 
-      await healthImport.addActivityEntries(data, type, unit);
-
+      expect(written, 2);
       verify(
         () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      ).called(1);
+      ).called(2);
+    });
+
+    // `createQuantitativeEntry` logs and returns null rather than throwing, so
+    // a count of attempts would tell the user "2 samples imported" about rows
+    // the database rejected.
+    test('does not count entries the database rejected', () async {
+      when(
+        () => mockPersistenceLogic.createQuantitativeEntry(any()),
+      ).thenAnswer((_) async => null);
+
+      final written = await healthImport.addActivityEntries(
+        {DateTime(2024): 100.0, DateTime(2024, 1, 2): 200.0},
+        'cumulative_step_count',
+        'count',
+      );
+
+      expect(written, 0);
+      verify(
+        () => mockPersistenceLogic.createQuantitativeEntry(any()),
+      ).called(2);
+    });
+
+    test('writes nothing and reports zero for an empty day map', () async {
+      expect(
+        await healthImport.addActivityEntries({}, 'cumulative_step_count', 'x'),
+        0,
+      );
+      verifyNever(() => mockPersistenceLogic.createQuantitativeEntry(any()));
     });
   });
 
   group('getDays', () {
     test('should generate correct date range for single day', () {
-      final dateFrom = DateTime(2024);
-      final dateTo = DateTime(2024);
-
-      final result = healthImport.getDays(dateFrom, dateTo);
+      final result = healthImport.getDays(DateTime(2024), DateTime(2024));
 
       expect(result.length, 1);
       expect(result.first, DateTime(2024));
     });
 
     test('should generate correct date range for multiple days', () {
-      final dateFrom = DateTime(2024);
-      final dateTo = DateTime(2024, 1, 5);
-
-      final result = healthImport.getDays(dateFrom, dateTo);
+      final result = healthImport.getDays(DateTime(2024), DateTime(2024, 1, 5));
 
       expect(result.length, 5);
       expect(result.first, DateTime(2024));
@@ -213,10 +280,10 @@ void main() {
     });
 
     test('should normalize times to midnight', () {
-      final dateFrom = DateTime(2024, 1, 1, 10, 30);
-      final dateTo = DateTime(2024, 1, 2, 15, 45);
-
-      final result = healthImport.getDays(dateFrom, dateTo);
+      final result = healthImport.getDays(
+        DateTime(2024, 1, 1, 10, 30),
+        DateTime(2024, 1, 2, 15, 45),
+      );
 
       expect(result.length, 2);
       expect(result.first, DateTime(2024));
@@ -224,21 +291,60 @@ void main() {
     });
   });
 
+  group('resolveHealthDataTypes', () {
+    test('resolves fully qualified storage type strings', () {
+      expect(
+        healthImport.resolveHealthDataTypes([
+          'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+          'HealthDataType.HEART_RATE_VARIABILITY_SDNN',
+        ]),
+        [
+          HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+          HealthDataType.HEART_RATE_VARIABILITY_SDNN,
+        ],
+      );
+    });
+
+    test('resolves bare enum names', () {
+      expect(
+        healthImport.resolveHealthDataTypes(['STEPS']),
+        [HealthDataType.STEPS],
+      );
+    });
+
+    test('drops names the plugin no longer defines', () {
+      // `SLEEP_ASLEEP_CORE` is exactly the kind of stale name that used to be
+      // dropped silently, leaving the caller with an empty fetch and no clue.
+      expect(
+        healthImport.resolveHealthDataTypes([
+          'HealthDataType.SLEEP_ASLEEP_CORE',
+          'HealthDataType.WEIGHT',
+        ]),
+        [HealthDataType.WEIGHT],
+      );
+    });
+
+    test('returns empty when nothing resolves', () {
+      expect(
+        healthImport.resolveHealthDataTypes(['HealthDataType.NOT_A_TYPE']),
+        isEmpty,
+      );
+    });
+  });
+
   group('fetchAndProcessActivityDataForDay', () {
     test('should not fetch data for future dates', () async {
-      final futureDate = DateTime(2099);
       final stepsByDay = <DateTime, num>{};
       final flightsByDay = <DateTime, num>{};
       final distanceByDay = <DateTime, num>{};
 
       await healthImport.fetchAndProcessActivityDataForDay(
-        futureDate,
+        DateTime(2099),
         stepsByDay,
         flightsByDay,
         distanceByDay,
       );
 
-      // Should not populate any data for future dates
       expect(stepsByDay.isEmpty, true);
       expect(flightsByDay.isEmpty, true);
       expect(distanceByDay.isEmpty, true);
@@ -250,7 +356,6 @@ void main() {
       final flightsByDay = <DateTime, num>{};
       final distanceByDay = <DateTime, num>{};
 
-      // Mock health service responses
       when(
         () => mockHealthService.getTotalStepsInInterval(any(), any()),
       ).thenAnswer((_) async => 10000);
@@ -302,12 +407,10 @@ void main() {
         distanceByDay,
       );
 
-      // Verify data was fetched and aggregated
       expect(stepsByDay[testDate], 10000);
       expect(flightsByDay[testDate], 25); // 15 + 10
       expect(distanceByDay[testDate], 5000);
 
-      // Verify health service was called
       verify(
         () => mockHealthService.getTotalStepsInInterval(any(), any()),
       ).called(1);
@@ -326,17 +429,7 @@ void main() {
       final flightsByDay = <DateTime, num>{};
       final distanceByDay = <DateTime, num>{};
 
-      when(
-        () => mockHealthService.getTotalStepsInInterval(any(), any()),
-      ).thenAnswer((_) async => 0);
-
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer((_) async => []);
+      stubHealthStore();
 
       await healthImport.fetchAndProcessActivityDataForDay(
         testDate,
@@ -356,17 +449,10 @@ void main() {
       final flightsByDay = <DateTime, num>{};
       final distanceByDay = <DateTime, num>{};
 
+      stubHealthStore();
       when(
         () => mockHealthService.getTotalStepsInInterval(any(), any()),
       ).thenAnswer((_) async => null);
-
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer((_) async => []);
 
       await healthImport.fetchAndProcessActivityDataForDay(
         testDate,
@@ -383,12 +469,7 @@ void main() {
 
   group('authorizeHealth', () {
     test('should return false on desktop platforms', () async {
-      final types = [HealthDataType.STEPS];
-
-      final result = await healthImport.authorizeHealth(types);
-
-      // On desktop (macOS/Linux/Windows), should return false
-      expect(result, false);
+      expect(await healthImport.authorizeHealth([HealthDataType.STEPS]), false);
     });
 
     test('should delegate to health service on mobile', () async {
@@ -398,15 +479,12 @@ void main() {
         () => mockHealthService.requestAuthorization(any()),
       ).thenAnswer((_) async => true);
 
-      final result = await mobileImport.authorizeHealth(
-        [HealthDataType.STEPS],
+      expect(
+        await mobileImport.authorizeHealth([HealthDataType.STEPS]),
+        true,
       );
-
-      expect(result, true);
       verify(
-        () => mockHealthService.requestAuthorization(
-          [HealthDataType.STEPS],
-        ),
+        () => mockHealthService.requestAuthorization([HealthDataType.STEPS]),
       ).called(1);
     });
 
@@ -417,46 +495,43 @@ void main() {
         () => mockHealthService.requestAuthorization(any()),
       ).thenAnswer((_) async => false);
 
-      final result = await mobileImport.authorizeHealth(
-        [HealthDataType.HEART_RATE],
+      expect(
+        await mobileImport.authorizeHealth([HealthDataType.HEART_RATE]),
+        false,
       );
-
-      expect(result, false);
     });
   });
 
   group('fetchHealthData', () {
-    test('should return early on desktop platforms', () async {
-      final dateFrom = DateTime(2024);
-      final dateTo = DateTime(2024, 1, 2);
-      final types = [HealthDataType.STEPS];
+    test(
+      'reports unsupportedPlatform on desktop without touching the store',
+      () async {
+        final result = await healthImport.fetchHealthData(
+          types: [HealthDataType.STEPS],
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        );
 
-      await healthImport.fetchHealthData(
-        types: types,
-        dateFrom: dateFrom,
-        dateTo: dateTo,
-      );
+        expect(result.status, HealthImportStatus.unsupportedPlatform);
+        verifyNever(() => mockHealthService.requestAuthorization(any()));
+      },
+    );
 
-      // On desktop, should return early without calling health service
-      verifyNever(() => mockHealthService.requestAuthorization(any()));
-    });
-
-    test('should return early when authorization is denied', () async {
+    test('reports permissionDenied when authorization is refused', () async {
       final mobileImport = createMobileHealthImport();
 
       when(
         () => mockHealthService.requestAuthorization(any()),
       ).thenAnswer((_) async => false);
 
-      await mobileImport.fetchHealthData(
+      final result = await mobileImport.fetchHealthData(
         types: [HealthDataType.HEART_RATE],
         dateFrom: DateTime(2024),
         dateTo: DateTime(2024, 1, 2),
       );
 
-      verify(
-        () => mockHealthService.requestAuthorization(any()),
-      ).called(1);
+      expect(result.status, HealthImportStatus.permissionDenied);
+      verify(() => mockHealthService.requestAuthorization(any())).called(1);
       verifyNever(
         () => mockHealthService.getHealthDataFromTypes(
           types: any(named: 'types'),
@@ -466,23 +541,13 @@ void main() {
       );
     });
 
-    test('should process numeric health data points', () async {
+    test('persists numeric points and reports how many', () async {
       final mobileImport = createMobileHealthImport();
       final dateFrom = DateTime(2024, 3);
       final dateTo = DateTime(2024, 3, 1, 12);
 
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
-
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer(
-        (_) async => [
+      stubHealthStore(
+        dataPoints: [
           makeNumericDataPoint(
             type: HealthDataType.HEART_RATE,
             value: 72,
@@ -493,20 +558,17 @@ void main() {
         ],
       );
 
-      when(
-        () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      ).thenAnswer((_) async => null);
-
-      await mobileImport.fetchHealthData(
+      final result = await mobileImport.fetchHealthData(
         types: [HealthDataType.HEART_RATE],
         dateFrom: dateFrom,
         dateTo: dateTo,
       );
 
+      expect(result.status, HealthImportStatus.imported);
+      expect(result.sampleCount, 1);
+
       final captured = verify(
-        () => mockPersistenceLogic.createQuantitativeEntry(
-          captureAny(),
-        ),
+        () => mockPersistenceLogic.createQuantitativeEntry(captureAny()),
       ).captured;
 
       expect(captured.length, 1);
@@ -515,18 +577,61 @@ void main() {
       expect(data.dataType, 'HealthDataType.HEART_RATE');
     });
 
-    // Sleep-duplication invariant, parameterized over the full contract:
-    // only SLEEP_DEEP and SLEEP_REM get an additional generic SLEEP_ASLEEP
-    // copy (for comparability with pre-iOS-16 data). All other sleep stages
-    // and non-sleep types must persist exactly one entry.
+    test('a rejected sample is not counted as imported', () async {
+      final mobileImport = createMobileHealthImport();
+      stubHealthStore(
+        dataPoints: [
+          makeNumericDataPoint(
+            type: HealthDataType.HEART_RATE,
+            value: 72,
+            dateFrom: DateTime(2024, 3),
+            dateTo: DateTime(2024, 3),
+          ),
+        ],
+      );
+      when(
+        () => mockPersistenceLogic.createQuantitativeEntry(any()),
+      ).thenAnswer((_) async => null);
+
+      final result = await mobileImport.fetchHealthData(
+        types: [HealthDataType.HEART_RATE],
+        dateFrom: DateTime(2024, 3),
+        dateTo: DateTime(2024, 3, 2),
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(
+        result.sampleCount,
+        0,
+        reason: 'the store refused the row; reporting 1 would be a lie',
+      );
+    });
+
+    test('an empty range is a success importing zero samples', () async {
+      final mobileImport = createMobileHealthImport();
+      stubHealthStore();
+
+      final result = await mobileImport.fetchHealthData(
+        types: [HealthDataType.HEART_RATE],
+        dateFrom: DateTime(2024, 3),
+        dateTo: DateTime(2024, 3, 2),
+      );
+
+      expect(result.isSuccess, isTrue);
+      expect(result.sampleCount, 0);
+    });
+
+    // Sleep-duplication invariant, parameterized over the full contract.
     //
-    // Note: the impl's duplication set also lists SLEEP_ASLEEP_CORE and
-    // SLEEP_ASLEEP_UNSPECIFIED, but those names do not exist in the current
-    // health-package enum, so they are unreachable via dataPoint.type.
+    // Apple's staged sleep (`SLEEP_LIGHT` = core, `SLEEP_DEEP`, `SLEEP_REM`) is
+    // additionally stored under the generic `SLEEP_ASLEEP` type, which is what
+    // the "Asleep" dashboard charts. `SLEEP_LIGHT` is the regression: the old
+    // duplication set named `SLEEP_ASLEEP_CORE`, which is not a value of the
+    // plugin's enum, so the largest stage of a night was never counted.
     const sleepDuplicationExpectations = <HealthDataType, bool>{
+      HealthDataType.SLEEP_LIGHT: true,
       HealthDataType.SLEEP_DEEP: true,
       HealthDataType.SLEEP_REM: true,
-      HealthDataType.SLEEP_LIGHT: false,
       HealthDataType.SLEEP_IN_BED: false,
       HealthDataType.SLEEP_AWAKE: false,
       HealthDataType.SLEEP_ASLEEP: false,
@@ -544,17 +649,8 @@ void main() {
           final dateFrom = DateTime(2024, 3);
           final dateTo = DateTime(2024, 3, 1, 8);
 
-          when(
-            () => mockHealthService.requestAuthorization(any()),
-          ).thenAnswer((_) async => true);
-          when(
-            () => mockHealthService.getHealthDataFromTypes(
-              types: any(named: 'types'),
-              startTime: any(named: 'startTime'),
-              endTime: any(named: 'endTime'),
-            ),
-          ).thenAnswer(
-            (_) async => [
+          stubHealthStore(
+            dataPoints: [
               makeNumericDataPoint(
                 type: type,
                 value: 90,
@@ -564,11 +660,8 @@ void main() {
               ),
             ],
           );
-          when(
-            () => mockPersistenceLogic.createQuantitativeEntry(any()),
-          ).thenAnswer((_) async => null);
 
-          await mobileImport.fetchHealthData(
+          final result = await mobileImport.fetchHealthData(
             types: [type],
             dateFrom: dateFrom,
             dateTo: dateTo,
@@ -579,11 +672,18 @@ void main() {
           ).captured.cast<DiscreteQuantityData>();
 
           expect(captured.first.dataType, type.toString());
+          // The reported count is samples read, not rows written: the generic
+          // copy is the same reading stored twice, not a second measurement.
+          expect(result.sampleCount, 1);
+
           if (duplicates) {
             expect(captured.length, 2);
             expect(captured.last.dataType, 'HealthDataType.SLEEP_ASLEEP');
-            // The duplicated entry preserves the original value.
             expect(captured.last.value, captured.first.value);
+            // Everything but the type is carried over verbatim.
+            expect(captured.last.dateFrom, captured.first.dateFrom);
+            expect(captured.last.dateTo, captured.first.dateTo);
+            expect(captured.last.unit, captured.first.unit);
           } else {
             expect(captured.length, 1);
           }
@@ -591,23 +691,30 @@ void main() {
       );
     }
 
+    test('the duplication set contains exactly the staged sleep types', () {
+      expect(sleepStagesDuplicatedAsAsleep, {
+        'HealthDataType.SLEEP_LIGHT',
+        'HealthDataType.SLEEP_DEEP',
+        'HealthDataType.SLEEP_REM',
+      });
+      // Every member must be a real enum value — the previous set's members
+      // were not, which is how the defect went unnoticed.
+      for (final name in sleepStagesDuplicatedAsAsleep) {
+        expect(
+          HealthDataType.values.map((type) => type.toString()),
+          contains(name),
+          reason: '$name is not a HealthDataType',
+        );
+      }
+    });
+
     test('should skip non-numeric health values', () async {
       final mobileImport = createMobileHealthImport();
       final dateFrom = DateTime(2024, 3);
       final dateTo = DateTime(2024, 3, 1, 12);
 
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
-
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer(
-        (_) async => [
+      stubHealthStore(
+        dataPoints: [
           HealthDataPoint(
             uuid: const Uuid().v4(),
             value: AudiogramHealthValue(
@@ -627,16 +734,14 @@ void main() {
         ],
       );
 
-      await mobileImport.fetchHealthData(
+      final result = await mobileImport.fetchHealthData(
         types: [HealthDataType.AUDIOGRAM],
         dateFrom: dateFrom,
         dateTo: dateTo,
       );
 
-      // Should not create any entries for non-numeric values
-      verifyNever(
-        () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      );
+      expect(result.sampleCount, 0);
+      verifyNever(() => mockPersistenceLogic.createQuantitativeEntry(any()));
     });
 
     test('should process multiple data points in reverse order', () async {
@@ -645,96 +750,212 @@ void main() {
       final date2 = DateTime(2024, 3, 1, 12);
       final date3 = DateTime(2024, 3, 1, 18);
 
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
-
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer(
-        (_) async => [
-          makeNumericDataPoint(
-            type: HealthDataType.HEART_RATE,
-            value: 60,
-            dateFrom: date1,
-            dateTo: date1,
-          ),
-          makeNumericDataPoint(
-            type: HealthDataType.HEART_RATE,
-            value: 80,
-            dateFrom: date2,
-            dateTo: date2,
-          ),
-          makeNumericDataPoint(
-            type: HealthDataType.HEART_RATE,
-            value: 70,
-            dateFrom: date3,
-            dateTo: date3,
-          ),
+      stubHealthStore(
+        dataPoints: [
+          for (final (date, value) in [(date1, 60), (date2, 80), (date3, 70)])
+            makeNumericDataPoint(
+              type: HealthDataType.HEART_RATE,
+              value: value,
+              dateFrom: date,
+              dateTo: date,
+            ),
         ],
       );
 
-      when(
-        () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      ).thenAnswer((_) async => null);
-
-      await mobileImport.fetchHealthData(
+      final result = await mobileImport.fetchHealthData(
         types: [HealthDataType.HEART_RATE],
         dateFrom: date1,
         dateTo: date3,
       );
 
       final captured = verify(
-        () => mockPersistenceLogic.createQuantitativeEntry(
-          captureAny(),
-        ),
+        () => mockPersistenceLogic.createQuantitativeEntry(captureAny()),
       ).captured;
 
-      // Processed in reversed order: date3, date2, date1
+      expect(result.sampleCount, 3);
       expect(captured.length, 3);
       expect((captured[0] as DiscreteQuantityData).value, 70);
       expect((captured[1] as DiscreteQuantityData).value, 80);
       expect((captured[2] as DiscreteQuantityData).value, 60);
     });
 
-    test('should catch and log exceptions', () async {
-      final mobileImport = createMobileHealthImport();
-      final mockDomainLogger = MockDomainLogger();
+    test('caps the range end at now rather than reading into the future', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
 
-      await getIt.reset();
-      getIt.registerSingleton<DomainLogger>(mockDomainLogger);
-      addTearDown(getIt.reset);
+        mobileImport.fetchHealthData(
+          types: [HealthDataType.HEART_RATE],
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2099),
+        );
+        async.flushMicrotasks();
+
+        final captured = verify(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: any(named: 'types'),
+            startTime: any(named: 'startTime'),
+            endTime: captureAny(named: 'endTime'),
+          ),
+        ).captured;
+
+        expect(captured.single, clock.now());
+      });
+    });
+
+    // The authorization call lives inside the same `try` as the read. It can
+    // throw on its own — `requestAuthorization` rejects a bad type/permission
+    // pairing, and `HealthService` rethrows a failed configure handshake — and
+    // letting that escape would break this method's contract of returning an
+    // outcome. The caller that trusts it hardest is the settings page, whose
+    // row would be left spinning with no way to retry.
+    test('reports failed when authorization itself throws', () async {
+      final mobileImport = createMobileHealthImport();
+      final failure = ArgumentError('types and permissions differ in length');
+
+      when(
+        () => mockHealthService.requestAuthorization(any()),
+      ).thenThrow(failure);
+
+      final result = await mobileImport.fetchHealthData(
+        types: [HealthDataType.HEART_RATE],
+        dateFrom: DateTime(2024, 3),
+        dateTo: DateTime(2024, 3, 2),
+      );
+
+      expect(result.status, HealthImportStatus.failed);
+      expect(result.error, same(failure));
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.health,
+          same(failure),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'fetchHealthData',
+        ),
+      ).called(1);
+    });
+
+    test('reports failed and logs when the health store throws', () async {
+      final mobileImport = createMobileHealthImport();
+      final failure = Exception('Health API error');
 
       when(
         () => mockHealthService.requestAuthorization(any()),
       ).thenAnswer((_) async => true);
-
       when(
         () => mockHealthService.getHealthDataFromTypes(
           types: any(named: 'types'),
           startTime: any(named: 'startTime'),
           endTime: any(named: 'endTime'),
         ),
-      ).thenThrow(Exception('Health API error'));
+      ).thenThrow(failure);
 
-      // Should not throw — error is caught and logged
-      await mobileImport.fetchHealthData(
+      final result = await mobileImport.fetchHealthData(
         types: [HealthDataType.HEART_RATE],
         dateFrom: DateTime(2024, 3),
         dateTo: DateTime(2024, 3, 1, 12),
       );
 
+      expect(result.status, HealthImportStatus.failed);
+      expect(result.error, same(failure));
       verify(
         () => mockDomainLogger.error(
           LogDomain.health,
-          any<Object>(),
+          same(failure),
+          stackTrace: any(named: 'stackTrace'),
           subDomain: 'fetchHealthData',
         ),
       ).called(1);
+    });
+  });
+
+  group('serialization of health-store access', () {
+    // HealthKit shows one authorization sheet at a time; a second request
+    // raised while the first is on screen replaces it, and the user sees a
+    // sheet flash and vanish. Two entry points can fire at once with no user
+    // error at all (a dashboard schedules background deltas while the settings
+    // page runs an import), so the import layer must serialize them itself.
+    test('two concurrent imports never overlap in the health plugin', () async {
+      final mobileImport = createMobileHealthImport();
+      final events = <String>[];
+
+      when(() => mockHealthService.requestAuthorization(any())).thenAnswer((
+        invocation,
+      ) async {
+        final types =
+            invocation.positionalArguments.first as List<HealthDataType>;
+        final label = types.first.name;
+        events.add('open:$label');
+        // Yield across several microtasks: if the two requests were allowed to
+        // run concurrently, the second would open inside this gap.
+        await null;
+        await null;
+        await null;
+        events.add('close:$label');
+        return true;
+      });
+      when(
+        () => mockHealthService.getHealthDataFromTypes(
+          types: any(named: 'types'),
+          startTime: any(named: 'startTime'),
+          endTime: any(named: 'endTime'),
+        ),
+      ).thenAnswer((_) async => []);
+
+      await Future.wait([
+        mobileImport.fetchHealthData(
+          types: [HealthDataType.HEART_RATE],
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        ),
+        mobileImport.fetchHealthData(
+          types: [HealthDataType.WEIGHT],
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        ),
+      ]);
+
+      expect(events, [
+        'open:HEART_RATE',
+        'close:HEART_RATE',
+        'open:WEIGHT',
+        'close:WEIGHT',
+      ]);
+    });
+
+    test('a failing import does not wedge the ones queued behind it', () async {
+      final mobileImport = createMobileHealthImport();
+
+      when(
+        () => mockHealthService.requestAuthorization(any()),
+      ).thenAnswer((_) async => true);
+      var call = 0;
+      when(
+        () => mockHealthService.getHealthDataFromTypes(
+          types: any(named: 'types'),
+          startTime: any(named: 'startTime'),
+          endTime: any(named: 'endTime'),
+        ),
+      ).thenAnswer((_) async {
+        if (++call == 1) throw Exception('first one explodes');
+        return [];
+      });
+
+      final results = await Future.wait([
+        mobileImport.fetchHealthData(
+          types: [HealthDataType.HEART_RATE],
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        ),
+        mobileImport.fetchHealthData(
+          types: [HealthDataType.WEIGHT],
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        ),
+      ]);
+
+      expect(results.first.status, HealthImportStatus.failed);
+      expect(results.last.isSuccess, isTrue);
     });
   });
 
@@ -743,18 +964,15 @@ void main() {
       fakeAsync((async) {
         const type = 'cumulative_step_count';
 
-        // First call - type should be queued and lastFetched recorded
         healthImport.fetchHealthDataDelta(type);
         async.flushMicrotasks();
 
         expect(healthImport.lastFetched.containsKey(type), true);
         final firstFetchTime = healthImport.lastFetched[type]!;
 
-        // Second call within 10 minutes should be throttled (not queued again)
         healthImport.fetchHealthDataDelta(type);
         async.flushMicrotasks();
 
-        // Verify throttling: lastFetched time unchanged, queue processed
         expect(healthImport.lastFetched[type], firstFetchTime);
         expect(healthImport.queue.length, 0);
       });
@@ -779,7 +997,6 @@ void main() {
         const type1 = 'HealthDataType.HEART_RATE';
         const type2 = 'HealthDataType.WEIGHT';
 
-        // Call without awaiting to test concurrent execution
         healthImport
           ..fetchHealthDataDelta(type1)
           ..fetchHealthDataDelta(type2);
@@ -800,97 +1017,174 @@ void main() {
 
         final firstFetchTime = healthImport.lastFetched[type]!;
 
-        // Second call - non-cumulative types are NOT throttled
         healthImport.fetchHealthDataDelta(type);
         async.flushMicrotasks();
 
-        // lastFetched should be updated (not throttled)
         expect(
           healthImport.lastFetched[type]!.millisecondsSinceEpoch,
           greaterThanOrEqualTo(firstFetchTime.millisecondsSinceEpoch),
         );
       });
     });
+
+    test('clears the running flag once the queue drains', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
+        stubHealthStore();
+
+        mobileImport.fetchHealthDataDelta('HealthDataType.HEART_RATE');
+        expect(mobileImport.running, isTrue, reason: 'set on enqueue');
+
+        async.flushMicrotasks();
+
+        expect(mobileImport.running, isFalse);
+        expect(mobileImport.queue, isEmpty);
+      });
+    });
+
+    // The queue-deadlock regression. `_start` had no try/finally and no
+    // per-item guard, so the first type that threw escaped the drain loop and
+    // left `running` permanently true. Every later import in the session was
+    // then queued behind a drain that would never run again — the symptom
+    // being health charts that simply stopped updating.
+    test('a throwing type does not wedge the queue for the session', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
+
+        when(
+          () => mockJournalDb.latestQuantitativeByType(
+            'HealthDataType.WEIGHT',
+          ),
+        ).thenThrow(Exception('db read failed'));
+        when(
+          () => mockJournalDb.latestQuantitativeByType(
+            'HealthDataType.HEART_RATE',
+          ),
+        ).thenAnswer((_) async => null);
+        stubHealthStore();
+
+        mobileImport
+          ..fetchHealthDataDelta('HealthDataType.WEIGHT')
+          ..fetchHealthDataDelta('HealthDataType.HEART_RATE');
+        async.flushMicrotasks();
+
+        // The drain survived the failure...
+        expect(mobileImport.running, isFalse);
+        expect(mobileImport.queue, isEmpty);
+        // ...and the type queued behind the failing one was still imported.
+        verify(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: [HealthDataType.HEART_RATE],
+            startTime: any(named: 'startTime'),
+            endTime: any(named: 'endTime'),
+          ),
+        ).called(1);
+        // The failure is reported rather than swallowed.
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.health,
+            any<Object>(),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'fetchHealthDataDelta',
+          ),
+        ).called(1);
+      });
+    });
+
+    test('a later delta still runs after an earlier one failed', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
+
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenThrow(Exception('db read failed'));
+        stubHealthStore();
+
+        mobileImport.fetchHealthDataDelta('HealthDataType.WEIGHT');
+        async.flushMicrotasks();
+        expect(mobileImport.running, isFalse);
+
+        // A *separate* later call — this is the one that used to be swallowed
+        // by the stuck `running` flag rather than merely failing itself.
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
+        mobileImport.fetchHealthDataDelta('HealthDataType.HEART_RATE');
+        async.flushMicrotasks();
+
+        verify(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: [HealthDataType.HEART_RATE],
+            startTime: any(named: 'startTime'),
+            endTime: any(named: 'endTime'),
+          ),
+        ).called(1);
+      });
+    });
   });
 
-  group('_fetchHealthDataDelta - type mapping', () {
-    test('should map BLOOD_PRESSURE to systolic and diastolic types', () {
+  group('delta type mapping', () {
+    test('maps BLOOD_PRESSURE to systolic and diastolic', () {
       fakeAsync((async) {
         final mobileImport = createMobileHealthImport();
 
         when(
           () => mockJournalDb.latestQuantitativeByType(any()),
         ).thenAnswer((_) async => null);
-
-        when(
-          () => mockHealthService.requestAuthorization(any()),
-        ).thenAnswer((_) async => true);
-
-        when(
-          () => mockHealthService.getHealthDataFromTypes(
-            types: any(named: 'types'),
-            startTime: any(named: 'startTime'),
-            endTime: any(named: 'endTime'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubHealthStore();
 
         mobileImport.fetchHealthDataDelta('BLOOD_PRESSURE');
         async.flushMicrotasks();
 
-        // Should look up latest by the first actual type (systolic)
         verify(
           () => mockJournalDb.latestQuantitativeByType(
             'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
           ),
         ).called(1);
 
-        // Auth requested in _fetchHealthDataDelta AND again in fetchHealthData
+        // Exactly one authorization request. It used to be two — the delta
+        // path asked, then handed off to `fetchHealthData`, which asked again,
+        // putting two HealthKit sheets back to back for one import.
         verify(
-          () => mockHealthService.requestAuthorization(
-            [
-              HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
-              HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
-            ],
-          ),
-        ).called(2);
+          () => mockHealthService.requestAuthorization([
+            HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+            HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+          ]),
+        ).called(1);
       });
     });
 
-    test('should map BODY_MASS_INDEX to WEIGHT', () {
+    test('maps BODY_MASS_INDEX to WEIGHT', () {
       fakeAsync((async) {
         final mobileImport = createMobileHealthImport();
 
         when(
           () => mockJournalDb.latestQuantitativeByType(any()),
         ).thenAnswer((_) async => null);
-
-        when(
-          () => mockHealthService.requestAuthorization(any()),
-        ).thenAnswer((_) async => true);
-
-        when(
-          () => mockHealthService.getHealthDataFromTypes(
-            types: any(named: 'types'),
-            startTime: any(named: 'startTime'),
-            endTime: any(named: 'endTime'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubHealthStore();
 
         mobileImport.fetchHealthDataDelta('BODY_MASS_INDEX');
         async.flushMicrotasks();
 
         verify(
-          () => mockJournalDb.latestQuantitativeByType(
-            'HealthDataType.WEIGHT',
-          ),
+          () => mockJournalDb.latestQuantitativeByType('HealthDataType.WEIGHT'),
         ).called(1);
-
-        // Auth requested in _fetchHealthDataDelta AND again in fetchHealthData
         verify(
-          () => mockHealthService.requestAuthorization(
-            [HealthDataType.WEIGHT],
-          ),
-        ).called(2);
+          () => mockHealthService.requestAuthorization([HealthDataType.WEIGHT]),
+        ).called(1);
+      });
+    });
+
+    test('the composite map documents exactly these two expansions', () {
+      expect(HealthImport.compositeStorageTypes, {
+        'BLOOD_PRESSURE': [
+          'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+          'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+        ],
+        'BODY_MASS_INDEX': ['HealthDataType.WEIGHT'],
       });
     });
 
@@ -899,43 +1193,29 @@ void main() {
         final mobileImport = createMobileHealthImport();
         final latestDate = DateTime(2024, 6, 15);
 
-        final latestEntry = QuantitativeEntry(
-          data: DiscreteQuantityData(
-            dateFrom: latestDate,
-            dateTo: latestDate,
-            value: 72,
-            dataType: 'HealthDataType.HEART_RATE',
-            unit: 'BEATS_PER_MINUTE',
-          ),
-          meta: Metadata(
-            id: 'test-id',
-            createdAt: latestDate,
-            updatedAt: latestDate,
-            dateFrom: latestDate,
-            dateTo: latestDate,
+        when(() => mockJournalDb.latestQuantitativeByType(any())).thenAnswer(
+          (_) async => QuantitativeEntry(
+            data: DiscreteQuantityData(
+              dateFrom: latestDate,
+              dateTo: latestDate,
+              value: 72,
+              dataType: 'HealthDataType.HEART_RATE',
+              unit: 'BEATS_PER_MINUTE',
+            ),
+            meta: Metadata(
+              id: 'test-id',
+              createdAt: latestDate,
+              updatedAt: latestDate,
+              dateFrom: latestDate,
+              dateTo: latestDate,
+            ),
           ),
         );
-
-        when(
-          () => mockJournalDb.latestQuantitativeByType(any()),
-        ).thenAnswer((_) async => latestEntry);
-
-        when(
-          () => mockHealthService.requestAuthorization(any()),
-        ).thenAnswer((_) async => true);
-
-        when(
-          () => mockHealthService.getHealthDataFromTypes(
-            types: any(named: 'types'),
-            startTime: any(named: 'startTime'),
-            endTime: any(named: 'endTime'),
-          ),
-        ).thenAnswer((_) async => []);
+        stubHealthStore();
 
         mobileImport.fetchHealthDataDelta('HealthDataType.HEART_RATE');
         async.flushMicrotasks();
 
-        // Should fetch from the latest entry's dateFrom
         verify(
           () => mockHealthService.getHealthDataFromTypes(
             types: [HealthDataType.HEART_RATE],
@@ -946,58 +1226,40 @@ void main() {
       });
     });
 
-    test(
-      'should use default fetch duration when no latest entry exists',
-      () {
-        fakeAsync((async) {
-          final mobileImport = createMobileHealthImport();
-
-          when(
-            () => mockJournalDb.latestQuantitativeByType(any()),
-          ).thenAnswer((_) async => null);
-
-          when(
-            () => mockHealthService.requestAuthorization(any()),
-          ).thenAnswer((_) async => true);
-
-          when(
-            () => mockHealthService.getHealthDataFromTypes(
-              types: any(named: 'types'),
-              startTime: any(named: 'startTime'),
-              endTime: any(named: 'endTime'),
-            ),
-          ).thenAnswer((_) async => []);
-
-          mobileImport.fetchHealthDataDelta('HealthDataType.WEIGHT');
-          async.flushMicrotasks();
-
-          final captured = verify(
-            () => mockHealthService.getHealthDataFromTypes(
-              types: any(named: 'types'),
-              startTime: captureAny(named: 'startTime'),
-              endTime: any(named: 'endTime'),
-            ),
-          ).captured;
-
-          final startTime = captured.first as DateTime;
-          // fakeAsync controls clock.now() used by production code,
-          // so we can assert exact equality.
-          final expectedStart = clock.now().subtract(
-            const Duration(days: 90),
-          );
-          expect(startTime, expectedStart);
-        });
-      },
-    );
-
-    test('should skip fetch when auth denied for non-cumulative type', () {
+    test('uses the default fetch duration when nothing is stored yet', () {
       fakeAsync((async) {
         final mobileImport = createMobileHealthImport();
 
         when(
           () => mockJournalDb.latestQuantitativeByType(any()),
         ).thenAnswer((_) async => null);
+        stubHealthStore();
 
+        mobileImport.fetchHealthDataDelta('HealthDataType.WEIGHT');
+        async.flushMicrotasks();
+
+        final captured = verify(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: any(named: 'types'),
+            startTime: captureAny(named: 'startTime'),
+            endTime: any(named: 'endTime'),
+          ),
+        ).captured;
+
+        expect(
+          captured.single,
+          clock.now().subtract(const Duration(days: 90)),
+        );
+      });
+    });
+
+    test('skips the fetch when auth is denied for a non-cumulative type', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
+
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
         when(
           () => mockHealthService.requestAuthorization(any()),
         ).thenAnswer((_) async => false);
@@ -1015,168 +1277,165 @@ void main() {
       });
     });
 
-    test(
-      'should call getActivityHealthData for cumulative types',
-      () {
-        fakeAsync((async) {
-          final mobileImport = createMobileHealthImport();
+    test('routes cumulative types through the activity importer', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
 
-          when(
-            () => mockJournalDb.latestQuantitativeByType(any()),
-          ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
+        stubHealthStore();
 
-          // Auth for activity types (called by getActivityHealthData)
-          when(
-            () => mockHealthService.requestAuthorization(any()),
-          ).thenAnswer((_) async => true);
+        mobileImport.fetchHealthDataDelta('cumulative_step_count');
+        async.flushMicrotasks();
 
-          when(
-            () => mockHealthService.getTotalStepsInInterval(any(), any()),
-          ).thenAnswer((_) async => 0);
+        verify(
+          () => mockJournalDb.latestQuantitativeByType('cumulative_step_count'),
+        ).called(1);
+        verify(
+          () => mockHealthService.requestAuthorization(activityTypes),
+        ).called(1);
+      });
+    });
 
-          when(
-            () => mockHealthService.getHealthDataFromTypes(
-              types: any(named: 'types'),
-              startTime: any(named: 'startTime'),
-              endTime: any(named: 'endTime'),
-            ),
-          ).thenAnswer((_) async => []);
+    // Silently importing nothing is what made a dashboard configured for a
+    // retired type look like a broken import rather than stale configuration.
+    test('an unresolvable type is reported, not silently skipped', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
 
-          when(
-            () => mockPersistenceLogic.createQuantitativeEntry(any()),
-          ).thenAnswer((_) async => null);
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
+        stubHealthStore();
 
-          mobileImport.fetchHealthDataDelta('cumulative_step_count');
-          async.flushMicrotasks();
+        mobileImport.fetchHealthDataDelta('HealthDataType.NO_SUCH_TYPE');
+        async.flushMicrotasks();
 
-          // Should have looked up latest for the cumulative type
-          verify(
-            () => mockJournalDb.latestQuantitativeByType(
-              'cumulative_step_count',
-            ),
-          ).called(1);
-
-          // Should have called getActivityHealthData which requests
-          // activity auth
-          verify(
-            () => mockHealthService.requestAuthorization(activityTypes),
-          ).called(1);
-        });
-      },
-    );
+        verifyNever(() => mockHealthService.requestAuthorization(any()));
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.health,
+            any<Object>(that: isA<StateError>()),
+            subDomain: 'fetchHealthDataDelta',
+          ),
+        ).called(1);
+      });
+    });
   });
 
   group('getActivityHealthData', () {
-    test('should return early on desktop platforms', () async {
-      await healthImport.getActivityHealthData(
+    test('reports unsupportedPlatform on desktop', () async {
+      final result = await healthImport.getActivityHealthData(
         dateFrom: DateTime(2024),
         dateTo: DateTime(2024, 1, 2),
       );
 
+      expect(result.status, HealthImportStatus.unsupportedPlatform);
       verifyNever(() => mockHealthService.requestAuthorization(any()));
     });
 
-    test('should return early when authorization is denied', () async {
+    test('reports permissionDenied when authorization is refused', () async {
       final mobileImport = createMobileHealthImport();
 
       when(
         () => mockHealthService.requestAuthorization(any()),
       ).thenAnswer((_) async => false);
 
-      await mobileImport.getActivityHealthData(
+      final result = await mobileImport.getActivityHealthData(
         dateFrom: DateTime(2024),
         dateTo: DateTime(2024, 1, 2),
       );
 
+      expect(result.status, HealthImportStatus.permissionDenied);
       verifyNever(
         () => mockHealthService.getTotalStepsInInterval(any(), any()),
       );
     });
 
-    test('should fetch and save activity data for date range', () async {
+    test('writes one entry per day per metric and counts them', () async {
       final mobileImport = createMobileHealthImport();
-      final dateFrom = DateTime(2024, 3);
-      final dateTo = DateTime(2024, 3, 2);
-
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
-
+      stubHealthStore();
       when(
         () => mockHealthService.getTotalStepsInInterval(any(), any()),
       ).thenAnswer((_) async => 5000);
 
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer((_) async => []);
-
-      when(
-        () => mockPersistenceLogic.createQuantitativeEntry(any()),
-      ).thenAnswer((_) async => null);
-
-      await mobileImport.getActivityHealthData(
-        dateFrom: dateFrom,
-        dateTo: dateTo,
+      final result = await mobileImport.getActivityHealthData(
+        dateFrom: DateTime(2024, 3),
+        dateTo: DateTime(2024, 3, 2),
       );
 
-      // 2 days × 3 types (steps, flights, distance) = 6 persistence calls
+      // 2 days × 3 metrics (steps, flights, distance)
+      expect(result.sampleCount, 6);
       verify(
         () => mockPersistenceLogic.createQuantitativeEntry(any()),
       ).called(6);
     });
+
+    test('reports failed and logs when the health store throws', () async {
+      final mobileImport = createMobileHealthImport();
+      final failure = Exception('steps unavailable');
+
+      when(
+        () => mockHealthService.requestAuthorization(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockHealthService.getTotalStepsInInterval(any(), any()),
+      ).thenThrow(failure);
+
+      final result = await mobileImport.getActivityHealthData(
+        dateFrom: DateTime(2024, 3),
+        dateTo: DateTime(2024, 3, 2),
+      );
+
+      expect(result.status, HealthImportStatus.failed);
+      expect(result.error, same(failure));
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.health,
+          same(failure),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'getActivityHealthData',
+        ),
+      ).called(1);
+    });
   });
 
   group('getWorkoutsHealthData', () {
-    test('should return early on desktop platforms', () async {
-      final dateFrom = DateTime(2024);
-      final dateTo = DateTime(2024, 1, 2);
-
-      await healthImport.getWorkoutsHealthData(
-        dateFrom: dateFrom,
-        dateTo: dateTo,
+    test('reports unsupportedPlatform on desktop', () async {
+      final result = await healthImport.getWorkoutsHealthData(
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024, 1, 2),
       );
 
-      // On desktop, should return early without calling health service
+      expect(result.status, HealthImportStatus.unsupportedPlatform);
       verifyNever(() => mockHealthService.requestAuthorization(any()));
       verifyNever(() => mockPersistenceLogic.createWorkoutEntry(any()));
     });
 
-    test('should return early when authorization is denied', () async {
+    test('reports permissionDenied when authorization is refused', () async {
       final mobileImport = createMobileHealthImport();
 
       when(
         () => mockHealthService.requestAuthorization(any()),
       ).thenAnswer((_) async => false);
 
-      await mobileImport.getWorkoutsHealthData(
+      final result = await mobileImport.getWorkoutsHealthData(
         dateFrom: DateTime(2024),
         dateTo: DateTime(2024, 1, 2),
       );
 
+      expect(result.status, HealthImportStatus.permissionDenied);
       verifyNever(() => mockPersistenceLogic.createWorkoutEntry(any()));
     });
 
-    test('should process WorkoutHealthValue data points', () async {
+    test('maps a workout data point onto a workout entry', () async {
       final mobileImport = createMobileHealthImport();
       final dateFrom = DateTime(2024, 3, 1, 8);
       final dateTo = DateTime(2024, 3, 1, 9);
 
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
-
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer(
-        (_) async => [
+      stubHealthStore(
+        dataPoints: [
           HealthDataPoint(
             uuid: 'workout-uuid-1',
             value: WorkoutHealthValue(
@@ -1196,14 +1455,12 @@ void main() {
         ],
       );
 
-      when(
-        () => mockPersistenceLogic.createWorkoutEntry(any()),
-      ).thenAnswer((_) async => null);
-
-      await mobileImport.getWorkoutsHealthData(
+      final result = await mobileImport.getWorkoutsHealthData(
         dateFrom: dateFrom,
         dateTo: dateTo,
       );
+
+      expect(result.sampleCount, 1);
 
       final captured = verify(
         () => mockPersistenceLogic.createWorkoutEntry(captureAny()),
@@ -1225,18 +1482,8 @@ void main() {
       final dateFrom = DateTime(2024, 3, 1, 8);
       final dateTo = DateTime(2024, 3, 1, 9);
 
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
-
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer(
-        (_) async => [
+      stubHealthStore(
+        dataPoints: [
           makeNumericDataPoint(
             type: HealthDataType.WORKOUT,
             value: 100,
@@ -1246,155 +1493,137 @@ void main() {
         ],
       );
 
-      await mobileImport.getWorkoutsHealthData(
+      final result = await mobileImport.getWorkoutsHealthData(
         dateFrom: dateFrom,
         dateTo: dateTo,
       );
 
-      // Numeric value should be skipped (not a WorkoutHealthValue)
+      expect(result.sampleCount, 0);
       verifyNever(() => mockPersistenceLogic.createWorkoutEntry(any()));
     });
 
     test('should process multiple workouts in reverse order', () async {
       final mobileImport = createMobileHealthImport();
       final date1From = DateTime(2024, 3, 1, 8);
-      final date1To = DateTime(2024, 3, 1, 9);
       final date2From = DateTime(2024, 3, 1, 16);
-      final date2To = DateTime(2024, 3, 1, 17);
 
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
-
-      when(
-        () => mockHealthService.getHealthDataFromTypes(
-          types: any(named: 'types'),
-          startTime: any(named: 'startTime'),
-          endTime: any(named: 'endTime'),
-        ),
-      ).thenAnswer(
-        (_) async => [
-          HealthDataPoint(
-            uuid: 'workout-1',
-            value: WorkoutHealthValue(
-              workoutActivityType: HealthWorkoutActivityType.RUNNING,
-              totalEnergyBurned: 200,
-              totalDistance: 3000,
+      stubHealthStore(
+        dataPoints: [
+          for (final (uuid, type, from) in [
+            ('workout-1', HealthWorkoutActivityType.RUNNING, date1From),
+            ('workout-2', HealthWorkoutActivityType.YOGA, date2From),
+          ])
+            HealthDataPoint(
+              uuid: uuid,
+              value: WorkoutHealthValue(
+                workoutActivityType: type,
+                totalEnergyBurned: 200,
+                totalDistance: 3000,
+              ),
+              type: HealthDataType.WORKOUT,
+              unit: HealthDataUnit.NO_UNIT,
+              dateFrom: from,
+              dateTo: from.add(const Duration(hours: 1)),
+              sourcePlatform: HealthPlatformType.appleHealth,
+              sourceDeviceId: 'test',
+              sourceId: 'test',
+              sourceName: 'test',
             ),
-            type: HealthDataType.WORKOUT,
-            unit: HealthDataUnit.NO_UNIT,
-            dateFrom: date1From,
-            dateTo: date1To,
-            sourcePlatform: HealthPlatformType.appleHealth,
-            sourceDeviceId: 'test',
-            sourceId: 'test',
-            sourceName: 'test',
-          ),
-          HealthDataPoint(
-            uuid: 'workout-2',
-            value: WorkoutHealthValue(
-              workoutActivityType: HealthWorkoutActivityType.YOGA,
-              totalEnergyBurned: 150,
-              totalDistance: 0,
-            ),
-            type: HealthDataType.WORKOUT,
-            unit: HealthDataUnit.NO_UNIT,
-            dateFrom: date2From,
-            dateTo: date2To,
-            sourcePlatform: HealthPlatformType.appleHealth,
-            sourceDeviceId: 'test',
-            sourceId: 'test',
-            sourceName: 'test',
-          ),
         ],
       );
 
-      when(
-        () => mockPersistenceLogic.createWorkoutEntry(any()),
-      ).thenAnswer((_) async => null);
-
       await mobileImport.getWorkoutsHealthData(
         dateFrom: date1From,
-        dateTo: date2To,
+        dateTo: date2From.add(const Duration(hours: 1)),
       );
 
       final captured = verify(
         () => mockPersistenceLogic.createWorkoutEntry(captureAny()),
       ).captured;
 
-      // Processed in reversed order
       expect(captured.length, 2);
       expect((captured[0] as WorkoutData).workoutType, 'YOGA');
       expect((captured[1] as WorkoutData).workoutType, 'RUNNING');
     });
-  });
 
-  group('getWorkoutsHealthDataDelta', () {
-    test('should return early on desktop platforms', () async {
-      await healthImport.getWorkoutsHealthDataDelta();
-
-      // On desktop, should return early
-      verifyNever(() => mockJournalDb.latestWorkout());
-      verifyNever(() => mockHealthService.requestAuthorization(any()));
-    });
-
-    test('should prevent concurrent workout imports using flag', () async {
-      expect(healthImport.workoutImportRunning, false);
-
-      // Simulate the flag being set (as it would be on mobile)
-      healthImport.workoutImportRunning = true;
-      expect(healthImport.workoutImportRunning, true);
-
-      // When flag is true, the method should return early without doing work
-      await healthImport.getWorkoutsHealthDataDelta();
-
-      // Flag should still be true since we set it manually and the method
-      // returned early
-      expect(healthImport.workoutImportRunning, true);
-
-      // Reset for next test
-      healthImport.workoutImportRunning = false;
-      expect(healthImport.workoutImportRunning, false);
-    });
-
-    test('should use latest workout dateFrom as fetch start', () async {
+    test('reports failed and logs when the health store throws', () async {
       final mobileImport = createMobileHealthImport();
-      final latestDate = DateTime(2024, 6, 15, 10);
-
-      final latestWorkout = WorkoutEntry(
-        data: WorkoutData(
-          dateFrom: latestDate,
-          dateTo: latestDate.add(const Duration(hours: 1)),
-          id: 'workout-123',
-          workoutType: 'RUNNING',
-          energy: 300,
-          distance: 5000,
-          source: 'test',
-        ),
-        meta: Metadata(
-          id: 'meta-id',
-          createdAt: latestDate,
-          updatedAt: latestDate,
-          dateFrom: latestDate,
-          dateTo: latestDate.add(const Duration(hours: 1)),
-        ),
-      );
-
-      when(
-        () => mockJournalDb.latestWorkout(),
-      ).thenAnswer((_) async => latestWorkout);
+      final failure = Exception('workouts unavailable');
 
       when(
         () => mockHealthService.requestAuthorization(any()),
       ).thenAnswer((_) async => true);
-
       when(
         () => mockHealthService.getHealthDataFromTypes(
           types: any(named: 'types'),
           startTime: any(named: 'startTime'),
           endTime: any(named: 'endTime'),
         ),
-      ).thenAnswer((_) async => []);
+      ).thenThrow(failure);
+
+      final result = await mobileImport.getWorkoutsHealthData(
+        dateFrom: DateTime(2024, 3),
+        dateTo: DateTime(2024, 3, 2),
+      );
+
+      expect(result.status, HealthImportStatus.failed);
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.health,
+          same(failure),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'getWorkoutsHealthData',
+        ),
+      ).called(1);
+    });
+  });
+
+  group('getWorkoutsHealthDataDelta', () {
+    test('reports unsupportedPlatform on desktop', () async {
+      final result = await healthImport.getWorkoutsHealthDataDelta();
+
+      expect(result.status, HealthImportStatus.unsupportedPlatform);
+      verifyNever(() => mockJournalDb.latestWorkout());
+      verifyNever(() => mockHealthService.requestAuthorization(any()));
+    });
+
+    test('refuses to overlap with a run already in flight', () async {
+      final mobileImport = createMobileHealthImport()
+        ..workoutImportRunning = true;
+
+      final result = await mobileImport.getWorkoutsHealthDataDelta();
+
+      expect(result.sampleCount, 0);
+      verifyNever(() => mockJournalDb.latestWorkout());
+      // The in-flight run owns the flag; the refused call must not clear it.
+      expect(mobileImport.workoutImportRunning, isTrue);
+    });
+
+    test('should use latest workout dateFrom as fetch start', () async {
+      final mobileImport = createMobileHealthImport();
+      final latestDate = DateTime(2024, 6, 15, 10);
+
+      when(() => mockJournalDb.latestWorkout()).thenAnswer(
+        (_) async => WorkoutEntry(
+          data: WorkoutData(
+            dateFrom: latestDate,
+            dateTo: latestDate.add(const Duration(hours: 1)),
+            id: 'workout-123',
+            workoutType: 'RUNNING',
+            energy: 300,
+            distance: 5000,
+            source: 'test',
+          ),
+          meta: Metadata(
+            id: 'meta-id',
+            createdAt: latestDate,
+            updatedAt: latestDate,
+            dateFrom: latestDate,
+            dateTo: latestDate.add(const Duration(hours: 1)),
+          ),
+        ),
+      );
+      stubHealthStore();
 
       await mobileImport.getWorkoutsHealthDataDelta();
 
@@ -1405,110 +1634,104 @@ void main() {
           endTime: any(named: 'endTime'),
         ),
       ).called(1);
-
-      // Flag should be reset after completion
       expect(mobileImport.workoutImportRunning, false);
     });
 
-    test(
-      'should use default duration when no latest workout exists',
-      () {
-        fakeAsync((async) {
-          final mobileImport = createMobileHealthImport();
+    test('uses the default duration when no workout is stored yet', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
 
-          when(
-            () => mockJournalDb.latestWorkout(),
-          ).thenAnswer((_) async => null);
+        when(() => mockJournalDb.latestWorkout()).thenAnswer((_) async => null);
+        stubHealthStore();
 
-          when(
-            () => mockHealthService.requestAuthorization(any()),
-          ).thenAnswer((_) async => true);
+        mobileImport.getWorkoutsHealthDataDelta();
+        async.flushMicrotasks();
 
-          when(
-            () => mockHealthService.getHealthDataFromTypes(
-              types: any(named: 'types'),
-              startTime: any(named: 'startTime'),
-              endTime: any(named: 'endTime'),
-            ),
-          ).thenAnswer((_) async => []);
+        final captured = verify(
+          () => mockHealthService.getHealthDataFromTypes(
+            types: any(named: 'types'),
+            startTime: captureAny(named: 'startTime'),
+            endTime: any(named: 'endTime'),
+          ),
+        ).captured;
 
-          mobileImport.getWorkoutsHealthDataDelta();
-          async.flushMicrotasks();
+        expect(
+          captured.single,
+          clock.now().subtract(const Duration(days: 90)),
+        );
+      });
+    });
 
-          final captured = verify(
-            () => mockHealthService.getHealthDataFromTypes(
-              types: any(named: 'types'),
-              startTime: captureAny(named: 'startTime'),
-              endTime: any(named: 'endTime'),
-            ),
-          ).captured;
-
-          final startTime = captured.first as DateTime;
-          final expectedStart = clock.now().subtract(
-            const Duration(days: 90),
-          );
-          expect(startTime, expectedStart);
-        });
-      },
-    );
-
-    test('should reset workoutImportRunning flag after completion', () async {
+    test('clears the guard flag when authorization is refused', () async {
       final mobileImport = createMobileHealthImport();
 
-      when(
-        () => mockJournalDb.latestWorkout(),
-      ).thenAnswer((_) async => null);
-
+      when(() => mockJournalDb.latestWorkout()).thenAnswer((_) async => null);
       when(
         () => mockHealthService.requestAuthorization(any()),
       ).thenAnswer((_) async => false);
 
-      expect(mobileImport.workoutImportRunning, false);
-
       await mobileImport.getWorkoutsHealthDataDelta();
 
-      // Flag should be reset even if auth fails
       expect(mobileImport.workoutImportRunning, false);
     });
 
-    test(
-      'leaves workoutImportRunning true and rethrows when fetch throws',
-      () async {
-        // Documents the current (unguarded) behaviour: there is no
-        // try/finally around the fetch, so a thrown error propagates out of
-        // getWorkoutsHealthDataDelta and the guard flag is never cleared,
-        // which would deadlock all future workout imports. This test pins
-        // that behaviour so any future fix (resetting the flag) is a visible,
-        // intentional change rather than a silent regression.
-        final mobileImport = createMobileHealthImport();
+    // The workout-deadlock regression: the guard flag used to be set before an
+    // unguarded fetch and cleared only on the line after it, so a throw left it
+    // set forever and every later workout import returned early — silently, for
+    // the rest of the session.
+    test('clears the guard flag and reports when the fetch fails', () async {
+      final mobileImport = createMobileHealthImport();
 
-        when(
-          () => mockJournalDb.latestWorkout(),
-        ).thenAnswer((_) async => null);
+      when(() => mockJournalDb.latestWorkout()).thenAnswer((_) async => null);
+      when(
+        () => mockHealthService.requestAuthorization(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => mockHealthService.getHealthDataFromTypes(
+          types: any(named: 'types'),
+          startTime: any(named: 'startTime'),
+          endTime: any(named: 'endTime'),
+        ),
+      ).thenThrow(Exception('health fetch failed'));
 
-        when(
-          () => mockHealthService.requestAuthorization(any()),
-        ).thenAnswer((_) async => true);
+      final result = await mobileImport.getWorkoutsHealthDataDelta();
 
-        final failure = Exception('health fetch failed');
-        when(
-          () => mockHealthService.getHealthDataFromTypes(
-            types: any(named: 'types'),
-            startTime: any(named: 'startTime'),
-            endTime: any(named: 'endTime'),
-          ),
-        ).thenThrow(failure);
+      expect(result.status, HealthImportStatus.failed);
+      expect(mobileImport.workoutImportRunning, isFalse);
+    });
 
-        await expectLater(
-          mobileImport.getWorkoutsHealthDataDelta(),
-          throwsA(same(failure)),
-        );
+    test('a later delta still runs after an earlier one failed', () async {
+      final mobileImport = createMobileHealthImport();
 
-        // The guard flag is left set because the reset line is unreachable
-        // after the throw.
-        expect(mobileImport.workoutImportRunning, true);
-      },
-    );
+      when(() => mockJournalDb.latestWorkout()).thenThrow(Exception('db down'));
+
+      final first = await mobileImport.getWorkoutsHealthDataDelta();
+      expect(first.status, HealthImportStatus.failed);
+      expect(mobileImport.workoutImportRunning, isFalse);
+
+      when(() => mockJournalDb.latestWorkout()).thenAnswer((_) async => null);
+      stubHealthStore();
+
+      final second = await mobileImport.getWorkoutsHealthDataDelta();
+      expect(second.isSuccess, isTrue);
+    });
+
+    test('a failing DB read is logged against the delta sub-domain', () async {
+      final mobileImport = createMobileHealthImport();
+      final failure = Exception('db down');
+      when(() => mockJournalDb.latestWorkout()).thenThrow(failure);
+
+      await mobileImport.getWorkoutsHealthDataDelta();
+
+      verify(
+        () => mockDomainLogger.error(
+          LogDomain.health,
+          same(failure),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'getWorkoutsHealthDataDelta',
+        ),
+      ).called(1);
+    });
   });
 
   group('default permission request', () {
@@ -1533,96 +1756,272 @@ void main() {
       );
     }
 
+    /// Pins the platform flags for the duration of one test.
+    void asPlatform({bool ios = false, bool android = false}) {
+      final originalIsIOS = platform.isIOS;
+      final originalIsAndroid = platform.isAndroid;
+      platform.isIOS = ios;
+      platform.isAndroid = android;
+      addTearDown(() {
+        platform.isIOS = originalIsIOS;
+        platform.isAndroid = originalIsAndroid;
+      });
+    }
+
+    // `activityRecognition` and `location` are Health Connect's companion
+    // permissions on Android. On every other platform the default handler now
+    // returns without asking: iOS has no strategy for `activityRecognition` at
+    // all (it resolves to permanently-denied without ever prompting), and
+    // `location` would raise an unrelated location prompt in front of the
+    // HealthKit sheet — two system dialogs racing for one tap.
+    test('asks for nothing on a non-Android platform', () async {
+      final recordingHandler = _RecordingPermissionHandler();
+      final originalHandler = PermissionHandlerPlatform.instance;
+      PermissionHandlerPlatform.instance = recordingHandler;
+      addTearDown(() => PermissionHandlerPlatform.instance = originalHandler);
+
+      final mobileImport = createMobileHealthImportWithDefaultPermissions();
+
+      when(
+        () => mockHealthService.requestAuthorization(any()),
+      ).thenAnswer((_) async => false);
+
+      await mobileImport.getActivityHealthData(
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024, 1, 2),
+      );
+
+      expect(recordingHandler.requestedPermissions, isEmpty);
+      // The health authorization itself still runs — only the companion
+      // Android permissions are skipped.
+      verify(() => mockHealthService.requestAuthorization(any())).called(1);
+    });
+
+    test('asks for both companion permissions on Android', () async {
+      asPlatform(android: true);
+
+      final recordingHandler = _RecordingPermissionHandler();
+      final originalHandler = PermissionHandlerPlatform.instance;
+      PermissionHandlerPlatform.instance = recordingHandler;
+      addTearDown(() => PermissionHandlerPlatform.instance = originalHandler);
+
+      final mobileImport = createMobileHealthImportWithDefaultPermissions();
+
+      when(
+        () => mockHealthService.requestAuthorization(any()),
+      ).thenAnswer((_) async => false);
+
+      await mobileImport.getActivityHealthData(
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024, 1, 2),
+      );
+
+      // Each is requested on its own, in this order.
+      expect(recordingHandler.requestedPermissions, [
+        [Permission.activityRecognition],
+        [Permission.location],
+      ]);
+    });
+  });
+
+  group('platform metadata stamped onto samples', () {
+    /// Builds a mobile import with the platform flags pinned, so the
+    /// device-info branch under test is the one that runs.
+    HealthImport importOn({bool ios = false, bool android = false}) {
+      final originalIsIOS = platform.isIOS;
+      final originalIsAndroid = platform.isAndroid;
+      platform.isIOS = ios;
+      platform.isAndroid = android;
+      addTearDown(() {
+        platform.isIOS = originalIsIOS;
+        platform.isAndroid = originalIsAndroid;
+      });
+      return createMobileHealthImport();
+    }
+
+    /// Persists one sample and returns what was written.
+    Future<DiscreteQuantityData> importOneSample(HealthImport import) async {
+      stubHealthStore(
+        dataPoints: [
+          makeNumericDataPoint(
+            type: HealthDataType.HEART_RATE,
+            value: 60,
+            dateFrom: DateTime(2024, 3),
+            dateTo: DateTime(2024, 3),
+          ),
+        ],
+      );
+
+      await import.fetchHealthData(
+        types: [HealthDataType.HEART_RATE],
+        dateFrom: DateTime(2024, 3),
+        dateTo: DateTime(2024, 3, 2),
+      );
+
+      return verify(
+            () => mockPersistenceLogic.createQuantitativeEntry(captureAny()),
+          ).captured.first
+          as DiscreteQuantityData;
+    }
+
+    test('stamps IOS and the hardware identifier on iOS', () async {
+      final utsname = MockIosUtsname();
+      when(() => utsname.machine).thenReturn('iPhone16,2');
+      final iosInfo = MockIosDeviceInfo();
+      when(() => iosInfo.utsname).thenReturn(utsname);
+      when(() => mockDeviceInfoPlugin.iosInfo).thenAnswer((_) async => iosInfo);
+
+      final entry = await importOneSample(importOn(ios: true));
+
+      expect(entry.platformType, 'IOS');
+      expect(entry.deviceType, 'iPhone16,2');
+    });
+
+    test('stamps ANDROID and the model on Android', () async {
+      final androidInfo = MockAndroidDeviceInfo();
+      when(() => androidInfo.model).thenReturn('Pixel 8');
+      when(
+        () => mockDeviceInfoPlugin.androidInfo,
+      ).thenAnswer((_) async => androidInfo);
+
+      final entry = await importOneSample(importOn(android: true));
+
+      expect(entry.platformType, 'ANDROID');
+      expect(entry.deviceType, 'Pixel 8');
+    });
+
+    // Device model is descriptive metadata, not something an import depends
+    // on: losing it must not take the import with it. It used to be resolved
+    // in an unawaited constructor call, where a throw became an unhandled
+    // async error.
     test(
-      'requests activityRecognition and location via the default handler',
+      'a failing device-info lookup is logged, and the import proceeds',
       () async {
-        final recordingHandler = _RecordingPermissionHandler();
-        final originalHandler = PermissionHandlerPlatform.instance;
-        PermissionHandlerPlatform.instance = recordingHandler;
-        addTearDown(
-          () => PermissionHandlerPlatform.instance = originalHandler,
-        );
+        final failure = Exception('device info channel unavailable');
+        when(() => mockDeviceInfoPlugin.iosInfo).thenThrow(failure);
 
-        final mobileImport = createMobileHealthImportWithDefaultPermissions();
+        final entry = await importOneSample(importOn(ios: true));
 
-        // Deny health auth so the flow returns right after the default
-        // permission request, isolating the permission request path.
-        when(
-          () => mockHealthService.requestAuthorization(any()),
-        ).thenAnswer((_) async => false);
-
-        await mobileImport.getActivityHealthData(
-          dateFrom: DateTime(2024),
-          dateTo: DateTime(2024, 1, 2),
-        );
-
-        // The default handler must have requested exactly the two
-        // permissions, each as its own single-element request.
-        expect(
-          recordingHandler.requestedPermissions,
-          [
-            [Permission.activityRecognition],
-            [Permission.location],
-          ],
-        );
+        expect(entry.platformType, 'IOS');
+        expect(entry.deviceType, isNull);
+        expect(entry.value, 60);
+        verify(
+          () => mockDomainLogger.error(
+            LogDomain.health,
+            same(failure),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: 'resolvePlatform',
+          ),
+        ).called(1);
       },
     );
+
+    test('stamps an empty platform and no device on desktop', () async {
+      final entry = await importOneSample(importOn());
+
+      expect(entry.platformType, '');
+      expect(entry.deviceType, isNull);
+      verifyNever(() => mockDeviceInfoPlugin.iosInfo);
+      verifyNever(() => mockDeviceInfoPlugin.androidInfo);
+    });
   });
 
   group('top-level type lists', () {
     test('sleepTypes contains expected types', () {
-      expect(sleepTypes, contains(HealthDataType.SLEEP_IN_BED));
-      expect(sleepTypes, contains(HealthDataType.SLEEP_ASLEEP));
-      expect(sleepTypes, contains(HealthDataType.SLEEP_LIGHT));
-      expect(sleepTypes, contains(HealthDataType.SLEEP_DEEP));
-      expect(sleepTypes, contains(HealthDataType.SLEEP_REM));
-      expect(sleepTypes, contains(HealthDataType.SLEEP_AWAKE));
-      expect(sleepTypes.length, 6);
+      expect(sleepTypes, [
+        HealthDataType.SLEEP_IN_BED,
+        HealthDataType.SLEEP_ASLEEP,
+        HealthDataType.SLEEP_LIGHT,
+        HealthDataType.SLEEP_DEEP,
+        HealthDataType.SLEEP_REM,
+        HealthDataType.SLEEP_AWAKE,
+      ]);
     });
 
     test('bpTypes contains systolic and diastolic', () {
-      expect(bpTypes, contains(HealthDataType.BLOOD_PRESSURE_SYSTOLIC));
-      expect(bpTypes, contains(HealthDataType.BLOOD_PRESSURE_DIASTOLIC));
-      expect(bpTypes.length, 2);
+      expect(bpTypes, [
+        HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+        HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
+      ]);
     });
 
     test('heartRateTypes contains expected types', () {
-      expect(heartRateTypes, contains(HealthDataType.RESTING_HEART_RATE));
-      expect(heartRateTypes, contains(HealthDataType.WALKING_HEART_RATE));
-      expect(
-        heartRateTypes,
-        contains(HealthDataType.HEART_RATE_VARIABILITY_SDNN),
-      );
-      expect(heartRateTypes.length, 3);
+      expect(heartRateTypes, [
+        HealthDataType.RESTING_HEART_RATE,
+        HealthDataType.WALKING_HEART_RATE,
+        HealthDataType.HEART_RATE_VARIABILITY_SDNN,
+      ]);
     });
 
     test('bodyMeasurementTypes contains expected types', () {
-      expect(bodyMeasurementTypes, contains(HealthDataType.WEIGHT));
-      expect(
-        bodyMeasurementTypes,
-        contains(HealthDataType.BODY_FAT_PERCENTAGE),
-      );
-      expect(bodyMeasurementTypes, contains(HealthDataType.BODY_MASS_INDEX));
-      expect(bodyMeasurementTypes, contains(HealthDataType.HEIGHT));
-      expect(bodyMeasurementTypes.length, 4);
+      expect(bodyMeasurementTypes, [
+        HealthDataType.WEIGHT,
+        HealthDataType.BODY_FAT_PERCENTAGE,
+        HealthDataType.BODY_MASS_INDEX,
+        HealthDataType.HEIGHT,
+      ]);
     });
 
     test('activityTypes contains expected types', () {
-      expect(activityTypes, contains(HealthDataType.STEPS));
-      expect(activityTypes, contains(HealthDataType.FLIGHTS_CLIMBED));
-      expect(
+      expect(activityTypes, [
+        HealthDataType.STEPS,
+        HealthDataType.FLIGHTS_CLIMBED,
+        HealthDataType.DISTANCE_WALKING_RUNNING,
+      ]);
+    });
+
+    test('the five type lists are pairwise disjoint', () {
+      final lists = <String, List<HealthDataType>>{
+        'sleepTypes': sleepTypes,
+        'bpTypes': bpTypes,
+        'heartRateTypes': heartRateTypes,
+        'bodyMeasurementTypes': bodyMeasurementTypes,
+        'activityTypes': activityTypes,
+      };
+
+      for (final MapEntry(key: name, value: list) in lists.entries) {
+        expect(list.toSet().length, list.length, reason: '$name has dupes');
+      }
+
+      final entries = lists.entries.toList();
+      for (var i = 0; i < entries.length; i++) {
+        for (var j = i + 1; j < entries.length; j++) {
+          final overlap = entries[i].value.toSet().intersection(
+            entries[j].value.toSet(),
+          );
+          expect(
+            overlap,
+            isEmpty,
+            reason: '${entries[i].key} and ${entries[j].key} share $overlap',
+          );
+        }
+      }
+    });
+
+    test('every listed type is a type the plugin can actually read', () {
+      for (final list in [
+        sleepTypes,
+        bpTypes,
+        heartRateTypes,
+        bodyMeasurementTypes,
         activityTypes,
-        contains(HealthDataType.DISTANCE_WALKING_RUNNING),
-      );
-      expect(activityTypes.length, 3);
+      ]) {
+        for (final type in list) {
+          expect(
+            dataTypeKeysIOS,
+            contains(type),
+            reason: '$type is not readable on iOS',
+          );
+        }
+      }
     });
   });
 
-  // -------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
   // Additive Glados property groups for pure methods on HealthImport.
   // healthImport is already initialized by setUp() above; the pure functions
   // under test do not use any injected dependency.
-  // -------------------------------------------------------------------------
+  // ---------------------------------------------------------------------------
 
   group('sumNumericHealthValues — Glados properties', () {
     glados.Glados<List<int>>(
@@ -1653,11 +2052,7 @@ void main() {
         ];
         final result = healthImport.sumNumericHealthValues(dataPoints);
         final expected = values.fold<num>(0, (acc, v) => acc + v);
-        expect(
-          result,
-          equals(expected),
-          reason: 'values=$values',
-        );
+        expect(result, equals(expected), reason: 'values=$values');
       },
       tags: 'glados',
     );
@@ -1711,9 +2106,8 @@ void main() {
         final base = DateTime(2024);
         final dateFrom = base.add(Duration(days: startOffsetDays));
         final dateTo = dateFrom.add(Duration(days: rangeLen));
-        final result = healthImport.getDays(dateFrom, dateTo);
         expect(
-          result.length,
+          healthImport.getDays(dateFrom, dateTo).length,
           equals(rangeLen + 1),
           reason: 'startOffset=$startOffsetDays rangeLen=$rangeLen',
         );
@@ -1731,8 +2125,7 @@ void main() {
         final base = DateTime(2024, 3, 15, 14, 30, 45); // non-midnight start
         final dateFrom = base.add(Duration(days: startOffsetDays));
         final dateTo = dateFrom.add(Duration(days: rangeLen));
-        final result = healthImport.getDays(dateFrom, dateTo);
-        for (final day in result) {
+        for (final day in healthImport.getDays(dateFrom, dateTo)) {
           expect(day.hour, equals(0), reason: 'day=$day is not midnight');
           expect(day.minute, equals(0), reason: 'day=$day is not midnight');
           expect(day.second, equals(0), reason: 'day=$day is not midnight');
@@ -1773,14 +2166,10 @@ void main() {
     ).test(
       'single-day range always returns exactly one element equal to that day',
       (offsetDays) {
-        final base = DateTime(2024);
-        final day = base.add(Duration(days: offsetDays));
+        final day = DateTime(2024).add(Duration(days: offsetDays));
         final result = healthImport.getDays(day, day);
         expect(result.length, equals(1));
-        expect(
-          result.single,
-          equals(DateTime(day.year, day.month, day.day)),
-        );
+        expect(result.single, equals(DateTime(day.year, day.month, day.day)));
       },
       tags: 'glados',
     );
@@ -1809,7 +2198,6 @@ void main() {
         await withClock(Clock.fixed(now), () async {
           final mobileImport = createMobileHealthImport();
           final dayStart = DateTime(2024, 3, 15 + dayOffsetFromNow);
-          final data = {dayStart: 42.0};
 
           final captured = <CumulativeQuantityData>[];
           when(
@@ -1822,7 +2210,7 @@ void main() {
           });
 
           await mobileImport.addActivityEntries(
-            data,
+            {dayStart: 42.0},
             'cumulative_step_count',
             'count',
           );
@@ -1867,7 +2255,6 @@ void main() {
           final mobileImport = createMobileHealthImport();
           final today = DateTime(2024, 3, 15);
           final yesterday = DateTime(2024, 3, 14);
-          final data = {yesterday: 10.0, today: 20.0};
 
           final captured = <CumulativeQuantityData>[];
           when(
@@ -1880,16 +2267,13 @@ void main() {
           });
 
           await mobileImport.addActivityEntries(
-            data,
+            {yesterday: 10.0, today: 20.0},
             'cumulative_step_count',
             'count',
           );
 
           // Entries are sorted ascending by day, so yesterday comes first.
-          expect(
-            captured.map((e) => e.dateFrom).toList(),
-            [yesterday, today],
-          );
+          expect(captured.map((e) => e.dateFrom).toList(), [yesterday, today]);
           // The completed day keeps its full end-of-day boundary.
           expect(
             captured[0].dateTo,
@@ -1902,40 +2286,5 @@ void main() {
         });
       },
     );
-  });
-
-  group('health type list invariants', () {
-    test('the five type lists are pairwise disjoint', () {
-      final lists = <String, List<HealthDataType>>{
-        'sleepTypes': sleepTypes,
-        'bpTypes': bpTypes,
-        'heartRateTypes': heartRateTypes,
-        'bodyMeasurementTypes': bodyMeasurementTypes,
-        'activityTypes': activityTypes,
-      };
-
-      // No list may contain duplicates...
-      for (final MapEntry(key: name, value: list) in lists.entries) {
-        expect(list.toSet().length, list.length, reason: '$name has dupes');
-      }
-
-      // ...and no type may appear in two different lists (a type present in
-      // two lists would be imported twice by the per-category fetchers).
-      final entries = lists.entries.toList();
-      for (var i = 0; i < entries.length; i++) {
-        for (var j = i + 1; j < entries.length; j++) {
-          final overlap = entries[i].value.toSet().intersection(
-            entries[j].value.toSet(),
-          );
-          expect(
-            overlap,
-            isEmpty,
-            reason:
-                '${entries[i].key} and ${entries[j].key} share '
-                '$overlap',
-          );
-        }
-      }
-    });
   });
 }

@@ -24,8 +24,12 @@ De tillgängliga importerna är:
 - **Kroppsmätning** för kroppsmåttsavläsningar; och
 - **Träning** för inspelade träningspass.
 
-Varje knapp importerar bara sin egen datafamilj över det visade
-datumintervallet. Att ändra intervallet startar inte i sig någon import.
+Varje rad importerar bara sin egen datafamilj över det visade datumintervallet
+och rapporterar sedan under sitt namn vad som hände: hur många värden som kom in,
+att det inte fanns några, att åtkomst nekades eller att importen misslyckades.
+**Importera allt** kör varje rad i tur och ordning. Genvägarna
+**Senaste 7 / 30 / 90 dagarna** ställer in båda datumen på en gång; att ändra
+intervallet startar inte i sig någon import.
 
 Ditt operativsystem kan be om behörighet för hälsodata. Lotti kan bara läsa
 de typer du beviljar. Om en förväntad datafamilj saknas, kontrollera appens

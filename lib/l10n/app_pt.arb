@@ -4275,15 +4275,46 @@
   "settingsHabitsSearchHint": "Hábitos de pesquisa…",
   "settingsHabitsSubtitle": "Gerencie seus hábitos e rotinas",
   "settingsHabitsTitle": "Hábitos",
-  "settingsHealthImportActivity": "Importar dados de atividades",
-  "settingsHealthImportBloodPressure": "Importar dados de pressão arterial",
-  "settingsHealthImportBodyMeasurement": "Importar dados de medição corporal",
+  "settingsHealthImportActivity": "Atividade",
+  "settingsHealthImportActivityDescription": "Passos, andares subidos e distância percorrida a pé",
+  "settingsHealthImportAll": "Importar tudo",
+  "settingsHealthImportBloodPressure": "Pressão arterial",
+  "settingsHealthImportBloodPressureDescription": "Valores sistólicos e diastólicos",
+  "settingsHealthImportBodyMeasurement": "Medidas corporais",
+  "settingsHealthImportBodyMeasurementDescription": "Peso, gordura corporal, IMC e altura",
+  "settingsHealthImportDataSectionTitle": "Dados para importar",
   "settingsHealthImportFromDate": "Começar",
-  "settingsHealthImportHeartRate": "Importar dados de frequência cardíaca",
-  "settingsHealthImportSleep": "Importar dados de sono",
+  "settingsHealthImportHeartRate": "Frequência cardíaca",
+  "settingsHealthImportHeartRateDescription": "Em repouso, caminhando e variabilidade",
+  "settingsHealthImportQuickRange": "{days, plural, =1{Último dia} other{Últimos {days} dias}}",
+  "@settingsHealthImportQuickRange": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportRangeSectionTitle": "Período",
+  "settingsHealthImportSleep": "Sono",
+  "settingsHealthImportSleepDescription": "Tempo na cama e fases do sono",
+  "settingsHealthImportStatusFailed": "Falha na importação — verifique os registros",
+  "settingsHealthImportStatusImported": "{count, plural, =0{Nenhum dado novo} =1{1 dado importado} other{{count} dados importados}}",
+  "@settingsHealthImportStatusImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportStatusPermissionDenied": "Acesso negado — permita o Lotti no seu app de saúde",
+  "settingsHealthImportStatusRunning": "Importando…",
+  "settingsHealthImportStatusUnsupportedType": "Esse tipo de dado não é mais suportado",
+  "settingsHealthImportSubtitle": "Importe do Apple Saúde ou Health Connect",
   "settingsHealthImportTitle": "Importação de Saúde",
   "settingsHealthImportToDate": "Fim",
-  "settingsHealthImportWorkout": "Importar dados de treino",
+  "settingsHealthImportUnavailable": "Os dados de saúde só estão disponíveis no iOS e no Android",
+  "settingsHealthImportWorkout": "Treinos",
+  "settingsHealthImportWorkoutDescription": "Treinos com distância e energia gasta",
   "settingsKeyboardShortcutsSubtitle": "Aprenda as combinações de teclado para navegação e edição mais rápidas na área de trabalho",
   "settingsKeyboardShortcutsTitle": "Atalhos de teclado",
   "settingsLabelsCategoriesAdd": "Adicionar categoria",

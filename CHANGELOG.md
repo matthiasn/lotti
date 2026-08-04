@@ -49,6 +49,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Clearing the field still snaps back to the full list immediately, and
   pressing Enter waits for its own search rather than acting on the previous
   one.
+- **Health imports no longer give up for the rest of the session.** The first
+  time an import hit an error — a data type this phone cannot read, a momentary
+  failure in Apple Health or Health Connect — the queue feeding every health
+  chart was left marked as busy and never ran again. From then on the
+  dashboards' background imports stopped: charts went on showing whatever was
+  already stored, no error appeared anywhere, and only restarting the app
+  cleared it. A failing
+  data type is now recorded and skipped, and everything queued behind it still
+  imports. Workout imports had the same flaw and have the same fix.
+- **Importing health data no longer flashes a permission sheet you cannot
+  answer.** Apple Health shows one authorization sheet at a time, and Lotti
+  could ask for two at once — opening a dashboard starts a background import per
+  chart while the Health Import page starts one on tap — so the second request
+  replaced the first, and the sheet appeared and vanished before it could be
+  read. Requests now go one at a time, and importing a family of data asks once
+  rather than twice. On iPhone, tapping Import Activity Data also no longer
+  raises an unrelated Location prompt in front of the Health sheet: those extra
+  permissions are an Android requirement and are now only requested there.
+- **Sleep charts count the whole night.** Apple splits sleep into core, deep and
+  REM, and the "Asleep" chart is the sum of the three. Core sleep — usually the
+  largest part of a night — was matched against a name Apple no longer uses, so
+  it was dropped, and the chart showed roughly half of what you actually slept.
+  Re-import a date range to fill in the missing hours.
+- **A dashboard set up for a health type that no longer exists now says so.** It
+  previously imported nothing at all, in silence, which looked exactly like an
+  import that was broken.
 - **The Add device QR code has a clearer edge for scanners.** Its white margin
   was narrow enough that the outer QR modules looked almost clipped against the
   surrounding card. The code now has four more pixels of white space on every
@@ -198,6 +224,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   there is no way to pick one without a category.
 
 ### Changed
+- **Settings → Advanced → Health Import was rebuilt.** The old page was a column
+  of differently-sized buttons that told you nothing: tapping one started an
+  import that was never waited for, so a successful import, an empty one and an
+  outright failure all looked identical — nothing happened. Each kind of data
+  now has a row saying what it will bring in, and after a run the same row
+  reports what actually happened: how many samples arrived, that there were
+  none, that access was denied and where to grant it, or that the import failed.
+  A row shows a spinner while it is working and cannot be started twice. The
+  date range gained Last 7 / 30 / 90 days shortcuts and no longer defaults to an
+  end date of tomorrow, and an Import all button runs every kind in turn. On
+  desktop, where there is no health data to read, the page now says so instead
+  of offering six buttons that quietly do nothing.
 - **The recovery actions on Backfill sync take the standard in-card button
   size.** The buttons under Advanced recovery were one size up from what the
   design system prescribes for actions living inside a card, so each one

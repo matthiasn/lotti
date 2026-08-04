@@ -102,6 +102,61 @@ void main() {
     },
   );
 
+  // Health entries carry deterministic uuidV5 ids and are written with
+  // `overwrite: false`, so re-importing an already-stored range is rejected row
+  // by row. Returning the entity anyway left callers unable to tell a fresh
+  // sample from a duplicate — the health import counted both.
+  test(
+    'createQuantitativeEntryImpl returns null on a rejected write',
+    () async {
+      when(
+        () => logic.createDbEntity(
+          any(),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          enqueueSync: any(named: 'enqueueSync'),
+          linkedId: any(named: 'linkedId'),
+        ),
+      ).thenAnswer((_) async => false);
+
+      final result = await ops.createQuantitativeEntryImpl(
+        QuantitativeData.cumulativeQuantityData(
+          dateFrom: DateTime(2024, 3, 15),
+          dateTo: DateTime(2024, 3, 15),
+          value: 1,
+          dataType: 'steps',
+          unit: 'count',
+        ),
+      );
+
+      expect(result, isNull);
+    },
+  );
+
+  test('createWorkoutEntryImpl returns null on a rejected write', () async {
+    when(
+      () => logic.createDbEntity(
+        any(),
+        shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+        enqueueSync: any(named: 'enqueueSync'),
+        linkedId: any(named: 'linkedId'),
+      ),
+    ).thenAnswer((_) async => false);
+
+    final result = await ops.createWorkoutEntryImpl(
+      WorkoutData(
+        id: 'w1',
+        dateFrom: DateTime(2024, 3, 15),
+        dateTo: DateTime(2024, 3, 15, 1),
+        workoutType: 'RUNNING',
+        energy: 100,
+        distance: 1000,
+        source: 'test',
+      ),
+    );
+
+    expect(result, isNull);
+  });
+
   test(
     'createEventEntryImpl forwards linkedId through the facade write',
     () async {

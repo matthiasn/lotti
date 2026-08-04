@@ -4276,15 +4276,46 @@
   "settingsHabitsSearchHint": "Søgevaner...",
   "settingsHabitsSubtitle": "Styr dine vaner og rutiner",
   "settingsHabitsTitle": "Vaner",
-  "settingsHealthImportActivity": "Importer aktivitetsdata",
-  "settingsHealthImportBloodPressure": "Importer blodtryksdata",
-  "settingsHealthImportBodyMeasurement": "Import af kropsmåledata",
+  "settingsHealthImportActivity": "Aktivitet",
+  "settingsHealthImportActivityDescription": "Skridt, etager og gåafstand",
+  "settingsHealthImportAll": "Importér alt",
+  "settingsHealthImportBloodPressure": "Blodtryk",
+  "settingsHealthImportBloodPressureDescription": "Systoliske og diastoliske værdier",
+  "settingsHealthImportBodyMeasurement": "Kropsmål",
+  "settingsHealthImportBodyMeasurementDescription": "Vægt, kropsfedt, BMI og højde",
+  "settingsHealthImportDataSectionTitle": "Data der skal importeres",
   "settingsHealthImportFromDate": "Start",
-  "settingsHealthImportHeartRate": "Importer pulsdata",
-  "settingsHealthImportSleep": "Importer søvndata",
+  "settingsHealthImportHeartRate": "Puls",
+  "settingsHealthImportHeartRateDescription": "Hvilepuls, gangpuls og variabilitet",
+  "settingsHealthImportQuickRange": "{days, plural, =1{Seneste døgn} other{Seneste {days} dage}}",
+  "@settingsHealthImportQuickRange": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportRangeSectionTitle": "Tidsrum",
+  "settingsHealthImportSleep": "Søvn",
+  "settingsHealthImportSleepDescription": "Tid i sengen og søvnfaser",
+  "settingsHealthImportStatusFailed": "Import mislykkedes — se logfilerne",
+  "settingsHealthImportStatusImported": "{count, plural, =0{Ingen nye værdier} =1{1 værdi importeret} other{{count} værdier importeret}}",
+  "@settingsHealthImportStatusImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportStatusPermissionDenied": "Adgang nægtet — giv Lotti adgang i din sundhedsapp",
+  "settingsHealthImportStatusRunning": "Importerer…",
+  "settingsHealthImportStatusUnsupportedType": "Denne datatype understøttes ikke længere",
+  "settingsHealthImportSubtitle": "Importér fra Apple Health eller Health Connect",
   "settingsHealthImportTitle": "Sundhedsimport",
   "settingsHealthImportToDate": "Slut",
-  "settingsHealthImportWorkout": "Importer træningsdata",
+  "settingsHealthImportUnavailable": "Sundhedsdata er kun tilgængelige på iOS og Android",
+  "settingsHealthImportWorkout": "Træning",
+  "settingsHealthImportWorkoutDescription": "Træning med distance og forbrændt energi",
   "settingsKeyboardShortcutsSubtitle": "Lær tastaturkombinationerne for hurtigere navigation og redigering på skrivebordet",
   "settingsKeyboardShortcutsTitle": "Tastaturgenveje",
   "settingsLabelsCategoriesAdd": "Tilføj kategori",

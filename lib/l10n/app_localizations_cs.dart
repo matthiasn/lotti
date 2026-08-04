@@ -9360,25 +9360,95 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsHabitsTitle => 'Návyky';
 
   @override
-  String get settingsHealthImportActivity => 'Importovat data aktivity';
+  String get settingsHealthImportActivity => 'Aktivita';
 
   @override
-  String get settingsHealthImportBloodPressure =>
-      'Importovat data krevního tlaku';
+  String get settingsHealthImportActivityDescription =>
+      'Kroky, vyšlapaná patra a ušlá vzdálenost';
 
   @override
-  String get settingsHealthImportBodyMeasurement =>
-      'Importovat data tělesných měr';
+  String get settingsHealthImportAll => 'Importovat vše';
+
+  @override
+  String get settingsHealthImportBloodPressure => 'Krevní tlak';
+
+  @override
+  String get settingsHealthImportBloodPressureDescription =>
+      'Systolické a diastolické hodnoty';
+
+  @override
+  String get settingsHealthImportBodyMeasurement => 'Tělesné míry';
+
+  @override
+  String get settingsHealthImportBodyMeasurementDescription =>
+      'Váha, tělesný tuk, BMI a výška';
+
+  @override
+  String get settingsHealthImportDataSectionTitle => 'Data k importu';
 
   @override
   String get settingsHealthImportFromDate => 'Začátek';
 
   @override
-  String get settingsHealthImportHeartRate =>
-      'Importovat data tepové frekvence';
+  String get settingsHealthImportHeartRate => 'Tepová frekvence';
 
   @override
-  String get settingsHealthImportSleep => 'Importovat data spánku';
+  String get settingsHealthImportHeartRateDescription =>
+      'Klidový tep, tep při chůzi a jeho variabilita';
+
+  @override
+  String settingsHealthImportQuickRange(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Posledních $days dnů',
+      few: 'Poslední $days dny',
+      one: 'Poslední den',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsHealthImportRangeSectionTitle => 'Období';
+
+  @override
+  String get settingsHealthImportSleep => 'Spánek';
+
+  @override
+  String get settingsHealthImportSleepDescription =>
+      'Čas v posteli a fáze spánku';
+
+  @override
+  String get settingsHealthImportStatusFailed =>
+      'Import selhal — zkontroluj protokoly';
+
+  @override
+  String settingsHealthImportStatusImported(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'Importováno $count hodnot',
+      few: 'Importovány $count hodnoty',
+      one: '1 hodnota importována',
+      zero: 'Žádné nové hodnoty',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsHealthImportStatusPermissionDenied =>
+      'Přístup odepřen — povol Lotti ve své zdravotní aplikaci';
+
+  @override
+  String get settingsHealthImportStatusRunning => 'Importuje se…';
+
+  @override
+  String get settingsHealthImportStatusUnsupportedType =>
+      'Tento typ dat už není podporován';
+
+  @override
+  String get settingsHealthImportSubtitle =>
+      'Import z Apple Health nebo Health Connect';
 
   @override
   String get settingsHealthImportTitle => 'Import zdraví';
@@ -9387,7 +9457,15 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsHealthImportToDate => 'Konec';
 
   @override
-  String get settingsHealthImportWorkout => 'Importovat data tréninků';
+  String get settingsHealthImportUnavailable =>
+      'Zdravotní data jsou dostupná jen na iOS a Androidu';
+
+  @override
+  String get settingsHealthImportWorkout => 'Tréninky';
+
+  @override
+  String get settingsHealthImportWorkoutDescription =>
+      'Tréninky se vzdáleností a spálenou energií';
 
   @override
   String get settingsKeyboardShortcutsSubtitle =>

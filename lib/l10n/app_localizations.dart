@@ -15810,20 +15810,50 @@ abstract class AppLocalizations {
   /// No description provided for @settingsHealthImportActivity.
   ///
   /// In en, this message translates to:
-  /// **'Import Activity Data'**
+  /// **'Activity'**
   String get settingsHealthImportActivity;
+
+  /// No description provided for @settingsHealthImportActivityDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Steps, flights climbed and walking distance'**
+  String get settingsHealthImportActivityDescription;
+
+  /// No description provided for @settingsHealthImportAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Import all'**
+  String get settingsHealthImportAll;
 
   /// No description provided for @settingsHealthImportBloodPressure.
   ///
   /// In en, this message translates to:
-  /// **'Import Blood Pressure Data'**
+  /// **'Blood Pressure'**
   String get settingsHealthImportBloodPressure;
+
+  /// No description provided for @settingsHealthImportBloodPressureDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Systolic and diastolic readings'**
+  String get settingsHealthImportBloodPressureDescription;
 
   /// No description provided for @settingsHealthImportBodyMeasurement.
   ///
   /// In en, this message translates to:
-  /// **'Import Body Measurement Data'**
+  /// **'Body Measurements'**
   String get settingsHealthImportBodyMeasurement;
+
+  /// No description provided for @settingsHealthImportBodyMeasurementDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight, body fat, BMI and height'**
+  String get settingsHealthImportBodyMeasurementDescription;
+
+  /// No description provided for @settingsHealthImportDataSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Data to import'**
+  String get settingsHealthImportDataSectionTitle;
 
   /// No description provided for @settingsHealthImportFromDate.
   ///
@@ -15834,14 +15864,74 @@ abstract class AppLocalizations {
   /// No description provided for @settingsHealthImportHeartRate.
   ///
   /// In en, this message translates to:
-  /// **'Import Heart Rate Data'**
+  /// **'Heart Rate'**
   String get settingsHealthImportHeartRate;
+
+  /// No description provided for @settingsHealthImportHeartRateDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Resting rate, walking rate and variability'**
+  String get settingsHealthImportHeartRateDescription;
+
+  /// No description provided for @settingsHealthImportQuickRange.
+  ///
+  /// In en, this message translates to:
+  /// **'{days, plural, =1{Last day} other{Last {days} days}}'**
+  String settingsHealthImportQuickRange(int days);
+
+  /// No description provided for @settingsHealthImportRangeSectionTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Date range'**
+  String get settingsHealthImportRangeSectionTitle;
 
   /// No description provided for @settingsHealthImportSleep.
   ///
   /// In en, this message translates to:
-  /// **'Import Sleep Data'**
+  /// **'Sleep'**
   String get settingsHealthImportSleep;
+
+  /// No description provided for @settingsHealthImportSleepDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Time in bed and sleep stages'**
+  String get settingsHealthImportSleepDescription;
+
+  /// No description provided for @settingsHealthImportStatusFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Import failed — check the logs'**
+  String get settingsHealthImportStatusFailed;
+
+  /// No description provided for @settingsHealthImportStatusImported.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No new samples} =1{1 sample imported} other{{count} samples imported}}'**
+  String settingsHealthImportStatusImported(int count);
+
+  /// No description provided for @settingsHealthImportStatusPermissionDenied.
+  ///
+  /// In en, this message translates to:
+  /// **'Access denied — allow Lotti in your health app'**
+  String get settingsHealthImportStatusPermissionDenied;
+
+  /// No description provided for @settingsHealthImportStatusRunning.
+  ///
+  /// In en, this message translates to:
+  /// **'Importing…'**
+  String get settingsHealthImportStatusRunning;
+
+  /// No description provided for @settingsHealthImportStatusUnsupportedType.
+  ///
+  /// In en, this message translates to:
+  /// **'This data type is no longer supported'**
+  String get settingsHealthImportStatusUnsupportedType;
+
+  /// No description provided for @settingsHealthImportSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Import from Apple Health or Health Connect'**
+  String get settingsHealthImportSubtitle;
 
   /// No description provided for @settingsHealthImportTitle.
   ///
@@ -15855,11 +15945,23 @@ abstract class AppLocalizations {
   /// **'End'**
   String get settingsHealthImportToDate;
 
+  /// No description provided for @settingsHealthImportUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Health data is only available on iOS and Android'**
+  String get settingsHealthImportUnavailable;
+
   /// No description provided for @settingsHealthImportWorkout.
   ///
   /// In en, this message translates to:
-  /// **'Import Workout Data'**
+  /// **'Workouts'**
   String get settingsHealthImportWorkout;
+
+  /// No description provided for @settingsHealthImportWorkoutDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Workouts with distance and energy burned'**
+  String get settingsHealthImportWorkoutDescription;
 
   /// No description provided for @settingsKeyboardShortcutsSubtitle.
   ///

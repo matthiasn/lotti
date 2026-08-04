@@ -9418,24 +9418,95 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsHabitsTitle => 'Obiceiuri';
 
   @override
-  String get settingsHealthImportActivity => 'Importați datele de activitate';
+  String get settingsHealthImportActivity => 'Activitate';
 
   @override
-  String get settingsHealthImportBloodPressure =>
-      'Importați datele de tensiune arterială';
+  String get settingsHealthImportActivityDescription =>
+      'Pași, etaje urcate și distanța parcursă';
 
   @override
-  String get settingsHealthImportBodyMeasurement =>
-      'Importați datele de măsurători corporale';
+  String get settingsHealthImportAll => 'Importați tot';
+
+  @override
+  String get settingsHealthImportBloodPressure => 'Tensiune arterială';
+
+  @override
+  String get settingsHealthImportBloodPressureDescription =>
+      'Valori sistolice și diastolice';
+
+  @override
+  String get settingsHealthImportBodyMeasurement => 'Măsurători corporale';
+
+  @override
+  String get settingsHealthImportBodyMeasurementDescription =>
+      'Greutate, grăsime corporală, IMC și înălțime';
+
+  @override
+  String get settingsHealthImportDataSectionTitle => 'Date de importat';
 
   @override
   String get settingsHealthImportFromDate => 'Început';
 
   @override
-  String get settingsHealthImportHeartRate => 'Importați datele de puls';
+  String get settingsHealthImportHeartRate => 'Puls';
 
   @override
-  String get settingsHealthImportSleep => 'Importați datele de somn';
+  String get settingsHealthImportHeartRateDescription =>
+      'În repaus, la mers și variabilitatea pulsului';
+
+  @override
+  String settingsHealthImportQuickRange(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Ultimele $days de zile',
+      few: 'Ultimele $days zile',
+      one: 'Ultima zi',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsHealthImportRangeSectionTitle => 'Interval de timp';
+
+  @override
+  String get settingsHealthImportSleep => 'Somn';
+
+  @override
+  String get settingsHealthImportSleepDescription =>
+      'Timpul în pat și fazele somnului';
+
+  @override
+  String get settingsHealthImportStatusFailed =>
+      'Importul a eșuat — verificați jurnalele';
+
+  @override
+  String settingsHealthImportStatusImported(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de valori importate',
+      few: '$count valori importate',
+      one: '1 valoare importată',
+      zero: 'Nicio valoare nouă',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsHealthImportStatusPermissionDenied =>
+      'Acces refuzat — permiteți Lotti în aplicația dvs. de sănătate';
+
+  @override
+  String get settingsHealthImportStatusRunning => 'Se importă…';
+
+  @override
+  String get settingsHealthImportStatusUnsupportedType =>
+      'Acest tip de date nu mai este acceptat';
+
+  @override
+  String get settingsHealthImportSubtitle =>
+      'Importați din Apple Health sau Health Connect';
 
   @override
   String get settingsHealthImportTitle => 'Import de date de sănătate';
@@ -9444,7 +9515,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsHealthImportToDate => 'Sfârșit';
 
   @override
-  String get settingsHealthImportWorkout => 'Importați datele de antrenament';
+  String get settingsHealthImportUnavailable =>
+      'Datele de sănătate sunt disponibile doar pe iOS și Android';
+
+  @override
+  String get settingsHealthImportWorkout => 'Antrenamente';
+
+  @override
+  String get settingsHealthImportWorkoutDescription =>
+      'Antrenamente cu distanță și energie consumată';
 
   @override
   String get settingsKeyboardShortcutsSubtitle =>

@@ -3763,15 +3763,46 @@
   "settingsHabitsSearchHint": "Gewohnheiten durchsuchen…",
   "settingsHabitsSubtitle": "Deine Gewohnheiten und Routinen verwalten",
   "settingsHabitsTitle": "Gewohnheiten",
-  "settingsHealthImportActivity": "Aktivitätsdaten importieren",
-  "settingsHealthImportBloodPressure": "Blutdruckdaten importieren",
-  "settingsHealthImportBodyMeasurement": "Körpermaße importieren",
+  "settingsHealthImportActivity": "Aktivität",
+  "settingsHealthImportActivityDescription": "Schritte, Stockwerke und Gehstrecke",
+  "settingsHealthImportAll": "Alles importieren",
+  "settingsHealthImportBloodPressure": "Blutdruck",
+  "settingsHealthImportBloodPressureDescription": "Systolische und diastolische Werte",
+  "settingsHealthImportBodyMeasurement": "Körpermaße",
+  "settingsHealthImportBodyMeasurementDescription": "Gewicht, Körperfett, BMI und Größe",
+  "settingsHealthImportDataSectionTitle": "Zu importierende Daten",
   "settingsHealthImportFromDate": "Start",
-  "settingsHealthImportHeartRate": "Herzfrequenzdaten importieren",
-  "settingsHealthImportSleep": "Schlafdaten importieren",
+  "settingsHealthImportHeartRate": "Herzfrequenz",
+  "settingsHealthImportHeartRateDescription": "Ruhepuls, Gehpuls und Variabilität",
+  "settingsHealthImportQuickRange": "{days, plural, =1{Letzter Tag} other{Letzte {days} Tage}}",
+  "@settingsHealthImportQuickRange": {
+    "placeholders": {
+      "days": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportRangeSectionTitle": "Zeitraum",
+  "settingsHealthImportSleep": "Schlaf",
+  "settingsHealthImportSleepDescription": "Bettzeit und Schlafphasen",
+  "settingsHealthImportStatusFailed": "Import fehlgeschlagen – sieh in die Logs",
+  "settingsHealthImportStatusImported": "{count, plural, =0{Keine neuen Werte} =1{1 Wert importiert} other{{count} Werte importiert}}",
+  "@settingsHealthImportStatusImported": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsHealthImportStatusPermissionDenied": "Zugriff verweigert – erlaube Lotti den Zugriff in deiner Health-App",
+  "settingsHealthImportStatusRunning": "Wird importiert …",
+  "settingsHealthImportStatusUnsupportedType": "Dieser Datentyp wird nicht mehr unterstützt",
+  "settingsHealthImportSubtitle": "Aus Apple Health oder Health Connect importieren",
   "settingsHealthImportTitle": "Gesundheitsdatenimport",
   "settingsHealthImportToDate": "Ende",
-  "settingsHealthImportWorkout": "Trainingsdaten importieren",
+  "settingsHealthImportUnavailable": "Gesundheitsdaten gibt es nur unter iOS und Android",
+  "settingsHealthImportWorkout": "Trainings",
+  "settingsHealthImportWorkoutDescription": "Trainings mit Strecke und verbrauchter Energie",
   "settingsKeyboardShortcutsSubtitle": "Lerne die Tastenkombinationen für schnellere Navigation und Bearbeitung am Desktop kennen",
   "settingsKeyboardShortcutsTitle": "Tastaturkurzbefehle",
   "settingsLabelsCategoriesAdd": "Kategorie hinzufügen",

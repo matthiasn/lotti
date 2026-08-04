@@ -9243,22 +9243,93 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsHabitsTitle => 'Vaner';
 
   @override
-  String get settingsHealthImportActivity => 'Importer aktivitetsdata';
+  String get settingsHealthImportActivity => 'Aktivitet';
 
   @override
-  String get settingsHealthImportBloodPressure => 'Importer blodtryksdata';
+  String get settingsHealthImportActivityDescription =>
+      'Skridt, etager og gåafstand';
 
   @override
-  String get settingsHealthImportBodyMeasurement => 'Import af kropsmåledata';
+  String get settingsHealthImportAll => 'Importér alt';
+
+  @override
+  String get settingsHealthImportBloodPressure => 'Blodtryk';
+
+  @override
+  String get settingsHealthImportBloodPressureDescription =>
+      'Systoliske og diastoliske værdier';
+
+  @override
+  String get settingsHealthImportBodyMeasurement => 'Kropsmål';
+
+  @override
+  String get settingsHealthImportBodyMeasurementDescription =>
+      'Vægt, kropsfedt, BMI og højde';
+
+  @override
+  String get settingsHealthImportDataSectionTitle => 'Data der skal importeres';
 
   @override
   String get settingsHealthImportFromDate => 'Start';
 
   @override
-  String get settingsHealthImportHeartRate => 'Importer pulsdata';
+  String get settingsHealthImportHeartRate => 'Puls';
 
   @override
-  String get settingsHealthImportSleep => 'Importer søvndata';
+  String get settingsHealthImportHeartRateDescription =>
+      'Hvilepuls, gangpuls og variabilitet';
+
+  @override
+  String settingsHealthImportQuickRange(int days) {
+    String _temp0 = intl.Intl.pluralLogic(
+      days,
+      locale: localeName,
+      other: 'Seneste $days dage',
+      one: 'Seneste døgn',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsHealthImportRangeSectionTitle => 'Tidsrum';
+
+  @override
+  String get settingsHealthImportSleep => 'Søvn';
+
+  @override
+  String get settingsHealthImportSleepDescription =>
+      'Tid i sengen og søvnfaser';
+
+  @override
+  String get settingsHealthImportStatusFailed =>
+      'Import mislykkedes — se logfilerne';
+
+  @override
+  String settingsHealthImportStatusImported(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count værdier importeret',
+      one: '1 værdi importeret',
+      zero: 'Ingen nye værdier',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get settingsHealthImportStatusPermissionDenied =>
+      'Adgang nægtet — giv Lotti adgang i din sundhedsapp';
+
+  @override
+  String get settingsHealthImportStatusRunning => 'Importerer…';
+
+  @override
+  String get settingsHealthImportStatusUnsupportedType =>
+      'Denne datatype understøttes ikke længere';
+
+  @override
+  String get settingsHealthImportSubtitle =>
+      'Importér fra Apple Health eller Health Connect';
 
   @override
   String get settingsHealthImportTitle => 'Sundhedsimport';
@@ -9267,7 +9338,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsHealthImportToDate => 'Slut';
 
   @override
-  String get settingsHealthImportWorkout => 'Importer træningsdata';
+  String get settingsHealthImportUnavailable =>
+      'Sundhedsdata er kun tilgængelige på iOS og Android';
+
+  @override
+  String get settingsHealthImportWorkout => 'Træning';
+
+  @override
+  String get settingsHealthImportWorkoutDescription =>
+      'Træning med distance og forbrændt energi';
 
   @override
   String get settingsKeyboardShortcutsSubtitle =>
