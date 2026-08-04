@@ -6,15 +6,14 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
-import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/state/linkable_tasks_controller.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   final now = DateTime(2026, 8, 4, 9);
@@ -50,8 +49,8 @@ void main() {
     active: active,
   );
 
+  late TestGetItMocks mocks;
   late MockJournalDb mockJournalDb;
-  late MockUpdateNotifications mockUpdateNotifications;
   late MockEntitiesCacheService mockCache;
   late StreamController<Set<String>> updateStream;
 
@@ -60,18 +59,22 @@ void main() {
   /// "the user created their second task somewhere else".
   late List<JournalEntity> tasksInDb;
 
-  setUp(() {
-    mockJournalDb = MockJournalDb();
-    mockUpdateNotifications = MockUpdateNotifications();
-    mockCache = MockEntitiesCacheService();
+  setUp(() async {
     updateStream = StreamController<Set<String>>.broadcast();
+    mockCache = MockEntitiesCacheService();
     tasksInDb = [buildTask('task-1')];
+
+    mocks = await setUpTestGetIt(
+      additionalSetup: () =>
+          getIt.registerSingleton<EntitiesCacheService>(mockCache),
+    );
+    mockJournalDb = mocks.journalDb;
 
     when(
       () => mockCache.categoriesById,
     ).thenReturn(<String, CategoryDefinition>{});
     when(
-      () => mockUpdateNotifications.updateStream,
+      () => mocks.updateNotifications.updateStream,
     ).thenAnswer((_) => updateStream.stream);
     when(
       () => mockJournalDb.getTasks(
@@ -86,16 +89,11 @@ void main() {
         offset: any(named: 'offset'),
       ),
     ).thenAnswer((_) async => tasksInDb);
-
-    getIt
-      ..registerSingleton<JournalDb>(mockJournalDb)
-      ..registerSingleton<UpdateNotifications>(mockUpdateNotifications)
-      ..registerSingleton<EntitiesCacheService>(mockCache);
   });
 
   tearDown(() async {
     await updateStream.close();
-    await getIt.reset();
+    await tearDownTestGetIt();
   });
 
   ProviderContainer makeContainer() {
@@ -191,6 +189,79 @@ void main() {
               'no needless rebuild for an unchanged answer — every one of '
               'these repaints the Linked Tasks band',
         );
+      });
+    },
+  );
+
+  test(
+    'a slow earlier refresh cannot overwrite a newer answer — a sync batch '
+    'fires several notifications and the queries can land out of order',
+    () {
+      fakeAsync((async) {
+        final container = makeContainer();
+        final emitted = watch(container, 'task-1');
+        async.flushMicrotasks();
+
+        // Two refreshes in flight. The FIRST one to be started is the LAST to
+        // answer, and it answers "no other tasks" — the state the world has
+        // since left behind.
+        final slowFirst = Completer<List<JournalEntity>>();
+        final fastSecond = Completer<List<JournalEntity>>();
+        var call = 0;
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenAnswer((_) => call++ == 0 ? slowFirst.future : fastSecond.future);
+
+        updateStream
+          ..add({'a'})
+          ..add({'b'});
+        async.flushMicrotasks();
+
+        fastSecond.complete([buildTask('task-1'), buildTask('task-2')]);
+        async.flushMicrotasks();
+        slowFirst.complete([buildTask('task-1')]);
+        async.flushMicrotasks();
+
+        expect(
+          container.read(linkableTasksExistProvider('task-1')).value,
+          isTrue,
+          reason: 'the superseded query must not restore its stale answer',
+        );
+        expect(emitted.map((e) => e.value), [false, true]);
+      });
+    },
+  );
+
+  test(
+    'a failed refresh keeps the last good answer rather than blanking a card '
+    'the user is looking at',
+    () {
+      fakeAsync((async) {
+        final container = makeContainer();
+        final emitted = watch(container, 'task-1');
+        async.flushMicrotasks();
+
+        when(
+          () => mockJournalDb.getTasks(
+            starredStatuses: any(named: 'starredStatuses'),
+            taskStatuses: any(named: 'taskStatuses'),
+            categoryIds: any(named: 'categoryIds'),
+            limit: any(named: 'limit'),
+          ),
+        ).thenThrow(Exception('db went away'));
+
+        updateStream.add({'a'});
+        async.flushMicrotasks();
+
+        final state = container.read(linkableTasksExistProvider('task-1'));
+        expect(state.hasError, isFalse);
+        expect(state.value, isFalse);
+        expect(emitted, hasLength(1), reason: 'only the initial resolution');
       });
     },
   );

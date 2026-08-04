@@ -8,6 +8,7 @@ import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/logging_service.dart';
 
 /// Whether any task other than the one being viewed exists to be linked to.
 ///
@@ -44,20 +45,41 @@ class LinkableTasksController extends AsyncNotifier<bool> {
 
   StreamSubscription<Set<String>>? _updateSubscription;
 
+  /// Increments per refresh. A burst of writes (a sync batch, an import) starts
+  /// several overlapping queries, and without this an older one completing last
+  /// would restore its stale answer over a newer one's.
+  int _generation = 0;
+
   @override
   Future<bool> build() async {
     ref.onDispose(() => _updateSubscription?.cancel());
     // Any journal write can be the app's second task — including one this
     // page itself creates through "Create new linked task" — so the card has
     // to appear without a reload once one exists.
-    _updateSubscription = getIt<UpdateNotifications>().updateStream.listen((_) {
-      unawaited(
-        _fetch().then((latest) {
-          if (ref.mounted && latest != state.value) state = AsyncData(latest);
-        }),
-      );
-    });
+    _updateSubscription = getIt<UpdateNotifications>().updateStream.listen(
+      (_) => unawaited(_refresh()),
+    );
     return _fetch();
+  }
+
+  Future<void> _refresh() async {
+    final generation = ++_generation;
+    try {
+      final latest = await _fetch();
+      if (!ref.mounted || generation != _generation) return;
+      if (latest != state.value) state = AsyncData(latest);
+    } catch (error, stackTrace) {
+      // Keep the last good answer rather than blanking a card the user is
+      // looking at over a transient query failure — the next write refreshes
+      // it anyway. Reported so the failure is not silent.
+      if (!ref.mounted || generation != _generation) return;
+      getIt<LoggingService>().captureException(
+        error,
+        domain: 'LinkableTasksController',
+        subDomain: 'refresh',
+        stackTrace: stackTrace,
+      );
+    }
   }
 
   Future<bool> _fetch() async {

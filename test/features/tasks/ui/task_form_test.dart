@@ -174,8 +174,10 @@ void main() {
     testWidgets(
       'the block retires as soon as the task holds a checklist',
       (tester) async {
+        // Blank in every other respect, so the checklist is the only thing
+        // that can be retiring the block.
         final withContent = testTask.copyWith(
-          data: testTask.data.copyWith(checklistIds: const ['c1']),
+          data: testTask.data.copyWith(title: '', checklistIds: const ['c1']),
           entryText: null,
         );
 

@@ -247,9 +247,9 @@ void main() {
     );
 
     testWidgets(
-      'an impatient second tap while the write is in flight is dropped — the '
-      'block only retires once the entry lands, so the row is still there and '
-      'still tappable for the whole of a slow write',
+      'a second tap is dropped while the write is in flight AND after it '
+      'succeeds — the block retires on a provider rebuild some frames later, '
+      'so re-arming on completion left a second window to double-tap through',
       (tester) async {
         final pending = Completer<JournalEntity?>();
         when(
@@ -273,10 +273,41 @@ void main() {
           ),
         ).called(1);
 
-        // …and once it lands, the row is live again — a write that failed
-        // must not leave the only path to a note permanently inert.
+        // The write lands. The row has done its job and stays inert — the
+        // block is on its way out, but not for several more frames.
+        pending.complete(buildNote('note-1'));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Write a note'));
+        await tester.pump();
+
+        verifyNever(
+          () => creation.createTextEntry(
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        );
+      },
+    );
+
+    testWidgets(
+      'a write that produced nothing re-arms the row — a failure must not '
+      'leave the only path to a note permanently dead',
+      (tester) async {
+        final pending = Completer<JournalEntity?>();
+        when(
+          () => creation.createTextEntry(
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) => pending.future);
+
+        await pump(tester, task: buildTask(categoryId: 'cat-1'));
+
+        await tester.tap(find.text('Write a note'));
+        await tester.pump();
         pending.complete(null);
         await tester.pumpAndSettle();
+
         await tester.tap(find.text('Write a note'));
         await tester.pump();
 
@@ -285,7 +316,7 @@ void main() {
             linkedId: 'task-1',
             categoryId: 'cat-1',
           ),
-        ).called(1);
+        ).called(2);
       },
     );
 

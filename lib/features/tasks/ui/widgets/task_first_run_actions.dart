@@ -135,35 +135,39 @@ class TaskFirstRunActions extends ConsumerWidget {
                 linkedId: task.meta.id,
                 categoryId: task.meta.categoryId,
               );
-          if (entry == null) return;
+          if (entry == null) return false;
           ref
               .read(taskFocusControllerProvider(task.meta.id).notifier)
               .publishTaskFocus(entryId: entry.meta.id);
+          return true;
         },
       ),
       _FirstRunRow(
         icon: Icons.checklist_rounded,
         opensPicker: false,
         label: context.messages.taskFirstRunAddChecklist,
-        onTap: () async {
-          await ref
-              .read(entryCreationServiceProvider)
-              .createChecklist(task: task);
-        },
+        onTap: () async =>
+            await ref
+                .read(entryCreationServiceProvider)
+                .createChecklist(task: task) !=
+            null,
       ),
       _FirstRunRow(
         icon: Icons.mic_rounded,
         label: context.messages.taskFirstRunRecordAudio,
-        // Synchronous — it pushes a modal route and returns — so there is no
-        // in-flight window to guard, only the `Future<void>` signature to
-        // satisfy.
-        onTap: () async => ref
-            .read(entryCreationServiceProvider)
-            .showAudioRecordingModal(
-              context,
-              linkedId: task.meta.id,
-              categoryId: task.meta.categoryId,
-            ),
+        // Opens a modal and returns; the recording (and the entry it makes)
+        // happens in there. Nothing to latch off — cancelling the sheet has to
+        // leave the row live.
+        onTap: () async {
+          ref
+              .read(entryCreationServiceProvider)
+              .showAudioRecordingModal(
+                context,
+                linkedId: task.meta.id,
+                categoryId: task.meta.categoryId,
+              );
+          return false;
+        },
       ),
       _FirstRunRow(
         icon: Icons.auto_awesome_rounded,
@@ -182,7 +186,11 @@ class TaskFirstRunActions extends ConsumerWidget {
         // truncated in German on a phone. The category route now belongs to
         // the picker this row opens.
         subtitle: context.messages.taskAgentAssignHint,
-        onTap: () => showAssignTaskAgentPicker(context, ref, task.meta.id),
+        // Same: the picker may be dismissed without assigning anything.
+        onTap: () async {
+          await showAssignTaskAgentPicker(context, ref, task.meta.id);
+          return false;
+        },
       ),
     ];
 
@@ -234,7 +242,10 @@ class _FirstRunRow extends StatefulWidget {
   final String label;
   final String? subtitle;
   final Color? iconColor;
-  final Future<void> Function() onTap;
+
+  /// Runs the row's action and reports whether it created content. `true`
+  /// latches the row off for good — see [_FirstRunRowState._spent].
+  final Future<bool> Function() onTap;
 
   /// Whether the tap opens a picker or modal (chevron) or creates something in
   /// place (plus). Four identical chevrons over four different behaviours told
@@ -254,15 +265,28 @@ class _FirstRunRowState extends State<_FirstRunRow> {
   /// future resolves.
   bool _pending = false;
 
+  /// This row already created something. Retiring the block is driven by a
+  /// provider rebuild, which lands some frames after the write resolves — so
+  /// re-enabling on completion left a second window in which the same tap made
+  /// a second note. A row that has done its job never comes back; only a failed
+  /// or cancelled action re-arms it.
+  bool _spent = false;
+
   Future<void> _handleTap() async {
-    if (_pending) return;
+    if (_pending || _spent) return;
     setState(() => _pending = true);
+    var created = false;
     try {
-      await widget.onTap();
+      created = await widget.onTap();
     } finally {
       // The successful path usually unmounts this row — the task now has
       // content — so `mounted` is the common case, not the exception.
-      if (mounted) setState(() => _pending = false);
+      if (mounted) {
+        setState(() {
+          _pending = false;
+          _spent = created;
+        });
+      }
     }
   }
 
@@ -273,7 +297,7 @@ class _FirstRunRowState extends State<_FirstRunRow> {
     final iconColor = widget.iconColor;
     final opensPicker = widget.opensPicker;
     return DesignSystemListItem(
-      onTap: _pending ? null : _handleTap,
+      onTap: _pending || _spent ? null : _handleTap,
       title: widget.label,
       titleMaxLines: 2,
       subtitle: widget.subtitle,
