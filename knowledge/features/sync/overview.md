@@ -533,6 +533,12 @@ clean it up:
 
 The correctness of the whole feature rests on a few sharp assumptions:
 
+- The stack described here exists only in **real profiles**. Guest/demo
+  worlds never construct it — they register an inert outbox instead, have
+  their own per-world host ID, and never read the keychain Matrix
+  credentials. See
+  [profiles and demo mode](../../architecture/profiles-and-demo-mode.md).
+
 - Sender-side `coveredVectorClocks` enrichment must stay correct, or offline
   convergence stops being sound.
 - File-backed payload replay depends on attachment dedupe and ordering in
