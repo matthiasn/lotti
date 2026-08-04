@@ -47,17 +47,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   warns that the clock starts immediately, and choosing a note from the menu
   now scrolls to the note it just made instead of leaving it out of sight. A
   small `+` marks rows that create something right away; an arrow marks rows
-  that open another screen first — the same cue the new-task card uses. The
-  button that opens the menu is now a labelled pill rather than an ellipsis —
-  an ellipsis promised leftovers and delivered the page's creation hub. On a
-  brand-new task it reads "Attach" with a paperclip, matching the menu, which
-  then holds only what the page doesn't already offer in words: attach an
-  image, capture a screenshot, link a task — and closes with a quiet line
-  saying that notes, checklists and voice notes live on the page itself. Once
-  the task has content, button and menu become the full "Add" list. On a task
-  the menu never lists "Timer", since the bar's Track time button is that
-  same action, and it no longer ends on a stray divider under a row that
-  isn't there.
+  that open another screen first — the same cue the new-task card uses. Where
+  the window allows, the button that opens the menu is a labelled "Add" pill
+  rather than an unlabelled ellipsis — an ellipsis promised leftovers and
+  delivered the page's creation hub. On a task the menu never lists "Timer",
+  since the bar's Track time button is that same action, and it no longer
+  ends on a stray divider under a row that isn't there.
 - **Setting a category is now an offer, not a report.** An uncategorized task
   led with a hollow checkbox-like square saying "No category" — the first
   thing on the page, describing an absence. It's gone; a dashed "Set category"
@@ -71,12 +66,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   page and, for low-vision users, effectively absent in dark mode.
 - **The new-task card explains every row.** Each of the four offers now
   carries one quiet line on what the tap does — the voice-note row says the
-  recorder opens first and nothing records until you start it there. While
-  the card is up, the bar's Track time button steps back to a quiet outline
-  (naming a task you haven't typed yet is the job; timing it isn't), the
-  image button stays in the bar since the card has no image row, and the
-  page's first tap eases the column out to its reading width instead of
-  snapping it.
+  recorder opens first and nothing records until you start it there — and
+  the page's first tap eases the column out to its reading width instead of
+  snapping it. The bottom bar keeps its full set of buttons throughout:
+  Track time stays the filled primary, and the microphone, checklist and
+  image buttons remain exactly where they always are.
 
 ### Fixed
 - **Searching for a task to link no longer flickers as you type.** Every

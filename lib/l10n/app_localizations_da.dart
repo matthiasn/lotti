@@ -3567,21 +3567,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get createCategoryTitle => 'Opret kategori';
 
   @override
-  String get createEntryAttachTitle => 'Vedhæft';
-
-  @override
-  String get createEntryFirstRunFooter =>
-      'Noter, tjeklister og talenoter er på selve siden.';
-
-  @override
   String get createEntryLabel => 'Opret ny post';
 
   @override
   String get createEntryTitle => 'Tilføj';
-
-  @override
-  String get createEntryTriggerHint =>
-      'Tilføj et billede, et skærmbillede eller en tilknyttet opgave';
 
   @override
   String get createEntryTriggerHintFull =>

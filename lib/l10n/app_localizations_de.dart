@@ -3594,21 +3594,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get createCategoryTitle => 'Kategorie erstellen';
 
   @override
-  String get createEntryAttachTitle => 'Anhängen';
-
-  @override
-  String get createEntryFirstRunFooter =>
-      'Notizen, Checklisten und Sprachnotizen findest du direkt auf der Seite.';
-
-  @override
   String get createEntryLabel => 'Neuen Eintrag erstellen';
 
   @override
   String get createEntryTitle => 'Hinzufügen';
-
-  @override
-  String get createEntryTriggerHint =>
-      'Bild, Bildschirmfoto oder verknüpfte Aufgabe hinzufügen';
 
   @override
   String get createEntryTriggerHintFull =>

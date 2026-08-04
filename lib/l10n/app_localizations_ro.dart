@@ -3622,21 +3622,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get createCategoryTitle => 'Creare categorie';
 
   @override
-  String get createEntryAttachTitle => 'Atașați';
-
-  @override
-  String get createEntryFirstRunFooter =>
-      'Notițele, listele și notele vocale se află chiar pe pagină.';
-
-  @override
   String get createEntryLabel => 'Creați o intrare nouă';
 
   @override
   String get createEntryTitle => 'Adăugați';
-
-  @override
-  String get createEntryTriggerHint =>
-      'Adăugați o imagine, o captură de ecran sau o sarcină legată';
 
   @override
   String get createEntryTriggerHintFull =>

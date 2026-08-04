@@ -192,7 +192,6 @@ void main() {
     AudioRecorderState? recorderState,
     Widget? topSlot,
     List<Override> extraOverrides = const [],
-    bool compact = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -200,7 +199,6 @@ void main() {
           child: TaskActionBar(
             task: testTask,
             topSlot: topSlot,
-            compact: compact,
           ),
         ),
         overrides: [
@@ -511,76 +509,6 @@ void main() {
   }
 
   testWidgets(
-    'compact collapses the bar to the primary and the Add trigger — every '
-    'other affordance has exactly one home elsewhere',
-    (tester) async {
-      await pumpBar(tester, compact: true);
-
-      expect(find.byKey(TaskActionBar.trackTimeKey), findsOneWidget);
-      expect(find.byKey(TaskActionBar.moreKey), findsOneWidget);
-      // Checklist / voice live as worded rows in the first-run card; image
-      // import lives as the labeled, subtitled row in the Add sheet the "+"
-      // right here opens. Keeping the image circle beside that "+" was one
-      // action in two adjacent homes.
-      for (final key in [
-        TaskActionBar.audioKey,
-        TaskActionBar.checklistKey,
-        TaskActionBar.imageKey,
-      ]) {
-        expect(find.byKey(key), findsNothing);
-      }
-    },
-  );
-
-  testWidgets(
-    'compact demotes the idle Track time pill to the subdued tonal fill — '
-    'on a blank task the filled accent belongs to the title field, not to a '
-    'tertiary action',
-    (tester) async {
-      Color pillFill() {
-        final container = tester
-            .widgetList<Container>(
-              find.descendant(
-                of: find.byKey(TaskActionBar.trackTimeKey),
-                matching: find.byType(Container),
-              ),
-            )
-            .first;
-        return (container.decoration! as BoxDecoration).color!;
-      }
-
-      await pumpBar(tester, compact: true);
-      final tokens = tester
-          .element(find.byKey(TaskActionBar.trackTimeKey))
-          .designTokens;
-      expect(pillFill(), tokens.colors.surface.enabled);
-
-      // The accent returns with the ordinary bar the moment the task has
-      // content.
-      await pumpBar(tester);
-      expect(pillFill(), tokens.colors.interactive.enabled);
-    },
-  );
-
-  testWidgets(
-    'compact never hides a LIVE recording — the mic is the only way to see '
-    'and stop a session in progress',
-    (tester) async {
-      await pumpBar(
-        tester,
-        compact: true,
-        recorderState: _recordingRecorderState(linkedId: testTask.meta.id),
-      );
-
-      expect(find.byKey(TaskActionBar.audioKey), findsOneWidget);
-      final tokens = tester
-          .element(find.byKey(TaskActionBar.audioKey))
-          .designTokens;
-      expect(audioButtonFill(tester), tokens.colors.alert.error.defaultColor);
-    },
-  );
-
-  testWidgets(
     'the idle mic is a peer of Track time — an accent ring and accent glyph, '
     'not a second filled shape',
     (tester) async {
@@ -614,42 +542,24 @@ void main() {
 
   testWidgets(
     'the Add trigger is the labeled pill wherever the row has width, and '
-    'compact rows always have it',
+    'falls back to the bare circle below the labeled threshold',
     (tester) async {
+      // Wide row: the trigger says the same word as the sheet it opens.
+      await pumpBar(tester);
+      expect(
+        tester.widget(find.byKey(TaskActionBar.moreKey)),
+        isA<AddMenuPill>(),
+      );
+
       // Outer 360 → inner ~328, below the labeled threshold on a full bar:
-      // the bare circle returns so the mic keeps its slot.
+      // the bare circle returns so the mic and pill keep their slots; the
+      // circle's semantics still name the sheet's contents.
       await tester.binding.setSurfaceSize(const Size(360, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
-
       await pumpBar(tester);
       expect(
         tester.widget(find.byKey(TaskActionBar.moreKey)),
         isA<DsGlassRoundButton>(),
-      );
-
-      // The compact row keeps the trigger's word at EVERY width — on the
-      // narrowest rows it is the demoted Track time pill that folds to an
-      // icon circle instead, so the label belongs to the likelier act.
-      await pumpBar(tester, compact: true);
-      expect(
-        tester.widget(find.byKey(TaskActionBar.moreKey)),
-        isA<AddMenuPill>(),
-      );
-      expect(
-        tester.widget(find.byKey(TaskActionBar.trackTimeKey)),
-        isA<DsGlassRoundButton>(),
-      );
-
-      // Wider compact rows hold both labeled pills.
-      await tester.binding.setSurfaceSize(const Size(430, 800));
-      await pumpBar(tester, compact: true);
-      expect(
-        tester.widget(find.byKey(TaskActionBar.moreKey)),
-        isA<AddMenuPill>(),
-      );
-      expect(
-        tester.widget(find.byKey(TaskActionBar.trackTimeKey)),
-        isA<TrackTimePill>(),
       );
     },
   );

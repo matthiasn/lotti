@@ -3574,21 +3574,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get createCategoryTitle => 'Skapa kategori';
 
   @override
-  String get createEntryAttachTitle => 'Bifoga';
-
-  @override
-  String get createEntryFirstRunFooter =>
-      'Anteckningar, checklistor och röstanteckningar finns på själva sidan.';
-
-  @override
   String get createEntryLabel => 'Skapa ny post';
 
   @override
   String get createEntryTitle => 'Lägg till';
-
-  @override
-  String get createEntryTriggerHint =>
-      'Lägg till en bild, en skärmbild eller en länkad uppgift';
 
   @override
   String get createEntryTriggerHintFull =>

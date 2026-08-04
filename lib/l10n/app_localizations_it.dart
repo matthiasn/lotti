@@ -3612,21 +3612,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get createCategoryTitle => 'Creare una categoria';
 
   @override
-  String get createEntryAttachTitle => 'Allega';
-
-  @override
-  String get createEntryFirstRunFooter =>
-      'Note, checklist e note vocali sono sulla pagina stessa.';
-
-  @override
   String get createEntryLabel => 'Creare una nuova voce';
 
   @override
   String get createEntryTitle => 'Aggiungi';
-
-  @override
-  String get createEntryTriggerHint =>
-      'Aggiungi un\'immagine, uno screenshot o un\'attività collegata';
 
   @override
   String get createEntryTriggerHintFull =>

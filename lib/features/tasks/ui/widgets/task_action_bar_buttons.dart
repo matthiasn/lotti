@@ -145,34 +145,6 @@ class TrackTimePill extends StatelessWidget {
   }
 }
 
-/// The idle Track time pill's laid-out width for [idleLabel]: horizontal
-/// padding, glyph, gaps and the measured text. Used by the bar to decide —
-/// from real localized metrics, not a pixel guess — whether the compact row
-/// can hold both labeled pills.
-double trackTimePillWidth(BuildContext context, String idleLabel) {
-  final spacing = context.designTokens.spacing;
-  final style = context.designTokens.typography.styles.subtitle.subtitle2;
-  return (spacing.step5 * 2) +
-      TaskActionBar.iconSize +
-      spacing.step2 +
-      _measureSingleLineTextWidth(context, idleLabel, style) +
-      spacing.step3;
-}
-
-/// The [AddMenuPill]'s laid-out width for [label], same contract as
-/// [trackTimePillWidth].
-double addMenuPillWidth(BuildContext context, String label) {
-  final spacing = context.designTokens.spacing;
-  final style = context.designTokens.typography.styles.subtitle.subtitle2;
-  return (spacing.step5 * 2) +
-      TaskActionBar.iconSize +
-      spacing.step2 +
-      _measureSingleLineTextWidth(context, label, style) +
-      spacing.step2 +
-      // The trailing opens-caret.
-      TaskActionBar.iconSize;
-}
-
 double _measureSingleLineTextWidth(
   BuildContext context,
   String text,

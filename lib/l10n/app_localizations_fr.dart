@@ -3616,21 +3616,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get createCategoryTitle => 'Créer une catégorie';
 
   @override
-  String get createEntryAttachTitle => 'Joindre';
-
-  @override
-  String get createEntryFirstRunFooter =>
-      'Les notes, les listes et les notes vocales sont sur la page elle-même.';
-
-  @override
   String get createEntryLabel => 'Créer une nouvelle entrée';
 
   @override
   String get createEntryTitle => 'Ajouter';
-
-  @override
-  String get createEntryTriggerHint =>
-      'Ajouter une image, une capture ou une tâche liée';
 
   @override
   String get createEntryTriggerHintFull =>

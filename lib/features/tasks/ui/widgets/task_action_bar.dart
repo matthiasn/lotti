@@ -42,28 +42,11 @@ class TaskActionBar extends ConsumerStatefulWidget {
   const TaskActionBar({
     required this.task,
     this.topSlot,
-    this.compact = false,
     super.key,
   });
 
   final Task task;
   final Widget? topSlot;
-
-  /// Drops the checklist, microphone and image affordances from the visible
-  /// row and demotes the Track time pill to its subdued tonal treatment, so
-  /// the bar collapses to the primary plus the Add trigger.
-  ///
-  /// True while the task page shows its first-run block. Every action here
-  /// then has exactly one other home — the card words the checklist, note
-  /// and voice offers, and the Add sheet (which stands its duplicated rows
-  /// down while the card shows) carries the labeled "Import an image" row.
-  /// Keeping the bar's image circle beside the very "+" that opens that
-  /// sheet put one action in two adjacent homes, the exact
-  /// overlapping-membership defect this flag exists to prevent.
-  ///
-  /// An *active* recording overrides this: the mic is the only way to see and
-  /// stop a session in progress, so a live one is never hidden.
-  final bool compact;
 
   /// Stable test key for the Track time pill body — the outer tap zone.
   /// Idle: tapping starts a timer. Tracking-this-task: tapping
@@ -254,13 +237,6 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
           context,
           linkedFromId: widget.task.meta.id,
           categoryId: widget.task.meta.categoryId,
-          // While the first-run card words the writing actions, the sheet
-          // holds only attach-class offers (image, screenshot, linked task)
-          // and both the trigger and the sheet say "Attach"; the generic
-          // "Add" returns with the full row set.
-          title: widget.compact
-              ? context.messages.createEntryAttachTitle
-              : null,
         );
   }
 
@@ -349,71 +325,26 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                 // with its opens-caret. Each round button costs ≈60 px, the
                 // labeled trigger ≈64 px over the bare circle — hence 528
                 // for the five-control row and 468 for the four-control row.
-                // While the first-run block shows, the bar keeps ONLY what no
-                // other surface offers: Track time and the Add trigger. The
-                // image circle sat immediately beside the "+" that opens a
-                // sheet listing a labeled, subtitled "Import an image" row —
-                // the same action in two adjacent homes, which is the exact
-                // overlapping-membership defect `compact` exists to prevent.
                 final showImage =
-                    !widget.compact &&
                     constraints.maxWidth >=
-                        TaskActionBar.minWidthForImageButton;
+                    TaskActionBar.minWidthForImageButton;
                 final showChecklist =
-                    !widget.compact &&
                     constraints.maxWidth >=
-                        TaskActionBar.minWidthForChecklistButton;
-                // On a compact row too narrow for two labeled pills, the
-                // demoted secondary gives up its word: Track time folds to
-                // an icon circle (tooltip and semantics keep its name) while
-                // the Attach trigger — the likelier act on a blank task —
-                // stays labeled. Decided from the REAL localized pill
-                // widths, not a pixel guess, so an English phone that fits
-                // both labels keeps both. A RUNNING timer always keeps the
-                // pill: the elapsed readout and the inset stop control are
-                // the whole point.
-                final compactIconOnlyTrack =
-                    widget.compact &&
-                    !isTracking &&
-                    trackTimePillWidth(
-                              context,
-                              messages.taskActionBarTrackTime,
-                            ) +
-                            spacing.step4 +
-                            addMenuPillWidth(
-                              context,
-                              messages.createEntryAttachTitle,
-                            ) >
-                        constraints.maxWidth;
+                    TaskActionBar.minWidthForChecklistButton;
                 final rowChildren = <Widget>[
-                  if (compactIconOnlyTrack)
-                    DsGlassRoundButton(
-                      key: TaskActionBar.trackTimeKey,
-                      icon: Icons.timer_outlined,
-                      semanticLabel: messages.taskActionBarTrackTime,
-                      onPressed: _onStartTimer,
-                      // The subdued pill's own treatment, not the glass
-                      // chip's: in dark theme the default glass fill read
-                      // BRIGHTER than the Attach pill beside it, inverting
-                      // the very demotion this circle exists to express.
-                      backgroundColor: tokens.colors.surface.enabled,
-                      outlineColor: tokens.colors.decorative.level02,
-                    )
-                  else
-                    TrackTimePill(
-                      key: TaskActionBar.trackTimeKey,
-                      isTracking: isTracking,
-                      subdued: widget.compact,
-                      label: elapsedLabel,
-                      idleSemanticLabel: messages.taskActionBarTrackTime,
-                      navigateSemanticLabel:
-                          messages.taskActionBarOpenRunningTimer,
-                      stopSemanticLabel: messages.taskActionBarStopTracking,
-                      onStartTimer: _onStartTimer,
-                      onNavigateToRunningEntry: _onNavigateToRunningEntry,
-                      onStop: _onStopTimer,
-                    ),
-                  if (!widget.compact || isRecordingAudio) ...[
+                  TrackTimePill(
+                    key: TaskActionBar.trackTimeKey,
+                    isTracking: isTracking,
+                    label: elapsedLabel,
+                    idleSemanticLabel: messages.taskActionBarTrackTime,
+                    navigateSemanticLabel:
+                        messages.taskActionBarOpenRunningTimer,
+                    stopSemanticLabel: messages.taskActionBarStopTracking,
+                    onStartTimer: _onStartTimer,
+                    onNavigateToRunningEntry: _onNavigateToRunningEntry,
+                    onStop: _onStopTimer,
+                  ),
+                  ...[
                     SizedBox(width: spacing.step4),
                     DsGlassRoundButton(
                       key: TaskActionBar.audioKey,
@@ -469,33 +400,16 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                   // the narrowest rows — where the mic, the bar's other
                   // lead action, needs the space — fall back to the circle,
                   // whose semantics still carry the sheet's contents.
-                  if (widget.compact ||
-                      constraints.maxWidth >=
-                          TaskActionBar.minWidthForLabeledAdd)
+                  if (constraints.maxWidth >=
+                      TaskActionBar.minWidthForLabeledAdd)
                     AddMenuPill(
                       key: TaskActionBar.moreKey,
-                      // "Attach" while first-run: the page already shows the
-                      // word "Add" on half a dozen affordances, and this
-                      // trigger's curated contents are all attach-class. The
-                      // label is scent a TOUCH user can see — the tooltip
-                      // never surfaces on mobile. The paperclip goes with
-                      // it: on this page "+" means commits-immediately, and
-                      // a trigger that opens a sheet must not wear it.
-                      icon: widget.compact
-                          ? Icons.attach_file_rounded
-                          : Icons.add_rounded,
-                      label: widget.compact
-                          ? messages.createEntryAttachTitle
-                          : messages.createEntryTitle,
-                      // Mode-aware scent: while the first-run card words the
-                      // writing actions, the sheet holds only the net-new
-                      // offers; once the card retires, the sheet holds
-                      // everything and the hint must say so — a trigger
-                      // whose honesty expires the moment the user succeeds
-                      // is not honest.
-                      tooltip: widget.compact
-                          ? messages.createEntryTriggerHint
-                          : messages.createEntryTriggerHintFull,
+                      // One word on every width and in every state: the
+                      // sheet titles itself "Add", so the trigger does too.
+                      // (An earlier mode-aware "Attach" variant read as
+                      // file-attachment and confused more than it scented.)
+                      label: messages.createEntryTitle,
+                      tooltip: messages.createEntryTriggerHintFull,
                       onPressed: _onMorePressed,
                     )
                   else
@@ -506,17 +420,9 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                       onPressed: _onMorePressed,
                     ),
                 ];
-                // While the first-run block shows, Add leads the row: on a
-                // blank task the sheet route is the likelier act, and the
-                // eye should land on it first. Track time leads again the
-                // moment real content exists and tracking becomes dominant.
-                // Reversing the list (gaps and all) rather than flipping the
-                // Row's text direction keeps every child's own content LTR.
                 return Row(
                   mainAxisAlignment: MainAxisAlignment.center,
-                  children: widget.compact
-                      ? rowChildren.reversed.toList()
-                      : rowChildren,
+                  children: rowChildren,
                 );
               },
             ),

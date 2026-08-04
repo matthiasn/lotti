@@ -6005,18 +6005,6 @@ abstract class AppLocalizations {
   /// **'Create category'**
   String get createCategoryTitle;
 
-  /// No description provided for @createEntryAttachTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Attach'**
-  String get createEntryAttachTitle;
-
-  /// No description provided for @createEntryFirstRunFooter.
-  ///
-  /// In en, this message translates to:
-  /// **'Notes, checklists and voice notes are on the page itself.'**
-  String get createEntryFirstRunFooter;
-
   /// No description provided for @createEntryLabel.
   ///
   /// In en, this message translates to:
@@ -6028,12 +6016,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get createEntryTitle;
-
-  /// No description provided for @createEntryTriggerHint.
-  ///
-  /// In en, this message translates to:
-  /// **'Add an image, a screenshot or a linked task'**
-  String get createEntryTriggerHint;
 
   /// No description provided for @createEntryTriggerHintFull.
   ///

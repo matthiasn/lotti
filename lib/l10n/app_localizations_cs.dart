@@ -3615,21 +3615,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get createCategoryTitle => 'Vytvořit kategorii';
 
   @override
-  String get createEntryAttachTitle => 'Přiložit';
-
-  @override
-  String get createEntryFirstRunFooter =>
-      'Poznámky, seznamy a hlasové poznámky najdeš přímo na stránce.';
-
-  @override
   String get createEntryLabel => 'Vytvořit novou položku';
 
   @override
   String get createEntryTitle => 'Přidat';
-
-  @override
-  String get createEntryTriggerHint =>
-      'Přidat obrázek, snímek obrazovky nebo propojený úkol';
 
   @override
   String get createEntryTriggerHintFull =>

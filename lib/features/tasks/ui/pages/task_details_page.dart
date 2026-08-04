@@ -493,11 +493,6 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       // own bottom safe-inset padding.
       bottomNavigationBar: TaskActionBar(
         task: task,
-        // While the first-run block is up it already offers the checklist,
-        // voice and note actions in words; the bar keeps only the (demoted)
-        // primary plus the affordances the card does not duplicate — image
-        // import and the "more actions" menu.
-        compact: isFirstRun,
         topSlot: AiRunningDecoderBars(
           entryId: widget.taskId,
           isInteractive: true,

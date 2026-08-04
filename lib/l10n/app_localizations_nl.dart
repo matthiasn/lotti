@@ -3579,21 +3579,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get createCategoryTitle => 'Categorie aanmaken';
 
   @override
-  String get createEntryAttachTitle => 'Bijvoegen';
-
-  @override
-  String get createEntryFirstRunFooter =>
-      'Notities, checklists en spraaknotities staan op de pagina zelf.';
-
-  @override
   String get createEntryLabel => 'Nieuwe item aanmaken';
 
   @override
   String get createEntryTitle => 'Toevoegen';
-
-  @override
-  String get createEntryTriggerHint =>
-      'Afbeelding, schermafbeelding of gekoppelde taak toevoegen';
 
   @override
   String get createEntryTriggerHintFull =>

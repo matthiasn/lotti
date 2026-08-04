@@ -3550,21 +3550,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createCategoryTitle => 'Create category';
 
   @override
-  String get createEntryAttachTitle => 'Attach';
-
-  @override
-  String get createEntryFirstRunFooter =>
-      'Notes, checklists and voice notes are on the page itself.';
-
-  @override
   String get createEntryLabel => 'Create new entry';
 
   @override
   String get createEntryTitle => 'Add';
-
-  @override
-  String get createEntryTriggerHint =>
-      'Add an image, a screenshot or a linked task';
 
   @override
   String get createEntryTriggerHintFull =>
