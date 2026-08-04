@@ -421,6 +421,8 @@ Future<String?> getIdFromSavedRoute() async {
 }
 
 // Global override for testing
+// Assigned throughout widget tests outside DCM's `lib`-only usage graph.
+// ignore: unused-code
 void Function(String)? beamToNamedOverride;
 
 void beamToNamed(String path, {Object? data}) {

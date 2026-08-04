@@ -466,9 +466,13 @@ class VectorClockService {
   // ---------------------------------------------------------------------------
 
   @visibleForTesting
+  // Called by vector-clock tests outside DCM's `lib`-only usage graph.
+  // ignore: unused-code
   Future<int> getNextAvailableCounter() async => _nextAvailableCounter;
 
   @visibleForTesting
+  // Called by vector-clock tests outside DCM's `lib`-only usage graph.
+  // ignore: unused-code
   Future<void> setNextAvailableCounter(int counter) async {
     _nextAvailableCounter = counter;
     _persistedCounter = counter;
@@ -476,6 +480,8 @@ class VectorClockService {
   }
 
   @visibleForTesting
+  // Called by vector-clock tests outside DCM's `lib`-only usage graph.
+  // ignore: unused-code
   Future<void> increment() async {
     final reservation = await reserveNextVectorClock();
     await reservation.commit();

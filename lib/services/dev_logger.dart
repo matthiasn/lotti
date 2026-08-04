@@ -33,9 +33,13 @@ class DevLogger {
 
   /// Captured log messages. Logs are always added here regardless of
   /// [suppressOutput], allowing tests to verify logging behavior.
+  // Read extensively by tests outside DCM's `lib`-only usage graph.
+  // ignore: unused-code
   static final List<String> capturedLogs = [];
 
   /// Clears all captured logs. Call this in test setUp/tearDown.
+  // Called extensively by tests outside DCM's `lib`-only usage graph.
+  // ignore: unused-code
   static void clear() {
     capturedLogs.clear();
   }

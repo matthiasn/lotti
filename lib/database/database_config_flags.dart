@@ -143,6 +143,8 @@ mixin _JournalDbConfigFlags on _$JournalDb {
   /// retain stale flag values — and `initConfigFlags`/`insertFlagIfNotExists`
   /// would skip re-seeding because the stale cache reports the flags exist).
   @visibleForTesting
+  // Called by the shared database test harness outside DCM's `lib` scan.
+  // ignore: unused-code
   void resetConfigFlagCacheForTesting() {
     _configFlagsLoaded = false;
     _configFlagsBootstrap = null;

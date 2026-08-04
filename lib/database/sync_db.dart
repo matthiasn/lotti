@@ -82,6 +82,8 @@ class SyncDatabase extends _$SyncDatabase
          ),
        );
 
+  // Used by database tests to wrap instrumented Drift connections.
+  // ignore: unused-code
   SyncDatabase.connect(super.c) : super.connect();
 
   bool inMemoryDatabase = false;
