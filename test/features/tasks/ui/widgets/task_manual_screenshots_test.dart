@@ -902,10 +902,15 @@ void main() {
         );
         await settleFrames(tester, 8);
         final messages = AppLocalizations.of(context)!;
-        expect(find.text(messages.createEntryTitle), findsOneWidget);
+        // findsWidgets, not findsOneWidget: on a wide bar the labeled Add
+        // trigger says the same word as the sheet's title — deliberately.
+        expect(find.text(messages.createEntryTitle), findsWidgets);
         expect(find.text(messages.taskFirstRunAddChecklist), findsOneWidget);
         expect(find.text(messages.taskFirstRunRecordAudio), findsOneWidget);
-        expect(find.text(messages.addActionAddTimer), findsOneWidget);
+        // No Timer row on a task host: the bar's Track time pill is that
+        // same action under its own name.
+        expect(find.text(messages.addActionAddTimer), findsNothing);
+        expect(find.text(messages.addActionCreateLinkedTask), findsOneWidget);
         await captureScreenshot(
           tester,
           'create_entry_task_${viewport}_$theme',

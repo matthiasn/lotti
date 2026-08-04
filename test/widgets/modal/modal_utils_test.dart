@@ -291,20 +291,18 @@ void main() {
         final button = leading! as IconButton;
         expect(button.tooltip, 'Back');
         expect(button.padding, EdgeInsets.all(dsTokensLight.spacing.step4));
+        // A plain mediumEmphasis glyph with NO filled container: the old
+        // surface-filled chip was the brightest element on a dark sheet,
+        // outshining the content it existed to dismiss.
         final icon = tester.widget<Icon>(find.byIcon(Icons.arrow_back_rounded));
         expect(icon.size, dsTokensLight.spacing.step6);
         expect(icon.color, dsTokensLight.colors.text.mediumEmphasis);
-        final container = tester.widget<Container>(
+        expect(
           find.ancestor(
             of: find.byIcon(Icons.arrow_back_rounded),
             matching: find.byType(Container),
           ),
-        );
-        final decoration = container.decoration! as BoxDecoration;
-        expect(decoration.color, dsTokensLight.colors.surface.enabled);
-        expect(
-          decoration.borderRadius,
-          BorderRadius.circular(dsTokensLight.radii.m),
+          findsNothing,
         );
 
         // The back button must actually invoke the supplied callback.
