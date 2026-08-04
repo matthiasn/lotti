@@ -95,8 +95,10 @@ Future<void> main() async {
       );
 
       WidgetsFlutterBinding.ensureInitialized();
-      await appOrientationController
-          .lockToPortrait(); // coverage:ignore-line — platform startup call
+      // Platform startup call; controller behavior is covered by focused tests.
+      // coverage:ignore-start
+      await appOrientationController.lockToPortrait();
+      // coverage:ignore-end
       try {
         MediaKit.ensureInitialized();
       } catch (e) {
