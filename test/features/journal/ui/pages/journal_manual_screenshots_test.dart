@@ -754,7 +754,9 @@ void main() {
         final messages = _messages(tester);
         expect(find.text(messages.createEntryTitle), findsOneWidget);
         expect(find.text(messages.addActionAddEvent), findsOneWidget);
-        expect(find.text(messages.addActionAddTask), findsOneWidget);
+        // Unlinked host: the journal FAB's sheet creates a standalone task,
+        // so the row wears the plain verb, not the linked variant.
+        expect(find.text(messages.addActionCreateTask), findsOneWidget);
         expect(
           find.text(messages.taskFirstRunRecordAudio),
           findsOneWidget,
