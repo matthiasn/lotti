@@ -6905,8 +6905,7 @@ class AppLocalizationsFr extends AppLocalizations {
   String get linkedTasksEmptyAction => 'Lier une tâche…';
 
   @override
-  String get linkedTasksEmptyHint =>
-      'Relie cette tâche à une autre : un bloqueur, un suivi ou un doublon.';
+  String get linkedTasksEmptyHint => 'Relie cette tâche à une autre tâche.';
 
   @override
   String get linkedTasksMenuTooltip => 'Options des tâches liées';
@@ -10741,6 +10740,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get taskActionBarTrackTime => 'Suivre le temps';
 
   @override
+  String get taskAgentAssignHint =>
+      'Laisse un agent proposer des étapes et des résumés.';
+
+  @override
   String get taskAgentAttributionUnavailable => 'Attribution indisponible';
 
   @override
@@ -11030,6 +11033,18 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get taskFirstRunAddChecklist => 'Ajouter une liste de contrôle';
+
+  @override
+  String get taskFirstRunAssignAgent => 'Assigner un agent';
+
+  @override
+  String get taskFirstRunRecordAudio => 'Enregistrer une note vocale';
+
+  @override
+  String get taskFirstRunWriteNote => 'Écrire une note';
+
+  @override
   String get taskHeaderNoCategoryLabel => 'Aucune catégorie';
 
   @override
@@ -11238,6 +11253,12 @@ class AppLocalizationsFr extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '« $query »';
   }
+
+  @override
+  String get taskSetDueDateLabel => 'Définir l\'échéance';
+
+  @override
+  String get taskSetEstimateLabel => 'Ajouter une estimation';
 
   @override
   String get tasksFilterApplyTitle => 'Appliquer le filtre';
@@ -11589,6 +11610,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'Sans titre';
+
+  @override
+  String get taskTitlePrompt => 'Nomme cette tâche';
 
   @override
   String get taskUntitled => '(sans titre)';

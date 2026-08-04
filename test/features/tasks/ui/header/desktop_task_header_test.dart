@@ -128,6 +128,21 @@ const _categoryFixture = DesktopTaskHeaderCategory(
   color: Color(0xFF1CA3E3),
 );
 
+/// The 10×10 breadcrumb swatch's decoration: filled with the category colour
+/// when the task has one, a hollow ring when it does not. Located by its
+/// 10×10 square rather than by key, since it is a bare [Container].
+BoxDecoration _categorySwatchDecoration(WidgetTester tester) {
+  final swatch = tester
+      .widgetList<Container>(find.byType(Container))
+      .firstWhere(
+        (c) =>
+            c.constraints?.maxWidth == 10 &&
+            c.constraints?.maxHeight == 10 &&
+            c.decoration is BoxDecoration,
+      );
+  return swatch.decoration! as BoxDecoration;
+}
+
 const _dueFixture = DesktopTaskHeaderDueDate(label: 'Due: Apr 1, 2026');
 
 final _labelFixtures = <LabelDefinition>[
@@ -209,13 +224,13 @@ void main() {
         );
         expect(find.text('Work'), findsOneWidget);
         expect(find.text('No project'), findsOneWidget);
-        expect(find.text('Add Label'), findsOneWidget);
-        expect(find.text('No due date'), findsOneWidget);
+        expect(find.text('Add label'), findsOneWidget);
+        expect(find.text('Set due date'), findsOneWidget);
 
         await tester.tap(find.text('Work'));
         await tester.tap(find.text('No project'));
-        await tester.tap(find.text('Add Label'));
-        await tester.tap(find.text('No due date'));
+        await tester.tap(find.text('Add label'));
+        await tester.tap(find.text('Set due date'));
         await tester.pump();
         expect(category, 1);
         expect(project, 1);
@@ -306,19 +321,29 @@ void main() {
       },
     );
 
-    testWidgets('italicizes the placeholder to mark it as unset', (
-      tester,
-    ) async {
-      await _pumpDesktop(
-        tester,
-        DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
-      );
+    testWidgets(
+      'marks an unset category with a hollow swatch, not with italics — a '
+      'slanted 12pt caption read as disabled and cost legibility',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
+        );
 
-      expect(
-        tester.widget<Text>(find.text('No category')).style?.fontStyle,
-        FontStyle.italic,
-      );
-    });
+        expect(
+          tester.widget<Text>(find.text('No category')).style?.fontStyle,
+          isNot(FontStyle.italic),
+        );
+
+        final swatch = _categorySwatchDecoration(tester);
+        expect(
+          swatch.color,
+          isNull,
+          reason: 'a solid square asserts a colour the task does not have',
+        );
+        expect(swatch.border, isNotNull);
+      },
+    );
 
     testWidgets('still names a project the task actually belongs to', (
       tester,
@@ -359,11 +384,9 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
       expect(find.text('/'), findsOneWidget);
       expect(find.text('No project'), findsOneWidget);
-      // A real category name is set text, not a placeholder.
-      expect(
-        tester.widget<Text>(find.text('Work')).style?.fontStyle,
-        FontStyle.normal,
-      );
+      // A category the task actually has fills its swatch with the category
+      // colour — the one place on the page that colour is used as a fill.
+      expect(_categorySwatchDecoration(tester).color, _categoryFixture.color);
     });
 
     testWidgets('shows the separator and the project name', (tester) async {
@@ -400,6 +423,14 @@ void main() {
       await tester.tap(find.text('Payment confirmation'));
       await tester.pump();
       expect(find.byType(TextField), findsOneWidget);
+      // Untouched, the field offers no confirm/cancel: on a freshly opened
+      // editor both would be no-ops, and reviewers read the bare X as
+      // "delete the task I just made".
+      expect(find.byIcon(Icons.check_rounded), findsNothing);
+      expect(find.byIcon(Icons.close_rounded), findsNothing);
+
+      await tester.enterText(find.byType(TextField), 'Payment flow');
+      await tester.pump();
       expect(find.byIcon(Icons.check_rounded), findsOneWidget);
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     });
@@ -424,7 +455,8 @@ void main() {
     );
 
     testWidgets(
-      'empty title renders "No title" placeholder and opens editor on tap',
+      'empty title prompts with an imperative in field chrome, not a '
+      '"No title" report, and opens the editor on tap',
       (tester) async {
         await _pumpDesktop(
           tester,
@@ -434,14 +466,186 @@ void main() {
           ),
         );
 
-        expect(find.text('No title'), findsOneWidget);
+        // An invitation, not a report of absence: "No title" is what the task
+        // *list* says about this task; the detail page asks for one.
+        expect(find.text('Name this task'), findsOneWidget);
+        expect(find.text('No title'), findsNothing);
         expect(find.byIcon(Icons.edit_outlined), findsNothing);
         expect(find.byType(TextField), findsNothing);
 
-        await tester.tap(find.text('No title'));
+        // The prompt wears real field chrome so it reads as tappable rather
+        // than as greyed-out body copy — a hairline box on the hover surface.
+        final context = tester.element(find.text('Name this task'));
+        final tokens = context.designTokens;
+        final box = tester.widget<Container>(
+          find
+              .ancestor(
+                of: find.text('Name this task'),
+                matching: find.byType(Container),
+              )
+              .first,
+        );
+        final decoration = box.decoration! as BoxDecoration;
+        expect(decoration.color, tokens.colors.surface.enabled);
+        expect(
+          (decoration.border! as Border).top.color,
+          tokens.colors.decorative.level01,
+        );
+
+        await tester.tap(find.text('Name this task'));
         await tester.pump();
 
         expect(find.byType(TextField), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the prompt is lighter as well as paler, in BOTH the read-only box and '
+      'the editor hint — a blank task opens the editor, so a weight override '
+      'applied to only one of them never ships',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(title: ''),
+            onTitleSaved: (_) {},
+          ),
+        );
+
+        final readOnly = tester.widget<Text>(find.text('Name this task'));
+        expect(readOnly.style?.fontWeight, FontWeight.w400);
+
+        await tester.tap(find.text('Name this task'));
+        await tester.pump();
+
+        final hint = tester
+            .widget<TextField>(find.byType(TextField))
+            .decoration!
+            .hintStyle;
+        expect(hint?.fontWeight, FontWeight.w400);
+        expect(
+          hint?.color,
+          readOnly.style?.color,
+          reason: 'one style, so the two states cannot drift apart',
+        );
+      },
+    );
+
+    testWidgets(
+      'Enter commits the title; the newline moves to Shift+Enter',
+      (tester) async {
+        String? saved;
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(title: ''),
+            onTitleSaved: (value) => saved = value,
+            initialEditing: true,
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'Buy milk');
+        await tester.pump();
+        await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+        await tester.pump();
+
+        // Typing a name and pressing Return is the most common action on this
+        // screen; it used to bury a line break in the title and leave the
+        // editor open with no feedback.
+        expect(saved, 'Buy milk');
+        expect(find.byType(TextField), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'losing focus commits the edit — the text is in front of the user and '
+      'they typed it, so discarding on a stray tap is the ruder outcome',
+      (tester) async {
+        String? saved;
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(title: ''),
+            onTitleSaved: (value) => saved = value,
+            initialEditing: true,
+          ),
+        );
+
+        await tester.enterText(find.byType(TextField), 'Buy milk');
+        await tester.pump();
+
+        // Focus goes away without the commit button being pressed — a tap
+        // elsewhere on the page, or the keyboard being dismissed.
+        primaryFocus?.unfocus();
+        await tester.pumpAndSettle();
+
+        expect(saved, 'Buy milk');
+        expect(find.byType(TextField), findsNothing);
+      },
+    );
+
+    testWidgets(
+      "the keyboard's own done action commits, not just the Enter shortcut "
+      '— on a phone that is the control the user actually presses',
+      (tester) async {
+        String? saved;
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(title: ''),
+            onTitleSaved: (value) => saved = value,
+            initialEditing: true,
+          ),
+          platform: TargetPlatform.iOS,
+        );
+
+        await tester.enterText(find.byType(TextField), 'Buy milk');
+        await tester.pump();
+        await tester.testTextInput.receiveAction(TextInputAction.done);
+        await tester.pumpAndSettle();
+
+        expect(saved, 'Buy milk');
+      },
+    );
+
+    testWidgets(
+      'a titled task keeps the bare title — no field chrome around content '
+      'the user already owns',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) {},
+          ),
+        );
+
+        expect(
+          find.ancestor(
+            of: find.text('Payment confirmation'),
+            matching: find.byType(Container),
+          ),
+          findsNothing,
+        );
+      },
+    );
+
+    testWidgets(
+      'initialEditing seeds the editor with the same imperative as the '
+      'placeholder, so auto-opening never blanks the instruction',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(title: ''),
+            onTitleSaved: (_) {},
+            initialEditing: true,
+          ),
+        );
+
+        final field = tester.widget<TextField>(find.byType(TextField));
+        expect(field.decoration?.hintText, 'Name this task');
+        expect(field.controller?.text, isEmpty);
       },
     );
 
@@ -525,6 +729,7 @@ void main() {
         ),
       );
       await tester.enterText(find.byType(TextField), 'Payment flow');
+      await tester.pump();
       await tester.tap(find.byIcon(Icons.check_rounded));
       await tester.pump();
 
@@ -546,6 +751,7 @@ void main() {
         ),
       );
       await tester.enterText(find.byType(TextField), 'Different title');
+      await tester.pump();
       await tester.tap(find.byIcon(Icons.close_rounded));
       await tester.pump();
 
@@ -709,14 +915,14 @@ void main() {
     );
 
     testWidgets(
-      'narrow viewport: the time estimate stays bonded to the due chip on the '
-      'same wrap row (never orphaned on its own near-empty line)',
+      'narrow viewport: the due date rides the first wrap row with status and '
+      'priority; only the estimate wraps',
       (tester) async {
-        // 420px is the real mobile header width. Here status+priority+due+
-        // estimate cannot all fit on one row, so without bonding the estimate
-        // would strand alone on a row beneath the due chip. The due+estimate
-        // group wraps as a unit instead: status+priority on the first row,
-        // due+estimate together on the second.
+        // 420px is the real mobile header width. The due date is the lane's
+        // second-most decision-relevant chip after status, so it belongs on
+        // the row the eye lands on first. Bonding it to the estimate made the
+        // pair one atomic wrap unit that was too wide to fit — both dropped to
+        // a second row while half of the first row sat empty.
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
@@ -726,18 +932,52 @@ void main() {
           ),
           size: const Size(420, 800),
         );
+        final status = tester.getTopLeft(find.text('Open')).dy;
+        final priority = tester.getTopLeft(find.text('High')).dy;
         final due = tester.getTopLeft(find.text('Due: Apr 1, 2026')).dy;
         final estimate = tester.getTopLeft(find.text('0h / 1h')).dy;
         final labelTop = tester.getTopLeft(find.text('Bug fix')).dy;
+
         expect(
-          (due - estimate).abs(),
+          (due - status).abs(),
           lessThan(8),
-          reason:
-              'due + estimate share one wrap row — the estimate is bonded '
-              'to the due chip, not stranded on its own line',
+          reason: 'the due chip shares the first row with the status pill',
         );
-        // The label lane still sits below the bonded time row.
+        expect((priority - status).abs(), lessThan(8));
+        expect(
+          estimate,
+          greaterThan(due),
+          reason:
+              'the estimate is what gives way at this width — not the due '
+              'date it used to drag down with it',
+        );
+        // The label lane still sits below the whole attribute lane.
         expect(labelTop, greaterThan(estimate));
+      },
+    );
+
+    testWidgets(
+      'wrapped rows sit a step further apart than the chips within a row',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(dueDate: _dueFixture),
+            onTitleSaved: (_) {},
+            estimateSlot: const Text('0h / 1h'),
+          ),
+          size: const Size(420, 800),
+        );
+        final context = tester.element(find.text('Open'));
+        final spacing = context.designTokens.spacing;
+        final lane = tester.widget<Wrap>(find.byType(Wrap).first);
+
+        // Two axes, two values. Reusing the horizontally-justified step2 for
+        // runSpacing put the wrapped rows closer together than the chips
+        // inside a row, which read as one crowded slab rather than two rows.
+        expect(lane.spacing, spacing.step2);
+        expect(lane.runSpacing, spacing.step3);
+        expect(lane.runSpacing, greaterThan(lane.spacing));
       },
     );
   });
@@ -1261,12 +1501,11 @@ void main() {
             initialEditing: true,
           ),
         );
-        // Do not change the text — tap the commit button immediately.
-        await tester.tap(find.byIcon(Icons.check_rounded));
-        await tester.pump();
-
+        // There is nothing to commit, so there is no commit button to press.
+        // The guard is now structural rather than a no-op handler.
+        expect(find.byIcon(Icons.check_rounded), findsNothing);
         expect(saves, 0, reason: 'same text should not trigger onTitleSaved');
-        expect(find.byType(TextField), findsNothing);
+        expect(find.byType(TextField), findsOneWidget);
       },
     );
 
@@ -1283,6 +1522,7 @@ void main() {
           ),
         );
         await tester.enterText(find.byType(TextField), '   ');
+        await tester.pump();
         await tester.tap(find.byIcon(Icons.check_rounded));
         await tester.pump();
 

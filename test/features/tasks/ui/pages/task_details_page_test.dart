@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart'
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
@@ -21,6 +22,7 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dar
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
@@ -33,6 +35,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../helpers/fake_linked_entries_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
@@ -180,6 +183,75 @@ void main() {
     // This group stubs journalEntityById per test, so leave it unstubbed here.
     setUp(() => registerTaskDetailsServices(stubTaskEntity: false));
     tearDown(getIt.reset);
+
+    testWidgets(
+      'a first-run task fills the remaining viewport and narrows the column, '
+      'so the group is composed rather than stacked at the top of a blank page',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+        when(
+          () => mockJournalDb.journalEntityById(testTask.meta.id),
+        ).thenAnswer((_) async => blank);
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            TaskDetailsPage(taskId: testTask.id),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              // Blank task *data* is not enough. `watchTaskIsFirstRun` also
+              // needs "no linked entries", and it treats an unresolved
+              // provider as unknown — the real controller reads through
+              // `JournalDb.linksFromId`, a Drift selectable this harness does
+              // not answer, so it lands in AsyncError and nothing first-run
+              // renders. Without this the test asserted the ordinary layout
+              // and passed.
+              linkedEntriesControllerProvider(
+                testTask.meta.id,
+              ).overrideWith(FakeLinkedEntriesController.new),
+              taskAgentProvider.overrideWith((ref, id) async => null),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byType(TaskFirstRunActions),
+          findsOneWidget,
+          reason: 'the layout under test only applies in the first-run state',
+        );
+
+        // The first content sliver claims the rest of the viewport instead of
+        // taking its child's height, which is what turns the leftover space
+        // into margin above and below.
+        expect(find.byType(SliverLayoutBuilder), findsWidgets);
+
+        final constraints = tester
+            .widgetList<ConstrainedBox>(
+              find.descendant(
+                of: find.byType(SliverLayoutBuilder),
+                matching: find.byType(ConstrainedBox),
+              ),
+            )
+            .map((box) => box.constraints)
+            .toList();
+        expect(
+          constraints.any((c) => c.minHeight > 0),
+          isTrue,
+          reason:
+              'a minHeight floor, not a fixed height — a long title or a '
+              'large text scale must still grow and scroll',
+        );
+        expect(
+          constraints.any((c) => c.maxWidth == TaskFirstRunActions.maxWidth),
+          isTrue,
+          reason:
+              'the column adopts the block measure so the field, the chip '
+              'lane and the card share one right edge',
+        );
+      },
+    );
 
     testWidgets('Task Entry is rendered', (tester) async {
       when(

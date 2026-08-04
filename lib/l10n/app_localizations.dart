@@ -11738,7 +11738,7 @@ abstract class AppLocalizations {
   /// No description provided for @linkedTasksEmptyHint.
   ///
   /// In en, this message translates to:
-  /// **'Connect this task to another — a blocker, a follow-up, a duplicate.'**
+  /// **'Connect this task to another task.'**
   String get linkedTasksEmptyHint;
 
   /// No description provided for @linkedTasksMenuTooltip.
@@ -18003,6 +18003,12 @@ abstract class AppLocalizations {
   /// **'Track time'**
   String get taskActionBarTrackTime;
 
+  /// No description provided for @taskAgentAssignHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Let an agent draft steps and summaries.'**
+  String get taskAgentAssignHint;
+
   /// No description provided for @taskAgentAttributionUnavailable.
   ///
   /// In en, this message translates to:
@@ -18384,7 +18390,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskCategoryUnassignedLabel.
   ///
   /// In en, this message translates to:
-  /// **'unassigned'**
+  /// **'Unassigned'**
   String get taskCategoryUnassignedLabel;
 
   /// No description provided for @taskDueDateLabel.
@@ -18452,6 +18458,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Time tracked: {tracked} of {estimate} estimated'**
   String taskEstimateTooltip(String tracked, String estimate);
+
+  /// No description provided for @taskFirstRunAddChecklist.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a checklist'**
+  String get taskFirstRunAddChecklist;
+
+  /// No description provided for @taskFirstRunAssignAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Assign an agent'**
+  String get taskFirstRunAssignAgent;
+
+  /// No description provided for @taskFirstRunRecordAudio.
+  ///
+  /// In en, this message translates to:
+  /// **'Record a voice note'**
+  String get taskFirstRunRecordAudio;
+
+  /// No description provided for @taskFirstRunWriteNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Write a note'**
+  String get taskFirstRunWriteNote;
 
   /// No description provided for @taskHeaderNoCategoryLabel.
   ///
@@ -18786,7 +18816,7 @@ abstract class AppLocalizations {
   /// No description provided for @tasksAddLabelButton.
   ///
   /// In en, this message translates to:
-  /// **'Add Label'**
+  /// **'Add label'**
   String get tasksAddLabelButton;
 
   /// No description provided for @tasksAgentFilterAll.
@@ -18830,6 +18860,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'“{query}”'**
   String tasksCompactSearchContext(String query);
+
+  /// No description provided for @taskSetDueDateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Set due date'**
+  String get taskSetDueDateLabel;
+
+  /// No description provided for @taskSetEstimateLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Add estimate'**
+  String get taskSetEstimateLabel;
 
   /// No description provided for @tasksFilterApplyTitle.
   ///
@@ -19394,6 +19436,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'No title'**
   String get taskTitleEmpty;
+
+  /// No description provided for @taskTitlePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'Name this task'**
+  String get taskTitlePrompt;
 
   /// No description provided for @taskUntitled.
   ///

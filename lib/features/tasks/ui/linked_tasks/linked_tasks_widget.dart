@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/tasks/state/linkable_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/edit_link_type_modal.dart';
@@ -31,8 +32,10 @@ import 'package:lotti/widgets/picker/entity_picker_sheet.dart';
 /// Renders a section card with a header (title, count badge, link action,
 /// expand chevron, overflow menu), the typed-relationship sections
 /// ([TaskRelationshipSections], one per relationship direction that has
-/// entries), and the flat plain-link list. The header always renders — even
-/// with no links at all — so the link action stays reachable.
+/// entries), and the flat plain-link list. The header renders whenever the
+/// card does — including with no links at all — so the link action stays
+/// reachable. The card as a whole renders nothing while the task has no links
+/// *and* no other task exists to link to (see [linkableTasksExistProvider]).
 class LinkedTasksWidget extends ConsumerStatefulWidget {
   const LinkedTasksWidget({
     required this.taskId,
@@ -69,6 +72,16 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
     // have no links" CTA on the first open of every task that has some.
     final resolved = groupsAsync.hasValue || groupsAsync.hasError;
     final hasLinks = linkGroups.totalCount > 0;
+
+    // Nothing to link to, nothing to show. On a first-run install this card
+    // was a bordered box teaching a relationship feature that could not be
+    // used — the loudest element on an otherwise empty task, explaining
+    // blockers and duplicates to someone who has exactly one task. It comes
+    // back the moment a second task exists (the provider watches the update
+    // stream), including one created from this page.
+    final canLink =
+        ref.watch(linkableTasksExistProvider(taskId)).value ?? false;
+    if (!hasLinks && !canLink) return const SizedBox.shrink();
 
     final flatRows = linkGroups.flat
         .map((entry) => LinkedTaskRowData(task: entry.task))
@@ -198,11 +211,12 @@ class _LinkedTasksEmptyAction extends StatelessWidget {
       // screen exists to teach.
       titleMaxLines: 2,
       subtitle: label == null ? context.messages.linkedTasksEmptyHint : null,
-      // Three lines, and quieter than the action it explains: at two lines
-      // the longer locales ellipsized away the examples that teach what
-      // "link" means here, and at medium ink the explanation tied with the
-      // action on the one screen shown before the feature has done anything.
-      subtitleMaxLines: 3,
+      // Two lines is now headroom rather than a cap: the hint was shortened to
+      // a single clause, so it fits one line in English and wraps to at most
+      // two in the longest locale. It stays quieter than the action it
+      // explains — on the one screen shown before the feature has done
+      // anything, a medium-ink explanation tied with the action itself.
+      subtitleMaxLines: 2,
       subtitleEmphasis: tokens.colors.text.lowEmphasis,
       size: DesignSystemListItemSize.small,
       leading: Icon(

@@ -10,7 +10,6 @@ import 'package:lotti/features/tasks/state/task_app_bar_controller.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_detail_back_leading.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/app_bar/title_app_bar.dart';
 
 /// Scroll offset at which the compact app bar surfaces the task title in
@@ -44,8 +43,13 @@ class TaskCompactAppBar extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final offset = ref.watch(taskAppBarControllerProvider(task.id)).value ?? 0;
     final showTitle = offset >= _persistentTitleScrollThreshold;
-    final showGraph = ref.watch(knowledgeGraphEntryPointEnabledProvider);
     final isDesktop = isDesktopLayout(context);
+    // Desktop only. The knowledge graph is a wide, pan-and-zoom canvas that a
+    // phone-width window cannot render usefully, so on mobile the icon spent
+    // one of only two action slots on a destination that disappoints — and it
+    // is the quietest, least self-explanatory glyph in the bar.
+    final showGraph =
+        isDesktop && ref.watch(knowledgeGraphEntryPointEnabledProvider);
     // On desktop the back arrow is only rendered while a linked task
     // sits on top of the detail stack — at that point we use the same
     // glass-styled button (and matching 48px leading width) as the
@@ -76,12 +80,18 @@ class TaskCompactAppBar extends ConsumerWidget {
   }
 
   List<Widget> _buildActions(BuildContext context, {required bool showGraph}) {
+    // `colorScheme.outline` is a *divider* colour — at the app bar's icon size
+    // it left both actions barely distinguishable from the background in
+    // either theme. These are the page's only two toolbar controls, so they
+    // sit at the same medium emphasis the entry header's overflow already
+    // uses (`entry_detail_header.dart`), one tier below the back arrow.
+    final iconColor = context.designTokens.colors.text.mediumEmphasis;
     return [
       if (showGraph)
         IconButton(
           icon: Icon(
             Icons.hub_outlined,
-            color: context.colorScheme.outline,
+            color: iconColor,
           ),
           tooltip: context.messages.knowledgeGraphTooltip,
           onPressed: () => Navigator.of(context).push(
@@ -93,8 +103,12 @@ class TaskCompactAppBar extends ConsumerWidget {
       IconButton(
         icon: Icon(
           Icons.more_horiz,
-          color: context.colorScheme.outline,
+          color: iconColor,
         ),
+        // The page carries a second `more_horiz` in its bottom bar opening an
+        // unrelated menu, and this one announced nothing at all — neither a
+        // tooltip on hover nor a label to assistive tech.
+        tooltip: context.messages.entryActions,
         onPressed: () => ExtendedHeaderModal.show(
           context: context,
           entryId: task.id,

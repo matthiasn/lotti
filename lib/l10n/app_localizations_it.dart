@@ -6877,7 +6877,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get linkedTasksEmptyHint =>
-      'Connect this task to another — a blocker, a follow-up, a duplicate.';
+      'Collega questa attività a un\'altra attività.';
 
   @override
   String get linkedTasksMenuTooltip => 'Opzioni di attività collegate';
@@ -10688,6 +10688,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskActionBarTrackTime => 'Tempo di tracciamento';
 
   @override
+  String get taskAgentAssignHint =>
+      'Lascia che un agente abbozzi passaggi e riepiloghi.';
+
+  @override
   String get taskAgentAttributionUnavailable => 'Attribuzione non disponibile';
 
   @override
@@ -10974,6 +10978,18 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get taskFirstRunAddChecklist => 'Aggiungi una checklist';
+
+  @override
+  String get taskFirstRunAssignAgent => 'Assegna un agente';
+
+  @override
+  String get taskFirstRunRecordAudio => 'Registra una nota vocale';
+
+  @override
+  String get taskFirstRunWriteNote => 'Scrivi una nota';
+
+  @override
   String get taskHeaderNoCategoryLabel => 'Nessuna categoria';
 
   @override
@@ -11181,6 +11197,12 @@ class AppLocalizationsIt extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '“$query”';
   }
+
+  @override
+  String get taskSetDueDateLabel => 'Imposta scadenza';
+
+  @override
+  String get taskSetEstimateLabel => 'Aggiungi stima';
 
   @override
   String get tasksFilterApplyTitle => 'Applica il filtro';
@@ -11522,6 +11544,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'Nessun titolo';
+
+  @override
+  String get taskTitlePrompt => 'Dai un nome a questa attività';
 
   @override
   String get taskUntitled => '(non legato)';

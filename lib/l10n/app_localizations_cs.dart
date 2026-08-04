@@ -6873,8 +6873,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get linkedTasksEmptyAction => 'Propojit úkol…';
 
   @override
-  String get linkedTasksEmptyHint =>
-      'Propoj tento úkol s jiným — blokátorem, navazujícím nebo duplicitou.';
+  String get linkedTasksEmptyHint => 'Propoj tento úkol s jiným úkolem.';
 
   @override
   String get linkedTasksMenuTooltip => 'Možnosti propojených úkolů';
@@ -10670,6 +10669,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskActionBarTrackTime => 'Sledovat čas';
 
   @override
+  String get taskAgentAssignHint => 'Nech agenta navrhnout kroky a shrnutí.';
+
+  @override
   String get taskAgentAttributionUnavailable => 'Autorství není dostupné';
 
   @override
@@ -10957,6 +10959,18 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get taskFirstRunAddChecklist => 'Přidat kontrolní seznam';
+
+  @override
+  String get taskFirstRunAssignAgent => 'Přiřadit agenta';
+
+  @override
+  String get taskFirstRunRecordAudio => 'Nahrát hlasovou poznámku';
+
+  @override
+  String get taskFirstRunWriteNote => 'Napsat poznámku';
+
+  @override
   String get taskHeaderNoCategoryLabel => 'Žádná kategorie';
 
   @override
@@ -11165,6 +11179,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '„$query“';
   }
+
+  @override
+  String get taskSetDueDateLabel => 'Nastavit termín';
+
+  @override
+  String get taskSetEstimateLabel => 'Přidat odhad';
 
   @override
   String get tasksFilterApplyTitle => 'Použít filtr';
@@ -11507,6 +11527,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'Bez názvu';
+
+  @override
+  String get taskTitlePrompt => 'Pojmenuj tento úkol';
 
   @override
   String get taskUntitled => '(bez názvu)';

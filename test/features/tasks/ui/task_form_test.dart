@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -7,12 +8,15 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
+import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
@@ -21,6 +25,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fake_linked_entries_controller.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
@@ -29,15 +34,15 @@ import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
 
 class _TestEntryController extends EntryController {
-  _TestEntryController(this._task);
+  _TestEntryController(this._entry);
 
-  final Task _task;
+  final JournalEntity _entry;
 
   @override
   Future<EntryState?> build() async {
     return EntryState.saved(
       entryId: id,
-      entry: _task,
+      entry: _entry,
       showMap: false,
       isFocused: false,
       shouldShowEditorToolBar: false,
@@ -93,12 +98,27 @@ void main() {
     AgentDomainEntity? agent,
     AgentDomainEntity? report,
     GlobalKey? cardRegionKey,
+    List<EntryLink>? linkedEntries,
+    List<JournalEntity> linkedTargets = const [],
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
         entryControllerProvider(task.meta.id).overrideWith(
           () => _TestEntryController(task),
         ),
+        // The real controller reads links through `JournalDb.linksFromId`, a
+        // Drift selectable no mock here answers — it would land in AsyncError,
+        // and `watchTaskIsFirstRun` reads an unresolved provider as *unknown*,
+        // so nothing first-run would ever render.
+        linkedEntriesControllerProvider(task.meta.id).overrideWith(
+          () => FakeLinkedEntriesController(links: linkedEntries ?? const []),
+        ),
+        // `watchTaskIsFirstRun` only trusts "no linked note" once every link
+        // has resolved to an entity, so a link needs its target on hand.
+        for (final target in linkedTargets)
+          entryControllerProvider(target.meta.id).overrideWith(
+            () => _TestEntryController(target),
+          ),
         taskAgentProvider.overrideWith(
           (ref, id) async => agent,
         ),
@@ -132,6 +152,125 @@ void main() {
           .first,
     );
   }
+
+  group('TaskForm — first-run block', () {
+    testWidgets(
+      'a task with nothing on it gets the first-run block, and the AI card '
+      'stands its assign CTA down so the offer is not made twice',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+
+        await tester.pumpWidget(buildSubject(task: blank));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsOneWidget);
+        expect(find.byType(AssignAgentCta), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'the block retires as soon as the task holds a checklist',
+      (tester) async {
+        // Blank in every other respect, so the checklist is the only thing
+        // that can be retiring the block.
+        final withContent = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const ['c1']),
+          entryText: null,
+        );
+
+        await tester.pumpWidget(buildSubject(task: withContent));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a linked entry retires it — that is where "Write a note" lands, so '
+      'without this rule the block kept offering a row already used',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            task: blank,
+            linkedEntries: [
+              EntryLink.basic(
+                id: 'link-1',
+                fromId: blank.meta.id,
+                toId: testTextEntry.meta.id,
+                createdAt: DateTime(2026, 8, 4),
+                updatedAt: DateTime(2026, 8, 4),
+                vectorClock: null,
+              ),
+            ],
+            linkedTargets: [testTextEntry],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a linked TASK does not retire it — that relationship has its own card, '
+      'and counting it made the block depend on which end of the link you '
+      'were standing on',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+        final other = testTask.copyWith(
+          meta: testTask.meta.copyWith(id: 'other-task'),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            task: blank,
+            linkedEntries: [
+              EntryLink.basic(
+                id: 'link-task',
+                fromId: blank.meta.id,
+                toId: other.meta.id,
+                createdAt: DateTime(2026, 8, 4),
+                updatedAt: DateTime(2026, 8, 4),
+                vectorClock: null,
+              ),
+            ],
+            linkedTargets: [other],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'an attached agent retires it too — the task is already doing something',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(task: blank, agent: makeTestIdentity()),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsNothing);
+      },
+    );
+  });
 
   group('TaskForm', () {
     testWidgets('renders nothing when entry is null', (tester) async {

@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/components/glass_strip.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -190,6 +191,7 @@ void main() {
     AudioRecorderState? recorderState,
     Widget? topSlot,
     List<Override> extraOverrides = const [],
+    bool compact = false,
   }) async {
     await tester.pumpWidget(
       makeTestableWidget(
@@ -197,6 +199,7 @@ void main() {
           child: TaskActionBar(
             task: testTask,
             topSlot: topSlot,
+            compact: compact,
           ),
         ),
         overrides: [
@@ -507,6 +510,152 @@ void main() {
   }
 
   testWidgets(
+    'compact drops every affordance the first-run card already words, so no '
+    'action has two homes at two weights',
+    (tester) async {
+      await pumpBar(tester, compact: true);
+
+      expect(find.byKey(TaskActionBar.trackTimeKey), findsOneWidget);
+      expect(find.byKey(TaskActionBar.moreKey), findsOneWidget);
+      for (final key in [
+        TaskActionBar.audioKey,
+        TaskActionBar.checklistKey,
+        TaskActionBar.imageKey,
+      ]) {
+        expect(find.byKey(key), findsNothing);
+      }
+    },
+  );
+
+  testWidgets(
+    'compact never hides a LIVE recording — the mic is the only way to see '
+    'and stop a session in progress',
+    (tester) async {
+      await pumpBar(
+        tester,
+        compact: true,
+        recorderState: _recordingRecorderState(linkedId: testTask.meta.id),
+      );
+
+      expect(find.byKey(TaskActionBar.audioKey), findsOneWidget);
+      final tokens = tester
+          .element(find.byKey(TaskActionBar.audioKey))
+          .designTokens;
+      expect(audioButtonFill(tester), tokens.colors.alert.error.defaultColor);
+    },
+  );
+
+  testWidgets(
+    'the idle mic is a peer of Track time — an accent ring and accent glyph, '
+    'not a second filled shape',
+    (tester) async {
+      await pumpBar(tester);
+
+      final tokens = tester
+          .element(find.byKey(TaskActionBar.audioKey))
+          .designTokens;
+      final button = tester.widget<DsGlassRoundButton>(
+        find.byKey(TaskActionBar.audioKey),
+      );
+
+      // Tracked time and captured thoughts are equally load-bearing for a
+      // task, so audio is not one of the bar's quiet utilities. It stays
+      // outlined rather than filled so the strip still has one filled shape.
+      expect(button.outlineColor, tokens.colors.interactive.enabled);
+      expect(button.iconColor, tokens.colors.interactive.enabled);
+      expect(button.backgroundColor, isNull);
+      expect(audioButtonFill(tester), dsGlassChipFill(tokens));
+
+      // The genuine utilities beside it keep the hairline and neutral glyph.
+      final more = tester.widget<DsGlassRoundButton>(
+        find.byKey(TaskActionBar.moreKey),
+      );
+      expect(more.outlineColor, isNull);
+      expect(more.iconColor, isNull);
+    },
+  );
+
+  testWidgets(
+    'a live recording still overrides the accent with the alert fill',
+    (tester) async {
+      await pumpBar(
+        tester,
+        recorderState: _recordingRecorderState(linkedId: testTask.meta.id),
+      );
+
+      final button = tester.widget<DsGlassRoundButton>(
+        find.byKey(TaskActionBar.audioKey),
+      );
+      expect(button.outlineColor, isNull);
+      expect(button.iconColor, Colors.white);
+    },
+  );
+
+  testWidgets(
+    'the bar has exactly one primary: Track time carries the solid '
+    'interactive accent while every round affordance stays on the glass chip',
+    (tester) async {
+      await pumpBar(tester);
+
+      final tokens = tester
+          .element(find.byKey(TaskActionBar.audioKey))
+          .designTokens;
+
+      // Idle Track time: solid accent, on-accent label — not the same
+      // translucent chip as its neighbours. Sharing one fill made all five
+      // controls equal-weight, which left the bar with no lead action and
+      // (in light theme) made the chrome the heaviest ink on the page.
+      final pill = tester.widget<Container>(
+        find
+            .descendant(
+              of: find.byKey(TaskActionBar.trackTimeKey),
+              matching: find.byType(Container),
+            )
+            .first,
+      );
+      final pillFill = (pill.decoration! as BoxDecoration).color;
+      expect(pillFill, tokens.colors.interactive.enabled);
+      expect(pillFill, isNot(dsGlassChipFill(tokens)));
+
+      final label = tester.widget<Text>(
+        find.descendant(
+          of: find.byKey(TaskActionBar.trackTimeKey),
+          matching: find.byType(Text),
+        ),
+      );
+      expect(label.style?.color, tokens.colors.text.onInteractiveAlert);
+
+      // The secondaries stay quiet, and demonstrably quieter than the pill.
+      expect(audioButtonFill(tester), dsGlassChipFill(tokens));
+    },
+  );
+
+  testWidgets(
+    'the glass chip fill is a surface colour, not an overridden overlay '
+    'token — the light-theme "grey blob" regression',
+    (tester) async {
+      await pumpBar(tester);
+
+      final tokens = tester
+          .element(find.byKey(TaskActionBar.audioKey))
+          .designTokens;
+
+      // `surface.focusPressed` is a ~16%-alpha black (light) / white (dark)
+      // wash meant to sit ON a surface. Forcing its alpha to 0.55 did not
+      // make "more of the same wash" — it made a near-black slab on a
+      // near-white bar. The fill has to come from a real background level.
+      expect(
+        dsGlassChipFill(tokens),
+        tokens.colors.background.level03.withValues(alpha: kDsGlassFillAlpha),
+      );
+      expect(
+        dsGlassChipFill(tokens),
+        isNot(tokens.colors.surface.focusPressed.withValues(alpha: 0.55)),
+      );
+    },
+  );
+
+  testWidgets(
     'audio button turns red while recording is active for THIS task',
     (tester) async {
       await pumpBar(
@@ -534,7 +683,7 @@ void main() {
           .designTokens;
       expect(
         audioButtonFill(tester),
-        tokens.colors.surface.focusPressed.withValues(alpha: 0.55),
+        dsGlassChipFill(tokens),
       );
       expect(
         audioButtonFill(tester),
@@ -553,7 +702,7 @@ void main() {
           .designTokens;
       expect(
         audioButtonFill(tester),
-        tokens.colors.surface.focusPressed.withValues(alpha: 0.55),
+        dsGlassChipFill(tokens),
       );
     },
   );

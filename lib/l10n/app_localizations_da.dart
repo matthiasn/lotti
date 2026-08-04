@@ -6794,7 +6794,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get linkedTasksEmptyHint =>
-      'Connect this task to another — a blocker, a follow-up, a duplicate.';
+      'Forbind denne opgave med en anden opgave.';
 
   @override
   String get linkedTasksMenuTooltip => 'Muligheder for tilknyttede opgaver';
@@ -10539,6 +10539,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskActionBarTrackTime => 'Banetid';
 
   @override
+  String get taskAgentAssignHint =>
+      'Lad en agent udkaste trin og opsummeringer.';
+
+  @override
   String get taskAgentAttributionUnavailable => 'Kilde ikke tilgængelig';
 
   @override
@@ -10824,6 +10828,18 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get taskFirstRunAddChecklist => 'Tilføj en tjekliste';
+
+  @override
+  String get taskFirstRunAssignAgent => 'Tildel en agent';
+
+  @override
+  String get taskFirstRunRecordAudio => 'Optag en talenote';
+
+  @override
+  String get taskFirstRunWriteNote => 'Skriv en note';
+
+  @override
   String get taskHeaderNoCategoryLabel => 'Ingen kategori';
 
   @override
@@ -11031,6 +11047,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '»$query«';
   }
+
+  @override
+  String get taskSetDueDateLabel => 'Angiv forfaldsdato';
+
+  @override
+  String get taskSetEstimateLabel => 'Tilføj estimat';
 
   @override
   String get tasksFilterApplyTitle => 'Påfør filter';
@@ -11369,6 +11391,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'Ingen titel';
+
+  @override
+  String get taskTitlePrompt => 'Giv opgaven et navn';
 
   @override
   String get taskUntitled => '(uden titel)';

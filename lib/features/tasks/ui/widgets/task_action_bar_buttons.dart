@@ -1,9 +1,8 @@
-// The action bar's Track time pill widgets. Glass-chip fill/outline
-// styling comes from the shared `glass_action_bar.dart` helpers
-// (`dsGlassChipFill` / `dsGlassChipBorder`); the round affordances use
-// `DsGlassRoundButton`.
+// The action bar's Track time pill widgets. The pill is the bar's single
+// primary and carries a solid `interactive.enabled` fill; the round
+// affordances beside it use `DsGlassRoundButton` and the shared glass-chip
+// styling from `glass_action_bar.dart`.
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/components/glass_action_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
 import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
@@ -44,18 +43,21 @@ class TrackTimePill extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final spacing = tokens.spacing;
-    // Idle pill is translucent and floats over a backdrop-blurred glass
-    // strip. Boosted alpha + hairline outline keep contrast over bright
-    // underlying content without losing the glass aesthetic.
+    // The bar's one primary. Idle it carries the interactive accent as a
+    // solid fill; the round affordances beside it stay on the translucent
+    // glass chip. Sharing that chip made all five controls the same weight —
+    // a row of equal grey lozenges with nothing leading it, and (in light
+    // theme) the heaviest ink on an otherwise near-white page.
     final fillColor = isTracking
         ? tokens.colors.alert.error.defaultColor
-        : dsGlassChipFill(tokens);
+        : tokens.colors.interactive.enabled;
     // The error palette has no dedicated on-color token — its
     // defaultColor is a vivid red across both themes, so a fixed white
-    // foreground stays legible on top.
+    // foreground stays legible on top. The interactive accent does have
+    // one: `text.onInteractiveAlert`.
     final foreground = isTracking
         ? Colors.white
-        : tokens.colors.text.highEmphasis;
+        : tokens.colors.text.onInteractiveAlert;
     final pillRadius = BorderRadius.circular(tokens.radii.badgesPills);
     final textStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
       color: foreground,
@@ -90,17 +92,9 @@ class TrackTimePill extends StatelessWidget {
               color: fillColor,
               borderRadius: pillRadius,
             ),
-            // foregroundDecoration paints on top of the child without
-            // contributing to the Container's padding, so the hairline
-            // outline stays a hairline and doesn't widen the pill (which
-            // would otherwise push the action row past the layout
-            // thresholds).
-            foregroundDecoration: isTracking
-                ? null
-                : BoxDecoration(
-                    borderRadius: pillRadius,
-                    border: dsGlassChipBorder(tokens),
-                  ),
+            // No outline in either state: both fills are solid and bring
+            // their own contrast. The hairline existed only for the
+            // translucent glass treatment this pill no longer uses.
             child: ConstrainedBox(
               constraints: BoxConstraints(minWidth: idleContentWidth),
               child: Center(

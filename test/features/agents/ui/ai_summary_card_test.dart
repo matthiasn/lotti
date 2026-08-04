@@ -16,13 +16,17 @@ void main() {
   Future<void> pumpCard(
     WidgetTester tester, {
     required Future<AgentDomainEntity?> Function() taskAgent,
+    bool showAssignCta = true,
   }) async {
     await tester.pumpWidget(
       RiverpodWidgetTestBench(
         overrides: [
           taskAgentProvider.overrideWith((ref, id) => taskAgent()),
         ],
-        child: const AiSummaryCard(taskId: 'task-001'),
+        child: AiSummaryCard(
+          taskId: 'task-001',
+          showAssignCta: showAssignCta,
+        ),
       ),
     );
     await tester.pump();
@@ -60,6 +64,21 @@ void main() {
     expect(find.text('Assign Agent'), findsOneWidget);
     expect(find.text('AI summary'), findsNothing);
   });
+
+  testWidgets(
+    'showAssignCta: false suppresses the CTA — the task page folds the same '
+    'offer into its first-run block, and two on one screen is one too many',
+    (tester) async {
+      await pumpCard(
+        tester,
+        taskAgent: () async => null,
+        showAssignCta: false,
+      );
+      await tester.pump();
+
+      expect(find.text('Assign Agent'), findsNothing);
+    },
+  );
 
   testWidgets('data with identity: shows the summary shell', (tester) async {
     await tester.pumpWidget(AgentTestBench().build());

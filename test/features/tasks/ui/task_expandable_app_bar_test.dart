@@ -142,6 +142,31 @@ void main() {
     await tester.pumpWidget(widget);
   }
 
+  /// Past `kDesktopBreakpoint` (960), which is where the knowledge-graph
+  /// entry point lives — the graph canvas needs a wide window to be readable,
+  /// so a phone never spends one of the bar's action slots on it.
+  Future<void> pumpDesktop(WidgetTester tester, Widget widget) async {
+    tester.view
+      ..physicalSize = const Size(1280, 800)
+      ..devicePixelRatio = 1.0;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    // Desktop swaps the leading widget for `TaskDetailDesktopBackLeading`,
+    // which resolves NavService from getIt.
+    final nav = MockNavService();
+    when(
+      () => nav.desktopTaskDetailStack,
+    ).thenReturn(ValueNotifier<List<String>>(<String>['task-1']));
+    if (getIt.isRegistered<NavService>()) getIt.unregister<NavService>();
+    getIt.registerSingleton<NavService>(nav);
+    addTearDown(() {
+      if (getIt.isRegistered<NavService>()) getIt.unregister<NavService>();
+    });
+
+    await tester.pumpWidget(widget);
+  }
+
   group('TaskExpandableAppBar', () {
     testWidgets('renders SliverAppBar', (tester) async {
       final task = buildTask();
@@ -193,7 +218,26 @@ void main() {
     );
 
     testWidgets(
-      'normal task surface renders the knowledge-graph hub button',
+      'a desktop window renders the knowledge-graph hub button',
+      (tester) async {
+        final task = buildTask();
+
+        await pumpDesktop(
+          tester,
+          buildTestWidget(task, 'image-1'),
+        );
+        await tester.pump();
+
+        // Hub + more menu. The desktop back arrow only appears when a linked
+        // task sits on top of the detail stack, and this one is the base.
+        expect(find.byType(GlassActionButton), findsNWidgets(2));
+        expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'a phone-width window drops the hub button, matching the compact bar — '
+      'the affordance must not depend on whether the task has cover art',
       (tester) async {
         final task = buildTask();
 
@@ -203,9 +247,8 @@ void main() {
         );
         await tester.pump();
 
-        // Back + knowledge-graph hub + more menu.
-        expect(find.byType(GlassActionButton), findsNWidgets(3));
-        expect(find.byIcon(Icons.hub_outlined), findsOneWidget);
+        expect(find.byIcon(Icons.hub_outlined), findsNothing);
+        expect(find.byIcon(Icons.more_horiz), findsOneWidget);
       },
     );
 
@@ -214,7 +257,7 @@ void main() {
       (tester) async {
         final task = buildTask();
 
-        await pumpMobile(
+        await pumpDesktop(
           tester,
           buildTestWidget(task, 'image-1'),
         );

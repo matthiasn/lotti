@@ -9,6 +9,7 @@ import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 
 /// Composes the task detail form for the task identified by [taskId].
@@ -16,8 +17,9 @@ import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.da
 /// Watches `entryControllerProvider` and, once the entry resolves to a
 /// [Task], stacks (top to bottom): the [DesktopTaskHeaderConnector] header,
 /// an [EditorWidget] for legacy entries that already contain rich text, the
-/// [ChecklistsWidget], the [LinkedTasksWidget], and the [AiSummaryCard] (whose
-/// proposals can be scrolled into view via [suggestionsFocusKey]).
+/// [ChecklistsWidget], the [LinkedTasksWidget], the [AiSummaryCard] (whose
+/// proposals can be scrolled into view via [suggestionsFocusKey]), and — on a
+/// task with no content at all — [TaskFirstRunActions].
 ///
 /// Every band a confirmed agent proposal can resize reports its geometry to
 /// the task page's pre-paint scroll stabilizer, because an unreported change
@@ -95,6 +97,11 @@ class TaskForm extends ConsumerWidget {
         entryState?.entry?.entryText != null && plainText.isNotEmpty;
     final tokens = context.designTokens;
 
+    // A task with nothing on it gets the first-run block instead of half a
+    // screen of nothing, and the block carries the agent offer itself — so
+    // the AI card's standalone CTA stands down while it is showing.
+    final isFirstRun = watchTaskIsFirstRun(ref, task);
+
     // Reading zones top-to-bottom: identity (header), the legacy body, the
     // user's WORK (checklists + linked tasks), then the AI assistant. The work
     // comes before the AI card so "what's left to do" is visible without
@@ -149,17 +156,33 @@ class TaskForm extends ConsumerWidget {
             // sectionGap BOTTOM gives the card real breathing room above the
             // action bar (the linked-entries sliver below contributes almost
             // none).
-            padding: EdgeInsets.only(
-              top: tokens.spacing.step4,
-              bottom: tokens.spacing.step5,
-            ),
+            // On a first-run task the card renders nothing at all (no agent,
+            // and its assign CTA is suppressed in favour of the block below),
+            // so its band must not still charge the page for the gaps around
+            // a card that isn't there.
+            padding: isFirstRun
+                ? EdgeInsets.zero
+                : EdgeInsets.only(
+                    top: tokens.spacing.step4,
+                    bottom: tokens.spacing.step5,
+                  ),
             child: AiSummaryCard(
               taskId: taskId,
               proposalsFocusKey: suggestionsFocusKey,
               onSuggestionResolveStart: onSuggestionResolveStart,
+              showAssignCta: !isFirstRun,
             ),
           ),
         ),
+        if (isFirstRun)
+          Padding(
+            // A full sectionGap: the block is a different register from the
+            // identity header above it — what you can *do* next, rather than
+            // what this task *is* — and the page has nothing else to separate
+            // them with.
+            padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
+            child: TaskFirstRunActions(task: task),
+          ),
       ],
     );
   }

@@ -6796,7 +6796,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get linkedTasksEmptyHint =>
-      'Connect this task to another — a blocker, a follow-up, a duplicate.';
+      'Koppla den här uppgiften till en annan uppgift.';
 
   @override
   String get linkedTasksMenuTooltip => 'Länkade uppgifter alternativ';
@@ -10540,6 +10540,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskActionBarTrackTime => 'Bantid';
 
   @override
+  String get taskAgentAssignHint =>
+      'Låt en agent utkasta steg och sammanfattningar.';
+
+  @override
   String get taskAgentAttributionUnavailable => 'Källa otillgänglig';
 
   @override
@@ -10825,6 +10829,18 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get taskFirstRunAddChecklist => 'Lägg till en checklista';
+
+  @override
+  String get taskFirstRunAssignAgent => 'Tilldela en agent';
+
+  @override
+  String get taskFirstRunRecordAudio => 'Spela in en röstanteckning';
+
+  @override
+  String get taskFirstRunWriteNote => 'Skriv en anteckning';
+
+  @override
   String get taskHeaderNoCategoryLabel => 'Ingen kategori';
 
   @override
@@ -11032,6 +11048,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '”$query”';
   }
+
+  @override
+  String get taskSetDueDateLabel => 'Ange förfallodatum';
+
+  @override
+  String get taskSetEstimateLabel => 'Lägg till uppskattning';
 
   @override
   String get tasksFilterApplyTitle => 'Använd filter';
@@ -11372,6 +11394,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'Ingen titel';
+
+  @override
+  String get taskTitlePrompt => 'Ge uppgiften ett namn';
 
   @override
   String get taskUntitled => '(utan titel)';

@@ -6852,8 +6852,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get linkedTasksEmptyAction => 'Link a task…';
 
   @override
-  String get linkedTasksEmptyHint =>
-      'Connect this task to another — a blocker, a follow-up, a duplicate.';
+  String get linkedTasksEmptyHint => 'Conecte esta tarefa a outra tarefa.';
 
   @override
   String get linkedTasksMenuTooltip => 'Opções de tarefas vinculadas';
@@ -10646,6 +10645,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get taskActionBarTrackTime => 'Monitorar o tempo';
 
   @override
+  String get taskAgentAssignHint => 'Deixa um agente esboçar passos e resumos.';
+
+  @override
   String get taskAgentAttributionUnavailable => 'Atribuição indisponível';
 
   @override
@@ -10931,6 +10933,18 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get taskFirstRunAddChecklist => 'Adicionar uma lista de verificação';
+
+  @override
+  String get taskFirstRunAssignAgent => 'Atribuir um agente';
+
+  @override
+  String get taskFirstRunRecordAudio => 'Gravar uma nota de voz';
+
+  @override
+  String get taskFirstRunWriteNote => 'Escrever uma nota';
+
+  @override
   String get taskHeaderNoCategoryLabel => 'Sem categoria';
 
   @override
@@ -11138,6 +11152,12 @@ class AppLocalizationsPt extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '«$query»';
   }
+
+  @override
+  String get taskSetDueDateLabel => 'Definir prazo';
+
+  @override
+  String get taskSetEstimateLabel => 'Adicionar estimativa';
 
   @override
   String get tasksFilterApplyTitle => 'Aplicar filtro';
@@ -11478,6 +11498,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get taskTitleEmpty => 'Sem título';
+
+  @override
+  String get taskTitlePrompt => 'Dá um nome a esta tarefa';
 
   @override
   String get taskUntitled => '(sem título)';

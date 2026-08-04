@@ -3600,7 +3600,7 @@
   "linkedTaskImageBadge": "From linked task",
   "linkedTasksBlockedBySectionTitle": "Blocked by",
   "linkedTasksEmptyAction": "Link a task…",
-  "linkedTasksEmptyHint": "Connect this task to another — a blocker, a follow-up, a duplicate.",
+  "linkedTasksEmptyHint": "Connect this task to another task.",
   "linkedTasksMenuTooltip": "Linked tasks options",
   "linkedTasksTitle": "Linked Tasks",
   "linkExistingTask": "Link existing task…",
@@ -5278,6 +5278,7 @@
   "taskActionBarOpenRunningTimer": "Open running timer",
   "taskActionBarStopTracking": "Stop time tracking",
   "taskActionBarTrackTime": "Track time",
+  "taskAgentAssignHint": "Let an agent draft steps and summaries.",
   "taskAgentAttributionUnavailable": "Attribution unavailable",
   "taskAgentAutomaticUpdatesLabel": "Automatic updates",
   "taskAgentAutomaticUpdatesNeedsSetup": "Choose an AI setup before turning on automatic updates.",
@@ -5443,7 +5444,7 @@
   "taskBlockerPickerTitle": "What's blocking this?",
   "taskCategoryAllLabel": "all",
   "taskCategoryLabel": "Category:",
-  "taskCategoryUnassignedLabel": "unassigned",
+  "taskCategoryUnassignedLabel": "Unassigned",
   "taskDueDateLabel": "Due Date",
   "taskDueDateWithDate": "Due: {date}",
   "@taskDueDateWithDate": {
@@ -5489,6 +5490,10 @@
       }
     }
   },
+  "taskFirstRunAddChecklist": "Add a checklist",
+  "taskFirstRunAssignAgent": "Assign an agent",
+  "taskFirstRunRecordAudio": "Record a voice note",
+  "taskFirstRunWriteNote": "Write a note",
   "taskHeaderNoCategoryLabel": "No category",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
@@ -5561,7 +5566,7 @@
   "taskPriorityLow": "Low",
   "taskPriorityMedium": "Medium",
   "taskPriorityUrgent": "Urgent",
-  "tasksAddLabelButton": "Add Label",
+  "tasksAddLabelButton": "Add label",
   "tasksAgentFilterAll": "All",
   "tasksAgentFilterHasAgent": "Has Agent",
   "tasksAgentFilterNoAgent": "No Agent",
@@ -5588,6 +5593,8 @@
       }
     }
   },
+  "taskSetDueDateLabel": "Set due date",
+  "taskSetEstimateLabel": "Add estimate",
   "tasksFilterApplyTitle": "Apply filter",
   "tasksFilterClearAll": "Clear all",
   "tasksFilterTitle": "Filter tasks",
@@ -5769,6 +5776,7 @@
   "taskStatusOpen": "Open",
   "taskStatusRejected": "Rejected",
   "taskTitleEmpty": "No title",
+  "taskTitlePrompt": "Name this task",
   "taskUntitled": "(untitled)",
   "thinkingDisclosureCopied": "Reasoning copied",
   "thinkingDisclosureCopy": "Copy reasoning",

@@ -22,6 +22,7 @@ import 'package:lotti/features/tasks/ui/checklists/consts.dart';
 import 'package:lotti/features/tasks/ui/task_app_bar.dart';
 import 'package:lotti/features/tasks/ui/task_form.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_first_run_actions.dart';
 import 'package:lotti/features/tasks/ui/widgets/viewport_stable_animated_size.dart';
 import 'package:lotti/features/tasks/util/scroll_anchor.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -467,6 +468,16 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       return const EmptyScaffoldWithTitle('');
     }
 
+    // An empty task narrows the whole column to the first-run block's measure,
+    // so the title field, the chip lane and the block share one right edge.
+    // At the full reading width the three disagreed by hundreds of points and
+    // the only card on the page floated far left of the window's centre — the
+    // "nothing lines up with anything" read every reviewer described.
+    final isFirstRun = watchTaskIsFirstRun(ref, task);
+    final contentMaxWidth = isFirstRun
+        ? TaskFirstRunActions.maxWidth
+        : kDetailContentMaxWidth;
+
     final scaffold = Scaffold(
       backgroundColor: context.designTokens.colors.background.level01,
       // extendBody so the BackdropFilter inside [TaskActionBar]'s
@@ -482,6 +493,10 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       // own bottom safe-inset padding.
       bottomNavigationBar: TaskActionBar(
         task: task,
+        // While the first-run block is up it already offers the checklist and
+        // note actions in words; the bar keeps only the primary and the two
+        // affordances the card does not duplicate.
+        compact: isFirstRun,
         topSlot: AiRunningDecoderBars(
           entryId: widget.taskId,
           isInteractive: true,
@@ -506,20 +521,32 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
             controller: _scrollController,
             slivers: [
               TaskSliverAppBar(taskId: widget.taskId),
-              SliverToBoxAdapter(
+              // On a first-run task the page has one short card and nothing
+              // else, so the remainder is composed rather than left over:
+              // `SliverFillRemaining` claims the rest of the viewport and the
+              // group settles above optical centre. Four review rounds in a
+              // row, every reviewer read the top-anchored version the same way
+              // — "the page stopped loading" — because every authored gap on
+              // it was 8–28pt and then one silence ran a third of the window.
+              _FirstSliver(
+                fillRemaining: isFirstRun,
                 child: Center(
                   child: ConstrainedBox(
                     // Cap the content measure on wide windows so the task reads
                     // as a centered column rather than full-bleed text; this is
                     // non-binding at phone / narrow-pane widths.
-                    constraints: const BoxConstraints(
-                      maxWidth: kDetailContentMaxWidth,
-                    ),
+                    constraints: BoxConstraints(maxWidth: contentMaxWidth),
                     child: Padding(
-                      padding: const EdgeInsets.only(
-                        left: 15,
-                        right: 15,
-                        top: 10,
+                      // The page owns the content gutter, once. The header,
+                      // its breadcrumb and this sliver each used to add a
+                      // little of their own, which put five different left
+                      // edges (15 / 21 / 23 / 24.5 / 27 logical) in the top
+                      // hundred points of the page — the loudest single cue
+                      // that nothing here was laid out on purpose.
+                      padding: EdgeInsets.only(
+                        left: context.designTokens.spacing.step5,
+                        right: context.designTokens.spacing.step5,
+                        top: context.designTokens.spacing.step4,
                       ),
                       child: TaskForm(
                         taskId: widget.taskId,
@@ -536,14 +563,15 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
                 child: Center(
                   key: _belowCardKey,
                   child: ConstrainedBox(
-                    constraints: const BoxConstraints(
-                      maxWidth: kDetailContentMaxWidth,
-                    ),
+                    constraints: BoxConstraints(maxWidth: contentMaxWidth),
                     child: Padding(
-                      padding: const EdgeInsets.only(
-                        top: 8,
-                        left: 10,
-                        right: 10,
+                      // Same gutter as the sliver above, so the linked
+                      // entries share the header's left rail instead of
+                      // sitting 5pt inside it.
+                      padding: EdgeInsets.only(
+                        top: context.designTokens.spacing.step3,
+                        left: context.designTokens.spacing.step5,
+                        right: context.designTokens.spacing.step5,
                       ),
                       child:
                           Column(
@@ -669,5 +697,48 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
         onScrolled();
       }
     });
+  }
+}
+
+/// The task page's first content sliver.
+///
+/// Normally a plain [SliverToBoxAdapter] that takes its child's height. On a
+/// first-run task — one short card and nothing below it — it instead grows to
+/// at least the remaining viewport and settles the group above optical centre,
+/// so the leftover space reads as margin rather than as a page that stopped
+/// rendering.
+///
+/// Deliberately **not** `SliverFillRemaining(hasScrollBody: false)`: that
+/// measures the child's intrinsic height, and the subtree contains
+/// `LayoutBuilder`s (the header's meta row, the linked-tasks header) which
+/// cannot answer an intrinsic query. A `minHeight` constraint gets the same
+/// composition without ever asking. It is a floor, not a fixed height, so a
+/// long title or a large text scale grows the sliver and scrolls normally
+/// instead of clipping.
+class _FirstSliver extends StatelessWidget {
+  const _FirstSliver({required this.child, required this.fillRemaining});
+
+  final Widget child;
+  final bool fillRemaining;
+
+  /// Vertical alignment of the group within the filled height. Above the
+  /// geometric centre — optical centre, where the eye expects a short
+  /// composition to sit — but only just, so the breadcrumb stays tied to the
+  /// app bar above it rather than floating free in the middle of the window.
+  static const Alignment _opticalCentre = Alignment(0, -0.45);
+
+  @override
+  Widget build(BuildContext context) {
+    if (!fillRemaining) return SliverToBoxAdapter(child: child);
+    return SliverLayoutBuilder(
+      builder: (context, constraints) => SliverToBoxAdapter(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            minHeight: constraints.remainingPaintExtent,
+          ),
+          child: Align(alignment: _opticalCentre, child: child),
+        ),
+      ),
+    );
   }
 }

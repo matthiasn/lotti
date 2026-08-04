@@ -3235,6 +3235,7 @@
     }
   },
   "linkedTaskImageBadge": "Fra linket opgave",
+  "linkedTasksEmptyHint": "Forbind denne opgave med en anden opgave.",
   "linkedTasksMenuTooltip": "Muligheder for tilknyttede opgaver",
   "linkedTasksTitle": "Sammenkoblede opgaver",
   "linkExistingTask": "Link eksisterende opgave…",
@@ -4768,6 +4769,7 @@
   "taskActionBarOpenRunningTimer": "Åben løbetimer",
   "taskActionBarStopTracking": "Stop tidsregistrering",
   "taskActionBarTrackTime": "Banetid",
+  "taskAgentAssignHint": "Lad en agent udkaste trin og opsummeringer.",
   "taskAgentAttributionUnavailable": "Kilde ikke tilgængelig",
   "taskAgentAutomaticUpdatesLabel": "Automatiske opdateringer",
   "taskAgentAutomaticUpdatesNeedsSetup": "Vælg en AI-opsætning, før du aktiverer automatiske opdateringer.",
@@ -4923,6 +4925,10 @@
       }
     }
   },
+  "taskFirstRunAddChecklist": "Tilføj en tjekliste",
+  "taskFirstRunAssignAgent": "Tildel en agent",
+  "taskFirstRunRecordAudio": "Optag en talenote",
+  "taskFirstRunWriteNote": "Skriv en note",
   "taskHeaderNoCategoryLabel": "Ingen kategori",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
@@ -5003,6 +5009,8 @@
   "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filtre}}",
   "tasksCompactHeaderExpandHint": "Vis søgning og filtre",
   "tasksCompactSearchContext": "»{query}«",
+  "taskSetDueDateLabel": "Angiv forfaldsdato",
+  "taskSetEstimateLabel": "Tilføj estimat",
   "tasksFilterApplyTitle": "Påfør filter",
   "tasksFilterClearAll": "Ryd alt",
   "tasksFilterTitle": "Filteropgaver",
@@ -5184,6 +5192,7 @@
   "taskStatusOpen": "Åben",
   "taskStatusRejected": "Afvist",
   "taskTitleEmpty": "Ingen titel",
+  "taskTitlePrompt": "Giv opgaven et navn",
   "taskUntitled": "(uden titel)",
   "thinkingDisclosureCopied": "Begrundelse kopieret",
   "thinkingDisclosureCopy": "Kopiræsonnement",

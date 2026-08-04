@@ -3234,6 +3234,7 @@
     }
   },
   "linkedTaskImageBadge": "Da tarefa vinculada",
+  "linkedTasksEmptyHint": "Conecte esta tarefa a outra tarefa.",
   "linkedTasksMenuTooltip": "Opções de tarefas vinculadas",
   "linkedTasksTitle": "Tarefas Vinculadas",
   "linkExistingTask": "Vincular tarefa existente…",
@@ -4767,6 +4768,7 @@
   "taskActionBarOpenRunningTimer": "Abrir cronômetro em execução",
   "taskActionBarStopTracking": "Parar o monitoramento do tempo",
   "taskActionBarTrackTime": "Monitorar o tempo",
+  "taskAgentAssignHint": "Deixa um agente esboçar passos e resumos.",
   "taskAgentAttributionUnavailable": "Atribuição indisponível",
   "taskAgentAutomaticUpdatesLabel": "Atualizações automáticas",
   "taskAgentAutomaticUpdatesNeedsSetup": "Escolha uma configuração de IA antes de ativar as atualizações automáticas.",
@@ -4922,6 +4924,10 @@
       }
     }
   },
+  "taskFirstRunAddChecklist": "Adicionar uma lista de verificação",
+  "taskFirstRunAssignAgent": "Atribuir um agente",
+  "taskFirstRunRecordAudio": "Gravar uma nota de voz",
+  "taskFirstRunWriteNote": "Escrever uma nota",
   "taskHeaderNoCategoryLabel": "Sem categoria",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
@@ -5002,6 +5008,8 @@
   "tasksCompactFilterCount": "{count, plural, one {{count} filtro} other {{count} filtros}}",
   "tasksCompactHeaderExpandHint": "Mostrar pesquisa e filtros",
   "tasksCompactSearchContext": "«{query}»",
+  "taskSetDueDateLabel": "Definir prazo",
+  "taskSetEstimateLabel": "Adicionar estimativa",
   "tasksFilterApplyTitle": "Aplicar filtro",
   "tasksFilterClearAll": "Limpar tudo",
   "tasksFilterTitle": "Filtrar tarefas",
@@ -5183,6 +5191,7 @@
   "taskStatusOpen": "Abrir",
   "taskStatusRejected": "Rejeitado",
   "taskTitleEmpty": "Sem título",
+  "taskTitlePrompt": "Dá um nome a esta tarefa",
   "taskUntitled": "(sem título)",
   "thinkingDisclosureCopied": "Raciocínio copiado",
   "thinkingDisclosureCopy": "Copie o raciocínio",

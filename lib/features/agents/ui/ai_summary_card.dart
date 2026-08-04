@@ -62,11 +62,19 @@ class AiSummaryCard extends ConsumerWidget {
     required this.taskId,
     this.proposalsFocusKey,
     this.onSuggestionResolveStart,
+    this.showAssignCta = true,
     super.key,
   });
 
   final String taskId;
   final GlobalKey? proposalsFocusKey;
+
+  /// Whether to render [AssignAgentCta] when no agent is attached.
+  ///
+  /// False when the host already offers assignment somewhere better — the
+  /// task page's first-run block folds the same offer into its own rows, and
+  /// two "Assign Agent" affordances on one screen is one too many.
+  final bool showAssignCta;
 
   /// Called synchronously when the user commits to resolving a suggestion,
   /// before the underlying task mutation can change surrounding layout.
@@ -83,7 +91,11 @@ class AiSummaryCard extends ConsumerWidget {
       error: (_, _) => const SizedBox.shrink(),
       data: (agentEntity) {
         final identity = agentEntity?.mapOrNull(agent: (e) => e);
-        if (identity == null) return AssignAgentCta(taskId: taskId);
+        if (identity == null) {
+          return showAssignCta
+              ? AssignAgentCta(taskId: taskId)
+              : const SizedBox.shrink();
+        }
         return _AiSummaryShell(
           taskId: taskId,
           identity: identity,

@@ -14,7 +14,7 @@ enum DsPillVariant {
   outline,
 
   /// Transparent background with a 1px dashed `decorative.level02` border and
-  /// italic `text.lowEmphasis` label. Used for empty / placeholder states.
+  /// a `text.mediumEmphasis` label. Used for empty / placeholder states.
   muted,
 }
 
@@ -107,9 +107,12 @@ class DsPill extends StatelessWidget {
 
     final labelStyle = tokens.typography.styles.others.caption.copyWith(
       color: labelColor ?? _labelColor(tokens),
-      fontStyle: variant == DsPillVariant.muted
-          ? FontStyle.italic
-          : FontStyle.normal,
+      // No italic on the muted variant. Its dashed border and low-emphasis
+      // ink already say "unset" twice; the slant added a third signal that
+      // reads as *disabled* rather than *empty* — and a 12pt italic caption
+      // is a genuine legibility failure at large accessibility text sizes.
+      // The pills a user most needs to fill in were the ones that looked
+      // unavailable.
       // Bold only when selected so unselected pills keep the caption's own
       // weight (regression-safe: copyWith(null) is a no-op).
       fontWeight: selected ? FontWeight.w700 : null,
@@ -213,8 +216,8 @@ class DsPill extends StatelessWidget {
       DsPillVariant.tinted => color!,
       DsPillVariant.outline => color!,
       // Medium (not low) emphasis: a placeholder/empty pill must stay legible
-      // for low-vision users — the dashed border + italic already mark it as
-      // unset, so it reads as secondary without becoming invisible grey.
+      // for low-vision users — the dashed border already marks it as unset,
+      // so it reads as secondary without becoming invisible grey.
       DsPillVariant.muted => tokens.colors.text.mediumEmphasis,
     };
   }

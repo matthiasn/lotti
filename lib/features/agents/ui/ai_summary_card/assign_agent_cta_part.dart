@@ -8,16 +8,30 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_creation_modal.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Compact CTA shown on the task details page when no agent is yet
-/// attached to the task. Tapping it opens the same template-picker
-/// modal that `TaskAgentReportSection` used to surface; the actual
-/// flow is in [_createTaskAgent] below.
+/// CTA shown on the task details page when no agent is yet attached to the
+/// task. Tapping it opens the same template-picker modal that
+/// `TaskAgentReportSection` used to surface; the actual flow is in
+/// [_createTaskAgent] below.
+///
+/// Shaped as a bordered card row rather than the centred text button it used
+/// to be. On a task with content the button was a small accent island the eye
+/// skipped; on an *empty* task it was a lone tinted label floating in the
+/// middle of a blank column, reading as leftover chrome rather than an offer.
+/// The card borrows the linked-tasks card's grammar — leading glyph in the
+/// feature's accent, worded title, quiet explanatory subtitle, trailing
+/// chevron — so the empty task reads as a short stack of deliberate offers in
+/// one language instead of a mix of cards and stray links.
+///
+/// The subtitle names the *other* way to get an agent: a category with a
+/// default agent assigns one to every task it creates, so the user who does
+/// not want to answer this question per task learns where to answer it once.
 class AssignAgentCta extends ConsumerWidget {
   const AssignAgentCta({required this.taskId, super.key});
 
@@ -25,20 +39,53 @@ class AssignAgentCta extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final ai = context.designTokens.colors.aiCard;
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Center(
-        child: TextButton.icon(
-          onPressed: () => _createTaskAgent(context, ref, taskId),
-          icon: Icon(Icons.auto_awesome_rounded, size: 18, color: ai.accent),
-          label: Text(context.messages.taskAgentCreateChipLabel),
-          style: TextButton.styleFrom(foregroundColor: ai.accent),
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.l);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level02,
+        borderRadius: radius,
+        border: Border.all(color: tokens.colors.decorative.level01),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: radius,
+        clipBehavior: Clip.antiAlias,
+        child: DesignSystemListItem(
+          onTap: () => _createTaskAgent(context, ref, taskId),
+          title: context.messages.taskAgentCreateChipLabel,
+          titleMaxLines: 2,
+          subtitle: context.messages.taskAgentAssignHint,
+          subtitleMaxLines: 2,
+          subtitleEmphasis: tokens.colors.text.lowEmphasis,
+          size: DesignSystemListItemSize.small,
+          leading: Icon(
+            Icons.auto_awesome_rounded,
+            size: tokens.spacing.step5,
+            // The AI accent, not the generic interactive one: this row is the
+            // entry point to the agent feature, and it is the only place on an
+            // empty task where that palette appears.
+            color: tokens.colors.aiCard.accent,
+          ),
+          trailingExtra: Icon(
+            Icons.arrow_forward_ios,
+            size: tokens.spacing.step4,
+            color: tokens.colors.text.lowEmphasis,
+          ),
         ),
       ),
     );
   }
 }
+
+/// Opens the assign-agent picker for [taskId] and creates the agent on
+/// confirmation. Public so the task page's first-run block can offer the same
+/// action inline without duplicating the flow.
+Future<void> showAssignTaskAgentPicker(
+  BuildContext context,
+  WidgetRef ref,
+  String taskId,
+) => _createTaskAgent(context, ref, taskId);
 
 /// Resolves the task's category, lists task-agent templates (preferring
 /// category-scoped ones), shows the picker, and creates the agent on
