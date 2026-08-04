@@ -28,10 +28,10 @@ import 'package:lotti/widgets/misc/timer_navigation.dart';
 ///   timer is running on this task: tapping the pill body navigates to
 ///   the running timer entry (mirrors the sidebar timer card); only the
 ///   inset stop circle stops the timer.
-/// * round affordances: add checklist, import image, record audio, and
-///   "more actions" (opens the existing create-entry menu for long-tail
-///   items like Event / Text / Paste image / link to event / capture
-///   screenshot — the latter is desktop-only inside that menu)
+/// * round affordances (add checklist, import image, record audio) and the
+///   labeled "Add" trigger, which opens the create-entry sheet for the long
+///   tail (linked task / event / paste image / capture screenshot — the
+///   latter desktop-only inside that sheet)
 ///
 /// The action row is a single [Row] with width-based priority drop: on
 /// narrow viewports the lower-priority trailing icons (image, then
@@ -49,15 +49,17 @@ class TaskActionBar extends ConsumerStatefulWidget {
   final Task task;
   final Widget? topSlot;
 
-  /// Drops the checklist, image and microphone affordances from the visible
-  /// row.
+  /// Drops the checklist, microphone and image affordances from the visible
+  /// row and demotes the Track time pill to its subdued tonal treatment, so
+  /// the bar collapses to the primary plus the Add trigger.
   ///
-  /// True while the task page shows its first-run block, which offers the same
-  /// actions as worded rows a few centimetres higher. Two action surfaces with
-  /// overlapping-but-unequal membership left users unable to tell which one
-  /// was the real list. All three stay reachable through the row's own "more
-  /// actions" menu, which is where the width-based drop already sends the
-  /// last two on a narrow window.
+  /// True while the task page shows its first-run block. Every action here
+  /// then has exactly one other home — the card words the checklist, note
+  /// and voice offers, and the Add sheet (which stands its duplicated rows
+  /// down while the card shows) carries the labeled "Import an image" row.
+  /// Keeping the bar's image circle beside the very "+" that opens that
+  /// sheet put one action in two adjacent homes, the exact
+  /// overlapping-membership defect this flag exists to prevent.
   ///
   /// An *active* recording overrides this: the mic is the only way to see and
   /// stop a session in progress, so a live one is never hidden.
@@ -117,15 +119,29 @@ class TaskActionBar extends ConsumerStatefulWidget {
   /// Minimum [LayoutBuilder] inner width at which the checklist
   /// affordance is included. Checklist is dropped second (after image)
   /// when the row would otherwise overflow.
+  ///
+  /// Both thresholds price the Add trigger as its labeled pill (roughly a
+  /// 40px premium over the old bare circle): the label is the trigger's
+  /// honesty, so it is the round buttons that give way to width pressure,
+  /// never the word. The narrowest real rows (a 390 phone) still hold the
+  /// Track time pill, the mic and the labeled Add.
   @visibleForTesting
-  static const double minWidthForChecklistButton = 374;
+  static const double minWidthForChecklistButton = 468;
 
   /// Minimum [LayoutBuilder] inner width at which the image affordance
   /// is included. Image is dropped first (before checklist) when the
-  /// row would otherwise overflow. Both stay reachable via the "..."
-  /// (more) menu.
+  /// row would otherwise overflow. Both stay reachable via the Add menu.
   @visibleForTesting
-  static const double minWidthForImageButton = 416;
+  static const double minWidthForImageButton = 528;
+
+  /// Minimum [LayoutBuilder] inner width at which the Add trigger renders
+  /// as its labeled pill; below it the bare "+" circle returns. Priced for
+  /// the widest translated idle pill (Portuguese), like the other
+  /// thresholds. The label would ideally never give way, but on a phone the
+  /// row cannot hold Track time, the mic AND the labeled pill — and the mic
+  /// is one of the bar's two lead actions, so it is the label that yields.
+  @visibleForTesting
+  static const double minWidthForLabeledAdd = 434;
 
   @override
   ConsumerState<TaskActionBar> createState() => _TaskActionBarState();
@@ -238,6 +254,13 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
           context,
           linkedFromId: widget.task.meta.id,
           categoryId: widget.task.meta.categoryId,
+          // While the first-run card words the writing actions, the sheet
+          // holds only attach-class offers (image, screenshot, linked task)
+          // and both the trigger and the sheet say "Attach"; the generic
+          // "Add" returns with the full row set.
+          title: widget.compact
+              ? context.messages.createEntryAttachTitle
+              : null,
         );
   }
 
@@ -317,13 +340,21 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
               builder: (context, constraints) {
                 // Affordances are dropped in priority order so the row
                 // always fits on a single line. Image goes first, then
-                // checklist; both stay reachable via the "..." (more) menu.
+                // checklist, then the Add trigger's label; everything
+                // dropped stays reachable via the Add sheet.
                 //
                 // Thresholds include the widest translated idle pill
-                // (Portuguese "Monitorar o tempo"), 48 px round buttons, and
-                // step4 (12 px) gaps. Adding each extra button costs ≈60 px,
-                // so the five-control row needs 416 px and the four-control
-                // row needs 374 px.
+                // (Portuguese "Monitorar o tempo"), 48 px round buttons,
+                // step4 (12 px) gaps, and the Add trigger's labeled pill
+                // with its opens-caret. Each round button costs ≈60 px, the
+                // labeled trigger ≈64 px over the bare circle — hence 528
+                // for the five-control row and 468 for the four-control row.
+                // While the first-run block shows, the bar keeps ONLY what no
+                // other surface offers: Track time and the Add trigger. The
+                // image circle sat immediately beside the "+" that opens a
+                // sheet listing a labeled, subtitled "Import an image" row —
+                // the same action in two adjacent homes, which is the exact
+                // overlapping-membership defect `compact` exists to prevent.
                 final showImage =
                     !widget.compact &&
                     constraints.maxWidth >=
@@ -332,12 +363,47 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                     !widget.compact &&
                     constraints.maxWidth >=
                         TaskActionBar.minWidthForChecklistButton;
-                return Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
+                // On a compact row too narrow for two labeled pills, the
+                // demoted secondary gives up its word: Track time folds to
+                // an icon circle (tooltip and semantics keep its name) while
+                // the Attach trigger — the likelier act on a blank task —
+                // stays labeled. Decided from the REAL localized pill
+                // widths, not a pixel guess, so an English phone that fits
+                // both labels keeps both. A RUNNING timer always keeps the
+                // pill: the elapsed readout and the inset stop control are
+                // the whole point.
+                final compactIconOnlyTrack =
+                    widget.compact &&
+                    !isTracking &&
+                    trackTimePillWidth(
+                              context,
+                              messages.taskActionBarTrackTime,
+                            ) +
+                            spacing.step4 +
+                            addMenuPillWidth(
+                              context,
+                              messages.createEntryAttachTitle,
+                            ) >
+                        constraints.maxWidth;
+                final rowChildren = <Widget>[
+                  if (compactIconOnlyTrack)
+                    DsGlassRoundButton(
+                      key: TaskActionBar.trackTimeKey,
+                      icon: Icons.timer_outlined,
+                      semanticLabel: messages.taskActionBarTrackTime,
+                      onPressed: _onStartTimer,
+                      // The subdued pill's own treatment, not the glass
+                      // chip's: in dark theme the default glass fill read
+                      // BRIGHTER than the Attach pill beside it, inverting
+                      // the very demotion this circle exists to express.
+                      backgroundColor: tokens.colors.surface.enabled,
+                      outlineColor: tokens.colors.decorative.level02,
+                    )
+                  else
                     TrackTimePill(
                       key: TaskActionBar.trackTimeKey,
                       isTracking: isTracking,
+                      subdued: widget.compact,
                       label: elapsedLabel,
                       idleSemanticLabel: messages.taskActionBarTrackTime,
                       navigateSemanticLabel:
@@ -347,59 +413,110 @@ class _TaskActionBarState extends ConsumerState<TaskActionBar> {
                       onNavigateToRunningEntry: _onNavigateToRunningEntry,
                       onStop: _onStopTimer,
                     ),
-                    if (!widget.compact || isRecordingAudio) ...[
-                      SizedBox(width: spacing.step4),
-                      DsGlassRoundButton(
-                        key: TaskActionBar.audioKey,
-                        icon: Icons.mic_rounded,
-                        semanticLabel: isRecordingAudio
-                            ? messages.taskActionBarAudioRecordingActive
-                            : messages.addActionAddAudioRecording,
-                        onPressed: _onAudioPressed,
-                        backgroundColor: isRecordingAudio
-                            ? tokens.colors.alert.error.defaultColor
-                            : null,
-                        // Idle, the mic wears the accent as a ring and an
-                        // accent glyph — a peer of Track time rather than one
-                        // of the quiet utilities beside it. Tracked time and
-                        // captured thoughts are equally load-bearing for a
-                        // task, so the bar carries two lead actions; the mic
-                        // stays outlined rather than filled so the strip still
-                        // holds only one filled shape.
-                        outlineColor: isRecordingAudio
-                            ? null
-                            : tokens.colors.interactive.enabled,
-                        iconColor: isRecordingAudio
-                            ? Colors.white
-                            : tokens.colors.interactive.enabled,
-                      ),
-                    ],
-                    if (showChecklist) ...[
-                      SizedBox(width: spacing.step4),
-                      DsGlassRoundButton(
-                        key: TaskActionBar.checklistKey,
-                        icon: Icons.checklist_rounded,
-                        semanticLabel: messages.addActionAddChecklist,
-                        onPressed: _onChecklistPressed,
-                      ),
-                    ],
-                    if (showImage) ...[
-                      SizedBox(width: spacing.step4),
-                      DsGlassRoundButton(
-                        key: TaskActionBar.imageKey,
-                        icon: Icons.image_rounded,
-                        semanticLabel: messages.addActionImportImage,
-                        onPressed: _onImagePressed,
-                      ),
-                    ],
+                  if (!widget.compact || isRecordingAudio) ...[
                     SizedBox(width: spacing.step4),
                     DsGlassRoundButton(
-                      key: TaskActionBar.moreKey,
-                      icon: Icons.more_horiz_rounded,
-                      semanticLabel: messages.taskActionBarMoreActions,
-                      onPressed: _onMorePressed,
+                      key: TaskActionBar.audioKey,
+                      icon: Icons.mic_rounded,
+                      semanticLabel: isRecordingAudio
+                          ? messages.taskActionBarAudioRecordingActive
+                          : messages.taskFirstRunRecordAudio,
+                      onPressed: _onAudioPressed,
+                      backgroundColor: isRecordingAudio
+                          ? tokens.colors.alert.error.defaultColor
+                          : null,
+                      // Idle, the mic wears the accent as a ring and an
+                      // accent glyph — a peer of Track time rather than one
+                      // of the quiet utilities beside it. Tracked time and
+                      // captured thoughts are equally load-bearing for a
+                      // task, so the bar carries two lead actions; the mic
+                      // stays outlined rather than filled so the strip still
+                      // holds only one filled shape.
+                      outlineColor: isRecordingAudio
+                          ? null
+                          : tokens.colors.interactive.enabled,
+                      iconColor: isRecordingAudio
+                          ? Colors.white
+                          : tokens.colors.interactive.enabled,
                     ),
                   ],
+                  if (showChecklist) ...[
+                    SizedBox(width: spacing.step4),
+                    DsGlassRoundButton(
+                      key: TaskActionBar.checklistKey,
+                      icon: Icons.checklist_rounded,
+                      semanticLabel: messages.taskFirstRunAddChecklist,
+                      onPressed: _onChecklistPressed,
+                    ),
+                  ],
+                  if (showImage) ...[
+                    SizedBox(width: spacing.step4),
+                    DsGlassRoundButton(
+                      key: TaskActionBar.imageKey,
+                      icon: Icons.image_rounded,
+                      semanticLabel: messages.addActionImportImage,
+                      onPressed: _onImagePressed,
+                    ),
+                  ],
+                  SizedBox(width: spacing.step4),
+                  // The sheet this opens titles itself "Add" and holds
+                  // creation verbs — including the page's only route to a
+                  // linked sub-task. An overflow glyph promised leftovers
+                  // and delivered the page's creation hub; a bare "+"
+                  // half-fixed that but still broke the page's own rule
+                  // that "+" creates in place. Wherever the row has width,
+                  // the trigger says the same word as its destination; only
+                  // the narrowest rows — where the mic, the bar's other
+                  // lead action, needs the space — fall back to the circle,
+                  // whose semantics still carry the sheet's contents.
+                  if (widget.compact ||
+                      constraints.maxWidth >=
+                          TaskActionBar.minWidthForLabeledAdd)
+                    AddMenuPill(
+                      key: TaskActionBar.moreKey,
+                      // "Attach" while first-run: the page already shows the
+                      // word "Add" on half a dozen affordances, and this
+                      // trigger's curated contents are all attach-class. The
+                      // label is scent a TOUCH user can see — the tooltip
+                      // never surfaces on mobile. The paperclip goes with
+                      // it: on this page "+" means commits-immediately, and
+                      // a trigger that opens a sheet must not wear it.
+                      icon: widget.compact
+                          ? Icons.attach_file_rounded
+                          : Icons.add_rounded,
+                      label: widget.compact
+                          ? messages.createEntryAttachTitle
+                          : messages.createEntryTitle,
+                      // Mode-aware scent: while the first-run card words the
+                      // writing actions, the sheet holds only the net-new
+                      // offers; once the card retires, the sheet holds
+                      // everything and the hint must say so — a trigger
+                      // whose honesty expires the moment the user succeeds
+                      // is not honest.
+                      tooltip: widget.compact
+                          ? messages.createEntryTriggerHint
+                          : messages.createEntryTriggerHintFull,
+                      onPressed: _onMorePressed,
+                    )
+                  else
+                    DsGlassRoundButton(
+                      key: TaskActionBar.moreKey,
+                      icon: Icons.add_rounded,
+                      semanticLabel: messages.createEntryTriggerHintFull,
+                      onPressed: _onMorePressed,
+                    ),
+                ];
+                // While the first-run block shows, Add leads the row: on a
+                // blank task the sheet route is the likelier act, and the
+                // eye should land on it first. Track time leads again the
+                // moment real content exists and tracking becomes dominant.
+                // Reversing the list (gaps and all) rather than flipping the
+                // Row's text direction keeps every child's own content LTR.
+                return Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: widget.compact
+                      ? rowChildren.reversed.toList()
+                      : rowChildren,
                 );
               },
             ),

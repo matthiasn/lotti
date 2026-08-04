@@ -174,6 +174,11 @@ ThemeData withOverrides(ThemeData themeData) {
     ),
     extensions: <ThemeExtension>[
       const WoltModalSheetThemeData(
+        // No Material-3 elevation tint: the modal surface must stay on the
+        // page's own background token family. With a tint, the light theme's
+        // sheets picked up a faint primary wash and read as a second design
+        // system laid over the first.
+        surfaceTintColor: Colors.transparent,
         animationStyle: WoltModalSheetAnimationStyle(
           paginationAnimationStyle: WoltModalSheetPaginationAnimationStyle(
             paginationDuration: MotionDurations.medium4,

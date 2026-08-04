@@ -20,6 +20,7 @@ import 'package:lotti/features/projects/ui/widgets/project_selection_modal_conte
 import 'package:lotti/features/tasks/state/task_blockers_controller.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
+import 'package:lotti/features/tasks/ui/header/desktop_task_header_meta.dart';
 import 'package:lotti/features/tasks/ui/header/estimated_time_widget.dart';
 import 'package:lotti/features/tasks/ui/header/task_consumption_chip.dart';
 import 'package:lotti/features/tasks/ui/header/task_due_date_widget.dart';
@@ -80,6 +81,12 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       // whichever task the header last rendered.
       initialEditing: data.title.trim().isEmpty,
       estimateSlot: _TaskEstimateChip(taskId: task.meta.id),
+      // Which lane the estimate chip joins — the chip itself is opaque to the
+      // header, so the connector answers from the task. Mirrors the chip's
+      // own `hasEstimate` check exactly; if the two drift the chip merely
+      // renders in the wrong lane, but they must not.
+      estimateIsSet:
+          task.data.estimate != null && task.data.estimate != Duration.zero,
       consumptionSlot: TaskConsumptionChip(taskId: task.meta.id),
       blockedBySlot: _TaskBlockedByChip(taskId: task.meta.id),
       onTitleSaved: (newTitle) {
@@ -356,12 +363,16 @@ class _TaskEstimateChip extends ConsumerWidget {
     if (!hasEstimate) {
       return DsPill(
         variant: DsPillVariant.muted,
-        // Verb form, matching the other unset chips — see `_DuePill`.
+        // Verb form and mediumText glyph, matching the other unset chips in
+        // the add-lane (see `MetaRow`).
         label: context.messages.taskSetEstimateLabel,
+        // `av_timer`, not `timer_outlined`: the Track time pill in the bar
+        // wears the stopwatch for ACTUAL time the whole first-run window,
+        // and the same glyph on planned time invited conflating the two.
         leading: Icon(
-          Icons.timer_outlined,
-          size: 12,
-          color: TaskShowcasePalette.lowText(context),
+          Icons.av_timer_rounded,
+          size: kTaskChipGlyphSize,
+          color: TaskShowcasePalette.mediumText(context),
         ),
         onTap: onTap,
       );
@@ -420,7 +431,11 @@ class _TaskEstimateChip extends ConsumerWidget {
             variant: DsPillVariant.tinted,
             color: TaskShowcasePalette.error(context),
             label: progressLabel,
-            leading: Icon(Icons.timer_outlined, size: 12, color: iconColor),
+            leading: Icon(
+              Icons.av_timer_rounded,
+              size: kTaskChipGlyphSize,
+              color: iconColor,
+            ),
             trailing: progressBar,
             onTap: onTap,
           )
@@ -434,7 +449,11 @@ class _TaskEstimateChip extends ConsumerWidget {
             // low-emphasis grey reserved for empty placeholders (which made an
             // active estimate look disabled).
             labelColor: TaskShowcasePalette.mediumText(context),
-            leading: Icon(Icons.timer_outlined, size: 12, color: iconColor),
+            leading: Icon(
+              Icons.av_timer_rounded,
+              size: kTaskChipGlyphSize,
+              color: iconColor,
+            ),
             trailing: progressBar,
             onTap: onTap,
           );

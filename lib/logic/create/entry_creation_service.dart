@@ -112,11 +112,13 @@ class EntryCreationService {
     BuildContext context, {
     String? linkedFromId,
     String? categoryId,
+    String? title,
   }) {
     return CreateEntryModal.show(
       context: context,
       linkedFromId: linkedFromId,
       categoryId: categoryId,
+      title: title,
     );
   }
 }

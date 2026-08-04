@@ -12,25 +12,27 @@ class AppLocalizationsIt extends AppLocalizations {
   String get activeLabel => 'Attivo';
 
   @override
-  String get addActionAddAudioRecording => 'Registrazione audio';
+  String get addActionAddEvent => 'Aggiungi un evento';
 
   @override
-  String get addActionAddChecklist => 'Lista di controllo';
+  String get addActionAddEventHint => 'Crea un evento e lo apre.';
 
   @override
-  String get addActionAddEvent => 'Evento';
+  String get addActionAddImageFromClipboard => 'Incolla un\'immagine';
 
   @override
-  String get addActionAddImageFromClipboard => 'Incolla immagine';
+  String get addActionAddImageFromClipboardHint =>
+      'Allega l\'immagine dagli appunti.';
 
   @override
-  String get addActionAddScreenshot => 'Sceneggiatura';
+  String get addActionAddScreenshot => 'Cattura uno screenshot';
+
+  @override
+  String get addActionAddScreenshotHint =>
+      'Chiude questo pannello e poi cattura lo schermo.';
 
   @override
   String get addActionAddTask => 'Compiti';
-
-  @override
-  String get addActionAddText => 'Inserimento del testo';
 
   @override
   String get addActionAddTimer => 'Cronometro';
@@ -39,7 +41,30 @@ class AppLocalizationsIt extends AppLocalizations {
   String get addActionAddTimeRecording => 'Registrazione del tempo';
 
   @override
-  String get addActionImportImage => 'Immagine di importazione';
+  String get addActionCreateLinkedTask => 'Collega un\'attività';
+
+  @override
+  String get addActionCreateLinkedTaskHint =>
+      'Crea e apre una nuova attività collegata a questa.';
+
+  @override
+  String get addActionCreateTask => 'Aggiungi un\'attività';
+
+  @override
+  String get addActionCreateTaskHint => 'Crea una nuova attività e la apre.';
+
+  @override
+  String get addActionImportImage => 'Importa un\'immagine';
+
+  @override
+  String get addActionImportImageHint =>
+      'Apre la galleria o il selettore di file.';
+
+  @override
+  String get addActionStartTimer => 'Avvia un timer';
+
+  @override
+  String get addActionStartTimerHint => 'Inizia subito a tracciare il tempo.';
 
   @override
   String get addHabitCommentLabel => 'Commento';
@@ -3587,10 +3612,25 @@ class AppLocalizationsIt extends AppLocalizations {
   String get createCategoryTitle => 'Creare una categoria';
 
   @override
+  String get createEntryAttachTitle => 'Allega';
+
+  @override
+  String get createEntryFirstRunFooter =>
+      'Note, checklist e note vocali sono sulla pagina stessa.';
+
+  @override
   String get createEntryLabel => 'Creare una nuova voce';
 
   @override
   String get createEntryTitle => 'Aggiungi';
+
+  @override
+  String get createEntryTriggerHint =>
+      'Aggiungi un\'immagine, uno screenshot o un\'attività collegata';
+
+  @override
+  String get createEntryTriggerHintFull =>
+      'Aggiungi una nota, una checklist, una nota vocale, un\'immagine e altro';
 
   @override
   String get createNewLinkedTask => 'Creare un nuovo compito collegato…';
@@ -10764,7 +10804,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get taskAgentAssignHint =>
-      'Lascia che un agente abbozzi passaggi e riepiloghi.';
+      'Prepara passaggi e riepiloghi con l\'IA integrata.';
 
   @override
   String get taskAgentAttributionUnavailable => 'Attribuzione non disponibile';
@@ -11056,16 +11096,25 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskFirstRunAddChecklist => 'Aggiungi una checklist';
 
   @override
+  String get taskFirstRunAddChecklistHint =>
+      'Aggiunge un elenco di passaggi spuntabili.';
+
+  @override
   String get taskFirstRunAssignAgent => 'Assegna un agente';
 
   @override
   String get taskFirstRunRecordAudio => 'Registra una nota vocale';
 
   @override
+  String get taskFirstRunRecordAudioHint =>
+      'Apre il registratore senza avviare la registrazione.';
+
+  @override
   String get taskFirstRunWriteNote => 'Scrivi una nota';
 
   @override
-  String get taskHeaderNoCategoryLabel => 'Nessuna categoria';
+  String get taskFirstRunWriteNoteHint =>
+      'Aggiunge una nota collegata per dettagli e pensieri.';
 
   @override
   String taskLabelsMoreCount(int count) {
@@ -11237,6 +11286,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get taskPriorityMedium => 'Mezzo';
 
   @override
+  String taskPriorityTooltip(String priority) {
+    return 'Priorità: $priority';
+  }
+
+  @override
   String get taskPriorityUrgent => 'Urgente';
 
   @override
@@ -11272,6 +11326,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '“$query”';
   }
+
+  @override
+  String get taskSetCategoryLabel => 'Imposta categoria';
 
   @override
   String get taskSetDueDateLabel => 'Imposta scadenza';

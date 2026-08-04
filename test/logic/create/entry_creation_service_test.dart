@@ -532,7 +532,7 @@ void main() {
 
         // The menu modal rendered its items (Event/Task/Audio/Timer/Text).
         expect(find.byType(CreateMenuListItem), findsWidgets);
-        expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.add_task_rounded), findsOneWidget);
         // Timer item only present because linkedFromId was provided.
         expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
       },

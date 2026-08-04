@@ -903,8 +903,8 @@ void main() {
         await settleFrames(tester, 8);
         final messages = AppLocalizations.of(context)!;
         expect(find.text(messages.createEntryTitle), findsOneWidget);
-        expect(find.text(messages.addActionAddChecklist), findsOneWidget);
-        expect(find.text(messages.addActionAddAudioRecording), findsOneWidget);
+        expect(find.text(messages.taskFirstRunAddChecklist), findsOneWidget);
+        expect(find.text(messages.taskFirstRunRecordAudio), findsOneWidget);
         expect(find.text(messages.addActionAddTimer), findsOneWidget);
         await captureScreenshot(
           tester,

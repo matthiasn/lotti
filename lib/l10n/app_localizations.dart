@@ -123,47 +123,47 @@ abstract class AppLocalizations {
   /// **'Active'**
   String get activeLabel;
 
-  /// No description provided for @addActionAddAudioRecording.
-  ///
-  /// In en, this message translates to:
-  /// **'Audio Recording'**
-  String get addActionAddAudioRecording;
-
-  /// No description provided for @addActionAddChecklist.
-  ///
-  /// In en, this message translates to:
-  /// **'Checklist'**
-  String get addActionAddChecklist;
-
   /// No description provided for @addActionAddEvent.
   ///
   /// In en, this message translates to:
-  /// **'Event'**
+  /// **'Add an event'**
   String get addActionAddEvent;
+
+  /// No description provided for @addActionAddEventHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Creates an event and opens it.'**
+  String get addActionAddEventHint;
 
   /// No description provided for @addActionAddImageFromClipboard.
   ///
   /// In en, this message translates to:
-  /// **'Paste Image'**
+  /// **'Paste an image'**
   String get addActionAddImageFromClipboard;
+
+  /// No description provided for @addActionAddImageFromClipboardHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Attaches the image on your clipboard.'**
+  String get addActionAddImageFromClipboardHint;
 
   /// No description provided for @addActionAddScreenshot.
   ///
   /// In en, this message translates to:
-  /// **'Screenshot'**
+  /// **'Capture a screenshot'**
   String get addActionAddScreenshot;
+
+  /// No description provided for @addActionAddScreenshotHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Closes this sheet, then captures the screen.'**
+  String get addActionAddScreenshotHint;
 
   /// No description provided for @addActionAddTask.
   ///
   /// In en, this message translates to:
   /// **'Task'**
   String get addActionAddTask;
-
-  /// No description provided for @addActionAddText.
-  ///
-  /// In en, this message translates to:
-  /// **'Text Entry'**
-  String get addActionAddText;
 
   /// No description provided for @addActionAddTimer.
   ///
@@ -177,11 +177,53 @@ abstract class AppLocalizations {
   /// **'Timer Entry'**
   String get addActionAddTimeRecording;
 
+  /// No description provided for @addActionCreateLinkedTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Link a task'**
+  String get addActionCreateLinkedTask;
+
+  /// No description provided for @addActionCreateLinkedTaskHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Creates and opens a new task linked to this one.'**
+  String get addActionCreateLinkedTaskHint;
+
+  /// No description provided for @addActionCreateTask.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a task'**
+  String get addActionCreateTask;
+
+  /// No description provided for @addActionCreateTaskHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Creates a new task and opens it.'**
+  String get addActionCreateTaskHint;
+
   /// No description provided for @addActionImportImage.
   ///
   /// In en, this message translates to:
-  /// **'Import Image'**
+  /// **'Import an image'**
   String get addActionImportImage;
+
+  /// No description provided for @addActionImportImageHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens your gallery or file picker.'**
+  String get addActionImportImageHint;
+
+  /// No description provided for @addActionStartTimer.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a timer'**
+  String get addActionStartTimer;
+
+  /// No description provided for @addActionStartTimerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Begins tracking time right away.'**
+  String get addActionStartTimerHint;
 
   /// No description provided for @addHabitCommentLabel.
   ///
@@ -5963,6 +6005,18 @@ abstract class AppLocalizations {
   /// **'Create category'**
   String get createCategoryTitle;
 
+  /// No description provided for @createEntryAttachTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Attach'**
+  String get createEntryAttachTitle;
+
+  /// No description provided for @createEntryFirstRunFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'Notes, checklists and voice notes are on the page itself.'**
+  String get createEntryFirstRunFooter;
+
   /// No description provided for @createEntryLabel.
   ///
   /// In en, this message translates to:
@@ -5974,6 +6028,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Add'**
   String get createEntryTitle;
+
+  /// No description provided for @createEntryTriggerHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Add an image, a screenshot or a linked task'**
+  String get createEntryTriggerHint;
+
+  /// No description provided for @createEntryTriggerHintFull.
+  ///
+  /// In en, this message translates to:
+  /// **'Add a note, a checklist, a voice note, an image and more'**
+  String get createEntryTriggerHintFull;
 
   /// No description provided for @createNewLinkedTask.
   ///
@@ -18108,7 +18174,7 @@ abstract class AppLocalizations {
   /// No description provided for @taskAgentAssignHint.
   ///
   /// In en, this message translates to:
-  /// **'Let an agent draft steps and summaries.'**
+  /// **'Drafts steps and summaries with built-in AI.'**
   String get taskAgentAssignHint;
 
   /// No description provided for @taskAgentAttributionUnavailable.
@@ -18567,6 +18633,12 @@ abstract class AppLocalizations {
   /// **'Add a checklist'**
   String get taskFirstRunAddChecklist;
 
+  /// No description provided for @taskFirstRunAddChecklistHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Adds a list of checkable steps.'**
+  String get taskFirstRunAddChecklistHint;
+
   /// No description provided for @taskFirstRunAssignAgent.
   ///
   /// In en, this message translates to:
@@ -18579,17 +18651,23 @@ abstract class AppLocalizations {
   /// **'Record a voice note'**
   String get taskFirstRunRecordAudio;
 
+  /// No description provided for @taskFirstRunRecordAudioHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Opens the recorder without starting to record.'**
+  String get taskFirstRunRecordAudioHint;
+
   /// No description provided for @taskFirstRunWriteNote.
   ///
   /// In en, this message translates to:
   /// **'Write a note'**
   String get taskFirstRunWriteNote;
 
-  /// No description provided for @taskHeaderNoCategoryLabel.
+  /// No description provided for @taskFirstRunWriteNoteHint.
   ///
   /// In en, this message translates to:
-  /// **'No category'**
-  String get taskHeaderNoCategoryLabel;
+  /// **'Adds a linked note for details and thoughts.'**
+  String get taskFirstRunWriteNoteHint;
 
   /// No description provided for @taskLabelsMoreCount.
   ///
@@ -18909,6 +18987,12 @@ abstract class AppLocalizations {
   /// **'Medium'**
   String get taskPriorityMedium;
 
+  /// No description provided for @taskPriorityTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Priority: {priority}'**
+  String taskPriorityTooltip(String priority);
+
   /// No description provided for @taskPriorityUrgent.
   ///
   /// In en, this message translates to:
@@ -18962,6 +19046,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'“{query}”'**
   String tasksCompactSearchContext(String query);
+
+  /// No description provided for @taskSetCategoryLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Set category'**
+  String get taskSetCategoryLabel;
 
   /// No description provided for @taskSetDueDateLabel.
   ///

@@ -11,6 +11,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_action_bar.dart';
+import 'package:lotti/features/tasks/ui/widgets/task_action_bar_buttons.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
 import 'package:lotti/services/editor_state_service.dart';
@@ -510,13 +511,17 @@ void main() {
   }
 
   testWidgets(
-    'compact drops every affordance the first-run card already words, so no '
-    'action has two homes at two weights',
+    'compact collapses the bar to the primary and the Add trigger — every '
+    'other affordance has exactly one home elsewhere',
     (tester) async {
       await pumpBar(tester, compact: true);
 
       expect(find.byKey(TaskActionBar.trackTimeKey), findsOneWidget);
       expect(find.byKey(TaskActionBar.moreKey), findsOneWidget);
+      // Checklist / voice live as worded rows in the first-run card; image
+      // import lives as the labeled, subtitled row in the Add sheet the "+"
+      // right here opens. Keeping the image circle beside that "+" was one
+      // action in two adjacent homes.
       for (final key in [
         TaskActionBar.audioKey,
         TaskActionBar.checklistKey,
@@ -524,6 +529,36 @@ void main() {
       ]) {
         expect(find.byKey(key), findsNothing);
       }
+    },
+  );
+
+  testWidgets(
+    'compact demotes the idle Track time pill to the subdued tonal fill — '
+    'on a blank task the filled accent belongs to the title field, not to a '
+    'tertiary action',
+    (tester) async {
+      Color pillFill() {
+        final container = tester
+            .widgetList<Container>(
+              find.descendant(
+                of: find.byKey(TaskActionBar.trackTimeKey),
+                matching: find.byType(Container),
+              ),
+            )
+            .first;
+        return (container.decoration! as BoxDecoration).color!;
+      }
+
+      await pumpBar(tester, compact: true);
+      final tokens = tester
+          .element(find.byKey(TaskActionBar.trackTimeKey))
+          .designTokens;
+      expect(pillFill(), tokens.colors.surface.enabled);
+
+      // The accent returns with the ordinary bar the moment the task has
+      // content.
+      await pumpBar(tester);
+      expect(pillFill(), tokens.colors.interactive.enabled);
     },
   );
 
@@ -566,12 +601,56 @@ void main() {
       expect(button.backgroundColor, isNull);
       expect(audioButtonFill(tester), dsGlassChipFill(tokens));
 
-      // The genuine utilities beside it keep the hairline and neutral glyph.
-      final more = tester.widget<DsGlassRoundButton>(
-        find.byKey(TaskActionBar.moreKey),
+      // The Add trigger beside it is the labeled tonal pill on a bar this
+      // wide — its word matches the sheet it opens, and it carries neutral
+      // ink so the strip still has one accent-filled shape.
+      expect(
+        tester.widget(find.byKey(TaskActionBar.moreKey)),
+        isA<AddMenuPill>(),
       );
-      expect(more.outlineColor, isNull);
-      expect(more.iconColor, isNull);
+      expect(find.text('Add'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'the Add trigger is the labeled pill wherever the row has width, and '
+    'compact rows always have it',
+    (tester) async {
+      // Outer 360 → inner ~328, below the labeled threshold on a full bar:
+      // the bare circle returns so the mic keeps its slot.
+      await tester.binding.setSurfaceSize(const Size(360, 800));
+      addTearDown(() => tester.binding.setSurfaceSize(null));
+
+      await pumpBar(tester);
+      expect(
+        tester.widget(find.byKey(TaskActionBar.moreKey)),
+        isA<DsGlassRoundButton>(),
+      );
+
+      // The compact row keeps the trigger's word at EVERY width — on the
+      // narrowest rows it is the demoted Track time pill that folds to an
+      // icon circle instead, so the label belongs to the likelier act.
+      await pumpBar(tester, compact: true);
+      expect(
+        tester.widget(find.byKey(TaskActionBar.moreKey)),
+        isA<AddMenuPill>(),
+      );
+      expect(
+        tester.widget(find.byKey(TaskActionBar.trackTimeKey)),
+        isA<DsGlassRoundButton>(),
+      );
+
+      // Wider compact rows hold both labeled pills.
+      await tester.binding.setSurfaceSize(const Size(430, 800));
+      await pumpBar(tester, compact: true);
+      expect(
+        tester.widget(find.byKey(TaskActionBar.moreKey)),
+        isA<AddMenuPill>(),
+      );
+      expect(
+        tester.widget(find.byKey(TaskActionBar.trackTimeKey)),
+        isA<TrackTimePill>(),
+      );
     },
   );
 
@@ -710,9 +789,9 @@ void main() {
   testWidgets(
     'time-recording state keeps the action row geometry stable',
     (tester) async {
-      // Outer 420 mirrors the phone layout from the regression report:
-      // Track time, audio, checklist, and more actions visible; image hidden.
-      await tester.binding.setSurfaceSize(const Size(420, 800));
+      // Outer 515 → inner ~483: Track time, audio, checklist and the Add
+      // pill visible; image hidden (below the 528 threshold).
+      await tester.binding.setSurfaceSize(const Size(515, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await pumpBar(tester);
@@ -751,7 +830,7 @@ void main() {
   testWidgets(
     'audio-recording state keeps the action row geometry stable',
     (tester) async {
-      await tester.binding.setSurfaceSize(const Size(420, 800));
+      await tester.binding.setSurfaceSize(const Size(515, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await pumpBar(tester);
@@ -803,13 +882,19 @@ void main() {
       TaskActionBar.imageKey,
       TaskActionBar.moreKey,
     ]) {
-      final icon = tester.widget<Icon>(
+      // `widgetList`, not `.single`: the Add trigger renders two glyphs
+      // (leading plus, trailing opens-caret) — every glyph in the slot must
+      // be shadow-free.
+      final icons = tester.widgetList<Icon>(
         find.descendant(
           of: find.byKey(key),
           matching: find.byType(Icon),
         ),
       );
-      expect(icon.shadows, isNull, reason: '$key paints a glyph shadow');
+      expect(icons, isNotEmpty);
+      for (final icon in icons) {
+        expect(icon.shadows, isNull, reason: '$key paints a glyph shadow');
+      }
     }
   });
 
@@ -918,8 +1003,10 @@ void main() {
     'when inner width is below the checklist threshold, both image and '
     'checklist are hidden so the remaining three affordances fit on a row',
     (tester) async {
-      // Outer 360 → inner ~328, which is below
-      // [TaskActionBar.minWidthForChecklistButton] (374).
+      // Outer 360 → inner ~328, below the checklist threshold (444) and the
+      // labeled-Add threshold (410): the mic keeps its slot — it is one of
+      // the bar's two lead actions — and the Add trigger falls back to the
+      // bare circle whose semantics still name the sheet's contents.
       await tester.binding.setSurfaceSize(const Size(360, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
@@ -927,6 +1014,7 @@ void main() {
 
       expect(find.byKey(TaskActionBar.imageKey), findsNothing);
       expect(find.byKey(TaskActionBar.checklistKey), findsNothing);
+      expect(find.byKey(TaskActionBar.audioKey), findsOneWidget);
 
       expectSingleRowWithin(tester, const [
         TaskActionBar.trackTimeKey,
@@ -940,10 +1028,10 @@ void main() {
     'when inner width is between the checklist and image thresholds, only '
     'image is hidden — checklist stays on the row',
     (tester) async {
-      // Outer 420 → inner ~388, which is at-or-above
-      // [TaskActionBar.minWidthForChecklistButton] (374) and below
-      // [TaskActionBar.minWidthForImageButton] (416).
-      await tester.binding.setSurfaceSize(const Size(420, 800));
+      // Outer 515 → inner ~483, which is at-or-above
+      // [TaskActionBar.minWidthForChecklistButton] (468) and below
+      // [TaskActionBar.minWidthForImageButton] (528).
+      await tester.binding.setSurfaceSize(const Size(515, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await pumpBar(tester);
@@ -981,7 +1069,7 @@ void main() {
       // wider than English, so this must stay below the image threshold.
       tester.binding.platformDispatcher.localeTestValue = const Locale('fr');
       addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
-      await tester.binding.setSurfaceSize(const Size(440, 800));
+      await tester.binding.setSurfaceSize(const Size(535, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await pumpBar(tester);
@@ -1003,7 +1091,7 @@ void main() {
       // Outer 400 → inner ~370, below the Portuguese checklist threshold.
       tester.binding.platformDispatcher.localeTestValue = const Locale('pt');
       addTearDown(tester.binding.platformDispatcher.clearLocaleTestValue);
-      await tester.binding.setSurfaceSize(const Size(400, 800));
+      await tester.binding.setSurfaceSize(const Size(420, 800));
       addTearDown(() => tester.binding.setSurfaceSize(null));
 
       await pumpBar(tester);

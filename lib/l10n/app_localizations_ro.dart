@@ -12,25 +12,27 @@ class AppLocalizationsRo extends AppLocalizations {
   String get activeLabel => 'Activ';
 
   @override
-  String get addActionAddAudioRecording => 'Adăugați o înregistrare audio';
+  String get addActionAddEvent => 'Adăugați un eveniment';
 
   @override
-  String get addActionAddChecklist => 'Listă de verificare';
+  String get addActionAddEventHint => 'Creează un eveniment și îl deschide.';
 
   @override
-  String get addActionAddEvent => 'Eveniment';
+  String get addActionAddImageFromClipboard => 'Lipiți o imagine';
 
   @override
-  String get addActionAddImageFromClipboard => 'Lipiți imaginea';
+  String get addActionAddImageFromClipboardHint =>
+      'Atașează imaginea din clipboard.';
 
   @override
-  String get addActionAddScreenshot => 'Adăugați o captură de ecran';
+  String get addActionAddScreenshot => 'Realizați o captură de ecran';
+
+  @override
+  String get addActionAddScreenshotHint =>
+      'Închide acest meniu, apoi capturează ecranul.';
 
   @override
   String get addActionAddTask => 'Adăugați o sarcină';
-
-  @override
-  String get addActionAddText => 'Adăugați text';
 
   @override
   String get addActionAddTimer => 'Cronometru';
@@ -39,7 +41,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get addActionAddTimeRecording => 'Adăugați timp';
 
   @override
-  String get addActionImportImage => 'Importă imagine';
+  String get addActionCreateLinkedTask => 'Legați o sarcină';
+
+  @override
+  String get addActionCreateLinkedTaskHint =>
+      'Creează și deschide o sarcină nouă legată de aceasta.';
+
+  @override
+  String get addActionCreateTask => 'Adăugați o sarcină';
+
+  @override
+  String get addActionCreateTaskHint => 'Creează o sarcină nouă și o deschide.';
+
+  @override
+  String get addActionImportImage => 'Importați o imagine';
+
+  @override
+  String get addActionImportImageHint =>
+      'Deschide galeria sau selectorul de fișiere.';
+
+  @override
+  String get addActionStartTimer => 'Porniți un cronometru';
+
+  @override
+  String get addActionStartTimerHint => 'Începe imediat urmărirea timpului.';
 
   @override
   String get addHabitCommentLabel => 'Comentariu';
@@ -3597,10 +3622,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get createCategoryTitle => 'Creare categorie';
 
   @override
+  String get createEntryAttachTitle => 'Atașați';
+
+  @override
+  String get createEntryFirstRunFooter =>
+      'Notițele, listele și notele vocale se află chiar pe pagină.';
+
+  @override
   String get createEntryLabel => 'Creați o intrare nouă';
 
   @override
   String get createEntryTitle => 'Adăugați';
+
+  @override
+  String get createEntryTriggerHint =>
+      'Adăugați o imagine, o captură de ecran sau o sarcină legată';
+
+  @override
+  String get createEntryTriggerHintFull =>
+      'Adăugați o notiță, o listă, o notă vocală, o imagine și altele';
 
   @override
   String get createNewLinkedTask => 'Creați o sarcină nouă asociată…';
@@ -10825,7 +10865,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskAgentAssignHint =>
-      'Lăsați un agent să schițeze pași și rezumate.';
+      'Redactează pași și rezumate cu IA încorporată.';
 
   @override
   String get taskAgentAttributionUnavailable =>
@@ -11123,16 +11163,24 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskFirstRunAddChecklist => 'Adăugați o listă de verificare';
 
   @override
+  String get taskFirstRunAddChecklistHint => 'Adaugă o listă de pași bifabili.';
+
+  @override
   String get taskFirstRunAssignAgent => 'Atribuiți un agent';
 
   @override
   String get taskFirstRunRecordAudio => 'Înregistrați o notă vocală';
 
   @override
+  String get taskFirstRunRecordAudioHint =>
+      'Deschide reportofonul fără a porni înregistrarea.';
+
+  @override
   String get taskFirstRunWriteNote => 'Scrieți o notă';
 
   @override
-  String get taskHeaderNoCategoryLabel => 'Fără categorie';
+  String get taskFirstRunWriteNoteHint =>
+      'Adaugă o notă legată pentru detalii și gânduri.';
 
   @override
   String taskLabelsMoreCount(int count) {
@@ -11304,6 +11352,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskPriorityMedium => 'Medie';
 
   @override
+  String taskPriorityTooltip(String priority) {
+    return 'Prioritate: $priority';
+  }
+
+  @override
   String get taskPriorityUrgent => 'Urgentă';
 
   @override
@@ -11340,6 +11393,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '„$query”';
   }
+
+  @override
+  String get taskSetCategoryLabel => 'Setați categoria';
 
   @override
   String get taskSetDueDateLabel => 'Stabiliți termenul';

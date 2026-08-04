@@ -756,10 +756,10 @@ void main() {
         expect(find.text(messages.addActionAddEvent), findsOneWidget);
         expect(find.text(messages.addActionAddTask), findsOneWidget);
         expect(
-          find.text(messages.addActionAddAudioRecording),
+          find.text(messages.taskFirstRunRecordAudio),
           findsOneWidget,
         );
-        expect(find.text(messages.addActionAddText), findsOneWidget);
+        expect(find.text(messages.taskFirstRunWriteNote), findsOneWidget);
         await captureScreenshot(
           tester,
           'journal_create_${viewport}_$theme',

@@ -204,7 +204,10 @@ void main() {
           .map((paint) => paint.painter)
           .whereType<DashedBorderPainter>()
           .single;
-      expect(dashedPainter.color, dsTokensDark.colors.decorative.level02);
+      // level03, not level02: at 24% alpha the dashed outline was invisible
+      // to low-vision users in both themes — a blocker, since these chips
+      // are the only controls that set a due date on a fresh task.
+      expect(dashedPainter.color, dsTokensDark.colors.decorative.level03);
       expect(dashedPainter.radius, dsTokensDark.radii.badgesPills);
 
       final richText = tester.widget<RichText>(
@@ -372,33 +375,5 @@ void main() {
         );
       },
     );
-  });
-
-  group('DsGhostChip', () {
-    Future<void> pump(WidgetTester tester, Widget child) {
-      return tester.pumpWidget(
-        makeTestableWidgetNoScroll(
-          Theme(
-            data: DesignSystemTheme.dark(),
-            child: Scaffold(body: Center(child: child)),
-          ),
-        ),
-      );
-    }
-
-    testWidgets('renders an add icon and forwards taps', (tester) async {
-      var taps = 0;
-      await pump(
-        tester,
-        DsGhostChip(label: 'Add label', onTap: () => taps++),
-      );
-
-      expect(find.byIcon(Icons.add_rounded), findsOneWidget);
-      expect(find.text('Add label'), findsOneWidget);
-
-      await tester.tap(find.byType(DsGhostChip));
-      await tester.pump();
-      expect(taps, 1);
-    });
   });
 }

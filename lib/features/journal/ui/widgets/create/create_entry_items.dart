@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
@@ -25,9 +24,10 @@ const _kTimerScrollPollInterval = Duration(milliseconds: 100);
 const _kTimerScrollMaxAttempts = 30;
 const _kTimerScrollInitialDelay = Duration(milliseconds: 200);
 
-/// Create-menu item that creates an event linked to `linkedFromId`. Renders
-/// only when the `enableEvents` config flag is on; otherwise it collapses to
-/// an empty box. On success, navigates to the new event's detail page.
+/// Create-menu item that creates an event linked to `linkedFromId`. The
+/// `enableEvents` config-flag gate lives in the menu list, which resolves all
+/// visibility before assembling rows. On success, navigates to the new
+/// event's detail page.
 class CreateEventItem extends ConsumerWidget {
   const CreateEventItem(
     this.linkedFromId, {
@@ -40,24 +40,12 @@ class CreateEventItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final enableEventsAsync = ref.watch(configFlagProvider(enableEventsFlag));
-
-    // Use unwrapPrevious to keep previous value during loading/error states
-    final enableEvents =
-        enableEventsAsync.unwrapPrevious().whenData((value) => value).value ??
-        false;
-
-    if (!enableEvents) {
-      return const SizedBox.shrink();
-    }
-
-    return _buildEventItem(context, ref);
-  }
-
-  Widget _buildEventItem(BuildContext context, WidgetRef ref) {
     return CreateMenuListItem(
       icon: Icons.event_rounded,
       title: context.messages.addActionAddEvent,
+      subtitle: context.messages.addActionAddEventHint,
+      // Chevron for the same reason as the task row: creates, then opens.
+      opensSheet: true,
       onTap: () async {
         final event = await createEvent(
           linkedId: linkedFromId,
@@ -90,9 +78,27 @@ class CreateTaskItem extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final linked = linkedFromId != null;
     return CreateMenuListItem(
-      icon: Icons.task_alt_rounded,
-      title: context.messages.addActionAddTask,
+      // `add_task`, not `task_alt`: the row creates a task, and the ticked
+      // circle of `task_alt` painted "done" in the accent that elsewhere
+      // means "create" — glyph and colour disagreeing about the verb.
+      icon: Icons.add_task_rounded,
+      // The relationship rides the TITLE, not just the subtitle — titles are
+      // what get scanned, and inside a task page a bare "Add a task" is
+      // ambiguous three ways (sibling? subtask? edit this one?). From the
+      // journal list the created task stands alone and "linked" would lie,
+      // so unlinked hosts keep the plain verb.
+      title: linked
+          ? context.messages.addActionCreateLinkedTask
+          : context.messages.addActionCreateTask,
+      subtitle: linked
+          ? context.messages.addActionCreateLinkedTaskHint
+          : context.messages.addActionCreateTaskHint,
+      // Chevron, not plus: this row navigates to the task it creates, and by
+      // the page's own glyph rule an action that takes you somewhere else is
+      // chevron-class — the "+" claimed create-in-place for a teleport.
+      opensSheet: true,
       onTap: () async {
         final task = await createTask(
           linkedId: linkedFromId,
@@ -130,7 +136,11 @@ class CreateChecklistItem extends ConsumerWidget {
 
     return CreateMenuListItem(
       icon: Icons.checklist_rounded,
-      title: context.messages.addActionAddChecklist,
+      // The same strings the first-run card uses for the same action — one
+      // action, one name AND one explanation, on every surface that offers
+      // it.
+      title: context.messages.taskFirstRunAddChecklist,
+      subtitle: context.messages.taskFirstRunAddChecklistHint,
       onTap: () async {
         await createChecklist(task: entry, ref: ref);
         if (!context.mounted) return;
@@ -157,8 +167,13 @@ class CreateAudioItem extends ConsumerWidget {
     final entryCreationService = ref.read(entryCreationServiceProvider);
 
     return CreateMenuListItem(
-      icon: Icons.mic_none_rounded,
-      title: context.messages.addActionAddAudioRecording,
+      icon: Icons.mic_rounded,
+      // The card's string, its chevron AND its subtitle: the
+      // does-tapping-start-recording ambiguity belongs to the action, not to
+      // the surface it appears on.
+      title: context.messages.taskFirstRunRecordAudio,
+      subtitle: context.messages.taskFirstRunRecordAudioHint,
+      opensSheet: true,
       onTap: () {
         Navigator.of(context).pop();
         entryCreationService.showAudioRecordingModal(
@@ -194,7 +209,10 @@ class CreateTimerItem extends ConsumerWidget {
 
     return CreateMenuListItem(
       icon: Icons.timer_outlined,
-      title: context.messages.addActionAddTimer,
+      // Verb + subtitle, because "Timer" alone never said the clock starts
+      // the moment the row is tapped.
+      title: context.messages.addActionStartTimer,
+      subtitle: context.messages.addActionStartTimerHint,
       onTap: () async {
         final timerEntry = await entryCreationService.createTimerEntry(
           linked: linked,
@@ -237,15 +255,34 @@ class CreateTextItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entryCreationService = ref.read(entryCreationServiceProvider);
+    final id = linkedFromId;
+    final host = id == null
+        ? null
+        : ref.watch(entryControllerProvider(id)).value?.entry;
 
     return CreateMenuListItem(
       icon: Icons.notes_rounded,
-      title: context.messages.addActionAddText,
+      // The first-run card's string — "Text Entry" and "Write a note" were
+      // the same action wearing two names one tap apart.
+      title: context.messages.taskFirstRunWriteNote,
+      subtitle: context.messages.taskFirstRunWriteNoteHint,
       onTap: () async {
-        await entryCreationService.createTextEntry(
+        final entry = await entryCreationService.createTextEntry(
           linkedId: linkedFromId,
           categoryId: categoryId,
         );
+        // Same journey as the first-run card's row: on a task host the new
+        // note lands in the linked entries below the fold, so without the
+        // focus publish this label silently minted an off-screen empty note
+        // — the documented dead-button flow the card row exists to avoid
+        // (task_first_run_actions.dart). Non-task hosts scroll via their own
+        // journal focus elsewhere; publishing is task-scoped.
+        final id = linkedFromId;
+        if (entry != null && id != null && host is Task) {
+          ref
+              .read(taskFocusControllerProvider(id).notifier)
+              .publishTaskFocus(entryId: entry.meta.id);
+        }
         if (context.mounted) {
           Navigator.of(context).pop();
         }
@@ -270,8 +307,14 @@ class ImportImageItem extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return CreateMenuListItem(
-      icon: Icons.photo_library_rounded,
+      // Outlined, matching the stroke weight of every other leading glyph in
+      // the sheet — the filled library icon was the one row shouting in
+      // solid teal.
+      icon: Icons.photo_library_outlined,
       title: context.messages.addActionImportImage,
+      subtitle: context.messages.addActionImportImageHint,
+      // Chevron: the tap opens a gallery / file picker, not a direct create.
+      opensSheet: true,
       onTap: () async {
         final trigger = ref.read(automaticImageAnalysisTriggerProvider);
         // Desktop Linux/Windows have no gallery picker — use a file dialog.
@@ -319,6 +362,9 @@ class CreateScreenshotItem extends ConsumerWidget {
     return CreateMenuListItem(
       icon: Icons.screenshot_monitor_rounded,
       title: context.messages.addActionAddScreenshot,
+      // Says what is captured (the screen) and where it goes — the row's
+      // one-word ancestor scared cautious users off entirely.
+      subtitle: context.messages.addActionAddScreenshotHint,
       onTap: () async {
         await createScreenshot(
           linkedId: linkedFromId,
@@ -334,8 +380,9 @@ class CreateScreenshotItem extends ConsumerWidget {
 }
 
 /// Create-menu item that pastes image(s) from the clipboard as entries linked
-/// to `linkedFromId`. Watches [ImagePasteController] and self-hides whenever
-/// the clipboard holds no pasteable PNG/JPEG image.
+/// to `linkedFromId`. The clipboard-has-an-image gate lives in the menu list
+/// ([ImagePasteController]), which resolves all visibility before assembling
+/// rows — this widget only renders when a paste is actually possible.
 class PasteImageItem extends ConsumerWidget {
   const PasteImageItem(
     this.linkedFromId, {
@@ -352,15 +399,11 @@ class PasteImageItem extends ConsumerWidget {
       linkedFromId: linkedFromId,
       categoryId: categoryId,
     ));
-    final canPasteImage = ref.watch(provider).value ?? false;
-
-    if (!canPasteImage) {
-      return const SizedBox.shrink();
-    }
 
     return CreateMenuListItem(
       icon: Icons.content_paste_rounded,
       title: context.messages.addActionAddImageFromClipboard,
+      subtitle: context.messages.addActionAddImageFromClipboardHint,
       onTap: () {
         Navigator.of(context).pop();
         ref.read(provider.notifier).paste();

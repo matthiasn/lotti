@@ -128,8 +128,8 @@ const _categoryFixture = DesktopTaskHeaderCategory(
   color: Color(0xFF1CA3E3),
 );
 
-/// The 10×10 breadcrumb swatch's decoration: filled with the category colour
-/// when the task has one, a hollow ring when it does not. Located by its
+/// The 10×10 breadcrumb swatch's decoration — only rendered for a task that
+/// HAS a category, filled with that category's colour. Located by its
 /// 10×10 square rather than by key, since it is a bare [Container].
 BoxDecoration _categorySwatchDecoration(WidgetTester tester) {
   final swatch = tester
@@ -267,24 +267,27 @@ void main() {
     );
   });
 
-  // The crumb names two different things side by side, and the project half of
-  // it is only reachable once a category exists — `linkTaskToProject` refuses a
-  // cross-category link, so the connector hands over a null `onProjectTap`
-  // without one. It used to read "unassigned / No project" regardless: a
-  // lowercase word that never said *what* was unassigned, then a separator and
-  // a placeholder for a choice that could not be made yet.
+  // An unset category no longer reports itself in the crumb at all. The old
+  // "No category" segment — a hollow square plus a low-emphasis caption — was
+  // the first element in reading order and read as a disabled checkbox from
+  // another design system; every panel reviewer flagged it. The offer now
+  // lives in the metadata lane as a dashed "Set category" chip speaking the
+  // same verb-first grammar as "Set due date", and the crumb renders only
+  // when there is real ancestry to show.
   group('DesktopTaskHeader — breadcrumb without a category', () {
-    testWidgets('names the category as the thing that is missing', (
-      tester,
-    ) async {
-      await _pumpDesktop(
-        tester,
-        DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
-      );
+    testWidgets(
+      'offers a dashed "Set category" chip in the lane instead of a '
+      '"No category" crumb',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
+        );
 
-      expect(find.text('No category'), findsOneWidget);
-      expect(find.text('unassigned'), findsNothing);
-    });
+        expect(find.text('No category'), findsNothing);
+        expect(find.text('Set category'), findsOneWidget);
+      },
+    );
 
     testWidgets('omits the separator and the project segment', (tester) async {
       await _pumpDesktop(
@@ -301,29 +304,28 @@ void main() {
       expect(find.text('/'), findsNothing);
     });
 
+    testWidgets('the "Set category" chip opens the category picker', (
+      tester,
+    ) async {
+      var categoryTaps = 0;
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(),
+          onTitleSaved: (_) {},
+          onCategoryTap: () => categoryTaps++,
+        ),
+      );
+
+      await tester.tap(find.text('Set category'));
+      await tester.pump();
+
+      expect(categoryTaps, 1);
+    });
+
     testWidgets(
-      'leaves the category segment itself tappable so one can be picked',
-      (tester) async {
-        var categoryTaps = 0;
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(),
-            onTitleSaved: (_) {},
-            onCategoryTap: () => categoryTaps++,
-          ),
-        );
-
-        await tester.tap(find.text('No category'));
-        await tester.pump();
-
-        expect(categoryTaps, 1);
-      },
-    );
-
-    testWidgets(
-      'marks an unset category with a hollow swatch, not with italics — a '
-      'slanted 12pt caption read as disabled and cost legibility',
+      'renders no swatch at all — the square is reserved for a colour the '
+      'task actually has',
       (tester) async {
         await _pumpDesktop(
           tester,
@@ -331,17 +333,19 @@ void main() {
         );
 
         expect(
-          tester.widget<Text>(find.text('No category')).style?.fontStyle,
-          isNot(FontStyle.italic),
+          tester
+              .widgetList<Container>(find.byType(Container))
+              .where(
+                (c) =>
+                    c.constraints?.maxWidth == 10 &&
+                    c.constraints?.maxHeight == 10 &&
+                    c.decoration is BoxDecoration,
+              ),
+          isEmpty,
+          reason:
+              'a swatch standing for an absence is the checkbox-impostor '
+              'read this layout exists to prevent',
         );
-
-        final swatch = _categorySwatchDecoration(tester);
-        expect(
-          swatch.color,
-          isNull,
-          reason: 'a solid square asserts a colour the task does not have',
-        );
-        expect(swatch.border, isNotNull);
       },
     );
 
@@ -350,8 +354,9 @@ void main() {
     ) async {
       // An uncategorized project is a real thing — `createProject` takes a
       // nullable category and `createTask(projectId:)` copies it onto the new
-      // task — so this pairing reaches the header legitimately. Only the
-      // *placeholder* is conditional; membership the user has is never hidden.
+      // task — so this pairing reaches the header legitimately. The project
+      // segment stands alone on the rail: no separator with nothing real on
+      // its other side.
       await _pumpDesktop(
         tester,
         DesktopTaskHeader(
@@ -360,8 +365,8 @@ void main() {
         ),
       );
 
-      expect(find.text('No category'), findsOneWidget);
-      expect(find.text('/'), findsOneWidget);
+      expect(find.text('No category'), findsNothing);
+      expect(find.text('/'), findsNothing);
       expect(
         find.text('Device Sync - Lotti Mobile App Implementation'),
         findsOneWidget,
@@ -387,6 +392,9 @@ void main() {
       // A category the task actually has fills its swatch with the category
       // colour — the one place on the page that colour is used as a fill.
       expect(_categorySwatchDecoration(tester).color, _categoryFixture.color);
+      // And with the crumb naming the category, the lane's dashed offer
+      // stands down — the two affordances never coexist.
+      expect(find.text('Set category'), findsNothing);
     });
 
     testWidgets('shows the separator and the project name', (tester) async {
@@ -915,14 +923,15 @@ void main() {
     );
 
     testWidgets(
-      'narrow viewport: the due date rides the first wrap row with status and '
-      'priority; only the estimate wraps',
+      'narrow viewport: status and priority lead; the due date and estimate '
+      'wrap together as a full second row',
       (tester) async {
-        // 420px is the real mobile header width. The due date is the lane's
-        // second-most decision-relevant chip after status, so it belongs on
-        // the row the eye lands on first. Bonding it to the estimate made the
-        // pair one atomic wrap unit that was too wide to fit — both dropped to
-        // a second row while half of the first row sat empty.
+        // 420px is the real mobile header width. Every attribute is its own
+        // wrap unit, so the lane breaks into two *balanced* rows: the state
+        // pair (status + its caret-bearing priority) up top, the time pair
+        // (due + estimate) below. The pathology this guards against is the
+        // old bonded due+estimate unit dropping as one atom while half of the
+        // first row sat empty — a wrapped row that is itself full is fine.
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
@@ -938,21 +947,24 @@ void main() {
         final estimate = tester.getTopLeft(find.text('0h / 1h')).dy;
         final labelTop = tester.getTopLeft(find.text('Bug fix')).dy;
 
-        expect(
-          (due - status).abs(),
-          lessThan(8),
-          reason: 'the due chip shares the first row with the status pill',
-        );
         expect((priority - status).abs(), lessThan(8));
         expect(
-          estimate,
-          greaterThan(due),
+          due,
+          greaterThan(status),
           reason:
-              'the estimate is what gives way at this width — not the due '
-              'date it used to drag down with it',
+              'the time pair wraps below the state pair at this width — the '
+              "priority pill's disclosure caret buys tap-scent on row one at "
+              'the cost of the slack the due chip used to squeeze into',
+        );
+        expect(
+          (due - estimate).abs(),
+          lessThan(8),
+          reason:
+              'due and estimate share the second row — the wrap lands on the '
+              'semantic seam, not mid-pair',
         );
         // The label lane still sits below the whole attribute lane.
-        expect(labelTop, greaterThan(estimate));
+        expect(labelTop, greaterThan(due));
       },
     );
 
@@ -1310,15 +1322,23 @@ void main() {
           );
           expect(background, accent.withValues(alpha: 0.18), reason: label);
         } else {
-          // Rejected: medium-emphasis (still legible) struck text on a neutral
-          // low-emphasis wash.
+          // Rejected: medium-emphasis (still legible) struck text on the
+          // same filled+bordered DsPill shell the set chips wear — the pill
+          // is rendered through the shared primitive now, and a dismissed
+          // status is a neutral fact, not a fifth accent.
           expect(
             text.style?.color,
             TaskShowcasePalette.mediumText(context),
           );
           expect(
-            background,
-            TaskShowcasePalette.lowText(context).withValues(alpha: 0.14),
+            text.style?.decoration,
+            TextDecoration.lineThrough,
+          );
+          final tokens = context.designTokens;
+          expect(background, tokens.colors.surface.enabled);
+          expect(
+            ((box.decoration as BoxDecoration).border! as Border).top.color,
+            tokens.colors.decorative.level02,
           );
         }
       });

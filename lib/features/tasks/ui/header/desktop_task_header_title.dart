@@ -16,7 +16,10 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// an override that never ships. Lighter as well as paler — at the title's own
 /// weight readers took the prompt for the task's actual name.
 TextStyle blankTitleStyle(TextStyle base, DsTokens tokens) => base.copyWith(
-  color: tokens.colors.text.lowEmphasis,
+  // mediumEmphasis, not low: this prompt is the page's PRIMARY ask, and at
+  // lowEmphasis it was one of the two grayest text runs on the surface. The
+  // w400 demotion below already keeps it from reading as a real title.
+  color: tokens.colors.text.mediumEmphasis,
   fontWeight: FontWeight.w400,
 );
 

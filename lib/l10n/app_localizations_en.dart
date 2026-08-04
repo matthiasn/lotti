@@ -12,25 +12,27 @@ class AppLocalizationsEn extends AppLocalizations {
   String get activeLabel => 'Active';
 
   @override
-  String get addActionAddAudioRecording => 'Audio Recording';
+  String get addActionAddEvent => 'Add an event';
 
   @override
-  String get addActionAddChecklist => 'Checklist';
+  String get addActionAddEventHint => 'Creates an event and opens it.';
 
   @override
-  String get addActionAddEvent => 'Event';
+  String get addActionAddImageFromClipboard => 'Paste an image';
 
   @override
-  String get addActionAddImageFromClipboard => 'Paste Image';
+  String get addActionAddImageFromClipboardHint =>
+      'Attaches the image on your clipboard.';
 
   @override
-  String get addActionAddScreenshot => 'Screenshot';
+  String get addActionAddScreenshot => 'Capture a screenshot';
+
+  @override
+  String get addActionAddScreenshotHint =>
+      'Closes this sheet, then captures the screen.';
 
   @override
   String get addActionAddTask => 'Task';
-
-  @override
-  String get addActionAddText => 'Text Entry';
 
   @override
   String get addActionAddTimer => 'Timer';
@@ -39,7 +41,29 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addActionAddTimeRecording => 'Timer Entry';
 
   @override
-  String get addActionImportImage => 'Import Image';
+  String get addActionCreateLinkedTask => 'Link a task';
+
+  @override
+  String get addActionCreateLinkedTaskHint =>
+      'Creates and opens a new task linked to this one.';
+
+  @override
+  String get addActionCreateTask => 'Add a task';
+
+  @override
+  String get addActionCreateTaskHint => 'Creates a new task and opens it.';
+
+  @override
+  String get addActionImportImage => 'Import an image';
+
+  @override
+  String get addActionImportImageHint => 'Opens your gallery or file picker.';
+
+  @override
+  String get addActionStartTimer => 'Start a timer';
+
+  @override
+  String get addActionStartTimerHint => 'Begins tracking time right away.';
 
   @override
   String get addHabitCommentLabel => 'Comment';
@@ -3526,10 +3550,25 @@ class AppLocalizationsEn extends AppLocalizations {
   String get createCategoryTitle => 'Create category';
 
   @override
+  String get createEntryAttachTitle => 'Attach';
+
+  @override
+  String get createEntryFirstRunFooter =>
+      'Notes, checklists and voice notes are on the page itself.';
+
+  @override
   String get createEntryLabel => 'Create new entry';
 
   @override
   String get createEntryTitle => 'Add';
+
+  @override
+  String get createEntryTriggerHint =>
+      'Add an image, a screenshot or a linked task';
+
+  @override
+  String get createEntryTriggerHintFull =>
+      'Add a note, a checklist, a voice note, an image and more';
 
   @override
   String get createNewLinkedTask => 'Create new linked task…';
@@ -10539,7 +10578,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskActionBarTrackTime => 'Track time';
 
   @override
-  String get taskAgentAssignHint => 'Let an agent draft steps and summaries.';
+  String get taskAgentAssignHint =>
+      'Drafts steps and summaries with built-in AI.';
 
   @override
   String get taskAgentAttributionUnavailable => 'Attribution unavailable';
@@ -10828,16 +10868,24 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskFirstRunAddChecklist => 'Add a checklist';
 
   @override
+  String get taskFirstRunAddChecklistHint => 'Adds a list of checkable steps.';
+
+  @override
   String get taskFirstRunAssignAgent => 'Assign an agent';
 
   @override
   String get taskFirstRunRecordAudio => 'Record a voice note';
 
   @override
+  String get taskFirstRunRecordAudioHint =>
+      'Opens the recorder without starting to record.';
+
+  @override
   String get taskFirstRunWriteNote => 'Write a note';
 
   @override
-  String get taskHeaderNoCategoryLabel => 'No category';
+  String get taskFirstRunWriteNoteHint =>
+      'Adds a linked note for details and thoughts.';
 
   @override
   String taskLabelsMoreCount(int count) {
@@ -11009,6 +11057,11 @@ class AppLocalizationsEn extends AppLocalizations {
   String get taskPriorityMedium => 'Medium';
 
   @override
+  String taskPriorityTooltip(String priority) {
+    return 'Priority: $priority';
+  }
+
+  @override
   String get taskPriorityUrgent => 'Urgent';
 
   @override
@@ -11044,6 +11097,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '“$query”';
   }
+
+  @override
+  String get taskSetCategoryLabel => 'Set category';
 
   @override
   String get taskSetDueDateLabel => 'Set due date';

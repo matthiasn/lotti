@@ -12,25 +12,27 @@ class AppLocalizationsCs extends AppLocalizations {
   String get activeLabel => 'Aktivní';
 
   @override
-  String get addActionAddAudioRecording => 'Audiozáznam';
+  String get addActionAddEvent => 'Přidat událost';
 
   @override
-  String get addActionAddChecklist => 'Kontrolní seznam';
-
-  @override
-  String get addActionAddEvent => 'Událost';
+  String get addActionAddEventHint => 'Vytvoří událost a otevře ji.';
 
   @override
   String get addActionAddImageFromClipboard => 'Vložit obrázek';
 
   @override
-  String get addActionAddScreenshot => 'Snímek obrazovky';
+  String get addActionAddImageFromClipboardHint =>
+      'Připojí obrázek ze schránky.';
+
+  @override
+  String get addActionAddScreenshot => 'Pořídit snímek obrazovky';
+
+  @override
+  String get addActionAddScreenshotHint =>
+      'Zavře tuto nabídku a poté zachytí obrazovku.';
 
   @override
   String get addActionAddTask => 'Úkol';
-
-  @override
-  String get addActionAddText => 'Textový záznam';
 
   @override
   String get addActionAddTimer => 'Časovač';
@@ -39,7 +41,29 @@ class AppLocalizationsCs extends AppLocalizations {
   String get addActionAddTimeRecording => 'Záznam času';
 
   @override
+  String get addActionCreateLinkedTask => 'Propojit úkol';
+
+  @override
+  String get addActionCreateLinkedTaskHint =>
+      'Vytvoří a otevře nový úkol propojený s tímto.';
+
+  @override
+  String get addActionCreateTask => 'Přidat úkol';
+
+  @override
+  String get addActionCreateTaskHint => 'Vytvoří nový úkol a otevře ho.';
+
+  @override
   String get addActionImportImage => 'Importovat obrázek';
+
+  @override
+  String get addActionImportImageHint => 'Otevře galerii nebo výběr souborů.';
+
+  @override
+  String get addActionStartTimer => 'Spustit časovač';
+
+  @override
+  String get addActionStartTimerHint => 'Okamžitě začne měřit čas.';
 
   @override
   String get addHabitCommentLabel => 'Komentář';
@@ -3591,10 +3615,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get createCategoryTitle => 'Vytvořit kategorii';
 
   @override
+  String get createEntryAttachTitle => 'Přiložit';
+
+  @override
+  String get createEntryFirstRunFooter =>
+      'Poznámky, seznamy a hlasové poznámky najdeš přímo na stránce.';
+
+  @override
   String get createEntryLabel => 'Vytvořit novou položku';
 
   @override
   String get createEntryTitle => 'Přidat';
+
+  @override
+  String get createEntryTriggerHint =>
+      'Přidat obrázek, snímek obrazovky nebo propojený úkol';
+
+  @override
+  String get createEntryTriggerHintFull =>
+      'Přidat poznámku, seznam, hlasovou poznámku, obrázek a další';
 
   @override
   String get createNewLinkedTask => 'Vytvořit nový propojený úkol…';
@@ -10747,7 +10786,8 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskActionBarTrackTime => 'Sledovat čas';
 
   @override
-  String get taskAgentAssignHint => 'Nech agenta navrhnout kroky a shrnutí.';
+  String get taskAgentAssignHint =>
+      'Navrhne kroky a shrnutí pomocí vestavěné AI.';
 
   @override
   String get taskAgentAttributionUnavailable => 'Autorství není dostupné';
@@ -11040,16 +11080,25 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskFirstRunAddChecklist => 'Přidat kontrolní seznam';
 
   @override
+  String get taskFirstRunAddChecklistHint =>
+      'Přidá seznam odškrtávatelných kroků.';
+
+  @override
   String get taskFirstRunAssignAgent => 'Přiřadit agenta';
 
   @override
   String get taskFirstRunRecordAudio => 'Nahrát hlasovou poznámku';
 
   @override
+  String get taskFirstRunRecordAudioHint =>
+      'Otevře rekordér, aniž by spustil nahrávání.';
+
+  @override
   String get taskFirstRunWriteNote => 'Napsat poznámku';
 
   @override
-  String get taskHeaderNoCategoryLabel => 'Žádná kategorie';
+  String get taskFirstRunWriteNoteHint =>
+      'Přidá propojenou poznámku na podrobnosti a myšlenky.';
 
   @override
   String taskLabelsMoreCount(int count) {
@@ -11221,6 +11270,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get taskPriorityMedium => 'Střední';
 
   @override
+  String taskPriorityTooltip(String priority) {
+    return 'Priorita: $priority';
+  }
+
+  @override
   String get taskPriorityUrgent => 'Naléhavá';
 
   @override
@@ -11257,6 +11311,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '„$query“';
   }
+
+  @override
+  String get taskSetCategoryLabel => 'Nastavit kategorii';
 
   @override
   String get taskSetDueDateLabel => 'Nastavit termín';

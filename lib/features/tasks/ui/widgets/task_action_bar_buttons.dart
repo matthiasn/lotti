@@ -27,10 +27,22 @@ class TrackTimePill extends StatelessWidget {
     required this.onStartTimer,
     required this.onNavigateToRunningEntry,
     required this.onStop,
+    this.subdued = false,
     super.key,
   });
 
   final bool isTracking;
+
+  /// Drops the idle pill one emphasis step: tonal surface fill with a
+  /// neutral high-emphasis label instead of the solid accent fill.
+  ///
+  /// True while the task page shows its first-run block. On a blank task the
+  /// filled pill was the page's single accent-filled element — maximal weight
+  /// on a tertiary action while the state's actual primary, the focused title
+  /// field, carried only a border. The accent returns the moment the task has
+  /// content. A *running* timer ignores this: the red recording fill is a
+  /// status, not an emphasis choice.
+  final bool subdued;
   final String label;
   final String idleSemanticLabel;
   final String navigateSemanticLabel;
@@ -50,14 +62,21 @@ class TrackTimePill extends StatelessWidget {
     // theme) the heaviest ink on an otherwise near-white page.
     final fillColor = isTracking
         ? tokens.colors.alert.error.defaultColor
-        : tokens.colors.interactive.enabled;
+        : (subdued
+              ? tokens.colors.surface.enabled
+              : tokens.colors.interactive.enabled);
     // The error palette has no dedicated on-color token — its
     // defaultColor is a vivid red across both themes, so a fixed white
     // foreground stays legible on top. The interactive accent does have
-    // one: `text.onInteractiveAlert`.
+    // one: `text.onInteractiveAlert`. The subdued pill reads in neutral
+    // high-emphasis ink: while the first-run block shows, the page's one
+    // accent belongs to the focused title field, and even an accent *label*
+    // down here competed with it. The teal returns with the ordinary bar.
     final foreground = isTracking
         ? Colors.white
-        : tokens.colors.text.onInteractiveAlert;
+        : (subdued
+              ? tokens.colors.text.highEmphasis
+              : tokens.colors.text.onInteractiveAlert);
     final pillRadius = BorderRadius.circular(tokens.radii.badgesPills);
     final textStyle = tokens.typography.styles.subtitle.subtitle2.copyWith(
       color: foreground,
@@ -91,10 +110,14 @@ class TrackTimePill extends StatelessWidget {
             decoration: BoxDecoration(
               color: fillColor,
               borderRadius: pillRadius,
+              // The accent and recording fills are solid and bring their own
+              // contrast, so they carry no outline. The subdued tonal fill
+              // sits near the glass strip's own tone and gets the same quiet
+              // boundary the bordered chips use.
+              border: isTracking || !subdued
+                  ? null
+                  : Border.all(color: tokens.colors.decorative.level02),
             ),
-            // No outline in either state: both fills are solid and bring
-            // their own contrast. The hairline existed only for the
-            // translucent glass treatment this pill no longer uses.
             child: ConstrainedBox(
               constraints: BoxConstraints(minWidth: idleContentWidth),
               child: Center(
@@ -120,6 +143,34 @@ class TrackTimePill extends StatelessWidget {
       ),
     );
   }
+}
+
+/// The idle Track time pill's laid-out width for [idleLabel]: horizontal
+/// padding, glyph, gaps and the measured text. Used by the bar to decide —
+/// from real localized metrics, not a pixel guess — whether the compact row
+/// can hold both labeled pills.
+double trackTimePillWidth(BuildContext context, String idleLabel) {
+  final spacing = context.designTokens.spacing;
+  final style = context.designTokens.typography.styles.subtitle.subtitle2;
+  return (spacing.step5 * 2) +
+      TaskActionBar.iconSize +
+      spacing.step2 +
+      _measureSingleLineTextWidth(context, idleLabel, style) +
+      spacing.step3;
+}
+
+/// The [AddMenuPill]'s laid-out width for [label], same contract as
+/// [trackTimePillWidth].
+double addMenuPillWidth(BuildContext context, String label) {
+  final spacing = context.designTokens.spacing;
+  final style = context.designTokens.typography.styles.subtitle.subtitle2;
+  return (spacing.step5 * 2) +
+      TaskActionBar.iconSize +
+      spacing.step2 +
+      _measureSingleLineTextWidth(context, label, style) +
+      spacing.step2 +
+      // The trailing opens-caret.
+      TaskActionBar.iconSize;
 }
 
 double _measureSingleLineTextWidth(
@@ -206,6 +257,103 @@ class _PillStopButton extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+/// Labeled "Add" trigger for the action bar, on the subdued pill treatment.
+///
+/// The bare "+" circle was the page's most prominent creation control and
+/// the one that broke the page's own glyph grammar: everywhere else "+"
+/// means creates-in-place, while this one opens the Add sheet. A label
+/// resolves the lie the way the sheet's own title does — trigger and
+/// destination say the same word. The bar renders this pill wherever the
+/// row has width for it and falls back to the bare circle only below the
+/// narrow-width threshold.
+class AddMenuPill extends StatelessWidget {
+  const AddMenuPill({
+    required this.label,
+    required this.onPressed,
+    this.icon = Icons.add_rounded,
+    this.tooltip,
+    super.key,
+  });
+
+  /// Leading glyph. The full-sheet "Add" wears the plus; the first-run
+  /// "Attach" wears the paperclip, because on this page "+" is the
+  /// commits-immediately glyph and this trigger opens a sheet.
+  final IconData icon;
+  final String label;
+
+  /// Optional long-form scent: names what the sheet actually holds, so a
+  /// pointer hover (or assistive tech) can route between the card and the
+  /// sheet BEFORE the tap. The visible label stays the one word the sheet
+  /// titles itself with.
+  final String? tooltip;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    // The subdued Track time treatment: tonal surface fill, quiet border,
+    // neutral high-emphasis ink. The bar keeps a single accent budget.
+    final style = tokens.typography.styles.subtitle.subtitle2.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
+
+    final pill = Semantics(
+      button: true,
+      label: tooltip ?? label,
+      excludeSemantics: true,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: radius,
+          onTap: onPressed,
+          child: Container(
+            height: TaskActionBar.buttonSize,
+            padding: EdgeInsets.symmetric(horizontal: spacing.step5),
+            decoration: BoxDecoration(
+              color: tokens.colors.surface.enabled,
+              borderRadius: radius,
+              border: Border.all(color: tokens.colors.decorative.level02),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  icon,
+                  size: TaskActionBar.iconSize,
+                  color: tokens.colors.text.highEmphasis,
+                ),
+                SizedBox(width: spacing.step2),
+                Text(label, style: style),
+                SizedBox(width: spacing.step2),
+                // The opens-further-UI marker, in the exact caret grammar
+                // the Open/Medium chips use for "tap reveals options". The
+                // page teaches that a plain glyph+word commits immediately;
+                // this trigger opens a sheet and must say so from the
+                // pixels — the tooltip never surfaces on touch.
+                Icon(
+                  Icons.expand_more_rounded,
+                  size: TaskActionBar.iconSize,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+    if (tooltip == null) return pill;
+    // The Semantics above already carries the long label; without the
+    // exclusion the tooltip would announce it a second time.
+    return Tooltip(
+      message: tooltip,
+      excludeFromSemantics: true,
+      child: pill,
     );
   }
 }

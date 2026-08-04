@@ -133,6 +133,16 @@ class DesignSystemListItem extends StatefulWidget {
   final bool excludeFromSemantics;
   final DesignSystemListItemVisualState? forcedState;
 
+  /// The horizontal inset from the row's left edge to its TITLE column, for
+  /// the medium spec with a step5-sized leading glyph: gutter + glyph + gap.
+  ///
+  /// Surfaces that append non-row content to a list (the Add sheet's closing
+  /// caption) consume this instead of re-deriving the arithmetic, so the
+  /// single-axis alignment is owned here and cannot drift when the spec
+  /// changes.
+  static double titleColumnInset(DsTokens tokens) =>
+      tokens.spacing.step5 + tokens.spacing.step5 + tokens.spacing.step3;
+
   @override
   State<DesignSystemListItem> createState() => _DesignSystemListItemState();
 }
@@ -174,9 +184,6 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
         ? (widget.subtitleMaxLines == null || widget.subtitleMaxLines! > 1) ||
               (widget.titleMaxLines == null || widget.titleMaxLines! > 1)
         : (widget.titleMaxLines == null || widget.titleMaxLines! > 1);
-    final titleLineHeight =
-        (spec.titleStyle.fontSize ?? tokens.typography.size.subtitle2) *
-        (spec.titleStyle.height ?? 1.4);
     final enabled = widget.onTap != null;
     final visualState = _resolveVisualState(enabled);
 
@@ -255,21 +262,17 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                     horizontal: spec.horizontalPadding,
                     vertical: spec.verticalPadding,
                   ),
-                  child: Row(
-                    // A row whose text can wrap aligns its leading and
-                    // trailing slots to the TITLE's first line rather than to
-                    // the row's vertical centre: with a two-line subtitle the
-                    // centred glyph dropped beside the description and fell
-                    // out of the icon rail its single-line neighbours share.
-                    // Single-line rows keep centring, where the two are the
-                    // same thing anyway.
-                    crossAxisAlignment: multiLine
-                        ? CrossAxisAlignment.start
-                        : CrossAxisAlignment.center,
+                  child: _RowAlign(
+                    multiLine: multiLine,
                     children: [
+                      // Both glyph rails centre against the row's full text
+                      // block. The leading slot used to pin to the title's
+                      // first line while the trailing slot centred — two
+                      // vertical axes on one row, and on every two-line row
+                      // the mismatch read as a wobble rather than a rail.
+                      // One axis, both sides.
                       if (widget.leadingExtra != null)
                         _SlotAlign(
-                          lineHeight: titleLineHeight,
                           multiLine: multiLine,
                           child: widget.leadingExtra!,
                         ),
@@ -277,7 +280,6 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                         SizedBox(width: spec.itemGap),
                       if (widget.leading != null)
                         _SlotAlign(
-                          lineHeight: titleLineHeight,
                           multiLine: multiLine,
                           child: widget.leading!,
                         ),
@@ -300,7 +302,6 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                         SizedBox(width: spec.itemGap),
                       if (widget.trailing != null)
                         _SlotAlign(
-                          lineHeight: titleLineHeight,
                           multiLine: multiLine,
                           child: widget.trailing!,
                         ),
@@ -309,7 +310,6 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
                         SizedBox(width: spec.itemGap),
                       if (widget.trailingExtra != null)
                         _SlotAlign(
-                          lineHeight: titleLineHeight,
                           multiLine: multiLine,
                           child: widget.trailingExtra!,
                         ),
@@ -341,31 +341,45 @@ class _DesignSystemListItemState extends State<DesignSystemListItem> {
   }
 }
 
-/// Pins a leading/trailing slot to the height of the title's first line, so a
-/// glyph beside a wrapping row sits on the same rail as its single-line
-/// neighbours. A pass-through when the row cannot wrap.
+/// The list row's layout shell. Single-line rows are a plain centred [Row];
+/// rows that can wrap get an [IntrinsicHeight] + stretch so the glyph slots
+/// can centre against the full text block ([_SlotAlign]).
+class _RowAlign extends StatelessWidget {
+  const _RowAlign({required this.children, required this.multiLine});
+
+  final List<Widget> children;
+  final bool multiLine;
+
+  @override
+  Widget build(BuildContext context) {
+    if (!multiLine) {
+      return Row(children: children);
+    }
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: children,
+      ),
+    );
+  }
+}
+
+/// Centres a glyph slot against the row's full (possibly two-line) text
+/// block. Both rails use the same axis: the leading slot used to pin to the
+/// title's first line while the trailing slot centred, and the two anchors on
+/// one row read as a wobble on every two-line list. A pass-through when the
+/// row cannot wrap — centring and the title rail are the same thing on a
+/// single line.
 class _SlotAlign extends StatelessWidget {
-  const _SlotAlign({
-    required this.child,
-    required this.lineHeight,
-    required this.multiLine,
-  });
+  const _SlotAlign({required this.child, required this.multiLine});
 
   final Widget child;
-  final double lineHeight;
   final bool multiLine;
 
   @override
   Widget build(BuildContext context) {
     if (!multiLine) return child;
-    // `minHeight`, never a fixed height: a slot holding a real 48pt action
-    // button has to keep its 48pt target. A small glyph gets centred in a
-    // line-tall box and so lands on the title's rail; anything taller than the
-    // line keeps its own height and simply starts at the top of the row.
-    return ConstrainedBox(
-      constraints: BoxConstraints(minHeight: lineHeight),
-      child: Center(heightFactor: 1, child: child),
-    );
+    return Center(child: child);
   }
 }
 

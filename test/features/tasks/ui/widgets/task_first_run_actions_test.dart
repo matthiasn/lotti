@@ -401,14 +401,15 @@ void main() {
         // under the finger.
         expect(glyphFor('Write a note'), Icons.add_rounded);
         expect(glyphFor('Add a checklist'), Icons.add_rounded);
-        expect(glyphFor('Record a voice note'), Icons.arrow_forward_ios);
-        expect(glyphFor('Assign an agent'), Icons.arrow_forward_ios);
+        expect(glyphFor('Record a voice note'), Icons.chevron_right_rounded);
+        expect(glyphFor('Assign an agent'), Icons.chevron_right_rounded);
       },
     );
 
     testWidgets(
-      'only the agent row carries an explanation — three worded verbs need '
-      'none, and a subtitle on each would make the block a paragraph',
+      'every row carries a one-line explanation — a subtitle on only the '
+      'agent row bottom-weighted the card and read as that row mattering '
+      'most, when order (not bulk) is what carries priority',
       (tester) async {
         await pump(tester, task: buildTask());
 
@@ -417,15 +418,16 @@ void main() {
             .map((row) => row.subtitle)
             .toList();
 
-        expect(subtitles.whereType<String>(), hasLength(1));
-        expect(
-          subtitles.last,
-          'Let an agent draft steps and summaries.',
-          reason:
-              'one short sentence describing what the tap does — it used to '
-              'describe the category-default screen instead, which made the '
-              "card's most optional row its largest",
-        );
+        expect(subtitles, [
+          'Adds a linked note for details and thoughts.',
+          'Adds a list of checkable steps.',
+          // Answers the fear low-vision and novice reviewers voiced verbatim:
+          // tapping does NOT start recording — it opens the recorder sheet.
+          'Opens the recorder without starting to record.',
+          // Names the AI plainly: "agent" alone was a jargon wall for
+          // non-technical readers.
+          'Drafts steps and summaries with built-in AI.',
+        ]);
       },
     );
   });

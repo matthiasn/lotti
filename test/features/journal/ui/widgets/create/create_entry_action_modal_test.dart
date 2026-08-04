@@ -2,8 +2,11 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/journal/state/image_paste_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_entry_action_modal.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_menu_list_item.dart';
 import 'package:lotti/get_it.dart';
@@ -55,10 +58,14 @@ void main() {
       WidgetTester tester, {
       String? linkedFromId = 'test-linked-id',
       String? categoryId = 'test-category-id',
+      List<Override> extraOverrides = const [],
     }) async {
       await tester.pumpWidget(
         ProviderScope(
-          overrides: [journalDbProvider.overrideWithValue(mockDb)],
+          overrides: [
+            journalDbProvider.overrideWithValue(mockDb),
+            ...extraOverrides,
+          ],
           child: makeTestableWidget2(
             Builder(
               builder: (context) => Scaffold(
@@ -95,21 +102,34 @@ void main() {
       final messages = AppLocalizations.of(context)!;
       for (final label in [
         messages.addActionAddEvent,
-        messages.addActionAddTask,
-        messages.addActionAddAudioRecording,
-        messages.addActionAddTimer,
-        messages.addActionAddText,
+        messages.addActionCreateLinkedTask,
+        messages.taskFirstRunRecordAudio,
+        messages.addActionStartTimer,
+        messages.taskFirstRunWriteNote,
       ]) {
         expect(find.text(label), findsOneWidget, reason: label);
       }
     });
 
-    testWidgets('shows dividers between menu items', (tester) async {
-      await pumpAndOpenModal(tester);
+    testWidgets(
+      'exactly one divider between adjacent rows — never a stranded rule '
+      'above or below the list',
+      (tester) async {
+        await pumpAndOpenModal(tester);
 
-      // Verify dividers are present between items
-      expect(find.byType(Divider), findsWidgets);
-    });
+        // Visibility is resolved before the list is assembled, so "listed"
+        // and "rendered" are the same thing and the divider count is exactly
+        // rows - 1. The old sheet let items collapse themselves after being
+        // listed, which closed the sheet on an orphan rule under a row that
+        // was not there.
+        final rows = find.byType(CreateMenuListItem).evaluate().length;
+        expect(rows, greaterThan(1));
+        expect(
+          find.byType(DesignSystemDivider).evaluate().length,
+          rows - 1,
+        );
+      },
+    );
 
     testWidgets('shows Timer item when linkedFromId is provided', (
       tester,
@@ -149,6 +169,61 @@ void main() {
       expect(find.byIcon(Icons.event_rounded), findsNothing);
     });
 
+    testWidgets(
+      'hides the Event row while the flag is still loading — an unresolved '
+      'flag is not permission',
+      (tester) async {
+        final flagController = StreamController<Set<ConfigFlag>>();
+        when(
+          () => mockDb.watchConfigFlags(),
+        ).thenAnswer((_) => flagController.stream);
+
+        await pumpAndOpenModal(tester, linkedFromId: null);
+
+        expect(find.byIcon(Icons.event_rounded), findsNothing);
+
+        await flagController.close();
+      },
+    );
+
+    testWidgets('hides the Event row when the flag stream errors', (
+      tester,
+    ) async {
+      when(() => mockDb.watchConfigFlags()).thenAnswer(
+        (_) => Stream<Set<ConfigFlag>>.error(Exception('flag backend down')),
+      );
+
+      await pumpAndOpenModal(tester, linkedFromId: null);
+
+      expect(find.byIcon(Icons.event_rounded), findsNothing);
+    });
+
+    testWidgets(
+      'offers the Paste row only when the clipboard actually holds an image '
+      '— resolved before the list is assembled, so no orphan divider',
+      (tester) async {
+        // Default clipboard (empty) — no row.
+        await pumpAndOpenModal(tester);
+        expect(find.byIcon(Icons.content_paste_rounded), findsNothing);
+
+        await tester.tap(find.byIcon(Icons.close_rounded));
+        await tester.pumpAndSettle();
+
+        // Clipboard holds an image — the row appears.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await pumpAndOpenModal(
+          tester,
+          extraOverrides: [
+            imagePasteControllerProvider((
+              linkedFromId: 'test-linked-id',
+              categoryId: 'test-category-id',
+            )).overrideWithBuild((ref, notifier) async => true),
+          ],
+        );
+        expect(find.byIcon(Icons.content_paste_rounded), findsOneWidget);
+      },
+    );
+
     testWidgets('displays correct icons for all standard menu items', (
       tester,
     ) async {
@@ -160,8 +235,8 @@ void main() {
 
       // Verify core icons are present
       expect(find.byIcon(Icons.event_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
-      expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.add_task_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
       expect(find.byIcon(Icons.timer_outlined), findsOneWidget);
       expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
     });
