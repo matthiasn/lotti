@@ -276,7 +276,6 @@ void main() {
           id: 'activity-retained',
           kind: DayActivityEntryKind.recording,
           createdAt: sourceCapturedAt,
-          activityEntryId: 'activity-retained',
           processingJob: job,
         );
 
@@ -322,7 +321,6 @@ void main() {
         id: capture.id,
         kind: DayActivityEntryKind.checkIn,
         createdAt: capture.capturedAt,
-        activityEntryId: capture.id,
         capture: capture,
       );
 
@@ -390,7 +388,6 @@ void main() {
               id: 'activity-refine',
               kind: DayActivityEntryKind.recording,
               createdAt: capturedAt,
-              activityEntryId: 'activity-refine',
               processingJob: job,
             ),
           ],

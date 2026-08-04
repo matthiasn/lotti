@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -22,7 +21,6 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-import '../../../test_data/test_data.dart';
 import '../../agents/test_data/entity_factories.dart';
 
 void main() {
@@ -34,77 +32,71 @@ void main() {
   );
 
   group('dayAgentProvider factory', () {
+    ({
+      RealDayAgent agent,
+      MockDayAgentCaptureService captureService,
+      MockDayAgentPlanService planService,
+      MockDayAgentService dayAgentService,
+      MockJournalDb journalDb,
+      MockDayProcessingOutboxRepository outbox,
+      MockDayProcessingRuntime runtime,
+    })
+    makeAgent() {
+      final captureService = MockDayAgentCaptureService();
+      final planService = MockDayAgentPlanService();
+      final dayAgentService = MockDayAgentService();
+      final journalDb = MockJournalDb();
+      final outbox = MockDayProcessingOutboxRepository();
+      final runtime = MockDayProcessingRuntime();
+      final container = ProviderContainer(
+        overrides: [
+          dayAgentCaptureServiceProvider.overrideWithValue(captureService),
+          dayAgentPlanServiceProvider.overrideWithValue(planService),
+          dayAgentServiceProvider.overrideWithValue(dayAgentService),
+          journalDbProvider.overrideWithValue(journalDb),
+          dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
+          dayProcessingRuntimeProvider.overrideWithValue(runtime),
+          silenceAgentUpdates,
+        ],
+      );
+      addTearDown(container.dispose);
+
+      return (
+        agent: container.read(dayAgentProvider) as RealDayAgent,
+        captureService: captureService,
+        planService: planService,
+        dayAgentService: dayAgentService,
+        journalDb: journalDb,
+        outbox: outbox,
+        runtime: runtime,
+      );
+    }
+
     test(
       'constructs a RealDayAgent wired to the upstream service providers',
       () {
-        final captureService = MockDayAgentCaptureService();
-        final planService = MockDayAgentPlanService();
-        final dayAgentService = MockDayAgentService();
-        final journalDb = MockJournalDb();
-        final outbox = MockDayProcessingOutboxRepository();
-        final runtime = MockDayProcessingRuntime();
+        final fixture = makeAgent();
 
-        final container = ProviderContainer(
-          overrides: [
-            dayAgentCaptureServiceProvider.overrideWithValue(captureService),
-            dayAgentPlanServiceProvider.overrideWithValue(planService),
-            dayAgentServiceProvider.overrideWithValue(dayAgentService),
-            journalDbProvider.overrideWithValue(journalDb),
-            dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
-            dayProcessingRuntimeProvider.overrideWithValue(runtime),
-            silenceAgentUpdates,
-          ],
-        );
-        addTearDown(container.dispose);
-
-        final agent = container.read(dayAgentProvider);
-        expect(agent, isA<RealDayAgent>());
-        final real = agent as RealDayAgent;
-        expect(real.captureService, same(captureService));
-        expect(real.planService, same(planService));
-        expect(real.dayAgentService, same(dayAgentService));
-        expect(real.journalDb, same(journalDb));
-        expect(real.mockFallback, isA<MockDayAgent>());
-        expect(real.outbox, same(outbox));
+        expect(fixture.agent.captureService, same(fixture.captureService));
+        expect(fixture.agent.planService, same(fixture.planService));
+        expect(fixture.agent.dayAgentService, same(fixture.dayAgentService));
+        expect(fixture.agent.journalDb, same(fixture.journalDb));
+        expect(fixture.agent.mockFallback, isA<MockDayAgent>());
+        expect(fixture.agent.outbox, same(fixture.outbox));
       },
     );
 
-    test(
-      'wires the durable outbox and nudges the processing runtime '
-      '(ADR 0032 phase 1)',
-      () {
-        final captureService = MockDayAgentCaptureService();
-        final planService = MockDayAgentPlanService();
-        final dayAgentService = MockDayAgentService();
-        final journalDb = MockJournalDb();
-        final outbox = MockDayProcessingOutboxRepository();
-        final runtime = MockDayProcessingRuntime();
-        // ignore: unnecessary_lambdas
-        when(() => runtime.nudge()).thenAnswer((_) async {});
+    test('wires the durable outbox and nudges the processing runtime '
+        '(ADR 0032 phase 1)', () {
+      final fixture = makeAgent();
+      // ignore: unnecessary_lambdas
+      when(() => fixture.runtime.nudge()).thenAnswer((_) async {});
+      expect(fixture.agent.outbox, same(fixture.outbox));
 
-        final container = ProviderContainer(
-          overrides: [
-            dayAgentCaptureServiceProvider.overrideWithValue(captureService),
-            dayAgentPlanServiceProvider.overrideWithValue(planService),
-            dayAgentServiceProvider.overrideWithValue(dayAgentService),
-            journalDbProvider.overrideWithValue(journalDb),
-            dayProcessingOutboxRepositoryProvider.overrideWithValue(outbox),
-            dayProcessingRuntimeProvider.overrideWithValue(runtime),
-            silenceAgentUpdates,
-          ],
-        );
-        addTearDown(container.dispose);
-
-        final agent = container.read(dayAgentProvider);
-        expect(agent, isA<RealDayAgent>());
-        final real = agent as RealDayAgent;
-        expect(real.outbox, same(outbox));
-
-        real.nudgeProcessing();
-        // ignore: unnecessary_lambdas
-        verify(() => runtime.nudge()).called(1);
-      },
-    );
+      fixture.agent.nudgeProcessing();
+      // ignore: unnecessary_lambdas
+      verify(() => fixture.runtime.nudge()).called(1);
+    });
   });
 
   group('currentDraftPlanProvider', () {
@@ -137,19 +129,16 @@ void main() {
       expect(plan, isNull);
     });
 
-    test(
-      'returns the projected plan when the agent supplies one and forwards '
-      'the requested date',
-      () async {
-        final agent = _PlanProvidingAgent();
-        final plan = await makeContainer(
-          agent,
-        ).read(currentDraftPlanProvider(asOf).future);
-        expect(plan, isNotNull);
-        expect(plan!.dayDate, asOf);
-        expect(agent.requestedDates, [asOf]);
-      },
-    );
+    test('returns the projected plan when the agent supplies one and forwards '
+        'the requested date', () async {
+      final agent = _PlanProvidingAgent();
+      final plan = await makeContainer(
+        agent,
+      ).read(currentDraftPlanProvider(asOf).future);
+      expect(plan, isNotNull);
+      expect(plan!.dayDate, asOf);
+      expect(agent.requestedDates, [asOf]);
+    });
   });
 
   group('dailyOsPlanDaysProvider', () {
@@ -189,40 +178,33 @@ void main() {
           as DayPlanEntity;
     }
 
-    test(
-      'requests one id per day of the month and returns only days with a '
-      'live plan',
-      () async {
-        final may13 = DateTime(2026, 5, 13);
-        final may20 = DateTime(2026, 5, 20);
-        when(() => agentRepository.getEntitiesByIds(any())).thenAnswer(
-          (invocation) async {
-            final ids =
-                invocation.positionalArguments.first as Iterable<String>;
-            // One deterministic id per day in May 2026.
-            expect(ids, hasLength(31));
-            expect(
-              ids,
-              contains(dayAgentPlanEntityId(dayAgentIdForDate(may13))),
-            );
-            return {
-              dayAgentPlanEntityId(dayAgentIdForDate(may13)): makePlan(may13),
-              // Soft-deleted plans must not produce a dot.
-              dayAgentPlanEntityId(dayAgentIdForDate(may20)): makePlan(
-                may20,
-                deletedAt: DateTime(2026, 5, 21),
-              ),
-            };
-          },
-        );
+    test('requests one id per day of the month and returns only days with a '
+        'live plan', () async {
+      final may13 = DateTime(2026, 5, 13);
+      final may20 = DateTime(2026, 5, 20);
+      when(() => agentRepository.getEntitiesByIds(any())).thenAnswer((
+        invocation,
+      ) async {
+        final ids = invocation.positionalArguments.first as Iterable<String>;
+        // One deterministic id per day in May 2026.
+        expect(ids, hasLength(31));
+        expect(ids, contains(dayAgentPlanEntityId(dayAgentIdForDate(may13))));
+        return {
+          dayAgentPlanEntityId(dayAgentIdForDate(may13)): makePlan(may13),
+          // Soft-deleted plans must not produce a dot.
+          dayAgentPlanEntityId(dayAgentIdForDate(may20)): makePlan(
+            may20,
+            deletedAt: DateTime(2026, 5, 21),
+          ),
+        };
+      });
 
-        final days = await makeContainer().read(
-          dailyOsPlanDaysProvider(DateTime(2026, 5)).future,
-        );
+      final days = await makeContainer().read(
+        dailyOsPlanDaysProvider(DateTime(2026, 5)).future,
+      );
 
-        expect(days, {may13});
-      },
-    );
+      expect(days, {may13});
+    });
 
     test('returns the empty set when no plans exist in the month', () async {
       when(
@@ -243,12 +225,9 @@ void main() {
 
     late MockDayAgentService dayAgentService;
     late MockAgentRepository agentRepository;
-    late MockJournalDb journalDb;
-
     setUp(() {
       dayAgentService = MockDayAgentService();
       agentRepository = MockAgentRepository();
-      journalDb = MockJournalDb();
       // The provider unions the resolved owner with the coordinator
       // (ADR 0032); default the coordinator leg to empty so owner-focused
       // tests stay unchanged. Specific stubs registered later win.
@@ -266,7 +245,6 @@ void main() {
         overrides: [
           dayAgentServiceProvider.overrideWithValue(dayAgentService),
           agentRepositoryProvider.overrideWithValue(agentRepository),
-          journalDbProvider.overrideWithValue(journalDb),
           silenceAgentUpdates,
         ],
       )..listen(capturesForDateProvider(forDate), (_, _) {});
@@ -278,7 +256,6 @@ void main() {
       required String id,
       required String agentId,
       DateTime? capturedAt,
-      String? audioRef,
       DateTime? deletedAt,
     }) {
       return AgentDomainEntity.capture(
@@ -288,7 +265,6 @@ void main() {
             capturedAt: capturedAt ?? forDate,
             createdAt: capturedAt ?? forDate,
             vectorClock: null,
-            audioRef: audioRef,
             deletedAt: deletedAt,
           )
           as CaptureEntity;
@@ -313,82 +289,66 @@ void main() {
       );
     });
 
-    test(
-      'queries the agent repo with the day-agent id and the capture entity '
-      'type',
-      () async {
-        const agentId = 'day-agent-001';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
-          (_) async => makeTestIdentity(
-            id: agentId,
-            agentId: agentId,
-            kind: AgentKinds.dayAgent,
-          ),
-        );
-        when(
-          () => agentRepository.getEntitiesByAgentIdAndSubtype(
-            agentId,
-            type: AgentEntityTypes.capture,
-            subtype: any(named: 'subtype'),
-          ),
-        ).thenAnswer((_) async => const <AgentDomainEntity>[]);
-
-        await makeContainer().read(capturesForDateProvider(forDate).future);
-
-        // The provider re-derives the day-agent id from the supplied date.
-        verify(() => dayAgentService.getDayAgentForDate(forDate)).called(1);
-        verify(
-          () => agentRepository.getEntitiesByAgentIdAndSubtype(
-            agentId,
-            type: AgentEntityTypes.capture,
-            subtype: any(named: 'subtype'),
-          ),
-        ).called(1);
-      },
-    );
-
-    test(
-      'filters out soft-deleted captures and pairs the survivor with its '
-      'JournalAudio',
-      () async {
-        const agentId = 'day-agent-002';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
-          (_) async => makeTestIdentity(
-            id: agentId,
-            agentId: agentId,
-            kind: AgentKinds.dayAgent,
-          ),
-        );
-        final live = makeCapture(
-          id: 'cap-live',
+    test('queries the agent repo with the day-agent id and the capture entity '
+        'type', () async {
+      const agentId = 'day-agent-001';
+      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: agentId,
           agentId: agentId,
-          audioRef: testAudioEntry.meta.id,
-        );
-        final tombstone = makeCapture(
-          id: 'cap-deleted',
+          kind: AgentKinds.dayAgent,
+        ),
+      );
+      when(
+        () => agentRepository.getEntitiesByAgentIdAndSubtype(
+          agentId,
+          type: AgentEntityTypes.capture,
+          subtype: any(named: 'subtype'),
+        ),
+      ).thenAnswer((_) async => const <AgentDomainEntity>[]);
+
+      await makeContainer().read(capturesForDateProvider(forDate).future);
+
+      // The provider re-derives the day-agent id from the supplied date.
+      verify(() => dayAgentService.getDayAgentForDate(forDate)).called(1);
+      verify(
+        () => agentRepository.getEntitiesByAgentIdAndSubtype(
+          agentId,
+          type: AgentEntityTypes.capture,
+          subtype: any(named: 'subtype'),
+        ),
+      ).called(1);
+    });
+
+    test('filters out soft-deleted captures', () async {
+      const agentId = 'day-agent-002';
+      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: agentId,
           agentId: agentId,
-          deletedAt: dayAt,
-        );
-        when(
-          () => agentRepository.getEntitiesByAgentIdAndSubtype(
-            agentId,
-            type: AgentEntityTypes.capture,
-            subtype: any(named: 'subtype'),
-          ),
-        ).thenAnswer((_) async => [live, tombstone]);
-        when(
-          () => journalDb.journalEntityById(testAudioEntry.meta.id),
-        ).thenAnswer((_) async => testAudioEntry);
+          kind: AgentKinds.dayAgent,
+        ),
+      );
+      final live = makeCapture(id: 'cap-live', agentId: agentId);
+      final tombstone = makeCapture(
+        id: 'cap-deleted',
+        agentId: agentId,
+        deletedAt: dayAt,
+      );
+      when(
+        () => agentRepository.getEntitiesByAgentIdAndSubtype(
+          agentId,
+          type: AgentEntityTypes.capture,
+          subtype: any(named: 'subtype'),
+        ),
+      ).thenAnswer((_) async => [live, tombstone]);
+      final rows = await makeContainer().read(
+        capturesForDateProvider(forDate).future,
+      );
 
-        final rows = await makeContainer().read(
-          capturesForDateProvider(forDate).future,
-        );
-
-        expect(rows, hasLength(1));
-        expect(rows.single.capture.id, 'cap-live');
-        expect(rows.single.audio?.meta.id, testAudioEntry.meta.id);
-      },
-    );
+      expect(rows, hasLength(1));
+      expect(rows.single.id, 'cap-live');
+    });
 
     test(
       'returns only captures for the selected day under one planner (ADR 0022)',
@@ -437,171 +397,58 @@ void main() {
           capturesForDateProvider(forDate).future,
         );
 
-        expect(rows.map((r) => r.capture.id), ['cap-today']);
+        expect(rows.map((r) => r.id), ['cap-today']);
       },
     );
 
-    test(
-      'unions coordinator captures with the per-day owner and dedupes by id '
-      '(ADR 0032)',
-      () async {
-        // A per-day agent owns the day, but a pre-cutover capture synced in
-        // under the coordinator — both must surface, shared ids only once.
-        final ownerId = perDayAgentId('dayplan-2026-05-25');
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
-          (_) async => makeTestIdentity(
-            id: ownerId,
-            agentId: ownerId,
-            kind: AgentKinds.dayAgent,
-          ),
-        );
-        final ownCapture = makeCapture(id: 'cap-own', agentId: ownerId);
-        final sharedOwn = makeCapture(id: 'cap-shared', agentId: ownerId);
-        final plannerCapture = makeCapture(
-          id: 'cap-planner',
-          agentId: dailyOsPlannerAgentId,
-        );
-        final sharedPlanner = makeCapture(
-          id: 'cap-shared',
-          agentId: dailyOsPlannerAgentId,
-        );
-        when(
-          () => agentRepository.getEntitiesByAgentIdAndSubtype(
-            ownerId,
-            type: AgentEntityTypes.capture,
-            subtype: any(named: 'subtype'),
-          ),
-        ).thenAnswer((_) async => [ownCapture, sharedOwn]);
-        when(
-          () => agentRepository.getEntitiesByAgentIdAndSubtype(
-            dailyOsPlannerAgentId,
-            type: AgentEntityTypes.capture,
-            subtype: any(named: 'subtype'),
-          ),
-        ).thenAnswer((_) async => [plannerCapture, sharedPlanner]);
+    test('unions coordinator captures with the per-day owner and dedupes by id '
+        '(ADR 0032)', () async {
+      // A per-day agent owns the day, but a pre-cutover capture synced in
+      // under the coordinator — both must surface, shared ids only once.
+      final ownerId = perDayAgentId('dayplan-2026-05-25');
+      when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
+        (_) async => makeTestIdentity(
+          id: ownerId,
+          agentId: ownerId,
+          kind: AgentKinds.dayAgent,
+        ),
+      );
+      final ownCapture = makeCapture(id: 'cap-own', agentId: ownerId);
+      final sharedOwn = makeCapture(id: 'cap-shared', agentId: ownerId);
+      final plannerCapture = makeCapture(
+        id: 'cap-planner',
+        agentId: dailyOsPlannerAgentId,
+      );
+      final sharedPlanner = makeCapture(
+        id: 'cap-shared',
+        agentId: dailyOsPlannerAgentId,
+      );
+      when(
+        () => agentRepository.getEntitiesByAgentIdAndSubtype(
+          ownerId,
+          type: AgentEntityTypes.capture,
+          subtype: any(named: 'subtype'),
+        ),
+      ).thenAnswer((_) async => [ownCapture, sharedOwn]);
+      when(
+        () => agentRepository.getEntitiesByAgentIdAndSubtype(
+          dailyOsPlannerAgentId,
+          type: AgentEntityTypes.capture,
+          subtype: any(named: 'subtype'),
+        ),
+      ).thenAnswer((_) async => [plannerCapture, sharedPlanner]);
 
-        final rows = await makeContainer().read(
-          capturesForDateProvider(forDate).future,
-        );
+      final rows = await makeContainer().read(
+        capturesForDateProvider(forDate).future,
+      );
 
-        expect(
-          rows.map((r) => r.capture.id).toSet(),
-          {'cap-own', 'cap-shared', 'cap-planner'},
-        );
-        expect(rows, hasLength(3));
-      },
-    );
-
-    test(
-      'leaves audio null when the capture has no audioRef',
-      () async {
-        const agentId = 'day-agent-003';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
-          (_) async => makeTestIdentity(
-            id: agentId,
-            agentId: agentId,
-            kind: AgentKinds.dayAgent,
-          ),
-        );
-        final typed = makeCapture(id: 'cap-typed', agentId: agentId);
-        when(
-          () => agentRepository.getEntitiesByAgentIdAndSubtype(
-            agentId,
-            type: AgentEntityTypes.capture,
-            subtype: any(named: 'subtype'),
-          ),
-        ).thenAnswer((_) async => [typed]);
-
-        final rows = await makeContainer().read(
-          capturesForDateProvider(forDate).future,
-        );
-
-        expect(rows, hasLength(1));
-        expect(rows.single.audio, isNull);
-        verifyNever(() => journalDb.journalEntityById(any()));
-      },
-    );
-
-    test(
-      'leaves audio null when the referenced JournalAudio has been deleted',
-      () async {
-        const agentId = 'day-agent-004';
-        const audioRef = 'audio-deleted';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
-          (_) async => makeTestIdentity(
-            id: agentId,
-            agentId: agentId,
-            kind: AgentKinds.dayAgent,
-          ),
-        );
-        final capture = makeCapture(
-          id: 'cap-stale-audio',
-          agentId: agentId,
-          audioRef: audioRef,
-        );
-        final deletedAudio = JournalAudio(
-          meta: testAudioEntry.meta.copyWith(
-            id: audioRef,
-            deletedAt: dayAt,
-          ),
-          data: testAudioEntry.data,
-        );
-        when(
-          () => agentRepository.getEntitiesByAgentIdAndSubtype(
-            agentId,
-            type: AgentEntityTypes.capture,
-            subtype: any(named: 'subtype'),
-          ),
-        ).thenAnswer((_) async => [capture]);
-        when(
-          () => journalDb.journalEntityById(audioRef),
-        ).thenAnswer((_) async => deletedAudio);
-
-        final rows = await makeContainer().read(
-          capturesForDateProvider(forDate).future,
-        );
-
-        expect(rows, hasLength(1));
-        expect(rows.single.audio, isNull);
-      },
-    );
-
-    test(
-      'leaves audio null when the referenced JournalAudio cannot be found',
-      () async {
-        const agentId = 'day-agent-005';
-        const audioRef = 'audio-missing';
-        when(() => dayAgentService.getDayAgentForDate(any())).thenAnswer(
-          (_) async => makeTestIdentity(
-            id: agentId,
-            agentId: agentId,
-            kind: AgentKinds.dayAgent,
-          ),
-        );
-        final capture = makeCapture(
-          id: 'cap-no-audio',
-          agentId: agentId,
-          audioRef: audioRef,
-        );
-        when(
-          () => agentRepository.getEntitiesByAgentIdAndSubtype(
-            agentId,
-            type: AgentEntityTypes.capture,
-            subtype: any(named: 'subtype'),
-          ),
-        ).thenAnswer((_) async => [capture]);
-        when(
-          () => journalDb.journalEntityById(audioRef),
-        ).thenAnswer((_) async => null);
-
-        final rows = await makeContainer().read(
-          capturesForDateProvider(forDate).future,
-        );
-
-        expect(rows, hasLength(1));
-        expect(rows.single.audio, isNull);
-      },
-    );
+      expect(rows.map((r) => r.id).toSet(), {
+        'cap-own',
+        'cap-shared',
+        'cap-planner',
+      });
+      expect(rows, hasLength(3));
+    });
   });
 
   group('dayAgentIsRunningProvider', () {
@@ -655,28 +502,22 @@ void main() {
       expect(await read(container), isTrue);
     });
 
-    test(
-      "false when only a different day's agent is running",
-      () async {
-        final container = runningContainer(
-          perDayRunningIds: {perDayAgentIdForDate(DateTime(2026, 5, 26))},
-        );
-        expect(await read(container), isFalse);
-      },
-    );
+    test("false when only a different day's agent is running", () async {
+      final container = runningContainer(
+        perDayRunningIds: {perDayAgentIdForDate(DateTime(2026, 5, 26))},
+      );
+      expect(await read(container), isFalse);
+    });
 
-    test(
-      "false when the coordinator is running a wake for a different day's "
-      'workspace',
-      () async {
-        final container = runningContainer(
-          coordinatorWorkspaceKey: dayAgentWorkspaceKey(
-            dayAgentIdForDate(DateTime(2026, 5, 26)),
-          ),
-        );
-        expect(await read(container), isFalse);
-      },
-    );
+    test("false when the coordinator is running a wake for a different day's "
+        'workspace', () async {
+      final container = runningContainer(
+        coordinatorWorkspaceKey: dayAgentWorkspaceKey(
+          dayAgentIdForDate(DateTime(2026, 5, 26)),
+        ),
+      );
+      expect(await read(container), isFalse);
+    });
 
     test('false when nothing is running', () async {
       final container = runningContainer();

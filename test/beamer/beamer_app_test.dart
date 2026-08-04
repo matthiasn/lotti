@@ -3545,13 +3545,11 @@ class _CountingDailyOsOnboardingSessionController
 
   @override
   DailyOsOnboardingSession start({
-    required DailyOsOnboardingOrigin origin,
     required DateTime targetDate,
     String? sessionId,
   }) {
     startCount++;
     return super.start(
-      origin: origin,
       targetDate: targetDate,
       sessionId: sessionId,
     );

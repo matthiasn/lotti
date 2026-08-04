@@ -103,8 +103,7 @@ class DayProcessingOutboxRepository {
 
   static const String _columns = dayProcessingJobColumns;
 
-  /// Statuses a job can be claimed or scheduled from. Mirrors
-  /// [DayProcessingJob.isDue]'s first guard.
+  /// Statuses a job can be claimed or scheduled from.
   static const String _drainableStatuses =
       "('queued', 'running', 'waitingForNetwork')";
 
@@ -115,7 +114,7 @@ class DayProcessingOutboxRepository {
   static const String _nonTerminalClause =
       "status NOT IN ('succeeded', 'cancelled')";
 
-  /// [DayProcessingJob.isDue] as SQL, with `?1` bound to now.
+  /// Due-job predicate, with `?1` bound to now.
   ///
   /// A `running` row is due only once its lease has expired (crash recovery);
   /// everything else is due at `next_attempt_at`. A hard provider boundary

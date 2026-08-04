@@ -16,7 +16,6 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
-import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_service.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
@@ -398,7 +397,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     ref
         .read(dailyOsOnboardingSessionControllerProvider.notifier)
         .start(
-          origin: DailyOsOnboardingOrigin.auto,
           targetDate: targetDate,
         );
     return true;

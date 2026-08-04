@@ -14,8 +14,7 @@ import 'package:lotti/utils/file_utils.dart';
 /// This is the coordination point the walkthrough UI reads: the empty-Day
 /// spotlight and the modal coach strips both watch this provider to decide
 /// whether to render and which session to record against. The session is armed
-/// by the auto-show gate or the Settings replay entry (a later phase) and ends
-/// on completion or dismissal.
+/// by the auto-show gate and ends on completion or dismissal.
 ///
 /// Session events (stage transitions, skip) are emitted to
 /// `OnboardingMetricsRepository` via the session's injected `onEvent`, so the
@@ -35,25 +34,18 @@ class DailyOsOnboardingSessionController
   /// spotlight is actually on-screen, so the metric reflects a walkthrough the
   /// user genuinely saw.
   DailyOsOnboardingSession start({
-    required DailyOsOnboardingOrigin origin,
     required DateTime targetDate,
     String? sessionId,
   }) {
     final localTargetDate = targetDate.toLocal();
     final session = DailyOsOnboardingSession(
       sessionId: sessionId ?? uuid.v1(),
-      origin: origin,
       targetDate: DateTime(
         localTargetDate.year,
         localTargetDate.month,
         localTargetDate.day,
       ),
-      onEvent: (event, {reason, valueBucket}) => _record(
-        event,
-        origin: origin,
-        reason: reason,
-        valueBucket: valueBucket,
-      ),
+      onEvent: _record,
     );
     state = session;
     return session;
@@ -101,13 +93,11 @@ class DailyOsOnboardingSessionController
   /// swallowed when the repository is not registered (most tests) so a metrics
   /// hiccup never disrupts the walkthrough.
   ///
-  /// The event's own [reason] wins when present; otherwise the session
-  /// [origin] (`auto` / `replay`) is recorded so the funnel can segment
-  /// auto-shown runs from replays. [valueBucket] (e.g. the materialized-task
-  /// count) is forwarded unchanged.
+  /// The event's own [reason] wins when present; otherwise `auto` records that
+  /// the auto-show gate started the walkthrough. [valueBucket] (e.g. the
+  /// materialized-task count) is forwarded unchanged.
   void _record(
     OnboardingEventName event, {
-    required DailyOsOnboardingOrigin origin,
     String? reason,
     int? valueBucket,
   }) {
@@ -116,7 +106,7 @@ class DailyOsOnboardingSessionController
       _recordBestEffort(
         getIt<OnboardingMetricsRepository>(),
         event,
-        reason: reason ?? origin.name,
+        reason: reason ?? 'auto',
         valueBucket: valueBucket,
       ),
     );

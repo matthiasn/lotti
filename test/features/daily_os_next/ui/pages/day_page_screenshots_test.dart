@@ -400,7 +400,6 @@ List<DayActivityEntry> _activityEntries() {
       id: 'activity-gym-check-in',
       kind: DayActivityEntryKind.recording,
       createdAt: readyAt,
-      activityEntryId: 'activity-gym-check-in',
       processingJob: job(
         id: 'activity-gym-check-in',
         createdAt: readyAt,
@@ -417,7 +416,6 @@ List<DayActivityEntry> _activityEntries() {
       id: 'activity-afternoon-check-in',
       kind: DayActivityEntryKind.recording,
       createdAt: waitingAt,
-      activityEntryId: 'activity-afternoon-check-in',
       processingJob: job(
         id: 'activity-afternoon-check-in',
         createdAt: waitingAt,

@@ -55,9 +55,7 @@ final dayActivityProvider = FutureProvider.autoDispose
         assetRoot: getIt<Directory>(),
       ).load(
         dayId: dayAgentIdForDate(date),
-        captures: <CaptureEntity>[
-          for (final item in captures) item.capture,
-        ],
+        captures: captures,
         summaries: summaries.whereType<DaySummaryEntity>(),
         plan: planEntity is DayPlanEntity ? planEntity : null,
       );

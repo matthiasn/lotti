@@ -72,7 +72,6 @@ void main() {
       id: 'waiting',
       kind: DayActivityEntryKind.recording,
       createdAt: capturedAt,
-      activityEntryId: 'waiting',
       processingJob: job(
         id: 'job-waiting',
         activityId: 'waiting',
@@ -84,7 +83,6 @@ void main() {
       id: 'ready',
       kind: DayActivityEntryKind.recording,
       createdAt: capturedAt.add(const Duration(minutes: 5)),
-      activityEntryId: 'ready',
       processingJob: job(
         id: 'job-ready',
         activityId: 'ready',
@@ -96,7 +94,6 @@ void main() {
       id: 'backed-off',
       kind: DayActivityEntryKind.recording,
       createdAt: capturedAt.add(const Duration(minutes: 7)),
-      activityEntryId: 'backed-off',
       processingJob: job(
         id: 'job-backed-off',
         activityId: 'backed-off',
@@ -237,13 +234,11 @@ void main() {
         id: 'plan',
         kind: DayActivityEntryKind.plan,
         createdAt: capturedAt,
-        activityEntryId: 'plan',
       ),
       DayActivityEntry(
         id: 'summary',
         kind: DayActivityEntryKind.summary,
         createdAt: capturedAt,
-        activityEntryId: 'summary',
       ),
       for (final (id, status, failure) in [
         ('running', DayProcessingJobStatus.running, null),
@@ -262,7 +257,6 @@ void main() {
           id: id,
           kind: DayActivityEntryKind.recording,
           createdAt: capturedAt,
-          activityEntryId: id,
           processingJob: job(
             id: 'job-$id',
             activityId: id,
@@ -315,7 +309,6 @@ void main() {
       id: 'waiting',
       kind: DayActivityEntryKind.recording,
       createdAt: capturedAt,
-      activityEntryId: 'waiting',
       processingJob: job(
         id: 'job-waiting',
         activityId: 'waiting',
@@ -380,7 +373,6 @@ void main() {
         id: 'ready',
         kind: DayActivityEntryKind.recording,
         createdAt: capturedAt,
-        activityEntryId: 'ready',
         processingJob: job(
           id: 'job-ready',
           activityId: 'ready',
@@ -392,20 +384,17 @@ void main() {
         id: 'saved',
         kind: DayActivityEntryKind.recording,
         createdAt: capturedAt,
-        activityEntryId: 'saved',
       ),
       DayActivityEntry(
         id: 'submitted',
         kind: DayActivityEntryKind.checkIn,
         createdAt: capturedAt,
-        activityEntryId: 'submitted',
         capture: submitted,
       ),
       DayActivityEntry(
         id: 'setup',
         kind: DayActivityEntryKind.recording,
         createdAt: capturedAt,
-        activityEntryId: 'setup',
         processingJob: job(
           id: 'job-setup',
           activityId: 'setup',
@@ -522,7 +511,6 @@ void main() {
         id: 'local',
         kind: DayActivityEntryKind.recording,
         createdAt: capturedAt,
-        activityEntryId: 'local',
         audio: audio,
         audioPath: audioFile.path,
       );
@@ -586,7 +574,6 @@ void main() {
         id: 'pending',
         kind: DayActivityEntryKind.recording,
         createdAt: capturedAt,
-        activityEntryId: 'pending',
         audio: audio,
         audioPath: '/nowhere/missing.wav',
       );
@@ -594,7 +581,6 @@ void main() {
         id: 'submitted',
         kind: DayActivityEntryKind.recording,
         createdAt: capturedAt.add(const Duration(minutes: 1)),
-        activityEntryId: 'submitted',
         audio: audio,
         audioPath: '/nowhere/missing.wav',
         capture:
@@ -652,7 +638,6 @@ void main() {
       id: 'doomed',
       kind: DayActivityEntryKind.recording,
       createdAt: capturedAt,
-      activityEntryId: 'doomed',
       processingJob: job(
         id: 'job-doomed',
         activityId: 'doomed',
@@ -711,7 +696,6 @@ void main() {
         id: 'draft_dayplan-2026-07-18',
         kind: DayActivityEntryKind.agentJob,
         createdAt: capturedAt,
-        activityEntryId: 'draft_dayplan-2026-07-18',
         processingJob: DayProcessingJob(
           id: 'draft_dayplan-2026-07-18',
           status: DayProcessingJobStatus.failed,
@@ -796,7 +780,6 @@ void main() {
       id: 'refine_dayplan-2026-07-18_abc',
       kind: DayActivityEntryKind.agentJob,
       createdAt: capturedAt,
-      activityEntryId: 'refine_dayplan-2026-07-18_abc',
       processingJob: DayProcessingJob(
         id: 'refine_dayplan-2026-07-18_abc',
         status: DayProcessingJobStatus.failed,
@@ -860,7 +843,6 @@ void main() {
       id: 'refine_dayplan-2026-07-18_abc',
       kind: DayActivityEntryKind.agentJob,
       createdAt: capturedAt,
-      activityEntryId: 'refine_dayplan-2026-07-18_abc',
       processingJob: DayProcessingJob(
         id: 'refine_dayplan-2026-07-18_abc',
         status: DayProcessingJobStatus.waitingForUser,
@@ -930,7 +912,6 @@ void main() {
         id: 'parse_capture-1',
         kind: DayActivityEntryKind.agentJob,
         createdAt: capturedAt,
-        activityEntryId: 'parse_capture-1',
         processingJob: DayProcessingJob(
           id: 'parse_capture-1',
           status: DayProcessingJobStatus.waitingForNetwork,

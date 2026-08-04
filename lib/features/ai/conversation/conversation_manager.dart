@@ -29,6 +29,9 @@ class ConversationManager {
   List<ChatCompletionMessage> get messages => List.unmodifiable(_messages);
 
   /// Most recent inference error recorded for this conversation, if any.
+  // Used by test/evaluation tooling, which `dcm check-unused-code lib` does not
+  // include in its usage graph.
+  // ignore: unused-code
   String? get lastError => _lastError;
 
   /// Clears the previous request's error before a new request begins.

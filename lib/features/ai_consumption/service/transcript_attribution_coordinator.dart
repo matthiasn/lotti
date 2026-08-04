@@ -82,47 +82,6 @@ class TranscriptAttributionCoordinator {
     );
   }
 
-  /// Records the provider transcript independently from whichever transcript
-  /// a later verification pass selects for the output carrier.
-  Future<void> recordInteraction({
-    required TranscriptAttributionSession session,
-    required String? audioEntryId,
-    required String transcript,
-    Map<String, dynamic>? usage,
-    AiInteractionStatus interactionStatus = AiInteractionStatus.succeeded,
-    String? errorCode,
-  }) async {
-    final eventId = const Uuid().v4();
-    final completedAt = clock.now().toUtc();
-    await _attributionService.recordInteraction(
-      attributionId: session.pending.id,
-      event: AiConsumptionEvent(
-        id: eventId,
-        createdAt: session.startedAt,
-        providerType: session.providerType,
-        responseType: AiConsumptionResponseType.audioTranscription,
-        vectorClock: null,
-        interactionKind: session.interactionKind,
-        interactionStatus: interactionStatus,
-        completedAt: completedAt,
-        errorCode: errorCode,
-        entryId: audioEntryId,
-        taskId: session.pending.taskId,
-        categoryId: session.pending.categoryId,
-        providerModelId: session.modelId,
-        durationMs: completedAt.difference(session.startedAt).inMilliseconds,
-        inputTokens: _usageInt(usage, const ['input_tokens', 'inputTokens']),
-        outputTokens: _usageInt(usage, const ['output_tokens', 'outputTokens']),
-        totalTokens: _usageInt(usage, const ['total_tokens', 'totalTokens']),
-        requestDigest: sha256
-            .convert(utf8.encode(audioEntryId ?? session.pending.id))
-            .toString(),
-        responseDigest: sha256.convert(utf8.encode(transcript)).toString(),
-        interactionParameters: {'providerName': session.providerName},
-      ),
-    );
-  }
-
   /// Prepares the output attribution after the provider interaction was already
   /// recorded through the shared interaction capture boundary under this
   /// session's attribution.
@@ -215,14 +174,4 @@ class TranscriptAttributionCoordinator {
 
   Future<void> finalize(PreparedTranscriptAttribution attribution) =>
       _attributionService.finalize(attribution.attribution);
-
-  static int? _usageInt(Map<String, dynamic>? usage, List<String> keys) {
-    if (usage == null) return null;
-    for (final key in keys) {
-      final value = usage[key];
-      if (value is int) return value;
-      if (value is num) return value.toInt();
-    }
-    return null;
-  }
 }

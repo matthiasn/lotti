@@ -29,15 +29,13 @@ void main() {
   final targetDate = DateTime(2026, 7, 10);
 
   group('DailyOsOnboardingSession', () {
-    test('exposes its id, origin, and target date', () {
+    test('exposes its id and target date', () {
       final session = DailyOsOnboardingSession(
         sessionId: 's-1',
-        origin: DailyOsOnboardingOrigin.replay,
         targetDate: targetDate,
       );
 
       expect(session.sessionId, 's-1');
-      expect(session.origin, DailyOsOnboardingOrigin.replay);
       expect(session.targetDate, targetDate);
     });
 
@@ -45,7 +43,6 @@ void main() {
       final sink = _EventSink();
       DailyOsOnboardingSession(
           sessionId: 's-1',
-          origin: DailyOsOnboardingOrigin.auto,
           targetDate: targetDate,
           onEvent: sink.add,
         )
@@ -63,7 +60,6 @@ void main() {
       final sink = _EventSink();
       DailyOsOnboardingSession(
         sessionId: 's-1',
-        origin: DailyOsOnboardingOrigin.auto,
         targetDate: targetDate,
         onEvent: sink.add,
       ).recordStageOnce(
@@ -85,7 +81,6 @@ void main() {
       final sink = _EventSink();
       DailyOsOnboardingSession(
           sessionId: 's-1',
-          origin: DailyOsOnboardingOrigin.auto,
           targetDate: targetDate,
           onEvent: sink.add,
         )
@@ -111,7 +106,6 @@ void main() {
       final sink = _EventSink();
       DailyOsOnboardingSession(
           sessionId: 's-1',
-          origin: DailyOsOnboardingOrigin.auto,
           targetDate: targetDate,
           onEvent: sink.add,
         )
@@ -125,7 +119,6 @@ void main() {
       final sink = _EventSink();
       DailyOsOnboardingSession(
           sessionId: 's-1',
-          origin: DailyOsOnboardingOrigin.auto,
           targetDate: targetDate,
           onEvent: sink.add,
         )
@@ -141,7 +134,6 @@ void main() {
     test('tolerates a null onEvent sink', () {
       final session = DailyOsOnboardingSession(
         sessionId: 's-1',
-        origin: DailyOsOnboardingOrigin.auto,
         targetDate: targetDate,
       );
 

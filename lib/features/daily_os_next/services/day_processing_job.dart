@@ -335,12 +335,6 @@ class DayProcessingJob {
     _ => null,
   };
 
-  /// The transcription payload's recording session id, `null` otherwise.
-  String? get recordingSessionId => switch (payload) {
-    TranscribeAudioPayload(:final recordingSessionId) => recordingSessionId,
-    _ => null,
-  };
-
   /// The transcription payload's audio entity id, `null` for agent jobs.
   String? get audioId => switch (payload) {
     TranscribeAudioPayload(:final audioId) => audioId,
@@ -358,20 +352,6 @@ class DayProcessingJob {
     DayProcessingJobStatus.cancelled => true,
     _ => false,
   };
-
-  bool isDue(DateTime now) {
-    if (isTerminal ||
-        status == DayProcessingJobStatus.waitingForUser ||
-        status == DayProcessingJobStatus.failed) {
-      return false;
-    }
-    final hardBoundary = retryNotBefore;
-    if (hardBoundary != null && now.isBefore(hardBoundary)) return false;
-    if (status == DayProcessingJobStatus.running) {
-      return leaseUntil != null && !now.isBefore(leaseUntil!);
-    }
-    return !now.isBefore(nextAttemptAt);
-  }
 
   DayProcessingJob copyWith({
     DayProcessingJobStatus? status,
