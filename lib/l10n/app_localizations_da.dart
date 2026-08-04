@@ -12,25 +12,27 @@ class AppLocalizationsDa extends AppLocalizations {
   String get activeLabel => 'Aktiv';
 
   @override
-  String get addActionAddAudioRecording => 'Lydoptagelse';
+  String get addActionAddEvent => 'Tilføj en begivenhed';
 
   @override
-  String get addActionAddChecklist => 'Tjekliste';
+  String get addActionAddEventHint => 'Opretter en begivenhed og åbner den.';
 
   @override
-  String get addActionAddEvent => 'Begivenhed';
+  String get addActionAddImageFromClipboard => 'Indsæt et billede';
 
   @override
-  String get addActionAddImageFromClipboard => 'Indsæt billede';
+  String get addActionAddImageFromClipboardHint =>
+      'Vedhæfter billedet fra din udklipsholder.';
 
   @override
-  String get addActionAddScreenshot => 'Skærmbillede';
+  String get addActionAddScreenshot => 'Tag et skærmbillede';
+
+  @override
+  String get addActionAddScreenshotHint =>
+      'Lukker dette panel og optager derefter skærmen.';
 
   @override
   String get addActionAddTask => 'Opgave';
-
-  @override
-  String get addActionAddText => 'Tekstindtastning';
 
   @override
   String get addActionAddTimer => 'Åbningstider';
@@ -39,7 +41,29 @@ class AppLocalizationsDa extends AppLocalizations {
   String get addActionAddTimeRecording => 'Timerindtastning';
 
   @override
-  String get addActionImportImage => 'Importbillede';
+  String get addActionCreateLinkedTask => 'Tilknyt en ny opgave';
+
+  @override
+  String get addActionCreateLinkedTaskHint =>
+      'Opretter og åbner en ny opgave, der er knyttet til denne.';
+
+  @override
+  String get addActionCreateTask => 'Tilføj en opgave';
+
+  @override
+  String get addActionCreateTaskHint => 'Opretter en ny opgave og åbner den.';
+
+  @override
+  String get addActionImportImage => 'Importér et billede';
+
+  @override
+  String get addActionImportImageHint => 'Åbner dit galleri eller filvælgeren.';
+
+  @override
+  String get addActionStartTimer => 'Start en timer';
+
+  @override
+  String get addActionStartTimerHint => 'Begynder at spore tid med det samme.';
 
   @override
   String get addHabitCommentLabel => 'Kommentar';
@@ -3547,6 +3571,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get createEntryTitle => 'Tilføj';
+
+  @override
+  String get createEntryTriggerHintFull =>
+      'Tilføj en note, en tjekliste, en talenote, et billede og mere';
 
   @override
   String get createNewLinkedTask => 'Opret ny sammenkædet opgave…';
@@ -10619,7 +10647,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get taskAgentAssignHint =>
-      'Lad en agent udkaste trin og opsummeringer.';
+      'Udarbejder trin og opsummeringer med indbygget AI.';
 
   @override
   String get taskAgentAttributionUnavailable => 'Kilde ikke tilgængelig';
@@ -10910,16 +10938,25 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskFirstRunAddChecklist => 'Tilføj en tjekliste';
 
   @override
+  String get taskFirstRunAddChecklistHint =>
+      'Tilføjer en liste med trin, du kan afkrydse.';
+
+  @override
   String get taskFirstRunAssignAgent => 'Tildel en agent';
 
   @override
   String get taskFirstRunRecordAudio => 'Optag en talenote';
 
   @override
+  String get taskFirstRunRecordAudioHint =>
+      'Åbner optageren uden at starte optagelsen.';
+
+  @override
   String get taskFirstRunWriteNote => 'Skriv en note';
 
   @override
-  String get taskHeaderNoCategoryLabel => 'Ingen kategori';
+  String get taskFirstRunWriteNoteHint =>
+      'Tilføjer en tilknyttet note til detaljer og tanker.';
 
   @override
   String taskLabelsMoreCount(int count) {
@@ -11091,6 +11128,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskPriorityMedium => 'Medium';
 
   @override
+  String taskPriorityTooltip(String priority) {
+    return 'Prioritet: $priority';
+  }
+
+  @override
   String get taskPriorityUrgent => 'Hastende';
 
   @override
@@ -11126,6 +11168,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '»$query«';
   }
+
+  @override
+  String get taskSetCategoryLabel => 'Vælg kategori';
 
   @override
   String get taskSetDueDateLabel => 'Angiv forfaldsdato';

@@ -12,25 +12,27 @@ class AppLocalizationsNl extends AppLocalizations {
   String get activeLabel => 'Actief';
 
   @override
-  String get addActionAddAudioRecording => 'Audio-opname';
+  String get addActionAddEvent => 'Evenement toevoegen';
 
   @override
-  String get addActionAddChecklist => 'Checklist';
-
-  @override
-  String get addActionAddEvent => 'Gebeurtenis';
+  String get addActionAddEventHint => 'Maakt een evenement en opent het.';
 
   @override
   String get addActionAddImageFromClipboard => 'Afbeelding plakken';
 
   @override
-  String get addActionAddScreenshot => 'Schermafdruk';
+  String get addActionAddImageFromClipboardHint =>
+      'Voegt de afbeelding van je klembord toe.';
+
+  @override
+  String get addActionAddScreenshot => 'Schermafbeelding maken';
+
+  @override
+  String get addActionAddScreenshotHint =>
+      'Sluit dit menu en legt daarna het scherm vast.';
 
   @override
   String get addActionAddTask => 'Taak';
-
-  @override
-  String get addActionAddText => 'Tekstinvoer';
 
   @override
   String get addActionAddTimer => 'Timer';
@@ -39,7 +41,29 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addActionAddTimeRecording => 'Timerinvoer';
 
   @override
+  String get addActionCreateLinkedTask => 'Nieuwe taak koppelen';
+
+  @override
+  String get addActionCreateLinkedTaskHint =>
+      'Maakt en opent een nieuwe taak die aan deze gekoppeld is.';
+
+  @override
+  String get addActionCreateTask => 'Taak toevoegen';
+
+  @override
+  String get addActionCreateTaskHint => 'Maakt een nieuwe taak en opent die.';
+
+  @override
   String get addActionImportImage => 'Afbeelding importeren';
+
+  @override
+  String get addActionImportImageHint => 'Opent je galerij of bestandskiezer.';
+
+  @override
+  String get addActionStartTimer => 'Timer starten';
+
+  @override
+  String get addActionStartTimerHint => 'Begint meteen met tijdregistratie.';
 
   @override
   String get addHabitCommentLabel => 'Opmerking';
@@ -3559,6 +3583,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get createEntryTitle => 'Toevoegen';
+
+  @override
+  String get createEntryTriggerHintFull =>
+      'Notitie, checklist, spraaknotitie, afbeelding en meer toevoegen';
 
   @override
   String get createNewLinkedTask => 'Nieuwe verbonden taak aanmaken…';
@@ -10653,7 +10681,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get taskAgentAssignHint =>
-      'Laat een agent stappen en samenvattingen opstellen.';
+      'Stelt stappen en samenvattingen op met ingebouwde AI.';
 
   @override
   String get taskAgentAttributionUnavailable =>
@@ -10947,16 +10975,25 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskFirstRunAddChecklist => 'Een checklist toevoegen';
 
   @override
+  String get taskFirstRunAddChecklistHint =>
+      'Voegt een lijst met afvinkbare stappen toe.';
+
+  @override
   String get taskFirstRunAssignAgent => 'Een agent toewijzen';
 
   @override
   String get taskFirstRunRecordAudio => 'Een spraaknotitie opnemen';
 
   @override
+  String get taskFirstRunRecordAudioHint =>
+      'Opent de recorder zonder de opname te starten.';
+
+  @override
   String get taskFirstRunWriteNote => 'Een notitie schrijven';
 
   @override
-  String get taskHeaderNoCategoryLabel => 'Geen categorie';
+  String get taskFirstRunWriteNoteHint =>
+      'Voegt een gekoppelde notitie toe voor details en gedachten.';
 
   @override
   String taskLabelsMoreCount(int count) {
@@ -11128,6 +11165,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get taskPriorityMedium => 'Middel';
 
   @override
+  String taskPriorityTooltip(String priority) {
+    return 'Prioriteit: $priority';
+  }
+
+  @override
   String get taskPriorityUrgent => 'Dringend';
 
   @override
@@ -11163,6 +11205,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '‘$query’';
   }
+
+  @override
+  String get taskSetCategoryLabel => 'Categorie instellen';
 
   @override
   String get taskSetDueDateLabel => 'Vervaldatum instellen';

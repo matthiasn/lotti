@@ -98,6 +98,7 @@ class DesktopTaskHeader extends StatefulWidget {
     this.consumptionSlot,
     this.blockedBySlot,
     this.initialEditing = false,
+    this.estimateIsSet = true,
     super.key,
   });
 
@@ -121,6 +122,14 @@ class DesktopTaskHeader extends StatefulWidget {
 
   /// Optional "Blocked by" chip forwarded into [MetaRow].
   final Widget? blockedBySlot;
+
+  /// Whether the task has a real estimate, deciding which lane the
+  /// [estimateSlot] joins: the set-attribute lane or the dashed add-lane. The
+  /// slot is an opaque widget by design (it stays Riverpod-aware while this
+  /// header stays framework-free), so the connector — which has the task —
+  /// answers the one question the lane split needs. Defaults to `true` so
+  /// fixtures that inject a populated chip need not say so twice.
+  final bool estimateIsSet;
 
   /// Force the inline editor open on first build.
   ///
@@ -244,18 +253,30 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
       bottom: tokens.spacing.step2,
     );
 
+    // No category and no project leaves the crumb with nothing true to say.
+    // It used to render a hollow square plus "No category" anyway — the first
+    // element in reading order, shaped like a checkbox from another design
+    // system, reporting an absence instead of offering the action. The offer
+    // now lives in the metadata lane as a dashed "Set category" chip speaking
+    // the same verb-first grammar as "Set due date", and the crumb appears
+    // once there is an ancestry to show.
+    final hasCrumb =
+        widget.data.category != null || widget.data.project != null;
+
     return Padding(
       padding: outerPadding,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _HeroCrumb(
-            category: widget.data.category,
-            project: widget.data.project,
-            onCategoryTap: widget.onCategoryTap,
-            onProjectTap: widget.onProjectTap,
-          ),
-          SizedBox(height: crumbGap),
+          if (hasCrumb) ...[
+            _HeroCrumb(
+              category: widget.data.category,
+              project: widget.data.project,
+              onCategoryTap: widget.onCategoryTap,
+              onProjectTap: widget.onProjectTap,
+            ),
+            SizedBox(height: crumbGap),
+          ],
           _buildTitleLine(context),
           SizedBox(height: metaGap),
           MetaRow(
@@ -264,10 +285,13 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
             dueDate: widget.data.dueDate,
             labels: widget.data.labels,
             estimateSlot: widget.estimateSlot,
+            estimateIsSet: widget.estimateIsSet,
             consumptionSlot: widget.consumptionSlot,
             blockedBySlot: widget.blockedBySlot,
+            showSetCategory: widget.data.category == null,
             onPriorityTap: widget.onPriorityTap,
             onStatusTap: widget.onStatusTap,
+            onCategoryTap: widget.onCategoryTap,
             onDueDateTap: widget.onDueDateTap,
             onLabelTap: widget.onLabelTap,
             onAddLabelTap: widget.onAddLabelTap,
@@ -314,11 +338,13 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
 /// The category color is used as a 10×10 rounded square — this is the *only*
 /// place the category color is used as a fill. Text never picks it up.
 ///
-/// **The project *placeholder* is conditional on the category.** A project is
-/// picked within a category — `linkTaskToProject` rejects cross-category links
-/// and the connector passes a null `onProjectTap` without one — so
-/// `No category / No project` offered a separator and a placeholder for a
-/// choice that cannot be made yet.
+/// Only rendered when there is real ancestry to show — the header skips it
+/// (and its gap) entirely when the task has neither category nor project, and
+/// the "Set category" offer lives in the metadata lane's dashed-chip grammar
+/// instead. With a category but no project the crumb keeps the "Unassigned"
+/// project placeholder: a project is picked within a category
+/// (`linkTaskToProject` rejects cross-category links), so at that point the
+/// choice is real and worth offering.
 ///
 /// A project that is actually linked is always shown, category or not. An
 /// uncategorized project is a real thing (`createProject` takes a nullable
@@ -342,14 +368,7 @@ class _HeroCrumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final categoryColor =
-        category?.color ?? TaskShowcasePalette.lowText(context);
-    // "No category" rather than a bare "unassigned": the crumb names two
-    // different things side by side, so the placeholder has to say which one
-    // is missing — and it is sentence-cased like the "No project" it sits next
-    // to instead of mismatching it in lowercase.
-    final categoryName =
-        category?.label ?? context.messages.taskHeaderNoCategoryLabel;
+    final category = this.category;
     final projectName =
         project?.label ?? context.messages.projectPickerUnassigned;
     // The breadcrumb is an "eyebrow": a quiet, slightly tracked caption that
@@ -365,51 +384,50 @@ class _HeroCrumb extends StatelessWidget {
         // Both segments are flexible so a long user-defined category name
         // shrinks/ellipsizes in proportion with a long project name instead
         // of forcing horizontal overflow on the whole row.
-        Flexible(
-          child: _CrumbSegment(
-            onTap: onCategoryTap,
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                // Filled when the task HAS a category; a hollow ring when it
-                // does not. A solid grey square asserted a colour the task
-                // never had, and it was the loudest mark in an otherwise quiet
-                // breadcrumb — the first ink on the page standing for an
-                // absence.
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: BoxDecoration(
-                    color: category == null ? null : categoryColor,
-                    border: category == null
-                        ? Border.all(color: tokens.colors.decorative.level02)
-                        : null,
-                    borderRadius: BorderRadius.circular(3),
-                  ),
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                Flexible(
-                  child: Text(
-                    categoryName,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: crumbStyle.copyWith(
-                      // The breadcrumb is quiet ancestor context, so even a
-                      // set category sits at medium (not high) emphasis — a
-                      // tier below the metadata chips, and comfortably legible
-                      // (~7:1). An unset one no longer adds italics: the page
-                      // already signals "empty" on the dashed chips below, and
-                      // slanting a 12pt caption for it cost legibility without
-                      // adding meaning.
-                      color: TaskShowcasePalette.mediumText(context),
+        if (category != null)
+          Flexible(
+            child: _CrumbSegment(
+              onTap: onCategoryTap,
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  // The one place the category colour is used as a fill. Only
+                  // rendered for a category that exists: the unset state has no
+                  // crumb segment at all (its affordance is the dashed chip in
+                  // the metadata lane), so this square never again stands for
+                  // an absence — the checkbox-impostor read every reviewer
+                  // called out.
+                  Container(
+                    width: 10,
+                    height: 10,
+                    decoration: BoxDecoration(
+                      color: category.color,
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
-                ),
-              ],
+                  SizedBox(width: tokens.spacing.step3),
+                  Flexible(
+                    child: Text(
+                      category.label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: crumbStyle.copyWith(
+                        // The breadcrumb is quiet ancestor context, so even a
+                        // set category sits at medium (not high) emphasis — a
+                        // tier below the metadata chips, and comfortably
+                        // legible (~7:1).
+                        color: TaskShowcasePalette.mediumText(context),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
-        ),
-        if (category != null || project != null) ...[
+        // The separator needs something real on both of its sides: a linked
+        // project after a category. An uncategorized task with a project shows
+        // the project segment alone, flush with the rail.
+        if (category != null) ...[
           SizedBox(width: tokens.spacing.step3),
           Text(
             '/',
@@ -418,22 +436,22 @@ class _HeroCrumb extends StatelessWidget {
             ),
           ),
           SizedBox(width: tokens.spacing.step3),
-          Flexible(
-            child: _CrumbSegment(
-              onTap: onProjectTap,
-              child: Text(
-                projectName,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: crumbStyle.copyWith(
-                  // Keep an unset project legible (medium emphasis) for
-                  // low-vision users rather than fading it to near-invisible.
-                  color: TaskShowcasePalette.mediumText(context),
-                ),
+        ],
+        Flexible(
+          child: _CrumbSegment(
+            onTap: onProjectTap,
+            child: Text(
+              projectName,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: crumbStyle.copyWith(
+                // Keep an unset project legible (medium emphasis) for
+                // low-vision users rather than fading it to near-invisible.
+                color: TaskShowcasePalette.mediumText(context),
               ),
             ),
           ),
-        ],
+        ),
       ],
     );
   }

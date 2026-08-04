@@ -16,21 +16,33 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_shared_widgets.dar
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/color.dart';
 
-/// Two-lane metadata block under the title. The first lane holds the
-/// task's *structured attributes* led by the **status** pill — status,
-/// priority, due date, time-estimate — and the second lane holds the
-/// free-form **labels**. Both lanes pack left-to-right and wrap with a
-/// consistent run spacing.
+/// One glyph size for every chip in the metadata lane — status and priority
+/// glyphs, disclosure carets, and the dashed add-chips' leading icons. The
+/// lane used to split 12 vs 14 across eight call sites, which is exactly the
+/// kind of per-widget improvisation that drifts. Deliberately between the
+/// design system's `IconSizes.xs` (12, inline caption glyphs) and
+/// `IconSizes.s` (16, list rows): the chips cap their labels at the 12pt
+/// caption, and a 16px glyph out-weighed that text inside a 28px pill.
+const double kTaskChipGlyphSize = 14;
+
+/// The metadata block under the title, in up to three lanes. The first lane
+/// holds the *set* attributes led by the **status** pill — status, priority,
+/// and whichever of due date / estimate carry real values; the second holds
+/// the dashed **add-affordances** for everything still unset (category, due
+/// date, estimate, first label); the third holds the free-form **labels**.
+/// All lanes pack left-to-right and wrap with a consistent run spacing.
 ///
-/// Status leads the attribute lane (rather than being pinned to a trailing
-/// edge) so it has one stable, predictable home that never opens a horizontal
-/// dead zone next to a short chip cluster and never gets marooned when the row
-/// wraps. Every attribute is its own wrap unit — the due date and the estimate
-/// used to be bonded into one, which on a phone was wide enough that the pair
-/// broke to a second row while half of the first row sat empty, burying the
-/// due date (the lane's second-most decision-relevant chip) below the fold of
-/// the block. Unbonded, status / priority / due fill the first row and only
-/// the estimate wraps.
+/// The set/unset split is semantic, not arithmetic. One mixed Wrap broke
+/// wherever the measure said — at the first-run page's 520pt it wrapped 4+1
+/// and stranded a lone dashed chip on its own line, the loudest remaining
+/// "nobody looked at this width" cue on the page. Two runs give the lane a
+/// stable rhythm at every breakpoint: solid facts first, dashed offers below,
+/// each group wrapping only within itself.
+///
+/// Status leads the set lane (rather than being pinned to a trailing edge) so
+/// it has one stable, predictable home that never opens a horizontal dead
+/// zone next to a short chip cluster and never gets marooned when the row
+/// wraps. Every attribute is its own wrap unit.
 /// Beyond a small cap the free-form labels collapse behind a tappable "+N"
 /// affordance so a long taxonomy never floods the lane. Separating attributes
 /// from labels gives the eye an
@@ -50,6 +62,9 @@ class MetaRow extends StatefulWidget {
     required this.onDueDateTap,
     required this.onLabelTap,
     required this.onAddLabelTap,
+    this.showSetCategory = false,
+    this.onCategoryTap,
+    this.estimateIsSet = true,
     super.key,
   });
 
@@ -58,6 +73,17 @@ class MetaRow extends StatefulWidget {
   final DesktopTaskHeaderDueDate? dueDate;
   final List<LabelDefinition> labels;
   final Widget? estimateSlot;
+
+  /// Whether to offer the dashed "Set category" chip in the add-lane. True
+  /// exactly when the task has no category — the crumb above then shows no
+  /// category segment, so this chip is the *only* category affordance and the
+  /// two can never disagree about whose turn it is.
+  final bool showSetCategory;
+  final VoidCallback? onCategoryTap;
+
+  /// Which lane the [estimateSlot] joins. The slot stays an opaque widget
+  /// (see [DesktopTaskHeader.estimateIsSet] for why the caller answers this).
+  final bool estimateIsSet;
 
   /// Optional "Blocked by" chip (link-derived readiness, ADR 0042 §4 —
   /// independent of [status]). Rendered right after the status pill, part of
@@ -80,6 +106,12 @@ class MetaRow extends StatefulWidget {
 }
 
 class _MetaRowState extends State<MetaRow> {
+  /// Below this lane width a four-chip add-lane breaks 2+2 instead of
+  /// wrapping greedily. Sits between the phone lane (~358 at a 390 viewport
+  /// inside the page's step5 gutters) and the capped first-run measure
+  /// (520 - 32 = 488), where all four chips fit one line.
+  static const double _addLaneBalanceBreakpoint = 460;
+
   /// How many label chips show before the remainder collapse behind a "+N"
   /// affordance, so a long taxonomy never floods the lane with a wall of
   /// equal-weight chips competing with the title (the dominant overwhelm cue
@@ -111,44 +143,129 @@ class _MetaRowState extends State<MetaRow> {
     // find the row break while the lane still holds together as one block.
     final laneRunGap = tokens.spacing.step3;
     final labels = widget.labels;
+    final dueIsSet = widget.dueDate != null;
+    // Solid facts only: everything here states a value the task actually has.
     final attributes = <Widget>[
       TaskHeaderStatusPill(status: widget.status, onTap: widget.onStatusTap),
       if (widget.blockedBySlot != null) widget.blockedBySlot!,
       _PriorityPill(priority: widget.priority, onTap: widget.onPriorityTap),
-      _DuePill(dueDate: widget.dueDate, onTap: widget.onDueDateTap),
-      if (widget.estimateSlot != null) widget.estimateSlot!,
+      if (dueIsSet)
+        _DuePill(dueDate: widget.dueDate!, onTap: widget.onDueDateTap),
+      if (widget.estimateSlot != null && widget.estimateIsSet)
+        widget.estimateSlot!,
       if (widget.consumptionSlot != null) widget.consumptionSlot!,
-      // With no labels yet, the "Add Label" affordance rides the END of the
-      // attribute lane rather than orphaning on its own near-empty second
-      // line — the dedicated label lane only materialises once there is real
-      // taxonomy to hold.
+    ];
+    // Dashed offers only: where the task lives, when it is due, how it is
+    // tagged, how big it is.
+    final addChips = <Widget>[
+      if (widget.showSetCategory)
+        DsPill(
+          variant: DsPillVariant.muted,
+          // Verb form, matching the other unset chips — see `_DuePill`.
+          label: context.messages.taskSetCategoryLabel,
+          // mediumText, matching the muted pill's label contract — a glyph a
+          // step fainter than its own caption vanished for low-vision users
+          // in dark theme.
+          leading: Icon(
+            Icons.category_outlined,
+            size: kTaskChipGlyphSize,
+            color: TaskShowcasePalette.mediumText(context),
+          ),
+          onTap: widget.onCategoryTap,
+        ),
+      if (!dueIsSet)
+        DsPill(
+          variant: DsPillVariant.muted,
+          // A verb, not a report. "No due date" is a statement of fact, and
+          // reviewers read it as one — a label describing the task rather
+          // than a control offering to fix it — so they never tapped it.
+          label: context.messages.taskSetDueDateLabel,
+          leading: Icon(
+            Icons.calendar_today_outlined,
+            size: kTaskChipGlyphSize,
+            color: TaskShowcasePalette.mediumText(context),
+          ),
+          onTap: widget.onDueDateTap,
+        ),
+      // With no labels yet, the "Add Label" affordance rides the add-lane
+      // with its fellow offers — the dedicated label lane only materialises
+      // once there is real taxonomy to hold. It sits BEFORE the estimate
+      // chip: the lane wraps at the measure's mercy, and when a row breaks
+      // the short label chip packs beside its neighbours while the widest
+      // chip takes the new row. An object glyph like its three siblings —
+      // the bare "+" made it the one chip in the lane wearing a different
+      // grammar.
       if (labels.isEmpty)
-        DsGhostChip(
+        DsPill(
+          variant: DsPillVariant.muted,
           label: context.messages.tasksAddLabelButton,
+          leading: Icon(
+            Icons.label_outline_rounded,
+            size: kTaskChipGlyphSize,
+            color: TaskShowcasePalette.mediumText(context),
+          ),
           onTap: widget.onAddLabelTap,
         ),
+      if (widget.estimateSlot != null && !widget.estimateIsSet)
+        widget.estimateSlot!,
     ];
-    final attributeLane = Wrap(
+    Wrap lane(List<Widget> children) => Wrap(
       spacing: chipGap,
       runSpacing: laneRunGap,
       crossAxisAlignment: WrapCrossAlignment.center,
-      children: attributes,
+      children: children,
     );
-    if (labels.isEmpty) return attributeLane;
+    // The add-lane on a phone: four chips greedily wrap 3+1, stranding the
+    // widest chip alone under a full row — the raggedness that undermines
+    // the two-run grammar on every narrow viewport. Below the balance
+    // breakpoint a four-offer lane breaks at its own midpoint instead, a
+    // deliberate 2+2. The full first-run set is the only population this
+    // needs; fewer chips fit a phone row outright, and the wide measure
+    // holds all four on one line.
+    Widget addLane(List<Widget> chips, double maxWidth) {
+      if (chips.length < 4 || maxWidth >= _addLaneBalanceBreakpoint) {
+        return lane(chips);
+      }
+      final midpoint = chips.length ~/ 2;
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          lane(chips.sublist(0, midpoint)),
+          SizedBox(height: laneRunGap),
+          lane(chips.sublist(midpoint)),
+        ],
+      );
+    }
+
+    final attributeLane = lane(attributes);
+    if (addChips.isEmpty && labels.isEmpty) return attributeLane;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         attributeLane,
-        // The lane separation (step4 = 12) is a full "context break" step —
-        // the same gap used between the breadcrumb and the title — so it reads
-        // as a clearly larger rhythmic step than the intra-lane chip gutter
-        // (step2 = 4). That vertical step alone signals the free-form label
-        // taxonomy as a distinct register from the structured attributes above
-        // it (rather than leaning only on the chips' colour dots), without
-        // needing a divider.
-        SizedBox(height: tokens.spacing.step4),
-        _buildLabelLane(context, chipGap, laneRunGap, labels),
+        if (addChips.isNotEmpty) ...[
+          // A full step4 below the set lane — one step looser than the
+          // intra-lane run gap — so the semantic split between facts and
+          // offers is carried by space as well as by border style, without
+          // growing into the sectionGap that would break the block apart.
+          SizedBox(height: tokens.spacing.step4),
+          LayoutBuilder(
+            builder: (context, constraints) =>
+                addLane(addChips, constraints.maxWidth),
+          ),
+        ],
+        if (labels.isNotEmpty) ...[
+          // The lane separation (step4 = 12) is a full "context break" step —
+          // the same gap used between the breadcrumb and the title — so it
+          // reads as a clearly larger rhythmic step than the intra-lane chip
+          // gutter (step2 = 4). That vertical step alone signals the
+          // free-form label taxonomy as a distinct register from the
+          // structured attributes above it (rather than leaning only on the
+          // chips' colour dots), without needing a divider.
+          SizedBox(height: tokens.spacing.step4),
+          _buildLabelLane(context, chipGap, laneRunGap, labels),
+        ],
       ],
     );
   }
@@ -237,53 +354,65 @@ class _PriorityPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // "Priority: Medium" on hover and for assistive tech: the chip's bare
+    // value never names its attribute, and priority was the one chip in the
+    // lane whose tooltip left that to guesswork (the estimate chip already
+    // spells its numbers out the same way).
     // Priority shares the neutral filled shell with due/estimate. Within the
     // lane's hierarchy it is a *quick-glance* attribute, so its label sits at
     // medium emphasis — a tier below the status pill and the due date — while
     // its urgency colour rides the glyph (red P0 → green P3), keeping the
     // signal without a second out-shouting solid fill.
-    return DsPill(
-      variant: DsPillVariant.filled,
-      bordered: true,
-      // Spelled-out priority (Urgent / High / Medium / Low) instead of the
-      // opaque "P2" code, so the urgency direction reads without decoding.
-      label: priority.localizedLabel(context),
-      // High emphasis, like the due chip. At medium it inked identically to
-      // the *unset* chips beside it, so a value the user had chosen looked no
-      // different from one they had not — and the lane's two shells stopped
-      // meaning "set" and "unset" at all.
-      labelColor: TaskShowcasePalette.highText(context),
-      leading: TaskShowcasePriorityGlyph(priority: priority, size: 14),
-      onTap: onTap,
+    return Tooltip(
+      message: context.messages.taskPriorityTooltip(
+        priority.localizedLabel(context),
+      ),
+      child: DsPill(
+        variant: DsPillVariant.filled,
+        bordered: true,
+        // Spelled-out priority (Urgent / High / Medium / Low) instead of the
+        // opaque "P2" code, so the urgency direction reads without decoding.
+        label: priority.localizedLabel(context),
+        // High emphasis, like the due chip. At medium it inked identically to
+        // the *unset* chips beside it, so a value the user had chosen looked no
+        // different from one they had not — and the lane's two shells stopped
+        // meaning "set" and "unset" at all.
+        labelColor: TaskShowcasePalette.highText(context),
+        leading: TaskShowcasePriorityGlyph(
+          priority: priority,
+          size: kTaskChipGlyphSize,
+        ),
+        // The same disclosure caret the status pill wears. Both chips open a
+        // picker, and only one of them said so — novice reviewers read the
+        // caret-less "Medium" as a badge rather than a control and never
+        // discovered priority was changeable.
+        trailing: Icon(
+          Icons.expand_more_rounded,
+          size: kTaskChipGlyphSize,
+          // mediumText, like every behavioural glyph on the surface: the caret
+          // is the chip's tap-scent, and at lowText it was the faintest ink on
+          // a control the empty state depends on.
+          color: TaskShowcasePalette.mediumText(context),
+        ),
+        onTap: onTap,
+      ),
     );
   }
 }
 
+/// The *set* due-date chip. The unset "Set due date" offer is not this
+/// widget's business any more — it lives in [MetaRow]'s dashed add-lane with
+/// the other unset affordances, so this pill only ever states a date the task
+/// actually has.
 class _DuePill extends StatelessWidget {
   const _DuePill({required this.dueDate, this.onTap});
 
-  final DesktopTaskHeaderDueDate? dueDate;
+  final DesktopTaskHeaderDueDate dueDate;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     final dueDate = this.dueDate;
-    if (dueDate == null) {
-      return DsPill(
-        variant: DsPillVariant.muted,
-        // A verb, not a report. "No due date" is a statement of fact, and
-        // reviewers read it as one — a label describing the task rather than a
-        // control offering to fix it — so they never tapped it. The unset
-        // chips now speak the same imperative "Add label" always did.
-        label: context.messages.taskSetDueDateLabel,
-        leading: Icon(
-          Icons.calendar_today_outlined,
-          size: 12,
-          color: TaskShowcasePalette.lowText(context),
-        ),
-        onTap: onTap,
-      );
-    }
     // Normal due dates render as a subtle *filled* metadata chip — the same
     // grammar as the estimate and label chips — so the row carries one
     // coherent chip language instead of a lone outlined pill. Urgency
@@ -315,110 +444,93 @@ class _DuePill extends StatelessWidget {
       // its label reads at high emphasis (a tier above priority / estimate);
       // an urgent due date escalates to the tinted accent instead.
       labelColor: urgent ? null : TaskShowcasePalette.highText(context),
-      leading: Icon(Icons.calendar_today_outlined, size: 12, color: accent),
+      leading: Icon(
+        Icons.calendar_today_outlined,
+        size: kTaskChipGlyphSize,
+        color: accent,
+      ),
       onTap: onTap,
     );
   }
 }
 
+/// The status pill, rendered through [DsPill] like every other chip in the
+/// lane — one pill primitive, no hand-copied height floor or radius to
+/// drift. Active statuses use the tinted variant (the same 18% wash the old
+/// bespoke pill painted); the neutral Open state and the dismissed Rejected
+/// state use the filled+bordered shell the set chips beside them wear, so
+/// the lane's "solid container = set value" grammar holds without a special
+/// case.
 class _StatusPill extends StatelessWidget {
   const _StatusPill({required this.status, this.onTap});
 
   final TaskStatus status;
   final VoidCallback? onTap;
 
-  // Match the shared chip height so the status pill sits on the same baseline
-  // as the priority / due / estimate chips it leads — a uniform attribute lane
-  // rather than an over-tall lead pill.
-  static const double _height = DsPill.height;
+  /// The status accent for the tinted variant, or null for the two states
+  /// that render on the neutral filled shell.
+  Color? _accent(BuildContext context) => switch (status) {
+    TaskInProgress() => TaskShowcasePalette.info(context),
+    TaskBlocked() => TaskShowcasePalette.error(context),
+    TaskOnHold() => TaskShowcasePalette.warning(context),
+    TaskGroomed() => context.designTokens.colors.interactive.enabled,
+    TaskDone() => TaskShowcasePalette.success(context),
+    TaskRejected() || TaskOpen() => null,
+  };
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final tint = _statusTint(context, status);
-    final radius = BorderRadius.circular(tokens.radii.badgesPills);
-    final label = status.localizedLabel(context);
-    final labelStyle = tokens.typography.styles.others.caption.copyWith(
-      color: tint.foreground,
-      height: 1,
-      decoration: status is TaskRejected ? TextDecoration.lineThrough : null,
+    final accent = _accent(context);
+    final rejected = status is TaskRejected;
+    final caret = Icon(
+      Icons.expand_more_rounded,
+      size: kTaskChipGlyphSize,
+      // mediumText — same behavioural-glyph ink as the priority chip's
+      // caret and the action rows' +/chevron.
+      color: TaskShowcasePalette.mediumText(context),
     );
-    final content = SizedBox(
-      height: _height,
-      child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            TaskShowcaseStatusGlyph(status: status, size: 14),
-            SizedBox(width: tokens.spacing.step2),
-            Text(label, style: labelStyle),
-            SizedBox(width: tokens.spacing.step2),
-            Icon(
-              Icons.expand_more_rounded,
-              size: 14,
-              color: TaskShowcasePalette.lowText(context),
-            ),
-          ],
-        ),
-      ),
+    final glyph = TaskShowcaseStatusGlyph(
+      status: status,
+      size: kTaskChipGlyphSize,
     );
-    final shaped = DecoratedBox(
-      decoration: BoxDecoration(
-        color: tint.background,
-        borderRadius: radius,
-      ),
-      child: content,
-    );
-    if (onTap == null) return shaped;
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        borderRadius: radius,
+    if (accent == null) {
+      return DsPill(
+        variant: DsPillVariant.filled,
+        bordered: true,
+        // Rejected reads as dismissed — struck-through, medium-emphasis
+        // (still legible) — while Open keeps the plain high-emphasis label.
+        labelWidget: rejected
+            ? Text(
+                status.localizedLabel(context),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: TaskShowcasePalette.mediumText(context),
+                  height: 1,
+                  decoration: TextDecoration.lineThrough,
+                ),
+              )
+            : null,
+        label: rejected ? null : status.localizedLabel(context),
+        leading: glyph,
+        trailing: caret,
         onTap: onTap,
-        child: shaped,
-      ),
+      );
+    }
+    return DsPill(
+      variant: DsPillVariant.tinted,
+      color: accent,
+      // The status accent itself is too low-contrast as text on its own
+      // tint (a WCAG failure); the colour identity rides the tint and the
+      // glyph.
+      labelColor: TaskShowcasePalette.highText(context),
+      label: status.localizedLabel(context),
+      leading: glyph,
+      trailing: caret,
+      onTap: onTap,
     );
   }
-}
-
-class _StatusTint {
-  const _StatusTint({required this.background, required this.foreground});
-
-  /// The pill's translucent fill — a low-alpha wash of the status accent.
-  final Color background;
-
-  /// The pill's label colour. Kept at high contrast against the fill (the
-  /// status accent itself is too low-contrast as text on its own tint — a
-  /// WCAG failure); the status's *colour* identity is instead carried by the
-  /// tinted fill and the per-status glyph.
-  final Color foreground;
-}
-
-_StatusTint _statusTint(BuildContext context, TaskStatus status) {
-  final high = TaskShowcasePalette.highText(context);
-  _StatusTint tinted(Color accent) =>
-      _StatusTint(background: accent.withValues(alpha: 0.18), foreground: high);
-  return switch (status) {
-    TaskInProgress() => tinted(TaskShowcasePalette.info(context)),
-    TaskBlocked() => tinted(TaskShowcasePalette.error(context)),
-    TaskOnHold() => tinted(TaskShowcasePalette.warning(context)),
-    TaskGroomed() => tinted(context.designTokens.colors.interactive.enabled),
-    TaskDone() => tinted(TaskShowcasePalette.success(context)),
-    // Rejected reads as dismissed — a neutral wash with medium-emphasis
-    // (still legible) struck-through text rather than the high-emphasis label
-    // an active status gets.
-    TaskRejected() => _StatusTint(
-      background: TaskShowcasePalette.lowText(context).withValues(alpha: 0.14),
-      foreground: TaskShowcasePalette.mediumText(context),
-    ),
-    TaskOpen() => _StatusTint(
-      background: TaskShowcasePalette.mediumText(
-        context,
-      ).withValues(alpha: 0.12),
-      foreground: high,
-    ),
-  };
 }
 
 /// 8px circle filled with the label's own color. Used as the leading dot in

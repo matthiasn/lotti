@@ -148,11 +148,15 @@ class TaskShowcasePriorityGlyph extends StatelessWidget {
     // due chip uses. Painting all four levels from the `alert.*` ramp meant a
     // task nobody had prioritised wore the brightest mark on the page, in the
     // very hue that means *In Progress* one chip to its left. Medium and Low
-    // now read from the bar count alone, at neutral ink.
+    // read from the bar count alone, at neutral ink — but Medium, the ramp's
+    // DEFAULT stop, gets the high-emphasis neutral: the asset's baked per-bar
+    // alpha already dims its upper bars, and over medium ink the whole glyph
+    // sank into the disabled-grey band, making the one priority every new
+    // task wears look like a control that had been turned off.
     final color = switch (priority) {
       TaskPriority.p0Urgent => TaskShowcasePalette.error(context),
       TaskPriority.p1High => TaskShowcasePalette.warning(context),
-      TaskPriority.p2Medium ||
+      TaskPriority.p2Medium => TaskShowcasePalette.highText(context),
       TaskPriority.p3Low => TaskShowcasePalette.mediumText(context),
     };
 

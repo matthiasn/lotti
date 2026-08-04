@@ -13,8 +13,8 @@ enum DsPillVariant {
   /// Transparent background, 50%-alpha `pillColor` border, `pillColor` label.
   outline,
 
-  /// Transparent background with a 1px dashed `decorative.level02` border and
-  /// a `text.mediumEmphasis` label. Used for empty / placeholder states.
+  /// Transparent background with a 1px dashed `decorative.level03` border
+  /// and a `text.mediumEmphasis` label. Used for empty / placeholder states.
   muted,
 }
 
@@ -106,7 +106,7 @@ class DsPill extends StatelessWidget {
     final gap = tokens.spacing.step2;
 
     final labelStyle = tokens.typography.styles.others.caption.copyWith(
-      color: labelColor ?? _labelColor(tokens),
+      color: labelColor ?? _labelColor(context, tokens),
       // No italic on the muted variant. Its dashed border and low-emphasis
       // ink already say "unset" twice; the slant added a third signal that
       // reads as *disabled* rather than *empty* — and a 12pt italic caption
@@ -149,10 +149,17 @@ class DsPill extends StatelessWidget {
       ],
     ];
 
-    final content = SizedBox(
-      height: height,
+    // A floor, not a box: at 1.0x text scale the pill is its canonical 28px,
+    // but a fixed height CLIPPED scaled-up captions — and the muted chips
+    // this shell renders are the only route to category / due date / label /
+    // estimate on a fresh task, exactly the users large text serves.
+    final content = ConstrainedBox(
+      constraints: const BoxConstraints(minHeight: height),
       child: Padding(
-        padding: EdgeInsets.symmetric(horizontal: hPadding),
+        padding: EdgeInsets.symmetric(
+          horizontal: hPadding,
+          vertical: tokens.spacing.step1,
+        ),
         child: Row(mainAxisSize: MainAxisSize.min, children: children),
       ),
     );
@@ -192,7 +199,14 @@ class DsPill extends StatelessWidget {
         child: content,
       ),
       DsPillVariant.muted => DsDashedBorder(
-        color: tokens.colors.decorative.level02,
+        // level03, both themes. At level02 (24% alpha) the dashed outline all
+        // but vanished on either surface — low-vision review found the unset
+        // chips "nearly invisible" in light theme first and then, next round,
+        // called the dark ones a blocker outright: the only controls that set
+        // a due date effectively did not exist. The dash pattern already
+        // keeps the border reading as "unset" next to the solid chips, so the
+        // stronger stroke costs nothing semantically.
+        color: tokens.colors.decorative.level03,
         radius: tokens.radii.badgesPills,
         child: content,
       ),
@@ -210,43 +224,20 @@ class DsPill extends StatelessWidget {
     );
   }
 
-  Color _labelColor(DsTokens tokens) {
+  Color _labelColor(BuildContext context, DsTokens tokens) {
     return switch (variant) {
       DsPillVariant.filled => tokens.colors.text.highEmphasis,
       DsPillVariant.tinted => color!,
       DsPillVariant.outline => color!,
-      // Medium (not low) emphasis: a placeholder/empty pill must stay legible
-      // for low-vision users — the dashed border already marks it as unset,
-      // so it reads as secondary without becoming invisible grey.
-      DsPillVariant.muted => tokens.colors.text.mediumEmphasis,
+      // The dashed border alone carries "unset" — the label must stay
+      // legible. In light theme even mediumEmphasis grey flirted with the
+      // disabled affordance on the white surface, so the label reads at
+      // highEmphasis there; dark keeps medium, where high out-shouted the
+      // set chips beside it.
+      DsPillVariant.muted =>
+        Theme.of(context).brightness == Brightness.light
+            ? tokens.colors.text.highEmphasis
+            : tokens.colors.text.mediumEmphasis,
     };
-  }
-}
-
-/// Trailing `+` / "Add label" affordance — same height/shape as [DsPill] but
-/// rendered with the muted (dashed) treatment. When [label] is null, only the
-/// leading plus icon is shown.
-class DsGhostChip extends StatelessWidget {
-  const DsGhostChip({this.label, this.onTap, super.key});
-
-  final String? label;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    return DsPill(
-      variant: DsPillVariant.muted,
-      label: label,
-      leading: Icon(
-        Icons.add_rounded,
-        size: 12,
-        color: tokens.colors.text.lowEmphasis,
-      ),
-      // Adds the standard leading/trailing gap on the right so the label
-      // doesn't sit flush against the dashed border.
-      trailing: label == null ? null : const SizedBox.shrink(),
-      onTap: onTap,
-    );
   }
 }

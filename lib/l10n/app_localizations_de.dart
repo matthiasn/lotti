@@ -12,25 +12,27 @@ class AppLocalizationsDe extends AppLocalizations {
   String get activeLabel => 'Aktiv';
 
   @override
-  String get addActionAddAudioRecording => 'Audioaufnahme';
+  String get addActionAddEvent => 'Termin hinzufügen';
 
   @override
-  String get addActionAddChecklist => 'Checkliste';
-
-  @override
-  String get addActionAddEvent => 'Ereignis';
+  String get addActionAddEventHint => 'Erstellt einen Termin und öffnet ihn.';
 
   @override
   String get addActionAddImageFromClipboard => 'Bild einfügen';
 
   @override
-  String get addActionAddScreenshot => 'Screenshot';
+  String get addActionAddImageFromClipboardHint =>
+      'Hängt das Bild aus deiner Zwischenablage an.';
+
+  @override
+  String get addActionAddScreenshot => 'Bildschirmfoto aufnehmen';
+
+  @override
+  String get addActionAddScreenshotHint =>
+      'Schließt dieses Menü und nimmt dann den Bildschirm auf.';
 
   @override
   String get addActionAddTask => 'Aufgabe';
-
-  @override
-  String get addActionAddText => 'Texteingabe';
 
   @override
   String get addActionAddTimer => 'Timer';
@@ -39,7 +41,31 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addActionAddTimeRecording => 'Zeiteingabe';
 
   @override
+  String get addActionCreateLinkedTask => 'Neue Aufgabe verknüpfen';
+
+  @override
+  String get addActionCreateLinkedTaskHint =>
+      'Erstellt eine neue, mit dieser verknüpfte Aufgabe und öffnet sie.';
+
+  @override
+  String get addActionCreateTask => 'Aufgabe hinzufügen';
+
+  @override
+  String get addActionCreateTaskHint =>
+      'Erstellt eine neue Aufgabe und öffnet sie.';
+
+  @override
   String get addActionImportImage => 'Bild importieren';
+
+  @override
+  String get addActionImportImageHint =>
+      'Öffnet deine Galerie oder Dateiauswahl.';
+
+  @override
+  String get addActionStartTimer => 'Timer starten';
+
+  @override
+  String get addActionStartTimerHint => 'Beginnt sofort mit der Zeiterfassung.';
 
   @override
   String get addHabitCommentLabel => 'Kommentar';
@@ -3572,6 +3598,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get createEntryTitle => 'Hinzufügen';
+
+  @override
+  String get createEntryTriggerHintFull =>
+      'Notiz, Checkliste, Sprachnotiz, Bild und mehr hinzufügen';
 
   @override
   String get createNewLinkedTask => 'Neue verknüpfte Aufgabe erstellen…';
@@ -10683,7 +10713,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get taskAgentAssignHint =>
-      'Ein Agent entwirft Schritte und Zusammenfassungen.';
+      'Entwirft Schritte und Zusammenfassungen mit eingebauter KI.';
 
   @override
   String get taskAgentAttributionUnavailable => 'Zuordnung nicht verfügbar';
@@ -10979,16 +11009,25 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskFirstRunAddChecklist => 'Checkliste hinzufügen';
 
   @override
+  String get taskFirstRunAddChecklistHint =>
+      'Fügt eine Liste abhakbarer Schritte hinzu.';
+
+  @override
   String get taskFirstRunAssignAgent => 'Agent zuweisen';
 
   @override
   String get taskFirstRunRecordAudio => 'Sprachnotiz aufnehmen';
 
   @override
+  String get taskFirstRunRecordAudioHint =>
+      'Öffnet die Aufnahme, ohne sie zu starten.';
+
+  @override
   String get taskFirstRunWriteNote => 'Notiz schreiben';
 
   @override
-  String get taskHeaderNoCategoryLabel => 'Keine Kategorie';
+  String get taskFirstRunWriteNoteHint =>
+      'Fügt eine verknüpfte Notiz für Details und Gedanken hinzu.';
 
   @override
   String taskLabelsMoreCount(int count) {
@@ -11160,6 +11199,11 @@ class AppLocalizationsDe extends AppLocalizations {
   String get taskPriorityMedium => 'Mittel';
 
   @override
+  String taskPriorityTooltip(String priority) {
+    return 'Priorität: $priority';
+  }
+
+  @override
   String get taskPriorityUrgent => 'Dringend';
 
   @override
@@ -11195,6 +11239,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '„$query“';
   }
+
+  @override
+  String get taskSetCategoryLabel => 'Kategorie festlegen';
 
   @override
   String get taskSetDueDateLabel => 'Fälligkeit setzen';

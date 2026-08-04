@@ -277,8 +277,8 @@ void main() {
     // vocabulary of the bordered active / Custom selection pills.
     expect(pill.variant, DsPillVariant.tinted);
     expect(pill.color, dsTokensLight.colors.interactive.enabled);
-    // Leading "+" affordance; the muted dashed ghost-chip skin is gone.
-    expect(find.byType(DsGhostChip), findsNothing);
+    // Leading "+" affordance on the tinted pill itself (the muted dashed
+    // ghost-chip skin — and the DsGhostChip component — are gone).
     expect(
       find.descendant(
         of: find.byKey(SavedTaskFilterRailKeys.saveChip),

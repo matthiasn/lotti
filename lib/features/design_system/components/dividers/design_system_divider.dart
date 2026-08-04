@@ -17,23 +17,34 @@ class DesignSystemDivider extends StatelessWidget {
     this.orientation = DesignSystemDividerOrientation.horizontal,
     this.label,
     this.length,
+    this.indent,
     super.key,
   }) : assert(
          orientation == DesignSystemDividerOrientation.horizontal ||
              label == null,
          'Vertical dividers do not support labels.',
+       ),
+       assert(
+         orientation == DesignSystemDividerOrientation.horizontal ||
+             indent == null,
+         'Vertical dividers do not support an indent.',
        );
 
   final DesignSystemDividerOrientation orientation;
   final String? label;
   final double? length;
 
+  /// Horizontal leading/trailing inset for the rule. List surfaces pass
+  /// their content gutter so the divider respects the same rail the rows
+  /// align to instead of running full-bleed under it.
+  final double? indent;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final color = tokens.colors.decorative.level01;
 
-    return switch (orientation) {
+    final divider = switch (orientation) {
       DesignSystemDividerOrientation.horizontal => _HorizontalDivider(
         color: color,
         label: label,
@@ -45,6 +56,12 @@ class DesignSystemDivider extends StatelessWidget {
         child: ColoredBox(color: color),
       ),
     };
+    final indent = this.indent;
+    if (indent == null) return divider;
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: indent),
+      child: divider,
+    );
   }
 }
 

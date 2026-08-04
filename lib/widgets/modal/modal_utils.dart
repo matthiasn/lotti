@@ -100,20 +100,19 @@ class ModalUtils {
     required VoidCallback onPressed,
   }) {
     final tokens = _tokens(context);
+    // A plain glyph at mediumEmphasis, not a filled chip: the dismiss
+    // affordance is chrome, and its old surface-filled container was the
+    // brightest element on a dark sheet — outshining the content it existed
+    // to close. The IconButton's own padding keeps the 48pt hit target.
     return IconButton(
       tooltip: tooltip,
       padding: EdgeInsets.all(tokens.spacing.step4),
-      icon: Container(
-        padding: EdgeInsets.all(tokens.spacing.step3),
-        decoration: BoxDecoration(
-          color: tokens.colors.surface.enabled,
-          borderRadius: BorderRadius.circular(tokens.radii.m),
-        ),
-        child: Icon(
-          icon,
-          color: tokens.colors.text.mediumEmphasis,
-          size: tokens.spacing.step6,
-        ),
+      icon: Icon(
+        icon,
+        color: tokens.colors.text.mediumEmphasis,
+        // IconSizes.l, the callout/header glyph tier (24) — not the step6
+        // gap that happens to share the number.
+        size: IconSizes.l,
       ),
       onPressed: onPressed,
     );

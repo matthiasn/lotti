@@ -12,25 +12,27 @@ class AppLocalizationsSv extends AppLocalizations {
   String get activeLabel => 'Aktiv';
 
   @override
-  String get addActionAddAudioRecording => 'Ljudinspelning';
+  String get addActionAddEvent => 'Lägg till en händelse';
 
   @override
-  String get addActionAddChecklist => 'Checklista';
+  String get addActionAddEventHint => 'Skapar en händelse och öppnar den.';
 
   @override
-  String get addActionAddEvent => 'Evenemang';
+  String get addActionAddImageFromClipboard => 'Klistra in en bild';
 
   @override
-  String get addActionAddImageFromClipboard => 'Klistra in bild';
+  String get addActionAddImageFromClipboardHint =>
+      'Bifogar bilden från urklipp.';
 
   @override
-  String get addActionAddScreenshot => 'Skärmdump';
+  String get addActionAddScreenshot => 'Ta en skärmbild';
+
+  @override
+  String get addActionAddScreenshotHint =>
+      'Stänger det här arket och tar sedan en bild av skärmen.';
 
   @override
   String get addActionAddTask => 'Uppgift';
-
-  @override
-  String get addActionAddText => 'Textinmatning';
 
   @override
   String get addActionAddTimer => 'Lägg till timer';
@@ -39,7 +41,30 @@ class AppLocalizationsSv extends AppLocalizations {
   String get addActionAddTimeRecording => 'Lägg till tidsregistrering';
 
   @override
-  String get addActionImportImage => 'Importera bild';
+  String get addActionCreateLinkedTask => 'Länka en ny uppgift';
+
+  @override
+  String get addActionCreateLinkedTaskHint =>
+      'Skapar och öppnar en ny uppgift som är länkad till den här.';
+
+  @override
+  String get addActionCreateTask => 'Lägg till en uppgift';
+
+  @override
+  String get addActionCreateTaskHint => 'Skapar en ny uppgift och öppnar den.';
+
+  @override
+  String get addActionImportImage => 'Importera en bild';
+
+  @override
+  String get addActionImportImageHint =>
+      'Öppnar ditt galleri eller filväljaren.';
+
+  @override
+  String get addActionStartTimer => 'Starta en timer';
+
+  @override
+  String get addActionStartTimerHint => 'Börjar spåra tid direkt.';
 
   @override
   String get addHabitCommentLabel => 'Kommentar';
@@ -3553,6 +3578,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get createEntryTitle => 'Lägg till';
+
+  @override
+  String get createEntryTriggerHintFull =>
+      'Lägg till en anteckning, en checklista, en röstanteckning, en bild med mera';
 
   @override
   String get createNewLinkedTask => 'Skapa ny länkad uppgift…';
@@ -10620,7 +10649,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get taskAgentAssignHint =>
-      'Låt en agent utkasta steg och sammanfattningar.';
+      'Utarbetar steg och sammanfattningar med inbyggd AI.';
 
   @override
   String get taskAgentAttributionUnavailable => 'Källa otillgänglig';
@@ -10911,16 +10940,25 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskFirstRunAddChecklist => 'Lägg till en checklista';
 
   @override
+  String get taskFirstRunAddChecklistHint =>
+      'Lägger till en lista med avprickbara steg.';
+
+  @override
   String get taskFirstRunAssignAgent => 'Tilldela en agent';
 
   @override
   String get taskFirstRunRecordAudio => 'Spela in en röstanteckning';
 
   @override
+  String get taskFirstRunRecordAudioHint =>
+      'Öppnar inspelaren utan att börja spela in.';
+
+  @override
   String get taskFirstRunWriteNote => 'Skriv en anteckning';
 
   @override
-  String get taskHeaderNoCategoryLabel => 'Ingen kategori';
+  String get taskFirstRunWriteNoteHint =>
+      'Lägger till en länkad anteckning för detaljer och tankar.';
 
   @override
   String taskLabelsMoreCount(int count) {
@@ -11092,6 +11130,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskPriorityMedium => 'Medium';
 
   @override
+  String taskPriorityTooltip(String priority) {
+    return 'Prioritet: $priority';
+  }
+
+  @override
   String get taskPriorityUrgent => 'Brådskande';
 
   @override
@@ -11127,6 +11170,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '”$query”';
   }
+
+  @override
+  String get taskSetCategoryLabel => 'Välj kategori';
 
   @override
   String get taskSetDueDateLabel => 'Ange förfallodatum';

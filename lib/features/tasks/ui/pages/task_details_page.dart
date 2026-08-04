@@ -493,10 +493,6 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
       // own bottom safe-inset padding.
       bottomNavigationBar: TaskActionBar(
         task: task,
-        // While the first-run block is up it already offers the checklist and
-        // note actions in words; the bar keeps only the primary and the two
-        // affordances the card does not duplicate.
-        compact: isFirstRun,
         topSlot: AiRunningDecoderBars(
           entryId: widget.taskId,
           isInteractive: true,
@@ -531,7 +527,15 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
               _FirstSliver(
                 fillRemaining: isFirstRun,
                 child: Center(
-                  child: ConstrainedBox(
+                  child: AnimatedContainer(
+                    // The first content tap flips `isFirstRun`, and with it
+                    // this measure (520 → 960). Snapping it in a single frame
+                    // was the page punishing the exact tap it invites —
+                    // animated, the column eases out to the reading width
+                    // while `_FirstSliver` releases its anchoring on the same
+                    // clock.
+                    duration: MotionDurations.medium2,
+                    curve: MotionCurves.standard,
                     // Cap the content measure on wide windows so the task reads
                     // as a centered column rather than full-bleed text; this is
                     // non-binding at phone / narrow-pane widths.
@@ -562,7 +566,11 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
               SliverToBoxAdapter(
                 child: Center(
                   key: _belowCardKey,
-                  child: ConstrainedBox(
+                  child: AnimatedContainer(
+                    // Same clock as the first sliver's measure, so the two
+                    // bands widen as one column instead of shearing.
+                    duration: MotionDurations.medium2,
+                    curve: MotionCurves.standard,
                     constraints: BoxConstraints(maxWidth: contentMaxWidth),
                     child: Padding(
                       // Same gutter as the sliver above, so the linked
@@ -715,28 +723,69 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
 /// composition without ever asking. It is a floor, not a fixed height, so a
 /// long title or a large text scale grows the sliver and scrolls normally
 /// instead of clipping.
-class _FirstSliver extends StatelessWidget {
+class _FirstSliver extends StatefulWidget {
   const _FirstSliver({required this.child, required this.fillRemaining});
 
   final Widget child;
   final bool fillRemaining;
 
+  @override
+  State<_FirstSliver> createState() => _FirstSliverState();
+}
+
+class _FirstSliverState extends State<_FirstSliver> {
   /// Vertical alignment of the group within the filled height. Above the
   /// geometric centre — optical centre, where the eye expects a short
   /// composition to sit — but only just, so the breadcrumb stays tied to the
   /// app bar above it rather than floating free in the middle of the window.
   static const Alignment _opticalCentre = Alignment(0, -0.45);
 
+  /// Whether the measuring branch (the [SliverLayoutBuilder]) is mounted.
+  ///
+  /// The first content tap flips [_FirstSliver.fillRemaining] off, but the
+  /// composed fill cannot simply switch to the plain branch in the same frame
+  /// — that snaps the group from optical centre to the top in one jump, half
+  /// of the "layout earthquake" the page fired at the exact tap it invited.
+  /// Instead the layout branch stays mounted while the height floor and the
+  /// alignment ease out on the shared `medium2` clock, and only then does the
+  /// sliver settle into the plain adapter that ordinary tasks use (so normal
+  /// scrolling never pays the layout-builder's rebuild-on-scroll cost).
+  late bool _fillLayout = widget.fillRemaining;
+
+  @override
+  void didUpdateWidget(covariant _FirstSliver oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.fillRemaining && !_fillLayout) {
+      setState(() => _fillLayout = true);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    if (!fillRemaining) return SliverToBoxAdapter(child: child);
+    if (!_fillLayout) return SliverToBoxAdapter(child: widget.child);
     return SliverLayoutBuilder(
       builder: (context, constraints) => SliverToBoxAdapter(
-        child: ConstrainedBox(
+        child: AnimatedContainer(
+          duration: MotionDurations.medium2,
+          curve: MotionCurves.standard,
           constraints: BoxConstraints(
-            minHeight: constraints.remainingPaintExtent,
+            minHeight: widget.fillRemaining
+                ? constraints.remainingPaintExtent
+                : 0,
           ),
-          child: Align(alignment: _opticalCentre, child: child),
+          onEnd: () {
+            if (!widget.fillRemaining && mounted) {
+              setState(() => _fillLayout = false);
+            }
+          },
+          child: AnimatedAlign(
+            duration: MotionDurations.medium2,
+            curve: MotionCurves.standard,
+            alignment: widget.fillRemaining
+                ? _opticalCentre
+                : Alignment.topCenter,
+            child: widget.child,
+          ),
         ),
       ),
     );

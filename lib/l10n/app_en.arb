@@ -1,15 +1,22 @@
 {
   "activeLabel": "Active",
-  "addActionAddAudioRecording": "Audio Recording",
-  "addActionAddChecklist": "Checklist",
-  "addActionAddEvent": "Event",
-  "addActionAddImageFromClipboard": "Paste Image",
-  "addActionAddScreenshot": "Screenshot",
+  "addActionAddEvent": "Add an event",
+  "addActionAddEventHint": "Creates an event and opens it.",
+  "addActionAddImageFromClipboard": "Paste an image",
+  "addActionAddImageFromClipboardHint": "Attaches the image on your clipboard.",
+  "addActionAddScreenshot": "Capture a screenshot",
+  "addActionAddScreenshotHint": "Closes this sheet, then captures the screen.",
   "addActionAddTask": "Task",
-  "addActionAddText": "Text Entry",
   "addActionAddTimer": "Timer",
   "addActionAddTimeRecording": "Timer Entry",
-  "addActionImportImage": "Import Image",
+  "addActionCreateLinkedTask": "Link a new task",
+  "addActionCreateLinkedTaskHint": "Creates and opens a new task linked to this one.",
+  "addActionCreateTask": "Add a task",
+  "addActionCreateTaskHint": "Creates a new task and opens it.",
+  "addActionImportImage": "Import an image",
+  "addActionImportImageHint": "Opens your gallery or file picker.",
+  "addActionStartTimer": "Start a timer",
+  "addActionStartTimerHint": "Begins tracking time right away.",
   "addHabitCommentLabel": "Comment",
   "addHabitDateLabel": "Completed at",
   "addLinkedEntryLabel": "Add linked entry",
@@ -2070,6 +2077,7 @@
   "createCategoryTitle": "Create category",
   "createEntryLabel": "Create new entry",
   "createEntryTitle": "Add",
+  "createEntryTriggerHintFull": "Add a note, a checklist, a voice note, an image and more",
   "createNewLinkedTask": "Create new linked task…",
   "createNewLinkedTaskTitle": "New linked task",
   "@createNewLinkedTaskTitle": {
@@ -5309,7 +5317,7 @@
   "taskActionBarOpenRunningTimer": "Open running timer",
   "taskActionBarStopTracking": "Stop time tracking",
   "taskActionBarTrackTime": "Track time",
-  "taskAgentAssignHint": "Let an agent draft steps and summaries.",
+  "taskAgentAssignHint": "Drafts steps and summaries with built-in AI.",
   "taskAgentAttributionUnavailable": "Attribution unavailable",
   "taskAgentAutomaticUpdatesLabel": "Automatic updates",
   "taskAgentAutomaticUpdatesNeedsSetup": "Choose an AI setup before turning on automatic updates.",
@@ -5522,10 +5530,12 @@
     }
   },
   "taskFirstRunAddChecklist": "Add a checklist",
+  "taskFirstRunAddChecklistHint": "Adds a list of checkable steps.",
   "taskFirstRunAssignAgent": "Assign an agent",
   "taskFirstRunRecordAudio": "Record a voice note",
+  "taskFirstRunRecordAudioHint": "Opens the recorder without starting to record.",
   "taskFirstRunWriteNote": "Write a note",
-  "taskHeaderNoCategoryLabel": "No category",
+  "taskFirstRunWriteNoteHint": "Adds a linked note for details and thoughts.",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {
@@ -5596,6 +5606,14 @@
   "taskPriorityHigh": "High",
   "taskPriorityLow": "Low",
   "taskPriorityMedium": "Medium",
+  "taskPriorityTooltip": "Priority: {priority}",
+  "@taskPriorityTooltip": {
+    "placeholders": {
+      "priority": {
+        "type": "String"
+      }
+    }
+  },
   "taskPriorityUrgent": "Urgent",
   "tasksAddLabelButton": "Add label",
   "tasksAgentFilterAll": "All",
@@ -5624,6 +5642,7 @@
       }
     }
   },
+  "taskSetCategoryLabel": "Set category",
   "taskSetDueDateLabel": "Set due date",
   "taskSetEstimateLabel": "Add estimate",
   "tasksFilterApplyTitle": "Apply filter",

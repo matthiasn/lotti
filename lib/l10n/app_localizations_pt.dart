@@ -12,25 +12,27 @@ class AppLocalizationsPt extends AppLocalizations {
   String get activeLabel => 'Ativo';
 
   @override
-  String get addActionAddAudioRecording => 'Gravação de áudio';
+  String get addActionAddEvent => 'Adicionar um evento';
 
   @override
-  String get addActionAddChecklist => 'Lista de verificação';
+  String get addActionAddEventHint => 'Cria um evento e o abre.';
 
   @override
-  String get addActionAddEvent => 'Evento';
+  String get addActionAddImageFromClipboard => 'Colar uma imagem';
 
   @override
-  String get addActionAddImageFromClipboard => 'Colar imagem';
+  String get addActionAddImageFromClipboardHint =>
+      'Anexa a imagem da sua área de transferência.';
 
   @override
-  String get addActionAddScreenshot => 'Captura de tela';
+  String get addActionAddScreenshot => 'Capturar uma captura de tela';
+
+  @override
+  String get addActionAddScreenshotHint =>
+      'Fecha este painel e depois captura a tela.';
 
   @override
   String get addActionAddTask => 'Tarefa';
-
-  @override
-  String get addActionAddText => 'Entrada de texto';
 
   @override
   String get addActionAddTimer => 'Temporizador';
@@ -39,7 +41,31 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addActionAddTimeRecording => 'Entrada do temporizador';
 
   @override
-  String get addActionImportImage => 'Importar imagem';
+  String get addActionCreateLinkedTask => 'Vincular uma nova tarefa';
+
+  @override
+  String get addActionCreateLinkedTaskHint =>
+      'Cria e abre uma nova tarefa vinculada a esta.';
+
+  @override
+  String get addActionCreateTask => 'Adicionar uma tarefa';
+
+  @override
+  String get addActionCreateTaskHint => 'Cria uma nova tarefa e a abre.';
+
+  @override
+  String get addActionImportImage => 'Importar uma imagem';
+
+  @override
+  String get addActionImportImageHint =>
+      'Abre sua galeria ou o seletor de arquivos.';
+
+  @override
+  String get addActionStartTimer => 'Iniciar um cronômetro';
+
+  @override
+  String get addActionStartTimerHint =>
+      'Começa a registrar o tempo imediatamente.';
 
   @override
   String get addHabitCommentLabel => 'Comentário';
@@ -3578,6 +3604,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get createEntryTitle => 'Adicionar';
+
+  @override
+  String get createEntryTriggerHintFull =>
+      'Adicionar uma nota, uma lista, uma nota de voz, uma imagem e mais';
 
   @override
   String get createNewLinkedTask => 'Criar nova tarefa vinculada…';
@@ -10721,7 +10751,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get taskActionBarTrackTime => 'Monitorar o tempo';
 
   @override
-  String get taskAgentAssignHint => 'Deixa um agente esboçar passos e resumos.';
+  String get taskAgentAssignHint => 'Redige etapas e resumos com IA integrada.';
 
   @override
   String get taskAgentAttributionUnavailable => 'Atribuição indisponível';
@@ -11012,16 +11042,25 @@ class AppLocalizationsPt extends AppLocalizations {
   String get taskFirstRunAddChecklist => 'Adicionar uma lista de verificação';
 
   @override
+  String get taskFirstRunAddChecklistHint =>
+      'Adiciona uma lista de etapas marcáveis.';
+
+  @override
   String get taskFirstRunAssignAgent => 'Atribuir um agente';
 
   @override
   String get taskFirstRunRecordAudio => 'Gravar uma nota de voz';
 
   @override
+  String get taskFirstRunRecordAudioHint =>
+      'Abre o gravador sem iniciar a gravação.';
+
+  @override
   String get taskFirstRunWriteNote => 'Escrever uma nota';
 
   @override
-  String get taskHeaderNoCategoryLabel => 'Sem categoria';
+  String get taskFirstRunWriteNoteHint =>
+      'Adiciona uma nota vinculada para detalhes e ideias.';
 
   @override
   String taskLabelsMoreCount(int count) {
@@ -11193,6 +11232,11 @@ class AppLocalizationsPt extends AppLocalizations {
   String get taskPriorityMedium => 'Médio';
 
   @override
+  String taskPriorityTooltip(String priority) {
+    return 'Prioridade: $priority';
+  }
+
+  @override
   String get taskPriorityUrgent => 'Urgente';
 
   @override
@@ -11228,6 +11272,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String tasksCompactSearchContext(String query) {
     return '«$query»';
   }
+
+  @override
+  String get taskSetCategoryLabel => 'Definir categoria';
 
   @override
   String get taskSetDueDateLabel => 'Definir prazo';

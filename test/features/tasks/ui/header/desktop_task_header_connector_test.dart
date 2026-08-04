@@ -621,7 +621,7 @@ void main() {
     );
 
     testWidgets(
-      'tapping the "No category" placeholder opens the category picker',
+      'tapping the "Set category" chip opens the category picker',
       (tester) async {
         final task = buildTask();
 
@@ -629,29 +629,30 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('No category'));
+        await tester.tap(find.text('Set category'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
         // CategoryPickerSheet renders with an empty category
-        // list — verify that the header's own "No category" crumb has been
-        // covered by a modal on top.
+        // list — verify that the lane's dashed chip has been covered by a
+        // modal on top.
         expect(find.byType(CategoryPickerSheet), findsOneWidget);
       },
     );
 
     testWidgets(
-      'offers no project crumb at all when the task has no category',
+      'offers no crumb at all when the task has no category',
       (tester) async {
-        // Projects live inside a category, so there is nothing to pick from
-        // and nothing to name: the crumb is the category segment alone.
+        // Without a category there is no ancestry to show: no crumb, no
+        // separator — the category offer is the dashed lane chip instead.
         final task = buildTask();
 
         await tester.pumpWidget(pumpConnector(task: task));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        expect(find.text('No category'), findsOneWidget);
+        expect(find.text('No category'), findsNothing);
+        expect(find.text('Set category'), findsOneWidget);
         expect(find.text('No project'), findsNothing);
         expect(find.text('/'), findsNothing);
       },
@@ -963,7 +964,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('No category'));
+        await tester.tap(find.text('Set category'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1009,7 +1010,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('No category'));
+        await tester.tap(find.text('Set category'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 

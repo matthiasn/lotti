@@ -271,7 +271,7 @@ void main() {
           final l10n = AppLocalizations.of(
             tester.element(find.byType(CreateMenuListItem)),
           )!;
-          expect(find.text(l10n.addActionAddChecklist), findsOneWidget);
+          expect(find.text(l10n.taskFirstRunAddChecklist), findsOneWidget);
         },
       );
 
@@ -455,7 +455,7 @@ void main() {
         await tester.pump();
 
         expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(find.byIcon(Icons.photo_library_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
 
         final l10n = AppLocalizations.of(
           tester.element(find.byType(CreateMenuListItem)),
@@ -688,7 +688,7 @@ void main() {
         final l10n = AppLocalizations.of(
           tester.element(find.byType(CreateMenuListItem)),
         )!;
-        expect(find.text(l10n.addActionAddTimer), findsOneWidget);
+        expect(find.text(l10n.addActionStartTimer), findsOneWidget);
       },
     );
   });
@@ -1251,8 +1251,8 @@ void main() {
 
           // Verify the task item is rendered
           expect(find.byType(CreateMenuListItem), findsOneWidget);
-          expect(find.text('Task'), findsOneWidget);
-          expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
+          expect(find.text('Link a new task'), findsOneWidget);
+          expect(find.byIcon(Icons.add_task_rounded), findsOneWidget);
         });
 
         testWidgets('shows task item in modal', (tester) async {
@@ -1285,8 +1285,8 @@ void main() {
 
           // Verify the task item is shown
           expect(find.byType(CreateMenuListItem), findsOneWidget);
-          expect(find.text('Task'), findsOneWidget);
-          expect(find.byIcon(Icons.task_alt_rounded), findsOneWidget);
+          expect(find.text('Link a new task'), findsOneWidget);
+          expect(find.byIcon(Icons.add_task_rounded), findsOneWidget);
         });
 
         testWidgets('navigates to task after creation when not linked', (
@@ -1720,8 +1720,8 @@ void main() {
           tester.element(find.byType(CreateMenuListItem)),
         )!;
         expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(find.text(l10n.addActionAddAudioRecording), findsOneWidget);
-        expect(find.byIcon(Icons.mic_none_rounded), findsOneWidget);
+        expect(find.text(l10n.taskFirstRunRecordAudio), findsOneWidget);
+        expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
       });
     });
 
@@ -1893,6 +1893,13 @@ void main() {
               'linked-id',
               categoryId: 'category-id',
             ),
+            overrides: [
+              // The row watches its host entry to decide whether to publish
+              // task focus after creating the note.
+              entryControllerProvider('linked-id').overrideWith(
+                () => _TestEntryController(_makeJournalEntry('linked-id')),
+              ),
+            ],
           ),
         );
 
@@ -1901,7 +1908,7 @@ void main() {
           tester.element(find.byType(CreateMenuListItem)),
         )!;
         expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(find.text(l10n.addActionAddText), findsOneWidget);
+        expect(find.text(l10n.taskFirstRunWriteNote), findsOneWidget);
         expect(find.byIcon(Icons.notes_rounded), findsOneWidget);
       });
     });
@@ -1923,7 +1930,7 @@ void main() {
         )!;
         expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(find.text(l10n.addActionImportImage), findsOneWidget);
-        expect(find.byIcon(Icons.photo_library_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
       });
     });
 
@@ -1945,341 +1952,6 @@ void main() {
         expect(find.byType(CreateMenuListItem), findsOneWidget);
         expect(find.text(l10n.addActionAddScreenshot), findsOneWidget);
         expect(find.byIcon(Icons.screenshot_monitor_rounded), findsOneWidget);
-      });
-    });
-
-    group('CreateEventItem Flag Tests', () {
-      late MockJournalDb mockDb;
-
-      setUp(() {
-        mockDb = MockJournalDb();
-      });
-
-      tearDown(() async {
-        await getIt.reset();
-      });
-
-      testWidgets('hides Event item when enableEventsFlag is OFF', (
-        tester,
-      ) async {
-        // Mock JournalDb.watchConfigFlags() to return enableEventsFlag: false
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => Stream<Set<ConfigFlag>>.fromIterable([
-            {
-              const ConfigFlag(
-                name: enableEventsFlag,
-                description: 'Enable Events?',
-                status: false,
-              ),
-            },
-          ]),
-        );
-
-        getIt.registerSingleton<JournalDb>(mockDb);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateEventItem(
-              'linked-id',
-              categoryId: 'category-id',
-            ),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockDb),
-            ],
-          ),
-        );
-
-        await tester.pump();
-
-        // Assert: SizedBox.shrink() behavior (CreateMenuListItem not found)
-        final l10n = AppLocalizations.of(
-          tester.element(find.byType(Scaffold)),
-        )!;
-        expect(find.byType(CreateMenuListItem), findsNothing);
-        expect(find.text(l10n.addActionAddEvent), findsNothing);
-      });
-
-      testWidgets(
-        'hides Event item while loading enableEventsFlag on initial load',
-        (tester) async {
-          final flagController = StreamController<Set<ConfigFlag>>();
-
-          when(() => mockDb.watchConfigFlags()).thenAnswer(
-            (_) => flagController.stream,
-          );
-
-          getIt.registerSingleton<JournalDb>(mockDb);
-
-          await tester.pumpWidget(
-            makeTestableWidgetWithScaffold(
-              const CreateEventItem(
-                'linked-id',
-                categoryId: 'category-id',
-              ),
-              overrides: [
-                journalDbProvider.overrideWithValue(mockDb),
-              ],
-            ),
-          );
-
-          // Stays in loading state (no flag emitted yet)
-          await tester.pump();
-
-          // Assert: Defaults to hidden during initial load with no previous value
-          expect(find.byType(CreateMenuListItem), findsNothing);
-
-          await flagController.close();
-        },
-      );
-
-      testWidgets('hides Event item when enableEventsFlag stream errors', (
-        tester,
-      ) async {
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => Stream<Set<ConfigFlag>>.error(Exception('Test error')),
-        );
-
-        getIt.registerSingleton<JournalDb>(mockDb);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateEventItem(
-              'linked-id',
-              categoryId: 'category-id',
-            ),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockDb),
-            ],
-          ),
-        );
-
-        await tester.pump();
-
-        // Assert: Defaults to hidden on error with no previous value
-        expect(find.byType(CreateMenuListItem), findsNothing);
-      });
-
-      testWidgets('transitions from loading to enabled', (tester) async {
-        final flagController = StreamController<Set<ConfigFlag>>();
-
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => flagController.stream,
-        );
-
-        getIt.registerSingleton<JournalDb>(mockDb);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateEventItem(
-              'linked-id',
-              categoryId: 'category-id',
-            ),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockDb),
-            ],
-          ),
-        );
-
-        // Initial state: loading (no item visible)
-        await tester.pump();
-        expect(find.byType(CreateMenuListItem), findsNothing);
-
-        // Emit flag enabled
-        flagController.add({
-          const ConfigFlag(
-            name: enableEventsFlag,
-            description: 'Enable Events?',
-            status: true,
-          ),
-        });
-
-        await tester.pumpAndSettle();
-
-        // Assert: Item now visible
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(find.byIcon(Icons.event_rounded), findsOneWidget);
-
-        await flagController.close();
-      });
-
-      testWidgets('transitions from enabled to disabled', (tester) async {
-        final flagController = StreamController<Set<ConfigFlag>>();
-
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => flagController.stream,
-        );
-
-        getIt.registerSingleton<JournalDb>(mockDb);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateEventItem(
-              'linked-id',
-              categoryId: 'category-id',
-            ),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockDb),
-            ],
-          ),
-        );
-
-        // Emit flag enabled: item becomes visible.
-        flagController.add({
-          const ConfigFlag(
-            name: enableEventsFlag,
-            description: 'Enable Events?',
-            status: true,
-          ),
-        });
-        await tester.pumpAndSettle();
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
-
-        // Emit flag disabled: item is removed from the tree.
-        flagController.add({
-          const ConfigFlag(
-            name: enableEventsFlag,
-            description: 'Enable Events?',
-            status: false,
-          ),
-        });
-        await tester.pumpAndSettle();
-
-        // Assert: item disappears once the flag concretely resolves to false.
-        expect(find.byType(CreateMenuListItem), findsNothing);
-        expect(tester.takeException(), isNull);
-
-        await flagController.close();
-      });
-
-      testWidgets('handles rapid flag toggles without errors', (tester) async {
-        final flagController = StreamController<Set<ConfigFlag>>();
-
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => flagController.stream,
-        );
-
-        getIt.registerSingleton<JournalDb>(mockDb);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateEventItem(
-              'linked-id',
-              categoryId: 'category-id',
-            ),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockDb),
-            ],
-          ),
-        );
-
-        // Rapid toggles: ON → OFF → ON
-        flagController.add({
-          const ConfigFlag(
-            name: enableEventsFlag,
-            description: 'Enable Events?',
-            status: true,
-          ),
-        });
-        await tester.pump(const Duration(milliseconds: 10));
-
-        flagController.add({
-          const ConfigFlag(
-            name: enableEventsFlag,
-            description: 'Enable Events?',
-            status: false,
-          ),
-        });
-        await tester.pump(const Duration(milliseconds: 10));
-
-        flagController.add({
-          const ConfigFlag(
-            name: enableEventsFlag,
-            description: 'Enable Events?',
-            status: true,
-          ),
-        });
-
-        await tester.pumpAndSettle();
-
-        // Assert: Final state is enabled, no errors thrown
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(tester.takeException(), isNull);
-
-        await flagController.close();
-      });
-
-      testWidgets('shows Event item when enableEventsFlag is ON', (
-        tester,
-      ) async {
-        // Mock JournalDb.watchConfigFlags() to return enableEventsFlag: true
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => Stream<Set<ConfigFlag>>.fromIterable([
-            {
-              const ConfigFlag(
-                name: enableEventsFlag,
-                description: 'Enable Events?',
-                status: true,
-              ),
-            },
-          ]),
-        );
-
-        getIt.registerSingleton<JournalDb>(mockDb);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateEventItem(
-              'linked-id',
-              categoryId: 'category-id',
-            ),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockDb),
-            ],
-          ),
-        );
-
-        await tester.pump();
-
-        // Assert: CreateMenuListItem is found and localized text visible
-        final l10n = AppLocalizations.of(
-          tester.element(find.byType(CreateMenuListItem)),
-        )!;
-        expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(find.text(l10n.addActionAddEvent), findsOneWidget);
-        // Assert: Icons.event_rounded is found
-        expect(find.byIcon(Icons.event_rounded), findsOneWidget);
-      });
-
-      testWidgets('defaults to hidden when flag data is null/empty', (
-        tester,
-      ) async {
-        // Mock stream returns empty set
-        when(() => mockDb.watchConfigFlags()).thenAnswer(
-          (_) => Stream<Set<ConfigFlag>>.fromIterable([{}]),
-        );
-
-        getIt.registerSingleton<JournalDb>(mockDb);
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            const CreateEventItem(
-              'linked-id',
-              categoryId: 'category-id',
-            ),
-            overrides: [
-              journalDbProvider.overrideWithValue(mockDb),
-            ],
-          ),
-        );
-
-        await tester.pump();
-
-        // Assert: Widget is hidden (defaults to false)
-        final l10n = AppLocalizations.of(
-          tester.element(find.byType(Scaffold)),
-        )!;
-        expect(find.byType(CreateMenuListItem), findsNothing);
-        expect(find.text(l10n.addActionAddEvent), findsNothing);
       });
     });
 
@@ -2522,10 +2194,13 @@ void main() {
                 () => _TestEntryController(parentEntry),
               ),
             ],
-            child: const MaterialApp(
+            // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
+            // theme and throws without them.
+            child: MaterialApp(
+              theme: resolveTestTheme(),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
+              home: const Scaffold(
                 body: CreateTimerItem(parentId),
               ),
             ),
@@ -2591,10 +2266,13 @@ void main() {
                 () => _TestEntryController(parentEntry),
               ),
             ],
-            child: const MaterialApp(
+            // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
+            // theme and throws without them.
+            child: MaterialApp(
+              theme: resolveTestTheme(),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
+              home: const Scaffold(
                 body: CreateTimerItem(parentId),
               ),
             ),
@@ -2645,10 +2323,13 @@ void main() {
                 mockEntryCreationService,
               ),
             ],
-            child: const MaterialApp(
+            // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
+            // theme and throws without them.
+            child: MaterialApp(
+              theme: resolveTestTheme(),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
+              home: const Scaffold(
                 body: CreateAudioItem(
                   linkedId,
                   categoryId: categoryId,
@@ -2710,11 +2391,19 @@ void main() {
               entryCreationServiceProvider.overrideWithValue(
                 mockEntryCreationService,
               ),
+              // The row watches its host entry to decide whether to publish
+              // task focus; a plain journal host takes the pop-only path.
+              entryControllerProvider(linkedId).overrideWith(
+                () => _TestEntryController(_makeJournalEntry(linkedId)),
+              ),
             ],
-            child: const MaterialApp(
+            // resolveTestTheme: DesignSystemListItem resolves DsTokens off the
+            // theme and throws without them.
+            child: MaterialApp(
+              theme: resolveTestTheme(),
               localizationsDelegates: AppLocalizations.localizationsDelegates,
               supportedLocales: AppLocalizations.supportedLocales,
-              home: Scaffold(
+              home: const Scaffold(
                 body: CreateTextItem(
                   linkedId,
                   categoryId: categoryId,
@@ -2740,6 +2429,80 @@ void main() {
           ),
         ).called(1);
       });
+
+      testWidgets(
+        'on a TASK host the row publishes task focus for the new note — '
+        'the same one-label-one-journey contract as the first-run card row',
+        (tester) async {
+          const taskId = 'host-task-id';
+          const noteId = 'focused-note-id';
+          final hostTask = Task(
+            meta: Metadata(
+              id: taskId,
+              createdAt: testDate,
+              updatedAt: testDate,
+              dateFrom: testDate,
+              dateTo: testDate,
+            ),
+            data: TaskData(
+              title: 'Host',
+              status: TaskStatus.open(
+                id: 's',
+                createdAt: testDate,
+                utcOffset: 0,
+              ),
+              dateFrom: testDate,
+              dateTo: testDate,
+              statusHistory: const [],
+            ),
+          );
+          final note = _makeJournalEntry(noteId);
+
+          final mockEntryCreationService = MockEntryCreationService();
+          when(
+            () => mockEntryCreationService.createTextEntry(
+              linkedId: taskId,
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => note);
+
+          final container = ProviderContainer(
+            overrides: [
+              entryCreationServiceProvider.overrideWithValue(
+                mockEntryCreationService,
+              ),
+              entryControllerProvider(
+                taskId,
+              ).overrideWith(() => _TestEntryController(hostTask)),
+            ],
+          );
+          addTearDown(container.dispose);
+
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: MaterialApp(
+                theme: resolveTestTheme(),
+                localizationsDelegates: AppLocalizations.localizationsDelegates,
+                supportedLocales: AppLocalizations.supportedLocales,
+                home: const Scaffold(
+                  body: CreateTextItem(taskId),
+                ),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          await tester.tap(find.byType(CreateMenuListItem));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 100));
+
+          // Without the publish, the sheet's "Write a note" silently minted
+          // an off-screen empty note — the documented dead-button flow.
+          final focus = container.read(taskFocusControllerProvider(taskId));
+          expect(focus?.entryId, noteId);
+        },
+      );
     });
 
     group('ImportImageItem Widget Integration Tests (modern)', () {
@@ -2768,7 +2531,7 @@ void main() {
 
         // Verify the item is rendered
         expect(find.byType(CreateMenuListItem), findsOneWidget);
-        expect(find.byIcon(Icons.photo_library_rounded), findsOneWidget);
+        expect(find.byIcon(Icons.photo_library_outlined), findsOneWidget);
       });
     });
 
@@ -2807,30 +2570,30 @@ void main() {
       setUpAll(bench.setUpAll);
       tearDownAll(bench.tearDownAll);
 
-      testWidgets('hides when canPasteImage is false (default)', (
-        tester,
-      ) async {
-        const linkedId = 'linked-id';
-        const categoryId = 'category-id';
+      testWidgets(
+        'renders unconditionally — the clipboard gate lives in the menu '
+        'list, which resolves visibility before assembling rows',
+        (tester) async {
+          const linkedId = 'linked-id';
+          const categoryId = 'category-id';
 
-        await tester.pumpWidget(
-          ProviderScope(
-            child: makeTestableWidget2(
-              const Scaffold(
-                body: PasteImageItem(
-                  linkedId,
-                  categoryId: categoryId,
-                ),
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              const PasteImageItem(
+                linkedId,
+                categoryId: categoryId,
               ),
             ),
-          ),
-        );
+          );
 
-        await tester.pump();
+          await tester.pump();
 
-        // Should show SizedBox.shrink (nothing visible) when clipboard is empty
-        expect(find.byType(CreateMenuListItem), findsNothing);
-      });
+          // The item itself no longer self-hides: were it to collapse after
+          // being listed, the sheet would close on an orphan divider — the
+          // exact defect the list-level gate exists to prevent.
+          expect(find.byType(CreateMenuListItem), findsOneWidget);
+        },
+      );
     });
   });
 }

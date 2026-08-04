@@ -123,6 +123,7 @@ class TaskFirstRunActions extends ConsumerWidget {
         icon: Icons.notes_rounded,
         opensPicker: false,
         label: context.messages.taskFirstRunWriteNote,
+        subtitle: context.messages.taskFirstRunWriteNoteHint,
         // …and then scroll to it. `createTextEntry` only navigates for an
         // *unlinked* entry; linked to a task it writes a row into the linked
         // entries below and returns. With the new note off-screen under a
@@ -146,6 +147,12 @@ class TaskFirstRunActions extends ConsumerWidget {
         icon: Icons.checklist_rounded,
         opensPicker: false,
         label: context.messages.taskFirstRunAddChecklist,
+        subtitle: context.messages.taskFirstRunAddChecklistHint,
+        // No focus publish here, deliberately: the checklists section keys
+        // its rows itself rather than through the page's entry-key registry,
+        // so a focus intent for the new checklist id has no rendered key to
+        // land on and would only spin the scroll-retry loop. The section
+        // renders directly under the header, above the fold.
         onTap: () async =>
             await ref
                 .read(entryCreationServiceProvider)
@@ -155,6 +162,10 @@ class TaskFirstRunActions extends ConsumerWidget {
       _FirstRunRow(
         icon: Icons.mic_rounded,
         label: context.messages.taskFirstRunRecordAudio,
+        // This subtitle answers the fear reviewers voiced verbatim — "does
+        // tapping start recording?": the tap only opens the recorder sheet,
+        // and nothing is captured until the user starts it there.
+        subtitle: context.messages.taskFirstRunRecordAudioHint,
         // Opens a modal and returns; the recording (and the entry it makes)
         // happens in there. Nothing to latch off — cancelling the sheet has to
         // leave the row live.
@@ -171,10 +182,11 @@ class TaskFirstRunActions extends ConsumerWidget {
       ),
       _FirstRunRow(
         icon: Icons.auto_awesome_rounded,
-        // The AI accent, the one place this palette appears on an empty
-        // task, so the agent row reads as a different kind of offer from
-        // the two manual ones above it.
-        iconColor: tokens.colors.aiCard.accent,
+        // No colour override: `aiCard.accent` resolves to the same colour as
+        // the default `interactive.enabled` in both themes, so the override
+        // promised a distinction it never rendered. The sparkle glyph carries
+        // the "different kind of offer" reading on its own.
+        //
         // The block's own sentence-case label, not the chip's Title Case
         // one: three rows reading "Write a note / Add a checklist / Assign
         // Agent" made the third look imported from somewhere else.
@@ -184,7 +196,9 @@ class TaskFirstRunActions extends ConsumerWidget {
         // different screen than the row it sat under; then it did both,
         // which made the card's most optional row its largest — and
         // truncated in German on a phone. The category route now belongs to
-        // the picker this row opens.
+        // the picker this row opens. Every row now carries a subtitle like
+        // this one, so the card's rhythm is 1-1-1-1 with order (not bulk)
+        // carrying priority.
         subtitle: context.messages.taskAgentAssignHint,
         // Same: the picker may be dismissed without assigning anything.
         onTap: () async {
@@ -214,7 +228,10 @@ class TaskFirstRunActions extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               for (var i = 0; i < rows.length; i++) ...[
-                if (i > 0) const DesignSystemDivider(),
+                // Inset to the rows' gutter: a full-bleed rule was the one
+                // element on the card that ignored the alignment system
+                // everything else obeys.
+                if (i > 0) DesignSystemDivider(indent: tokens.spacing.step5),
                 rows[i],
               ],
             ],
@@ -232,16 +249,18 @@ class _FirstRunRow extends StatefulWidget {
   const _FirstRunRow({
     required this.icon,
     required this.label,
+    required this.subtitle,
     required this.onTap,
-    this.subtitle,
-    this.iconColor,
     this.opensPicker = true,
   });
 
   final IconData icon;
   final String label;
-  final String? subtitle;
-  final Color? iconColor;
+
+  /// One line on what the tap does. Required, not optional: a lone subtitle
+  /// on one row bottom-weighted the card and read as that row mattering most,
+  /// so the rhythm contract is all four rows or none.
+  final String subtitle;
 
   /// Runs the row's action and reports whether it created content. `true`
   /// latches the row off for good — see [_FirstRunRowState._spent].
@@ -294,7 +313,6 @@ class _FirstRunRowState extends State<_FirstRunRow> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final icon = widget.icon;
-    final iconColor = widget.iconColor;
     final opensPicker = widget.opensPicker;
     return DesignSystemListItem(
       onTap: _pending || _spent ? null : _handleTap,
@@ -314,14 +332,45 @@ class _FirstRunRowState extends State<_FirstRunRow> {
       // is the ramp this block wants.
       leading: Icon(
         icon,
-        size: tokens.spacing.step5,
-        color: iconColor ?? tokens.colors.interactive.enabled,
+        // IconSizes.s, the list-row glyph tier — not a borrowed spacing step.
+        size: IconSizes.s,
+        color: tokens.colors.interactive.enabled,
       ),
-      trailingExtra: Icon(
-        opensPicker ? Icons.arrow_forward_ios : Icons.add_rounded,
-        size: tokens.spacing.step4,
-        color: tokens.colors.text.lowEmphasis,
-      ),
+      // While the row's own future is in flight the glyph gives way to a
+      // small spinner: on a slow database the inert window used to look like
+      // a dead button, when it is actually the re-entrancy guard protecting
+      // the user from minting duplicates. A row that has DONE its job shows
+      // a check until the provider rebuild retires the whole card — the
+      // latch window must read as "done", never as a button that ignores
+      // taps.
+      trailingExtra: _pending
+          ? SizedBox(
+              width: IconSizes.s,
+              height: IconSizes.s,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                color: tokens.colors.text.mediumEmphasis,
+              ),
+            )
+          : _spent
+          ? Icon(
+              Icons.check_rounded,
+              size: IconSizes.s,
+              color: tokens.colors.text.mediumEmphasis,
+            )
+          : Icon(
+              // Rounded chevron, not `arrow_forward_ios`: one icon family
+              // across the card and the Add sheet, with the plus and the
+              // chevron at one size so the two behavioural glyphs carry
+              // equal ink.
+              opensPicker ? Icons.chevron_right_rounded : Icons.add_rounded,
+              size: IconSizes.s,
+              // Medium, not low: this glyph is the card's only behavioural
+              // semantic — creates-in-place versus opens-a-sheet — and at
+              // lowEmphasis it was the faintest ink on the card, outranked
+              // by the dividers between the rows it was meant to explain.
+              color: tokens.colors.text.mediumEmphasis,
+            ),
     );
   }
 }
