@@ -10991,6 +10991,9 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get taskHeaderNoCategoryLabel => 'Sin categoría';
+
+  @override
   String taskLabelsMoreCount(int count) {
     return '+$count';
   }

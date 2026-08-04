@@ -198,7 +198,8 @@ void main() {
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
-            data: _fixture(),
+            // A category, so the project placeholder is in play at all.
+            data: _fixture(category: _categoryFixture),
             onTitleSaved: (_) {},
             onCategoryTap: () => category++,
             onProjectTap: () => project++,
@@ -206,12 +207,12 @@ void main() {
             onDueDateTap: () => due++,
           ),
         );
-        expect(find.text('unassigned'), findsOneWidget);
+        expect(find.text('Work'), findsOneWidget);
         expect(find.text('No project'), findsOneWidget);
         expect(find.text('Add Label'), findsOneWidget);
         expect(find.text('No due date'), findsOneWidget);
 
-        await tester.tap(find.text('unassigned'));
+        await tester.tap(find.text('Work'));
         await tester.tap(find.text('No project'));
         await tester.tap(find.text('Add Label'));
         await tester.tap(find.text('No due date'));
@@ -229,7 +230,7 @@ void main() {
         await _pumpDesktop(
           tester,
           DesktopTaskHeader(
-            data: _fixture(),
+            data: _fixture(category: _categoryFixture),
             onTitleSaved: (_) {},
           ),
         );
@@ -249,6 +250,141 @@ void main() {
         await tester.pump();
       },
     );
+  });
+
+  // The crumb names two different things side by side, and the project half of
+  // it is only reachable once a category exists — `linkTaskToProject` refuses a
+  // cross-category link, so the connector hands over a null `onProjectTap`
+  // without one. It used to read "unassigned / No project" regardless: a
+  // lowercase word that never said *what* was unassigned, then a separator and
+  // a placeholder for a choice that could not be made yet.
+  group('DesktopTaskHeader — breadcrumb without a category', () {
+    testWidgets('names the category as the thing that is missing', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
+      );
+
+      expect(find.text('No category'), findsOneWidget);
+      expect(find.text('unassigned'), findsNothing);
+    });
+
+    testWidgets('omits the separator and the project segment', (tester) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(),
+          onTitleSaved: (_) {},
+          onCategoryTap: () {},
+          onProjectTap: () {},
+        ),
+      );
+
+      expect(find.text('No project'), findsNothing);
+      expect(find.text('/'), findsNothing);
+    });
+
+    testWidgets(
+      'leaves the category segment itself tappable so one can be picked',
+      (tester) async {
+        var categoryTaps = 0;
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(
+            data: _fixture(),
+            onTitleSaved: (_) {},
+            onCategoryTap: () => categoryTaps++,
+          ),
+        );
+
+        await tester.tap(find.text('No category'));
+        await tester.pump();
+
+        expect(categoryTaps, 1);
+      },
+    );
+
+    testWidgets('italicizes the placeholder to mark it as unset', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
+      );
+
+      expect(
+        tester.widget<Text>(find.text('No category')).style?.fontStyle,
+        FontStyle.italic,
+      );
+    });
+
+    testWidgets('still names a project the task actually belongs to', (
+      tester,
+    ) async {
+      // An uncategorized project is a real thing — `createProject` takes a
+      // nullable category and `createTask(projectId:)` copies it onto the new
+      // task — so this pairing reaches the header legitimately. Only the
+      // *placeholder* is conditional; membership the user has is never hidden.
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(project: _projectFixture),
+          onTitleSaved: (_) {},
+        ),
+      );
+
+      expect(find.text('No category'), findsOneWidget);
+      expect(find.text('/'), findsOneWidget);
+      expect(
+        find.text('Device Sync - Lotti Mobile App Implementation'),
+        findsOneWidget,
+      );
+    });
+  });
+
+  group('DesktopTaskHeader — breadcrumb with a category', () {
+    testWidgets('shows the separator and the project placeholder', (
+      tester,
+    ) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(category: _categoryFixture),
+          onTitleSaved: (_) {},
+        ),
+      );
+
+      expect(find.text('Work'), findsOneWidget);
+      expect(find.text('/'), findsOneWidget);
+      expect(find.text('No project'), findsOneWidget);
+      // A real category name is set text, not a placeholder.
+      expect(
+        tester.widget<Text>(find.text('Work')).style?.fontStyle,
+        FontStyle.normal,
+      );
+    });
+
+    testWidgets('shows the separator and the project name', (tester) async {
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(
+            category: _categoryFixture,
+            project: _projectFixture,
+          ),
+          onTitleSaved: (_) {},
+        ),
+      );
+
+      expect(find.text('/'), findsOneWidget);
+      expect(
+        find.text('Device Sync - Lotti Mobile App Implementation'),
+        findsOneWidget,
+      );
+      expect(find.text('No project'), findsNothing);
+    });
   });
 
   group('DesktopTaskHeader — title editing', () {

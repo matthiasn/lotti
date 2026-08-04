@@ -4923,6 +4923,7 @@
       }
     }
   },
+  "taskHeaderNoCategoryLabel": "Nessuna categoria",
   "taskLabelsMoreCount": "+{count}",
   "@taskLabelsMoreCount": {
     "placeholders": {

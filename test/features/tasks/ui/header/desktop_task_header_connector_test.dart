@@ -18,6 +18,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/categories/ui/widgets/category_picker_sheet.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/labels/state/labels_list_controller.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -361,7 +362,11 @@ void main() {
     );
 
     testWidgets('shows the project title when one is linked', (tester) async {
-      final task = buildTask();
+      // A project only exists inside a category, and the crumb only renders
+      // its project segment once that category is set.
+      final category = buildCategory();
+      when(() => mockCache.getCategoryById('cat-1')).thenReturn(category);
+      final task = buildTask(categoryId: 'cat-1');
       final project = buildProject();
 
       await tester.pumpWidget(pumpConnector(task: task, project: project));
@@ -616,7 +621,7 @@ void main() {
     );
 
     testWidgets(
-      'tapping the "unassigned" category placeholder opens the category picker',
+      'tapping the "No category" placeholder opens the category picker',
       (tester) async {
         final task = buildTask();
 
@@ -624,35 +629,48 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('unassigned'));
+        await tester.tap(find.text('No category'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
         // CategoryPickerSheet renders with an empty category
-        // list — verify that the header's own "unassigned" chip has been
+        // list — verify that the header's own "No category" crumb has been
         // covered by a modal on top.
         expect(find.byType(CategoryPickerSheet), findsOneWidget);
       },
     );
 
     testWidgets(
-      'project picker is skipped when the task has no category',
+      'offers no project crumb at all when the task has no category',
       (tester) async {
-        // Task has no categoryId; tapping project placeholder is a no-op
-        // because _showProjectPicker returns early.
+        // Projects live inside a category, so there is nothing to pick from
+        // and nothing to name: the crumb is the category segment alone.
         final task = buildTask();
 
         await tester.pumpWidget(pumpConnector(task: task));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('No project'));
+        expect(find.text('No category'), findsOneWidget);
+        expect(find.text('No project'), findsNothing);
+        expect(find.text('/'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'restores the project crumb once the task has a category',
+      (tester) async {
+        final category = buildCategory();
+        when(() => mockCache.getCategoryById('cat-1')).thenReturn(category);
+        final task = buildTask(categoryId: 'cat-1');
+
+        await tester.pumpWidget(pumpConnector(task: task));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        // No modal opened — the base connector is still the visible root.
-        expect(find.byType(DesktopTaskHeaderConnector), findsOneWidget);
-        expect(find.text('Select project'), findsNothing);
+        expect(find.text('Work'), findsOneWidget);
+        expect(find.text('/'), findsOneWidget);
+        expect(find.text('No project'), findsOneWidget);
       },
     );
 
@@ -945,7 +963,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('unassigned'));
+        await tester.tap(find.text('No category'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -991,7 +1009,7 @@ void main() {
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
-        await tester.tap(find.text('unassigned'));
+        await tester.tap(find.text('No category'));
         await tester.pump();
         await tester.pump(const Duration(milliseconds: 300));
 
@@ -1097,6 +1115,7 @@ void main() {
       required ToggleCallTracker tracker,
       required MockProjectRepository projectRepo,
       List<ProjectEntry> projects = const [],
+      ProjectEntry? currentProject,
     }) {
       return [
         entryControllerProvider(task.id).overrideWith(
@@ -1105,7 +1124,9 @@ void main() {
         labelsStreamProvider.overrideWith(
           (ref) => Stream<List<LabelDefinition>>.value(const []),
         ),
-        projectForTaskProvider(task.id).overrideWith((ref) async => null),
+        projectForTaskProvider(
+          task.id,
+        ).overrideWith((ref) async => currentProject),
         taskProgressControllerProvider(task.id).overrideWith(
           () => _FakeTaskProgressController(null),
         ),
@@ -1177,6 +1198,55 @@ void main() {
 
         // The project-selection modal opened.
         expect(find.byType(ProjectSelectionModalContent), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      "the picker opens with the task's current project already selected",
+      (tester) async {
+        final category = buildCategory(id: 'cat-proj', name: 'Design');
+        when(
+          () => mockCache.getCategoryById('cat-proj'),
+        ).thenReturn(category);
+
+        final current = buildProject(id: 'proj-1', title: 'Alpha Project');
+        final other = buildProject(id: 'proj-2', title: 'Beta Project');
+        final task = buildTask(categoryId: 'cat-proj');
+        final projectRepo = MockProjectRepository();
+        when(
+          () => projectRepo.updateStream,
+        ).thenAnswer((_) => const Stream<Set<String>>.empty());
+
+        final overrides = projectPickerOverrides(
+          task: task,
+          tracker: ToggleCallTracker(),
+          projectRepo: projectRepo,
+          projects: [current, other],
+          currentProject: current,
+        );
+
+        await tester.pumpWidget(
+          wrapWithProjectApp(overrides: overrides, task: task),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        // The crumb names the linked project, so that is the tap target.
+        await tester.tap(find.text('Alpha Project'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        DesignSystemSelectionRow row(String key) =>
+            tester.widget<DesignSystemSelectionRow>(
+              find.byKey(ValueKey(key)),
+            );
+
+        // The connector has to forward the linked project as the picker's
+        // current selection; without it the sheet would open showing
+        // "No project" ticked while the task is in one.
+        expect(row('project-proj-1').selected, isTrue);
+        expect(row('project-proj-2').selected, isFalse);
+        expect(row('project-none').selected, isFalse);
       },
     );
 

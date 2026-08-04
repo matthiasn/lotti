@@ -94,8 +94,28 @@ class ProjectRepository {
   }
 
   /// Returns the project a task belongs to, or null if unlinked.
+  ///
+  /// Honors the private gate: a project hidden by it resolves to null. That is
+  /// right for display and wrong for integrity work — see
+  /// [getLinkedProjectForTask].
   Future<ProjectEntry?> getProjectForTask(String taskId) {
     return _journalDb.getProjectForTask(taskId);
+  }
+
+  /// Returns the project a task is linked to **regardless of the private
+  /// gate**, or null if unlinked.
+  ///
+  /// [getProjectForTask] reads the denormalized `project_id` through a
+  /// privacy-filtered bulk fetch, so a private project resolves to null while
+  /// private entries are hidden. A caller deciding whether a link is still
+  /// valid must not read that as "no link": it would skip the very row it
+  /// exists to remove, and the stale link would reappear the moment private
+  /// entries were shown again. This resolves the live `ProjectLink` and its
+  /// project entity directly, neither of which is privacy-filtered.
+  Future<ProjectEntry?> getLinkedProjectForTask(String taskId) async {
+    final link = await _journalDb.getProjectLinkForTask(taskId);
+    if (link == null) return null;
+    return getProjectById(link.fromId);
   }
 
   /// Resolves project IDs affected by a local update batch.

@@ -67,6 +67,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
 
     final data = _buildData(context, task, project);
     final controller = ref.read(entryControllerProvider(taskId).notifier);
+    final categoryId = task.meta.categoryId;
 
     return DesktopTaskHeader(
       data: data,
@@ -78,19 +79,13 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
       },
       onPriorityTap: () => _showPriorityPicker(context, ref, task),
       onStatusTap: () => _showStatusPicker(context, ref, task),
-      // Without a category we can't open a project picker — the connector
-      // would early-return inside `_showProjectPicker`. Pass `null` so the
-      // crumb segment renders without an InkWell instead of looking
-      // tappable but doing nothing.
-      onProjectTap: task.meta.categoryId == null
+      // Projects are scoped to a category, so without one there is nothing to
+      // pick from. The header drops the project crumb entirely in that state;
+      // passing `null` keeps the two in agreement rather than leaving a
+      // tappable-looking target that does nothing.
+      onProjectTap: categoryId == null
           ? null
-          : () => _showProjectPicker(
-              context,
-              ref,
-              taskId,
-              project,
-              task.meta.categoryId,
-            ),
+          : () => _showProjectPicker(context, ref, taskId, project, categoryId),
       onCategoryTap: () => _showCategoryPicker(context, ref, task),
       onDueDateTap: () => _showDueDatePicker(context, ref, task),
       onLabelTap: (_) => _openLabelSelector(context, ref, task),
@@ -250,9 +245,8 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     WidgetRef ref,
     String taskId,
     ProjectEntry? current,
-    String? categoryId,
+    String categoryId,
   ) async {
-    if (categoryId == null) return;
     final repository = ref.read(projectRepositoryProvider);
     await ModalUtils.showSinglePageModal<void>(
       context: context,

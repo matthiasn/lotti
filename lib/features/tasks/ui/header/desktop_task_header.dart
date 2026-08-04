@@ -7,10 +7,12 @@ import 'package:lotti/features/tasks/ui/header/desktop_task_header_title.dart';
 import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Project reference shown in the breadcrumb. When the task has no project,
-/// the connector passes `null` and the crumb renders the literal "No project"
-/// placeholder; the same `onProjectTap` callback still fires so users can
-/// attach one.
+/// Project reference shown in the breadcrumb. When the task has a category but
+/// no project, the connector passes `null` and the crumb renders the literal
+/// "No project" placeholder; the same `onProjectTap` callback still fires so
+/// users can attach one. Without a category that placeholder is dropped, since
+/// no project can be picked yet — a project that *is* linked always shows. See
+/// [_HeroCrumb].
 @immutable
 class DesktopTaskHeaderProject {
   const DesktopTaskHeaderProject({required this.label});
@@ -275,6 +277,19 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
 ///
 /// The category color is used as a 10×10 rounded square — this is the *only*
 /// place the category color is used as a fill. Text never picks it up.
+///
+/// **The project *placeholder* is conditional on the category.** A project is
+/// picked within a category — `linkTaskToProject` rejects cross-category links
+/// and the connector passes a null `onProjectTap` without one — so
+/// `No category / No project` offered a separator and a placeholder for a
+/// choice that cannot be made yet.
+///
+/// A project that is actually linked is always shown, category or not. An
+/// uncategorized project is a real thing (`createProject` takes a nullable
+/// category), and `createTask(projectId:)` copies the project's category onto
+/// the new task — `null` included — so a task legitimately reaches this widget
+/// with no category and a project. Gating on the category alone would hide
+/// membership the user has.
 class _HeroCrumb extends StatelessWidget {
   const _HeroCrumb({
     required this.category,
@@ -293,8 +308,12 @@ class _HeroCrumb extends StatelessWidget {
     final tokens = context.designTokens;
     final categoryColor =
         category?.color ?? TaskShowcasePalette.lowText(context);
+    // "No category" rather than a bare "unassigned": the crumb names two
+    // different things side by side, so the placeholder has to say which one
+    // is missing — and it is sentence-cased like the "No project" it sits next
+    // to instead of mismatching it in lowercase.
     final categoryName =
-        category?.label ?? context.messages.taskCategoryUnassignedLabel;
+        category?.label ?? context.messages.taskHeaderNoCategoryLabel;
     final projectName =
         project?.label ?? context.messages.projectPickerUnassigned;
     // The breadcrumb is an "eyebrow": a quiet, slightly tracked caption that
@@ -346,29 +365,31 @@ class _HeroCrumb extends StatelessWidget {
             ),
           ),
         ),
-        SizedBox(width: tokens.spacing.step3),
-        Text(
-          '/',
-          style: crumbStyle.copyWith(
-            color: TaskShowcasePalette.lowText(context),
+        if (category != null || project != null) ...[
+          SizedBox(width: tokens.spacing.step3),
+          Text(
+            '/',
+            style: crumbStyle.copyWith(
+              color: TaskShowcasePalette.lowText(context),
+            ),
           ),
-        ),
-        SizedBox(width: tokens.spacing.step3),
-        Flexible(
-          child: _CrumbSegment(
-            onTap: onProjectTap,
-            child: Text(
-              projectName,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: crumbStyle.copyWith(
-                // Keep an unset project legible (medium emphasis) for
-                // low-vision users rather than fading it to near-invisible.
-                color: TaskShowcasePalette.mediumText(context),
+          SizedBox(width: tokens.spacing.step3),
+          Flexible(
+            child: _CrumbSegment(
+              onTap: onProjectTap,
+              child: Text(
+                projectName,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: crumbStyle.copyWith(
+                  // Keep an unset project legible (medium emphasis) for
+                  // low-vision users rather than fading it to near-invisible.
+                  color: TaskShowcasePalette.mediumText(context),
+                ),
               ),
             ),
           ),
-        ),
+        ],
       ],
     );
   }
