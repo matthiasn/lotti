@@ -34,6 +34,8 @@ const Duration kSidebarWakeQueueScheduledLookahead = Duration(hours: 1);
 /// stack. Setting to `null` restores the production navigation path.
 @visibleForTesting
 abstract final class SidebarWakeQueueTestHooks {
+  // Assigned by widget tests outside DCM's `lib`-only usage graph.
+  // ignore: unused-code
   static void Function(String path)? navigatorOverride;
 }
 

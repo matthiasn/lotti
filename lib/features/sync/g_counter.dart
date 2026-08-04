@@ -52,6 +52,9 @@ class GCounter extends Equatable {
   /// A fresh map each call, so a caller can't mutate this value object's state
   /// through the returned JSON (mirrors the value-object contract `Equatable`
   /// relies on).
+  // jsonEncode reaches this dynamically from generated entity serializers;
+  // DCM cannot follow that invocation through the generated JSON graph.
+  // ignore: unused-code
   Map<String, dynamic> toJson() => Map<String, dynamic>.from(byHost);
 
   @override

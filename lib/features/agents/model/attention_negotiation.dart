@@ -253,6 +253,9 @@ class AttentionEvidenceRef {
   final String? label;
 
   /// Converts this evidence reference to JSON.
+  // jsonEncode reaches this dynamically when generated entity serializers
+  // expose AttentionEvidenceRef values; DCM cannot follow that invocation.
+  // ignore: unused-code
   Map<String, Object?> toJson() => {
     'kind': kind.name,
     'id': id,

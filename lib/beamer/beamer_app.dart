@@ -86,6 +86,8 @@ bool _isRunningInFlatpak() {
 /// uses the real `Platform.environment` check; tests set true/false to pin
 /// the branch regardless of host.
 @visibleForTesting
+// Assigned by tests outside DCM's `lib`-only usage graph.
+// ignore: unused-code
 bool? debugIsRunningInFlatpakOverride;
 
 /// True when the tasks tab is active and the tasks beamer location points

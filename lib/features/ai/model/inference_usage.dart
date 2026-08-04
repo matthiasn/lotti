@@ -29,6 +29,9 @@ class InferenceUsage {
   final int? cachedInputTokens;
 
   /// Total tokens used (input + output)
+  // Read by multiple production inference and attribution paths; retain the
+  // explicit suppression for DCM's incomplete cross-library usage graph.
+  // ignore: unused-code
   int get totalTokens => (inputTokens ?? 0) + (outputTokens ?? 0);
 
   /// Whether any usage data is available

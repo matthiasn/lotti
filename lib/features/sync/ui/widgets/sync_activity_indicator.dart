@@ -16,6 +16,8 @@ import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 abstract final class SyncActivityIndicatorTestHooks {
   /// Override the navigation callback the indicator triggers on tap.
   /// Setting to `null` restores the default `beamToNamed` behaviour.
+  // Assigned by widget tests outside DCM's `lib`-only usage graph.
+  // ignore: unused-code
   static void Function(String path)? navigatorOverride;
 }
 

@@ -96,6 +96,8 @@ class NotificationService {
   /// catches around its own `await` for that, which is the part a `try`/`catch`
   /// around the bare call used to miss.
   @visibleForTesting
+  // Awaited by notification tests outside DCM's `lib`-only usage graph.
+  // ignore: unused-code
   late final Future<void> initialized;
 
   /// Memoized permission request — see [_requestPermissions].

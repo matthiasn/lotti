@@ -432,6 +432,8 @@ class _FirstDeviceCard extends ConsumerWidget {
 /// Follows the same override pattern as `beamToNamedOverride`. Null in
 /// production, where the real scanner is always used.
 @visibleForTesting
+// Assigned by widget and screenshot tests outside DCM's `lib` scan.
+// ignore: unused-code
 Widget Function(BuildContext context, double side)? scannerPreviewOverride;
 
 class _ScannerView extends StatefulWidget {
