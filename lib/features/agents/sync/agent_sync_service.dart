@@ -437,48 +437,6 @@ class AgentSyncService {
     });
   }
 
-  /// Insert an [AgentLink] exclusively — throws a
-  /// `DuplicateInsertException` if a unique constraint is violated (e.g. the
-  /// partial unique index on `improver_target` links). On success, enqueues a
-  /// sync message unless [fromSync] is `true`. A unique-constraint failure
-  /// rolls back the reserved vector clock via the surrounding scope — the DB
-  /// write never happened, so the counter was never claimed on disk.
-  Future<void> insertLinkExclusive(
-    AgentLink link, {
-    bool fromSync = false,
-  }) async {
-    if (fromSync) {
-      await _repository.insertLinkExclusive(link);
-      return;
-    }
-    await _vectorClockService.withVcScope<void>(() async {
-      final stamped = link.copyWith(
-        vectorClock: await _vectorClockService.getNextVectorClock(
-          previous: link.vectorClock,
-        ),
-      );
-      await _repository.insertLinkExclusive(stamped);
-      // Insert succeeded — commit-on-write invariant applies.
-      final message = SyncMessage.agentLink(
-        agentLink: stamped,
-        status: SyncEntryStatus.update,
-      );
-      final txCtx = _currentTxContext;
-      if (txCtx != null) {
-        txCtx.pendingSequenceBindings.add(
-          () => _recordAgentLinkSequence(stamped),
-        );
-        txCtx.pendingMessages.add(message);
-      } else {
-        await _recordAgentLinkSequence(stamped);
-        await _enqueueOrBufferPostWrite(
-          message,
-          subDomain: 'insertLinkExclusive.enqueue',
-        );
-      }
-    });
-  }
-
   /// Run a post-DB-write outbox enqueue that MUST NOT propagate failures.
   ///
   /// Once [_repository] has accepted the row, the reserved VC counter is

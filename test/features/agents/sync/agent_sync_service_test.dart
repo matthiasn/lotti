@@ -23,10 +23,8 @@ import 'fork_test_support.dart';
 enum _GeneratedSyncWriteKind {
   entity,
   link,
-  exclusiveLink,
   entityFromSync,
   linkFromSync,
-  exclusiveLinkFromSync,
 }
 
 enum _GeneratedSyncOperationKind {
@@ -41,7 +39,7 @@ enum _GeneratedSyncOutboxFailureSlot { none, first, second, last }
 
 enum _GeneratedSyncMessageKind { entity, link }
 
-enum _GeneratedPersistedWriteKind { entity, link, exclusiveLink }
+enum _GeneratedPersistedWriteKind { entity, link }
 
 class _GeneratedSyncRollbackException implements Exception {
   const _GeneratedSyncRollbackException();
@@ -194,12 +192,9 @@ class _GeneratedSyncTransactionScenario {
 extension _GeneratedSyncWriteKindX on _GeneratedSyncWriteKind {
   bool get fromSync {
     return switch (this) {
-      _GeneratedSyncWriteKind.entity ||
-      _GeneratedSyncWriteKind.link ||
-      _GeneratedSyncWriteKind.exclusiveLink => false,
+      _GeneratedSyncWriteKind.entity || _GeneratedSyncWriteKind.link => false,
       _GeneratedSyncWriteKind.entityFromSync ||
-      _GeneratedSyncWriteKind.linkFromSync ||
-      _GeneratedSyncWriteKind.exclusiveLinkFromSync => true,
+      _GeneratedSyncWriteKind.linkFromSync => true,
     };
   }
 
@@ -210,9 +205,6 @@ extension _GeneratedSyncWriteKindX on _GeneratedSyncWriteKind {
         _GeneratedPersistedWriteKind.entity,
       _GeneratedSyncWriteKind.link ||
       _GeneratedSyncWriteKind.linkFromSync => _GeneratedPersistedWriteKind.link,
-      _GeneratedSyncWriteKind.exclusiveLink ||
-      _GeneratedSyncWriteKind.exclusiveLinkFromSync =>
-        _GeneratedPersistedWriteKind.exclusiveLink,
     };
   }
 
@@ -220,11 +212,9 @@ extension _GeneratedSyncWriteKindX on _GeneratedSyncWriteKind {
     if (fromSync) return null;
     return switch (this) {
       _GeneratedSyncWriteKind.entity => _GeneratedSyncMessageKind.entity,
-      _GeneratedSyncWriteKind.link ||
-      _GeneratedSyncWriteKind.exclusiveLink => _GeneratedSyncMessageKind.link,
+      _GeneratedSyncWriteKind.link => _GeneratedSyncMessageKind.link,
       _GeneratedSyncWriteKind.entityFromSync ||
-      _GeneratedSyncWriteKind.linkFromSync ||
-      _GeneratedSyncWriteKind.exclusiveLinkFromSync => null,
+      _GeneratedSyncWriteKind.linkFromSync => null,
     };
   }
 }
@@ -1086,49 +1076,6 @@ void main() {
       });
     });
 
-    group('insertLinkExclusive', () {
-      test('stamps clock and enqueues outside of wake/transaction', () async {
-        await syncService.insertLinkExclusive(testBasicLink);
-
-        final stampedLink = testBasicLink.copyWith(vectorClock: testClock);
-        verify(() => mockRepository.insertLinkExclusive(stampedLink)).called(1);
-        verify(
-          () => mockOutboxService.enqueueMessage(
-            any(
-              that: isA<SyncAgentLink>().having(
-                (m) => m.agentLink?.vectorClock,
-                'vectorClock',
-                testClock,
-              ),
-            ),
-          ),
-        ).called(1);
-      });
-
-      test('preserves original clock when fromSync is true', () async {
-        final synced = testBasicLink.copyWith(
-          vectorClock: const VectorClock({'remote': 9}),
-        );
-        await syncService.insertLinkExclusive(synced, fromSync: true);
-
-        verify(() => mockRepository.insertLinkExclusive(synced)).called(1);
-        verifyNever(() => mockOutboxService.enqueueMessage(any()));
-      });
-
-      test('defers enqueue until transaction commit', () async {
-        await syncService.runInTransaction(() async {
-          await syncService.insertLinkExclusive(testBasicLink);
-          verifyNever(() => mockOutboxService.enqueueMessage(any()));
-        });
-
-        verify(
-          () => mockOutboxService.enqueueMessage(
-            any(that: isA<SyncAgentLink>()),
-          ),
-        ).called(1);
-      });
-    });
-
     group('sequence record error paths', () {
       late MockSyncSequenceLogService sequenceLog;
       late AgentSyncService service;
@@ -1363,17 +1310,6 @@ void main() {
           );
         });
         when(
-          () => generatedRepository.insertLinkExclusive(any()),
-        ).thenAnswer((invocation) async {
-          final link = invocation.positionalArguments.single as AgentLink;
-          observedPersistedWrites.add(
-            _ObservedPersistedWrite(
-              kind: _GeneratedPersistedWriteKind.exclusiveLink,
-              hasVectorClock: link.vectorClock != null,
-            ),
-          );
-        });
-        when(
           () => generatedOutboxService.enqueueMessage(any()),
         ).thenAnswer((invocation) async {
           final message = invocation.positionalArguments.single as SyncMessage;
@@ -1413,8 +1349,6 @@ void main() {
               await generatedSyncService.upsertEntity(entityFor(index));
             case _GeneratedSyncWriteKind.link:
               await generatedSyncService.upsertLink(linkFor(index));
-            case _GeneratedSyncWriteKind.exclusiveLink:
-              await generatedSyncService.insertLinkExclusive(linkFor(index));
             case _GeneratedSyncWriteKind.entityFromSync:
               await generatedSyncService.upsertEntity(
                 entityFor(index),
@@ -1422,11 +1356,6 @@ void main() {
               );
             case _GeneratedSyncWriteKind.linkFromSync:
               await generatedSyncService.upsertLink(
-                linkFor(index),
-                fromSync: true,
-              );
-            case _GeneratedSyncWriteKind.exclusiveLinkFromSync:
-              await generatedSyncService.insertLinkExclusive(
                 linkFor(index),
                 fromSync: true,
               );

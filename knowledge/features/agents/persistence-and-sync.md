@@ -313,11 +313,10 @@ SQL, so a new entity type forces a decision instead of silently inheriting one.
 | Observations | **180 days, in ancestor-closed sets only** | See below |
 | `dayStatusEvent` | **90 days, floored at the digest watermark** | See below |
 
-**The classification is exhaustive over the entity union.** `classify` is a
-freezed `map` with no fallback branch, so adding an `AgentDomainEntity` variant
-is a compile error until someone decides what retention does with it. A wildcard
-would have let a new machine-derived row accumulate forever with neither a test
-nor a compiler failure to say so.
+The sweep does not run a generic entity classifier. It invokes explicit,
+type-specific repository operations for observations and day-status events;
+every other entity variant is outside the delete path. Adding a new union
+variant therefore does not make it prunable by default.
 
 ## Age alone is not the bound for status events
 
