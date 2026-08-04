@@ -34,15 +34,15 @@ import '../../../widget_test_utils.dart';
 import '../../agents/test_utils.dart';
 
 class _TestEntryController extends EntryController {
-  _TestEntryController(this._task);
+  _TestEntryController(this._entry);
 
-  final Task _task;
+  final JournalEntity _entry;
 
   @override
   Future<EntryState?> build() async {
     return EntryState.saved(
       entryId: id,
-      entry: _task,
+      entry: _entry,
       showMap: false,
       isFocused: false,
       shouldShowEditorToolBar: false,
@@ -99,6 +99,7 @@ void main() {
     AgentDomainEntity? report,
     GlobalKey? cardRegionKey,
     List<EntryLink>? linkedEntries,
+    List<JournalEntity> linkedTargets = const [],
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
@@ -112,6 +113,12 @@ void main() {
         linkedEntriesControllerProvider(task.meta.id).overrideWith(
           () => FakeLinkedEntriesController(links: linkedEntries ?? const []),
         ),
+        // `watchTaskIsFirstRun` only trusts "no linked note" once every link
+        // has resolved to an entity, so a link needs its target on hand.
+        for (final target in linkedTargets)
+          entryControllerProvider(target.meta.id).overrideWith(
+            () => _TestEntryController(target),
+          ),
         taskAgentProvider.overrideWith(
           (ref, id) async => agent,
         ),
@@ -195,17 +202,53 @@ void main() {
               EntryLink.basic(
                 id: 'link-1',
                 fromId: blank.meta.id,
-                toId: 'note-1',
+                toId: testTextEntry.meta.id,
                 createdAt: DateTime(2026, 8, 4),
                 updatedAt: DateTime(2026, 8, 4),
                 vectorClock: null,
               ),
             ],
+            linkedTargets: [testTextEntry],
           ),
         );
         await tester.pumpAndSettle();
 
         expect(find.byType(TaskFirstRunActions), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a linked TASK does not retire it — that relationship has its own card, '
+      'and counting it made the block depend on which end of the link you '
+      'were standing on',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+        final other = testTask.copyWith(
+          meta: testTask.meta.copyWith(id: 'other-task'),
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            task: blank,
+            linkedEntries: [
+              EntryLink.basic(
+                id: 'link-task',
+                fromId: blank.meta.id,
+                toId: other.meta.id,
+                createdAt: DateTime(2026, 8, 4),
+                updatedAt: DateTime(2026, 8, 4),
+                vectorClock: null,
+              ),
+            ],
+            linkedTargets: [other],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsOneWidget);
       },
     );
 

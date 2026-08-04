@@ -15,9 +15,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   worded rows rather than unlabelled glyphs in the bottom bar, and while the
   card is up the bar drops the buttons that would say the same thing twice. The
   card disappears the moment the task has any content, and the whole page is
-  composed in the window rather than stacked at the top of an empty one. The agent row also points out that a category can assign an agent to
-  every task it creates, so you can answer that question once instead of per
-  task.
+  composed in the window rather than stacked at the top of an empty one.
 - **Daily OS has a Today button.** Once you step off today, a Today button
   appears beside the date arrows and takes you straight back. Returning
   previously meant either opening the date picker or knowing that a long press

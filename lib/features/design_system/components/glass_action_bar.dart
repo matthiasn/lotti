@@ -109,6 +109,10 @@ class DsGlassRoundButton extends StatelessWidget {
       // hover/long-press costs nothing and makes an icon-only bar
       // self-describing.
       message: semanticLabel,
+      // The [Semantics] below already owns the accessible label. Without this
+      // the tooltip contributes the identical string a second time and a
+      // screen reader announces every button twice.
+      excludeFromSemantics: true,
       child: Semantics(
         button: true,
         label: semanticLabel,

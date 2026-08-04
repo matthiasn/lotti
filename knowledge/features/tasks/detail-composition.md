@@ -129,7 +129,8 @@ stateDiagram-v2
   [*] --> Editing: title blank (connector passes initialEditing)
   ReadOnly --> Editing: tap title / keyboard activate
   Editing --> ReadOnly: check button / Primary+S / Primary+Enter → onTitleSaved
-  Editing --> ReadOnly: Enter (touch platforms) → onTitleSaved
+  Editing --> ReadOnly: Enter / keyboard done action → onTitleSaved
+  Editing --> Editing: Shift+Enter → newline
   Editing --> ReadOnly: focus lost → commit (deferred one frame)
   Editing --> ReadOnly: close button / Esc → revert
 ```
@@ -163,10 +164,14 @@ binding as the rest of the app.
 
 Three rules govern getting *out* of edit mode:
 
-- **Enter commits on touch, inserts a newline on desktop.** A phone keyboard has
-  no Cmd/Ctrl to pair with Enter and no hint that Return is not the commit key, so
-  a thumb's reflex Enter used to bury a newline in the title. A hardware keyboard
-  keeps the newline, with Primary+Enter as the control-local commit.
+- **Bare Enter commits, on every platform; Shift+Enter is the newline.** Typing a
+  name and pressing Return is the most common action on this screen, and it used
+  to bury a line break in the title and leave the editor open with no feedback.
+  Primary+Enter and Primary+S are kept as aliases, since they were the documented
+  gesture and the command palette still advertises Primary+S. The newline moves
+  to Shift+Enter — a keyboard that has a Shift to press is the only one that
+  wanted a multi-line title in the first place. A phone keyboard's `done` action
+  commits too, since that is the control a thumb actually reaches for.
 - **Losing focus commits**, deferred one frame and re-checked. Tapping the ✕ takes
   focus away *before* the cancel handler runs, so a synchronous commit would save
   the very text the user asked to discard; by the next frame `_cancelEdit` has

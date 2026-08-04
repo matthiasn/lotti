@@ -26,13 +26,28 @@ import 'package:lotti/logic/create/entry_creation_service.dart';
 /// separately decide the block, the column measure, the compact action bar and
 /// whether the AI card shows its own assign CTA.
 bool watchTaskIsFirstRun(WidgetRef ref, Task task) {
-  final agent = ref.watch(taskAgentProvider(task.meta.id));
-  final linked = ref.watch(linkedEntriesControllerProvider(task.meta.id));
-  if (!agent.hasValue || !linked.hasValue) return false;
+  final id = task.meta.id;
+  final agent = ref.watch(taskAgentProvider(id));
+  final links = ref.watch(linkedEntriesControllerProvider(id));
+  if (!agent.hasValue || !links.hasValue) return false;
+
+  // A link is only evidence of content once its target has resolved. Until
+  // then "no linked note" is a not-yet, not a fact — the same wrong-for-a-frame
+  // state one level down.
+  final resolved = ref.watch(resolvedOutgoingLinkedEntriesProvider(id));
+  if (resolved.length < links.value!.length) return false;
+
   return TaskFirstRunActions.isBlank(
     task,
     hasAgent: agent.value != null,
-    hasLinkedEntries: linked.value?.isNotEmpty ?? false,
+    // Linked *tasks* are not this task's content. The page hides them from the
+    // linked-entries list (`hideTaskEntries: true`) and gives them their own
+    // card, and counting them made the block depend on link *direction*: this
+    // controller reports outgoing links only, while the Linked Tasks card
+    // resolves relationships both ways, so one relationship read as content
+    // from the `fromId` end and as nothing from the `toId` end — flipping the
+    // block, the page measure and the compact action bar with it.
+    hasLinkedEntries: ref.watch(hasNonTaskLinkedEntriesProvider(id)),
   );
 }
 

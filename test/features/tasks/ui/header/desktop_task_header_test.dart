@@ -128,6 +128,21 @@ const _categoryFixture = DesktopTaskHeaderCategory(
   color: Color(0xFF1CA3E3),
 );
 
+/// The 10×10 breadcrumb swatch's decoration: filled with the category colour
+/// when the task has one, a hollow ring when it does not. Located by its
+/// 10×10 square rather than by key, since it is a bare [Container].
+BoxDecoration _categorySwatchDecoration(WidgetTester tester) {
+  final swatch = tester
+      .widgetList<Container>(find.byType(Container))
+      .firstWhere(
+        (c) =>
+            c.constraints?.maxWidth == 10 &&
+            c.constraints?.maxHeight == 10 &&
+            c.decoration is BoxDecoration,
+      );
+  return swatch.decoration! as BoxDecoration;
+}
+
 const _dueFixture = DesktopTaskHeaderDueDate(label: 'Due: Apr 1, 2026');
 
 final _labelFixtures = <LabelDefinition>[
@@ -306,19 +321,29 @@ void main() {
       },
     );
 
-    testWidgets('italicizes the placeholder to mark it as unset', (
-      tester,
-    ) async {
-      await _pumpDesktop(
-        tester,
-        DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
-      );
+    testWidgets(
+      'marks an unset category with a hollow swatch, not with italics — a '
+      'slanted 12pt caption read as disabled and cost legibility',
+      (tester) async {
+        await _pumpDesktop(
+          tester,
+          DesktopTaskHeader(data: _fixture(), onTitleSaved: (_) {}),
+        );
 
-      expect(
-        tester.widget<Text>(find.text('No category')).style?.fontStyle,
-        FontStyle.italic,
-      );
-    });
+        expect(
+          tester.widget<Text>(find.text('No category')).style?.fontStyle,
+          isNot(FontStyle.italic),
+        );
+
+        final swatch = _categorySwatchDecoration(tester);
+        expect(
+          swatch.color,
+          isNull,
+          reason: 'a solid square asserts a colour the task does not have',
+        );
+        expect(swatch.border, isNotNull);
+      },
+    );
 
     testWidgets('still names a project the task actually belongs to', (
       tester,
@@ -359,11 +384,9 @@ void main() {
       expect(find.text('Work'), findsOneWidget);
       expect(find.text('/'), findsOneWidget);
       expect(find.text('No project'), findsOneWidget);
-      // A real category name is set text, not a placeholder.
-      expect(
-        tester.widget<Text>(find.text('Work')).style?.fontStyle,
-        FontStyle.normal,
-      );
+      // A category the task actually has fills its swatch with the category
+      // colour — the one place on the page that colour is used as a fill.
+      expect(_categorySwatchDecoration(tester).color, _categoryFixture.color);
     });
 
     testWidgets('shows the separator and the project name', (tester) async {
