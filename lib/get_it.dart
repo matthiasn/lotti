@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
-import 'package:flutter_vodozemac/flutter_vodozemac.dart' as vod;
 import 'package:get_it/get_it.dart';
 import 'package:health/health.dart';
 import 'package:lotti/database/database.dart';
@@ -38,6 +37,7 @@ import 'package:lotti/features/notifications/repository/notification_repository.
 import 'package:lotti/features/notifications/scheduler/notification_scheduler.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_rollout.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/speech/services/audio_waveform_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/backfill/backfill_response_handler.dart';
@@ -96,7 +96,10 @@ part 'get_it_maintenance.dart';
 
 final GetIt getIt = GetIt.instance;
 
-Future<void> registerSingletons() async {
+/// Registers the full per-generation service graph for [profile]'s world.
+/// Called by the bootstrap after the profile-scoped primitives (Directory,
+/// SettingsDb, SecureStorage, ProfileContext) are in place.
+Future<void> registerSingletons({required ProfileContext profile}) async {
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
     ..registerSingleton<UserActivityService>(
@@ -167,7 +170,6 @@ Future<void> registerSingletons() async {
   final aiConfigRepository = AiConfigRepository(AiConfigDb());
   getIt.registerSingleton<AiConfigRepository>(aiConfigRepository);
 
-  await vod.init();
   final documentsDirectory = getIt<Directory>();
   final dayProcessingDb = DayProcessingDb();
   getIt
