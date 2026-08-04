@@ -9,7 +9,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Full-screen photos now follow phone rotation.** The rest of Lotti remains
   portrait-only on iOS and Android, but opening a journal image or event photo
   temporarily permits either landscape direction. Wide cover art is contained
-  and centered in either orientation, and closing the viewer restores portrait.
+  and centered in either orientation, with controls floating over a canvas that
+  reaches the screen edges, and closing the viewer restores portrait.
 - **The task page's Add menu speaks the same language as the page.** The menu
   offered "Text Entry", "Checklist" and "Audio Recording" — the same actions
   the new-task card had just introduced as "Write a note", "Add a checklist"

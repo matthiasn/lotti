@@ -240,8 +240,6 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
     final tokens = context.designTokens;
     final padding = MediaQuery.paddingOf(context);
     final edge = isMobile ? tokens.spacing.step3 : tokens.spacing.step8;
-    final top = tokens.spacing.step5;
-    final bottom = tokens.spacing.step11;
     final minimumScale = _minimumScale ?? _scale;
     final canZoomOut = _scale > minimumScale * 1.01;
 
@@ -257,38 +255,22 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
             body: Stack(
               children: [
                 Positioned.fill(
-                  child: SafeArea(
-                    child: Padding(
-                      padding: EdgeInsets.fromLTRB(edge, top, edge, bottom),
-                      child: ClipRRect(
-                        borderRadius: BorderRadius.circular(tokens.radii.m),
-                        child: DecoratedBox(
-                          decoration: BoxDecoration(
-                            color: Theme.of(context).colorScheme.scrim,
-                            border: Border.all(
-                              color: tokens.colors.decorative.level02,
-                            ),
-                          ),
-                          child: PhotoView(
-                            imageProvider: imageProvider,
-                            backgroundDecoration:
-                                widget.backgroundDecoration ??
-                                BoxDecoration(
-                                  color: Theme.of(context).colorScheme.scrim,
-                                ),
-                            controller: _photoController,
-                            scaleStateController: _scaleStateController,
-                            heroAttributes: const PhotoViewHeroAttributes(
-                              tag: 'entry_img',
-                            ),
-                            minScale: PhotoViewComputedScale.contained,
-                            maxScale: PhotoViewComputedScale.covered * 4,
-                            initialScale: PhotoViewComputedScale.contained,
-                            strictScale: true,
-                          ),
+                  child: PhotoView(
+                    imageProvider: imageProvider,
+                    backgroundDecoration:
+                        widget.backgroundDecoration ??
+                        BoxDecoration(
+                          color: Theme.of(context).colorScheme.scrim,
                         ),
-                      ),
+                    controller: _photoController,
+                    scaleStateController: _scaleStateController,
+                    heroAttributes: const PhotoViewHeroAttributes(
+                      tag: 'entry_img',
                     ),
+                    minScale: PhotoViewComputedScale.contained,
+                    maxScale: PhotoViewComputedScale.covered * 4,
+                    initialScale: PhotoViewComputedScale.contained,
+                    strictScale: true,
                   ),
                 ),
                 Positioned(

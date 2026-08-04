@@ -355,6 +355,11 @@ void main() {
 
         // PhotoView carries the hero tag for the shared-element transition.
         expect(find.byType(PhotoView), findsOneWidget);
+        expect(
+          tester.getRect(find.byType(PhotoView)),
+          tester.getRect(find.byType(Scaffold)),
+          reason: 'the image canvas should extend behind the overlay controls',
+        );
         final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
         expect(photoView.imageProvider, isA<FileImage>());
         expect(photoView.minScale, PhotoViewComputedScale.contained);
