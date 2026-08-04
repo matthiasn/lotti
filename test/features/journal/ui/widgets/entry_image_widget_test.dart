@@ -14,6 +14,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 import 'package:photo_view/photo_view.dart';
 
@@ -323,6 +324,7 @@ void main() {
     Widget buildWrapper({
       BoxDecoration? backgroundDecoration,
       ImageExporter? imageExporter,
+      MediaQueryData? mediaQueryData,
     }) {
       return ProviderScope(
         child: MaterialApp(
@@ -334,6 +336,12 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          builder: mediaQueryData == null
+              ? null
+              : (context, child) => MediaQuery(
+                  data: mediaQueryData,
+                  child: child!,
+                ),
           home: HeroPhotoViewRouteWrapper(
             file: imageFile,
             backgroundDecoration: backgroundDecoration,
@@ -354,6 +362,11 @@ void main() {
 
         // PhotoView carries the hero tag for the shared-element transition.
         expect(find.byType(PhotoView), findsOneWidget);
+        expect(
+          tester.getRect(find.byType(PhotoView)),
+          tester.getRect(find.byType(Scaffold)),
+          reason: 'the image canvas should extend behind the overlay controls',
+        );
         final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
         expect(photoView.imageProvider, isA<FileImage>());
         expect(photoView.minScale, PhotoViewComputedScale.contained);
@@ -381,6 +394,82 @@ void main() {
           find.widgetWithIcon(IconButton, Icons.remove_rounded),
         );
         expect(zoomOutButton.onPressed, isNull);
+      },
+    );
+
+    testWidgets('keeps top controls inside the landscape right safe area', (
+      tester,
+    ) async {
+      const landscapeSize = Size(844, 390);
+      const rightInset = 44.0;
+      const withoutInset = MediaQueryData(size: landscapeSize);
+      const withInset = MediaQueryData(
+        size: landscapeSize,
+        padding: EdgeInsets.only(right: rightInset),
+      );
+
+      await tester.pumpWidget(buildWrapper(mediaQueryData: withoutInset));
+      await tester.pump();
+      final controls = find.ancestor(
+        of: find.byTooltip('Download image'),
+        matching: find.byType(Row),
+      );
+      final rightWithoutInset = tester.getTopRight(controls).dx;
+
+      await tester.pumpWidget(buildWrapper(mediaQueryData: withInset));
+      await tester.pump();
+      final rightWithInset = tester.getTopRight(controls).dx;
+
+      expect(rightWithInset, rightWithoutInset - rightInset);
+    });
+
+    testWidgets(
+      'allows landscape while mounted and restores portrait on dispose',
+      (tester) async {
+        final originalIsMobile = platform.isMobile;
+        final originalIsIOS = platform.isIOS;
+        platform.isMobile = true;
+        platform.isIOS = true;
+        addTearDown(() {
+          platform.isMobile = originalIsMobile;
+          platform.isIOS = originalIsIOS;
+        });
+
+        final orientationCalls = <MethodCall>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              if (call.method == 'SystemChrome.setPreferredOrientations') {
+                orientationCalls.add(call);
+              }
+              return null;
+            });
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null),
+        );
+
+        await tester.pumpWidget(buildWrapper());
+        await tester.pump();
+
+        expect(
+          orientationCalls.map((call) => call.arguments),
+          [
+            [
+              'DeviceOrientation.portraitUp',
+              'DeviceOrientation.landscapeLeft',
+              'DeviceOrientation.landscapeRight',
+            ],
+          ],
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+
+        expect(orientationCalls.last.arguments, [
+          'DeviceOrientation.portraitUp',
+        ]);
       },
     );
 

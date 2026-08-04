@@ -18,6 +18,7 @@ lib/widgets/
 ├── settings/    # settings page grid and detail scaffold
 ├── picker/      # EntityPickerSheet, shared by categories, labels and task links
 ├── nav_bar/     # bottom navigation shell and FAB clearance
+├── media/       # full-screen image-viewer orientation lifecycle
 └── misc/        # sidebar activity summary and similar cross-feature pieces
 ```
 

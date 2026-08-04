@@ -13,6 +13,7 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/platform.dart';
+import 'package:lotti/widgets/media/image_viewer_orientation_scope.dart';
 import 'package:photo_view/photo_view.dart';
 
 /// Inline image for a [JournalImage] entry in the detail view.
@@ -239,99 +240,83 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
     final tokens = context.designTokens;
     final padding = MediaQuery.paddingOf(context);
     final edge = isMobile ? tokens.spacing.step3 : tokens.spacing.step8;
-    final top = tokens.spacing.step5;
-    final bottom = tokens.spacing.step11;
     final minimumScale = _minimumScale ?? _scale;
     final canZoomOut = _scale > minimumScale * 1.01;
 
-    return CallbackShortcuts(
-      bindings: {
-        const SingleActivator(LogicalKeyboardKey.escape): _close,
-      },
-      child: Focus(
-        autofocus: true,
-        child: Scaffold(
-          backgroundColor: Colors.transparent,
-          body: Stack(
-            children: [
-              Positioned.fill(
-                child: SafeArea(
-                  child: Padding(
-                    padding: EdgeInsets.fromLTRB(edge, top, edge, bottom),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(tokens.radii.m),
-                      child: DecoratedBox(
-                        decoration: BoxDecoration(
+    return ImageViewerOrientationScope(
+      child: CallbackShortcuts(
+        bindings: {
+          const SingleActivator(LogicalKeyboardKey.escape): _close,
+        },
+        child: Focus(
+          autofocus: true,
+          child: Scaffold(
+            backgroundColor: Colors.transparent,
+            body: Stack(
+              children: [
+                Positioned.fill(
+                  child: PhotoView(
+                    imageProvider: imageProvider,
+                    backgroundDecoration:
+                        widget.backgroundDecoration ??
+                        BoxDecoration(
                           color: Theme.of(context).colorScheme.scrim,
-                          border: Border.all(
-                            color: tokens.colors.decorative.level02,
-                          ),
                         ),
-                        child: PhotoView(
-                          imageProvider: imageProvider,
-                          backgroundDecoration:
-                              widget.backgroundDecoration ??
-                              BoxDecoration(
-                                color: Theme.of(context).colorScheme.scrim,
-                              ),
-                          controller: _photoController,
-                          scaleStateController: _scaleStateController,
-                          heroAttributes: const PhotoViewHeroAttributes(
-                            tag: 'entry_img',
-                          ),
-                          minScale: PhotoViewComputedScale.contained,
-                          maxScale: PhotoViewComputedScale.covered * 4,
-                          initialScale: PhotoViewComputedScale.contained,
-                          strictScale: true,
-                        ),
+                    controller: _photoController,
+                    scaleStateController: _scaleStateController,
+                    heroAttributes: const PhotoViewHeroAttributes(
+                      tag: 'entry_img',
+                    ),
+                    minScale: PhotoViewComputedScale.contained,
+                    maxScale: PhotoViewComputedScale.covered * 4,
+                    initialScale: PhotoViewComputedScale.contained,
+                    strictScale: true,
+                  ),
+                ),
+                Positioned(
+                  right: padding.right + edge,
+                  top: padding.top + tokens.spacing.step3,
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      _ImageViewerIconButton(
+                        tooltip: _isDownloading
+                            ? context.messages.imageViewerDownloadingTooltip
+                            : context.messages.imageViewerDownloadTooltip,
+                        icon: _isDownloading
+                            ? Icons.hourglass_top_rounded
+                            : Icons.download_rounded,
+                        onPressed: _isDownloading
+                            ? null
+                            : () => unawaited(_downloadImage()),
                       ),
+                      SizedBox(width: tokens.spacing.step2),
+                      _ImageViewerIconButton(
+                        tooltip: MaterialLocalizations.of(
+                          context,
+                        ).closeButtonTooltip,
+                        icon: Icons.close_rounded,
+                        onPressed: _close,
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: padding.bottom + tokens.spacing.step4,
+                  child: Center(
+                    child: _ImageViewerZoomControls(
+                      scale: _scale,
+                      canZoomOut: canZoomOut,
+                      onZoomOut: canZoomOut ? _zoomOut : null,
+                      onZoomReset: _resetZoom,
+                      onZoomIn: _zoomIn,
                     ),
                   ),
                 ),
-              ),
-              Positioned(
-                right: edge,
-                top: padding.top + tokens.spacing.step3,
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    _ImageViewerIconButton(
-                      tooltip: _isDownloading
-                          ? context.messages.imageViewerDownloadingTooltip
-                          : context.messages.imageViewerDownloadTooltip,
-                      icon: _isDownloading
-                          ? Icons.hourglass_top_rounded
-                          : Icons.download_rounded,
-                      onPressed: _isDownloading
-                          ? null
-                          : () => unawaited(_downloadImage()),
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    _ImageViewerIconButton(
-                      tooltip: MaterialLocalizations.of(
-                        context,
-                      ).closeButtonTooltip,
-                      icon: Icons.close_rounded,
-                      onPressed: _close,
-                    ),
-                  ],
-                ),
-              ),
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: padding.bottom + tokens.spacing.step4,
-                child: Center(
-                  child: _ImageViewerZoomControls(
-                    scale: _scale,
-                    canZoomOut: canZoomOut,
-                    onZoomOut: canZoomOut ? _zoomOut : null,
-                    onZoomReset: _resetZoom,
-                    onZoomIn: _zoomIn,
-                  ),
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

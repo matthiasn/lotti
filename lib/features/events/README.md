@@ -10,7 +10,8 @@ Behind the **Enable Events** flag. With it off, events are hidden everywhere.
 - **Gives a moment its own page.** A photographic detail page with a cover image,
   a title, when it happened, its status and its rating.
 - **Collects everything about it.** Photos, notes and voice memos added to the
-  event link straight back to it and appear on its timeline.
+  event link straight back to it and appear on its timeline. Photos open in a
+  swipeable full-screen gallery that follows phone rotation on iOS and Android.
 - **Turns into work when needed.** A task can be created from an event and stays
   linked to it.
 - **Rates a memory, but only once it is a memory.** Stars appear once the event

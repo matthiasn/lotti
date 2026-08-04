@@ -28,6 +28,7 @@ import 'package:lotti/utils/fd_limits.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/utils/timezone.dart';
+import 'package:lotti/widgets/media/image_viewer_orientation_scope.dart';
 import 'package:media_kit/media_kit.dart';
 import 'package:timezone/data/latest.dart' as tz;
 import 'package:window_manager/window_manager.dart';
@@ -94,6 +95,10 @@ Future<void> main() async {
       );
 
       WidgetsFlutterBinding.ensureInitialized();
+      // Platform startup call; controller behavior is covered by focused tests.
+      // coverage:ignore-start
+      await appOrientationController.lockToPortrait();
+      // coverage:ignore-end
       try {
         MediaKit.ensureInitialized();
       } catch (e) {
