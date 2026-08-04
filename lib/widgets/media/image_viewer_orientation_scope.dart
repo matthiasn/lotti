@@ -11,10 +11,11 @@ typedef PreferredOrientationsSetter =
 
 /// Coordinates the mobile orientation policy for full-screen image viewers.
 ///
-/// The app remains portrait-only by default. While at least one image viewer
-/// is mounted, either landscape direction is also permitted. Reference
+/// The app requests portrait-only mode by default. While at least one image
+/// viewer is mounted, either landscape direction is also permitted. Reference
 /// counting prevents a nested viewer from restoring portrait while its parent
-/// viewer is still visible.
+/// viewer is still visible. Resizable iPad windows may ignore these requests;
+/// the app intentionally keeps iPad multitasking enabled.
 class AppOrientationController {
   AppOrientationController({
     PreferredOrientationsSetter? setPreferredOrientations,
@@ -41,7 +42,7 @@ class AppOrientationController {
 
   static bool _defaultIsSupportedMobilePlatform() => isIOS || isAndroid;
 
-  /// Establishes the portrait-only policy used outside image viewers.
+  /// Requests the portrait-only policy used outside image viewers.
   Future<void> lockToPortrait() => _apply(portraitOrientations);
 
   /// Allows either landscape direction while an image viewer is visible.

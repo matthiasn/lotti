@@ -55,13 +55,14 @@ widget has no shared home just because it is absent.
 
 # Image viewers temporarily widen the mobile orientation policy
 
-App startup locks iOS and Android to portrait. `ImageViewerOrientationScope`
-temporarily changes the preferred set to portrait plus both landscape
-directions while a full-screen image viewer is mounted. It reference-counts
-viewers, so closing a nested viewer cannot restore portrait under a parent that
-is still visible, and it reasserts the viewer policy when the app resumes from
-the background. Disposing the final scope restores portrait. On desktop the
-controller is a no-op; window orientation remains a desktop concern.
+App startup requests portrait on iOS and Android. On iPhone and Android phones,
+`ImageViewerOrientationScope` temporarily changes the preferred set to portrait
+plus both landscape directions while a full-screen image viewer is mounted. It
+reference-counts viewers, so closing a nested viewer cannot restore portrait
+under a parent that is still visible, and it reasserts the viewer policy when
+the app resumes from the background. Disposing the final scope restores
+portrait. On desktop the controller is a no-op; window orientation remains a
+desktop concern.
 
 iOS must declare the three phone orientations in `Info.plist` before Flutter's
 runtime preference can select between them. Android uses the same runtime
@@ -71,6 +72,12 @@ compatibility property; without it, Android 16 ignores orientation requests on
 `sw600dp` and larger displays. That property stops applying at API 37, so the
 non-viewer UI must become fully adaptive before that target upgrade rather than
 assuming the portrait lock can remain enforceable on large screens.
+
+Resizable iPad windows are deliberately outside the phone-scoped lock guarantee.
+iPadOS can ignore runtime orientation preferences while multitasking, and Lotti
+does not set the deprecated `UIRequiresFullScreen` compatibility key because
+that would restrict or rescale iPad multitasking. The viewer layout remains
+responsive when iPadOS chooses another orientation.
 
 ```mermaid
 stateDiagram-v2

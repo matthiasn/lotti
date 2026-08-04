@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.2]
 ### Changed
 - **Full-screen photos now follow phone rotation.** The rest of Lotti remains
-  portrait-only on iOS and Android, but opening a journal image or event photo
+  portrait-only on iPhone and Android phones, but opening a journal image or event photo
   temporarily permits either landscape direction. Wide cover art is contained
   and centered in either orientation, with controls floating over a canvas that
   reaches the screen edges, and closing the viewer restores portrait.
