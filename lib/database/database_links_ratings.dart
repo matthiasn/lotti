@@ -191,15 +191,28 @@ mixin _JournalDbLinksRatings
   /// Single-shot query executed by the basic-links coalescer. Extracted as a
   /// protected seam so tests can count DB round-trips without depending on
   /// a query interceptor.
+  ///
+  /// While modern SQLite defaults `SQLITE_MAX_VARIABLE_NUMBER` to 32,766,
+  /// requiring >32k distinct entry ids in a single microtask wave to exceed the
+  /// cap (which no current caller produces), the id set is chunked by
+  /// `_sqliteInListChunk` to maintain a consistent chunking discipline with
+  /// the other bulk-by-id helpers in this file.
   @protected
   @visibleForTesting
   Future<List<EntryLink>> runBasicLinksQueryForIds(Set<String> ids) async {
-    final rows =
-        await (select(linkedEntries)..where(
-              (t) => t.toId.isIn(ids.toList()) & t.type.equals('BasicLink'),
-            ))
-            .get();
-    return rows.map(entryLinkFromLinkedDbEntry).toList();
+    final idList = ids.toList(growable: false);
+    final combined = <EntryLink>[];
+    for (var i = 0; i < idList.length; i += _sqliteInListChunk) {
+      final end = (i + _sqliteInListChunk).clamp(0, idList.length);
+      final chunk = idList.sublist(i, end);
+      final rows =
+          await (select(linkedEntries)..where(
+                (t) => t.toId.isIn(chunk) & t.type.equals('BasicLink'),
+              ))
+              .get();
+      combined.addAll(rows.map(entryLinkFromLinkedDbEntry));
+    }
+    return combined;
   }
 
   Future<List<EntryLink>> _coalesceBasicLinks(Set<String> ids) {
