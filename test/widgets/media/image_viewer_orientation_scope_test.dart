@@ -38,6 +38,9 @@ void main() {
         },
       );
 
+      await controller.leaveImageViewer();
+      expect(calls, isEmpty);
+
       await controller.enterImageViewer();
       await controller.enterImageViewer();
       await controller.leaveImageViewer();
@@ -91,4 +94,44 @@ void main() {
       expect(calls.last, AppOrientationController.portraitOrientations);
     },
   );
+
+  testWidgets('changing controller transfers viewer ownership', (tester) async {
+    final firstCalls = <List<DeviceOrientation>>[];
+    final firstController = AppOrientationController(
+      isMobilePlatform: () => true,
+      setPreferredOrientations: (orientations) async {
+        firstCalls.add(List.of(orientations));
+      },
+    );
+    final secondCalls = <List<DeviceOrientation>>[];
+    final secondController = AppOrientationController(
+      isMobilePlatform: () => true,
+      setPreferredOrientations: (orientations) async {
+        secondCalls.add(List.of(orientations));
+      },
+    );
+
+    await tester.pumpWidget(
+      ImageViewerOrientationScope(
+        controller: firstController,
+        child: const SizedBox.shrink(),
+      ),
+    );
+    await tester.pumpWidget(
+      ImageViewerOrientationScope(
+        controller: secondController,
+        child: const SizedBox.shrink(),
+      ),
+    );
+
+    expect(firstCalls, [
+      AppOrientationController.imageViewerOrientations,
+      AppOrientationController.portraitOrientations,
+    ]);
+    expect(secondCalls, [AppOrientationController.imageViewerOrientations]);
+
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    expect(secondCalls.last, AppOrientationController.portraitOrientations);
+  });
 }

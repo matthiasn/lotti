@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
 import 'package:lotti/utils/platform.dart' as platform;
+import 'package:photo_view/photo_view_gallery.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -72,6 +73,14 @@ void main() {
 
       expect(find.text('1 / 5'), findsOneWidget);
       expect(find.byType(IconButton), findsOneWidget);
+
+      final gallery = tester.widget<PhotoViewGallery>(
+        find.byType(PhotoViewGallery),
+      );
+      gallery.onPageChanged!(3);
+      await tester.pump();
+
+      expect(find.text('4 / 5'), findsOneWidget);
     });
 
     testWidgets('hides the page indicator for a single photo', (tester) async {

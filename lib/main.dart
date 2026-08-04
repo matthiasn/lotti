@@ -95,7 +95,8 @@ Future<void> main() async {
       );
 
       WidgetsFlutterBinding.ensureInitialized();
-      await appOrientationController.lockToPortrait();
+      await appOrientationController
+          .lockToPortrait(); // coverage:ignore-line — platform startup call
       try {
         MediaKit.ensureInitialized();
       } catch (e) {
