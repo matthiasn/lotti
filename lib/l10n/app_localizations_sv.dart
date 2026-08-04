@@ -41,7 +41,7 @@ class AppLocalizationsSv extends AppLocalizations {
   String get addActionAddTimeRecording => 'Lägg till tidsregistrering';
 
   @override
-  String get addActionCreateLinkedTask => 'Länka en uppgift';
+  String get addActionCreateLinkedTask => 'Länka en ny uppgift';
 
   @override
   String get addActionCreateLinkedTaskHint =>

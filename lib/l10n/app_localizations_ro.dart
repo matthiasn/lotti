@@ -41,7 +41,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get addActionAddTimeRecording => 'Adăugați timp';
 
   @override
-  String get addActionCreateLinkedTask => 'Legați o sarcină';
+  String get addActionCreateLinkedTask => 'Legați o sarcină nouă';
 
   @override
   String get addActionCreateLinkedTaskHint =>

@@ -41,7 +41,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get addActionAddTimeRecording => 'Zeiteingabe';
 
   @override
-  String get addActionCreateLinkedTask => 'Aufgabe verknüpfen';
+  String get addActionCreateLinkedTask => 'Neue Aufgabe verknüpfen';
 
   @override
   String get addActionCreateLinkedTaskHint =>

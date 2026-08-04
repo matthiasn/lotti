@@ -9,7 +9,7 @@
   "addActionAddTask": "Task",
   "addActionAddTimer": "Timer",
   "addActionAddTimeRecording": "Timer Entry",
-  "addActionCreateLinkedTask": "Link a task",
+  "addActionCreateLinkedTask": "Link a new task",
   "addActionCreateLinkedTaskHint": "Creates and opens a new task linked to this one.",
   "addActionCreateTask": "Add a task",
   "addActionCreateTaskHint": "Creates a new task and opens it.",

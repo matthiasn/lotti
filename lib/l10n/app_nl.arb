@@ -9,7 +9,7 @@
   "addActionAddTask": "Taak",
   "addActionAddTimer": "Timer",
   "addActionAddTimeRecording": "Timerinvoer",
-  "addActionCreateLinkedTask": "Taak koppelen",
+  "addActionCreateLinkedTask": "Nieuwe taak koppelen",
   "addActionCreateLinkedTaskHint": "Maakt en opent een nieuwe taak die aan deze gekoppeld is.",
   "addActionCreateTask": "Taak toevoegen",
   "addActionCreateTaskHint": "Maakt een nieuwe taak en opent die.",

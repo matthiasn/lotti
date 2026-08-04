@@ -41,7 +41,7 @@ class AppLocalizationsDa extends AppLocalizations {
   String get addActionAddTimeRecording => 'Timerindtastning';
 
   @override
-  String get addActionCreateLinkedTask => 'Tilknyt en opgave';
+  String get addActionCreateLinkedTask => 'Tilknyt en ny opgave';
 
   @override
   String get addActionCreateLinkedTaskHint =>

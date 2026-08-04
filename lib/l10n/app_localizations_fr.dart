@@ -42,7 +42,7 @@ class AppLocalizationsFr extends AppLocalizations {
       'Commencer l\'enregistrement du temps';
 
   @override
-  String get addActionCreateLinkedTask => 'Lier une tâche';
+  String get addActionCreateLinkedTask => 'Lier une nouvelle tâche';
 
   @override
   String get addActionCreateLinkedTaskHint =>

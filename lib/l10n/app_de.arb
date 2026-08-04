@@ -10,7 +10,7 @@
   "addActionAddTask": "Aufgabe",
   "addActionAddTimer": "Timer",
   "addActionAddTimeRecording": "Zeiteingabe",
-  "addActionCreateLinkedTask": "Aufgabe verknüpfen",
+  "addActionCreateLinkedTask": "Neue Aufgabe verknüpfen",
   "addActionCreateLinkedTaskHint": "Erstellt eine neue, mit dieser verknüpfte Aufgabe und öffnet sie.",
   "addActionCreateTask": "Aufgabe hinzufügen",
   "addActionCreateTaskHint": "Erstellt eine neue Aufgabe und öffnet sie.",

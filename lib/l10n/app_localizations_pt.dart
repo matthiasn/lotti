@@ -41,7 +41,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get addActionAddTimeRecording => 'Entrada do temporizador';
 
   @override
-  String get addActionCreateLinkedTask => 'Vincular uma tarefa';
+  String get addActionCreateLinkedTask => 'Vincular uma nova tarefa';
 
   @override
   String get addActionCreateLinkedTaskHint =>

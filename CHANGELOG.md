@@ -4,38 +4,7 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.0.1]
-### Added
-- **A new task now tells you what to do next.** Opening a task you have just
-  created used to leave you with a "No title" label, a row of chips, and half a
-  screen of nothing. The title is now a field you land in with the cursor
-  already blinking, asking you to name the task — press Return to save it —
-  and below it a short card offers the four things a task usually needs next:
-  write a note, add a checklist, record a voice note, assign an agent. They are
-  worded rows rather than unlabelled glyphs in the bottom bar, and while the
-  card is up the bar drops the buttons that would say the same thing twice. The
-  card disappears the moment the task has any content, and the whole page is
-  composed in the window rather than stacked at the top of an empty one.
-- **Daily OS has a Today button.** Once you step off today, a Today button
-  appears beside the date arrows and takes you straight back. Returning
-  previously meant either opening the date picker or knowing that a long press
-  on the date did it. On today itself the button is not shown, since there is
-  nowhere to return to, and it also stays away when the window is too narrow to
-  hold it beside the date — a phone, or a desktop window with a wide sidebar.
-  There, tapping the date opens Lotti's own date sheet, which carries a Today
-  shortcut of its own.
-- **A failed planning step now says so on the day it happened.** When Daily OS
-  could not draft or update a plan, or could not read a check-in, it failed in
-  silence: no notification arrived, and the day showed no sign anything had
-  gone wrong. Work that has stopped now appears in that day's Activity
-  timeline, saying in plain words which step did not finish and why — the model
-  could not complete it, no planning model is set up, there is no plan to
-  update yet, or it is waiting for the network — and offering Retry in place.
-  Retrying puts the work back in flight and the entry disappears. Network waits
-  also resume on their own once you are back online. Steps still running are
-  not listed; the plan itself already shows those. Failed drafts and updates
-  now raise the notification they were always meant to.
-
+## [1.0.2]
 ### Changed
 - **The task page's Add menu speaks the same language as the page.** The menu
   offered "Text Entry", "Checklist" and "Audio Recording" — the same actions
@@ -71,6 +40,39 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   snapping it. The bottom bar keeps its full set of buttons throughout:
   Track time stays the filled primary, and the microphone, checklist and
   image buttons remain exactly where they always are.
+
+
+## [1.0.1]
+### Added
+- **A new task now tells you what to do next.** Opening a task you have just
+  created used to leave you with a "No title" label, a row of chips, and half a
+  screen of nothing. The title is now a field you land in with the cursor
+  already blinking, asking you to name the task — press Return to save it —
+  and below it a short card offers the four things a task usually needs next:
+  write a note, add a checklist, record a voice note, assign an agent. They are
+  worded rows rather than unlabelled glyphs in the bottom bar, and while the
+  card is up the bar drops the buttons that would say the same thing twice. The
+  card disappears the moment the task has any content, and the whole page is
+  composed in the window rather than stacked at the top of an empty one.
+- **Daily OS has a Today button.** Once you step off today, a Today button
+  appears beside the date arrows and takes you straight back. Returning
+  previously meant either opening the date picker or knowing that a long press
+  on the date did it. On today itself the button is not shown, since there is
+  nowhere to return to, and it also stays away when the window is too narrow to
+  hold it beside the date — a phone, or a desktop window with a wide sidebar.
+  There, tapping the date opens Lotti's own date sheet, which carries a Today
+  shortcut of its own.
+- **A failed planning step now says so on the day it happened.** When Daily OS
+  could not draft or update a plan, or could not read a check-in, it failed in
+  silence: no notification arrived, and the day showed no sign anything had
+  gone wrong. Work that has stopped now appears in that day's Activity
+  timeline, saying in plain words which step did not finish and why — the model
+  could not complete it, no planning model is set up, there is no plan to
+  update yet, or it is waiting for the network — and offering Retry in place.
+  Retrying puts the work back in flight and the entry disappears. Network waits
+  also resume on their own once you are back online. Steps still running are
+  not listed; the plan itself already shows those. Failed drafts and updates
+  now raise the notification they were always meant to.
 
 ### Fixed
 - **Searching for a task to link no longer flickers as you type.** Every

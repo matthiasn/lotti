@@ -9,7 +9,7 @@
   "addActionAddTask": "Tarefa",
   "addActionAddTimer": "Temporizador",
   "addActionAddTimeRecording": "Entrada do temporizador",
-  "addActionCreateLinkedTask": "Vincular uma tarefa",
+  "addActionCreateLinkedTask": "Vincular uma nova tarefa",
   "addActionCreateLinkedTaskHint": "Cria e abre uma nova tarefa vinculada a esta.",
   "addActionCreateTask": "Adicionar uma tarefa",
   "addActionCreateTaskHint": "Cria uma nova tarefa e a abre.",

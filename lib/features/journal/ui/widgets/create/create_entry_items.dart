@@ -365,15 +365,19 @@ class CreateScreenshotItem extends ConsumerWidget {
       // Says what is captured (the screen) and where it goes — the row's
       // one-word ancestor scared cautious users off entirely.
       subtitle: context.messages.addActionAddScreenshotHint,
-      onTap: () async {
-        await createScreenshot(
-          linkedId: linkedFromId,
-          categoryId: categoryId,
-          analysisTrigger: ref.read(automaticImageAnalysisTriggerProvider),
+      onTap: () {
+        // Pop FIRST, then capture: the subtitle promises exactly this order,
+        // and capturing with the sheet still up would put the sheet itself
+        // in the shot. Values are read before the pop disposes this ref.
+        final trigger = ref.read(automaticImageAnalysisTriggerProvider);
+        Navigator.of(context).pop();
+        unawaited(
+          createScreenshot(
+            linkedId: linkedFromId,
+            categoryId: categoryId,
+            analysisTrigger: trigger,
+          ),
         );
-        if (context.mounted) {
-          Navigator.of(context).pop();
-        }
       },
     );
   }

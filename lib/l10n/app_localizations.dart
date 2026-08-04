@@ -180,7 +180,7 @@ abstract class AppLocalizations {
   /// No description provided for @addActionCreateLinkedTask.
   ///
   /// In en, this message translates to:
-  /// **'Link a task'**
+  /// **'Link a new task'**
   String get addActionCreateLinkedTask;
 
   /// No description provided for @addActionCreateLinkedTaskHint.

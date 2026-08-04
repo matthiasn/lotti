@@ -10,7 +10,7 @@
   "addActionAddTask": "Úkol",
   "addActionAddTimer": "Časovač",
   "addActionAddTimeRecording": "Záznam času",
-  "addActionCreateLinkedTask": "Propojit úkol",
+  "addActionCreateLinkedTask": "Propojit nový úkol",
   "addActionCreateLinkedTaskHint": "Vytvoří a otevře nový úkol propojený s tímto.",
   "addActionCreateTask": "Přidat úkol",
   "addActionCreateTaskHint": "Vytvoří nový úkol a otevře ho.",

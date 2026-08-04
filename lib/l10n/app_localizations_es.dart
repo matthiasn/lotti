@@ -41,7 +41,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get addActionAddTimeRecording => 'Registro de tiempo';
 
   @override
-  String get addActionCreateLinkedTask => 'Vincular una tarea';
+  String get addActionCreateLinkedTask => 'Vincular una tarea nueva';
 
   @override
   String get addActionCreateLinkedTaskHint =>

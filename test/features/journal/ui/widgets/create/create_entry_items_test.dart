@@ -1251,7 +1251,7 @@ void main() {
 
           // Verify the task item is rendered
           expect(find.byType(CreateMenuListItem), findsOneWidget);
-          expect(find.text('Link a task'), findsOneWidget);
+          expect(find.text('Link a new task'), findsOneWidget);
           expect(find.byIcon(Icons.add_task_rounded), findsOneWidget);
         });
 
@@ -1285,7 +1285,7 @@ void main() {
 
           // Verify the task item is shown
           expect(find.byType(CreateMenuListItem), findsOneWidget);
-          expect(find.text('Link a task'), findsOneWidget);
+          expect(find.text('Link a new task'), findsOneWidget);
           expect(find.byIcon(Icons.add_task_rounded), findsOneWidget);
         });
 

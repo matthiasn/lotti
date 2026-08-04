@@ -19,8 +19,10 @@ import 'package:lotti/utils/color.dart';
 /// One glyph size for every chip in the metadata lane — status and priority
 /// glyphs, disclosure carets, and the dashed add-chips' leading icons. The
 /// lane used to split 12 vs 14 across eight call sites, which is exactly the
-/// kind of per-widget improvisation that drifts; a single named constant is
-/// the seam's owner until a design-system icon-size token exists.
+/// kind of per-widget improvisation that drifts. Deliberately between the
+/// design system's `IconSizes.xs` (12, inline caption glyphs) and
+/// `IconSizes.s` (16, list rows): the chips cap their labels at the 12pt
+/// caption, and a 16px glyph out-weighed that text inside a 28px pill.
 const double kTaskChipGlyphSize = 14;
 
 /// The metadata block under the title, in up to three lanes. The first lane

@@ -10,7 +10,7 @@
   "addActionAddTask": "Ajouter une tâche",
   "addActionAddTimer": "Minuteur",
   "addActionAddTimeRecording": "Commencer l'enregistrement du temps",
-  "addActionCreateLinkedTask": "Lier une tâche",
+  "addActionCreateLinkedTask": "Lier une nouvelle tâche",
   "addActionCreateLinkedTaskHint": "Crée et ouvre une nouvelle tâche liée à celle-ci.",
   "addActionCreateTask": "Ajouter une tâche",
   "addActionCreateTaskHint": "Crée une nouvelle tâche et l'ouvre.",

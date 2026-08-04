@@ -53,7 +53,9 @@ class CreateMenuListItem extends StatelessWidget {
       subtitleMaxLines: 2,
       leading: Icon(
         icon,
-        size: tokens.spacing.step5,
+        // IconSizes.s, the list-row glyph tier — not a borrowed spacing step,
+        // which would resize the glyph whenever the gap scale is retuned.
+        size: IconSizes.s,
         color: tokens.colors.interactive.enabled,
       ),
       trailingExtra: Icon(
@@ -61,7 +63,7 @@ class CreateMenuListItem extends StatelessWidget {
         // the plus and the chevron carry equal ink — the behavioural signal
         // must not be faintest exactly where its meaning is rarest.
         opensSheet ? Icons.chevron_right_rounded : Icons.add_rounded,
-        size: tokens.spacing.step5,
+        size: IconSizes.s,
         color: tokens.colors.text.mediumEmphasis,
       ),
     );

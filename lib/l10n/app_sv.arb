@@ -10,7 +10,7 @@
   "addActionAddTask": "Uppgift",
   "addActionAddTimer": "Lägg till timer",
   "addActionAddTimeRecording": "Lägg till tidsregistrering",
-  "addActionCreateLinkedTask": "Länka en uppgift",
+  "addActionCreateLinkedTask": "Länka en ny uppgift",
   "addActionCreateLinkedTaskHint": "Skapar och öppnar en ny uppgift som är länkad till den här.",
   "addActionCreateTask": "Lägg till en uppgift",
   "addActionCreateTaskHint": "Skapar en ny uppgift och öppnar den.",

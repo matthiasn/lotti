@@ -110,7 +110,9 @@ class ModalUtils {
       icon: Icon(
         icon,
         color: tokens.colors.text.mediumEmphasis,
-        size: tokens.spacing.step6,
+        // IconSizes.l, the callout/header glyph tier (24) — not the step6
+        // gap that happens to share the number.
+        size: IconSizes.l,
       ),
       onPressed: onPressed,
     );

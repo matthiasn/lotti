@@ -41,7 +41,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get addActionAddTimeRecording => 'Registrazione del tempo';
 
   @override
-  String get addActionCreateLinkedTask => 'Collega un\'attività';
+  String get addActionCreateLinkedTask => 'Collega una nuova attività';
 
   @override
   String get addActionCreateLinkedTaskHint =>

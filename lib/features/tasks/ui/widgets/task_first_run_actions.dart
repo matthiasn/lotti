@@ -148,19 +148,16 @@ class TaskFirstRunActions extends ConsumerWidget {
         opensPicker: false,
         label: context.messages.taskFirstRunAddChecklist,
         subtitle: context.messages.taskFirstRunAddChecklistHint,
-        onTap: () async {
-          final checklist = await ref
-              .read(entryCreationServiceProvider)
-              .createChecklist(task: task);
-          if (checklist == null) return false;
-          // Same promise as the note row: every tap lands somewhere visible.
-          // The new checklist renders above the fold on most screens, but on
-          // a short window the focus intent is what carries the eye there.
-          ref
-              .read(taskFocusControllerProvider(task.meta.id).notifier)
-              .publishTaskFocus(entryId: checklist.meta.id);
-          return true;
-        },
+        // No focus publish here, deliberately: the checklists section keys
+        // its rows itself rather than through the page's entry-key registry,
+        // so a focus intent for the new checklist id has no rendered key to
+        // land on and would only spin the scroll-retry loop. The section
+        // renders directly under the header, above the fold.
+        onTap: () async =>
+            await ref
+                .read(entryCreationServiceProvider)
+                .createChecklist(task: task) !=
+            null,
       ),
       _FirstRunRow(
         icon: Icons.mic_rounded,
@@ -335,7 +332,8 @@ class _FirstRunRowState extends State<_FirstRunRow> {
       // is the ramp this block wants.
       leading: Icon(
         icon,
-        size: tokens.spacing.step5,
+        // IconSizes.s, the list-row glyph tier — not a borrowed spacing step.
+        size: IconSizes.s,
         color: tokens.colors.interactive.enabled,
       ),
       // While the row's own future is in flight the glyph gives way to a
@@ -347,8 +345,8 @@ class _FirstRunRowState extends State<_FirstRunRow> {
       // taps.
       trailingExtra: _pending
           ? SizedBox(
-              width: tokens.spacing.step5,
-              height: tokens.spacing.step5,
+              width: IconSizes.s,
+              height: IconSizes.s,
               child: CircularProgressIndicator(
                 strokeWidth: 2,
                 color: tokens.colors.text.mediumEmphasis,
@@ -357,7 +355,7 @@ class _FirstRunRowState extends State<_FirstRunRow> {
           : _spent
           ? Icon(
               Icons.check_rounded,
-              size: tokens.spacing.step5,
+              size: IconSizes.s,
               color: tokens.colors.text.mediumEmphasis,
             )
           : Icon(
@@ -366,7 +364,7 @@ class _FirstRunRowState extends State<_FirstRunRow> {
               // chevron at one size so the two behavioural glyphs carry
               // equal ink.
               opensPicker ? Icons.chevron_right_rounded : Icons.add_rounded,
-              size: tokens.spacing.step5,
+              size: IconSizes.s,
               // Medium, not low: this glyph is the card's only behavioural
               // semantic — creates-in-place versus opens-a-sheet — and at
               // lowEmphasis it was the faintest ink on the card, outranked

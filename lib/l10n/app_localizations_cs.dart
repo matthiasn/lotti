@@ -41,7 +41,7 @@ class AppLocalizationsCs extends AppLocalizations {
   String get addActionAddTimeRecording => 'Záznam času';
 
   @override
-  String get addActionCreateLinkedTask => 'Propojit úkol';
+  String get addActionCreateLinkedTask => 'Propojit nový úkol';
 
   @override
   String get addActionCreateLinkedTaskHint =>

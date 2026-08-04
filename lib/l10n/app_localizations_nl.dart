@@ -41,7 +41,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get addActionAddTimeRecording => 'Timerinvoer';
 
   @override
-  String get addActionCreateLinkedTask => 'Taak koppelen';
+  String get addActionCreateLinkedTask => 'Nieuwe taak koppelen';
 
   @override
   String get addActionCreateLinkedTaskHint =>

@@ -10,7 +10,7 @@
   "addActionAddTask": "Opgave",
   "addActionAddTimer": "Åbningstider",
   "addActionAddTimeRecording": "Timerindtastning",
-  "addActionCreateLinkedTask": "Tilknyt en opgave",
+  "addActionCreateLinkedTask": "Tilknyt en ny opgave",
   "addActionCreateLinkedTaskHint": "Opretter og åbner en ny opgave, der er knyttet til denne.",
   "addActionCreateTask": "Tilføj en opgave",
   "addActionCreateTaskHint": "Opretter en ny opgave og åbner den.",

@@ -41,7 +41,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get addActionAddTimeRecording => 'Timer Entry';
 
   @override
-  String get addActionCreateLinkedTask => 'Link a task';
+  String get addActionCreateLinkedTask => 'Link a new task';
 
   @override
   String get addActionCreateLinkedTaskHint =>
