@@ -6793,7 +6793,8 @@ class AppLocalizationsDa extends AppLocalizations {
   String get linkedTasksEmptyAction => 'Link a task…';
 
   @override
-  String get linkedTasksEmptyHint => 'Connect this task to another task.';
+  String get linkedTasksEmptyHint =>
+      'Forbind denne opgave med en anden opgave.';
 
   @override
   String get linkedTasksMenuTooltip => 'Muligheder for tilknyttede opgaver';

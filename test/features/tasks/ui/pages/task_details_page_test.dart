@@ -14,6 +14,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card/proposal_row_part.dart'
 import 'package:lotti/features/agents/ui/ai_summary_card/proposals_section_part.dart';
 import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
@@ -34,6 +35,7 @@ import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../../../../helpers/fake_linked_entries_controller.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
@@ -193,15 +195,32 @@ void main() {
         when(
           () => mockJournalDb.journalEntityById(testTask.meta.id),
         ).thenAnswer((_) async => blank);
-
         await tester.pumpWidget(
           makeTestableWidgetWithScaffold(
             TaskDetailsPage(taskId: testTask.id),
-            overrides: hTaskDetailsPageOverrides(),
+            overrides: [
+              ...hTaskDetailsPageOverrides(),
+              // Blank task *data* is not enough. `watchTaskIsFirstRun` also
+              // needs "no linked entries", and it treats an unresolved
+              // provider as unknown — the real controller reads through
+              // `JournalDb.linksFromId`, a Drift selectable this harness does
+              // not answer, so it lands in AsyncError and nothing first-run
+              // renders. Without this the test asserted the ordinary layout
+              // and passed.
+              linkedEntriesControllerProvider(
+                testTask.meta.id,
+              ).overrideWith(FakeLinkedEntriesController.new),
+              taskAgentProvider.overrideWith((ref, id) async => null),
+            ],
           ),
         );
-        await tester.pump();
-        await tester.pump(const Duration(milliseconds: 300));
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byType(TaskFirstRunActions),
+          findsOneWidget,
+          reason: 'the layout under test only applies in the first-run state',
+        );
 
         // The first content sliver claims the rest of the viewport instead of
         // taking its child's height, which is what turns the leftover space

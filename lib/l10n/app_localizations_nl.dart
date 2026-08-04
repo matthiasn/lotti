@@ -6812,7 +6812,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get linkedTasksEmptyAction => 'Link a task…';
 
   @override
-  String get linkedTasksEmptyHint => 'Connect this task to another task.';
+  String get linkedTasksEmptyHint => 'Verbind deze taak met een andere taak.';
 
   @override
   String get linkedTasksMenuTooltip => 'Gekoppelde takenopties';

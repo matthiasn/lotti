@@ -3234,6 +3234,7 @@
     }
   },
   "linkedTaskImageBadge": "Da tarefa vinculada",
+  "linkedTasksEmptyHint": "Conecte esta tarefa a outra tarefa.",
   "linkedTasksMenuTooltip": "Opções de tarefas vinculadas",
   "linkedTasksTitle": "Tarefas Vinculadas",
   "linkExistingTask": "Vincular tarefa existente…",

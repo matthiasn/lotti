@@ -3235,6 +3235,7 @@
     }
   },
   "linkedTaskImageBadge": "Från länkad uppgift",
+  "linkedTasksEmptyHint": "Koppla den här uppgiften till en annan uppgift.",
   "linkedTasksMenuTooltip": "Länkade uppgifter alternativ",
   "linkedTasksTitle": "Länkade uppgifter",
   "linkExistingTask": "Länka befintlig uppgift…",

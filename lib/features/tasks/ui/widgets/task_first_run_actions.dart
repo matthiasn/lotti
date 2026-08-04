@@ -1,13 +1,40 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/tasks/state/task_focus_controller.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/entry_creation_service.dart';
+
+/// Whether [task] should be treated as first-run, watching the two providers
+/// that answer "does this task have anything on it".
+///
+/// **Unresolved is not blank.** Both providers start without a value, so
+/// reading them as `?? false` claimed "no agent, no linked entries" for the
+/// frames before the database answered — and a task that has both flashed the
+/// first-run offer, with the page narrowed to its measure and the action bar
+/// compacted, before the established UI replaced it. On a slow database that
+/// wrong state is long enough to tap.
+///
+/// Shared by `TaskForm` and `TaskDetailsPage`, which have to agree: they
+/// separately decide the block, the column measure, the compact action bar and
+/// whether the AI card shows its own assign CTA.
+bool watchTaskIsFirstRun(WidgetRef ref, Task task) {
+  final agent = ref.watch(taskAgentProvider(task.meta.id));
+  final linked = ref.watch(linkedEntriesControllerProvider(task.meta.id));
+  if (!agent.hasValue || !linked.hasValue) return false;
+  return TaskFirstRunActions.isBlank(
+    task,
+    hasAgent: agent.value != null,
+    hasLinkedEntries: linked.value?.isNotEmpty ?? false,
+  );
+}
 
 /// The "what now?" block on a task that has nothing on it yet.
 ///
@@ -38,12 +65,12 @@ class TaskFirstRunActions extends ConsumerWidget {
 
   /// The measure the whole page adopts while this block is showing.
   ///
-  /// Narrower than `kDetailContentMaxWidth`: these rows are a few words each,
-  /// and a list whose trailing glyph sits most of a window from its label
-  /// stops reading as a list. `TaskDetailsPage` caps its content column to
+  /// The design system's [kActionListContentMaxWidth] — the measure for a
+  /// column of worded action rows, narrower than the prose measure for the
+  /// reasons documented there. `TaskDetailsPage` caps its content column to
   /// this on a first-run task so the title field, the chip lane and this block
   /// share one right edge instead of three.
-  static const double maxWidth = 520;
+  static const double maxWidth = kActionListContentMaxWidth;
 
   /// Whether [task] is blank enough to warrant the block: no checklists, no
   /// body text, no linked entries, and no agent attached.
@@ -103,13 +130,19 @@ class TaskFirstRunActions extends ConsumerWidget {
         icon: Icons.checklist_rounded,
         opensPicker: false,
         label: context.messages.taskFirstRunAddChecklist,
-        onTap: () =>
-            ref.read(entryCreationServiceProvider).createChecklist(task: task),
+        onTap: () async {
+          await ref
+              .read(entryCreationServiceProvider)
+              .createChecklist(task: task);
+        },
       ),
       _FirstRunRow(
         icon: Icons.mic_rounded,
         label: context.messages.taskFirstRunRecordAudio,
-        onTap: () => ref
+        // Synchronous — it pushes a modal route and returns — so there is no
+        // in-flight window to guard, only the `Future<void>` signature to
+        // satisfy.
+        onTap: () async => ref
             .read(entryCreationServiceProvider)
             .showAudioRecordingModal(
               context,
@@ -172,7 +205,7 @@ class TaskFirstRunActions extends ConsumerWidget {
 /// One row of the block. A worded action with its glyph and a chevron —
 /// the same anatomy the linked-tasks card's rows use, so the two cards read
 /// as one component family rather than two takes on the same idea.
-class _FirstRunRow extends StatelessWidget {
+class _FirstRunRow extends StatefulWidget {
   const _FirstRunRow({
     required this.icon,
     required this.label,
@@ -186,7 +219,7 @@ class _FirstRunRow extends StatelessWidget {
   final String label;
   final String? subtitle;
   final Color? iconColor;
-  final VoidCallback onTap;
+  final Future<void> Function() onTap;
 
   /// Whether the tap opens a picker or modal (chevron) or creates something in
   /// place (plus). Four identical chevrons over four different behaviours told
@@ -195,25 +228,46 @@ class _FirstRunRow extends StatelessWidget {
   final bool opensPicker;
 
   @override
+  State<_FirstRunRow> createState() => _FirstRunRowState();
+}
+
+class _FirstRunRowState extends State<_FirstRunRow> {
+  /// A tap is in flight. The block only retires once the write lands and the
+  /// provider rebuilds, so on a slow database every tap in that window started
+  /// another independent `createTextEntry` / `createChecklist` — a handful of
+  /// empty notes from one impatient user. The row goes inert until its own
+  /// future resolves.
+  bool _pending = false;
+
+  Future<void> _handleTap() async {
+    if (_pending) return;
+    setState(() => _pending = true);
+    try {
+      await widget.onTap();
+    } finally {
+      // The successful path usually unmounts this row — the task now has
+      // content — so `mounted` is the common case, not the exception.
+      if (mounted) setState(() => _pending = false);
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final icon = widget.icon;
+    final iconColor = widget.iconColor;
+    final opensPicker = widget.opensPicker;
     return DesignSystemListItem(
-      onTap: onTap,
-      title: label,
+      onTap: _pending ? null : _handleTap,
+      title: widget.label,
       titleMaxLines: 2,
-      subtitle: subtitle,
+      subtitle: widget.subtitle,
       subtitleMaxLines: 2,
       // No emphasis override: the component's own `text.mediumEmphasis` is
       // right. At lowEmphasis the page's single explanatory sentence was also
       // its faintest text.
-      // Medium, not small. The small spec titles rows in `body.bodySmall`
-      // (14/w400) — the same weight as body copy — so the four actions this
-      // card exists to offer read lighter than the default status chip above
-      // them. Medium already carries `subtitle.subtitle2` (14/w600) and a
-      // looser title/subtitle gap, which is the ramp this block wants; using
-      // it costs a few points of row height on a page with room to spare, and
-      // avoids re-tuning the small spec for every other caller in the app.
-      // Left at the component's default `medium` on purpose. The `small`
+      //
+      // Left at the component's default `medium` size on purpose. The `small`
       // spec titles rows in `body.bodySmall` (14/w400) — the same weight as
       // body copy — so the four actions this card exists to offer would read
       // lighter than the default status chip above them. Medium carries

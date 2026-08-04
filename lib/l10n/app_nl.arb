@@ -3234,6 +3234,7 @@
     }
   },
   "linkedTaskImageBadge": "Van verbonden taak",
+  "linkedTasksEmptyHint": "Verbind deze taak met een andere taak.",
   "linkedTasksMenuTooltip": "Gekoppelde takenopties",
   "linkedTasksTitle": "Gekoppelde taken",
   "linkExistingTask": "Bestaande taak koppelen…",

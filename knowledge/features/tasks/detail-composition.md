@@ -48,14 +48,19 @@ because it was the one path an empty task did not offer: `EditorWidget` renders
 only for a task that *already* has entry text, so the plain-text route existed
 solely behind the action bar's unlabelled overflow glyph.
 
-Two rows are conditional, both by the same rule — **a section must not offer what
-cannot happen**:
+All four rows are unconditional. The agent row in particular is *not* gated on a
+template existing: `AgentTemplateSeeding.seedDefaults()` runs at startup, so a
+fresh install already has task-agent templates, and gating on an async check
+would only flash the row in and out on first paint. What a fresh install can
+still be missing is an inference provider and its key — a prerequisite the
+picker itself reports, not this band.
 
-- The agent row appears only when `taskAgentTemplatesExistProvider` resolves true.
-  Without a single task-agent template the picker it opens dead-ends on a warning
-  toast, which is the fresh-install path.
-- The whole band disappears the moment the task has any content, so a returning
-  user never meets it twice on the same task.
+The band as a whole is conditional, by the rule **a section must not offer what
+cannot happen**: it disappears the moment the task has any content, so a
+returning user never meets it twice on the same task. `watchTaskIsFirstRun`
+decides that, and treats an unresolved provider as *unknown*, not as "no
+content" — otherwise a task with an agent flashes the offer before the database
+answers.
 
 While this band renders, `TaskForm` passes `showAssignCta: false` to
 `AiSummaryCard`: the band carries the same offer, and two "assign agent"

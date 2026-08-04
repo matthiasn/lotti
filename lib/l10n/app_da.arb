@@ -3235,6 +3235,7 @@
     }
   },
   "linkedTaskImageBadge": "Fra linket opgave",
+  "linkedTasksEmptyHint": "Forbind denne opgave med en anden opgave.",
   "linkedTasksMenuTooltip": "Muligheder for tilknyttede opgaver",
   "linkedTasksTitle": "Sammenkoblede opgaver",
   "linkExistingTask": "Link eksisterende opgave…",

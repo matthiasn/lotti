@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -241,6 +243,49 @@ void main() {
         final intent = container.read(taskFocusControllerProvider('task-1'));
         expect(intent, isNotNull);
         expect(intent!.entryId, 'note-1');
+      },
+    );
+
+    testWidgets(
+      'an impatient second tap while the write is in flight is dropped — the '
+      'block only retires once the entry lands, so the row is still there and '
+      'still tappable for the whole of a slow write',
+      (tester) async {
+        final pending = Completer<JournalEntity?>();
+        when(
+          () => creation.createTextEntry(
+            linkedId: any(named: 'linkedId'),
+            categoryId: any(named: 'categoryId'),
+          ),
+        ).thenAnswer((_) => pending.future);
+
+        await pump(tester, task: buildTask(categoryId: 'cat-1'));
+
+        await tester.tap(find.text('Write a note'));
+        await tester.pump();
+        await tester.tap(find.text('Write a note'));
+        await tester.pump();
+
+        verify(
+          () => creation.createTextEntry(
+            linkedId: 'task-1',
+            categoryId: 'cat-1',
+          ),
+        ).called(1);
+
+        // …and once it lands, the row is live again — a write that failed
+        // must not leave the only path to a note permanently inert.
+        pending.complete(null);
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Write a note'));
+        await tester.pump();
+
+        verify(
+          () => creation.createTextEntry(
+            linkedId: 'task-1',
+            categoryId: 'cat-1',
+          ),
+        ).called(1);
       },
     );
 

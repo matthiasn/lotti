@@ -18,11 +18,18 @@ import 'package:lotti/services/entities_cache_service.dart';
 /// before a relationship is possible is what made the first task screen read
 /// as unfinished. Nothing to link to, no card.
 ///
-/// Deliberately mirrors the candidate query `TaskSearchPickerBody` runs, so
-/// "the card is here" and "the picker has rows" can never disagree: every
-/// status (a finished task is a valid target for "duplicates" / "follows up
-/// on"), every category plus `''` for uncategorized — an empty category list
-/// short-circuits the query builder to `WHERE 1 = 0`.
+/// Deliberately at least as wide as the candidate set `TaskSearchPickerBody`
+/// can reach, so "the card is here" and "the picker has rows" can never
+/// disagree: every status (a finished task is a valid target for "duplicates"
+/// / "follows up on"), every category plus `''` for uncategorized — an empty
+/// category list short-circuits the query builder to `WHERE 1 = 0`.
+///
+/// Every category means `categoriesById`, not `sortedCategories`: the latter
+/// drops inactive ones, and the picker's FTS path resolves matches through
+/// `getJournalEntitiesForIds`, which applies no category filter at all. Gating
+/// on the narrower set would hide the whole card from someone whose only other
+/// task sits in a category they have since archived — a task the picker would
+/// happily find.
 final AsyncNotifierProviderFamily<LinkableTasksController, bool, String>
 linkableTasksExistProvider = AsyncNotifierProvider.autoDispose
     .family<LinkableTasksController, bool, String>(
@@ -55,7 +62,7 @@ class LinkableTasksController extends AsyncNotifier<bool> {
 
   Future<bool> _fetch() async {
     final categoryIds = [
-      ...getIt<EntitiesCacheService>().sortedCategories.map((c) => c.id),
+      ...getIt<EntitiesCacheService>().categoriesById.keys,
       '',
     ];
     // Two rows, not a count: the current task is itself a candidate row, so a

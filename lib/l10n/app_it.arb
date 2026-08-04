@@ -3235,6 +3235,7 @@
     }
   },
   "linkedTaskImageBadge": "Da un'attività collegata",
+  "linkedTasksEmptyHint": "Collega questa attività a un'altra attività.",
   "linkedTasksMenuTooltip": "Opzioni di attività collegate",
   "linkedTasksTitle": "Compiti collegati",
   "linkExistingTask": "Collegare il compito esistente…",

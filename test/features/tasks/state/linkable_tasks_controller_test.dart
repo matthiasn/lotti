@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -7,6 +8,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/tasks/state/linkable_tasks_controller.dart';
+import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -34,6 +36,20 @@ void main() {
     ),
   );
 
+  CategoryDefinition buildCategory({
+    required String id,
+    required String name,
+    bool active = true,
+  }) => CategoryDefinition(
+    id: id,
+    name: name,
+    createdAt: now,
+    updatedAt: now,
+    vectorClock: null,
+    private: false,
+    active: active,
+  );
+
   late MockJournalDb mockJournalDb;
   late MockUpdateNotifications mockUpdateNotifications;
   late MockEntitiesCacheService mockCache;
@@ -51,7 +67,9 @@ void main() {
     updateStream = StreamController<Set<String>>.broadcast();
     tasksInDb = [buildTask('task-1')];
 
-    when(() => mockCache.sortedCategories).thenReturn(<CategoryDefinition>[]);
+    when(
+      () => mockCache.categoriesById,
+    ).thenReturn(<String, CategoryDefinition>{});
     when(
       () => mockUpdateNotifications.updateStream,
     ).thenAnswer((_) => updateStream.stream);
@@ -86,15 +104,17 @@ void main() {
     return container;
   }
 
-  /// Keeps an autoDispose provider alive for the length of a test. Without a
-  /// listener it is torn down the moment the read completes, and the
-  /// update-stream subscription goes with it.
-  void keepAlive(ProviderContainer container, String taskId) {
+  /// Keeps an autoDispose provider alive for the length of a test and records
+  /// every state it publishes. Without a listener it is torn down the moment
+  /// the read completes, and the update-stream subscription goes with it.
+  List<AsyncValue<bool>> watch(ProviderContainer container, String taskId) {
+    final emitted = <AsyncValue<bool>>[];
     final sub = container.listen(
       linkableTasksExistProvider(taskId),
-      (_, _) {},
+      (_, next) => emitted.add(next),
     );
     addTearDown(sub.close);
+    return emitted;
   }
 
   test(
@@ -123,43 +143,55 @@ void main() {
   test(
     'a task created elsewhere flips the answer without a reload — the card '
     'has to come back the moment a second task exists',
-    () async {
-      final container = makeContainer();
-      keepAlive(container, 'task-1');
-      expect(
-        await container.read(linkableTasksExistProvider('task-1').future),
-        isFalse,
-      );
+    () {
+      // `fakeAsync` rather than a real zero-duration wait: the refresh is a
+      // broadcast-stream delivery followed by an async db read, all of it
+      // microtasks, and `flushMicrotasks` drains exactly that chain instead of
+      // hoping one turn of the event loop was enough.
+      fakeAsync((async) {
+        final container = makeContainer();
+        watch(container, 'task-1');
+        async.flushMicrotasks();
+        expect(
+          container.read(linkableTasksExistProvider('task-1')).value,
+          isFalse,
+        );
 
-      // The world changes, then the write announces itself. This is the shape
-      // of "Create new linked task" on the very page reading this provider.
-      tasksInDb = [buildTask('task-1'), buildTask('task-2')];
-      updateStream.add({'task-2'});
-      await Future<void>.delayed(Duration.zero);
+        // The world changes, then the write announces itself. This is the
+        // shape of "Create new linked task" on the very page reading this
+        // provider.
+        tasksInDb = [buildTask('task-1'), buildTask('task-2')];
+        updateStream.add({'task-2'});
+        async.flushMicrotasks();
 
-      expect(
-        container.read(linkableTasksExistProvider('task-1')).value,
-        isTrue,
-      );
+        expect(
+          container.read(linkableTasksExistProvider('task-1')).value,
+          isTrue,
+        );
+      });
     },
   );
 
   test(
-    'an update that does not change the answer leaves the state alone',
-    () async {
-      final container = makeContainer();
-      keepAlive(container, 'task-1');
-      await container.read(linkableTasksExistProvider('task-1').future);
+    'an update that does not change the answer publishes no new state',
+    () {
+      fakeAsync((async) {
+        final container = makeContainer();
+        final emitted = watch(container, 'task-1');
+        async.flushMicrotasks();
+        expect(emitted, hasLength(1), reason: 'the initial resolution');
 
-      final before = container.read(linkableTasksExistProvider('task-1'));
-      updateStream.add({'task-1'});
-      await Future<void>.delayed(Duration.zero);
+        updateStream.add({'task-1'});
+        async.flushMicrotasks();
 
-      expect(
-        identical(before, container.read(linkableTasksExistProvider('task-1'))),
-        isTrue,
-        reason: 'no needless rebuild for an unchanged answer',
-      );
+        expect(
+          emitted,
+          hasLength(1),
+          reason:
+              'no needless rebuild for an unchanged answer — every one of '
+              'these repaints the Linked Tasks band',
+        );
+      });
     },
   );
 
@@ -182,20 +214,44 @@ void main() {
   });
 
   test(
-    'queries every category plus the uncategorized bucket — an empty list '
-    'short-circuits the query builder to WHERE 1 = 0',
+    'every status counts as a link target — a finished task is a valid '
+    '"duplicates" or "follows up on"',
     () async {
-      when(() => mockCache.sortedCategories).thenReturn([
-        CategoryDefinition(
-          id: 'cat-1',
-          name: 'Work',
-          createdAt: now,
-          updatedAt: now,
-          vectorClock: null,
-          private: false,
-          active: true,
+      final container = makeContainer();
+      await container.read(linkableTasksExistProvider('task-1').future);
+
+      final taskStatuses =
+          verify(
+                () => mockJournalDb.getTasks(
+                  starredStatuses: any(named: 'starredStatuses'),
+                  taskStatuses: captureAny(named: 'taskStatuses'),
+                  categoryIds: any(named: 'categoryIds'),
+                  limit: any(named: 'limit'),
+                ),
+              ).captured.single
+              as List<String>;
+
+      expect(taskStatuses, unorderedEquals(allTaskStatuses));
+    },
+  );
+
+  test(
+    'queries every category — including inactive ones — plus the '
+    'uncategorized bucket; an empty list short-circuits the query builder '
+    'to WHERE 1 = 0',
+    () async {
+      // An archived category is exactly the case `sortedCategories` drops. The
+      // picker's full-text path resolves tasks through `getJournalEntitiesForIds`
+      // with no category filter at all, so gating on the active-only set would
+      // hide the whole card from someone whose only other task lives here.
+      when(() => mockCache.categoriesById).thenReturn({
+        'cat-1': buildCategory(id: 'cat-1', name: 'Work'),
+        'cat-archived': buildCategory(
+          id: 'cat-archived',
+          name: 'Retired',
+          active: false,
         ),
-      ]);
+      });
       final container = makeContainer();
       await container.read(linkableTasksExistProvider('task-1').future);
 
@@ -210,7 +266,10 @@ void main() {
               ).captured.single
               as List<String>;
 
-      expect(categoryIds, containsAll(<String>['cat-1', '']));
+      expect(
+        categoryIds,
+        unorderedEquals(<String>['cat-1', 'cat-archived', '']),
+      );
     },
   );
 }

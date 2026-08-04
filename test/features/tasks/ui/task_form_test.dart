@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card/assign_agent_cta_part.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
@@ -23,6 +25,7 @@ import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fake_linked_entries_controller.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../test_data/test_data.dart';
@@ -95,11 +98,19 @@ void main() {
     AgentDomainEntity? agent,
     AgentDomainEntity? report,
     GlobalKey? cardRegionKey,
+    List<EntryLink>? linkedEntries,
   }) {
     return RiverpodWidgetTestBench(
       overrides: [
         entryControllerProvider(task.meta.id).overrideWith(
           () => _TestEntryController(task),
+        ),
+        // The real controller reads links through `JournalDb.linksFromId`, a
+        // Drift selectable no mock here answers — it would land in AsyncError,
+        // and `watchTaskIsFirstRun` reads an unresolved provider as *unknown*,
+        // so nothing first-run would ever render.
+        linkedEntriesControllerProvider(task.meta.id).overrideWith(
+          () => FakeLinkedEntriesController(links: linkedEntries ?? const []),
         ),
         taskAgentProvider.overrideWith(
           (ref, id) async => agent,
@@ -162,6 +173,36 @@ void main() {
         );
 
         await tester.pumpWidget(buildSubject(task: withContent));
+        await tester.pumpAndSettle();
+
+        expect(find.byType(TaskFirstRunActions), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'a linked entry retires it — that is where "Write a note" lands, so '
+      'without this rule the block kept offering a row already used',
+      (tester) async {
+        final blank = testTask.copyWith(
+          data: testTask.data.copyWith(title: '', checklistIds: const []),
+          entryText: null,
+        );
+
+        await tester.pumpWidget(
+          buildSubject(
+            task: blank,
+            linkedEntries: [
+              EntryLink.basic(
+                id: 'link-1',
+                fromId: blank.meta.id,
+                toId: 'note-1',
+                createdAt: DateTime(2026, 8, 4),
+                updatedAt: DateTime(2026, 8, 4),
+                vectorClock: null,
+              ),
+            ],
+          ),
+        );
         await tester.pumpAndSettle();
 
         expect(find.byType(TaskFirstRunActions), findsNothing);

@@ -1,12 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/ui/ai_summary_card.dart';
 import 'package:lotti/features/design_system/components/motion/staggered_entrance.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/widgets/editor/editor_widget.dart';
 import 'package:lotti/features/tasks/ui/checklists/checklists_widget.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
@@ -102,17 +100,7 @@ class TaskForm extends ConsumerWidget {
     // A task with nothing on it gets the first-run block instead of half a
     // screen of nothing, and the block carries the agent offer itself — so
     // the AI card's standalone CTA stands down while it is showing.
-    final hasAgent = ref.watch(taskAgentProvider(taskId)).value != null;
-    final isFirstRun = TaskFirstRunActions.isBlank(
-      task,
-      hasAgent: hasAgent,
-      hasLinkedEntries:
-          ref
-              .watch(linkedEntriesControllerProvider(taskId))
-              .value
-              ?.isNotEmpty ??
-          false,
-    );
+    final isFirstRun = watchTaskIsFirstRun(ref, task);
 
     // Reading zones top-to-bottom: identity (header), the legacy body, the
     // user's WORK (checklists + linked tasks), then the AI assistant. The work

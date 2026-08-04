@@ -5,7 +5,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/state/unified_suggestion_providers.dart';
 import 'package:lotti/features/ai/helpers/automatic_image_analysis_trigger.dart';
 import 'package:lotti/features/ai/state/consts.dart';
@@ -13,7 +12,6 @@ import 'package:lotti/features/ai/ui/animation/ai_running_animation.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
-import 'package:lotti/features/journal/state/linked_entries_controller.dart';
 import 'package:lotti/features/journal/ui/mixins/highlight_scroll_mixin.dart';
 import 'package:lotti/features/journal/ui/widgets/entry_detail_linked_from.dart';
 import 'package:lotti/features/journal/ui/widgets/linked_entries_with_timer.dart';
@@ -475,16 +473,7 @@ class _TaskDetailsPageState extends ConsumerState<TaskDetailsPage>
     // At the full reading width the three disagreed by hundreds of points and
     // the only card on the page floated far left of the window's centre — the
     // "nothing lines up with anything" read every reviewer described.
-    final isFirstRun = TaskFirstRunActions.isBlank(
-      task,
-      hasAgent: ref.watch(taskAgentProvider(widget.taskId)).value != null,
-      hasLinkedEntries:
-          ref
-              .watch(linkedEntriesControllerProvider(widget.taskId))
-              .value
-              ?.isNotEmpty ??
-          false,
-    );
+    final isFirstRun = watchTaskIsFirstRun(ref, task);
     final contentMaxWidth = isFirstRun
         ? TaskFirstRunActions.maxWidth
         : kDetailContentMaxWidth;
