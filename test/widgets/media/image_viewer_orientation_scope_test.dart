@@ -3,7 +3,17 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/widgets/media/image_viewer_orientation_scope.dart';
 
+import '../../widget_test_utils.dart';
+
 void main() {
+  setUp(() async {
+    await setUpTestGetIt();
+  });
+
+  tearDown(() async {
+    await tearDownTestGetIt();
+  });
+
   test('portrait lock is applied only on mobile platforms', () async {
     final mobileCalls = <List<DeviceOrientation>>[];
     final mobileController = AppOrientationController(
@@ -68,9 +78,11 @@ void main() {
       );
 
       await tester.pumpWidget(
-        ImageViewerOrientationScope(
-          controller: controller,
-          child: const SizedBox.shrink(),
+        makeTestableWidget(
+          ImageViewerOrientationScope(
+            controller: controller,
+            child: const SizedBox.shrink(),
+          ),
         ),
       );
 
@@ -112,15 +124,19 @@ void main() {
     );
 
     await tester.pumpWidget(
-      ImageViewerOrientationScope(
-        controller: firstController,
-        child: const SizedBox.shrink(),
+      makeTestableWidget(
+        ImageViewerOrientationScope(
+          controller: firstController,
+          child: const SizedBox.shrink(),
+        ),
       ),
     );
     await tester.pumpWidget(
-      ImageViewerOrientationScope(
-        controller: secondController,
-        child: const SizedBox.shrink(),
+      makeTestableWidget(
+        ImageViewerOrientationScope(
+          controller: secondController,
+          child: const SizedBox.shrink(),
+        ),
       ),
     );
 

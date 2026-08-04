@@ -274,7 +274,7 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                   ),
                 ),
                 Positioned(
-                  right: edge,
+                  right: padding.right + edge,
                   top: padding.top + tokens.spacing.step3,
                   child: Row(
                     mainAxisSize: MainAxisSize.min,

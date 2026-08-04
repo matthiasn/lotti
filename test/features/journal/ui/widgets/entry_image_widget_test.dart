@@ -324,6 +324,7 @@ void main() {
     Widget buildWrapper({
       BoxDecoration? backgroundDecoration,
       ImageExporter? imageExporter,
+      MediaQueryData? mediaQueryData,
     }) {
       return ProviderScope(
         child: MaterialApp(
@@ -335,6 +336,12 @@ void main() {
             GlobalCupertinoLocalizations.delegate,
           ],
           supportedLocales: AppLocalizations.supportedLocales,
+          builder: mediaQueryData == null
+              ? null
+              : (context, child) => MediaQuery(
+                  data: mediaQueryData,
+                  child: child!,
+                ),
           home: HeroPhotoViewRouteWrapper(
             file: imageFile,
             backgroundDecoration: backgroundDecoration,
@@ -389,6 +396,32 @@ void main() {
         expect(zoomOutButton.onPressed, isNull);
       },
     );
+
+    testWidgets('keeps top controls inside the landscape right safe area', (
+      tester,
+    ) async {
+      const landscapeSize = Size(844, 390);
+      const rightInset = 44.0;
+      const withoutInset = MediaQueryData(size: landscapeSize);
+      const withInset = MediaQueryData(
+        size: landscapeSize,
+        padding: EdgeInsets.only(right: rightInset),
+      );
+
+      await tester.pumpWidget(buildWrapper(mediaQueryData: withoutInset));
+      await tester.pump();
+      final controls = find.ancestor(
+        of: find.byTooltip('Download image'),
+        matching: find.byType(Row),
+      );
+      final rightWithoutInset = tester.getTopRight(controls).dx;
+
+      await tester.pumpWidget(buildWrapper(mediaQueryData: withInset));
+      await tester.pump();
+      final rightWithInset = tester.getTopRight(controls).dx;
+
+      expect(rightWithInset, rightWithoutInset - rightInset);
+    });
 
     testWidgets(
       'allows landscape while mounted and restores portrait on dispose',

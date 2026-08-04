@@ -181,6 +181,7 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final padding = MediaQuery.paddingOf(context);
     return ImageViewerOrientationScope(
       child: Scaffold(
         backgroundColor: Colors.black,
@@ -201,7 +202,7 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
             // Page indicator (e.g. "3 / 12").
             if (widget.photos.length > 1)
               Positioned(
-                top: MediaQuery.paddingOf(context).top + tokens.spacing.step3,
+                top: padding.top + tokens.spacing.step3,
                 left: 0,
                 right: 0,
                 child: Center(
@@ -228,8 +229,8 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
                 ),
               ),
             Positioned(
-              right: 0,
-              top: MediaQuery.paddingOf(context).top,
+              right: padding.right,
+              top: padding.top,
               child: IconButton(
                 tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
                 padding: EdgeInsets.all(tokens.spacing.step6),

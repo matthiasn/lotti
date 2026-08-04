@@ -94,6 +94,38 @@ void main() {
       expect(find.textContaining(' / '), findsNothing);
     });
 
+    testWidgets('keeps close control inside the landscape right safe area', (
+      tester,
+    ) async {
+      const landscapeSize = Size(844, 390);
+      const rightInset = 44.0;
+      const withoutInset = MediaQueryData(size: landscapeSize);
+      const withInset = MediaQueryData(
+        size: landscapeSize,
+        padding: EdgeInsets.only(right: rightInset),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          EventPhotoGalleryViewer(photos: _photos(1)),
+          mediaQueryData: withoutInset,
+        ),
+      );
+      await tester.pump();
+      final rightWithoutInset = tester.getTopRight(find.byType(IconButton)).dx;
+
+      await tester.pumpWidget(
+        makeTestableWidget2(
+          EventPhotoGalleryViewer(photos: _photos(1)),
+          mediaQueryData: withInset,
+        ),
+      );
+      await tester.pump();
+      final rightWithInset = tester.getTopRight(find.byType(IconButton)).dx;
+
+      expect(rightWithInset, rightWithoutInset - rightInset);
+    });
+
     testWidgets(
       'allows landscape while mounted and restores portrait on dispose',
       (tester) async {

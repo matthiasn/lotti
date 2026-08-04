@@ -20,6 +20,10 @@ sources:
     resource: ../../ios/Runner/Info.plist
     title: iOS-supported interface orientations
     last_modified: 2026-08-05
+  - id: android-orientations
+    resource: ../../android/app/src/main/AndroidManifest.xml
+    title: Android large-screen orientation compatibility policy
+    last_modified: 2026-08-05
 ---
 
 `lib/widgets/` holds the reusable widgets that belong to no single feature.
@@ -60,9 +64,13 @@ the background. Disposing the final scope restores portrait. On desktop the
 controller is a no-op; window orientation remains a desktop concern.
 
 iOS must declare the three phone orientations in `Info.plist` before Flutter's
-runtime preference can select between them. Android needs no manifest-level
-orientation declaration here: the same runtime controller supplies the
-portrait-only and viewer-specific sets.
+runtime preference can select between them. Android uses the same runtime
+controller for portrait-only and viewer-specific sets. Because the app targets
+API 36, `MainActivity` also declares Android's temporary restricted-resizability
+compatibility property; without it, Android 16 ignores orientation requests on
+`sw600dp` and larger displays. That property stops applying at API 37, so the
+non-viewer UI must become fully adaptive before that target upgrade rather than
+assuming the portrait lock can remain enforceable on large screens.
 
 ```mermaid
 stateDiagram-v2
