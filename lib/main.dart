@@ -80,7 +80,12 @@ Future<void> main() async {
       configureFrameworkErrorSuppression(scheduleIntervalSummaries: true);
       FlutterError.onError = handleFlutterFrameworkError;
 
-      runApp(const LottiAppRoot());
+      runApp(
+        LottiAppRoot(
+          registry: bootInfo.registry,
+          lifecycleHolder: lifecycleHolder,
+        ),
+      );
     },
     handleUncaughtZoneError,
   );

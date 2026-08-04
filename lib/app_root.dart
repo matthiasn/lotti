@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/repository/profile_registry.dart';
+import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/get_it.dart';
 
 /// Root widget above the ProviderScope. Deliberately Riverpod-free: on a
@@ -10,7 +12,14 @@ import 'package:lotti/get_it.dart';
 /// key, so every provider — including the getIt bridge overrides — rebinds
 /// against the freshly registered service generation.
 class LottiAppRoot extends StatefulWidget {
-  const LottiAppRoot({super.key});
+  const LottiAppRoot({
+    required this.registry,
+    required this.lifecycleHolder,
+    super.key,
+  });
+
+  final ProfileRegistry registry;
+  final AppLifecycleHolder lifecycleHolder;
 
   @override
   State<LottiAppRoot> createState() => LottiAppRootState();
@@ -18,20 +27,83 @@ class LottiAppRoot extends StatefulWidget {
 
 class LottiAppRootState extends State<LottiAppRoot> {
   int _generation = 0;
+  bool _switching = false;
+  late final ProfileSwitcher _switcher;
 
-  /// Discards the current ProviderScope and rebuilds it against the current
-  /// getIt registrations. Called by the profile switcher after it has torn
-  /// down the old generation and bootstrapped the new one.
-  void bumpGeneration() {
-    setState(() => _generation++);
+  @override
+  void initState() {
+    super.initState();
+    _switcher = ProfileSwitcher(
+      registry: widget.registry,
+      lifecycleHolder: widget.lifecycleHolder,
+      onSwitchStarted: () async {
+        setState(() => _switching = true);
+      },
+      onSwitchCompleted: () {
+        setState(() {
+          _generation++;
+          _switching = false;
+        });
+      },
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    return ProviderScope(
-      key: ValueKey('profile-gen-$_generation'),
-      overrides: buildProviderOverrides(getIt<ProfileContext>()),
-      child: const MyBeamerApp(),
+    if (_switching) {
+      return const ProfileSwitchSplash();
+    }
+    return ProfileSwitcherScope(
+      switcher: _switcher,
+      child: ProviderScope(
+        key: ValueKey('profile-gen-$_generation'),
+        overrides: buildProviderOverrides(getIt<ProfileContext>()),
+        child: const MyBeamerApp(),
+      ),
     );
   }
+}
+
+/// Minimal full-screen splash shown while a profile switch tears down one
+/// service generation and bootstraps the next. Deliberately free of
+/// localization and providers — nothing from the old generation may be
+/// alive while it is on screen.
+class ProfileSwitchSplash extends StatelessWidget {
+  const ProfileSwitchSplash({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return const MaterialApp(
+      debugShowCheckedModeBanner: false,
+      home: Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      ),
+    );
+  }
+}
+
+/// Exposes the [ProfileSwitcher] to the widget tree. Mounted ABOVE the
+/// ProviderScope, so it survives generation rebuilds and can be reached
+/// from any generation's widgets.
+class ProfileSwitcherScope extends InheritedWidget {
+  const ProfileSwitcherScope({
+    required this.switcher,
+    required super.child,
+    super.key,
+  });
+
+  final ProfileSwitcher switcher;
+
+  static ProfileSwitcher of(BuildContext context) {
+    final scope = context
+        .dependOnInheritedWidgetOfExactType<ProfileSwitcherScope>();
+    assert(scope != null, 'No ProfileSwitcherScope found in context');
+    return scope!.switcher;
+  }
+
+  @override
+  bool updateShouldNotify(ProfileSwitcherScope oldWidget) =>
+      switcher != oldWidget.switcher;
 }

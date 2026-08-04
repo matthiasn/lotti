@@ -172,6 +172,16 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
     }
   }
 
+  /// Detaches this instance from the window manager and the widgets binding
+  /// without tearing the window down. Called during an in-app profile
+  /// switch: the outgoing generation's WindowService must stop observing
+  /// window events, or it would keep writing geometry after its service
+  /// generation is disposed.
+  void detachForRestart() {
+    windowManager.removeListener(this);
+    WidgetsBinding.instance.removeObserver(this);
+  }
+
   /// Stops native/background work and closes every database exactly once.
   ///
   /// Both Flutter's app-exit callback and the window-manager callback await
