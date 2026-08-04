@@ -5,13 +5,13 @@ description: A first-class destination for meaningful moments — its own entity
 resource: ../../lib/features/events
 tags: [events, memories, view-models, localization]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T03:45:00Z }
+generated: { by: codex/5, at: 2026-08-05T01:02:35+02:00 }
 stale_after: 2027-02-22
 sources:
   - id: src
     resource: ../../lib/features/events
     title: Events feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-05
 ---
 
 Events are the meaningful moments — a birthday, a trip, a wedding, an upcoming
@@ -86,6 +86,11 @@ rating, so a fresh or tentative event is not pushed gold stars.
 cover photo" action opens the create-entry menu and the first linked photo becomes
 the cover; once one exists, the overflow menu offers a picker over the event's
 linked photos.
+
+Linked photos render as a compact grid and open into a swipeable, zoomable
+full-screen gallery. The gallery contains each image without changing its aspect
+ratio and participates in the shared mobile image-viewer orientation lifecycle
+described in [shared widgets](../architecture/shared-widgets.md).
 
 *Add task* mirrors the linked-tasks flow — create the task linked from the event
 (so the event surfaces under the task's "Linked from"), auto-assign the category's

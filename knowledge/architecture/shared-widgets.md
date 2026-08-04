@@ -1,17 +1,25 @@
 ---
 type: Architecture
 title: Shared widgets
-description: "The widgets that belong to no single feature — app-bar chrome, modal presentation, selection primitives, the entity picker and settings scaffolding."
+description: "The widgets that belong to no single feature — app-bar chrome, modal presentation, selection primitives, media lifecycle policy, the entity picker and settings scaffolding."
 resource: ../../lib/widgets
-tags: [widgets, shared, modals, selection, picker]
+tags: [widgets, shared, modals, selection, picker, media, orientation]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T13:00:00Z }
+generated: { by: codex/5, at: 2026-08-05T01:02:35+02:00 }
 stale_after: 2027-01-11
 sources:
   - id: src
     resource: ../../lib/widgets
     title: Shared widgets source
-    last_modified: 2026-08-03
+    last_modified: 2026-08-05
+  - id: startup-orientation
+    resource: ../../lib/main.dart
+    title: App startup orientation policy
+    last_modified: 2026-08-05
+  - id: ios-orientations
+    resource: ../../ios/Runner/Info.plist
+    title: iOS-supported interface orientations
+    last_modified: 2026-08-05
 ---
 
 `lib/widgets/` holds the reusable widgets that belong to no single feature.
@@ -29,16 +37,41 @@ composition and app-shell chrome.
 | `settings/` | The settings page grid and detail scaffold every editor sits on |
 | `picker/` | `EntityPickerSheet`, shared by categories, labels and the task link pickers |
 | `nav_bar/` | The bottom navigation shell and its FAB clearance wrapper |
+| `media/` | The lifecycle scope that temporarily permits landscape in full-screen image viewers |
 | `misc/` | The sidebar activity summary and similar cross-feature pieces |
 
 **Buttons are not here.** They all come from `DesignSystemButton` and its
 relatives.
 
 **That table is the documented subset, not the directory listing.** `lib/widgets/`
-holds sixteen groups; the nine not described above — `cards/`, `charts/`,
-`create/`, `date_time/`, `flags/`, `form/`, `media/`, `search/`, `ui/` — are
+holds sixteen groups; the eight not described above — `cards/`, `charts/`,
+`create/`, `date_time/`, `flags/`, `form/`, `search/`, `ui/` — are
 undocumented here. Read them directly, and do not infer from this concept that a
 widget has no shared home just because it is absent.
+
+# Image viewers temporarily widen the mobile orientation policy
+
+App startup locks iOS and Android to portrait. `ImageViewerOrientationScope`
+temporarily changes the preferred set to portrait plus both landscape
+directions while a full-screen image viewer is mounted. It reference-counts
+viewers, so closing a nested viewer cannot restore portrait under a parent that
+is still visible, and it reasserts the viewer policy when the app resumes from
+the background. Disposing the final scope restores portrait. On desktop the
+controller is a no-op; window orientation remains a desktop concern.
+
+iOS must declare the three phone orientations in `Info.plist` before Flutter's
+runtime preference can select between them. Android needs no manifest-level
+orientation declaration here: the same runtime controller supplies the
+portrait-only and viewer-specific sets.
+
+```mermaid
+stateDiagram-v2
+    [*] --> PortraitOnly: app starts on iOS or Android
+    PortraitOnly --> ViewerOpen: first image viewer mounts
+    ViewerOpen --> ViewerOpen: nested viewer mounts or closes
+    ViewerOpen --> ViewerOpen: app resumes, policy reapplied
+    ViewerOpen --> PortraitOnly: final image viewer disposes
+```
 
 # Modal presentation is mostly centralized
 

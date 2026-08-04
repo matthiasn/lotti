@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/themes/theme.dart';
+import 'package:lotti/widgets/media/image_viewer_orientation_scope.dart';
 import 'package:photo_view/photo_view.dart';
 import 'package:photo_view/photo_view_gallery.dart';
 
@@ -180,74 +181,77 @@ class _EventPhotoGalleryViewerState extends State<EventPhotoGalleryViewer> {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Scaffold(
-      backgroundColor: Colors.black,
-      body: Stack(
-        children: [
-          PhotoViewGallery.builder(
-            pageController: _controller,
-            itemCount: widget.photos.length,
-            onPageChanged: (i) => setState(() => _index = i),
-            backgroundDecoration: const BoxDecoration(color: Colors.black),
-            builder: (context, i) => PhotoViewGalleryPageOptions(
-              imageProvider: widget.photos[i].image,
-              minScale: PhotoViewComputedScale.contained,
-              maxScale: PhotoViewComputedScale.covered * 3,
-              heroAttributes: PhotoViewHeroAttributes(tag: 'event_photo_$i'),
+    return ImageViewerOrientationScope(
+      child: Scaffold(
+        backgroundColor: Colors.black,
+        body: Stack(
+          children: [
+            PhotoViewGallery.builder(
+              pageController: _controller,
+              itemCount: widget.photos.length,
+              onPageChanged: (i) => setState(() => _index = i),
+              backgroundDecoration: const BoxDecoration(color: Colors.black),
+              builder: (context, i) => PhotoViewGalleryPageOptions(
+                imageProvider: widget.photos[i].image,
+                minScale: PhotoViewComputedScale.contained,
+                maxScale: PhotoViewComputedScale.covered * 3,
+                heroAttributes: PhotoViewHeroAttributes(tag: 'event_photo_$i'),
+              ),
             ),
-          ),
-          // Page indicator (e.g. "3 / 12").
-          if (widget.photos.length > 1)
-            Positioned(
-              top: MediaQuery.paddingOf(context).top + tokens.spacing.step3,
-              left: 0,
-              right: 0,
-              child: Center(
-                child: DecoratedBox(
-                  decoration: BoxDecoration(
-                    color: Colors.black.withValues(alpha: 0.45),
-                    borderRadius: BorderRadius.circular(
-                      tokens.radii.badgesPills,
+            // Page indicator (e.g. "3 / 12").
+            if (widget.photos.length > 1)
+              Positioned(
+                top: MediaQuery.paddingOf(context).top + tokens.spacing.step3,
+                left: 0,
+                right: 0,
+                child: Center(
+                  child: DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: Colors.black.withValues(alpha: 0.45),
+                      borderRadius: BorderRadius.circular(
+                        tokens.radii.badgesPills,
+                      ),
                     ),
-                  ),
-                  child: Padding(
-                    padding: EdgeInsets.symmetric(
-                      horizontal: tokens.spacing.step3,
-                      vertical: tokens.spacing.step1,
-                    ),
-                    child: Text(
-                      '${_index + 1} / ${widget.photos.length}',
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: Colors.white,
+                    child: Padding(
+                      padding: EdgeInsets.symmetric(
+                        horizontal: tokens.spacing.step3,
+                        vertical: tokens.spacing.step1,
+                      ),
+                      child: Text(
+                        '${_index + 1} / ${widget.photos.length}',
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: Colors.white,
+                        ),
                       ),
                     ),
                   ),
                 ),
               ),
-            ),
-          Positioned(
-            right: 0,
-            top: MediaQuery.paddingOf(context).top,
-            child: IconButton(
-              tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
-              padding: EdgeInsets.all(tokens.spacing.step6),
-              onPressed: () => Navigator.of(context, rootNavigator: true).pop(),
-              icon: Stack(
-                children: [
-                  ImageFiltered(
-                    imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
-                    child: const Icon(Icons.close_rounded, size: 30),
-                  ),
-                  const Icon(
-                    Icons.close_rounded,
-                    size: 30,
-                    color: Colors.white,
-                  ),
-                ],
+            Positioned(
+              right: 0,
+              top: MediaQuery.paddingOf(context).top,
+              child: IconButton(
+                tooltip: MaterialLocalizations.of(context).closeButtonTooltip,
+                padding: EdgeInsets.all(tokens.spacing.step6),
+                onPressed: () =>
+                    Navigator.of(context, rootNavigator: true).pop(),
+                icon: Stack(
+                  children: [
+                    ImageFiltered(
+                      imageFilter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
+                      child: const Icon(Icons.close_rounded, size: 30),
+                    ),
+                    const Icon(
+                      Icons.close_rounded,
+                      size: 30,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

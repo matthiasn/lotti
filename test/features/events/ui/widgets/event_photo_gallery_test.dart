@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/events/ui/model/event_view_data.dart';
 import 'package:lotti/features/events/ui/widgets/event_photo_gallery.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 
 import '../../../../widget_test_utils.dart';
 import '../../test_utils.dart';
@@ -82,5 +84,57 @@ void main() {
 
       expect(find.textContaining(' / '), findsNothing);
     });
+
+    testWidgets(
+      'allows landscape while mounted and restores portrait on dispose',
+      (tester) async {
+        final originalIsMobile = platform.isMobile;
+        final originalIsAndroid = platform.isAndroid;
+        platform.isMobile = true;
+        platform.isAndroid = true;
+        addTearDown(() {
+          platform.isMobile = originalIsMobile;
+          platform.isAndroid = originalIsAndroid;
+        });
+
+        final orientationCalls = <MethodCall>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              if (call.method == 'SystemChrome.setPreferredOrientations') {
+                orientationCalls.add(call);
+              }
+              return null;
+            });
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidget2(EventPhotoGalleryViewer(photos: _photos(1))),
+        );
+        await tester.pump();
+
+        expect(
+          orientationCalls.map((call) => call.arguments),
+          [
+            [
+              'DeviceOrientation.portraitUp',
+              'DeviceOrientation.landscapeLeft',
+              'DeviceOrientation.landscapeRight',
+            ],
+          ],
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+
+        expect(orientationCalls.last.arguments, [
+          'DeviceOrientation.portraitUp',
+        ]);
+      },
+    );
   });
 }

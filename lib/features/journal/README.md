@@ -26,6 +26,9 @@ responses and ratings are all journal entries with different shapes.
 - **Captures quickly.** Create from the button, paste an image from the
   clipboard, drag a file onto an entry, take a screenshot, or start a recording —
   all from the same place.
+- **Shows photos at their natural shape.** The full-screen image viewer contains
+  and centers portrait or landscape images, and on iOS and Android it follows
+  phone rotation until the viewer closes.
 - **Never silently loses an edit.** Unsaved text is kept as a draft, survives
   navigating away, and can be discarded deliberately.
 - **Corrects times honestly.** Start and end times are edited together with a

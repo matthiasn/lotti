@@ -14,6 +14,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 import 'package:mocktail/mocktail.dart';
 import 'package:photo_view/photo_view.dart';
 
@@ -381,6 +382,56 @@ void main() {
           find.widgetWithIcon(IconButton, Icons.remove_rounded),
         );
         expect(zoomOutButton.onPressed, isNull);
+      },
+    );
+
+    testWidgets(
+      'allows landscape while mounted and restores portrait on dispose',
+      (tester) async {
+        final originalIsMobile = platform.isMobile;
+        final originalIsIOS = platform.isIOS;
+        platform.isMobile = true;
+        platform.isIOS = true;
+        addTearDown(() {
+          platform.isMobile = originalIsMobile;
+          platform.isIOS = originalIsIOS;
+        });
+
+        final orientationCalls = <MethodCall>[];
+        TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+            .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+              if (call.method == 'SystemChrome.setPreferredOrientations') {
+                orientationCalls.add(call);
+              }
+              return null;
+            });
+        addTearDown(
+          () => TestDefaultBinaryMessengerBinding
+              .instance
+              .defaultBinaryMessenger
+              .setMockMethodCallHandler(SystemChannels.platform, null),
+        );
+
+        await tester.pumpWidget(buildWrapper());
+        await tester.pump();
+
+        expect(
+          orientationCalls.map((call) => call.arguments),
+          [
+            [
+              'DeviceOrientation.portraitUp',
+              'DeviceOrientation.landscapeLeft',
+              'DeviceOrientation.landscapeRight',
+            ],
+          ],
+        );
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pump();
+
+        expect(orientationCalls.last.arguments, [
+          'DeviceOrientation.portraitUp',
+        ]);
       },
     );
 
