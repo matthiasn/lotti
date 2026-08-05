@@ -113,7 +113,7 @@ EvalConstraintResult scoreBlockerBeforeBlocked(EvalRunOutcome outcome) {
   const id = EvalConstraintIds.blockerBeforeBlocked;
   final noPlan = _requirePlan(outcome, id);
   if (noPlan != null) return noPlan;
-  final blocked = <PlannedBlock, EvalCorpusTask>{};
+  final blocked = <(PlannedBlock, EvalCorpusTask)>[];
   for (final block in _scheduled(outcome)) {
     final taskId = block.taskId;
     if (taskId == null) continue;
@@ -124,7 +124,7 @@ EvalConstraintResult scoreBlockerBeforeBlocked(EvalRunOutcome outcome) {
     // available, and the prompt says so explicitly. Exempting these would
     // credit exactly the defect the constraint exists to catch — a plan that
     // schedules work the model was told cannot start.
-    if (task != null && task.isBlocked) blocked[block] = task;
+    if (task != null && task.isBlocked) blocked.add((block, task));
   }
   if (blocked.isEmpty) {
     return const EvalConstraintResult.notApplicable(
@@ -134,9 +134,7 @@ EvalConstraintResult scoreBlockerBeforeBlocked(EvalRunOutcome outcome) {
   }
   final violations = <String>[];
   var usedProseBypass = false;
-  for (final entry in blocked.entries) {
-    final block = entry.key;
-    final task = entry.value;
+  for (final (block, task) in blocked) {
     final blockerScheduledEarlier = _scheduled(outcome).any(
       (other) =>
           other.taskId != null &&
