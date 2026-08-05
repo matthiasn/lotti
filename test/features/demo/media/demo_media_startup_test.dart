@@ -7,6 +7,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_hydrator.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
@@ -23,10 +24,17 @@ void main() {
   late GetIt services;
   late Directory root;
   late MockDomainLogger logger;
+  late MockJournalDb journalDb;
 
   setUp(() {
     logger = MockDomainLogger();
-    services = GetIt.asNewInstance()..registerSingleton<DomainLogger>(logger);
+    journalDb = MockJournalDb();
+    when(
+      () => journalDb.allNonDeletedJournalEntityIds(),
+    ).thenAnswer((_) async => <String>[]);
+    services = GetIt.asNewInstance()
+      ..registerSingleton<DomainLogger>(logger)
+      ..registerSingleton<JournalDb>(journalDb);
     root = Directory.systemTemp.createTempSync('demo_media_startup_');
   });
 
@@ -96,6 +104,9 @@ void main() {
       seededDefinitionIds: const [],
       seededAiConfigIds: const [],
     ).write(root);
+    when(
+      () => journalDb.allNonDeletedJournalEntityIds(),
+    ).thenAnswer((_) async => [seeded.id]);
     final requested = <Uri>[];
     late Future<void> hydration;
 
@@ -132,6 +143,9 @@ void main() {
       seededDefinitionIds: const [],
       seededAiConfigIds: const [],
     ).write(root);
+    when(
+      () => journalDb.allNonDeletedJournalEntityIds(),
+    ).thenAnswer((_) async => [seeded.id]);
     final response = Completer<Uint8List>();
     late Future<void> hydration;
 
@@ -217,6 +231,9 @@ void main() {
       seededDefinitionIds: const [],
       seededAiConfigIds: const [],
     ).write(root);
+    when(
+      () => journalDb.allNonDeletedJournalEntityIds(),
+    ).thenAnswer((_) async => [seeded.id]);
     late Future<void> hydration;
 
     await registerDemoMediaHydration(
@@ -246,4 +263,34 @@ void main() {
       ),
     ).called(1);
   });
+
+  test(
+    'does not rehydrate a seeded image that was permanently purged',
+    () async {
+      final bytes = Uint8List.fromList([14]);
+      final purged = asset('purged-image', bytes);
+      await DemoSeedManifest(
+        seedVersion: demoSeedVersion,
+        seededAt: DateTime(2026, 8, 5),
+        localeTag: 'en',
+        seededJournalIds: [purged.id],
+        seededDefinitionIds: const [],
+        seededAiConfigIds: const [],
+      ).write(root);
+      var requests = 0;
+
+      await registerDemoMediaHydration(
+        serviceLocator: services,
+        profile: context(ProfileType.guest),
+        catalog: [purged],
+        download: (uri) async {
+          requests++;
+          return bytes;
+        },
+      );
+
+      expect(requests, 0);
+      expect(services.isRegistered<DemoMediaHydrator>(), isFalse);
+    },
+  );
 }

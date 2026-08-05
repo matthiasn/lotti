@@ -231,6 +231,48 @@ void main() {
       expect(root.existsSync(), isTrue);
     });
 
+    test('a stale v4 manifest with only a user-created link between seeded '
+        'tasks resumes instead of losing that relationship', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final first = (await gateway.findDemoProfile())!;
+      final root = registry.rootFor(first);
+      await DemoSeedManifest(
+        seedVersion: demoSeedVersion - 1,
+        seededAt: DateTime.utc(2026),
+        localeTag: 'en',
+        seededJournalIds: const ['seeded-task-a', 'seeded-task-b'],
+        seededDefinitionIds: const [],
+        seededAiConfigIds: const [],
+      ).write(root);
+      final work = WorldHandle.open(root);
+      await work.writeJournalEntity(
+        TestTaskFactory.create(id: 'seeded-task-a', title: 'Seeded A'),
+      );
+      await work.writeJournalEntity(
+        TestTaskFactory.create(id: 'seeded-task-b', title: 'Seeded B'),
+      );
+      await work.writeEntryLink(
+        EntryLink.basic(
+          id: 'user-created-link',
+          fromId: 'seeded-task-a',
+          toId: 'seeded-task-b',
+          createdAt: DateTime.utc(2026),
+          updatedAt: DateTime.utc(2026),
+          vectorClock: null,
+        ),
+      );
+      await work.close();
+      activated.clear();
+      seededLocales.clear();
+
+      await gateway.enterDemo(locale: const Locale('en'));
+
+      expect(seededLocales, isEmpty);
+      expect(activated, [first.id]);
+      expect(root.existsSync(), isTrue);
+    });
+
     test('a stale manifest with only a user-connected AI provider (their '
         'API key) also resumes instead of wiping', () async {
       final gateway = buildGateway();

@@ -4,11 +4,13 @@ import 'dart:io';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/app_root.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
+import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seeder.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
@@ -305,6 +307,7 @@ class DemoModeGateway {
       return await _hasUserWorkIn(
         profile: profile,
         journalIds: opened.journalDb.allNonDeletedJournalEntityIds,
+        entryLinks: opened.journalDb.linksForEntryIdsBidirectional,
         inferenceProviders: () => AiConfigRepository(
           opened.aiConfigDb,
         ).getConfigsByType(AiConfigType.inferenceProvider),
@@ -327,6 +330,7 @@ class DemoModeGateway {
       return await _hasUserWorkIn(
         profile: profile,
         journalIds: getIt<JournalDb>().allNonDeletedJournalEntityIds,
+        entryLinks: getIt<JournalDb>().linksForEntryIdsBidirectional,
         inferenceProviders: () => getIt<AiConfigRepository>().getConfigsByType(
           AiConfigType.inferenceProvider,
         ),
@@ -344,6 +348,7 @@ class DemoModeGateway {
   Future<bool> _hasUserWorkIn({
     required Profile profile,
     required Future<List<String>> Function() journalIds,
+    required Future<List<EntryLink>> Function(Set<String> ids) entryLinks,
     required Future<List<AiConfig>> Function() inferenceProviders,
   }) async {
     DemoSeedManifest? manifest;
@@ -359,8 +364,24 @@ class DemoModeGateway {
     if (ids.any((id) => !seededJournalIds.contains(id))) {
       return true;
     }
+    final links = await entryLinks(seededJournalIds);
+    if (links.any(
+      (link) => link.hidden != true && !_isSeededLink(manifest, link),
+    )) {
+      return true;
+    }
     final providers = await inferenceProviders();
     return providers.any((config) => !seededAiIds.contains(config.id));
+  }
+
+  /// Legacy v4 manifests did not record seeded link IDs. Their links were
+  /// all deterministic, so their established id scheme remains a safe
+  /// compatibility inventory while v5+ manifests use their exact IDs.
+  static bool _isSeededLink(DemoSeedManifest? manifest, EntryLink link) {
+    final seededLinkIds = manifest?.seededLinkIds;
+    if (seededLinkIds != null) return seededLinkIds.contains(link.id);
+    return link.id == demoUuid('manual-habitat-time-link') ||
+        link.id == demoUuid('link-${link.fromId}-${link.toId}');
   }
 
   Future<void> _createAndEnter(Locale locale) async {

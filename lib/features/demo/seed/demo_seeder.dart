@@ -115,6 +115,9 @@ class DemoSeeder {
       seededAiConfigIds: List.unmodifiable([
         for (final config in aiConfigs) config.id,
       ]),
+      seededLinkIds: List.unmodifiable([
+        for (final link in [...penguinWorld.links, ...tutorial.links]) link.id,
+      ]),
     );
     await manifest.write(world.root);
     return manifest;

@@ -13,6 +13,7 @@ void main() {
     seededJournalIds: const ['task-1', 'image-1'],
     seededDefinitionIds: const ['category-1'],
     seededAiConfigIds: const ['provider-1', 'model-1'],
+    seededLinkIds: const ['link-1'],
   );
 
   group('DemoSeedManifest', () {
@@ -27,6 +28,7 @@ void main() {
       expect(decoded.seededJournalIds, manifest.seededJournalIds);
       expect(decoded.seededDefinitionIds, manifest.seededDefinitionIds);
       expect(decoded.seededAiConfigIds, manifest.seededAiConfigIds);
+      expect(decoded.seededLinkIds, manifest.seededLinkIds);
       expect(decoded.isCurrentVersion, isTrue);
     });
 
@@ -43,6 +45,7 @@ void main() {
       final read = await DemoSeedManifest.read(root);
       expect(read, isNotNull);
       expect(read!.seededJournalIds, manifest.seededJournalIds);
+      expect(read.seededLinkIds, manifest.seededLinkIds);
       expect(read.seededAt, manifest.seededAt);
     });
 
@@ -60,6 +63,16 @@ void main() {
       });
       expect(stale.isCurrentVersion, isFalse);
       expect(manifest.isCurrentVersion, isTrue);
+    });
+
+    test('reads a v4 manifest without a seeded-link inventory', () {
+      final legacy = DemoSeedManifest.fromJson(
+        {
+          ...manifest.toJson(),
+        }..remove('seededLinkIds'),
+      );
+
+      expect(legacy.seededLinkIds, isNull);
     });
   });
 }

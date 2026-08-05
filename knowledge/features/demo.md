@@ -81,8 +81,8 @@ UI builds it on demand from the ambient `ProfileSwitcherScope` via
 One seed run writes the Intergalactic Penguin Logistics fixture plus the
 tutorial "first mission", then records what it wrote in
 `demo_seed_manifest.json` at the demo world's root: `seedVersion`, seed
-timestamp, locale tag, and the full id sets of seeded journal entities,
-entity definitions, and AI configs
+timestamp, locale tag, and the full id sets of seeded journal entities, entry
+links, entity definitions, and AI configs
 ([`demo_seed_manifest.dart`](../../lib/features/demo/seed/demo_seed_manifest.dart)).
 Every later decision reads that file:
 
@@ -92,7 +92,9 @@ Every later decision reads that file:
   when the stale world holds no demo-created work: `enterDemo` scans the
   non-active world's RAW rows against the manifest first (via a
   `WorldHandle`) — any non-deleted journal row not listed in the manifest,
-  or any non-manifest inference provider (the user's API key), counts.
+  any non-manifest active entry link, or any non-manifest inference provider
+  (the user's API key), counts. v4 manifests predate the link inventory, so
+  their deterministic seeded link IDs remain a compatibility allow-list.
   Deliberately not the exit sheet's candidate scan, which drops non-seeded
   entries with inbound links (a recording attached to a seeded task) and
   would green-light wiping them. A stale world with user work resumes
@@ -153,13 +155,17 @@ files live only in Cloudflare R2; the app bundle contains no demo artwork.
 
 After each profile bootstrap, `registerDemoMediaHydration` first proves the
 active guest is this product demo by reading its seed manifest. It filters the
-current catalog to image ids that manifest actually owns — essential when an
-older demo is resumed to protect user work — and launches a bounded-concurrency
+current catalog to image ids that manifest actually owns, then intersects that
+set with non-deleted database rows — essential when an older demo is resumed
+to protect user work, and so a permanently purged seeded image stays purged —
+and launches a bounded-concurrency
 `DemoMediaHydrator` without awaiting or registering it as switch-blocking
 startup work. Its getIt disposal callback cancels in-flight requests when the
 user leaves the demo. Existing files are accepted only when their digest
-matches. Missing or corrupt objects download to `.part`, pass the catalog
-checksum, and rename atomically inside that guest root. Individual failures are
+matches. Catalog directories are created synchronously before the background
+work begins, so mounted cover widgets can install their file watchers. Missing
+or corrupt objects download to `.part`, pass the catalog checksum, and rename
+atomically inside that guest root. Individual failures are
 logged and contained; placeholders remain usable and the next startup retries
 the incomplete catalog.
 
