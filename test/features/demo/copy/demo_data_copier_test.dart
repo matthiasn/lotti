@@ -7,6 +7,10 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/model/skill_assignment.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
@@ -413,6 +417,209 @@ void main() {
       );
 
       verifyNever(() => persistence.upsertEntityDefinition(any()));
+    });
+  });
+
+  group('AI setup copy', () {
+    AiConfig provider(String id) => AiConfig.inferenceProvider(
+      id: id,
+      baseUrl: 'https://example.test',
+      apiKey: 'key-$id',
+      name: 'Provider $id',
+      createdAt: created,
+      inferenceProviderType: InferenceProviderType.gemini,
+    );
+
+    AiConfig model(String id, String providerId) => AiConfig.model(
+      id: id,
+      name: 'Model $id',
+      providerModelId: 'wire-$id',
+      inferenceProviderId: providerId,
+      createdAt: created,
+      inputModalities: const [Modality.text],
+      outputModalities: const [Modality.text],
+      isReasoningModel: false,
+    );
+
+    AiConfig profile(
+      String id,
+      String thinkingModelId,
+      List<String> skillIds,
+    ) => AiConfig.inferenceProfile(
+      id: id,
+      name: 'Profile $id',
+      createdAt: created,
+      thinkingModelId: thinkingModelId,
+      skillAssignments: [
+        for (final skillId in skillIds)
+          SkillAssignment(skillId: skillId, automate: true),
+      ],
+    );
+
+    AiConfig skill(String id) => AiConfig.skill(
+      id: id,
+      name: 'Skill $id',
+      createdAt: created,
+      skillType: SkillType.transcription,
+      requiredInputModalities: const [Modality.text],
+      systemInstructions: 'sys',
+      userInstructions: 'user',
+    );
+
+    /// Seeds fixture + user AI configs and the manifest listing the fixtures.
+    Future<void> seedAiConfigs() async {
+      for (final config in [
+        provider('fixture-provider'),
+        provider('user-provider'),
+        model('fixture-model', 'fixture-provider'),
+        // Auto-backfilled against a FICTIONAL provider: not in the manifest,
+        // but bound to a fixture — must never travel.
+        model('backfill-model', 'fixture-provider'),
+        model('user-model', 'user-provider'),
+        profile('fixture-profile', 'fixture-model', const []),
+        profile('user-profile', 'user-model', const [
+          'user-skill',
+          'seeded-skill',
+        ]),
+        skill('seeded-skill'),
+        skill('user-skill'),
+      ]) {
+        await source.writeAiConfig(config);
+      }
+      await DemoSeedManifest(
+        seedVersion: demoSeedVersion,
+        seededAt: created.toUtc(),
+        localeTag: 'en',
+        seededJournalIds: const [],
+        seededDefinitionIds: const [],
+        seededAiConfigIds: const [
+          'fixture-provider',
+          'fixture-model',
+          'fixture-profile',
+          'seeded-skill',
+        ],
+      ).write(sourceRoot);
+    }
+
+    test('prepare carries the selected provider with its models, referencing '
+        'profiles and their skills — SAME ids, fixtures excluded even when '
+        'selected', () async {
+      await seedAiConfigs();
+      final copier = DemoDataCopier(newId: sequentialIds());
+
+      final plan = await copier.prepare(
+        selectedIds: {},
+        // The fixture id is selected too — it must be dropped, not carried.
+        selectedAiProviderIds: {'user-provider', 'fixture-provider'},
+        sourceDb: source.journalDb,
+        sourceAiConfigs: AiConfigRepository(source.aiConfigDb),
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+
+      expect(plan.entities, isEmpty);
+      expect(
+        plan.aiConfigs.map((config) => config.id),
+        ['user-provider', 'user-model', 'user-profile', 'user-skill'],
+        reason:
+            'original ids preserved, insertion order providers → models → '
+            'profiles → skills; the seeded skill assignment and the model '
+            'backfilled onto a fixture provider stay behind',
+      );
+      expect(plan.isEmpty, isFalse);
+    });
+
+    test('prepare without an AI selection carries no AI configs', () async {
+      await seedAiConfigs();
+      final copier = DemoDataCopier(newId: sequentialIds());
+
+      final plan = await copier.prepare(
+        selectedIds: {},
+        sourceDb: source.journalDb,
+        sourceAiConfigs: AiConfigRepository(source.aiConfigDb),
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+
+      expect(plan.aiConfigs, isEmpty);
+      expect(plan.isEmpty, isTrue);
+    });
+
+    test('apply writes AI configs with their original ids and skips any id '
+        'already present in the real world — including tombstones', () async {
+      await seedAiConfigs();
+      final copier = DemoDataCopier(newId: sequentialIds());
+      final plan = await copier.prepare(
+        selectedIds: {},
+        selectedAiProviderIds: {'user-provider'},
+        sourceDb: source.journalDb,
+        sourceAiConfigs: AiConfigRepository(source.aiConfigDb),
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+
+      final persistence = MockPersistenceLogic();
+      final targetDb = MockJournalDb();
+      final targetAi = MockAiConfigRepository();
+      // The skill was deleted in the real world: its tombstone must win.
+      when(
+        () => targetAi.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((invocation) async {
+        final id = invocation.positionalArguments.first as String;
+        return id == 'user-skill'
+            ? skill('user-skill').copyWith(deletedAt: created)
+            : null;
+      });
+      when(() => targetAi.saveConfig(any())).thenAnswer((_) async {});
+
+      final copied = await copier.apply(
+        plan,
+        persistence: persistence,
+        targetJournalDb: targetDb,
+        targetRoot: targetRoot,
+        targetAiConfigs: targetAi,
+      );
+
+      final saved = verify(
+        () => targetAi.saveConfig(captureAny()),
+      ).captured.cast<AiConfig>();
+      expect(
+        saved.map((config) => config.id),
+        ['user-provider', 'user-model', 'user-profile'],
+        reason: 'the tombstoned skill is never resurrected',
+      );
+      // Existence checks used includeDeleted so tombstones read as present.
+      verify(
+        () => targetAi.getConfigById('user-skill', includeDeleted: true),
+      ).called(1);
+      expect(copied, 3);
+    });
+
+    test('apply throws when a plan carries AI configs but no target '
+        'repository was provided', () async {
+      await seedAiConfigs();
+      final copier = DemoDataCopier(newId: sequentialIds());
+      final plan = await copier.prepare(
+        selectedIds: {},
+        selectedAiProviderIds: {'user-provider'},
+        sourceDb: source.journalDb,
+        sourceAiConfigs: AiConfigRepository(source.aiConfigDb),
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+
+      await expectLater(
+        copier.apply(
+          plan,
+          persistence: MockPersistenceLogic(),
+          targetJournalDb: MockJournalDb(),
+          targetRoot: targetRoot,
+        ),
+        throwsArgumentError,
+      );
     });
   });
 }

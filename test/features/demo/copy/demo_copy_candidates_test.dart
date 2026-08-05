@@ -6,6 +6,8 @@ import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_copy_candidates.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
@@ -64,8 +66,26 @@ void main() {
     vectorClock: null,
   );
 
-  test('offers demo-created tasks and unlinked entries; excludes seeded '
-      'fixtures, linked entries and checklist internals', () async {
+  AiConfigInferenceProvider provider(String id, String name) =>
+      AiConfig.inferenceProvider(
+            id: id,
+            baseUrl: 'https://example.test',
+            apiKey: 'key-$id',
+            name: name,
+            createdAt: fixed,
+            inferenceProviderType: InferenceProviderType.gemini,
+          )
+          as AiConfigInferenceProvider;
+
+  Future<DemoCopyCandidates> load() => loadDemoCopyCandidates(
+    journalDb: world.journalDb,
+    aiConfigRepository: AiConfigRepository(world.aiConfigDb),
+    demoRoot: demoRoot,
+  );
+
+  test('offers demo-created tasks, unlinked entries and user-connected AI '
+      'providers; excludes seeded fixtures, linked entries and checklist '
+      'internals', () async {
     // Seeded fixture content, listed in the manifest.
     final seededTask = TestTaskFactory.create(
       id: 'seeded-task',
@@ -114,19 +134,20 @@ void main() {
       link('l2', 'seeded-task', 'seeded-attached'),
     );
 
+    // AI configs: a seeded fictional fixture and a user-connected provider.
+    await world.writeAiConfig(provider('fixture-provider', 'Mission Control'));
+    await world.writeAiConfig(provider('user-provider', 'My real Gemini'));
+
     await DemoSeedManifest(
       seedVersion: demoSeedVersion,
       seededAt: fixed.toUtc(),
       localeTag: 'en',
       seededJournalIds: const ['seeded-task'],
       seededDefinitionIds: const [],
-      seededAiConfigIds: const [],
+      seededAiConfigIds: const ['fixture-provider'],
     ).write(demoRoot);
 
-    final candidates = await loadDemoCopyCandidates(
-      journalDb: world.journalDb,
-      demoRoot: demoRoot,
-    );
+    final candidates = await load();
 
     expect(
       candidates.tasks.map((task) => task.meta.id),
@@ -140,8 +161,13 @@ void main() {
           'entries with an inbound link travel with their parent — '
           'including entries attached to SEEDED tasks (documented v1 scope)',
     );
+    expect(
+      candidates.aiProviders.map((p) => p.id),
+      ['user-provider'],
+      reason: 'seeded fixture providers never surface in the AI setup group',
+    );
     expect(candidates.isNotEmpty, isTrue);
-    expect(candidates.length, 2);
+    expect(candidates.length, 3);
   });
 
   test('deleted entities are never offered', () async {
@@ -150,10 +176,7 @@ void main() {
       deleted.copyWith(meta: deleted.meta.copyWith(deletedAt: fixed)),
     );
 
-    final candidates = await loadDemoCopyCandidates(
-      journalDb: world.journalDb,
-      demoRoot: demoRoot,
-    );
+    final candidates = await load();
     expect(candidates.isEmpty, isTrue);
   });
 
@@ -162,11 +185,10 @@ void main() {
     await world.writeJournalEntity(
       TestTaskFactory.create(id: 'task-a', title: 'A'),
     );
+    await world.writeAiConfig(provider('provider-a', 'A'));
 
-    final candidates = await loadDemoCopyCandidates(
-      journalDb: world.journalDb,
-      demoRoot: demoRoot,
-    );
+    final candidates = await load();
     expect(candidates.tasks.map((task) => task.meta.id), ['task-a']);
+    expect(candidates.aiProviders.map((p) => p.id), ['provider-a']);
   });
 }

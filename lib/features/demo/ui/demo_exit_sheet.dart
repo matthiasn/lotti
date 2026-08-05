@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_copy_candidates.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -17,7 +18,8 @@ import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Opens the demo exit sheet: step 1 confirms leaving (the demo world stays
 /// saved), step 2 — reachable only when the user created something — picks
-/// what to copy into the real journal before exiting.
+/// what to copy into the real world before exiting: tasks, journal entries,
+/// and any AI setup the user connected inside the demo.
 Future<void> showDemoExitSheet(
   BuildContext context, {
   DemoModeGateway? gateway,
@@ -78,6 +80,7 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
   static Future<DemoCopyCandidates> _loadFromActiveWorld() =>
       loadDemoCopyCandidates(
         journalDb: getIt<JournalDb>(),
+        aiConfigRepository: getIt<AiConfigRepository>(),
         demoRoot: getIt<Directory>(),
       );
 
@@ -96,13 +99,18 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
     }
   }
 
-  Future<void> _copyAndExit() async {
+  /// [aiCandidateIds] are the ids rendered in the "AI setup" section — they
+  /// route to the copier's AI path rather than the journal closure.
+  Future<void> _copyAndExit(Set<String> aiCandidateIds) async {
     setState(() {
       _copying = true;
       _step = _ExitStep.working;
     });
     try {
-      await widget.gateway.exitWithCopy(selectedIds: Set.of(_selected));
+      await widget.gateway.exitWithCopy(
+        selectedIds: _selected.difference(aiCandidateIds),
+        selectedAiConfigIds: _selected.intersection(aiCandidateIds),
+      );
     } catch (exception, stackTrace) {
       _logError(exception, stackTrace);
       if (mounted) setState(() => _step = _ExitStep.pick);
@@ -191,9 +199,13 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
       future: _candidates,
       builder: (context, snapshot) {
         final candidates = snapshot.data ?? DemoCopyCandidates.empty;
+        final aiCandidateIds = {
+          for (final provider in candidates.aiProviders) provider.id,
+        };
         final allIds = {
           for (final entity in candidates.tasks) entity.meta.id,
           for (final entity in candidates.entries) entity.meta.id,
+          ...aiCandidateIds,
         };
         final allSelected =
             allIds.isNotEmpty && _selected.length == allIds.length;
@@ -235,14 +247,36 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
             if (candidates.tasks.isNotEmpty)
               _CandidateSection(
                 title: messages.demoCopySectionTasks,
-                entities: candidates.tasks,
+                items: [
+                  for (final entity in candidates.tasks)
+                    (
+                      id: entity.meta.id,
+                      title: demoCopyCandidateTitle(context, entity),
+                    ),
+                ],
                 selected: _selected,
                 onToggle: _toggle,
               ),
             if (candidates.entries.isNotEmpty)
               _CandidateSection(
                 title: messages.demoCopySectionEntries,
-                entities: candidates.entries,
+                items: [
+                  for (final entity in candidates.entries)
+                    (
+                      id: entity.meta.id,
+                      title: demoCopyCandidateTitle(context, entity),
+                    ),
+                ],
+                selected: _selected,
+                onToggle: _toggle,
+              ),
+            if (candidates.aiProviders.isNotEmpty)
+              _CandidateSection(
+                title: messages.demoCopySectionAiSetup,
+                items: [
+                  for (final provider in candidates.aiProviders)
+                    (id: provider.id, title: provider.name),
+                ],
                 selected: _selected,
                 onToggle: _toggle,
               ),
@@ -253,7 +287,7 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
               fullWidth: true,
               onPressed: _selected.isEmpty
                   ? null
-                  : () => unawaited(_copyAndExit()),
+                  : () => unawaited(_copyAndExit(aiCandidateIds)),
             ),
             SizedBox(height: tokens.spacing.step2),
             DesignSystemButton(
@@ -298,13 +332,13 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
 class _CandidateSection extends StatelessWidget {
   const _CandidateSection({
     required this.title,
-    required this.entities,
+    required this.items,
     required this.selected,
     required this.onToggle,
   });
 
   final String title;
-  final List<JournalEntity> entities;
+  final List<({String id, String title})> items;
   final Set<String> selected;
   final ValueChanged<String> onToggle;
 
@@ -326,13 +360,13 @@ class _CandidateSection extends StatelessWidget {
             ),
           ),
         ),
-        for (final entity in entities)
+        for (final item in items)
           DesignSystemSelectionRow(
-            title: demoCopyCandidateTitle(context, entity),
+            title: item.title,
             type: DesignSystemSelectionRowType.multiSelect,
-            selected: selected.contains(entity.meta.id),
+            selected: selected.contains(item.id),
             showSelectedBackground: false,
-            onTap: () => onToggle(entity.meta.id),
+            onTap: () => onToggle(item.id),
           ),
       ],
     );

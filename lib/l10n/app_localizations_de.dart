@@ -4935,6 +4935,26 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteDeviceLabel => 'Aus Sync entfernen';
 
   @override
+  String get demoAiNudgeBody =>
+      'Die Demo-Welt enthält fiktive KI-Anbieter, daher können KI-Aktionen hier nicht wirklich laufen. Verbinde dein eigenes KI-Konto, um echte KI in der Demo zu nutzen. Dein Schlüssel bleibt in dieser Demo-Welt, außer du kopierst ihn beim Verlassen mit.';
+
+  @override
+  String get demoAiNudgeCancel => 'Jetzt nicht';
+
+  @override
+  String get demoAiNudgeConfirm => 'Echte KI einrichten';
+
+  @override
+  String get demoAiNudgeTitle => 'Die KI in der Demo ist nur gespielt';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'Diese Demo-Welt nutzt jetzt dein echtes KI-Konto. Dein Schlüssel bleibt hier, außer du kopierst ihn beim Verlassen mit.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'Echte KI ist aktiv';
+
+  @override
   String get demoBannerExit => 'Beenden';
 
   @override
@@ -4949,6 +4969,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get demoCopyProgress => 'Deine Arbeit wird kopiert…';
+
+  @override
+  String get demoCopySectionAiSetup => 'KI-Einrichtung';
 
   @override
   String get demoCopySectionEntries => 'Journaleinträge';
@@ -5004,6 +5027,17 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get demoSettingsExitTitle => 'Demo beenden';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'Echte KI ist in dieser Demo-Welt eingerichtet';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Nutze dein eigenes KI-Konto in der Demo-Welt';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Echte KI in der Demo aktivieren';
 
   @override
   String get demoSettingsResetConfirm =>

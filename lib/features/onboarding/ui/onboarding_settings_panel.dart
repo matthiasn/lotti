@@ -1,7 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/demo/ui/demo_ai_setup_sheet.dart';
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
@@ -51,17 +54,19 @@ class OnboardingSettingsPage extends StatelessWidget {
 /// The demo rows resolve their [DemoModeGateway] from the ambient
 /// `ProfileSwitcherScope`; hosts without one (bare tests) simply don't show
 /// the demo section unless [demoGateway] is injected.
-class OnboardingSettingsBody extends StatefulWidget {
+class OnboardingSettingsBody extends ConsumerStatefulWidget {
   const OnboardingSettingsBody({this.demoGateway, super.key});
 
   /// Test seam; production resolves via the ambient `ProfileSwitcherScope`.
   final DemoModeGateway? demoGateway;
 
   @override
-  State<OnboardingSettingsBody> createState() => _OnboardingSettingsBodyState();
+  ConsumerState<OnboardingSettingsBody> createState() =>
+      _OnboardingSettingsBodyState();
 }
 
-class _OnboardingSettingsBodyState extends State<OnboardingSettingsBody> {
+class _OnboardingSettingsBodyState
+    extends ConsumerState<OnboardingSettingsBody> {
   late Future<bool> _reachedRealAha;
   DemoModeGateway? _gateway;
   var _gatewayResolved = false;
@@ -152,10 +157,34 @@ class _OnboardingSettingsBodyState extends State<OnboardingSettingsBody> {
     DsTokens tokens, {
     required DemoModeGateway gateway,
     required bool demoExists,
+    required bool? realAiAvailable,
   }) {
     final m = context.messages;
     if (gateway.isDemoActive) {
       return [
+        // Advanced: enable real AI inside the demo. While no real provider
+        // exists the row opens the guided setup; once one does it becomes a
+        // status row. Hidden while availability is still resolving (null) —
+        // a row must not claim either state it cannot know yet.
+        if (realAiAvailable != null)
+          if (realAiAvailable)
+            DesignSystemListItem(
+              title: m.demoSettingsRealAiTitle,
+              subtitle: m.demoSettingsRealAiActiveSubtitle,
+              leading: const SettingsIcon(icon: Icons.check_circle_outline),
+              showDivider: true,
+              dividerIndent: SettingsIcon.dividerIndent(tokens),
+            )
+          else
+            DesignSystemListItem(
+              title: m.demoSettingsRealAiTitle,
+              subtitle: m.demoSettingsRealAiSubtitle,
+              leading: const SettingsIcon(icon: Icons.auto_awesome_outlined),
+              trailing: SettingsIcon.trailingChevron(tokens),
+              showDivider: true,
+              dividerIndent: SettingsIcon.dividerIndent(tokens),
+              onTap: () => unawaited(DemoAiSetupSheet.show(context)),
+            ),
         DesignSystemListItem(
           title: m.demoSettingsExitTitle,
           leading: const SettingsIcon(icon: Icons.logout_rounded),
@@ -203,6 +232,11 @@ class _OnboardingSettingsBodyState extends State<OnboardingSettingsBody> {
     final tokens = context.designTokens;
     final m = context.messages;
     final gateway = _gateway;
+    // Only resolved while the demo is active — outside it the row never
+    // shows, so the AI config database is never touched from here.
+    final realAiAvailable = (gateway?.isDemoActive ?? false)
+        ? ref.watch(demoRealAiAvailableProvider).value
+        : null;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
@@ -223,6 +257,7 @@ class _OnboardingSettingsBodyState extends State<OnboardingSettingsBody> {
                       tokens,
                       gateway: gateway,
                       demoExists: demoExists,
+                      realAiAvailable: realAiAvailable,
                     );
 
               return DesignSystemGroupedList(

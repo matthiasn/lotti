@@ -4955,6 +4955,26 @@ class AppLocalizationsCs extends AppLocalizations {
   String get deleteDeviceLabel => 'Odebrat ze synchronizace';
 
   @override
+  String get demoAiNudgeBody =>
+      'Demo svět obsahuje fiktivní poskytovatele AI, takže AI akce tady doopravdy neproběhnou. Připoj svůj vlastní AI účet a používej v demu skutečnou AI. Tvůj klíč zůstane v tomto demo světě, pokud si ho při odchodu nezkopíruješ.';
+
+  @override
+  String get demoAiNudgeCancel => 'Teď ne';
+
+  @override
+  String get demoAiNudgeConfirm => 'Nastavit skutečnou AI';
+
+  @override
+  String get demoAiNudgeTitle => 'AI v demu je jen jako';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'Tento demo svět teď používá tvůj skutečný AI účet. Tvůj klíč zůstane tady, pokud si ho při odchodu nezkopíruješ.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'Skutečná AI je zapnutá';
+
+  @override
   String get demoBannerExit => 'Ukončit';
 
   @override
@@ -4969,6 +4989,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get demoCopyProgress => 'Kopíruji tvou práci…';
+
+  @override
+  String get demoCopySectionAiSetup => 'Nastavení AI';
 
   @override
   String get demoCopySectionEntries => 'Záznamy v deníku';
@@ -5025,6 +5048,17 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get demoSettingsExitTitle => 'Ukončit demo';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'Skutečná AI je v tomto demo světě nastavená';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Používej v demo světě svůj vlastní AI účet';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Zapnout skutečnou AI v demu';
 
   @override
   String get demoSettingsResetConfirm =>

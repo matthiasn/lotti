@@ -4873,6 +4873,26 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteDeviceLabel => 'Remove from sync';
 
   @override
+  String get demoAiNudgeBody =>
+      'The demo world ships with fictional AI providers, so AI actions can\'t really run here. Connect your own AI account to use real AI inside the demo. Your key stays in this demo world unless you copy it over when you leave.';
+
+  @override
+  String get demoAiNudgeCancel => 'Not now';
+
+  @override
+  String get demoAiNudgeConfirm => 'Set up real AI';
+
+  @override
+  String get demoAiNudgeTitle => 'AI in the demo is pretend';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'This demo world now uses your real AI account. Your key stays here unless you copy it over when you leave.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'Real AI is live';
+
+  @override
   String get demoBannerExit => 'Exit';
 
   @override
@@ -4887,6 +4907,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get demoCopyProgress => 'Copying your work…';
+
+  @override
+  String get demoCopySectionAiSetup => 'AI setup';
 
   @override
   String get demoCopySectionEntries => 'Journal entries';
@@ -4942,6 +4965,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get demoSettingsExitTitle => 'Exit demo';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'Real AI is set up in this demo world';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Use your own AI account inside the demo world';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Enable real AI in the demo';
 
   @override
   String get demoSettingsResetConfirm =>

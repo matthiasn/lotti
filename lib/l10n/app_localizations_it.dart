@@ -4960,6 +4960,26 @@ class AppLocalizationsIt extends AppLocalizations {
   String get deleteDeviceLabel => 'Rimuovi dalla sincronizzazione';
 
   @override
+  String get demoAiNudgeBody =>
+      'Il mondo demo include provider di IA fittizi, quindi le azioni di IA non possono davvero funzionare qui. Collega il tuo account IA per usare l\'IA reale nella demo. La tua chiave resta in questo mondo demo, a meno che tu non la copi quando esci.';
+
+  @override
+  String get demoAiNudgeCancel => 'Non ora';
+
+  @override
+  String get demoAiNudgeConfirm => 'Configura l\'IA reale';
+
+  @override
+  String get demoAiNudgeTitle => 'L\'IA della demo è finta';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'Questo mondo demo ora usa il tuo vero account IA. La tua chiave resta qui, a meno che tu non la copi quando esci.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'L\'IA reale è attiva';
+
+  @override
   String get demoBannerExit => 'Esci';
 
   @override
@@ -4974,6 +4994,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get demoCopyProgress => 'Copia del tuo lavoro in corso…';
+
+  @override
+  String get demoCopySectionAiSetup => 'Configurazione IA';
 
   @override
   String get demoCopySectionEntries => 'Voci del diario';
@@ -5029,6 +5052,17 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get demoSettingsExitTitle => 'Esci dalla demo';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'L\'IA reale è configurata in questo mondo demo';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Usa il tuo account IA nel mondo demo';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Attiva l\'IA reale nella demo';
 
   @override
   String get demoSettingsResetConfirm =>

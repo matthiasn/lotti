@@ -4902,6 +4902,26 @@ class AppLocalizationsSv extends AppLocalizations {
   String get deleteDeviceLabel => 'Ta bort från synkronisering';
 
   @override
+  String get demoAiNudgeBody =>
+      'Demovärlden innehåller fiktiva AI-leverantörer, så AI-åtgärder kan inte köras på riktigt här. Anslut ditt eget AI-konto för att använda riktig AI i demon. Din nyckel stannar i den här demovärlden om du inte kopierar över den när du lämnar den.';
+
+  @override
+  String get demoAiNudgeCancel => 'Inte nu';
+
+  @override
+  String get demoAiNudgeConfirm => 'Ställ in riktig AI';
+
+  @override
+  String get demoAiNudgeTitle => 'AI:n i demon är på låtsas';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'Den här demovärlden använder nu ditt riktiga AI-konto. Din nyckel stannar här om du inte kopierar över den när du lämnar.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'Riktig AI är aktiv';
+
+  @override
   String get demoBannerExit => 'Avsluta';
 
   @override
@@ -4916,6 +4936,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get demoCopyProgress => 'Kopierar ditt arbete…';
+
+  @override
+  String get demoCopySectionAiSetup => 'AI-inställning';
 
   @override
   String get demoCopySectionEntries => 'Dagboksinlägg';
@@ -4971,6 +4994,17 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get demoSettingsExitTitle => 'Avsluta demon';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'Riktig AI är inställd i den här demovärlden';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Använd ditt eget AI-konto i demovärlden';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Aktivera riktig AI i demon';
 
   @override
   String get demoSettingsResetConfirm =>

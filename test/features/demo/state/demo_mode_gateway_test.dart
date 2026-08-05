@@ -23,7 +23,7 @@ void main() {
   ProfileContext? activeContext;
 
   DemoModeGateway buildGateway({
-    Future<DemoCopyPlan> Function(Set<String>)? prepareCopy,
+    Future<DemoCopyPlan> Function(Set<String>, Set<String>)? prepareCopy,
     Future<int> Function(DemoCopyPlan)? applyCopy,
   }) {
     return DemoModeGateway(
@@ -277,8 +277,8 @@ void main() {
           activate: (id) async => order.add('activate:$id'),
           profileContext: () => activeContext,
           seedRunner: (_, _) async {},
-          prepareCopyOverride: (ids) async {
-            order.add('prepare:${ids.single}');
+          prepareCopyOverride: (ids, aiIds) async {
+            order.add('prepare:${ids.single}+${aiIds.single}');
             return plan;
           },
           applyCopyOverride: (received) async {
@@ -290,17 +290,20 @@ void main() {
         final demo = await registry.createGuestProfile(name: 'Demo');
         activeContext = guestContext(demo);
 
-        final copied = await gateway.exitWithCopy(selectedIds: {'task-1'});
+        final copied = await gateway.exitWithCopy(
+          selectedIds: {'task-1'},
+          selectedAiConfigIds: {'provider-1'},
+        );
 
         expect(copied, 4);
-        expect(order, ['prepare:task-1', 'activate:real', 'apply']);
+        expect(order, ['prepare:task-1+provider-1', 'activate:real', 'apply']);
       },
     );
 
     test('empty selection just exits', () async {
       var prepared = false;
       final gateway = buildGateway(
-        prepareCopy: (_) async {
+        prepareCopy: (_, _) async {
           prepared = true;
           return plan;
         },
@@ -313,6 +316,31 @@ void main() {
 
       expect(copied, 0);
       expect(prepared, isFalse);
+      expect(activated, [Profile.realProfileId]);
+    });
+
+    test('an AI-only selection still runs the copy crossing', () async {
+      Set<String>? journalIds;
+      Set<String>? aiIds;
+      final gateway = buildGateway(
+        prepareCopy: (ids, selectedAiIds) async {
+          journalIds = ids;
+          aiIds = selectedAiIds;
+          return plan;
+        },
+        applyCopy: (_) async => 1,
+      );
+      final demo = await registry.createGuestProfile(name: 'Demo');
+      activeContext = guestContext(demo);
+
+      final copied = await gateway.exitWithCopy(
+        selectedIds: {},
+        selectedAiConfigIds: {'provider-1'},
+      );
+
+      expect(copied, 1);
+      expect(journalIds, isEmpty);
+      expect(aiIds, {'provider-1'});
       expect(activated, [Profile.realProfileId]);
     });
 

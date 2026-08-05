@@ -3,6 +3,8 @@ import 'dart:io';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/utils/audio_utils.dart';
@@ -41,6 +43,7 @@ class DemoCopyPlan {
     required this.links,
     required this.definitions,
     required this.media,
+    this.aiConfigs = const [],
   });
 
   /// Remapped entities in insertion order (checklist items → checklists →
@@ -56,7 +59,12 @@ class DemoCopyPlan {
 
   final List<DemoStagedMedia> media;
 
-  bool get isEmpty => entities.isEmpty;
+  /// User-created AI configs carried with their ORIGINAL ids, in insertion
+  /// order (providers → models → profiles → skills). Written only when the
+  /// id does not already exist in the real world.
+  final List<AiConfig> aiConfigs;
+
+  bool get isEmpty => entities.isEmpty && aiConfigs.isEmpty;
 }
 
 /// Copies demo-created work into the real world across the profile switch.
@@ -82,10 +90,20 @@ class DemoDataCopier {
   /// anything listed in the seed manifest is cut off (a selected task's own
   /// checklist tree is demo-created by construction, so it always travels).
   /// Deleted entities are skipped.
+  ///
+  /// [selectedAiProviderIds] are the "AI setup" selections: user-connected
+  /// inference providers, each carried together with its user-created
+  /// dependents (models on the provider, profiles slotting those models,
+  /// skills those profiles assign) read from [sourceAiConfigs]. AI configs
+  /// keep their ORIGINAL ids — unlike journal entities they are per-device
+  /// configuration upserted idempotently, not content that could collide
+  /// with an earlier copy run. Seeded fixture ids never travel.
   Future<DemoCopyPlan> prepare({
     required Set<String> selectedIds,
     required JournalDb sourceDb,
     required Directory sourceRoot,
+    Set<String> selectedAiProviderIds = const {},
+    AiConfigRepository? sourceAiConfigs,
     Directory? stagingDir,
   }) async {
     DemoSeedManifest? manifest;
@@ -247,6 +265,15 @@ class DemoDataCopier {
       for (final id in labelIds) ?await sourceDb.getLabelDefinitionById(id),
     ];
 
+    // --- AI setup (same ids, no remap) --------------------------------------
+    final aiConfigs = selectedAiProviderIds.isEmpty || sourceAiConfigs == null
+        ? const <AiConfig>[]
+        : await _prepareAiConfigs(
+            selectedProviderIds: selectedAiProviderIds,
+            repository: sourceAiConfigs,
+            seededAiIds: {...?manifest?.seededAiConfigIds},
+          );
+
     return DemoCopyPlan(
       entities: entities,
       links: [
@@ -255,8 +282,79 @@ class DemoDataCopier {
       ],
       definitions: definitions,
       media: media,
+      aiConfigs: aiConfigs,
     );
   }
+
+  /// Collects the AI configs traveling with the selected providers, in
+  /// insertion order: the providers themselves, then user-created models
+  /// bound to them, then user-created profiles whose model slots reference
+  /// a carried model, then user-created skills those profiles assign.
+  ///
+  /// Anchoring the closure on the selected PROVIDERS keeps junk out: rows
+  /// the app auto-seeded against a fictional fixture provider (backfilled
+  /// models, gated bundled profiles) reference fixture ids and therefore
+  /// never join. Anything listed in the manifest is excluded outright.
+  Future<List<AiConfig>> _prepareAiConfigs({
+    required Set<String> selectedProviderIds,
+    required AiConfigRepository repository,
+    required Set<String> seededAiIds,
+  }) async {
+    final providers = [
+      for (final config in (await repository.getConfigsByType(
+        AiConfigType.inferenceProvider,
+      )).whereType<AiConfigInferenceProvider>())
+        if (selectedProviderIds.contains(config.id) &&
+            !seededAiIds.contains(config.id))
+          config,
+    ];
+    if (providers.isEmpty) return const [];
+    final providerIds = {for (final provider in providers) provider.id};
+
+    final models = [
+      for (final config in (await repository.getConfigsByType(
+        AiConfigType.model,
+      )).whereType<AiConfigModel>())
+        if (!seededAiIds.contains(config.id) &&
+            providerIds.contains(config.inferenceProviderId))
+          config,
+    ];
+    final modelIds = {for (final model in models) model.id};
+
+    final profiles = [
+      for (final config in (await repository.getConfigsByType(
+        AiConfigType.inferenceProfile,
+      )).whereType<AiConfigInferenceProfile>())
+        if (!seededAiIds.contains(config.id) &&
+            _profileModelSlotIds(config).any(modelIds.contains))
+          config,
+    ];
+    final skillIds = {
+      for (final profile in profiles)
+        for (final assignment in profile.skillAssignments) assignment.skillId,
+    };
+
+    final skills = [
+      for (final config in (await repository.getConfigsByType(
+        AiConfigType.skill,
+      )).whereType<AiConfigSkill>())
+        if (!seededAiIds.contains(config.id) && skillIds.contains(config.id))
+          config,
+    ];
+
+    return [...providers, ...models, ...profiles, ...skills];
+  }
+
+  /// Every model-config id a profile's slots reference.
+  static Iterable<String> _profileModelSlotIds(
+    AiConfigInferenceProfile profile,
+  ) => [
+    profile.thinkingModelId,
+    ?profile.thinkingHighEndModelId,
+    ?profile.imageRecognitionModelId,
+    ?profile.transcriptionModelId,
+    ?profile.imageGenerationModelId,
+  ];
 
   /// Applies [plan] in the REAL generation.
   ///
@@ -268,12 +366,20 @@ class DemoDataCopier {
   /// through `createLink`. Definitions keep their demo ids and are only
   /// written when absent, so re-copying never clobbers real-world edits.
   ///
-  /// Returns the number of entities written.
+  /// AI configs go through [targetAiConfigs] (the REAL generation's
+  /// repository) with their original ids, skipped when the id already
+  /// exists there — including as a tombstone: a config the user deleted in
+  /// the real world must not be resurrected by a demo exit. Saves use the
+  /// default `fromSync: false`, so copied AI setup replicates to peers like
+  /// any locally created config.
+  ///
+  /// Returns the number of entities plus AI configs written.
   Future<int> apply(
     DemoCopyPlan plan, {
     required PersistenceLogic persistence,
     required JournalDb targetJournalDb,
     required Directory targetRoot,
+    AiConfigRepository? targetAiConfigs,
   }) async {
     for (final staged in plan.media) {
       final target = File('${targetRoot.path}${staged.relativeTarget}');
@@ -314,6 +420,24 @@ class DemoDataCopier {
 
     for (final link in plan.links) {
       await persistence.createLink(fromId: link.fromId, toId: link.toId);
+    }
+
+    if (plan.aiConfigs.isNotEmpty) {
+      final aiRepository = targetAiConfigs;
+      if (aiRepository == null) {
+        throw ArgumentError(
+          'plan carries AI configs but no targetAiConfigs was provided',
+        );
+      }
+      for (final config in plan.aiConfigs) {
+        final existing = await aiRepository.getConfigById(
+          config.id,
+          includeDeleted: true,
+        );
+        if (existing != null) continue;
+        await aiRepository.saveConfig(config);
+        copied++;
+      }
     }
     return copied;
   }

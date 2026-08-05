@@ -2,6 +2,8 @@ import 'dart:io';
 
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 
 /// Batch size for paging through the demo journal. Small worlds only — the
@@ -28,11 +30,16 @@ const List<String> _candidateRootTypes = [
 /// SEEDED task has an inbound link and is not offered — edits and additions
 /// to seeded entities do not copy.
 class DemoCopyCandidates {
-  const DemoCopyCandidates({required this.tasks, required this.entries});
+  const DemoCopyCandidates({
+    required this.tasks,
+    required this.entries,
+    required this.aiProviders,
+  });
 
   static const DemoCopyCandidates empty = DemoCopyCandidates(
     tasks: [],
     entries: [],
+    aiProviders: [],
   );
 
   /// Demo-created tasks, newest first (query order).
@@ -41,20 +48,28 @@ class DemoCopyCandidates {
   /// Demo-created standalone entries (text/audio/image), newest first.
   final List<JournalEntity> entries;
 
-  bool get isEmpty => tasks.isEmpty && entries.isEmpty;
+  /// USER-connected inference providers (id not in the seed manifest) — the
+  /// selectable units of the "AI setup" group. Selecting one carries its
+  /// dependent models/profiles/skills via the copier; the fictional seeded
+  /// fixtures never appear here.
+  final List<AiConfigInferenceProvider> aiProviders;
+
+  bool get isEmpty => tasks.isEmpty && entries.isEmpty && aiProviders.isEmpty;
   bool get isNotEmpty => !isEmpty;
-  int get length => tasks.length + entries.length;
+  int get length => tasks.length + entries.length + aiProviders.length;
 }
 
 /// Loads the copy-over candidates from the ACTIVE demo world.
 ///
-/// [journalDb] and [demoRoot] are the demo generation's active handles
-/// (`getIt<JournalDb>()` / `getIt<Directory>()` in production); the manifest
-/// at [demoRoot] supplies the seeded-id exclusion set. A missing or
-/// malformed manifest excludes nothing — better to over-offer than to lose
-/// user work behind a corrupt manifest.
+/// [journalDb], [aiConfigRepository] and [demoRoot] are the demo
+/// generation's active handles (`getIt<JournalDb>()` /
+/// `getIt<AiConfigRepository>()` / `getIt<Directory>()` in production); the
+/// manifest at [demoRoot] supplies the seeded-id exclusion sets. A missing
+/// or malformed manifest excludes nothing — better to over-offer than to
+/// lose user work behind a corrupt manifest.
 Future<DemoCopyCandidates> loadDemoCopyCandidates({
   required JournalDb journalDb,
+  required AiConfigRepository aiConfigRepository,
   required Directory demoRoot,
 }) async {
   DemoSeedManifest? manifest;
@@ -97,11 +112,25 @@ Future<DemoCopyCandidates> loadDemoCopyCandidates({
       if (link.deletedAt == null) link.toId,
   };
 
+  // USER-connected providers: everything of the inference-provider type not
+  // listed in the manifest. The seeded fictional fixtures are excluded by
+  // id; models/profiles/skills are never offered on their own — they travel
+  // with the provider they belong to (copier closure).
+  final seededAi = {...?manifest?.seededAiConfigIds};
+  final providerConfigs = await aiConfigRepository.getConfigsByType(
+    AiConfigType.inferenceProvider,
+  );
+  final aiProviders = [
+    for (final config in providerConfigs.whereType<AiConfigInferenceProvider>())
+      if (!seededAi.contains(config.id)) config,
+  ];
+
   return DemoCopyCandidates(
     tasks: tasks,
     entries: [
       for (final entity in nonTasks)
         if (!linkedToIds.contains(entity.meta.id)) entity,
     ],
+    aiProviders: aiProviders,
   );
 }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
@@ -8,6 +9,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
+import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
@@ -341,16 +344,41 @@ void main() {
       await getIt.reset();
     });
 
-    Future<void> pumpWithGateway(WidgetTester tester) async {
+    Future<void> pumpWithGateway(
+      WidgetTester tester, {
+      List<Override> overrides = const [],
+    }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
           OnboardingSettingsBody(demoGateway: gateway),
           mediaQueryData: mq,
+          overrides: overrides,
         ),
       );
       // Let the async demoProfileExists + funnel reads resolve.
       await tester.pump(const Duration(milliseconds: 20));
       await tester.pump(const Duration(milliseconds: 20));
+    }
+
+    /// Overrides resolving the real-AI availability gate to [providers].
+    List<Override> realAiOverrides(List<AiConfig> providers) {
+      final repository = MockAiConfigRepository();
+      when(
+        () => repository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => Stream.value(providers));
+      return [
+        aiConfigRepositoryProvider.overrideWithValue(repository),
+        demoSeedManifestProvider.overrideWith(
+          (ref) async => DemoSeedManifest(
+            seedVersion: demoSeedVersion,
+            seededAt: DateTime.utc(2026, 8, 5),
+            localeTag: 'en',
+            seededJournalIds: const [],
+            seededDefinitionIds: const [],
+            seededAiConfigIds: const ['fixture-provider'],
+          ),
+        ),
+      ];
     }
 
     testWidgets('without a gateway (no ProfileSwitcherScope) no demo rows '
@@ -410,6 +438,81 @@ void main() {
       expect(find.text('Try the demo workspace'), findsNothing);
       expect(find.text('Return to the demo workspace'), findsNothing);
       expect(find.text('Delete demo data'), findsNothing);
+    });
+
+    AiConfig aiProvider(String id) => AiConfig.inferenceProvider(
+      id: id,
+      baseUrl: 'https://example.test',
+      apiKey: 'key-$id',
+      name: 'Provider $id',
+      createdAt: DateTime(2026, 8, 5),
+      inferenceProviderType: InferenceProviderType.gemini,
+    );
+
+    testWidgets('inside the demo with only fixture providers: the real-AI '
+        'row invites setup and opens the guided sheet', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(true);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(
+        tester,
+        overrides: realAiOverrides([aiProvider('fixture-provider')]),
+      );
+
+      expect(find.text('Enable real AI in the demo'), findsOneWidget);
+      expect(
+        find.text('Use your own AI account inside the demo world'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Real AI is set up in this demo world'),
+        findsNothing,
+      );
+
+      await tester.ensureVisible(find.text('Enable real AI in the demo'));
+      await tester.tap(find.text('Enable real AI in the demo'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('AI in the demo is pretend'), findsOneWidget);
+    });
+
+    testWidgets('inside the demo with a real provider: the row becomes a '
+        'status row', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(true);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(
+        tester,
+        overrides: realAiOverrides([
+          aiProvider('fixture-provider'),
+          aiProvider('user-real'),
+        ]),
+      );
+
+      expect(find.text('Enable real AI in the demo'), findsOneWidget);
+      expect(
+        find.text('Real AI is set up in this demo world'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Use your own AI account inside the demo world'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('outside the demo the real-AI row never renders', (
+      tester,
+    ) async {
+      when(() => gateway.isDemoActive).thenReturn(false);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(
+        tester,
+        overrides: realAiOverrides([aiProvider('fixture-provider')]),
+      );
+
+      expect(find.text('Enable real AI in the demo'), findsNothing);
     });
 
     testWidgets('delete asks for confirmation, deletes, toasts, and the row '

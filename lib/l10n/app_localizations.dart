@@ -8303,6 +8303,42 @@ abstract class AppLocalizations {
   /// **'Remove from sync'**
   String get deleteDeviceLabel;
 
+  /// No description provided for @demoAiNudgeBody.
+  ///
+  /// In en, this message translates to:
+  /// **'The demo world ships with fictional AI providers, so AI actions can\'t really run here. Connect your own AI account to use real AI inside the demo. Your key stays in this demo world unless you copy it over when you leave.'**
+  String get demoAiNudgeBody;
+
+  /// No description provided for @demoAiNudgeCancel.
+  ///
+  /// In en, this message translates to:
+  /// **'Not now'**
+  String get demoAiNudgeCancel;
+
+  /// No description provided for @demoAiNudgeConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Set up real AI'**
+  String get demoAiNudgeConfirm;
+
+  /// No description provided for @demoAiNudgeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'AI in the demo is pretend'**
+  String get demoAiNudgeTitle;
+
+  /// No description provided for @demoAiSetupSuccessBody.
+  ///
+  /// In en, this message translates to:
+  /// **'This demo world now uses your real AI account. Your key stays here unless you copy it over when you leave.'**
+  String get demoAiSetupSuccessBody;
+
+  /// No description provided for @demoAiSetupSuccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Real AI is live'**
+  String get demoAiSetupSuccessTitle;
+
   /// No description provided for @demoBannerExit.
   ///
   /// In en, this message translates to:
@@ -8332,6 +8368,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Copying your work…'**
   String get demoCopyProgress;
+
+  /// No description provided for @demoCopySectionAiSetup.
+  ///
+  /// In en, this message translates to:
+  /// **'AI setup'**
+  String get demoCopySectionAiSetup;
 
   /// No description provided for @demoCopySectionEntries.
   ///
@@ -8422,6 +8464,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Exit demo'**
   String get demoSettingsExitTitle;
+
+  /// No description provided for @demoSettingsRealAiActiveSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Real AI is set up in this demo world'**
+  String get demoSettingsRealAiActiveSubtitle;
+
+  /// No description provided for @demoSettingsRealAiSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Use your own AI account inside the demo world'**
+  String get demoSettingsRealAiSubtitle;
+
+  /// No description provided for @demoSettingsRealAiTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable real AI in the demo'**
+  String get demoSettingsRealAiTitle;
 
   /// No description provided for @demoSettingsResetConfirm.
   ///

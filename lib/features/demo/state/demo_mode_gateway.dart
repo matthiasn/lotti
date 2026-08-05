@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/app_root.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seeder.dart';
@@ -62,7 +63,10 @@ class DemoModeGateway {
 
   /// Test seam replacing the read of the demo side in [exitWithCopy].
   @visibleForTesting
-  final Future<DemoCopyPlan> Function(Set<String> selectedIds)?
+  final Future<DemoCopyPlan> Function(
+    Set<String> selectedIds,
+    Set<String> selectedAiConfigIds,
+  )?
   prepareCopyOverride;
 
   /// Test seam replacing the write into the real side in [exitWithCopy].
@@ -159,28 +163,36 @@ class DemoModeGateway {
   /// toasted to the user: the generation switch replaces the whole widget
   /// tree mid-flow, so the exit sheet surfaces progress before the switch
   /// and the count is returned for logging/tests only.
-  Future<int> exitWithCopy({required Set<String> selectedIds}) async {
+  Future<int> exitWithCopy({
+    required Set<String> selectedIds,
+    Set<String> selectedAiConfigIds = const {},
+  }) async {
     if (!isDemoActive) {
       throw StateError('exitWithCopy requires the demo world to be active');
     }
-    if (selectedIds.isEmpty) {
+    if (selectedIds.isEmpty && selectedAiConfigIds.isEmpty) {
       await exitDemo();
       return 0;
     }
     final plan = await (prepareCopyOverride ?? _defaultPrepareCopy)(
       selectedIds,
+      selectedAiConfigIds,
     );
     await exitDemo();
     return (applyCopyOverride ?? _defaultApplyCopy)(plan);
   }
 
   /// Reads the copy plan from the ACTIVE (demo) generation's services.
-  Future<DemoCopyPlan> _defaultPrepareCopy(Set<String> selectedIds) =>
-      DemoDataCopier().prepare(
-        selectedIds: selectedIds,
-        sourceDb: getIt<JournalDb>(),
-        sourceRoot: getIt<Directory>(),
-      );
+  Future<DemoCopyPlan> _defaultPrepareCopy(
+    Set<String> selectedIds,
+    Set<String> selectedAiConfigIds,
+  ) => DemoDataCopier().prepare(
+    selectedIds: selectedIds,
+    selectedAiProviderIds: selectedAiConfigIds,
+    sourceDb: getIt<JournalDb>(),
+    sourceAiConfigs: getIt<AiConfigRepository>(),
+    sourceRoot: getIt<Directory>(),
+  );
 
   /// Applies the plan against the ACTIVE (by now: real) generation.
   Future<int> _defaultApplyCopy(DemoCopyPlan plan) => DemoDataCopier().apply(
@@ -188,6 +200,7 @@ class DemoModeGateway {
     persistence: getIt<PersistenceLogic>(),
     targetJournalDb: getIt<JournalDb>(),
     targetRoot: getIt<Directory>(),
+    targetAiConfigs: getIt<AiConfigRepository>(),
   );
 
   /// Whether [profile]'s world was seeded by the current seed content. A

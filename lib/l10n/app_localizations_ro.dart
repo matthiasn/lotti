@@ -4984,6 +4984,26 @@ class AppLocalizationsRo extends AppLocalizations {
   String get deleteDeviceLabel => 'Eliminați din sincronizare';
 
   @override
+  String get demoAiNudgeBody =>
+      'Lumea demo include furnizori de IA fictivi, așa că acțiunile de IA nu pot rula cu adevărat aici. Conectați contul dvs. de IA pentru a folosi IA reală în demo. Cheia dvs. rămâne în această lume demo, cu excepția cazului în care o copiați la ieșire.';
+
+  @override
+  String get demoAiNudgeCancel => 'Nu acum';
+
+  @override
+  String get demoAiNudgeConfirm => 'Configurați IA reală';
+
+  @override
+  String get demoAiNudgeTitle => 'IA din demo este fictivă';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'Această lume demo folosește acum contul dvs. real de IA. Cheia dvs. rămâne aici, cu excepția cazului în care o copiați la ieșire.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'IA reală este activă';
+
+  @override
   String get demoBannerExit => 'Ieșire';
 
   @override
@@ -4998,6 +5018,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get demoCopyProgress => 'Se copiază munca dvs.…';
+
+  @override
+  String get demoCopySectionAiSetup => 'Configurare IA';
 
   @override
   String get demoCopySectionEntries => 'Însemnări în jurnal';
@@ -5054,6 +5077,17 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get demoSettingsExitTitle => 'Ieșiți din demo';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'IA reală este configurată în această lume demo';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Folosiți contul dvs. de IA în lumea demo';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Activați IA reală în demo';
 
   @override
   String get demoSettingsResetConfirm =>
