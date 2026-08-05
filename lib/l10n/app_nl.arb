@@ -4283,6 +4283,7 @@
   "settingsHabitsSearchHint": "Zoekgewoonten...",
   "settingsHabitsSubtitle": "Beheer uw gewoonten en routines",
   "settingsHabitsTitle": "Gewoontes",
+  "settingsHealthImportAccessHint": "Sommige gegevens konden niet worden gelezen. Als je Lotti’s toegang hebt uitgeschakeld in de gezondheidsprivacyinstellingen van je apparaat, kan Lotti er niet opnieuw om vragen — zet die daar weer aan.",
   "settingsHealthImportActivity": "Activiteit",
   "settingsHealthImportActivityDescription": "Stappen, traplopen en wandelafstand",
   "settingsHealthImportAll": "Alles importeren",
@@ -4294,6 +4295,7 @@
   "settingsHealthImportFromDate": "Begin",
   "settingsHealthImportHeartRate": "Hartslag",
   "settingsHealthImportHeartRateDescription": "Rust, wandelen en variabiliteit",
+  "settingsHealthImportOpenSettings": "Instellingen openen",
   "settingsHealthImportQuickRange": "{days, plural, =1{Laatste dag} other{Laatste {days} dagen}}",
   "@settingsHealthImportQuickRange": {
     "placeholders": {
@@ -4314,6 +4316,7 @@
       }
     }
   },
+  "settingsHealthImportStatusNoDataOrAccess": "Geen gegevens — controleer Lotti’s toegang in je gezondheidsapp",
   "settingsHealthImportStatusPermissionDenied": "Toegang geweigerd — geef Lotti toegang in je gezondheidsapp",
   "settingsHealthImportStatusRunning": "Bezig met importeren…",
   "settingsHealthImportStatusUnsupportedType": "Dit gegevenstype wordt niet meer ondersteund",

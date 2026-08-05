@@ -66,6 +66,47 @@ void main() {
       },
     );
 
+    test('hasPermissions passes types and permissions through', () async {
+      final types = [HealthDataType.STEPS];
+      final permissions = [HealthDataAccess.READ];
+
+      when(
+        () => mockHealth.hasPermissions(types, permissions: permissions),
+      ).thenAnswer((_) async => true);
+
+      expect(
+        await healthService.hasPermissions(types, permissions: permissions),
+        isTrue,
+      );
+      verify(
+        () => mockHealth.hasPermissions(types, permissions: permissions),
+      ).called(1);
+    });
+
+    test('hasPermissions relays a definitive refusal', () async {
+      when(
+        () => mockHealth.hasPermissions(any()),
+      ).thenAnswer((_) async => false);
+
+      expect(
+        await healthService.hasPermissions([HealthDataType.STEPS]),
+        isFalse,
+      );
+    });
+
+    test('hasPermissions relays the undisclosed answer as null', () async {
+      // HealthKit's answer for a READ query — Apple will not say. Collapsing it
+      // to `false` here would make every iOS import look permanently denied.
+      when(
+        () => mockHealth.hasPermissions(any()),
+      ).thenAnswer((_) async => null);
+
+      expect(
+        await healthService.hasPermissions([HealthDataType.STEPS]),
+        isNull,
+      );
+    });
+
     test('getTotalStepsInInterval relays the count', () async {
       final startTime = DateTime(2025);
       final endTime = DateTime(2025, 1, 1, 23, 59);
@@ -168,9 +209,16 @@ void main() {
 
       // Each entry point on its own service, so each one has to do the
       // handshake itself rather than riding on a sibling's.
+      when(
+        () => mockHealth.hasPermissions(any()),
+      ).thenAnswer((_) async => null);
+
       await HealthService(mockHealth).requestAuthorization([
         HealthDataType.STEPS,
       ]);
+      verify(() => mockHealth.configure()).called(1);
+
+      await HealthService(mockHealth).hasPermissions([HealthDataType.STEPS]);
       verify(() => mockHealth.configure()).called(1);
 
       await HealthService(mockHealth).getTotalStepsInInterval(start, end);

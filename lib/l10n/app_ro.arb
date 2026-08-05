@@ -3771,6 +3771,7 @@
   "settingsHabitsSearchHint": "Căutați obiceiuri…",
   "settingsHabitsSubtitle": "Gestionați obiceiurile și rutinele dvs.",
   "settingsHabitsTitle": "Obiceiuri",
+  "settingsHealthImportAccessHint": "Unele date nu au putut fi citite. Dacă ați dezactivat accesul Lotti în setările de confidențialitate pentru sănătate ale dispozitivului, Lotti nu îl mai poate solicita — reactivați-l acolo.",
   "settingsHealthImportActivity": "Activitate",
   "settingsHealthImportActivityDescription": "Pași, etaje urcate și distanța parcursă",
   "settingsHealthImportAll": "Importați tot",
@@ -3782,6 +3783,7 @@
   "settingsHealthImportFromDate": "Început",
   "settingsHealthImportHeartRate": "Puls",
   "settingsHealthImportHeartRateDescription": "În repaus, la mers și variabilitatea pulsului",
+  "settingsHealthImportOpenSettings": "Deschideți setările",
   "settingsHealthImportQuickRange": "{days, plural, =1{Ultima zi} few{Ultimele {days} zile} other{Ultimele {days} de zile}}",
   "@settingsHealthImportQuickRange": {
     "placeholders": {
@@ -3802,6 +3804,7 @@
       }
     }
   },
+  "settingsHealthImportStatusNoDataOrAccess": "Fără date — verificați accesul Lotti în aplicația de sănătate",
   "settingsHealthImportStatusPermissionDenied": "Acces refuzat — permiteți Lotti în aplicația dvs. de sănătate",
   "settingsHealthImportStatusRunning": "Se importă…",
   "settingsHealthImportStatusUnsupportedType": "Acest tip de date nu mai este acceptat",

@@ -9447,6 +9447,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsHabitsTitle => 'Obiceiuri';
 
   @override
+  String get settingsHealthImportAccessHint =>
+      'Unele date nu au putut fi citite. Dacă ați dezactivat accesul Lotti în setările de confidențialitate pentru sănătate ale dispozitivului, Lotti nu îl mai poate solicita — reactivați-l acolo.';
+
+  @override
   String get settingsHealthImportActivity => 'Activitate';
 
   @override
@@ -9482,6 +9486,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get settingsHealthImportHeartRateDescription =>
       'În repaus, la mers și variabilitatea pulsului';
+
+  @override
+  String get settingsHealthImportOpenSettings => 'Deschideți setările';
 
   @override
   String settingsHealthImportQuickRange(int days) {
@@ -9521,6 +9528,10 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get settingsHealthImportStatusNoDataOrAccess =>
+      'Fără date — verificați accesul Lotti în aplicația de sănătate';
 
   @override
   String get settingsHealthImportStatusPermissionDenied =>

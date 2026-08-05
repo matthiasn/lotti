@@ -9388,6 +9388,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get settingsHabitsTitle => 'Návyky';
 
   @override
+  String get settingsHealthImportAccessHint =>
+      'Některá data se nepodařilo načíst. Pokud jsi přístup Lotti vypnul v nastavení soukromí zdraví na svém zařízení, Lotti o něj už nemůže požádat znovu — zapni ho tam.';
+
+  @override
   String get settingsHealthImportActivity => 'Aktivita';
 
   @override
@@ -9423,6 +9427,9 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get settingsHealthImportHeartRateDescription =>
       'Klidový tep, tep při chůzi a jeho variabilita';
+
+  @override
+  String get settingsHealthImportOpenSettings => 'Otevřít nastavení';
 
   @override
   String settingsHealthImportQuickRange(int days) {
@@ -9462,6 +9469,10 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get settingsHealthImportStatusNoDataOrAccess =>
+      'Žádná data — zkontroluj přístup Lotti ve zdravotní aplikaci';
 
   @override
   String get settingsHealthImportStatusPermissionDenied =>

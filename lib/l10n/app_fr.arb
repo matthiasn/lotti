@@ -3771,6 +3771,7 @@
   "settingsHabitsSearchHint": "Rechercher des habitudes…",
   "settingsHabitsSubtitle": "Gérer tes habitudes et routines",
   "settingsHabitsTitle": "Habitudes",
+  "settingsHealthImportAccessHint": "Certaines données n’ont pas pu être lues. Si tu as désactivé l’accès de Lotti dans les réglages de confidentialité santé de ton appareil, Lotti ne peut plus le demander — réactive-le là-bas.",
   "settingsHealthImportActivity": "Activité",
   "settingsHealthImportActivityDescription": "Pas, étages montés et distance à pied",
   "settingsHealthImportAll": "Tout importer",
@@ -3782,6 +3783,7 @@
   "settingsHealthImportFromDate": "Début",
   "settingsHealthImportHeartRate": "Fréquence cardiaque",
   "settingsHealthImportHeartRateDescription": "Au repos, à la marche et variabilité cardiaque",
+  "settingsHealthImportOpenSettings": "Ouvrir les réglages",
   "settingsHealthImportQuickRange": "{days, plural, =1{Dernier jour} other{{days} derniers jours}}",
   "@settingsHealthImportQuickRange": {
     "placeholders": {
@@ -3802,6 +3804,7 @@
       }
     }
   },
+  "settingsHealthImportStatusNoDataOrAccess": "Aucune donnée — vérifie l’accès de Lotti dans ton app de santé",
   "settingsHealthImportStatusPermissionDenied": "Accès refusé — autorise Lotti dans ton app de santé",
   "settingsHealthImportStatusRunning": "Importation…",
   "settingsHealthImportStatusUnsupportedType": "Ce type de données n’est plus pris en charge",

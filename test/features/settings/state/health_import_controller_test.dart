@@ -8,8 +8,25 @@ import 'package:lotti/features/settings/state/health_import_controller.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:mocktail/mocktail.dart';
+// ignore: depend_on_referenced_packages
+import 'package:permission_handler_platform_interface/permission_handler_platform_interface.dart'
+    show PermissionHandlerPlatform;
 
 import '../../../mocks/mocks.dart';
+
+/// Fake [PermissionHandlerPlatform] that records whether the app's system
+/// settings page was opened, so the escape hatch can be tested without the
+/// native plugin.
+class _RecordingPermissionHandler extends PermissionHandlerPlatform {
+  int openAppSettingsCalls = 0;
+  bool opens = true;
+
+  @override
+  Future<bool> openAppSettings() async {
+    openAppSettingsCalls++;
+    return opens;
+  }
+}
 
 void main() {
   late MockHealthImport mockHealthImport;
@@ -308,6 +325,125 @@ void main() {
         );
       },
     );
+  });
+
+  // Drives the page's "check your health access" callout: it appears only once
+  // a run has actually come back with nothing that access could explain.
+  group('needsAccessCheck', () {
+    Future<ProviderContainer> containerAfterRun(
+      HealthImportResult result,
+    ) async {
+      final container = makeContainer();
+      final controller = withPinnedClock(
+        () => container.read(healthImportControllerProvider.notifier),
+      );
+      stubImports(result);
+      await controller.runImport(HealthImportCategory.bloodPressure);
+      return container;
+    }
+
+    bool needsAccessCheck(ProviderContainer container) =>
+        container.read(healthImportControllerProvider).needsAccessCheck;
+
+    test('is false before anything has run', () {
+      expect(
+        withPinnedClock(
+          () => makeContainer().read(healthImportControllerProvider),
+        ).needsAccessCheck,
+        isFalse,
+      );
+    });
+
+    test('is raised by a suspected access problem', () async {
+      expect(
+        needsAccessCheck(
+          await containerAfterRun(const HealthImportResult.noDataOrAccess()),
+        ),
+        isTrue,
+      );
+    });
+
+    test('is raised by an outright refusal', () async {
+      expect(
+        needsAccessCheck(
+          await containerAfterRun(const HealthImportResult.permissionDenied()),
+        ),
+        isTrue,
+      );
+    });
+
+    test('is not raised by a successful import', () async {
+      expect(
+        needsAccessCheck(
+          await containerAfterRun(const HealthImportResult.imported(7)),
+        ),
+        isFalse,
+      );
+    });
+
+    test('is not raised by an ordinary empty import', () async {
+      // "No new samples" with history behind it is the steady state of a daily
+      // import; offering a permission escape hatch there would cry wolf.
+      expect(
+        needsAccessCheck(
+          await containerAfterRun(const HealthImportResult.imported(0)),
+        ),
+        isFalse,
+      );
+    });
+
+    test('is not raised by an unrelated failure', () async {
+      expect(
+        needsAccessCheck(
+          await containerAfterRun(HealthImportResult.failed(Exception('x'))),
+        ),
+        isFalse,
+      );
+    });
+
+    test(
+      'is not raised on desktop, where there is no store to allow',
+      () async {
+        expect(
+          needsAccessCheck(
+            await containerAfterRun(
+              const HealthImportResult.unsupportedPlatform(),
+            ),
+          ),
+          isFalse,
+        );
+      },
+    );
+
+    test('drops away when the range moves on', () async {
+      final container = await containerAfterRun(
+        const HealthImportResult.noDataOrAccess(),
+      );
+      expect(needsAccessCheck(container), isTrue);
+
+      container
+          .read(healthImportControllerProvider.notifier)
+          .setDateFrom(DateTime(2020));
+
+      // The outcome no longer describes the selected range, so neither the row
+      // nor the callout may keep claiming it.
+      expect(needsAccessCheck(container), isFalse);
+    });
+
+    test('one affected category among several is enough', () async {
+      final container = makeContainer();
+      final controller = withPinnedClock(
+        () => container.read(healthImportControllerProvider.notifier),
+      );
+
+      stubImports(const HealthImportResult.imported(3));
+      await controller.runImport(HealthImportCategory.sleep);
+      expect(needsAccessCheck(container), isFalse);
+
+      stubImports(const HealthImportResult.noDataOrAccess());
+      await controller.runImport(HealthImportCategory.bloodPressure);
+      expect(needsAccessCheck(container), isTrue);
+    });
   });
 
   group('runImport', () {
@@ -611,6 +747,40 @@ void main() {
           dateTo: expected.dateTo,
         ),
       ).called(1);
+    });
+  });
+
+  // iOS makes this the only real remedy: once a data type has been answered
+  // for, HealthKit will not present it again, so no amount of re-requesting
+  // from inside the app can turn it back on.
+  group('openHealthSettings', () {
+    late _RecordingPermissionHandler permissionHandler;
+    late PermissionHandlerPlatform originalPlatform;
+
+    setUp(() {
+      originalPlatform = PermissionHandlerPlatform.instance;
+      permissionHandler = _RecordingPermissionHandler();
+      PermissionHandlerPlatform.instance = permissionHandler;
+    });
+
+    tearDown(() => PermissionHandlerPlatform.instance = originalPlatform);
+
+    test('hands off to the operating system', () async {
+      final controller = withPinnedClock(
+        () => makeContainer().read(healthImportControllerProvider.notifier),
+      );
+
+      expect(await controller.openHealthSettings(), isTrue);
+      expect(permissionHandler.openAppSettingsCalls, 1);
+    });
+
+    test('relays a refusal rather than claiming it opened', () async {
+      permissionHandler.opens = false;
+      final controller = withPinnedClock(
+        () => makeContainer().read(healthImportControllerProvider.notifier),
+      );
+
+      expect(await controller.openHealthSettings(), isFalse);
     });
   });
 

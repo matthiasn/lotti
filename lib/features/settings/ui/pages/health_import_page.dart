@@ -124,6 +124,25 @@ class HealthImportBody extends ConsumerWidget {
                   ),
               ],
             ),
+            // Only once a run has actually come back empty. Offering the
+            // permission escape hatch unprompted would imply something is wrong
+            // on a page that has not yet tried anything.
+            if (state.needsAccessCheck) ...[
+              SizedBox(height: tokens.spacing.sectionGap),
+              DesignSystemInlineCallout(
+                icon: Icons.privacy_tip_outlined,
+                text: messages.settingsHealthImportAccessHint,
+              ),
+              SizedBox(height: tokens.spacing.step3),
+              DesignSystemButton(
+                label: messages.settingsHealthImportOpenSettings,
+                leadingIcon: Icons.settings_outlined,
+                variant: DesignSystemButtonVariant.secondary,
+                size: DesignSystemButtonSize.large,
+                fullWidth: true,
+                onPressed: () => unawaited(controller.openHealthSettings()),
+              ),
+            ],
             SizedBox(height: tokens.spacing.sectionGap),
             DesignSystemButton(
               label: messages.settingsHealthImportAll,
@@ -282,14 +301,27 @@ class _CategoryTrailing extends StatelessWidget {
     }
 
     return Icon(
-      outcome.isSuccess
-          ? Icons.check_circle_outline_rounded
-          : Icons.error_outline_rounded,
+      healthImportResultIcon(outcome),
       size: tokens.spacing.step6,
       color: healthImportResultTone(tokens, outcome),
     );
   }
 }
+
+/// Outcome glyph for a finished run.
+///
+/// A padlock rather than an error cross for the two access outcomes: neither is
+/// a malfunction, and both are fixed in the same place — the system's health
+/// privacy settings — which the glyph should point at rather than alarm about.
+IconData healthImportResultIcon(HealthImportResult result) =>
+    switch (result.status) {
+      HealthImportStatus.imported => Icons.check_circle_outline_rounded,
+      HealthImportStatus.permissionDenied ||
+      HealthImportStatus.noDataOrAccess => Icons.lock_outline_rounded,
+      HealthImportStatus.unsupportedPlatform ||
+      HealthImportStatus.noMatchingTypes ||
+      HealthImportStatus.failed => Icons.error_outline_rounded,
+    };
 
 /// Row glyph per data family.
 IconData healthImportCategoryIcon(HealthImportCategory category) =>
@@ -345,6 +377,8 @@ String healthImportResultLabel(
   ),
   HealthImportStatus.permissionDenied =>
     messages.settingsHealthImportStatusPermissionDenied,
+  HealthImportStatus.noDataOrAccess =>
+    messages.settingsHealthImportStatusNoDataOrAccess,
   HealthImportStatus.unsupportedPlatform =>
     messages.settingsHealthImportUnavailable,
   HealthImportStatus.noMatchingTypes =>
@@ -359,6 +393,7 @@ Color healthImportResultTone(DsTokens tokens, HealthImportResult result) =>
     switch (result.status) {
       HealthImportStatus.imported => tokens.colors.alert.success.defaultColor,
       HealthImportStatus.permissionDenied ||
+      HealthImportStatus.noDataOrAccess ||
       HealthImportStatus.unsupportedPlatform =>
         tokens.colors.alert.warning.defaultColor,
       HealthImportStatus.noMatchingTypes ||

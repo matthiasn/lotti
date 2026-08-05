@@ -4284,6 +4284,7 @@
   "settingsHabitsSearchHint": "Le abitudini di ricerca...",
   "settingsHabitsSubtitle": "Gestisci le tue abitudini e routine",
   "settingsHabitsTitle": "Abitazioni",
+  "settingsHealthImportAccessHint": "Non è stato possibile leggere alcuni dati. Se hai disattivato l’accesso di Lotti nelle impostazioni di privacy Salute del tuo dispositivo, Lotti non può richiederlo di nuovo: riattivalo lì.",
   "settingsHealthImportActivity": "Attività",
   "settingsHealthImportActivityDescription": "Passi, piani saliti e distanza percorsa",
   "settingsHealthImportAll": "Importa tutto",
@@ -4295,6 +4296,7 @@
   "settingsHealthImportFromDate": "Iniziare",
   "settingsHealthImportHeartRate": "Frequenza cardiaca",
   "settingsHealthImportHeartRateDescription": "A riposo, in movimento e variabilità",
+  "settingsHealthImportOpenSettings": "Apri impostazioni",
   "settingsHealthImportQuickRange": "{days, plural, =1{Ultimo giorno} other{Ultimi {days} giorni}}",
   "@settingsHealthImportQuickRange": {
     "placeholders": {
@@ -4315,6 +4317,7 @@
       }
     }
   },
+  "settingsHealthImportStatusNoDataOrAccess": "Nessun dato — controlla l’accesso di Lotti nella tua app Salute",
   "settingsHealthImportStatusPermissionDenied": "Accesso negato — autorizza Lotti nella tua app Salute",
   "settingsHealthImportStatusRunning": "Importazione…",
   "settingsHealthImportStatusUnsupportedType": "Questo tipo di dati non è più supportato",

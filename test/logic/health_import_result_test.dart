@@ -38,6 +38,26 @@ void main() {
       expect(result.sampleCount, 0);
     });
 
+    test('noDataOrAccess is not a success and counts nothing', () {
+      const result = HealthImportResult.noDataOrAccess();
+
+      expect(result.status, HealthImportStatus.noDataOrAccess);
+      expect(result.isSuccess, isFalse);
+      expect(result.sampleCount, 0);
+      expect(result.error, isNull);
+    });
+
+    test('noDataOrAccess is distinct from an empty success', () {
+      // The whole reason it exists: iOS reports a switched-off data type as a
+      // successful authorization followed by an empty read, which is
+      // indistinguishable from an up-to-date import unless they are separate
+      // outcomes.
+      expect(
+        const HealthImportResult.noDataOrAccess().status,
+        isNot(const HealthImportResult.imported(0).status),
+      );
+    });
+
     test('noMatchingTypes is not a success and counts nothing', () {
       const result = HealthImportResult.noMatchingTypes();
 
@@ -89,6 +109,19 @@ void main() {
 
       expect(combined, same(denied));
       expect(combined.sampleCount, 0);
+    });
+
+    test('a suspected access problem surfaces through a batch', () {
+      // Import all must not bury the one category that needs attention under
+      // five that worked — the page's access callout keys off this.
+      const suspected = HealthImportResult.noDataOrAccess();
+      final combined = HealthImportResult.combined(const [
+        HealthImportResult.imported(5),
+        suspected,
+        HealthImportResult.imported(2),
+      ]);
+
+      expect(combined, same(suspected));
     });
 
     test('a single failure among successes suppresses the sum', () {

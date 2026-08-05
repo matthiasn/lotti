@@ -11,14 +11,18 @@ import 'package:lotti/classes/health.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/health_data_types.dart';
 import 'package:lotti/logic/health_import_result.dart';
+import 'package:lotti/logic/health_permission_gate.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/health_service.dart';
 import 'package:lotti/utils/platform.dart';
 import 'package:permission_handler/permission_handler.dart';
 
+export 'package:lotti/logic/health_data_types.dart';
 export 'package:lotti/logic/health_import_result.dart';
+export 'package:lotti/logic/health_permission_gate.dart';
 
 /// Reads samples out of Apple Health / Health Connect and persists them as
 /// quantitative and workout journal entries.
@@ -43,7 +47,9 @@ class HealthImport {
     required this.health,
     required this.deviceInfo,
     Future<void> Function()? requestPermissions,
-  }) : _requestPermissions = requestPermissions ?? _defaultRequestPermissions {
+    HealthPermissionGate? permissionGate,
+  }) : _requestPermissions = requestPermissions ?? _defaultRequestPermissions,
+       permissionGate = permissionGate ?? HealthPermissionGate(health) {
     _platformReady = _resolvePlatform();
   }
   final PersistenceLogic persistenceLogic;
@@ -51,6 +57,12 @@ class HealthImport {
   final HealthService health;
   final DeviceInfoPlugin deviceInfo;
   final Future<void> Function() _requestPermissions;
+
+  /// Decides when the system authorization sheet may be raised, and for which
+  /// types. Every import goes through it rather than calling
+  /// `requestAuthorization` directly — see [HealthPermissionGate] for why
+  /// asking on every import was itself the bug.
+  final HealthPermissionGate permissionGate;
 
   /// Companion permissions that Health Connect needs before it will hand over
   /// step and distance data on Android.
@@ -250,13 +262,19 @@ class HealthImport {
   Future<HealthImportResult> getActivityHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
+    bool userInitiated = true,
   }) => _serialized(
-    () => _getActivityHealthData(dateFrom: dateFrom, dateTo: dateTo),
+    () => _getActivityHealthData(
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+      userInitiated: userInitiated,
+    ),
   );
 
   Future<HealthImportResult> _getActivityHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
+    required bool userInitiated,
   }) async {
     if (isDesktop) {
       return const HealthImportResult.unsupportedPlatform();
@@ -264,9 +282,12 @@ class HealthImport {
 
     try {
       await _requestPermissions();
-      final accessWasGranted = await authorizeHealth(activityTypes) ?? false;
+      final authorization = await authorizeHealth(
+        activityTypes,
+        userInitiated: userInitiated,
+      );
 
-      if (!accessWasGranted) {
+      if (authorization == HealthAuthorization.denied) {
         _logger.log(
           LogDomain.health,
           'authorization denied for activity types',
@@ -289,6 +310,30 @@ class HealthImport {
           flightsByDay,
           distanceByDay,
         );
+      }
+
+      // Every day in the range reads as zero. That is what a switched-off
+      // permission looks like on iOS, and also what a genuinely idle range
+      // looks like — so it is only worth reporting when nothing was ever
+      // imported for these types either. Checked *before* writing, so a denied
+      // permission does not fill the journal with fabricated zero-step days.
+      final readNothing = [
+        stepsByDay,
+        flightsByDay,
+        distanceByDay,
+      ].every((byDay) => byDay.values.every((value) => value == 0));
+
+      if (readNothing &&
+          authorization != HealthAuthorization.granted &&
+          !await _hasStoredHistory(activityStorageTypes)) {
+        _logger.log(
+          LogDomain.health,
+          'no activity data over ${days.length} days and none ever stored — '
+          'read access may be off',
+          subDomain: 'getActivityHealthData',
+          level: InsightLevel.warn,
+        );
+        return const HealthImportResult.noDataOrAccess();
       }
 
       final imported =
@@ -333,12 +378,42 @@ class HealthImport {
         .sum;
   }
 
-  Future<bool?> authorizeHealth(List<HealthDataType> types) async {
+  /// Authorizes [types] and everything in their permission families.
+  ///
+  /// [userInitiated] distinguishes a tap on the Health Import page from a
+  /// dashboard's background import: only the former may re-raise a system sheet
+  /// the user has already answered this session. See [HealthPermissionGate].
+  Future<HealthAuthorization> authorizeHealth(
+    List<HealthDataType> types, {
+    required bool userInitiated,
+  }) async {
     if (isDesktop) {
-      return false;
+      return HealthAuthorization.denied;
     }
-    final allowed = health.requestAuthorization(types);
-    return allowed;
+    return permissionGate.ensure(types, userInitiated: userInitiated);
+  }
+
+  /// The storage-type strings `addActivityEntries` writes under.
+  static const activityStorageTypes = <String>[
+    'cumulative_step_count',
+    'cumulative_flights_climbed',
+    'cumulative_distance',
+  ];
+
+  /// Whether any sample has ever been stored under one of [storageTypes].
+  ///
+  /// The discriminator behind [HealthImportStatus.noDataOrAccess]: an empty
+  /// read means "no samples" or "not allowed", and iOS will not say which — but
+  /// a category that has never produced a single sample is far more likely to
+  /// be one Lotti cannot read than one the user has never recorded *and* has a
+  /// dashboard for.
+  Future<bool> _hasStoredHistory(List<String> storageTypes) async {
+    for (final storageType in storageTypes) {
+      if (await _db.latestQuantitativeByType(storageType) != null) {
+        return true;
+      }
+    }
+    return false;
   }
 
   /// Imports every sample of [types] in the range as discrete quantitative
@@ -349,14 +424,21 @@ class HealthImport {
     required List<HealthDataType> types,
     required DateTime dateFrom,
     required DateTime dateTo,
+    bool userInitiated = true,
   }) => _serialized(
-    () => _fetchHealthData(types: types, dateFrom: dateFrom, dateTo: dateTo),
+    () => _fetchHealthData(
+      types: types,
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+      userInitiated: userInitiated,
+    ),
   );
 
   Future<HealthImportResult> _fetchHealthData({
     required List<HealthDataType> types,
     required DateTime dateFrom,
     required DateTime dateTo,
+    required bool userInitiated,
   }) async {
     if (isDesktop) {
       return const HealthImportResult.unsupportedPlatform();
@@ -369,9 +451,12 @@ class HealthImport {
       // contract of returning an outcome rather than throwing — and the caller
       // that trusts it hardest is the settings page, whose row would be left
       // spinning with no way to retry.
-      final accessWasGranted = await authorizeHealth(types) ?? false;
+      final authorization = await authorizeHealth(
+        types,
+        userInitiated: userInitiated,
+      );
 
-      if (!accessWasGranted) {
+      if (authorization == HealthAuthorization.denied) {
         _logger.log(
           LogDomain.health,
           'authorization denied for ${types.length} type(s)',
@@ -389,6 +474,27 @@ class HealthImport {
         startTime: dateFrom,
         endTime: dateToOrNow,
       );
+
+      // An empty read is either "no samples in this range" or "you are not
+      // allowed to see them", and on iOS there is no API that tells them apart.
+      // Reporting it as a plain success — a green tick reading "No new
+      // samples" — is what made a switched-off permission look like an
+      // up-to-date import. When nothing was read *and* nothing was ever stored
+      // for these types, say so, so the page can point at access.
+      if (dataPoints.isEmpty &&
+          authorization != HealthAuthorization.granted &&
+          !await _hasStoredHistory(
+            types.map((type) => type.toString()).toList(),
+          )) {
+        _logger.log(
+          LogDomain.health,
+          'no samples for ${types.length} type(s) and none ever stored — '
+          'read access may be off',
+          subDomain: 'fetchHealthData',
+          level: InsightLevel.warn,
+        );
+        return const HealthImportResult.noDataOrAccess();
+      }
 
       var imported = 0;
 
@@ -498,6 +604,10 @@ class HealthImport {
       return _getActivityHealthData(
         dateFrom: dateFrom,
         dateTo: now,
+        // Nobody asked for this — a chart scheduled it on open. Re-raising an
+        // authorization sheet the user has already answered would put a modal
+        // in front of a dashboard they were only looking at.
+        userInitiated: false,
       );
     }
 
@@ -519,6 +629,7 @@ class HealthImport {
       types: healthDataTypes,
       dateFrom: dateFrom,
       dateTo: now,
+      userInitiated: false,
     );
   }
 
@@ -578,13 +689,19 @@ class HealthImport {
   Future<HealthImportResult> getWorkoutsHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
+    bool userInitiated = true,
   }) => _serialized(
-    () => _getWorkoutsHealthData(dateFrom: dateFrom, dateTo: dateTo),
+    () => _getWorkoutsHealthData(
+      dateFrom: dateFrom,
+      dateTo: dateTo,
+      userInitiated: userInitiated,
+    ),
   );
 
   Future<HealthImportResult> _getWorkoutsHealthData({
     required DateTime dateFrom,
     required DateTime dateTo,
+    required bool userInitiated,
   }) async {
     if (isDesktop) {
       return const HealthImportResult.unsupportedPlatform();
@@ -595,10 +712,12 @@ class HealthImport {
       final dateToOrNow = dateTo.isAfter(now) ? now : dateTo;
 
       await _requestPermissions();
-      const types = [HealthDataType.WORKOUT];
-      final accessWasGranted = await authorizeHealth(types);
+      final authorization = await authorizeHealth(
+        workoutTypes,
+        userInitiated: userInitiated,
+      );
 
-      if (accessWasGranted != true) {
+      if (authorization == HealthAuthorization.denied) {
         _logger.log(
           LogDomain.health,
           'authorization denied for workouts',
@@ -609,10 +728,22 @@ class HealthImport {
       }
 
       final dataPoints = await health.getHealthDataFromTypes(
-        types: types,
+        types: workoutTypes,
         startTime: dateFrom,
         endTime: dateToOrNow,
       );
+
+      if (dataPoints.isEmpty &&
+          authorization != HealthAuthorization.granted &&
+          await _db.latestWorkout() == null) {
+        _logger.log(
+          LogDomain.health,
+          'no workouts in range and none ever stored — read access may be off',
+          subDomain: 'getWorkoutsHealthData',
+          level: InsightLevel.warn,
+        );
+        return const HealthImportResult.noDataOrAccess();
+      }
 
       var imported = 0;
 
@@ -676,6 +807,9 @@ class HealthImport {
       return await getWorkoutsHealthData(
         dateFrom: latest?.data.dateFrom ?? now.subtract(defaultFetchDuration),
         dateTo: now,
+        // Scheduled by a chart, not asked for by the user — see
+        // `_fetchHealthDataDelta`.
+        userInitiated: false,
       );
     } catch (error, stackTrace) {
       _logger.error(
@@ -690,56 +824,3 @@ class HealthImport {
     }
   }
 }
-
-/// Sleep stages that are additionally stored under the generic
-/// `HealthDataType.SLEEP_ASLEEP` type.
-///
-/// Apple splits sleep into core, deep and REM from iOS 16 / watchOS 9 onward
-/// (`SLEEP_LIGHT`, `SLEEP_DEEP`, `SLEEP_REM` in plugin terms) and reserves the
-/// generic category for `asleepUnspecified` — which is all an older phone, or a
-/// sleep entry added by hand in the Health app, ever writes. The "Asleep"
-/// dashboard charts the generic type, so each staged sample is stored a second
-/// time under it to keep one comparable series across both eras.
-///
-/// This set previously named `SLEEP_ASLEEP_CORE` and `SLEEP_ASLEEP_UNSPECIFIED`,
-/// which are not values of the plugin's enum and so matched nothing. Deep and
-/// REM matched by luck; core — the *largest* stage of a typical night — did not,
-/// and the "Asleep" chart lost roughly half of every staged night.
-const sleepStagesDuplicatedAsAsleep = <String>{
-  'HealthDataType.SLEEP_LIGHT',
-  'HealthDataType.SLEEP_DEEP',
-  'HealthDataType.SLEEP_REM',
-};
-
-List<HealthDataType> sleepTypes = [
-  HealthDataType.SLEEP_IN_BED,
-  HealthDataType.SLEEP_ASLEEP,
-  HealthDataType.SLEEP_LIGHT,
-  HealthDataType.SLEEP_DEEP,
-  HealthDataType.SLEEP_REM,
-  HealthDataType.SLEEP_AWAKE,
-];
-
-List<HealthDataType> bpTypes = [
-  HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
-  HealthDataType.BLOOD_PRESSURE_DIASTOLIC,
-];
-
-List<HealthDataType> heartRateTypes = [
-  HealthDataType.RESTING_HEART_RATE,
-  HealthDataType.WALKING_HEART_RATE,
-  HealthDataType.HEART_RATE_VARIABILITY_SDNN,
-];
-
-List<HealthDataType> bodyMeasurementTypes = [
-  HealthDataType.WEIGHT,
-  HealthDataType.BODY_FAT_PERCENTAGE,
-  HealthDataType.BODY_MASS_INDEX,
-  HealthDataType.HEIGHT,
-];
-
-List<HealthDataType> activityTypes = [
-  HealthDataType.STEPS,
-  HealthDataType.FLIGHTS_CLIMBED,
-  HealthDataType.DISTANCE_WALKING_RUNNING,
-];

@@ -30,9 +30,23 @@ byl přístup odepřen nebo že import selhal. **Importovat vše** spustí všec
 řádky po sobě. Zkratky **Posledních 7 / 30 / 90 dnů** nastaví oba datumy
 najednou; samotná změna rozsahu import nespustí.
 
-Operační systém může požádat o oprávnění ke zdravotním datům. Lotti může číst
-jen typy, které povolíš. Pokud očekávaná rodina chybí, zkontroluj oprávnění
-aplikace v systémovém nastavení telefonu a import zopakuj.
+## Když řádek nic nepřinese
+
+Operační systém požádá o oprávnění ke zdravotním datům, když Lotti čte rodinu dat
+poprvé, a Lotti může číst jen typy, které povolíš. Ptá se **jednou na rodinu dat**
+— krevní tlak je jediný dotaz pokrývající systolickou i diastolickou hodnotu — a
+sám se pak znovu neptá. Klepnutí na řádek zopakuje import a vyžádá jen ta
+oprávnění, která zůstala nerozhodnutá; u typu, na který jsi už odpověděl, se
+žádná nová výzva neobjeví, protože systém ji podruhé nezobrazí.
+
+Řádek, který nic nepřečetl a nikdy nepřinesl jediný vzorek, hlásí **Žádná data —
+zkontroluj přístup Lotti ve zdravotní aplikaci** a pod seznamem se objeví tlačítko **Otevřít
+nastavení**. Je to výzva ke kontrole, ne rozsudek: Apple záměrně aplikaci
+neprozradí, zda smí typ číst, takže Lotti nedokáže rozlišit „žádné takové záznamy
+nemáš“ od „tohle jsi vypnul“. Pokud jsi to opravdu vypnul — na iPhonu v
+**Nastavení → Zdraví → Přístup k datům a zařízení → Lotti**, na Androidu v Health
+Connect — jediná cesta zpět je zapnout to tam; Lotti tu výzvu podruhé vyvolat
+nemůže. Potom klepni na řádek znovu a import proběhne.
 
 Import zdraví se na počítači nezobrazuje, protože tam základní mobilní úložiště
 nejsou dostupná. Importovaná pozorování lze po synchronizaci na další zařízení

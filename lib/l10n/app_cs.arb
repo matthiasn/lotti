@@ -3778,6 +3778,7 @@
   "settingsHabitsSearchHint": "Hledat návyky",
   "settingsHabitsSubtitle": "Spravovat návyky a rutiny",
   "settingsHabitsTitle": "Návyky",
+  "settingsHealthImportAccessHint": "Některá data se nepodařilo načíst. Pokud jsi přístup Lotti vypnul v nastavení soukromí zdraví na svém zařízení, Lotti o něj už nemůže požádat znovu — zapni ho tam.",
   "settingsHealthImportActivity": "Aktivita",
   "settingsHealthImportActivityDescription": "Kroky, vyšlapaná patra a ušlá vzdálenost",
   "settingsHealthImportAll": "Importovat vše",
@@ -3789,6 +3790,7 @@
   "settingsHealthImportFromDate": "Začátek",
   "settingsHealthImportHeartRate": "Tepová frekvence",
   "settingsHealthImportHeartRateDescription": "Klidový tep, tep při chůzi a jeho variabilita",
+  "settingsHealthImportOpenSettings": "Otevřít nastavení",
   "settingsHealthImportQuickRange": "{days, plural, =1{Poslední den} few{Poslední {days} dny} other{Posledních {days} dnů}}",
   "@settingsHealthImportQuickRange": {
     "placeholders": {
@@ -3809,6 +3811,7 @@
       }
     }
   },
+  "settingsHealthImportStatusNoDataOrAccess": "Žádná data — zkontroluj přístup Lotti ve zdravotní aplikaci",
   "settingsHealthImportStatusPermissionDenied": "Přístup odepřen — povol Lotti ve své zdravotní aplikaci",
   "settingsHealthImportStatusRunning": "Importuje se…",
   "settingsHealthImportStatusUnsupportedType": "Tento typ dat už není podporován",

@@ -15855,6 +15855,12 @@ abstract class AppLocalizations {
   /// **'Habits'**
   String get settingsHabitsTitle;
 
+  /// No description provided for @settingsHealthImportAccessHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Some data could not be read. If you turned Lotti’s access off in your device’s health privacy settings, Lotti cannot ask for it again — turn it back on there.'**
+  String get settingsHealthImportAccessHint;
+
   /// No description provided for @settingsHealthImportActivity.
   ///
   /// In en, this message translates to:
@@ -15921,6 +15927,12 @@ abstract class AppLocalizations {
   /// **'Resting rate, walking rate and variability'**
   String get settingsHealthImportHeartRateDescription;
 
+  /// No description provided for @settingsHealthImportOpenSettings.
+  ///
+  /// In en, this message translates to:
+  /// **'Open settings'**
+  String get settingsHealthImportOpenSettings;
+
   /// No description provided for @settingsHealthImportQuickRange.
   ///
   /// In en, this message translates to:
@@ -15956,6 +15968,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{No new samples} =1{1 sample imported} other{{count} samples imported}}'**
   String settingsHealthImportStatusImported(int count);
+
+  /// No description provided for @settingsHealthImportStatusNoDataOrAccess.
+  ///
+  /// In en, this message translates to:
+  /// **'No data — check Lotti’s access in your health app'**
+  String get settingsHealthImportStatusNoDataOrAccess;
 
   /// No description provided for @settingsHealthImportStatusPermissionDenied.
   ///

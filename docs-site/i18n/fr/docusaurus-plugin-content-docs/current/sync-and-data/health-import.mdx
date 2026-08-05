@@ -32,10 +32,26 @@ arrivées, qu’il n’y en avait aucune, que l’accès a été refusé ou que 
 **7 / 30 / 90 derniers jours** règlent les deux dates d’un coup ; modifier la
 plage ne lance pas un import à lui seul.
 
-Le système d’exploitation peut demander l’autorisation d’accéder aux données de
-santé. Lotti ne peut lire que les types que tu autorises. Si une famille de
-données attendue manque, vérifie les autorisations de santé de l’app dans les
-réglages système du téléphone, puis réessaie cet import.
+## Quand une ligne ne rapporte rien
+
+Ton système d’exploitation demande l’autorisation d’accéder aux données de santé
+la première fois que Lotti lit une famille, et Lotti ne peut lire que les types
+que tu autorises. La demande a lieu **une fois par famille de données** — la
+tension artérielle est une seule demande couvrant la systolique et la diastolique
+— et elle ne se répète pas d’elle-même ensuite. Toucher la ligne relance l’import
+et ne demande que les autorisations encore indéterminées : un type auquel tu as
+déjà répondu ne provoque aucune nouvelle invite, car le système ne la présente
+pas une seconde fois.
+
+Une ligne qui n’a rien lu et n’a jamais rapporté la moindre mesure affiche
+**Aucune donnée — vérifie l’accès de Lotti dans ton app de santé**, et un bouton **Ouvrir les réglages**
+apparaît sous la liste. C’est une invitation à vérifier, pas un verdict : Apple
+ne dit délibérément pas à une app si elle a le droit de lire un type, donc Lotti
+ne distingue pas « tu n’as aucune mesure de ce genre » de « tu as désactivé
+ceci ». Si tu l’as désactivé — sur iPhone dans **Réglages → Santé → Accès aux données et
+appareils → Lotti**, sur Android dans Health Connect — c’est seulement là
+que tu peux le réactiver ; Lotti ne peut pas relancer cette demande. Touche
+ensuite à nouveau la ligne pour importer.
 
 L’import de données de santé n’apparaît pas sur ordinateur, car les dépôts de
 santé mobiles sous-jacents n’y sont pas disponibles. Les observations importées

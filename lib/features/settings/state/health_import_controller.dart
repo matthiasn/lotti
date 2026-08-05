@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
+import 'package:permission_handler/permission_handler.dart';
 
 /// One row on the Health Import page: a family of health data the user can
 /// import as a unit.
@@ -86,6 +87,18 @@ class HealthImportState {
   /// single-file pipeline.
   bool get isAnyRunning =>
       categories.values.any((category) => category.isRunning);
+
+  /// True when a category's last run came back with nothing and read access is
+  /// a plausible reason.
+  ///
+  /// Drives the page's access callout. Read from [resultFor] rather than
+  /// [HealthImportCategoryState.lastResult] so an outcome that no longer
+  /// describes the selected range stops raising it, exactly as the rows do.
+  bool get needsAccessCheck => HealthImportCategory.values.any((category) {
+    final status = resultFor(category)?.status;
+    return status == HealthImportStatus.permissionDenied ||
+        status == HealthImportStatus.noDataOrAccess;
+  });
 
   HealthImportState copyWith({
     DateTime? dateFrom,
@@ -257,6 +270,16 @@ class HealthImportController extends Notifier<HealthImportState> {
     );
     return result;
   }
+
+  /// Opens the operating system's settings page for Lotti, from which its
+  /// health permissions can be reached.
+  ///
+  /// The escape hatch iOS makes necessary: once a data type has been answered
+  /// for — at the first authorization sheet, or later in Settings → Privacy &
+  /// Security → Health — HealthKit will not present it again, so no amount of
+  /// re-requesting from inside the app can turn it back on. Only the user can,
+  /// there.
+  Future<bool> openHealthSettings() => openAppSettings();
 
   /// Runs every category in order, returning the combined outcome.
   ///
