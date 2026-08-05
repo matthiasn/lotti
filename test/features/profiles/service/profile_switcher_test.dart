@@ -11,6 +11,8 @@ import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/service_disposer.dart';
 
+import '../../../helpers/db_settle.dart';
+
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
   late Directory realRoot;
@@ -134,7 +136,7 @@ void main() {
             (MethodCall call) async => null,
           );
         addTearDown(() async {
-          await pumpEventQueue(times: 200);
+          await settlePendingDbWork();
           await ServiceDisposer(getIt, (e, s, n) {}).disposeAll();
           await getIt.reset();
           for (final channel in const [

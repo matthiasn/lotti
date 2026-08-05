@@ -15,6 +15,7 @@ import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:path/path.dart' as p;
 
+import 'helpers/db_settle.dart';
 import 'helpers/entity_factories.dart';
 
 /// Recursive snapshot of a directory subtree: relative path -> file length.
@@ -79,7 +80,7 @@ void main() {
   });
 
   tearDown(() async {
-    await pumpEventQueue(times: 200);
+    await settlePendingDbWork();
     await ServiceDisposer(getIt, (e, s, n) {}).disposeAll();
     await getIt.reset();
     unmockChannels();
