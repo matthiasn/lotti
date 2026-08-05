@@ -283,13 +283,16 @@ void main() {
     for (final node in painterOf(tester).scenario.nodes) node.id,
   };
 
-  Offset screenPosOf(WidgetTester tester, String nodeId) {
-    final painter = painterOf(tester);
-    final viewTopLeft = tester.getTopLeft(find.byType(KnowledgeGraphView));
-    return viewTopLeft +
-        painter.positions[nodeId]! * painter.scale +
-        painter.pan;
-  }
+  /// Full merged scenario ids, including raw nodes that the local projection
+  /// may intentionally replace with an aggregate display node.
+  Set<String> graphNodeIds(WidgetTester tester) => {
+    for (final node
+        in tester
+            .widget<KnowledgeGraphView>(find.byType(KnowledgeGraphView))
+            .scenario!
+            .nodes)
+      node.id,
+  };
 
   bool graphContainsNode(WidgetTester tester, String id) =>
       find.byType(KnowledgeGraphView).evaluate().isNotEmpty &&
@@ -630,10 +633,10 @@ void main() {
 
       await pumpUntil(
         tester,
-        () => paintedNodeIds(tester).contains('note-2'),
+        () => graphNodeIds(tester).contains('note-2'),
         reason: 'task-2 expansion to render note-2',
       );
-      expect(paintedNodeIds(tester), contains('note-2'));
+      expect(graphNodeIds(tester), contains('note-2'));
       expect(expansionReads, 1);
 
       seedHasNote = true;
@@ -644,11 +647,11 @@ void main() {
       await tester.pump();
       await pumpUntil(
         tester,
-        () => paintedNodeIds(tester).contains('seed-note'),
+        () => graphNodeIds(tester).contains('seed-note'),
         reason: 'seed refresh to preserve expansion and render seed-note',
       );
 
-      final afterSeedRefresh = paintedNodeIds(tester);
+      final afterSeedRefresh = graphNodeIds(tester);
       expect(afterSeedRefresh, contains('seed-note'));
       expect(afterSeedRefresh, contains('note-2'));
 
@@ -660,11 +663,11 @@ void main() {
       await tester.pump();
       await pumpUntil(
         tester,
-        () => paintedNodeIds(tester).contains('note-3'),
+        () => graphNodeIds(tester).contains('note-3'),
         reason: 'expanded task refresh to render note-3',
       );
 
-      final afterExpansionRefresh = paintedNodeIds(tester);
+      final afterExpansionRefresh = graphNodeIds(tester);
       expect(afterExpansionRefresh, contains('seed-note'));
       expect(afterExpansionRefresh, contains('note-2'));
       expect(afterExpansionRefresh, contains('note-3'));
@@ -951,9 +954,12 @@ void main() {
       );
       await tester.pump();
 
-      await tester.tapAt(screenPosOf(tester, 'project'));
-      await tester.pump();
-      await tester.tapAt(screenPosOf(tester, 'task-2'));
+      final graphView = tester.widget<KnowledgeGraphView>(
+        find.byType(KnowledgeGraphView),
+      );
+      // Pointer walking is covered above. This test isolates merge ordering by
+      // driving the same public focus callback the graph invokes for a task.
+      graphView.onTaskFocusChanged?.call('task-2', 'project');
       await tester.pump();
       await pumpUntil(
         tester,
@@ -961,7 +967,7 @@ void main() {
         reason: 'first merge gate',
       );
 
-      await tester.tapAt(screenPosOf(tester, 'task-3'));
+      graphView.onTaskFocusChanged?.call('task-3', 'project');
       await tester.pump();
       await pumpUntil(
         tester,
@@ -982,24 +988,24 @@ void main() {
       await pumpUntil(
         tester,
         () =>
-            graphContainsNode(tester, 'note-2') &&
-            graphContainsNode(tester, 'note-4'),
+            graphNodeIds(tester).contains('note-2') &&
+            graphNodeIds(tester).contains('note-4'),
         reason: 'both out-of-order expansions to render',
       );
 
-      expect(paintedNodeIds(tester), containsAll(['note-2', 'note-4']));
+      expect(graphNodeIds(tester), containsAll(['note-2', 'note-4']));
 
       mergeGates[0].complete();
       await tester.pump();
       await pumpUntil(
         tester,
         () =>
-            graphContainsNode(tester, 'note-2') &&
-            graphContainsNode(tester, 'note-4'),
+            graphNodeIds(tester).contains('note-2') &&
+            graphNodeIds(tester).contains('note-4'),
         reason: 'stale first merge to leave both expansions visible',
       );
 
-      expect(paintedNodeIds(tester), containsAll(['note-2', 'note-4']));
+      expect(graphNodeIds(tester), containsAll(['note-2', 'note-4']));
       expect(tester.takeException(), isNull);
     },
   );
