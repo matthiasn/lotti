@@ -6,7 +6,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/tasks/ui/file_watcher_mixin.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/utils/image_utils.dart';
 
 /// Bucket size (physical pixels) for quantizing the decode target.
@@ -47,7 +49,7 @@ int? coverArtCacheExtent(double maxExtent, double devicePixelRatio) {
   return math.min(buckets * coverArtDecodeBucket, coverArtMaxDecodeExtent);
 }
 
-/// Background widget for displaying task cover art in SliverAppBar.
+/// Displays task cover art in a SliverAppBar and opens it full screen on tap.
 class CoverArtBackground extends ConsumerStatefulWidget {
   const CoverArtBackground({
     required this.imageId,
@@ -120,7 +122,15 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
       return const SizedBox.shrink();
     }
 
-    return Stack(
+    final file = File(path);
+    final heroTag = 'task_cover_art_${widget.imageId}';
+    void openViewer() => showFullscreenImageViewer(
+      context,
+      file: file,
+      heroTag: heroTag,
+    );
+
+    final coverArt = Stack(
       fit: StackFit.expand,
       children: [
         LayoutBuilder(
@@ -137,7 +147,7 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
             final cacheExtent =
                 coverArtCacheExtent(constraints.maxWidth, devicePixelRatio) ??
                 coverArtCacheExtent(constraints.maxHeight, devicePixelRatio);
-            final fileImage = FileImage(File(path));
+            final fileImage = FileImage(file);
             ImageProvider imageProvider = fileImage;
             if (cacheExtent != null) {
               imageProvider = ResizeImage(
@@ -192,6 +202,22 @@ class _CoverArtBackgroundState extends ConsumerState<CoverArtBackground>
           child: SizedBox.expand(),
         ),
       ],
+    );
+
+    return Semantics(
+      button: true,
+      label: context.messages.entryTypeLabelJournalImage,
+      onTap: openViewer,
+      child: ExcludeSemantics(
+        child: GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onTap: openViewer,
+          child: MouseRegion(
+            cursor: SystemMouseCursors.click,
+            child: Hero(tag: heroTag, child: coverArt),
+          ),
+        ),
+      ),
     );
   }
 }

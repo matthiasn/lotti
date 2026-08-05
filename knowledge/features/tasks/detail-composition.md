@@ -15,7 +15,7 @@ sources:
   - id: pages
     resource: ../../../lib/features/tasks/ui/pages
     title: TaskDetailsPage and TaskForm
-    last_modified: 2026-08-03
+    last_modified: 2026-08-05
   - id: first-run
     resource: ../../../lib/features/tasks/ui/widgets/task_first_run_actions.dart
     title: First-run actions block
@@ -275,6 +275,12 @@ crumb segments. The page owns the gutter (see above).
 `TaskCompactAppBar` and `TaskExpandableAppBar` surface the task title in
 `subtitle2` once the scroll offset passes a threshold, so the title stays visible
 as the header scrolls away.
+
+When the expandable app bar has cover art, the whole artwork is an interactive
+image surface. A tap opens the same full-screen, zoomable viewer used by linked
+image entries, including rotation, download and zoom controls. The cover uses a
+task-specific Hero tag so an expanded linked image lower on the same detail page
+cannot become the transition source by mistake.
 
 The header is exercised in isolation under **Widgetbook → Tasks → Desktop task
 header**, whose Playground drives priority, status, category, due date, labels and
