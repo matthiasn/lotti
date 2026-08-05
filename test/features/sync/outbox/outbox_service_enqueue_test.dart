@@ -253,7 +253,6 @@ void main() {
       ),
     ).called(1);
     verify(() => syncDatabase.addOutboxItem(any())).called(1);
-    await failingService.dispose();
   });
 
   test('non-journal messages skip JSON refresh lookup', () async {
