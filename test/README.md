@@ -206,6 +206,26 @@ no `main()`. A repository behavior belongs in exactly one facade suite;
 collaborator-level unit coverage remains in the collaborator's mirrored test
 file.
 
+### Documented exception: `MatrixOutboxService` facade suites
+
+`MatrixOutboxService` coordinates enqueue persistence and payload preparation
+with the send runner, retry gates, maintenance timers, and subscription-driven
+nudges. Its end-to-end facade coverage is split into mutually exclusive suites:
+
+- `outbox_service_test.dart` — constructor requirements, sender delegation,
+  disposal, database/login subscription wiring, and facade invariants;
+- `outbox_service_enqueue_test.dart` — enqueue dispatch, pending-row merge and
+  persistence behavior, notifications, attachments, and inline message types;
+- `outbox_service_payload_test.dart` — linked payload preparation, sequence-log
+  recording, covered-vector-clock enrichment, and agent payload behavior;
+- `outbox_service_send_test.dart` — the mirrored `_OutboxSend` runner, login
+  and activity gates, drain/backoff behavior, watchdog, and sent-row pruning.
+
+Shared deterministic collaborators and lifecycle cleanup live in
+`outbox_service_test_harness.dart`, which has no `main()`. A facade behavior
+belongs in exactly one of these four suites; direct `OutboxEnqueueWriter` and
+`OutboxProcessor` unit coverage stays in their own mirrored test files.
+
 ## Mocktail global-state hygiene
 
 Mocktail stores argument matchers (`any`, `captureAny`) in **process-global**
