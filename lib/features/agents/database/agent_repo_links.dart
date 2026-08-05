@@ -268,6 +268,19 @@ class AgentRepoLinks {
     return rows.map(AgentDbConversions.fromLinkRow).toList();
   }
 
+  /// Fetches undecoded agent-link rows for item-isolated historical sync.
+  ///
+  /// The caller can decode each row inside its own retry boundary instead of
+  /// losing the rest of a page when one serialized payload is malformed.
+  Future<List<AgentLink>> getLinkRowsInInterval({
+    required DateTime start,
+    required DateTime end,
+    required int limit,
+    required int offset,
+  }) {
+    return _db.getAgentLinksInInterval(start, end, limit, offset).get();
+  }
+
   /// Counts agent links (including soft-deleted) updated in the
   /// half-open interval [start, end).
   Future<int> countLinksInInterval({

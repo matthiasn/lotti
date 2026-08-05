@@ -46,8 +46,10 @@ merge of two users' work.
   (roster order never chooses the target): message history defaults to All,
   with 30-day and custom ranges available. Custom dates use the same full-year
   calendar as the rest of the app. Progress remains visible until every row has
-  been attempted; an isolated failure names the affected row and can be retried
-  without requeueing everything that succeeded. During that full initial
+  been attempted; raw rows are decoded inside the item boundary, so an isolated
+  failure names the affected row and can be retried without requeueing
+  everything that succeeded. A journal link waits for its parent entry to
+  queue, including across retries. During that full initial
   transfer, the new device starts holding off automatic history requests before
   it logs in, so even the first queue drain cannot ask for data that is about to
   arrive; a failed or disconnected transfer releases that hold automatically,

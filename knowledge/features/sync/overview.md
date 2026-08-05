@@ -298,13 +298,17 @@ so an enqueue-only failure does not increment the clock again.
 `SyncMaintenanceRepository.backfillAgentEntityClocks` /
 `backfillAgentLinkClocks` remain the whole-database version of the same repair,
 reachable from *Backfill sync* as the **Agent vector clocks** recovery action.
-The historical sweep isolates every journal entity, entry link, agent entity
-and agent link: preparation, persistence or enqueue failure is logged with its
-payload family and id, collected in `ReSyncResult`, and never aborts later rows
-or phases. The modal reports the successful and failed counts, lists the failed
-ids, and retries only those retained actions. During onboarding, the exact
-suppression round remains active until all failed rows succeed; dismissing the
-partial summary aborts the round instead of claiming a complete snapshot.
+The historical sweep fetches undecoded journal and agent rows, then isolates
+every journal entity, entry link, agent entity and agent link: decode,
+preparation, persistence or enqueue failure is logged with its payload family
+and id, collected in `ReSyncResult`, and never aborts later rows or phases. A
+journal link whose parent entry did not queue is retained as a dependent
+failure; retry always attempts the parent first and queues the link only after
+that succeeds. The modal reports the successful and failed counts, lists the
+failed ids, and retries only those retained actions. During onboarding, the
+exact suppression round remains active until all failed rows succeed;
+dismissing the sheet while staging or retrying aborts the round, and the
+disposed sheet cannot subsequently queue a completion barrier.
 The paired screen names both transfers because the new device cannot send
 history it does not yet have.
 

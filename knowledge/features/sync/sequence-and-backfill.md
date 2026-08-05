@@ -178,13 +178,16 @@ cleanup only after `beginOutbound` succeeds. The empty Begin atomically adopts
 the provisional gate but claims no covered counters, so automatic backfill is
 no longer blocked while the partial or declined flow continues.
 
-Once a full round is active, the sender attempts every selected journal entity,
-entry link, agent entity and agent link independently. Failed rows are logged
-and retained in the result while later work continues. The End barrier is not
-queued while any failures remain: the sheet summarizes them and retry acts only
-on those retained rows. A successful retry completes the round; dismissing the
-partial summary aborts it, preserving the existing cooldown semantics instead
-of marking an incomplete snapshot complete.
+Once a full round is active, the sender fetches undecoded rows and performs
+decode, preparation, persistence and enqueue inside each retained item action.
+One malformed payload therefore cannot abort the rest of its page. Failed rows
+are logged and retained in the result while later work continues. Entry links
+are dependent items: a link is retained without enqueue when its parent journal
+entry fails, and retry preserves parent-before-link ordering. The End barrier
+is not queued while any failures remain: the sheet summarizes them and retry
+acts only on those retained rows. A successful retry completes the round;
+dismissing the sheet during staging, retry or the partial summary aborts it,
+and a disposed sheet cannot later enqueue End.
 
 ```mermaid
 stateDiagram-v2

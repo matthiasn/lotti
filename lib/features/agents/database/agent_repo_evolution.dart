@@ -159,6 +159,19 @@ class AgentRepoEvolution {
     return rows.map(AgentDbConversions.fromEntityRow).toList();
   }
 
+  /// Fetches undecoded agent rows for item-isolated historical sync.
+  ///
+  /// Keeping decoding out of the page query lets the sync sweep retain and
+  /// retry one malformed row without aborting every later row in the page.
+  Future<List<AgentEntity>> getEntityRowsInInterval({
+    required DateTime start,
+    required DateTime end,
+    required int limit,
+    required int offset,
+  }) {
+    return _db.getAgentEntitiesInInterval(start, end, limit, offset).get();
+  }
+
   /// Counts agent entities (including soft-deleted) updated in the
   /// half-open interval [start, end).
   Future<int> countEntitiesInInterval({

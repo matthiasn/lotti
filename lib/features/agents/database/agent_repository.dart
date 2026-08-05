@@ -374,6 +374,19 @@ class AgentRepository {
     offset: offset,
   );
 
+  /// Returns raw interval rows so historical sync can isolate decode errors.
+  Future<List<AgentEntity>> getEntityRowsInInterval({
+    required DateTime start,
+    required DateTime end,
+    required int limit,
+    required int offset,
+  }) => _evolution.getEntityRowsInInterval(
+    start: start,
+    end: end,
+    limit: limit,
+    offset: offset,
+  );
+
   Future<int> countEntitiesInInterval({
     required DateTime start,
     required DateTime end,
@@ -480,6 +493,19 @@ class AgentRepository {
     required int limit,
     required int offset,
   }) => _links.getLinksInInterval(
+    start: start,
+    end: end,
+    limit: limit,
+    offset: offset,
+  );
+
+  /// Returns raw interval rows so historical sync can isolate decode errors.
+  Future<List<AgentLink>> getLinkRowsInInterval({
+    required DateTime start,
+    required DateTime end,
+    required int limit,
+    required int offset,
+  }) => _links.getLinkRowsInInterval(
     start: start,
     end: end,
     limit: limit,

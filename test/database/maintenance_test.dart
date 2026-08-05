@@ -416,6 +416,207 @@ void main() {
         },
       );
 
+      test('isolates a malformed journal row before enqueue', () async {
+        final timestamp = DateTime(2024, 1, 16);
+        await _insertEntries(journalDb, [
+          _buildJournalEntry(
+            id: 'before-malformed',
+            timestamp: timestamp,
+            text: 'Before',
+          ),
+          _buildJournalEntry(
+            id: 'malformed-journal',
+            timestamp: timestamp.add(const Duration(minutes: 1)),
+            text: 'Malformed',
+          ),
+          _buildJournalEntry(
+            id: 'after-malformed',
+            timestamp: timestamp.add(const Duration(minutes: 2)),
+            text: 'After',
+          ),
+        ]);
+        final malformedRow = await journalDb.entriesForIds([
+          'malformed-journal',
+        ]).getSingle();
+        await journalDb
+            .into(journalDb.journal)
+            .insert(
+              malformedRow.copyWith(serialized: '{not-json'),
+              mode: InsertMode.insertOrReplace,
+            );
+
+        final result = await maintenance.reSyncInterval(
+          start: timestamp.subtract(const Duration(hours: 1)),
+          end: timestamp.add(const Duration(hours: 1)),
+          agentRepository: mockAgentRepo,
+          includeAgentEntities: false,
+        );
+
+        expect(
+          sentMessages.whereType<SyncJournalEntity>().map((entry) => entry.id),
+          ['before-malformed', 'after-malformed'],
+        );
+        expect(result.succeeded, 2);
+        expect(result.failures, hasLength(1));
+        expect(result.failures.single.itemId, 'malformed-journal');
+        expect(result.failures.single.error, isA<FormatException>());
+        expect(loggedExceptions, hasLength(1));
+
+        final retried = await result.retryFailures();
+
+        expect(retried.succeeded, 2);
+        expect(retried.failures, hasLength(1));
+        expect(retried.failures.single.itemId, 'malformed-journal');
+        expect(loggedExceptions, hasLength(2));
+        expect(
+          sentMessages.whereType<SyncJournalEntity>().map((entry) => entry.id),
+          ['before-malformed', 'after-malformed'],
+          reason: 'retry must not replay rows that were already queued',
+        );
+      });
+
+      test(
+        'defers entry links until their parent queues successfully',
+        () async {
+          final timestamp = DateTime(2024, 1, 17);
+          final parent = _buildJournalEntry(
+            id: 'parent-entry',
+            timestamp: timestamp,
+            text: 'Parent',
+          );
+          final target = _buildJournalEntry(
+            id: 'target-entry',
+            timestamp: timestamp.add(const Duration(minutes: 1)),
+            text: 'Target',
+          );
+          await _insertEntries(journalDb, [parent, target]);
+          await journalDb.upsertEntryLink(
+            _buildEntryLink(
+              id: 'dependent-link',
+              fromId: parent.id,
+              toId: 'target-entry',
+              timestamp: timestamp,
+            ),
+          );
+          var failParent = true;
+          final attempts = <String>[];
+          when(
+            () => outboxService.enqueueMessageOrThrow(any()),
+          ).thenAnswer((invocation) async {
+            final message =
+                invocation.positionalArguments.single as SyncMessage;
+            switch (message) {
+              case SyncJournalEntity(:final id):
+                attempts.add(id);
+                if (failParent && id == parent.id) {
+                  throw StateError('parent unavailable');
+                }
+              case SyncEntryLink(:final entryLink):
+                attempts.add(entryLink.id);
+              default:
+            }
+            sentMessages.add(message);
+          });
+
+          final result = await maintenance.reSyncInterval(
+            start: timestamp.subtract(const Duration(hours: 1)),
+            end: timestamp.add(const Duration(hours: 1)),
+            agentRepository: mockAgentRepo,
+            includeAgentEntities: false,
+          );
+
+          expect(attempts, ['parent-entry', 'target-entry']);
+          expect(result.succeeded, 1);
+          expect(result.failures, hasLength(2));
+          expect(
+            result.failures.map((failure) => failure.itemId),
+            ['parent-entry', 'dependent-link'],
+          );
+          expect(loggedExceptions, hasLength(2));
+
+          final stillFailing = await result.retryFailures();
+
+          expect(
+            attempts,
+            ['parent-entry', 'target-entry', 'parent-entry'],
+          );
+          expect(stillFailing.failures, hasLength(2));
+          expect(loggedExceptions, hasLength(4));
+
+          failParent = false;
+          final retried = await stillFailing.retryFailures();
+
+          expect(retried.succeeded, 3);
+          expect(retried.failures, isEmpty);
+          expect(
+            attempts,
+            [
+              'parent-entry',
+              'target-entry',
+              'parent-entry',
+              'parent-entry',
+              'dependent-link',
+            ],
+            reason: 'the parent retry must complete before its link is queued',
+          );
+          expect(sentMessages, hasLength(3));
+        },
+      );
+
+      test('isolates a malformed entry-link row before enqueue', () async {
+        final timestamp = DateTime(2024, 1, 18);
+        final parent = _buildJournalEntry(
+          id: 'valid-link-parent',
+          timestamp: timestamp,
+          text: 'Parent',
+        );
+        final target = _buildJournalEntry(
+          id: 'valid-link-target',
+          timestamp: timestamp.add(const Duration(minutes: 1)),
+          text: 'Target',
+        );
+        await _insertEntries(journalDb, [parent, target]);
+        await journalDb.upsertEntryLink(
+          _buildEntryLink(
+            id: 'malformed-entry-link',
+            fromId: parent.id,
+            toId: target.id,
+            timestamp: timestamp,
+          ),
+        );
+        final malformedLinkRow = await journalDb.linksFromIds([
+          parent.id,
+        ]).getSingle();
+        await journalDb
+            .into(journalDb.linkedEntries)
+            .insert(
+              malformedLinkRow.copyWith(serialized: '{not-json'),
+              mode: InsertMode.insertOrReplace,
+            );
+
+        final result = await maintenance.reSyncInterval(
+          start: timestamp.subtract(const Duration(hours: 1)),
+          end: timestamp.add(const Duration(hours: 1)),
+          agentRepository: mockAgentRepo,
+          includeAgentEntities: false,
+        );
+
+        expect(result.succeeded, 2);
+        expect(result.failures, hasLength(1));
+        expect(result.failures.single.itemId, 'malformed-entry-link');
+        expect(result.failures.single.itemType, ReSyncItemType.entryLink);
+        expect(result.failures.single.error, isA<FormatException>());
+        expect(sentMessages.whereType<SyncJournalEntity>(), hasLength(2));
+        expect(sentMessages.whereType<SyncEntryLink>(), isEmpty);
+
+        final retried = await result.retryFailures();
+
+        expect(retried.succeeded, 2);
+        expect(retried.failures, hasLength(1));
+        expect(retried.failures.single.itemId, 'malformed-entry-link');
+        expect(loggedExceptions, hasLength(2));
+      });
+
       test('handles pagination beyond the default page size', () async {
         final baseDate = DateTime(2024, 2);
         final entries = List.generate(
@@ -734,9 +935,107 @@ void main() {
           expect(sentMessages, hasLength(6));
           verify(
             () => outboxService.enqueueMessageOrThrow(any()),
-          ).called(10);
+          ).called(9);
         },
       );
+
+      test('isolates malformed agent entity and link rows', () async {
+        final timestamp = DateTime(2025, 1, 11, 9);
+        final malformedEntity = AgentDomainEntity.agent(
+          id: 'malformed-agent-entity',
+          agentId: 'agent-1',
+          kind: 'task_agent',
+          displayName: 'Malformed agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'valid-agent-entity',
+          config: const AgentConfig(),
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+        final validEntity = AgentDomainEntity.agentState(
+          id: 'valid-agent-entity',
+          agentId: 'agent-1',
+          revision: 2,
+          slots: const AgentSlots(),
+          updatedAt: timestamp.add(const Duration(minutes: 1)),
+          vectorClock: const VectorClock({'node': 2}),
+        );
+        final malformedLink = agent_model.AgentLink.agentState(
+          id: 'malformed-agent-link',
+          fromId: 'agent-1',
+          toId: malformedEntity.id,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          vectorClock: const VectorClock({'node': 3}),
+        );
+        final validLink = agent_model.AgentLink.agentState(
+          id: 'valid-agent-link',
+          fromId: 'agent-1',
+          toId: validEntity.id,
+          createdAt: timestamp,
+          updatedAt: timestamp.add(const Duration(minutes: 1)),
+          vectorClock: const VectorClock({'node': 4}),
+        );
+        await populateAgentDb(
+          entities: [malformedEntity, validEntity],
+          links: [malformedLink, validLink],
+        );
+        final malformedEntityRow = await agentDb
+            .getAgentEntityById(malformedEntity.id)
+            .getSingle();
+        await agentDb
+            .into(agentDb.agentEntities)
+            .insert(
+              malformedEntityRow.copyWith(serialized: '{not-json'),
+              mode: InsertMode.insertOrReplace,
+            );
+        final malformedLinkRow = await agentDb
+            .getAgentLinkById(malformedLink.id)
+            .getSingle();
+        await agentDb
+            .into(agentDb.agentLinks)
+            .insert(
+              malformedLinkRow.copyWith(serialized: '{not-json'),
+              mode: InsertMode.insertOrReplace,
+            );
+
+        final result = await maintenance.reSyncInterval(
+          start: timestamp.subtract(const Duration(hours: 1)),
+          end: timestamp.add(const Duration(hours: 1)),
+          agentRepository: agentRepo,
+          includeJournalEntities: false,
+        );
+
+        expect(result.succeeded, 2);
+        expect(result.failures, hasLength(2));
+        expect(
+          result.failures.map((failure) => failure.itemId).toSet(),
+          {malformedEntity.id, malformedLink.id},
+        );
+        expect(
+          sentMessages.whereType<SyncAgentEntity>().map(
+            (message) => message.agentEntity?.id,
+          ),
+          [validEntity.id],
+        );
+        expect(
+          sentMessages.whereType<SyncAgentLink>().map(
+            (message) => message.agentLink?.id,
+          ),
+          [validLink.id],
+        );
+        expect(loggedExceptions, hasLength(2));
+
+        final retried = await result.retryFailures();
+
+        expect(retried.succeeded, 2);
+        expect(retried.failures, hasLength(2));
+        expect(loggedExceptions, hasLength(4));
+        expect(sentMessages, hasLength(2));
+      });
 
       test('enqueues agent entities updated within interval', () async {
         final baseDate = DateTime(2024, 10);

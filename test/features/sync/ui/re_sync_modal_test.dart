@@ -389,6 +389,75 @@ void main() {
     expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
   });
 
+  testWidgets('retry infrastructure failure aborts onboarding', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenAnswer((_) async => round);
+    when(() => onboarding.abortOutbound(round)).thenAnswer((_) async {});
+    when(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer(
+      (_) async => partialResult(
+        retryAction: () async => throw StateError('retry failed'),
+      ),
+    );
+    when(
+      () => mockLogging.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
+        message: any<String?>(named: 'message'),
+      ),
+    ).thenAnswer((invocation) {
+      if (invocation.namedArguments[#subDomain] == 'reSyncInterval.item') {
+        throw StateError('retry logging failed');
+      }
+    });
+
+    await pumpModal(
+      tester,
+      onboardingTarget: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('reSyncRetryFailures')));
+    await tester.pump();
+
+    verify(() => onboarding.abortOutbound(round)).called(1);
+    verify(
+      () => mockLogging.error(
+        LogDomain.sync,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: 'reSyncMessagesRetry',
+      ),
+    ).called(1);
+    expect(find.byKey(const Key('reSyncFailed')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
   testWidgets('partial target sync does not start onboarding suppression', (
     tester,
   ) async {
@@ -530,6 +599,115 @@ void main() {
     verify(() => onboarding.abortOutbound(round)).called(1);
     verifyNever(() => onboarding.completeOutbound(round));
     verifyNever(() => onboarding.releaseInboundPreflight(target));
+    expect(find.byType(ReSyncModalContent), findsNothing);
+  });
+
+  testWidgets(
+    'dismissal while history is staging never completes onboarding',
+    (tester) async {
+      const target = OnboardingSyncTarget(
+        userId: '@alice:example.com',
+        deviceId: 'PHONE',
+      );
+      const round = OutboundOnboardingRound(
+        roundId: 'round-1',
+        senderHostId: 'desktop-host',
+        target: target,
+        coverageUpperBounds: {'desktop-host': 99},
+      );
+      final onboarding = MockOnboardingSyncService();
+      final staging = Completer<ReSyncResult>();
+      when(
+        () => onboarding.beginOutbound(target),
+      ).thenAnswer((_) async => round);
+      when(() => onboarding.abortOutbound(round)).thenAnswer((_) async {});
+      when(
+        () => onboarding.completeOutbound(round),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockMaintenance.reSyncInterval(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+          agentRepository: any(named: 'agentRepository'),
+          includeJournalEntities: any(named: 'includeJournalEntities'),
+          includeAgentEntities: any(named: 'includeAgentEntities'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) => staging.future);
+
+      await openOnboardingModal(
+        tester,
+        target: target,
+        onboardingSyncService: onboarding,
+      );
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+      await tester.pump();
+
+      Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      staging.complete(ReSyncResult.empty);
+      await tester.pump();
+
+      verify(() => onboarding.abortOutbound(round)).called(1);
+      verifyNever(() => onboarding.completeOutbound(round));
+      expect(find.byType(ReSyncModalContent), findsNothing);
+    },
+  );
+
+  testWidgets('dismissal while retrying never completes onboarding', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = MockOnboardingSyncService();
+    final retry = Completer<void>();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenAnswer((_) async => round);
+    when(() => onboarding.abortOutbound(round)).thenAnswer((_) async {});
+    when(
+      () => onboarding.completeOutbound(round),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer(
+      (_) async => partialResult(retryAction: () => retry.future),
+    );
+
+    await openOnboardingModal(
+      tester,
+      target: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('reSyncRetryFailures')));
+    await tester.pump();
+
+    Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    retry.complete();
+    await tester.pump();
+
+    verify(() => onboarding.abortOutbound(round)).called(1);
+    verifyNever(() => onboarding.completeOutbound(round));
     expect(find.byType(ReSyncModalContent), findsNothing);
   });
 

@@ -149,6 +149,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
               });
             },
           );
+      if (!mounted) return;
       if (onboardingRound != null && !result.hasFailures) {
         await _onboardingService.completeOutbound(onboardingRound);
         _setActiveOnboardingRound(null);
@@ -227,6 +228,7 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
           });
         },
       );
+      if (!mounted) return;
       final onboardingRound = _activeOnboardingRound;
       if (!result.hasFailures && onboardingRound != null) {
         await _onboardingService.completeOutbound(onboardingRound);

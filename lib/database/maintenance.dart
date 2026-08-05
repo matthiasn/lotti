@@ -10,6 +10,7 @@ import 'package:lotti/database/editor_db.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_link.dart' as agent_model;
@@ -241,6 +242,30 @@ class _ReSyncFailureCollector {
       return false;
     }
   }
+
+  void defer({
+    required ReSyncPhase phase,
+    required ReSyncItemType itemType,
+    required String itemId,
+    required String dependencyItemId,
+    required Future<void> Function() retryAction,
+  }) {
+    final error = StateError(
+      'Historical sync deferred because parent item '
+      '$dependencyItemId was not queued',
+    );
+    final stackTrace = StackTrace.current;
+    final failure = ReSyncFailure(
+      phase: phase,
+      itemType: itemType,
+      itemId: itemId,
+      error: error,
+      stackTrace: stackTrace,
+      retryAction: retryAction,
+      logger: _logger,
+    ).._logFailure(error, stackTrace, attempt: 'defer');
+    _failures.add(failure);
+  }
 }
 
 class Maintenance {
@@ -326,50 +351,85 @@ class Maintenance {
           break;
         }
 
-        final entries = entityStreamMapper(dbEntities);
-        final pageEntryIds = entries.map((e) => e.meta.id).toSet();
-        final allPageLinks = await _db.linksForEntryIds(pageEntryIds);
-        final linksByFromId = <String, List<EntryLink>>{};
-        for (final link in allPageLinks) {
-          linksByFromId.putIfAbsent(link.fromId, () => []).add(link);
+        final pageEntryIds = dbEntities.map((row) => row.id).toSet();
+        final allPageLinkRows = await _db
+            .linksFromIds(
+              pageEntryIds.toList(),
+            )
+            .get();
+        final linkRowsByFromId = <String, List<LinkedDbEntry>>{};
+        for (final row in allPageLinkRows) {
+          linkRowsByFromId.putIfAbsent(row.fromId, () => []).add(row);
         }
 
-        for (final entry in entries) {
+        for (final dbEntity in dbEntities) {
+          JournalEntity? preparedEntry;
+          var parentQueued = false;
           final queued = await failures.attempt(
             phase: ReSyncPhase.journalEntities,
             itemType: ReSyncItemType.journalEntity,
-            itemId: entry.id,
-            action: () => outboxService.enqueueMessageOrThrow(
-              SyncMessage.journalEntity(
-                id: entry.id,
-                vectorClock: entry.meta.vectorClock,
-                jsonPath: relativeEntityPath(entry),
-                status: SyncEntryStatus.update,
-                originatingHostId: hostId,
-                // A re-sync targets a peer that may hold none of this history
-                // — typically a freshly provisioned device. `update` status
-                // is correct (the entry is not new here), but JSON alone
-                // would leave that peer with image and audio entries it can
-                // never render, so the media rides along.
-                includeAttachments: true,
-              ),
-            ),
+            itemId: dbEntity.id,
+            action: () async {
+              final entry = preparedEntry ??= fromDbEntity(dbEntity);
+              await outboxService.enqueueMessageOrThrow(
+                SyncMessage.journalEntity(
+                  id: entry.id,
+                  vectorClock: entry.meta.vectorClock,
+                  jsonPath: relativeEntityPath(entry),
+                  status: SyncEntryStatus.update,
+                  originatingHostId: hostId,
+                  // A re-sync targets a peer that may hold none of this
+                  // history — typically a freshly provisioned device.
+                  // `update` status is correct (the entry is not new here),
+                  // but JSON alone would leave that peer with image and audio
+                  // entries it can never render, so the media rides along.
+                  includeAttachments: true,
+                ),
+              );
+              parentQueued = true;
+            },
           );
           processed++;
           if (!queued) failed++;
 
-          final entryLinks = linksByFromId[entry.meta.id] ?? const [];
-          for (final entryLink in entryLinks) {
-            final linkQueued = await failures.attempt(
-              phase: ReSyncPhase.journalEntities,
-              itemType: ReSyncItemType.entryLink,
-              itemId: entryLink.id,
-              action: () => outboxService.enqueueMessageOrThrow(
+          final entryLinkRows = linkRowsByFromId[dbEntity.id] ?? const [];
+          for (final entryLinkRow in entryLinkRows) {
+            EntryLink? preparedLink;
+            Future<void> enqueueLink() async {
+              if (!parentQueued) {
+                throw StateError(
+                  'Parent journal entity ${dbEntity.id} is not queued',
+                );
+              }
+              final entryLink = preparedLink ??= entryLinkFromLinkedDbEntry(
+                entryLinkRow,
+              );
+              await outboxService.enqueueMessageOrThrow(
                 SyncMessage.entryLink(
                   status: SyncEntryStatus.update,
                   entryLink: entryLink,
                 ),
-              ),
+              );
+            }
+
+            if (!queued) {
+              failures.defer(
+                phase: ReSyncPhase.journalEntities,
+                itemType: ReSyncItemType.entryLink,
+                itemId: entryLinkRow.id,
+                dependencyItemId: dbEntity.id,
+                retryAction: enqueueLink,
+              );
+              processed++;
+              failed++;
+              continue;
+            }
+
+            final linkQueued = await failures.attempt(
+              phase: ReSyncPhase.journalEntities,
+              itemType: ReSyncItemType.entryLink,
+              itemId: entryLinkRow.id,
+              action: enqueueLink,
             );
             processed++;
             if (!linkQueued) failed++;
@@ -392,7 +452,6 @@ class Maintenance {
     // Such a row is applied by the peer but skipped by the sequence log
     // (sync_event_processor_agent_handlers.dart:599), so it lands invisible to
     // gap detection and backfill.
-    //
     // Stamping here rather than in a preflight sweep keeps the repair inside
     // the interval the user actually chose: a "Last 30 days" run must not
     // enqueue years of legacy agent history just because those rows happen to
@@ -413,19 +472,23 @@ class Maintenance {
           start: start,
           end: end,
         ),
-        itemsFetcher: (limit, offset) => agentRepository.getEntitiesInInterval(
-          start: start,
-          end: end,
-          limit: limit,
-          offset: offset,
-        ),
-        enqueueAction: (entity) async {
-          var toSend = entity;
+        itemsFetcher: (limit, offset) =>
+            agentRepository.getEntityRowsInInterval(
+              start: start,
+              end: end,
+              limit: limit,
+              offset: offset,
+            ),
+        enqueueAction: (row) async {
+          AgentDomainEntity? preparedEntity;
           return failures.attempt(
             phase: ReSyncPhase.agentEntities,
             itemType: ReSyncItemType.agentEntity,
-            itemId: entity.id,
+            itemId: row.id,
             action: () async {
+              var toSend = preparedEntity ??= AgentDbConversions.fromEntityRow(
+                row,
+              );
               toSend = await stampIfClockless(
                 toSend,
                 toSend.vectorClock,
@@ -441,6 +504,7 @@ class Maintenance {
                   },
                 ),
               );
+              preparedEntity = toSend;
               await outboxService.enqueueMessageOrThrow(
                 SyncMessage.agentEntity(
                   agentEntity: toSend,
@@ -475,19 +539,20 @@ class Maintenance {
           start: start,
           end: end,
         ),
-        itemsFetcher: (limit, offset) => agentRepository.getLinksInInterval(
+        itemsFetcher: (limit, offset) => agentRepository.getLinkRowsInInterval(
           start: start,
           end: end,
           limit: limit,
           offset: offset,
         ),
-        enqueueAction: (link) async {
-          var toSend = link;
+        enqueueAction: (row) async {
+          agent_model.AgentLink? preparedLink;
           return failures.attempt(
             phase: ReSyncPhase.agentLinks,
             itemType: ReSyncItemType.agentLink,
-            itemId: link.id,
+            itemId: row.id,
             action: () async {
+              var toSend = preparedLink ??= AgentDbConversions.fromLinkRow(row);
               toSend = await stampIfClockless(
                 toSend,
                 toSend.vectorClock,
@@ -503,6 +568,7 @@ class Maintenance {
                   },
                 ),
               );
+              preparedLink = toSend;
               await outboxService.enqueueMessageOrThrow(
                 SyncMessage.agentLink(
                   agentLink: toSend,
