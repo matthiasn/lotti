@@ -1,7 +1,7 @@
 # Test Suite Review and Optimization Plan
 
 **Date:** 2026-02-18
-**Status:** Phase 4 Complete (Steps 12 done; Step 13 CI guardrails remaining)
+**Status:** Phase 4 Complete (Step 13 closed without CI changes)
 **Scope:** 774 test files, 332K lines of test code
 
 ---
@@ -588,10 +588,11 @@ documentation, not code.
     - Use existing `retry_fake_time.dart` and `pump_retry_time.dart` infrastructure
     - Target: all tests under `test/features/*/state/`, `test/features/*/repository/`, `test/services/`
 
-13. **Add CI guardrails**
-    - Lint rule or pre-commit hook to catch `Future.delayed` in `*_test.dart`
-    - Warning for `pumpAndSettle(Duration(seconds: N))` where N >= 2
-    - Warning for test files with 50+ `pumpAndSettle` calls
+13. **CI guardrails — NOT PURSUED**
+    - No new CI check, lint rule, or pre-commit hook will be added for this
+      review.
+    - Remaining debt is handled in focused implementation PRs, using the
+      existing testing conventions and normal review/CI verification.
 
 ---
 

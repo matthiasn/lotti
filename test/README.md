@@ -137,6 +137,29 @@ decision, not an accident. Rules for the satellites:
 - new sub-domains get a satellite only when the core file would otherwise
   grow past ~8k lines — default to the core file.
 
+### Documented exception: `SyncSequenceLogService` facade suites
+
+`SyncSequenceLogService` is a thin integration facade over the sequence
+receiver, sender, backfill, population, and cache collaborators. Its tests keep
+the end-to-end facade coverage, but split the former 6k+ line mirror into
+responsibility-owned satellites:
+
+- `sync_sequence_log_service_test.dart` — facade wiring, send path, cache, and
+  missing-work notification behavior;
+- `sync_sequence_log_service_receive_test.dart` — receive-path gap detection
+  and generated sequence models;
+- `sync_sequence_log_service_backfill_test.dart` — backfill response,
+  verification, reset, and retirement behavior;
+- `sync_sequence_log_service_population_test.dart` — journal, link, and agent
+  population plus read/query behavior;
+- `sync_sequence_log_service_covered_clock_test.dart` — covered-vector-clock
+  semantics.
+
+Shared generators, deterministic entities, and mock wiring live in
+`sync_sequence_log_service_test_helpers.dart`, which has no `main()`. A behavior
+belongs in exactly one satellite; collaborator-level unit coverage continues to
+live in the collaborator's own mirrored test file.
+
 ## Mocktail global-state hygiene
 
 Mocktail stores argument matchers (`any`, `captureAny`) in **process-global**
