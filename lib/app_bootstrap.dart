@@ -65,9 +65,7 @@ void registerProcessLogging() {
 Future<void> initPlatformOnce() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Platform startup call; controller behavior is covered by focused tests.
-  // coverage:ignore-start
   await appOrientationController.lockToPortrait();
-  // coverage:ignore-end
   try {
     MediaKit.ensureInitialized();
   } catch (e) {
@@ -101,11 +99,9 @@ Future<void> initPlatformOnce() async {
   tz.initializeTimeZones();
   // Loading the database does not pick a zone — without this the package's
   // `local` stays UTC and scheduled reminders land hours off.
-  // coverage:ignore-start
   await configureLocalTimezone(
     onError: handleTimezoneConfigurationError,
   );
-  // coverage:ignore-end
 
   // Process-global crypto init for the vodozemac bindings; required before
   // any Matrix stack is constructed, harmless when none ever is.
