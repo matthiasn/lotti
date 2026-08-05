@@ -6,14 +6,25 @@ import 'package:matrix/encryption/utils/key_verification.dart';
 import 'package:matrix/matrix.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+/// Directory below the active profile root that owns Matrix SDK state.
+const matrixDatabaseDirectoryName = 'matrix';
+
+/// Default logical database name passed to the Matrix SDK.
+const matrixDatabaseName = 'lotti_sync';
+
+/// Default Matrix SDK database path relative to the active profile root.
+const matrixDatabaseRelativePath =
+    '$matrixDatabaseDirectoryName/$matrixDatabaseName.db';
+
 Future<Client> createMatrixClient({
   required Directory documentsDirectory,
   String? deviceDisplayName,
   String? dbName,
   bool? singleInstance,
 }) async {
-  final name = dbName ?? 'lotti_sync';
-  final path = '${documentsDirectory.path}/matrix/$name.db';
+  final name = dbName ?? matrixDatabaseName;
+  final path =
+      '${documentsDirectory.path}/$matrixDatabaseDirectoryName/$name.db';
 
   sqfliteFfiInit();
   final dbFactory = createDatabaseFactoryFfi(ffiInit: sqfliteFfiInit);

@@ -5,7 +5,7 @@ description: The eleven Drift/SQLite databases, how connections are opened and m
 resource: ../../lib/database
 tags: [architecture, persistence, drift, sqlite, migrations]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-01T20:22:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-05T22:23:21Z }
 stale_after: 2027-01-11
 sources:
   - id: sync-db
@@ -48,6 +48,10 @@ sources:
     resource: ../../lib/database/database_migration.dart
     title: JournalDb migration strategy
     last_modified: 2026-07-09
+  - id: backup-catalog
+    resource: ../../lib/features/backup_restore/domain/profile_backup_catalog.dart
+    title: Profile backup storage catalog
+    last_modified: 2026-08-06
   - id: update-notifications
     resource: ../../lib/services/db_notification.dart
     title: UpdateNotifications
@@ -70,15 +74,15 @@ migration work has to cover both, and embeddings are a third store again (below)
 | Database | File | Schema | Owns |
 |----------|------|--------|------|
 | `JournalDb` | `db.sqlite` | 45 | Journal entities, tasks, links, tags, config flags — the primary store |
-| `SyncDatabase` | `sync.sqlite` | 28 | Outbox, sequence log, host activity, inbound event queue, queue markers |
-| `AgentDatabase` | `agent.sqlite` | 18 | Agent state, reports, observations, change proposals, wake history |
+| `SyncDatabase` | `sync.sqlite` | 29 | Outbox, sequence log, host activity, inbound event queue, queue markers |
+| `AgentDatabase` | `agent.sqlite` | 19 | Agent state, reports, observations, change proposals, wake history |
 | `EditorDb` | `editor_drafts_db.sqlite` | 2 | Unsaved rich-text editor drafts |
 | `ConsumptionDatabase` | `ai_consumption.sqlite` | 2 | AI token usage and the interaction ledger |
 | `SettingsDb` | `settings.sqlite` | 1 | Key/value app settings, sync watermarks, saved filters |
 | `Fts5Db` | `fts5_db.sqlite` | 1 | Full-text search index |
 | `NotificationsDb` | `notifications.sqlite` | 1 | Scheduled and delivered notifications |
 | `OnboardingMetricsDb` | `onboarding_metrics.sqlite` | 1 | First-run and activation measurement |
-| `AiConfigDb` | (feature-local) | 1 | Providers, models, prompts, inference profiles |
+| `AiConfigDb` | `ai_config.sqlite` | 1 | Providers, models, prompts, inference profiles |
 | `DayProcessingDb` | `day_processing.sqlite` | 1 | Daily OS day-processing outbox |
 
 Splitting by concern is what makes a heavy background writer — sync ingestion,
@@ -331,6 +335,23 @@ Two consequences worth holding on to:
 Timestamps come from `package:clock`'s `clock.now()`, so tests can drive them
 with `withClock`.
 
+That helper is a **legacy per-database fallback**, not a supported profile
+backup. It copies only the main SQLite file, has no store identity, manifest,
+checksum, media coverage, encryption, coordinated quiescence, or restore path.
+A raw copy is not safe while WAL-backed writers are active.
+
+The implementation-consumable profile inventory now lives in
+`ProfileBackupCatalog`. It includes authoritative databases, media and sync
+sidecars; marks FTS, ObjectBox embeddings and waveform previews rebuildable;
+excludes logs, sibling guest worlds, the device-global profile registry and the
+legacy `backup/` directory; and rejects SQLite journal companions as evidence
+that strict quiescence has not been proven. `QuiescedProfileSnapshotService`
+can then copy a closed profile into a partial stage, rehash the source, validate
+SQLite integrity and schema versions, verify the manifest against the payload,
+and publish with one rename. It does not stop writers; lifecycle orchestration
+must satisfy that precondition. The full contract and remaining runtime layers
+are in [backup and restore](../features/backup-and-restore.md).
+
 `lib/database/maintenance.dart` owns physical database upkeep: whole-database
 deletion (`deleteAgentDb`, `deleteEditorDb`, `deleteSyncDb`), FTS rebuilding,
 and the `sent`-outbox purge. Historical re-send orchestration belongs to Sync
@@ -353,6 +374,7 @@ entity operations, which is where to look for it.
 | Slow-query interceptor | [`lib/database/slow_query_logging.dart`](../../lib/database/slow_query_logging.dart) |
 | Maintenance operations | [`lib/database/maintenance.dart`](../../lib/database/maintenance.dart) |
 | Historical Sync staging and retry | [`lib/features/sync/services/historical_sync_service.dart`](../../lib/features/sync/services/historical_sync_service.dart) |
+| Profile backup inventory, manifest and staging | [Backup and restore](../features/backup-and-restore.md) |
 
 Related: [bootstrap and dependency injection](bootstrap-and-di.md) for when each
 database is registered, [the sync feature](../features/sync/) for what fills

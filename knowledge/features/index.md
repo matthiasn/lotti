@@ -35,6 +35,7 @@ what it does for a user; these describe how it runs.
 
 * [Sync](sync/) - single-user multi-device replication over end-to-end encrypted Matrix.
 * [Notifications](notifications.md) - durable alerts that converge across devices.
+* [Backup and restore](backup-and-restore.md) - the independent recovery artifact: profile inventory, integrity manifest, and safe capture/restore boundary.
 
 # Shell, settings and look
 
