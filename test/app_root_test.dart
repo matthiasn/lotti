@@ -10,10 +10,14 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     hide aiConfigRepositoryProvider;
+import 'package:lotti/features/design_system/theme/design_system_theme.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
+import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
+import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/logging_service.dart';
@@ -52,6 +56,11 @@ void main() {
         ..registerSingleton<LoggingService>(MockLoggingService())
         ..registerSingleton<OutboxService>(MockOutboxService())
         ..registerSingleton<AiConfigRepository>(MockAiConfigRepository());
+      // The real world advertises sync, so its provider bridge resolves a
+      // MatrixService; guest worlds never construct one.
+      if (profile.type != ProfileType.guest) {
+        getIt.registerSingleton<MatrixService>(MockMatrixService());
+      }
     }
 
     testWidgets(
@@ -128,18 +137,199 @@ void main() {
         expect(reloaded!.activeProfileId, guest2.id);
       },
     );
+
+    // The white-flash regression: every frame between the last themed frame
+    // of the outgoing generation and the first themed frame of the incoming
+    // one must stay on the carried-over background. A `MaterialApp` or
+    // `Scaffold` anywhere in the switch chrome silently reintroduces
+    // Flutter's default LIGHT theme, which is what users saw strobe.
+    for (final direction in const [
+      (label: 'entering the demo', toGuest: true),
+      (label: 'leaving the demo', toGuest: false),
+    ]) {
+      testWidgets(
+        'no frame paints the default light background while ${direction.label}',
+        (tester) async {
+          addTearDown(ProfileSwitchChrome.instance.reset);
+          late Profile guest;
+          await tester.runAsync(() async {
+            guest = await registry.createGuestProfile(name: 'Demo');
+            await registry.setActiveProfile(
+              direction.toGuest ? Profile.realProfileId : guest.id,
+            );
+          });
+          final state = await tester.runAsync(() => registry.load());
+          final from = state!.profileById(
+            direction.toGuest ? Profile.realProfileId : guest.id,
+          )!;
+          final to = direction.toGuest ? guest.id : Profile.realProfileId;
+          registerBridgeSingletons(from);
+
+          late BuildContext appContext;
+          final bootstrapGate = Completer<void>();
+          final bootstrapEntered = Completer<void>();
+          await tester.pumpWidget(
+            LottiAppRoot(
+              registry: registry,
+              lifecycleHolder: AppLifecycleHolder(),
+              // Stands in for MyBeamerApp: a themed generation that
+              // publishes its resolved chrome exactly as the real app does.
+              appBuilder: (context) {
+                appContext = context;
+                ProfileSwitchChrome.instance.capture(DesignSystemTheme.dark());
+                return ColoredBox(
+                  color: DesignSystemTheme.dark().scaffoldBackgroundColor,
+                  child: const SizedBox.expand(),
+                );
+              },
+              teardownOverride: () async {},
+              bootstrapOverride: () {
+                bootstrapEntered.complete();
+                return bootstrapGate.future;
+              },
+            ),
+          );
+
+          final dark = DesignSystemTheme.dark().scaffoldBackgroundColor;
+          final painted = <Color>{};
+          void sample() {
+            final boxes = tester.widgetList<ColoredBox>(
+              find.byType(ColoredBox),
+            );
+            painted.addAll(boxes.map((box) => box.color));
+            // No frame may mount chrome that carries a default theme.
+            expect(find.byType(MaterialApp), findsNothing);
+            expect(find.byType(Scaffold), findsNothing);
+          }
+
+          sample();
+          final switcher = ProfileSwitcherScope.of(appContext);
+          late Future<void> pending;
+          await tester.runAsync(() async {
+            pending = switcher.switchTo(to);
+            while (!bootstrapEntered.isCompleted) {
+              await tester.pump(const Duration(milliseconds: 16));
+              await Future<void>.delayed(Duration.zero);
+              sample();
+            }
+          });
+          await tester.pump();
+          // Mid-switch: the splash is up and painting the dark background
+          // it carried over — not merely absent of white.
+          expect(find.byType(ProfileSwitchSplash), findsOneWidget);
+          expect(
+            tester
+                .widget<ColoredBox>(
+                  find.descendant(
+                    of: find.byType(ProfileSwitchSplash),
+                    matching: find.byType(ColoredBox),
+                  ),
+                )
+                .color,
+            dark,
+          );
+          sample();
+
+          bootstrapGate.complete();
+          await tester.runAsync(() => pending);
+          await tester.pump();
+          sample();
+
+          expect(painted, {dark});
+          expect(
+            painted,
+            isNot(contains(ThemeData.light().scaffoldBackgroundColor)),
+          );
+          expect(painted, isNot(contains(const ColorScheme.light().surface)));
+        },
+      );
+    }
   });
 
   group('ProfileSwitchSplash', () {
-    testWidgets('shows a bare progress indicator with no app chrome', (
+    tearDown(ProfileSwitchChrome.instance.reset);
+
+    testWidgets('paints the carried-over background, with no app chrome', (
       tester,
     ) async {
+      ProfileSwitchChrome.instance.capture(DesignSystemTheme.dark());
+
       await tester.pumpWidget(const ProfileSwitchSplash());
 
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       // Deliberately provider- and localization-free: nothing from the old
-      // generation may be needed to render it.
-      expect(find.byType(Scaffold), findsOneWidget);
+      // generation may be needed to render it. And deliberately WITHOUT
+      // MaterialApp/Scaffold — either would fall back to Flutter's default
+      // light theme and paint the switch white.
+      expect(find.byType(Scaffold), findsNothing);
+      expect(find.byType(MaterialApp), findsNothing);
+      expect(
+        tester.widget<ColoredBox>(find.byType(ColoredBox)).color,
+        DesignSystemTheme.dark().scaffoldBackgroundColor,
+      );
+    });
+
+    testWidgets('follows a light host into the light background', (
+      tester,
+    ) async {
+      ProfileSwitchChrome.instance.capture(DesignSystemTheme.light());
+
+      await tester.pumpWidget(const ProfileSwitchSplash());
+
+      expect(
+        tester.widget<ColoredBox>(find.byType(ColoredBox)).color,
+        DesignSystemTheme.light().scaffoldBackgroundColor,
+      );
+    });
+
+    testWidgets('falls back to the design-system dark background on a cold '
+        'boot, where no generation has published a theme yet', (tester) async {
+      expect(ProfileSwitchChrome.instance.hasCapture, isFalse);
+
+      await tester.pumpWidget(const ProfileSwitchSplash());
+
+      expect(
+        tester.widget<ColoredBox>(find.byType(ColoredBox)).color,
+        DesignSystemTheme.dark().scaffoldBackgroundColor,
+      );
+      // Never Flutter's default light scaffold — that is the white flash.
+      expect(
+        tester.widget<ColoredBox>(find.byType(ColoredBox)).color,
+        isNot(ThemeData.light().scaffoldBackgroundColor),
+      );
+    });
+  });
+
+  group('ProfileSwitchChrome', () {
+    tearDown(ProfileSwitchChrome.instance.reset);
+
+    test('capture records the resolved background and brightness', () {
+      final chrome = ProfileSwitchChrome.instance
+        ..capture(
+          DesignSystemTheme.light(),
+        );
+
+      expect(chrome.hasCapture, isTrue);
+      expect(
+        chrome.background,
+        DesignSystemTheme.light().scaffoldBackgroundColor,
+      );
+      expect(chrome.brightness, Brightness.light);
+      expect(chrome.tokens, dsTokensLight);
+
+      chrome.capture(DesignSystemTheme.dark());
+      expect(chrome.brightness, Brightness.dark);
+      expect(chrome.tokens, dsTokensDark);
+    });
+
+    test('reset returns it to the cold-boot fallback', () {
+      final chrome = ProfileSwitchChrome.instance
+        ..capture(DesignSystemTheme.light())
+        ..reset();
+
+      expect(chrome.hasCapture, isFalse);
+      expect(chrome.background, dsTokensDark.colors.background.level01);
+      expect(chrome.brightness, Brightness.dark);
     });
   });
 

@@ -21,6 +21,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/profiles/model/profile.dart' as profiles;
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
+import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
@@ -54,29 +55,11 @@ void main() {
 
   group('MyBeamerApp theming', () {
     test('loading state has null darkTheme initially', () {
-      // Test the loading screen condition directly
-      // When darkTheme is null, MyBeamerApp shows EmptyScaffoldWithTitle
+      // When darkTheme is null, MyBeamerApp paints the carried-over
+      // ProfileSwitchChrome colour instead of a themed shell.
       const loadingState = ThemingState();
       expect(loadingState.darkTheme, isNull);
       expect(loadingState.lightTheme, isNull);
-    });
-
-    testWidgets('loading message is shown in EmptyScaffoldWithTitle', (
-      tester,
-    ) async {
-      // The loading screen renders "Loading..." text
-      await tester.pumpWidget(
-        MaterialApp(
-          theme: ThemeData.dark().copyWith(
-            scaffoldBackgroundColor: Colors.black87,
-          ),
-          home: const Scaffold(
-            body: Center(child: Text('Loading...')),
-          ),
-        ),
-      );
-
-      expect(find.text('Loading...'), findsOneWidget);
     });
 
     test('ThemingState with darkTheme not null is ready to render', () {
@@ -209,14 +192,19 @@ void main() {
 
       await tester.pump(const Duration(seconds: 1));
 
-      // Initialization started exactly once and remains in progress
+      // Initialization started exactly once and remains in progress. The
+      // loading branch holds the carried-over switch colour rather than an
+      // untheme-able MaterialApp/Scaffold (which would paint white).
       expect(initializationRuns, 1);
-      expect(find.text('Loading...'), findsOneWidget);
+      expect(
+        tester.widget<ColoredBox>(find.byType(ColoredBox)).color,
+        ProfileSwitchChrome.instance.background,
+      );
 
       // Pump again to verify the subscription stays active
       await tester.pump(const Duration(seconds: 2));
       expect(initializationRuns, 1);
-      expect(find.text('Loading...'), findsOneWidget);
+      expect(find.byType(ColoredBox), findsOneWidget);
 
       // Complete initialization to allow clean teardown
       completer.complete();

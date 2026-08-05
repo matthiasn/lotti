@@ -33,6 +33,7 @@ import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
@@ -671,8 +672,15 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(seconds: 1));
 
-      expect(find.text('Loading...'), findsOneWidget);
-      expect(find.byType(MaterialApp), findsOneWidget);
+      // The loading shell holds the colour carried across the profile
+      // switch and mounts NO MaterialApp/Scaffold — either would fall back
+      // to Flutter's default light theme and strobe the switch white.
+      expect(find.byType(MaterialApp), findsNothing);
+      expect(find.byType(Scaffold), findsNothing);
+      expect(
+        tester.widget<ColoredBox>(find.byType(ColoredBox)).color,
+        ProfileSwitchChrome.instance.background,
+      );
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump(const Duration(seconds: 1));

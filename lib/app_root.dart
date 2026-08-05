@@ -4,6 +4,7 @@ import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
+import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/get_it.dart';
 
@@ -80,19 +81,31 @@ class LottiAppRootState extends State<LottiAppRoot> {
 }
 
 /// Minimal full-screen splash shown while a profile switch tears down one
-/// service generation and bootstraps the next. Deliberately free of
-/// localization and providers — nothing from the old generation may be
-/// alive while it is on screen.
+/// service generation and bootstraps the next.
+///
+/// Deliberately free of localization, providers AND of `MaterialApp` /
+/// `Scaffold` — nothing from the old generation may be alive while it is on
+/// screen, and either of those would silently pull in Flutter's default
+/// LIGHT theme and paint the switch white. A `ColoredBox` under a
+/// `Directionality` can only paint the colour it is given, which is the one
+/// [ProfileSwitchChrome] carried across from the outgoing generation.
 class ProfileSwitchSplash extends StatelessWidget {
-  const ProfileSwitchSplash({super.key});
+  const ProfileSwitchSplash({this.chrome, super.key});
+
+  /// Test seam; production reads the process-wide capture.
+  final ProfileSwitchChrome? chrome;
 
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
-      debugShowCheckedModeBanner: false,
-      home: Scaffold(
-        body: Center(
-          child: CircularProgressIndicator(),
+    final resolved = chrome ?? ProfileSwitchChrome.instance;
+    return Directionality(
+      textDirection: TextDirection.ltr,
+      child: ColoredBox(
+        color: resolved.background,
+        child: Center(
+          child: CircularProgressIndicator(
+            color: resolved.tokens.colors.interactive.enabled,
+          ),
         ),
       ),
     );

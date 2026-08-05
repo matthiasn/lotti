@@ -29,7 +29,6 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
-import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
@@ -39,6 +38,7 @@ import 'package:lotti/features/keyboard/ui/keyboard_focus_region.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
+import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
@@ -60,7 +60,6 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/logic/create/create_entry.dart';
-import 'package:lotti/pages/empty_scaffold.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -1306,13 +1305,19 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
     final languagePreference = ref.watch(manualLanguageControllerProvider);
 
     if (themingState.darkTheme == null || languagePreference.isLoading) {
-      // The design-system dark theme, so the loading frame's background
-      // matches the first real frame instead of flashing near-black.
-      return MaterialApp(
-        debugShowCheckedModeBanner: false,
-        theme: DesignSystemTheme.dark(),
-        home: const EmptyScaffoldWithTitle(
-          'Loading...',
+      // Theming and language re-resolve from the NEW world's SettingsDb on
+      // every generation rebuild, so this frame sits between the switch
+      // splash and the first themed frame. It holds the colour
+      // [ProfileSwitchChrome] carried over from the outgoing generation —
+      // no MaterialApp and no Scaffold, either of which would fall back to
+      // Flutter's default LIGHT theme and strobe the switch white. A plain
+      // hold also beats the old untranslated "Loading..." app bar, which
+      // flashed chrome the user never asked for.
+      return Directionality(
+        textDirection: TextDirection.ltr,
+        child: ColoredBox(
+          color: ProfileSwitchChrome.instance.background,
+          child: const SizedBox.expand(),
         ),
       );
     }
@@ -1359,6 +1364,11 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
               delegate: routerDelegate,
             ),
             builder: (context, child) {
+              // Publish the RESOLVED theme (light vs dark per themeMode and
+              // platform brightness — known only here, below MaterialApp's
+              // own Theme) so the next profile switch can paint its splash
+              // and loading frame in this colour instead of white.
+              ProfileSwitchChrome.instance.capture(Theme.of(context));
               final zoomController = ref.watch(
                 zoomControllerProvider.notifier,
               );
