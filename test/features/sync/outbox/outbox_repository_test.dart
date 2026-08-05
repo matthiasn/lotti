@@ -522,7 +522,7 @@ void main() {
         'pruneSentOutboxItems (non-chunked) deletes only sent rows older '
         'than the retention window',
         () async {
-          final now = DateTime.now();
+          final now = DateTime.utc(2024, 3, 15, 10, 30);
           // Old sent row → pruned.
           final oldSent = await insertRow(
             status: OutboxStatus.sent,
@@ -539,9 +539,10 @@ void main() {
             createdAt: now.subtract(const Duration(days: 30)),
           );
 
-          final deleted = await realRepo.pruneSentOutboxItems(
-            retention: const Duration(days: 7),
-          );
+        final deleted = await realRepo.pruneSentOutboxItems(
+          retention: const Duration(days: 7),
+          now: now,
+        );
 
           expect(deleted, 1);
           expect(await realDb.getOutboxItemById(oldSent), isNull);
@@ -788,20 +789,24 @@ void main() {
         'reads the count only for logging cardinality, so it has to be '
         'the same value the DB reported',
         () async {
+          final now = DateTime.utc(2024, 3, 15, 10, 30);
           when(
             () => database.pruneSentOutboxItems(
               retention: any(named: 'retention'),
+              now: any(named: 'now'),
             ),
           ).thenAnswer((_) async => 42);
 
           final deleted = await repository.pruneSentOutboxItems(
             retention: const Duration(days: 7),
+            now: now,
           );
 
           expect(deleted, 42);
           verify(
             () => database.pruneSentOutboxItems(
               retention: const Duration(days: 7),
+              now: now,
             ),
           ).called(1);
         },

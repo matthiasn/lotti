@@ -67,7 +67,9 @@ outlives its test.
   inside a fake zone will not advance the way it appears to.
 
 **Dates are deterministic.** Never `DateTime.now()` — use a fixed date such as
-`DateTime(2024, 3, 15)`, or inject `clock`.
+`DateTime(2024, 3, 15)`, or inject `clock`. The only wall-clock exceptions are
+the explicitly tagged `tutorial-video` drivers and `eval-live` model runs
+documented in `test/README.md`.
 
 # Shared infrastructure, not per-file improvisation
 

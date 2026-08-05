@@ -61,7 +61,7 @@ abstract class HabitsState with _$HabitsState {
   }) = _HabitsState;
 
   /// Creates the initial state with default values.
-  factory HabitsState.initial() => HabitsState(
+  factory HabitsState.initial({DateTime? now}) => HabitsState(
     habitDefinitions: [],
     habitCompletions: [],
     completedToday: <String>{},
@@ -69,7 +69,7 @@ abstract class HabitsState with _$HabitsState {
     openNow: [],
     pendingLater: [],
     completed: [],
-    days: getHabitDays(14),
+    days: getHabitDays(14, now: now),
     successfulToday: <String>{},
     successfulByDay: <String, Set<String>>{},
     skippedByDay: <String, Set<String>>{},
@@ -210,11 +210,13 @@ double habitMinY({
 ///
 /// Reads the current instant via [clock] (defaults to the wall clock) so
 /// callers can pin "today" deterministically in tests with `withClock`.
-List<String> getHabitDays(int timeSpanDays) {
-  final now = clock.now();
+List<String> getHabitDays(int timeSpanDays, {DateTime? now}) {
+  final currentTime = now ?? clock.now();
   final days = daysInRange(
-    rangeStart: now.dayAtMidnight.subtract(Duration(days: timeSpanDays)),
-    rangeEnd: now,
+    rangeStart: currentTime.dayAtMidnight.subtract(
+      Duration(days: timeSpanDays),
+    ),
+    rangeEnd: currentTime,
   )..sort();
   return days;
 }

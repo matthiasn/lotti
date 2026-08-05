@@ -29,6 +29,7 @@ void main() {
 
   const habitsTabIndex = 3;
   const otherTabIndex = 0;
+  final controllerNow = DateTime(2025, 12, 30, 10);
 
   // Use fixed dates for deterministic tests
   final lastWeek = DateTime(2025, 12, 23);
@@ -141,6 +142,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         habitsRepositoryProvider.overrideWithValue(mockRepository),
+        habitsNowProvider.overrideWithValue(() => controllerNow),
       ],
     );
   });
@@ -254,13 +256,7 @@ void main() {
   });
 
   group('Category filtering', () {
-    // The controller uses DateTime.now() internally to determine "today",
-    // so completion dates must match the real wall-clock date.
-    late DateTime controllerToday;
-
-    setUp(() {
-      controllerToday = DateTime.now(); // ignore: avoid_DateTime_now
-    });
+    final controllerToday = controllerNow;
 
     test('filters openNow by selected category', () async {
       when(

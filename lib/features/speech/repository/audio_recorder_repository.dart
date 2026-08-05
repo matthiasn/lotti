@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/audio_note.dart';
@@ -147,7 +148,7 @@ class AudioRecorderRepository {
   /// `null` and logs if starting fails (e.g. missing permission).
   Future<AudioNote?> startRecording() async {
     try {
-      final created = DateTime.now();
+      final created = clock.now();
       final fileName =
           '${DateFormat('yyyy-MM-dd_HH-mm-ss-S').format(created)}.m4a';
       final day = DateFormat('yyyy-MM-dd').format(created);

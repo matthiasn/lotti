@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_form_builder/flutter_form_builder.dart';
@@ -160,51 +161,52 @@ void main() {
     });
 
     testWidgets('time record button is tappable', (WidgetTester tester) async {
-      when(
-        mockTimeService.getStream,
-      ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
+      final fixedNow = DateTime(2024, 3, 15, 10, 30);
+      await withClock(Clock.fixed(fixedNow), () async {
+        when(
+          mockTimeService.getStream,
+        ).thenAnswer((_) => Stream<JournalEntity>.fromIterable([]));
 
-      // Must be relative to real time — the widget checks isRecent via
-      // DateTime.now().difference(dateFrom).inHours < 12 internally.
-      final recentDate = DateTime.now(); // ignore: avoid_DateTime_now
+        final recentDate = fixedNow;
 
-      final testEntry = testTextEntry.copyWith(
-        meta: testTextEntry.meta.copyWith(
-          dateFrom: recentDate,
-          dateTo: recentDate,
-        ),
-      );
-
-      when(
-        () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
-      ).thenAnswer((_) async => testEntry);
-
-      Future<void> mockStartTimer() => mockTimeService.start(testEntry, null);
-      when(mockStartTimer).thenAnswer((_) async {});
-
-      await tester.pumpWidget(
-        makeTestableWidgetWithScaffold(
-          EntryDetailFooter(
-            entryId: testTextEntry.meta.id,
-            linkedFrom: null,
+        final testEntry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(
+            dateFrom: recentDate,
+            dateTo: recentDate,
           ),
-        ),
-      );
-      await tester.pumpAndSettle();
+        );
 
-      final recordIconFinder = find.byIcon(Icons.fiber_manual_record_sharp);
-      final stopIconFinder = find.byIcon(Icons.stop);
-      expect(recordIconFinder, findsOneWidget);
-      expect(stopIconFinder, findsNothing);
+        when(
+          () => mockJournalDb.journalEntityById(testTextEntry.meta.id),
+        ).thenAnswer((_) async => testEntry);
 
-      // At rest the duration renders humanized: "Duration: 0m".
-      final durationZeroFinder = find.textContaining('0m');
-      expect(durationZeroFinder, findsOneWidget);
+        Future<void> mockStartTimer() => mockTimeService.start(testEntry, null);
+        when(mockStartTimer).thenAnswer((_) async {});
 
-      await tester.tap(recordIconFinder);
-      await tester.pumpAndSettle();
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            EntryDetailFooter(
+              entryId: testTextEntry.meta.id,
+              linkedFrom: null,
+            ),
+          ),
+        );
+        await tester.pumpAndSettle();
 
-      verify(mockStartTimer).called(1);
+        final recordIconFinder = find.byIcon(Icons.fiber_manual_record_sharp);
+        final stopIconFinder = find.byIcon(Icons.stop);
+        expect(recordIconFinder, findsOneWidget);
+        expect(stopIconFinder, findsNothing);
+
+        // At rest the duration renders humanized: "Duration: 0m".
+        final durationZeroFinder = find.textContaining('0m');
+        expect(durationZeroFinder, findsOneWidget);
+
+        await tester.tap(recordIconFinder);
+        await tester.pumpAndSettle();
+
+        verify(mockStartTimer).called(1);
+      });
     });
 
     testWidgets('time record stop button is tappable', (

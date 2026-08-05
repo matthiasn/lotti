@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/habits
     title: Habits feature source
-    last_modified: 2026-08-01
+    last_modified: 2026-08-05
   - id: definitions
     resource: ../../lib/classes/entity_definitions.dart
     title: HabitDefinition

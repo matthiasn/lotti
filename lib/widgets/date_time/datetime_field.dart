@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/journal/util/entry_tools.dart';
@@ -77,7 +78,7 @@ Future<void> showDateTimePickerModal(
   required void Function(DateTime) setDateTime,
   CupertinoDatePickerMode mode = CupertinoDatePickerMode.dateAndTime,
 }) async {
-  var selectedDateTime = dateTime ?? DateTime.now();
+  var selectedDateTime = dateTime ?? clock.now();
 
   await ModalUtils.showSinglePageModal<void>(
     context: context,
@@ -96,7 +97,7 @@ Future<void> showDateTimePickerModal(
     stickyActionBar: DateTimeStickyActionBar(
       onCancel: () => Navigator.of(context).pop(),
       onNow: () {
-        setDateTime(DateTime.now());
+        setDateTime(clock.now());
         Navigator.of(context).pop();
       },
       onDone: () {

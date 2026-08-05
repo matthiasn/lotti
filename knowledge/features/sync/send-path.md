@@ -11,7 +11,7 @@ sources:
   - id: outbox
     resource: ../../../lib/features/sync/outbox
     title: Outbox service, processor, repository
-    last_modified: 2026-08-01
+    last_modified: 2026-08-05
   - id: payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: MatrixPayloadSender — wire encoding

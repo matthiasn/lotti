@@ -2,6 +2,7 @@ import 'dart:collection';
 import 'dart:core';
 import 'dart:math';
 
+import 'package:clock/clock.dart';
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -264,9 +265,16 @@ DateTime getRangeEnd({int shiftDays = 0}) {
   ).subtract(Duration(days: shiftDays));
 }
 
-DateTime getEndOfToday() {
-  final now = DateTime.now();
-  return DateTime(now.year, now.month, now.day, 23, 59, 59);
+DateTime getEndOfToday({DateTime? now}) {
+  final currentTime = now ?? clock.now();
+  return DateTime(
+    currentTime.year,
+    currentTime.month,
+    currentTime.day,
+    23,
+    59,
+    59,
+  );
 }
 
 String padLeft(num value) {
@@ -278,10 +286,10 @@ int minutesSinceMidnight(DateTime? dt) {
   return hoursPastMidnight * 60 + (dt?.minute ?? 0);
 }
 
-bool showHabit(HabitDefinition item) {
+bool showHabit(HabitDefinition item, {DateTime? now}) {
   final showFrom = item.habitSchedule.mapOrNull(daily: (d) => d.showFrom);
   final showFromMinuteOfDay = minutesSinceMidnight(showFrom);
-  final actualMinuteOfDay = minutesSinceMidnight(DateTime.now());
+  final actualMinuteOfDay = minutesSinceMidnight(now ?? clock.now());
   return actualMinuteOfDay >= showFromMinuteOfDay;
 }
 

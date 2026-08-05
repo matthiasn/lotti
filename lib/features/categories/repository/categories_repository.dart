@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/conversions.dart';
@@ -117,7 +118,7 @@ class CategoryRepository {
     String? defaultTemplateId,
     bool? automaticInferenceEnabled,
   }) async {
-    final now = DateTime.now();
+    final now = clock.now();
 
     final category = CategoryDefinition(
       id: _uuid.v4(),
@@ -146,7 +147,7 @@ class CategoryRepository {
     CategoryDefinition category,
   ) async {
     final updated = category.copyWith(
-      updatedAt: DateTime.now(),
+      updatedAt: clock.now(),
     );
 
     await _persistenceLogic.upsertEntityDefinition(updated);
@@ -166,9 +167,10 @@ class CategoryRepository {
   Future<void> deleteCategory(String id) async {
     final category = await getCategoryById(id);
     if (category != null) {
+      final now = clock.now();
       final deleted = category.copyWith(
-        deletedAt: DateTime.now(),
-        updatedAt: DateTime.now(),
+        deletedAt: now,
+        updatedAt: now,
       );
       await _persistenceLogic.upsertEntityDefinition(deleted);
     }

@@ -171,7 +171,7 @@ void main() {
       File(filePath1).createSync();
 
       // Create second image data
-      final now = DateTime.now();
+      final now = DateTime(2024, 3, 15, 10, 30);
       final testImage2 = JournalImage(
         meta: Metadata(
           id: 'test-image-id-2',

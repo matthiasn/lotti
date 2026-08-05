@@ -110,25 +110,24 @@ class TestConfig {
 JournalEntry createTestEntry({
   required String deviceName,
   required int index,
+  required DateTime timestamp,
   String? id,
-  DateTime? timestamp,
   String? text,
 }) {
   final entryId = id ?? uuid.v1();
-  final now = timestamp ?? DateTime.now();
 
   return JournalEntry(
     meta: Metadata(
       id: entryId,
-      createdAt: now,
-      dateFrom: now,
-      dateTo: now,
-      updatedAt: now,
+      createdAt: timestamp,
+      dateFrom: timestamp,
+      dateTo: timestamp,
+      updatedAt: timestamp,
       starred: false,
       vectorClock: VectorClock({deviceName: index}),
     ),
     entryText: EntryText(
-      plainText: text ?? 'Test from $deviceName #$index - $now',
+      plainText: text ?? 'Test from $deviceName #$index - $timestamp',
     ),
   );
 }
@@ -144,6 +143,7 @@ Future<void> sendTestMessage({
   final entry = createTestEntry(
     deviceName: deviceName,
     index: index,
+    timestamp: DateTime.utc(2024, 3, 15).add(Duration(seconds: index)),
     text: text,
   );
 

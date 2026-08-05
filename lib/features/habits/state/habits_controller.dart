@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:collection/collection.dart';
 import 'package:easy_debounce/easy_debounce.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -32,6 +33,11 @@ final habitsControllerProvider =
       name: 'habitsControllerProvider',
     );
 
+/// Provides the current instant used for habit bucketing and range queries.
+/// Tests override this with a fixed clock so midnight and due-time behavior is
+/// deterministic without sleeping or consulting the process wall clock.
+final habitsNowProvider = Provider<DateTime Function()>((ref) => clock.now);
+
 class HabitsController extends Notifier<HabitsState> {
   StreamSubscription<List<HabitDefinition>>? _definitionsSubscription;
   StreamSubscription<Set<String>>? _updateSubscription;
@@ -43,17 +49,19 @@ class HabitsController extends Notifier<HabitsState> {
 
   /// Tracks whether the habits tab was the active top-level tab on the
   /// previous nav-index emission. Used to detect the off→on edge that
-  /// triggers a recompute — `showHabit()` depends on `DateTime.now()`,
+  /// triggers a recompute — `showHabit()` depends on the current time,
   /// so re-entering the tab is the cue to refresh the due/later split
   /// without keeping a background ticker alive.
   bool _wasHabitsActive = false;
 
   late HabitsRepository _repository;
   late final NavService _navService = getIt<NavService>();
+  late DateTime Function() _now;
 
   @override
   HabitsState build() {
     _repository = ref.read(habitsRepositoryProvider);
+    _now = ref.read(habitsNowProvider);
 
     ref.onDispose(_cleanup);
 
@@ -85,7 +93,7 @@ class HabitsController extends Notifier<HabitsState> {
     // avoids touching disposed state if the provider is torn down
     // before the microtask drains.
     Future.microtask(_startWatching);
-    return HabitsState.initial();
+    return HabitsState.initial(now: _now());
   }
 
   void _cleanup() {
@@ -112,7 +120,7 @@ class HabitsController extends Notifier<HabitsState> {
   }
 
   Future<void> _fetchHabitCompletions() async {
-    final rangeStart = DateTime.now().dayAtMidnight.subtract(
+    final rangeStart = _now().dayAtMidnight.subtract(
       Duration(days: state.timeSpanDays),
     );
     _habitCompletions = await _repository.getHabitCompletionsInRange(
@@ -128,7 +136,8 @@ class HabitsController extends Notifier<HabitsState> {
     final failedByDay = <String, Set<String>>{};
     final allByDay = <String, Set<String>>{};
 
-    final today = DateTime.now().ymd;
+    final now = _now();
+    final today = now.ymd;
 
     void addId(Map<String, Set<String>> byDay, String day, String habitId) {
       byDay.putIfAbsent(day, () => <String>{}).add(habitId);
@@ -183,23 +192,23 @@ class HabitsController extends Notifier<HabitsState> {
         .where((item) => !completedToday.contains(item.id))
         .sorted(habitSorter);
 
-    final openNow = openHabits.where(showHabit).toList();
-    final pendingLater = openHabits.where((item) => !showHabit(item)).toList();
+    final openNow = openHabits.where((item) => showHabit(item, now: now)).toList();
+    final pendingLater = openHabits
+        .where((item) => !showHabit(item, now: now))
+        .toList();
 
     final completed = _habitDefinitions
         .where((item) => completedToday.contains(item.id))
         .sorted(habitSorter);
 
-    final now = DateTime.now();
-
     final shortStreakDays = daysInRange(
       rangeStart: now.subtract(const Duration(days: 3)),
-      rangeEnd: getEndOfToday(),
+      rangeEnd: getEndOfToday(now: now),
     );
 
     final longStreakDays = daysInRange(
       rangeStart: now.subtract(const Duration(days: 7)),
-      rangeEnd: getEndOfToday(),
+      rangeEnd: getEndOfToday(now: now),
     );
 
     final habitSuccessDays = <String, Set<String>>{};
@@ -249,7 +258,7 @@ class HabitsController extends Notifier<HabitsState> {
               )
               .toList();
 
-    final days = getHabitDays(state.timeSpanDays);
+    final days = getHabitDays(state.timeSpanDays, now: now);
 
     // Build intermediate state with all freshly computed fields
     // so habitMinY can use accurate data from totalForDay
@@ -299,7 +308,7 @@ class HabitsController extends Notifier<HabitsState> {
   Future<void> setTimeSpan(int timeSpanDays) async {
     state = state.copyWith(
       timeSpanDays: timeSpanDays,
-      days: getHabitDays(timeSpanDays),
+      days: getHabitDays(timeSpanDays, now: _now()),
     );
     await _fetchHabitCompletions();
     _determineHabitSuccessByDays();

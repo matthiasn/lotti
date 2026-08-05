@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/settings_db.dart';
@@ -328,18 +329,20 @@ void main() {
       'returns true when the persisted shown count is under the max and '
       'the first-shown timestamp is recent',
       () async {
+        final fixedNow = DateTime.utc(2024, 3, 15, 10, 30);
         await settingsDb.saveSettingsItem(
           onboardingWelcomeShownCountKey,
           '${onboardingWelcomeMaxShows - 1}',
         );
         await settingsDb.saveSettingsItem(
           onboardingWelcomeFirstShownAtKey,
-          DateTime.now().toUtc().toIso8601String(),
+          fixedNow.toIso8601String(),
         );
         final container = createContainer();
 
-        final result = await container.read(
-          shouldAutoShowOnboardingProvider.future,
+        final result = await withClock(
+          Clock.fixed(fixedNow),
+          () => container.read(shouldAutoShowOnboardingProvider.future),
         );
 
         expect(result, isTrue);
@@ -473,10 +476,13 @@ void main() {
       'the very first call',
       () async {
         final container = createContainer();
+        final fixedNow = DateTime.utc(2024, 3, 15, 10, 30);
 
-        await container
-            .read(onboardingWelcomeCadenceProvider.notifier)
-            .recordShown();
+        await withClock(Clock.fixed(fixedNow), () {
+          return container
+              .read(onboardingWelcomeCadenceProvider.notifier)
+              .recordShown();
+        });
 
         expect(
           await settingsDb.itemByKey(onboardingWelcomeShownCountKey),
@@ -484,7 +490,7 @@ void main() {
         );
         expect(
           await settingsDb.itemByKey(onboardingWelcomeFirstShownAtKey),
-          isNotNull,
+          fixedNow.toIso8601String(),
         );
       },
     );

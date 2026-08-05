@@ -77,9 +77,13 @@ abstract class OutboxRepository {
   /// Delete rows with `status = sent` older than [retention]. Never
   /// touches `pending`, `sending`, or `error` — error rows are kept
   /// forever so persistent failures remain inspectable.
+  ///
+  /// [now] pins the retention cutoff for deterministic callers; the database
+  /// wall clock remains the default when omitted.
   /// Returns the number of rows deleted.
   Future<int> pruneSentOutboxItems({
     required Duration retention,
+    DateTime? now,
   });
 
   /// Same retention semantics as [pruneSentOutboxItems], but the DELETE
@@ -228,8 +232,9 @@ class DatabaseOutboxRepository implements OutboxRepository {
   @override
   Future<int> pruneSentOutboxItems({
     required Duration retention,
+    DateTime? now,
   }) {
-    return _database.pruneSentOutboxItems(retention: retention);
+    return _database.pruneSentOutboxItems(retention: retention, now: now);
   }
 
   @override

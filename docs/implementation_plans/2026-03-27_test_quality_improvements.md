@@ -79,13 +79,13 @@ across all test files. Work was parallelized across 14 batch agents.
 
 ### Result
 
-- **845 → 41 remaining** (95.1% reduction)
-- The 41 remaining are all intentional keeps:
-  - Production code calling `DateTime.now()` internally (widgets checking `isRecent`,
-    controllers computing "today", countdown timers)
-  - Comments referencing `DateTime.now()` (not actual calls)
-  - Tests verifying production code's real-time behavior (e.g., soft-delete timestamps)
-- Each remaining instance has an `// ignore: avoid_DateTime_now` comment explaining why
+- The March pass reduced 845 direct calls to 41 intentional keeps.
+- The August due-diligence follow-up removed the remaining direct wall-clock
+  reads from every normal unit and integration test. Production owners that
+  calculate "now" expose `clock`-backed behavior or an explicit `now` input,
+  while fixed fixtures cover data-only cases.
+- Direct wall-clock reads remain only in the tagged `tutorial-video` drivers
+  and `eval-live` model runs documented in `test/README.md`.
 
 ### Bonus: Fixed 3 pre-existing broken tests
 
@@ -94,18 +94,19 @@ failing before our changes. Root cause: `fakeAsync` breaks `SharedPreferences.ge
 (platform channel), so the handler's `await isBackfillEnabled()` would hang, preventing
 cooldown/rate-limit logic from executing.
 
-**Fix**: Replaced `fakeAsync` with regular `async` tests using real-time relative timestamps.
-The cooldown and rate-limit checks work correctly with real `DateTime.now()` since the cache
-entries just need correct relative timing.
+**Historical fix**: Replaced `fakeAsync` with regular `async` tests so
+`SharedPreferences` could complete. Those tests have since moved to
+`withClock` and fixed timestamps; no normal test depends on the wall clock.
 
-### Key patterns for intentional DateTime.now() keeps
+### August follow-up patterns
 
-| Pattern | Example | Why it must use real time |
-|---------|---------|-------------------------|
-| Widget `isRecent` check | `duration_widget_test.dart` | Widget calls `DateTime.now()` internally to determine if entry is < 12h old |
-| Controller "today" logic | `habits_controller_test.dart` | Controller maps completions by `DateTime.now().ymd` |
-| Countdown timers | `correction_capture_service_test.dart` | `remainingTime` getter calls `DateTime.now()` |
-| Soft-delete verification | `categories_repository_test.dart` | Asserts `deletedAt` is close to real current time |
+| Pattern | Example | Deterministic seam |
+|---------|---------|--------------------|
+| Widget `isRecent` check | `duration_widget_test.dart` | production reads `clock.now()`; the widget test uses `withClock` |
+| Controller "today" logic | `habits_controller_test.dart` | `habitsNowProvider` supplies one instant for buckets, due/later state, days, and streaks |
+| Soft-delete timestamps | `categories_repository_test.dart` | repository reads `clock.now()` once and the test asserts the exact timestamp |
+| Retention cutoff | `outbox_repository_test.dart` | repository forwards an explicit `now` to the database prune operation |
+| End-to-end UI pacing | `home_integration_test.dart` | bounded widget pumps replace real delays; the fixture label is fixed |
 
 ---
 
@@ -167,7 +168,7 @@ The following were evaluated but deferred due to extensive existing indirect cov
 
 | Metric | Before | After |
 |--------|--------|-------|
-| DateTime.now() in tests | 845 | 41 (intentional) |
+| DateTime.now() in normal tests | 845 | 0 (tagged tutorial/eval exceptions only) |
 | Duplicated mock classes | 8+ inline definitions | 0 (all centralized) |
 | Duplicated FakeController variants | 11 inline definitions | 0 (shared version) |
 | Untested AI repo/interface files | 4 | 0 |

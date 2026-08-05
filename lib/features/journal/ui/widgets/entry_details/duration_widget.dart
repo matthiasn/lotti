@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -65,7 +66,7 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
     // widget is unmounted before the post-frame callback runs (the controller
     // is keepAlive and outlives the widget).
     if (_wasRecording && !isRecording) {
-      final duration = DateTime.now().difference(widget.item.meta.dateFrom);
+      final duration = clock.now().difference(widget.item.meta.dateFrom);
       if (duration >= const Duration(minutes: 1)) {
         final notifier = ref.read(sessionEndedControllerProvider.notifier);
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -116,7 +117,7 @@ class _DurationWidgetState extends ConsumerState<DurationWidget> {
       ),
     );
 
-    final isRecent = DateTime.now().difference(item.meta.dateFrom).inHours < 12;
+    final isRecent = clock.now().difference(item.meta.dateFrom).inHours < 12;
 
     final recording = _currentRecording;
 
