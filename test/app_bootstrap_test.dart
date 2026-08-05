@@ -269,6 +269,31 @@ void main() {
       expect(actor, isNotNull);
     });
 
+    test(
+      'a burn broadcast against a dead sync database is contained and does '
+      'not fail the release',
+      () async {
+        registerProcessLogging();
+        final lifecycleHolder = AppLifecycleHolder();
+        addTearDown(lifecycleHolder.dispose);
+        await bootstrapProfileServices(
+          await resolveActiveProfile(),
+          lifecycleHolder: lifecycleHolder,
+          restoreWindow: false,
+          registerLateAndOptional: false,
+        );
+        await settlePendingDbWork();
+        final reservation = await getIt<VectorClockService>()
+            .reserveNextVectorClock();
+
+        // Shutdown race: the sync database dies before the release's burn
+        // broadcast runs. The handler must contain the failure — the
+        // counter stays burn-pending for the next boot's reconciliation.
+        await getIt<SyncDatabase>().close();
+        await expectLater(reservation.release(), completes);
+      },
+    );
+
     test('window close after a guest bootstrap runs the pre-flush hook and '
         'releases the app-exit listener', () async {
       final registry = ProfileRegistry(realRoot: osRoot);
