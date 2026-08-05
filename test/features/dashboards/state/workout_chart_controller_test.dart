@@ -262,5 +262,46 @@ void main() {
         expect(result, isEmpty);
       },
     );
+
+    test(
+      'guest/demo world (no HealthImport registered): still charts DB data '
+      'and skips the device delta fetch',
+      () async {
+        // Simulate a guest world: the health-import capability is
+        // structurally absent, so the singleton is never registered.
+        getIt.unregister<HealthImport>();
+
+        when(
+          () => mocks.journalDb.getWorkouts(
+            rangeStart: any(named: 'rangeStart'),
+            rangeEnd: any(named: 'rangeEnd'),
+          ),
+        ).thenAnswer(
+          (_) async => [
+            makeWorkoutEntry(
+              dateFrom: DateTime(2024, 3, 12, 8),
+              dateTo: DateTime(2024, 3, 12, 9),
+              workoutType: 'running',
+              energy: 500,
+            ),
+          ],
+        );
+
+        final container = ProviderContainer();
+        addTearDown(container.dispose);
+
+        // Without the isRegistered guard this throws in the controller
+        // constructor before the DB fetch ever runs.
+        final result = await container.read(
+          workoutChartDataControllerProvider((
+            rangeStart: rangeStart,
+            rangeEnd: rangeEnd,
+          )).future,
+        );
+
+        expect(result, hasLength(1));
+        verifyNever(() => mockHealthImport.getWorkoutsHealthDataDelta());
+      },
+    );
   });
 }

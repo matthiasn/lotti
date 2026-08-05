@@ -4967,6 +4967,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get demoSettingsExitTitle => 'Exit demo';
 
   @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Health import is not available in the demo workspace';
+
+  @override
   String get demoSettingsRealAiActiveSubtitle =>
       'Real AI is set up in this demo world';
 
@@ -4986,6 +4990,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get demoSettingsResumeTitle => 'Return to the demo workspace';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Sync is not available in the demo workspace';
 
   @override
   String get demoSettingsTrySubtitle =>

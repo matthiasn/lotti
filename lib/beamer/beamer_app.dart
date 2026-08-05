@@ -39,6 +39,7 @@ import 'package:lotti/features/keyboard/ui/keyboard_focus_region.dart';
 import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
@@ -674,9 +675,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     );
     final sidebarWidth = resolvedSidebar.width;
     final isCollapsed = paneWidths.sidebarCollapsed;
+    // Capability-gated on top of the config flag: the indicator's inbound
+    // queue provider resolves `matrixServiceProvider`, which guest/demo
+    // worlds deliberately leave unoverridden (UnimplementedError).
     final showSyncIndicator =
-        ref.watch(configFlagProvider(showSyncActivityIndicatorFlag)).value ??
-        false;
+        ref.watch(syncFeatureAvailableProvider) &&
+        (ref.watch(configFlagProvider(showSyncActivityIndicatorFlag)).value ??
+            false);
     return Scaffold(
       // Scaffold fills behind the outer ResizableDivider's 3 px reserved
       // SizedBox; without an explicit colour Flutter would paint the theme

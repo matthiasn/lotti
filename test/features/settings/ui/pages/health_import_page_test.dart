@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -7,6 +8,9 @@ import 'package:lotti/features/design_system/components/callouts/design_system_i
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/generated/design_tokens.g.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/state/health_import_controller.dart';
 import 'package:lotti/features/settings/ui/pages/health_import_page.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -798,5 +802,56 @@ void main() {
         tokens.colors.alert.error.defaultColor,
       );
     });
+  });
+
+  group('guest/demo world', () {
+    testWidgets(
+      'collapses to the demo explainer — no rows, no import actions, '
+      'nothing resolving the absent HealthImport',
+      (tester) async {
+        const size = Size(600, 1600);
+        tester.view
+          ..physicalSize = size
+          ..devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            const HealthImportPage(),
+            mediaQueryData: const MediaQueryData(size: size),
+            overrides: [
+              profileContextProvider.overrideWithValue(
+                ProfileContext.forProfile(
+                  profile: Profile(
+                    id: 'demo-guest',
+                    type: ProfileType.guest,
+                    name: 'Demo',
+                    dirName: 'guest_profiles/demo-guest',
+                    createdAt: DateTime(2026),
+                  ),
+                  root: Directory.systemTemp,
+                ),
+              ),
+            ],
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.text('Health import is not available in the demo workspace'),
+          findsOneWidget,
+        );
+        expect(find.byType(DesignSystemInlineCallout), findsOneWidget);
+        // None of the import surface renders: no category rows, no
+        // "import all" button, no date-range fields.
+        expect(find.byType(DesignSystemListItem), findsNothing);
+        expect(find.byType(DesignSystemButton), findsNothing);
+        expect(find.byType(DateTimeField), findsNothing);
+        // No import ever reached the (absent) HealthImport service.
+        verifyZeroInteractions(mockHealthImport);
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 }

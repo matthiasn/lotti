@@ -117,7 +117,11 @@ class HealthObservationsController extends AsyncNotifier<List<Observation>> {
   HealthObservationsController(this._providerArgs) {
     if (!Platform.environment.containsKey('FLUTTER_TEST')) {
       Future.delayed(Duration(milliseconds: 500 + Random().nextInt(500)), () {
-        getIt<HealthImport>().fetchHealthDataDelta(healthDataType);
+        // Guest/demo worlds never register `HealthImport` — skip the device
+        // delta fetch and chart whatever the world's database holds.
+        if (getIt.isRegistered<HealthImport>()) {
+          getIt<HealthImport>().fetchHealthDataDelta(healthDataType);
+        }
       });
     }
   }

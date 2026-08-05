@@ -1,5 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
@@ -19,6 +24,7 @@ Future<void> _pumpPane(
   WidgetTester tester, {
   Map<String, bool> flags = const {},
   List<String> initialPath = const [],
+  bool guestProfile = false,
 }) async {
   tester.view.physicalSize = const Size(1200, 900);
   tester.view.devicePixelRatio = 1;
@@ -46,6 +52,19 @@ Future<void> _pumpPane(
         settingsTreePathProvider.overrideWith(
           () => _SeededTreePath(initialPath),
         ),
+        if (guestProfile)
+          profileContextProvider.overrideWithValue(
+            ProfileContext.forProfile(
+              profile: Profile(
+                id: 'demo-guest',
+                type: ProfileType.guest,
+                name: 'Demo',
+                dirName: 'guest_profiles/demo-guest',
+                createdAt: DateTime(2026),
+              ),
+              root: Directory.systemTemp,
+            ),
+          ),
       ],
     ),
   );
@@ -103,6 +122,27 @@ void main() {
         await tester.pump(const Duration(milliseconds: 200));
         expect(find.byType(CategoryEmpty), findsOneWidget);
         expect(find.byType(LeafPanel), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'guest world: a stale sync leaf path falls back to EmptyRoot — '
+      'no sync panel is ever mounted against the absent Matrix stack',
+      (tester) async {
+        // A deep link / persisted path pointing at a sync leaf. In a guest
+        // world the tree carries no sync ids at all (only the inert
+        // explainer tile), so the pane must dispatch to EmptyRoot instead
+        // of a LeafPanel whose body would resolve matrixServiceProvider.
+        await _pumpPane(
+          tester,
+          flags: {enableMatrixFlag: true},
+          initialPath: ['sync', 'sync/outbox'],
+          guestProfile: true,
+        );
+        await tester.pump(const Duration(milliseconds: 200));
+        expect(find.byType(EmptyRoot), findsOneWidget);
+        expect(find.byType(LeafPanel), findsNothing);
+        expect(tester.takeException(), isNull);
       },
     );
   });

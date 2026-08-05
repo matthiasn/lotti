@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_data.dart';
 import 'package:lotti/features/settings_v2/ui/labels/settings_tree_labels.dart';
@@ -34,6 +35,12 @@ List<SettingsNode> watchSettingsTree(BuildContext context, WidgetRef ref) {
     // Health import is an iOS/Android-only utility; it surfaces under the
     // mobile Advanced hub and is absent on desktop platforms (matching the
     // pre-unification behaviour, where the entry was `if (isMobile)`).
-    enableHealthImport: isMobile,
+    // Guest/demo worlds additionally hide it: `HealthImport` is never
+    // registered there, so the leaf must not be reachable.
+    enableHealthImport:
+        isMobile && ref.watch(healthImportFeatureAvailableProvider),
+    // Guest/demo worlds have no Matrix stack; the tree swaps the Sync
+    // section for a non-interactive "not available in the demo" tile.
+    syncFeatureAvailable: ref.watch(syncFeatureAvailableProvider),
   );
 }

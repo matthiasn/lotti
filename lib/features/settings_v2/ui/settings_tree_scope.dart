@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_data.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
@@ -80,6 +81,7 @@ class SettingsTreeScopeHost extends ConsumerWidget {
       enableMatrix: enableMatrix,
       enableWhatsNew: enableWhatsNew,
       enableSpeechTts: enableSpeechTts,
+      syncFeatureAvailable: ref.watch(syncFeatureAvailableProvider),
     );
     final index = SettingsTreeIndex.build(tree);
 

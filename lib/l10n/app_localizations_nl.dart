@@ -5006,6 +5006,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get demoSettingsExitTitle => 'Demo afsluiten';
 
   @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Import van gezondheidsgegevens is niet beschikbaar in de demowereld';
+
+  @override
   String get demoSettingsRealAiActiveSubtitle =>
       'Echte AI is ingesteld in deze demowereld';
 
@@ -5025,6 +5029,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get demoSettingsResumeTitle => 'Terug naar de demowereld';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Synchronisatie is niet beschikbaar in de demowereld';
 
   @override
   String get demoSettingsTrySubtitle =>

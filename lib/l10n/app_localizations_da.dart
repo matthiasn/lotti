@@ -4994,6 +4994,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get demoSettingsExitTitle => 'Afslut demo';
 
   @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Import af sundhedsdata er ikke tilgængelig i demoverdenen';
+
+  @override
   String get demoSettingsRealAiActiveSubtitle =>
       'Rigtig AI er sat op i denne demoverden';
 
@@ -5013,6 +5017,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get demoSettingsResumeTitle => 'Tilbage til demoverdenen';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Synkronisering er ikke tilgængelig i demoverdenen';
 
   @override
   String get demoSettingsTrySubtitle =>

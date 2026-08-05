@@ -5050,6 +5050,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get demoSettingsExitTitle => 'Ukončit demo';
 
   @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Import zdravotních dat není v demo světě dostupný';
+
+  @override
   String get demoSettingsRealAiActiveSubtitle =>
       'Skutečná AI je v tomto demo světě nastavená';
 
@@ -5069,6 +5073,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get demoSettingsResumeTitle => 'Vrátit se do demo světa';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Synchronizace není v demo světě dostupná';
 
   @override
   String get demoSettingsTrySubtitle =>

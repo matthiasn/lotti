@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/components/lists/hover_divider_inde
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/get_it.dart';
@@ -120,6 +121,17 @@ class FlagsBody extends ConsumerStatefulWidget {
   /// Flag names to render, in display order.
   @visibleForTesting
   final List<String> displayedItems;
+
+  /// Flags that only make sense while the Matrix sync stack exists.
+  /// Guest/demo worlds never construct it (see `ProfileCapabilities.guest`),
+  /// so these rows are filtered out there — most importantly
+  /// [enableMatrixFlag], whose toggle would otherwise resurrect the Sync
+  /// settings surfaces against an absent `MatrixService`.
+  static const Set<String> syncOnlyFlags = {
+    enableMatrixFlag,
+    resendAttachments,
+    showSyncActivityIndicatorFlag,
+  };
 
   @override
   ConsumerState<FlagsBody> createState() => _FlagsBodyState();
@@ -315,7 +327,13 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
                 for (final flag in snapshot.data ?? <ConfigFlag>{})
                   flag.name: flag,
               };
+              final syncAvailable = ref.watch(syncFeatureAvailableProvider);
               final orderedFlags = widget.displayedItems
+                  .where(
+                    (name) =>
+                        syncAvailable ||
+                        !FlagsBody.syncOnlyFlags.contains(name),
+                  )
                   .map((name) => flagLookup[name])
                   .nonNulls
                   .toList();

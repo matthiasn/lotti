@@ -5079,6 +5079,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get demoSettingsExitTitle => 'Ieșiți din demo';
 
   @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Importul datelor de sănătate nu este disponibil în lumea demo';
+
+  @override
   String get demoSettingsRealAiActiveSubtitle =>
       'IA reală este configurată în această lume demo';
 
@@ -5098,6 +5102,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get demoSettingsResumeTitle => 'Reveniți la lumea demo';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Sincronizarea nu este disponibilă în lumea demo';
 
   @override
   String get demoSettingsTrySubtitle =>

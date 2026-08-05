@@ -1,13 +1,36 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/ui/settings_tree_builder.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/utils/platform.dart' as platform;
 
 import '../../../widget_test_utils.dart';
+
+/// Overrides the active profile with a guest (demo) or real world.
+Override _profile({required bool guest}) =>
+    profileContextProvider.overrideWithValue(
+      ProfileContext.forProfile(
+        profile: guest
+            ? Profile(
+                id: 'demo-guest',
+                type: ProfileType.guest,
+                name: 'Demo',
+                dirName: 'guest_profiles/demo-guest',
+                createdAt: DateTime(2026),
+              )
+            : Profile.realDefault(),
+        root: Directory.systemTemp,
+      ),
+    );
 
 List<Override> _flags({
   bool matrix = true,
@@ -130,5 +153,66 @@ void main() {
       await _buildTree(tester, overrides: _flags(whatsNew: true)),
     );
     expect(ids.contains('whats-new'), isTrue);
+  });
+
+  testWidgets(
+    'guest world swaps the sync branch for the explainer tile — '
+    'even with the matrix flag on',
+    (tester) async {
+      final ids = _ids(
+        await _buildTree(
+          tester,
+          overrides: [..._flags(), _profile(guest: true)],
+        ),
+      );
+      expect(ids.contains('sync'), isFalse);
+      expect(ids.contains('sync/outbox'), isFalse);
+      expect(ids.contains('sync-unavailable'), isTrue);
+    },
+  );
+
+  testWidgets('real world keeps the full sync branch, no explainer tile', (
+    tester,
+  ) async {
+    final ids = _ids(
+      await _buildTree(
+        tester,
+        overrides: [..._flags(), _profile(guest: false)],
+      ),
+    );
+    expect(ids.contains('sync'), isTrue);
+    expect(ids.contains('sync-unavailable'), isFalse);
+  });
+
+  testWidgets('guest world hides the mobile health-import leaf', (
+    tester,
+  ) async {
+    final wasMobile = platform.isMobile;
+    platform.isMobile = true;
+    addTearDown(() => platform.isMobile = wasMobile);
+
+    final ids = _ids(
+      await _buildTree(
+        tester,
+        overrides: [..._flags(), _profile(guest: true)],
+      ),
+    );
+    expect(ids.contains('advanced/health-import'), isFalse);
+  });
+
+  testWidgets('real world keeps the mobile health-import leaf', (
+    tester,
+  ) async {
+    final wasMobile = platform.isMobile;
+    platform.isMobile = true;
+    addTearDown(() => platform.isMobile = wasMobile);
+
+    final ids = _ids(
+      await _buildTree(
+        tester,
+        overrides: [..._flags(), _profile(guest: false)],
+      ),
+    );
+    expect(ids.contains('advanced/health-import'), isTrue);
   });
 }

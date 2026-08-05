@@ -29,6 +29,7 @@ List<SettingsNode> buildSettingsTree({
   required bool enableWhatsNew,
   bool enableSpeechTts = false,
   bool enableHealthImport = false,
+  bool syncFeatureAvailable = true,
 }) {
   SettingsNode leaf(
     String id,
@@ -145,7 +146,15 @@ List<SettingsNode> buildSettingsTree({
     // (no Sync entry at all). This keeps desktop and mobile in sync
     // — previously desktop showed a bare Sync branch with only
     // Conflicts while mobile hid Sync entirely.
-    if (enableMatrix)
+    // Guest/demo worlds run without the Matrix stack (see
+    // `ProfileCapabilities.guest`): the entire Sync section collapses into
+    // a single non-interactive explainer tile — no panel, no action — so
+    // the tree never routes anywhere that would resolve the absent
+    // MatrixService. The tile shows regardless of `enableMatrix` because
+    // the flag row itself is filtered out of the Flags page in demo mode.
+    if (!syncFeatureAvailable)
+      leaf('sync-unavailable', Icons.sync_disabled_rounded)
+    else if (enableMatrix)
       branch(
         'sync',
         Icons.sync_rounded,

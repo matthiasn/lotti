@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +8,9 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/search/design_system_search.dart';
 import 'package:lotti/features/design_system/components/toggles/design_system_toggle.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/ui/pages/flags_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -1105,6 +1110,113 @@ void main() {
 
         // Only the private flag is in the default display order.
         expect(find.byType(DesignSystemListItem), findsOneWidget);
+      },
+    );
+  });
+
+  group('FlagsPage — guest/demo world', () {
+    // The sync-only flags must disappear in guest worlds: toggling
+    // `enable_matrix` there would resurrect the Sync settings surfaces
+    // against a Matrix stack that is structurally absent.
+    Set<ConfigFlag> syncAndPrivateFixture() => {
+      const ConfigFlag(
+        name: privateFlag,
+        description: 'Show private entries?',
+        status: true,
+      ),
+      const ConfigFlag(
+        name: enableMatrixFlag,
+        description: 'Enable Matrix Sync?',
+        status: false,
+      ),
+      const ConfigFlag(
+        name: resendAttachments,
+        description: 'Resend Attachments?',
+        status: false,
+      ),
+      const ConfigFlag(
+        name: showSyncActivityIndicatorFlag,
+        description: 'Show sync status in the sidebar.',
+        status: false,
+      ),
+    };
+
+    ProfileContext guestContext() => ProfileContext.forProfile(
+      profile: Profile(
+        id: 'demo-guest',
+        type: ProfileType.guest,
+        name: 'Demo',
+        dirName: 'guest_profiles/demo-guest',
+        createdAt: DateTime(2026),
+      ),
+      root: Directory.systemTemp,
+    );
+
+    testWidgets(
+      'guest world hides the sync-only flag rows and keeps the rest',
+      (tester) async {
+        when(() => mockDb.watchConfigFlags()).thenAnswer(
+          (_) =>
+              Stream<Set<ConfigFlag>>.fromIterable([syncAndPrivateFixture()]),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            const FlagsPage(),
+            overrides: [
+              profileContextProvider.overrideWithValue(guestContext()),
+            ],
+          ),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final context = tester.element(find.byType(FlagsPage));
+        // Only the private flag row survives.
+        expect(find.byType(DesignSystemListItem), findsOneWidget);
+        expect(find.text(context.messages.configFlagPrivate), findsOneWidget);
+        expect(
+          find.text(context.messages.configFlagEnableMatrix),
+          findsNothing,
+        );
+        expect(
+          find.text(context.messages.configFlagResendAttachments),
+          findsNothing,
+        );
+        expect(
+          find.text(context.messages.configFlagShowSyncActivityIndicator),
+          findsNothing,
+        );
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'real world keeps the sync-only flag rows (unchanged behavior)',
+      (tester) async {
+        when(() => mockDb.watchConfigFlags()).thenAnswer(
+          (_) =>
+              Stream<Set<ConfigFlag>>.fromIterable([syncAndPrivateFixture()]),
+        );
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const FlagsPage()),
+        );
+        await tester.pump(const Duration(milliseconds: 100));
+
+        final context = tester.element(find.byType(FlagsPage));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(4));
+        expect(
+          find.text(context.messages.configFlagEnableMatrix),
+          findsOneWidget,
+        );
+        expect(
+          find.text(context.messages.configFlagResendAttachments),
+          findsOneWidget,
+        );
+        expect(
+          find.text(context.messages.configFlagShowSyncActivityIndicator),
+          findsOneWidget,
+        );
       },
     );
   });

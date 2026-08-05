@@ -8465,6 +8465,12 @@ abstract class AppLocalizations {
   /// **'Exit demo'**
   String get demoSettingsExitTitle;
 
+  /// No description provided for @demoSettingsHealthImportUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Health import is not available in the demo workspace'**
+  String get demoSettingsHealthImportUnavailable;
+
   /// No description provided for @demoSettingsRealAiActiveSubtitle.
   ///
   /// In en, this message translates to:
@@ -8500,6 +8506,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Return to the demo workspace'**
   String get demoSettingsResumeTitle;
+
+  /// No description provided for @demoSettingsSyncUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Sync is not available in the demo workspace'**
+  String get demoSettingsSyncUnavailable;
 
   /// No description provided for @demoSettingsTrySubtitle.
   ///

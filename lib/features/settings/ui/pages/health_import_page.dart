@@ -12,6 +12,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_grou
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/state/health_import_controller.dart';
 import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
@@ -52,6 +53,24 @@ class HealthImportBody extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final messages = context.messages;
+
+    // Guest/demo worlds never register `HealthImport` (device health data
+    // must not bleed into a play world), so the import surface collapses
+    // into an explainer instead of offering actions that would resolve the
+    // absent singleton. Reachable only via a stale deep link — the settings
+    // tree already hides the Health import leaf in demo mode.
+    if (!ref.watch(healthImportFeatureAvailableProvider)) {
+      return Padding(
+        padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+        child: DetailContentWidth(
+          child: DesignSystemInlineCallout(
+            icon: Icons.health_and_safety_rounded,
+            text: messages.demoSettingsHealthImportUnavailable,
+          ),
+        ),
+      );
+    }
+
     final state = ref.watch(healthImportControllerProvider);
     final controller = ref.read(healthImportControllerProvider.notifier);
 

@@ -5054,6 +5054,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get demoSettingsExitTitle => 'Esci dalla demo';
 
   @override
+  String get demoSettingsHealthImportUnavailable =>
+      'L\'importazione dei dati sulla salute non è disponibile nel mondo demo';
+
+  @override
   String get demoSettingsRealAiActiveSubtitle =>
       'L\'IA reale è configurata in questo mondo demo';
 
@@ -5073,6 +5077,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get demoSettingsResumeTitle => 'Torna al mondo demo';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'La sincronizzazione non è disponibile nel mondo demo';
 
   @override
   String get demoSettingsTrySubtitle =>

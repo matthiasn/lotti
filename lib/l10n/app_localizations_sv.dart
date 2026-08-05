@@ -4996,6 +4996,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get demoSettingsExitTitle => 'Avsluta demon';
 
   @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Import av hälsodata är inte tillgänglig i demovärlden';
+
+  @override
   String get demoSettingsRealAiActiveSubtitle =>
       'Riktig AI är inställd i den här demovärlden';
 
@@ -5015,6 +5019,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get demoSettingsResumeTitle => 'Tillbaka till demovärlden';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Synkronisering är inte tillgänglig i demovärlden';
 
   @override
   String get demoSettingsTrySubtitle =>
