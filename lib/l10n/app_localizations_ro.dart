@@ -6975,7 +6975,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get knowledgeGraphDensityBalanced => 'Echilibrată';
 
   @override
-  String get knowledgeGraphDensityCalm => 'Simplă';
+  String get knowledgeGraphDensityCalm => 'Calmă';
 
   @override
   String get knowledgeGraphDensityExplore => 'Explorare';
@@ -7011,6 +7011,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get knowledgeGraphFilterTypes => 'Tipuri';
+
+  @override
+  String get knowledgeGraphForward => 'Înainte';
 
   @override
   String get knowledgeGraphLast30Days => 'Ultimele 30 de zile';
@@ -7118,6 +7121,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Explorați legăturile';
+
+  @override
+  String get knowledgeGraphTopologyOverview =>
+      'Prezentare generală a topologiei';
 
   @override
   String get knowledgeGraphTwoHops => '2 pași';

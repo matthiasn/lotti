@@ -628,6 +628,13 @@ void main() {
           ),
         );
         expect(cover.alignment, const Alignment(0.5, 0));
+        final resized = cover.image as ResizeImage;
+        expect(
+          resized.width,
+          ((tokens.spacing.step13 + tokens.spacing.step10) *
+                  tester.view.devicePixelRatio)
+              .round(),
+        );
       },
     );
 

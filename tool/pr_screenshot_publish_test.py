@@ -13,12 +13,25 @@ from pr_screenshot_publish import (
 
 
 class _MissingObjectError(Exception):
-    response = {"Error": {"Code": "404"}}
+    def __init__(self):
+        super().__init__()
+        self.response = {"Error": {"Code": "404"}}
+
+
+class _PreconditionFailedError(Exception):
+    def __init__(self):
+        super().__init__()
+        self.response = {"Error": {"Code": "412"}}
 
 
 class _FakeClient:
-    def __init__(self, existing: dict[str, str] | None = None):
+    def __init__(
+        self,
+        existing: dict[str, str] | None = None,
+        concurrent: dict[str, str] | None = None,
+    ):
         self.existing = existing or {}
+        self.concurrent = concurrent or {}
         self.puts: list[dict[str, object]] = []
 
     def head_object(self, *, Bucket: str, Key: str):
@@ -27,6 +40,10 @@ class _FakeClient:
         return {"Metadata": {"sha256": self.existing[Key]}}
 
     def put_object(self, **kwargs):
+        key = kwargs["Key"]
+        if key in self.concurrent:
+            self.existing[key] = self.concurrent[key]
+            raise _PreconditionFailedError
         self.puts.append(kwargs)
 
 
@@ -92,6 +109,58 @@ class PrScreenshotPublishTest(unittest.TestCase):
             self.assertEqual(upload["ContentType"], "image/png")
             self.assertEqual(upload["CacheControl"], CACHE_CONTROL)
             self.assertRegex(upload["Metadata"]["sha256"], r"^[0-9a-f]{64}$")
+            self.assertEqual(upload["IfNoneMatch"], "*")
+
+    def test_rejects_missing_before_or_after_state(self):
+        (self.source / "after" / "viewer.png").unlink()
+
+        with self.assertRaisesRegex(PublishError, "Both before/ and after"):
+            discover_uploads(
+                self.source,
+                topic="ontology-viewer",
+                commit=self.commit,
+            )
+
+    def test_rejects_mismatched_pair_filenames(self):
+        (self.source / "after" / "viewer.png").rename(
+            self.source / "after" / "different.png"
+        )
+
+        with self.assertRaisesRegex(PublishError, "surfaces must match"):
+            discover_uploads(
+                self.source,
+                topic="ontology-viewer",
+                commit=self.commit,
+            )
+
+    def test_accepts_state_suffixes_as_one_surface_pair(self):
+        (self.source / "before" / "viewer.png").rename(
+            self.source / "before" / "viewer_before.png"
+        )
+        (self.source / "after" / "viewer.png").rename(
+            self.source / "after" / "viewer_after.png"
+        )
+
+        uploads = discover_uploads(
+            self.source,
+            topic="ontology-viewer",
+            commit=self.commit,
+        )
+
+        self.assertEqual(
+            [upload.path.name for upload in uploads],
+            ["viewer_after.png", "viewer_before.png"],
+        )
+
+    def test_rejects_duplicate_normalized_surface(self):
+        (self.source / "before" / "viewer_before.png").write_bytes(b"duplicate")
+
+        with self.assertRaisesRegex(PublishError, "Duplicate before"):
+            discover_uploads(
+                self.source,
+                topic="ontology-viewer",
+                commit=self.commit,
+            )
 
     def test_same_content_is_idempotent_without_another_put(self):
         uploads = discover_uploads(
@@ -122,6 +191,47 @@ class PrScreenshotPublishTest(unittest.TestCase):
         client = _FakeClient({upload.key: "different"})
 
         with self.assertRaisesRegex(PublishError, "Refusing to overwrite"):
+            publish_screenshots(
+                self.source,
+                topic="ontology-viewer",
+                commit=self.commit,
+                env_path=self.env_path,
+                client_factory=lambda _: client,
+            )
+
+        self.assertEqual(client.puts, [])
+
+    def test_accepts_matching_concurrent_create(self):
+        uploads = discover_uploads(
+            self.source,
+            topic="ontology-viewer",
+            commit=self.commit,
+        )
+        concurrent = {upload.key: upload.sha256 for upload in uploads}
+        client = _FakeClient(concurrent=concurrent)
+
+        urls = publish_screenshots(
+            self.source,
+            topic="ontology-viewer",
+            commit=self.commit,
+            env_path=self.env_path,
+            client_factory=lambda _: client,
+        )
+
+        self.assertEqual(len(urls), 2)
+        self.assertEqual(client.puts, [])
+
+    def test_rejects_mismatched_concurrent_create(self):
+        uploads = discover_uploads(
+            self.source,
+            topic="ontology-viewer",
+            commit=self.commit,
+        )
+        client = _FakeClient(
+            concurrent={upload.key: "different" for upload in uploads}
+        )
+
+        with self.assertRaisesRegex(PublishError, "concurrent overwrite"):
             publish_screenshots(
                 self.source,
                 topic="ontology-viewer",

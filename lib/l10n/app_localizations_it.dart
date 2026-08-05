@@ -6935,10 +6935,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get knowledgeGraphDensityBalanced => 'Bilanciata';
 
   @override
-  String get knowledgeGraphDensityCalm => 'Essenziale';
+  String get knowledgeGraphDensityCalm => 'Calma';
 
   @override
-  String get knowledgeGraphDensityExplore => 'Esplora';
+  String get knowledgeGraphDensityExplore => 'Esplorativa';
 
   @override
   String get knowledgeGraphEmpty => 'Nessun link per esplorare ancora';
@@ -6957,7 +6957,7 @@ class AppLocalizationsIt extends AppLocalizations {
   String get knowledgeGraphFilterCategories => 'Categorie';
 
   @override
-  String get knowledgeGraphFilterRecency => 'Data';
+  String get knowledgeGraphFilterRecency => 'Periodo';
 
   @override
   String get knowledgeGraphFilterRelations => 'Relazioni';
@@ -6970,6 +6970,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get knowledgeGraphFilterTypes => 'Tipi';
+
+  @override
+  String get knowledgeGraphForward => 'Avanti';
 
   @override
   String get knowledgeGraphLast30Days => 'Ultimi 30 giorni';
@@ -7076,6 +7079,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Esplora i link';
+
+  @override
+  String get knowledgeGraphTopologyOverview => 'Panoramica della topologia';
 
   @override
   String get knowledgeGraphTwoHops => '2 passaggi';

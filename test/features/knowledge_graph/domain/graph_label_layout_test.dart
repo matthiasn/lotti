@@ -117,4 +117,25 @@ void main() {
       isTrue,
     );
   });
+
+  test('places a required label larger than the viewport without throwing', () {
+    const viewport = Rect.fromLTWH(20, 30, 80, 40);
+    const candidate = GraphLabelCandidate(
+      id: 'oversized',
+      center: Offset(60, 50),
+      nodeRadius: 12,
+      labelSize: Size(160, 90),
+      priority: 100,
+      required: true,
+    );
+
+    final result = solveGraphLabelLayout(
+      candidates: const [candidate],
+      viewport: viewport,
+      nodeObstacles: const {},
+    );
+
+    expect(result['oversized']!.rect.topLeft, viewport.topLeft);
+    expect(result['oversized']!.rect.size, candidate.labelSize);
+  });
 }

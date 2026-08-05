@@ -68,6 +68,12 @@ def discover_uploads(
     topic: str,
     commit: str,
 ) -> list[ScreenshotUpload]:
+    """Return uploads for complete before/after screenshot surface pairs.
+
+    Pair identities preserve nested directories and ignore a terminal
+    ``_before`` or ``_after`` filename suffix. Identical filenames are also
+    accepted when the state directory alone distinguishes the captures.
+    """
     if not _TOPIC_PATTERN.fullmatch(topic):
         raise PublishError(
             "Topic must use lowercase letters, numbers, dots, dashes, or underscores"
@@ -77,14 +83,36 @@ def discover_uploads(
     if not source.is_dir():
         raise PublishError(f"Screenshot source does not exist: {source}")
 
-    paths = sorted(
-        path
-        for state in ("before", "after")
-        for path in (source / state).glob("**/*.png")
-        if path.is_file()
-    )
-    if not paths:
+    state_paths: dict[str, dict[Path, Path]] = {}
+    for state in ("before", "after"):
+        paths: dict[Path, Path] = {}
+        for path in (source / state).glob("**/*.png"):
+            if not path.is_file():
+                continue
+            relative = path.relative_to(source / state)
+            state_suffix = f"_{state}"
+            stem = relative.stem.removesuffix(state_suffix)
+            identity = relative.with_name(f"{stem}{relative.suffix}")
+            if identity in paths:
+                raise PublishError(
+                    f"Duplicate {state} screenshot surface: {identity.as_posix()}"
+                )
+            paths[identity] = path
+        state_paths[state] = paths
+    before_names = set(state_paths["before"])
+    after_names = set(state_paths["after"])
+    if not before_names and not after_names:
         raise PublishError("No before/ or after/ PNG screenshots found")
+    if not before_names or not after_names:
+        raise PublishError("Both before/ and after/ screenshots are required")
+    if before_names != after_names:
+        raise PublishError("Before/ and after/ screenshot surfaces must match")
+
+    paths = sorted(
+        state_paths[state][name]
+        for state in ("before", "after")
+        for name in before_names
+    )
 
     prefix = f"pr-screenshots/{topic}/{commit}"
     return [
@@ -150,14 +178,34 @@ def publish_screenshots(
 
     for upload in pending:
         with upload.path.open("rb") as stream:
-            client.put_object(
-                Bucket=bucket,
-                Key=upload.key,
-                Body=stream,
-                ContentType="image/png",
-                CacheControl=CACHE_CONTROL,
-                Metadata={"sha256": upload.sha256},
-            )
+            try:
+                client.put_object(
+                    Bucket=bucket,
+                    Key=upload.key,
+                    Body=stream,
+                    ContentType="image/png",
+                    CacheControl=CACHE_CONTROL,
+                    Metadata={"sha256": upload.sha256},
+                    IfNoneMatch="*",
+                )
+            except Exception as error:  # boto3 is an optional dependency.
+                code = str(
+                    getattr(error, "response", {}).get("Error", {}).get("Code", "")
+                )
+                if code not in {"412", "PreconditionFailed"}:
+                    raise PublishError(
+                        f"R2 upload failed for {upload.key}: {error}"
+                    ) from error
+                existing_sha256 = _existing_sha256(
+                    client,
+                    bucket=bucket,
+                    key=upload.key,
+                )
+                if existing_sha256 != upload.sha256:
+                    raise PublishError(
+                        f"Refusing concurrent overwrite of immutable object "
+                        f"{upload.key}"
+                    ) from error
 
     public_base = values["R2_PUBLIC_BASE_URL"].rstrip("/")
     return [f"{public_base}/{upload.key}" for upload in uploads]

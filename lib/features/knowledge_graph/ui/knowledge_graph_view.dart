@@ -60,6 +60,7 @@ class KnowledgeGraphView extends StatefulWidget {
     this.showLegend = true,
     this.showInspector = true,
     this.imageLoader,
+    this.visualSpec,
     super.key,
   });
 
@@ -98,6 +99,9 @@ class KnowledgeGraphView extends StatefulWidget {
   /// Overrides local image decoding for deterministic tests.
   final GraphImageLoader? imageLoader;
 
+  /// Overrides graph geometry and styling for deterministic hosts and tests.
+  final GraphVisualSpec? visualSpec;
+
   @override
   State<KnowledgeGraphView> createState() => _KnowledgeGraphViewState();
 }
@@ -112,11 +116,13 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   late GraphProjection _projection;
   late GraphScenario _displayScenario;
   late Map<String, int> _degrees;
-  late final Map<String, List<String>> _adjacency;
+  late final Map<String, List<String>> _rawAdjacency;
+  late Map<String, List<String>> _displayAdjacency;
   late final GraphViewportController _viewport;
   late final AnimationController _cam;
   late final AnimationController _wakeCtl;
   late final GraphMotionController _motion;
+  GraphVisualSpec? _visualSpec;
   final GraphLabelLayoutMemory _labelMemory = GraphLabelLayoutMemory();
   final FocusNode _graphFocusNode = FocusNode(
     debugLabel: 'knowledge-graph-canvas',
@@ -151,11 +157,8 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   void initState() {
     super.initState();
     _scenario = widget.scenario ?? exploreWorldScenario();
-    _adjacency = {for (final n in _scenario.nodes) n.id: <String>[]};
-    for (final e in _scenario.edges) {
-      _adjacency[e.fromId]?.add(e.toId);
-      _adjacency[e.toId]?.add(e.fromId);
-    }
+    _visualSpec = widget.visualSpec;
+    _rawAdjacency = _adjacencyFor(_scenario);
     final initialFocusId =
         widget.initialFocusId != null &&
             _scenario.nodes.any((n) => n.id == widget.initialFocusId)
@@ -192,6 +195,13 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _visualSpec =
+        widget.visualSpec ??
+        GraphVisualSpec.fromTokens(
+          context.designTokens,
+          categoryColors: widget.categoryColors,
+          highContrast: MediaQuery.highContrastOf(context),
+        );
     _disableAnimations =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     _motion.setReduceMotion(value: _disableAnimations);
@@ -201,6 +211,24 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
         ..stop()
         ..value = 1;
     }
+  }
+
+  @override
+  void didUpdateWidget(KnowledgeGraphView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.visualSpec == widget.visualSpec &&
+        oldWidget.categoryColors == widget.categoryColors) {
+      return;
+    }
+    _visualSpec =
+        widget.visualSpec ??
+        GraphVisualSpec.fromTokens(
+          context.designTokens,
+          categoryColors: widget.categoryColors,
+          highContrast: MediaQuery.highContrastOf(context),
+        );
+    _rebuildLocalGraph();
+    _hops = _bfs(_focusId);
   }
 
   /// Decode task covers, entry images, and aggregate thumbnails off the main
@@ -262,11 +290,9 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     _projection = buildLocalGraphProjection(
       raw: _scenario,
       focusId: _focusId,
-      maxNodes: switch (_viewport.value.density) {
-        GraphDensity.calm => GraphVisualSpec.defaultCalmNodeLimit,
-        GraphDensity.balanced => GraphVisualSpec.defaultBalancedNodeLimit,
-        GraphDensity.explore => GraphVisualSpec.defaultExploreNodeLimit,
-      },
+      maxNodes:
+          _visualSpec?.nodeLimit(_viewport.value.density) ??
+          GraphVisualSpec.defaultNodeLimit(_viewport.value.density),
       clusterPreviewLimit: GraphVisualSpec.defaultClusterPreviewLimit,
       clusterCollapseThreshold: GraphVisualSpec.defaultClusterCollapseThreshold,
       filters: _viewport.value.filters,
@@ -280,6 +306,18 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     }
     _layout = computeGraphLayout(_displayScenario, iterations: 140);
     _degrees = degreeMap(_displayScenario.edges);
+    _displayAdjacency = _adjacencyFor(_displayScenario);
+  }
+
+  Map<String, List<String>> _adjacencyFor(GraphScenario scenario) {
+    final adjacency = {
+      for (final node in scenario.nodes) node.id: <String>[],
+    };
+    for (final edge in scenario.edges) {
+      adjacency[edge.fromId]?.add(edge.toId);
+      adjacency[edge.toId]?.add(edge.fromId);
+    }
+    return adjacency;
   }
 
   Map<String, int> _bfs(String from) {
@@ -288,7 +326,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     var head = 0;
     while (head < queue.length) {
       final cur = queue[head++];
-      for (final nb in _adjacency[cur] ?? const <String>[]) {
+      for (final nb in _displayAdjacency[cur] ?? const <String>[]) {
         if (!hops.containsKey(nb)) {
           hops[nb] = hops[cur]! + 1;
           queue.add(nb);
@@ -306,7 +344,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     while (head < queue.length) {
       final cur = queue[head++];
       if (cur == to) break;
-      for (final nb in _adjacency[cur] ?? const <String>[]) {
+      for (final nb in _rawAdjacency[cur] ?? const <String>[]) {
         if (!parent.containsKey(nb)) {
           parent[nb] = cur;
           queue.add(nb);
@@ -633,7 +671,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     if (origin == null) return;
 
     var count = 0;
-    for (final neighborId in _adjacency[id] ?? const <String>[]) {
+    for (final neighborId in _displayAdjacency[id] ?? const <String>[]) {
       if (exclude.contains(neighborId)) continue;
       final neighbor = _layout.positions[neighborId];
       if (neighbor == null) continue;
@@ -765,11 +803,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final visualSpec = GraphVisualSpec.fromTokens(
-      tokens,
-      categoryColors: widget.categoryColors,
-      highContrast: MediaQuery.highContrastOf(context),
-    );
+    final visualSpec = _visualSpec!;
     final style = visualSpec.style;
     // The host page reserves its floating header's height in this view's top
     // padding (status bar + header), so the phone-only title chip clears the
@@ -1020,7 +1054,8 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                       focusId: _focusId,
                       visibleNodeIds: _projection.visibleRawIds,
                       spec: visualSpec,
-                      semanticsLabel: context.messages.knowledgeGraphTitle,
+                      semanticsLabel:
+                          context.messages.knowledgeGraphTopologyOverview,
                       onJump: _jumpTo,
                     ),
                   ),
@@ -1252,7 +1287,7 @@ class _Controls extends StatelessWidget {
         SizedBox(width: tokens.spacing.step2),
         _CircleButton(
           icon: Icons.arrow_forward,
-          tooltip: MaterialLocalizations.of(context).nextPageTooltip,
+          tooltip: context.messages.knowledgeGraphForward,
           enabled: canGoForward,
           onTap: onForward,
           tokens: tokens,

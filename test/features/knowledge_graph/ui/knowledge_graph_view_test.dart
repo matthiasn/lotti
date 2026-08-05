@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_keyboard_navigation.dart';
@@ -13,6 +14,7 @@ import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_projection.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_scenarios.dart';
 import 'package:lotti/features/knowledge_graph/ui/entry_detail_sidebar.dart';
+import 'package:lotti/features/knowledge_graph/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_visual_spec.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_workspace_toolbar.dart';
 import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_painter.dart';
@@ -53,6 +55,7 @@ void main() {
     bool disableAnimations = false,
     void Function(String taskId, String previousFocusId)? onTaskFocusChanged,
     GraphImageLoader? imageLoader,
+    GraphVisualSpec? visualSpec,
     Size size = desktopSize,
     List<Override> extraOverrides = const [],
   }) async {
@@ -75,6 +78,7 @@ void main() {
           showTitle: showTitle,
           showLegend: showLegend,
           imageLoader: imageLoader,
+          visualSpec: visualSpec,
         ),
         mediaQueryData: MediaQueryData(
           size: size,
@@ -171,7 +175,7 @@ void main() {
         positions,
       );
       // The main canvas owns a separate focus-centred local layout.
-      expect(painterOf(tester).positions, isNot(positions));
+      expect(painterOf(tester).positions, isNot(equals(positions)));
     });
 
     testWidgets('a single-node scenario still renders without throwing', (
@@ -202,6 +206,68 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('uses the visual spec node budget for local projection', (
+      tester,
+    ) async {
+      final visualSpec = GraphVisualSpec(
+        style: GraphStyle.fromTokens(dsTokensDark),
+        balancedNodeLimit: 2,
+      );
+      await pumpView(
+        tester,
+        scenario: busyTaskScenario(),
+        visualSpec: visualSpec,
+      );
+
+      expect(painterOf(tester).scenario.nodes.length, lessThanOrEqualTo(2));
+    });
+
+    testWidgets('reprojects when a host replaces the visual spec', (
+      tester,
+    ) async {
+      final scenario = busyTaskScenario();
+      final style = GraphStyle.fromTokens(dsTokensDark);
+      var visualSpec = GraphVisualSpec(
+        style: style,
+        balancedNodeLimit: 2,
+      );
+      late StateSetter updateHost;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          StatefulBuilder(
+            builder: (context, setState) {
+              updateHost = setState;
+              return KnowledgeGraphView(
+                scenario: scenario,
+                visualSpec: visualSpec,
+                showInspector: false,
+              );
+            },
+          ),
+        ),
+      );
+      await tester.pump();
+      final initialCount = painterOf(tester).scenario.nodes.length;
+      expect(initialCount, lessThanOrEqualTo(2));
+
+      updateHost(() {});
+      await tester.pump();
+      expect(painterOf(tester).scenario.nodes.length, initialCount);
+
+      updateHost(() {
+        visualSpec = GraphVisualSpec(
+          style: style,
+          balancedNodeLimit: 6,
+        );
+      });
+      await tester.pump();
+      expect(
+        painterOf(tester).scenario.nodes.length,
+        greaterThan(initialCount),
+      );
+      expect(painterOf(tester).scenario.nodes.length, lessThanOrEqualTo(6));
+    });
+
     testWidgets('labels collapsed relationship aggregates with their count', (
       tester,
     ) async {
@@ -214,6 +280,13 @@ void main() {
       expect(
         painter.nodeLabels[aggregate.id],
         'more links · ${aggregate.aggregateCount}',
+      );
+      expect(painter.hops[aggregate.id], 1);
+      expect(
+        painter.scenario.edges.any(
+          (edge) => edge.fromId == painter.focusId && edge.toId == aggregate.id,
+        ),
+        isTrue,
       );
     });
   });
@@ -251,7 +324,7 @@ void main() {
     testWidgets('arrow selects a spatial neighbor and Enter walks to it', (
       tester,
     ) async {
-      final scenario = taskEgoNetworkScenario();
+      final scenario = lightTaskScenario();
       await pumpView(tester, scenario: scenario);
       final painter = painterOf(tester);
       final directions = <(LogicalKeyboardKey, Offset)>[
@@ -324,6 +397,7 @@ void main() {
           calls.add((taskId: taskId, previousFocusId: previousFocusId));
         },
       );
+      expect(find.bySemanticsLabel('Topology overview'), findsOneWidget);
 
       tester
           .widget<TopologyMiniMap>(find.byType(TopologyMiniMap))
@@ -667,7 +741,12 @@ void main() {
         ),
       );
       final fileImages = images
-          .map((i) => i.image)
+          .map(
+            (image) => switch (image.image) {
+              final ResizeImage resized => resized.imageProvider,
+              final provider => provider,
+            },
+          )
           .whereType<FileImage>()
           .where((p) => p.file.path == '/tmp/lotti_kg_view_test_missing.png');
       expect(
@@ -750,6 +829,7 @@ void main() {
         find.text('Tap a node to walk · ${scenario.nodes.length} nodes'),
         findsOneWidget,
       );
+      expect(find.byTooltip('Forward'), findsOneWidget);
     });
   });
 
@@ -1196,6 +1276,7 @@ void main() {
       final aggregate = before.scenario.nodes.singleWhere(
         (node) => node.type == GraphNodeType.mediaCollection,
       );
+      expect(before.hops[aggregate.id], 1);
       await tester.tapAt(screenPosOf(tester, before.positions[aggregate.id]!));
       await tester.pump();
 

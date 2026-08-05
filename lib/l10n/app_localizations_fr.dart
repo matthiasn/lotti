@@ -7003,6 +7003,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get knowledgeGraphFilterTypes => 'Types';
 
   @override
+  String get knowledgeGraphForward => 'Suivant';
+
+  @override
   String get knowledgeGraphLast30Days => '30 derniers jours';
 
   @override
@@ -7106,6 +7109,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Explorer les liens';
+
+  @override
+  String get knowledgeGraphTopologyOverview => 'Vue d’ensemble de la topologie';
 
   @override
   String get knowledgeGraphTwoHops => '2 niveaux';

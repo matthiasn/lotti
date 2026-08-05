@@ -81,6 +81,7 @@ class TopologyMiniMap extends StatelessWidget {
   }
 }
 
+@immutable
 class TopologyTransform {
   const TopologyTransform({required this.scale, required this.offset});
 
@@ -109,6 +110,15 @@ class TopologyTransform {
   final Offset offset;
 
   Offset toLocal(Offset world) => world * scale + offset;
+
+  @override
+  bool operator ==(Object other) =>
+      other is TopologyTransform &&
+      other.scale == scale &&
+      other.offset == offset;
+
+  @override
+  int get hashCode => Object.hash(scale, offset);
 }
 
 Rect topologyBounds(Iterable<Offset> positions) {

@@ -82,10 +82,19 @@ void main() {
       semantics.getSemanticsData().hasAction(SemanticsAction.tap),
       isFalse,
     );
-    await tester.tap(
-      find.byKey(const ValueKey('knowledge-graph-topology-minimap')),
+    final minimap = find.byKey(
+      const ValueKey('knowledge-graph-topology-minimap'),
     );
-    expect(jumpedTo, isNotNull);
+    final renderBox = tester.renderObject<RenderBox>(minimap);
+    final transform = TopologyTransform.fit(
+      positions: layout.positions,
+      size: renderBox.size,
+      inset: dsTokensDark.spacing.step3,
+    );
+    final targetId = scenario.nodes.last.id;
+    final target = transform.toLocal(layout.positions[targetId]!);
+    await tester.tapAt(renderBox.localToGlobal(target));
+    expect(jumpedTo, targetId);
   });
 
   testWidgets('empty minimap ignores taps without throwing', (tester) async {
@@ -154,6 +163,15 @@ void main() {
     );
 
     expect(copy().shouldRepaint(painter), isFalse);
+    expect(
+      copy(
+        nextTransform: const TopologyTransform(
+          scale: 1,
+          offset: Offset.zero,
+        ),
+      ).shouldRepaint(painter),
+      isFalse,
+    );
     expect(
       copy(
         nextScenario: GraphScenario(

@@ -6893,6 +6893,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get knowledgeGraphFilterTypes => 'Typer';
 
   @override
+  String get knowledgeGraphForward => 'Framåt';
+
+  @override
   String get knowledgeGraphLast30Days => 'Senaste 30 dagarna';
 
   @override
@@ -6996,6 +6999,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Utforska länkar';
+
+  @override
+  String get knowledgeGraphTopologyOverview => 'Topologiöversikt';
 
   @override
   String get knowledgeGraphTwoHops => '2 steg';

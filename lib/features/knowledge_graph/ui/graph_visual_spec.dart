@@ -51,6 +51,12 @@ class GraphVisualSpec {
   static const int defaultClusterPreviewLimit = 5;
   static const int defaultClusterCollapseThreshold = 8;
 
+  static int defaultNodeLimit(GraphDensity density) => switch (density) {
+    GraphDensity.calm => defaultCalmNodeLimit,
+    GraphDensity.balanced => defaultBalancedNodeLimit,
+    GraphDensity.explore => defaultExploreNodeLimit,
+  };
+
   final GraphStyle style;
   final int calmNodeLimit;
   final int balancedNodeLimit;

@@ -12,6 +12,7 @@ void main() {
     String category = catWork,
     int ageDays = 0,
     String? imagePath,
+    String? coverImagePath,
     List<String> mediaPaths = const [],
     GraphTaskStatus? status,
   }) => GraphNode(
@@ -21,6 +22,7 @@ void main() {
     categoryId: category,
     createdAt: now.subtract(Duration(days: ageDays)),
     imagePath: imagePath,
+    coverImagePath: coverImagePath,
     mediaPaths: mediaPaths,
     taskStatus: status,
   );
@@ -49,6 +51,7 @@ void main() {
     final focus = node(
       'task',
       GraphNodeType.task,
+      coverImagePath: '/cover.jpg',
       mediaPaths: const ['/cover.jpg', '/one.jpg', '/two.jpg'],
     );
     final first = node(
@@ -90,11 +93,15 @@ void main() {
     final media = collapsed.scenario.nodes.singleWhere(
       (node) => node.aggregateKind == GraphAggregateKind.photos,
     );
-    expect(media.aggregateCount, 3);
+    expect(media.aggregateCount, 2);
     expect(media.mediaPaths, ['/cover.jpg', '/one.jpg', '/two.jpg']);
     expect(
       collapsed.scenario.nodes.map((node) => node.id),
       isNot(contains('one')),
+    );
+    expect(
+      collapsed.scenario.nodes.map((node) => node.id),
+      isNot(contains('two')),
     );
 
     final expanded = buildLocalGraphProjection(
@@ -117,10 +124,11 @@ void main() {
     );
   });
 
-  test('creates a media collection from focus-owned media only', () {
+  test('keeps cover-only media on the focus instead of an empty aggregate', () {
     final focus = node(
       'task',
       GraphNodeType.task,
+      coverImagePath: '/cover.jpg',
       mediaPaths: const ['/cover.jpg'],
     );
     final projection = buildLocalGraphProjection(
@@ -137,19 +145,152 @@ void main() {
       clusterCollapseThreshold: 8,
     );
 
+    expect(
+      projection.scenario.nodes.where(
+        (node) => node.type == GraphNodeType.mediaCollection,
+      ),
+      isEmpty,
+    );
+    expect(projection.scenario.nodes, [focus]);
+    expect(projection.aggregateMembers, isEmpty);
+    expect(projection.scenario.edges, isEmpty);
+  });
+
+  test('keeps an image node with no decodable path visible', () {
+    final focus = node('task', GraphNodeType.task);
+    final image = node('image', GraphNodeType.imageEntry);
+    final projection = buildLocalGraphProjection(
+      raw: GraphScenario(
+        name: 'missing image file',
+        seedId: focus.id,
+        nodes: [focus, image],
+        edges: const [
+          GraphEdge(
+            fromId: 'task',
+            toId: 'image',
+            kind: GraphEdgeKind.association,
+          ),
+        ],
+        now: now,
+      ),
+      focusId: focus.id,
+      maxNodes: 24,
+      clusterPreviewLimit: 5,
+      clusterCollapseThreshold: 8,
+    );
+
+    expect(projection.scenario.nodes.map((node) => node.id), ['task', 'image']);
+    expect(
+      projection.scenario.nodes.where(
+        (node) => node.type == GraphNodeType.mediaCollection,
+      ),
+      isEmpty,
+    );
+  });
+
+  test('does not reintroduce task media excluded by active filters', () {
+    final focus = node(
+      'task',
+      GraphNodeType.task,
+      coverImagePath: '/cover.jpg',
+      mediaPaths: const ['/cover.jpg', '/photo.jpg'],
+    );
+    final image = node(
+      'image',
+      GraphNodeType.imageEntry,
+      imagePath: '/photo.jpg',
+    );
+    final raw = GraphScenario(
+      name: 'filtered media',
+      seedId: focus.id,
+      nodes: [focus, image],
+      edges: const [
+        GraphEdge(
+          fromId: 'task',
+          toId: 'image',
+          kind: GraphEdgeKind.association,
+        ),
+      ],
+      now: now,
+    );
+
+    for (final filters in [
+      const GraphProjectionFilters(edgeKinds: {GraphEdgeKind.blocks}),
+      const GraphProjectionFilters(nodeTypes: {GraphNodeType.task}),
+    ]) {
+      final projection = buildLocalGraphProjection(
+        raw: raw,
+        focusId: focus.id,
+        maxNodes: 24,
+        clusterPreviewLimit: 5,
+        clusterCollapseThreshold: 8,
+        filters: filters,
+      );
+
+      expect(
+        projection.scenario.nodes.where(
+          (node) => node.type == GraphNodeType.mediaCollection,
+        ),
+        isEmpty,
+      );
+      expect(projection.scenario.nodes, [focus]);
+    }
+  });
+
+  test('media collection contains only filtered direct image paths', () {
+    final focus = node(
+      'task',
+      GraphNodeType.task,
+      coverImagePath: '/cover.jpg',
+      mediaPaths: const ['/cover.jpg', '/recent.jpg', '/old.jpg'],
+    );
+    final recent = node(
+      'recent',
+      GraphNodeType.imageEntry,
+      imagePath: '/recent.jpg',
+    );
+    final old = node(
+      'old',
+      GraphNodeType.imageEntry,
+      category: catWriting,
+      ageDays: 90,
+      imagePath: '/old.jpg',
+    );
+    final projection = buildLocalGraphProjection(
+      raw: GraphScenario(
+        name: 'filtered media paths',
+        seedId: focus.id,
+        nodes: [focus, recent, old],
+        edges: const [
+          GraphEdge(
+            fromId: 'task',
+            toId: 'recent',
+            kind: GraphEdgeKind.association,
+          ),
+          GraphEdge(
+            fromId: 'task',
+            toId: 'old',
+            kind: GraphEdgeKind.association,
+          ),
+        ],
+        now: now,
+      ),
+      focusId: focus.id,
+      maxNodes: 24,
+      clusterPreviewLimit: 5,
+      clusterCollapseThreshold: 8,
+      filters: const GraphProjectionFilters(
+        categoryIds: {catWork},
+        maxAgeDays: 30,
+      ),
+    );
+
     final media = projection.scenario.nodes.singleWhere(
       (node) => node.type == GraphNodeType.mediaCollection,
     );
-    expect(media.createdAt, focus.createdAt);
+    expect(media.memberIds, ['recent']);
+    expect(media.mediaPaths, ['/cover.jpg', '/recent.jpg']);
     expect(media.aggregateCount, 1);
-    expect(media.memberIds, isEmpty);
-    expect(media.mediaPaths, ['/cover.jpg']);
-    expect(projection.aggregateMembers[media.id], isEmpty);
-    expect(projection.scenario.edges, hasLength(1));
-    final mediaEdge = projection.scenario.edges.single;
-    expect(mediaEdge.fromId, focus.id);
-    expect(mediaEdge.toId, media.id);
-    expect(mediaEdge.kind, GraphEdgeKind.association);
   });
 
   test('orders defensive synthetic node types after ordinary entries', () {

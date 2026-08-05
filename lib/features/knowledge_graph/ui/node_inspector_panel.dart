@@ -532,6 +532,8 @@ class _MediaCarousel extends StatelessWidget {
                   key: ValueKey('knowledge-graph-media-$path'),
                   fit: BoxFit.cover,
                   alignment: alignment,
+                  cacheWidth: (width * MediaQuery.devicePixelRatioOf(context))
+                      .round(),
                   errorBuilder: (_, _, _) => ColoredBox(
                     color: tokens.colors.background.level02,
                     child: Icon(

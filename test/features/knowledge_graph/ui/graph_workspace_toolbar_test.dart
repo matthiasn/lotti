@@ -6,6 +6,8 @@ import 'package:lotti/features/knowledge_graph/state/graph_viewport_controller.d
 import 'package:lotti/features/knowledge_graph/ui/graph_visual_spec.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_workspace_toolbar.dart';
 import 'package:lotti/l10n/app_localizations_en.dart';
+import 'package:lotti/l10n/app_localizations_it.dart';
+import 'package:lotti/l10n/app_localizations_ro.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -43,6 +45,16 @@ void main() {
       ],
       now: now,
     );
+  });
+
+  test('preserves Italian and Romanian density and recency meanings', () {
+    final italian = AppLocalizationsIt();
+    final romanian = AppLocalizationsRo();
+
+    expect(graphDensityLabel(italian, GraphDensity.calm), 'Calma');
+    expect(graphDensityLabel(italian, GraphDensity.explore), 'Esplorativa');
+    expect(italian.knowledgeGraphFilterRecency, 'Periodo');
+    expect(graphDensityLabel(romanian, GraphDensity.calm), 'Calmă');
   });
 
   Widget toolbar({

@@ -150,7 +150,7 @@ GraphProjection buildLocalGraphProjection({
       .where((neighbor) => neighbor.node.type == GraphNodeType.imageEntry)
       .toList();
   final mediaPaths = <String>{
-    ...focus.mediaPaths.where((path) => path.isNotEmpty),
+    if (focus.coverImagePath case final path? when path.isNotEmpty) path,
     ...directImages.map((item) => item.node.imagePath).nonNulls,
   }.toList(growable: false);
   final mediaId = graphAggregateId(
@@ -158,7 +158,11 @@ GraphProjection buildLocalGraphProjection({
     kind: GraphAggregateKind.photos,
   );
   final mediaExpanded = expandedAggregateIds.contains(mediaId);
-  if (mediaPaths.isNotEmpty && !mediaExpanded && remaining > 0) {
+  var mediaCollectionAdded = false;
+  if (directImages.isNotEmpty &&
+      mediaPaths.isNotEmpty &&
+      !mediaExpanded &&
+      remaining > 0) {
     final memberIds = directImages.map((item) => item.node.id).toList();
     visibleNodes.add(
       GraphNode(
@@ -172,12 +176,13 @@ GraphProjection buildLocalGraphProjection({
                   .map((item) => item.node.createdAt)
                   .reduce((a, b) => a.isAfter(b) ? a : b),
         aggregateKind: GraphAggregateKind.photos,
-        aggregateCount: mediaPaths.length,
+        aggregateCount: memberIds.length,
         memberIds: memberIds,
         mediaPaths: mediaPaths.take(4).toList(growable: false),
       ),
     );
     aggregateMembers[mediaId] = memberIds;
+    mediaCollectionAdded = true;
     aggregateEdges.add(
       GraphEdge(
         fromId: actualFocusId,
@@ -190,7 +195,8 @@ GraphProjection buildLocalGraphProjection({
 
   final grouped = <(GraphEdgeKind, GraphNodeType), List<_Neighbor>>{};
   for (final neighbor in direct) {
-    if (neighbor.node.type == GraphNodeType.imageEntry && !mediaExpanded) {
+    if (neighbor.node.type == GraphNodeType.imageEntry &&
+        mediaCollectionAdded) {
       continue;
     }
     grouped

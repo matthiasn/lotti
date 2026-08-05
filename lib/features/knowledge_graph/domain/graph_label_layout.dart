@@ -114,9 +114,15 @@ Map<String, GraphLabelPlacement> solveGraphLabelLayout({
     if (choice == null && candidate.required) {
       final anchor = previousAnchor ?? GraphLabelAnchor.bottom;
       final raw = _rectFor(candidate, anchor, gap);
+      final maxLeft = viewport.right - raw.width;
+      final maxTop = viewport.bottom - raw.height;
       final rect = Rect.fromLTWH(
-        raw.left.clamp(viewport.left, viewport.right - raw.width),
-        raw.top.clamp(viewport.top, viewport.bottom - raw.height),
+        maxLeft <= viewport.left
+            ? viewport.left
+            : raw.left.clamp(viewport.left, maxLeft),
+        maxTop <= viewport.top
+            ? viewport.top
+            : raw.top.clamp(viewport.top, maxTop),
         raw.width,
         raw.height,
       );

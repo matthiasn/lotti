@@ -43,6 +43,20 @@ flowchart LR
   Connections --> Inspector
 ```
 
+```mermaid
+stateDiagram-v2
+  [*] --> GraphFocused: initialFocusId
+  GraphFocused --> GraphFocused: walkTo\nappend back, clear forward + aggregates
+  GraphFocused --> GraphFocused: jumpTo\nclear histories + aggregates
+  GraphFocused --> GraphFocused: goBack / goForward\nmove history, clear aggregates
+  GraphFocused --> GraphFocused: setFilters\nselection → focus, clear aggregates
+  GraphFocused --> GraphFocused: setDensity / toggleAggregate
+  GraphFocused --> ConnectionsFocused: setMode(connections)
+  ConnectionsFocused --> GraphFocused: setMode(graph)
+  ConnectionsFocused --> ConnectionsFocused: walkTo / jumpTo / history
+  ConnectionsFocused --> ConnectionsFocused: setFilters / setDensity / toggleAggregate
+```
+
 # Why walking rather than a force-directed layout
 
 A whole-graph force layout over a real journal produces a hairball. The
@@ -90,9 +104,9 @@ The inspector renders a cover-first horizontal media carousel only when media
 exists, keeps the full title visible, and collapses the longer AI brief by
 default. Its linked-entry timeline remains another way to walk the graph.
 
-**It ships, ungated.** Both task-detail app bars — `TaskCompactAppBar` and
-`TaskExpandableAppBar` — render a hub-icon action that pushes
-`TaskKnowledgeGraphPage`, and the gate in front of it,
+**It ships, ungated on desktop.** Both task-detail app bars —
+`TaskCompactAppBar` and `TaskExpandableAppBar` — render a desktop-only hub-icon
+action that pushes `TaskKnowledgeGraphPage`, and the gate in front of it,
 `knowledgeGraphEntryPointEnabledProvider`, is `Provider<bool>((_) => true)` with
-no config flag behind it. Every user with a task open can reach it, so treat
+no config flag behind it. Users can reach it from desktop task details, so treat
 changes here as user-facing.

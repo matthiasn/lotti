@@ -11921,6 +11921,12 @@ abstract class AppLocalizations {
   /// **'Types'**
   String get knowledgeGraphFilterTypes;
 
+  /// No description provided for @knowledgeGraphForward.
+  ///
+  /// In en, this message translates to:
+  /// **'Forward'**
+  String get knowledgeGraphForward;
+
   /// No description provided for @knowledgeGraphLast30Days.
   ///
   /// In en, this message translates to:
@@ -12094,6 +12100,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Explore links'**
   String get knowledgeGraphTooltip;
+
+  /// No description provided for @knowledgeGraphTopologyOverview.
+  ///
+  /// In en, this message translates to:
+  /// **'Topology overview'**
+  String get knowledgeGraphTopologyOverview;
 
   /// No description provided for @knowledgeGraphTwoHops.
   ///

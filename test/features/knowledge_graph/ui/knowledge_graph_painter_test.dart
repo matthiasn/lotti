@@ -587,6 +587,7 @@ void main() {
       expect(task.properties.selected, isFalse);
       expect(note.properties.selected, isTrue);
       expect(task.rect.width, greaterThanOrEqualTo(TapTargets.minimum));
+      expect(task.rect.height, greaterThanOrEqualTo(TapTargets.minimum));
 
       task.properties.onTap?.call();
       expect(activated, ['task']);

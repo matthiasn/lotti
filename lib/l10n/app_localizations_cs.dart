@@ -6968,6 +6968,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get knowledgeGraphFilterTypes => 'Typy';
 
   @override
+  String get knowledgeGraphForward => 'Vpřed';
+
+  @override
   String get knowledgeGraphLast30Days => 'Posledních 30 dní';
 
   @override
@@ -7073,6 +7076,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Prozkoumat odkazy';
+
+  @override
+  String get knowledgeGraphTopologyOverview => 'Přehled topologie';
 
   @override
   String get knowledgeGraphTwoHops => '2 kroky';

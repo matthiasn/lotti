@@ -11,6 +11,9 @@ void main() {
     expect(spec.nodeLimit(GraphDensity.calm), 24);
     expect(spec.nodeLimit(GraphDensity.balanced), 48);
     expect(spec.nodeLimit(GraphDensity.explore), 72);
+    expect(GraphVisualSpec.defaultNodeLimit(GraphDensity.calm), 24);
+    expect(GraphVisualSpec.defaultNodeLimit(GraphDensity.balanced), 48);
+    expect(GraphVisualSpec.defaultNodeLimit(GraphDensity.explore), 72);
     expect(spec.clusterPreviewLimit, lessThan(spec.clusterCollapseThreshold));
   });
 }

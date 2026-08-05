@@ -4,7 +4,7 @@ An exploratory view of how everything in Lotti connects — entries, tasks,
 projects, agents — as a graph you walk through rather than a diagram you squint
 at.
 
-The explorer is available from the graph action in task details.
+The explorer is available from the graph action in desktop task details.
 
 ## What it does
 
