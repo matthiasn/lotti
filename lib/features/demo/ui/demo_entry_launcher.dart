@@ -23,7 +23,36 @@ import 'package:lotti/services/domain_logging.dart';
 Future<void> launchDemoEnter(
   BuildContext context, {
   DemoModeGateway? gateway,
-}) => _launch(context, gateway, (g, locale) => g.enterDemo(locale: locale));
+}) => _launch(context, gateway, (g, locale, showProgress) {
+  showProgress();
+  return g.enterDemo(locale: locale);
+});
+
+/// Reseeds the demo world the app is ALREADY in when its seed content has
+/// gone stale and nothing would be lost — see
+/// [DemoModeGateway.refreshStaleDemoWorld] for the decision, which this only
+/// drives the UI for.
+///
+/// Called on the first frame of every generation that boots into the demo,
+/// so it must be silent when there is nothing to do: progress is raised only
+/// once the gateway commits to reseeding, and an up-to-date world (the
+/// overwhelmingly common case) never sees a blocking page.
+///
+/// A failure is logged but NOT toasted. The user did not ask for this — an
+/// error about an automatic repair they never initiated is noise, and the
+/// stale world is still perfectly usable.
+Future<void> launchStaleDemoRefresh(
+  BuildContext context, {
+  DemoModeGateway? gateway,
+}) => _launch(
+  context,
+  gateway,
+  (g, locale, showProgress) => g.refreshStaleDemoWorld(
+    locale: locale,
+    onReseedStarted: showProgress,
+  ),
+  toastFailure: false,
+);
 
 /// Wipes, reseeds and re-enters the demo world. Same progress/failure
 /// contract as [launchDemoEnter]. Because the flow ends INSIDE the freshly
@@ -32,13 +61,26 @@ Future<void> launchDemoEnter(
 Future<void> launchDemoReset(
   BuildContext context, {
   DemoModeGateway? gateway,
-}) => _launch(context, gateway, (g, locale) => g.resetDemo(locale: locale));
+}) => _launch(context, gateway, (g, locale, showProgress) {
+  showProgress();
+  return g.resetDemo(locale: locale);
+});
 
 Future<void> _launch(
   BuildContext context,
   DemoModeGateway? gateway,
-  Future<void> Function(DemoModeGateway gateway, Locale locale) action,
-) async {
+  Future<void> Function(
+    DemoModeGateway gateway,
+    Locale locale,
+    VoidCallback showProgress,
+  )
+  action, {
+
+  /// Whether a failure is surfaced to the user. True for taps (a tap must
+  /// not fail silently); false for automatic repair the user never asked
+  /// for.
+  bool toastFailure = true,
+}) async {
   final resolved = gateway ?? maybeDemoModeGatewayOf(context);
   if (resolved == null) {
     // No ProfileSwitcherScope above this context — a bare test harness.
@@ -51,15 +93,28 @@ Future<void> _launch(
     fullscreenDialog: true,
     builder: (_) => const DemoEnteringProgressPage(),
   );
-  unawaited(navigator.push(progressRoute));
+  // Pushed by the action, not here: an action that may decide to do nothing
+  // must not flash a blocking page on the way to that decision.
+  var pushed = false;
+  void showProgress() {
+    if (pushed) return;
+    pushed = true;
+    unawaited(navigator.push(progressRoute));
+  }
+
   try {
-    await action(resolved, locale);
-    // Success: the profile switch has replaced the whole tree; the old
-    // navigator (and its progress route) no longer exists.
+    await action(resolved, locale, showProgress);
+    // A switch has replaced the whole tree, progress route included. An
+    // action that decided to do NOTHING leaves this generation alive, so a
+    // route raised on the way there has to come back off — otherwise the
+    // user is stranded on a progress page that will never resolve.
+    if (pushed && progressRoute.isActive) {
+      navigator.removeRoute(progressRoute);
+    }
   } catch (exception, stackTrace) {
-    // Still in the previous world — clear the progress route, log, and tell
-    // the user why nothing happened (the tap must not fail silently).
-    if (progressRoute.isActive) {
+    // Still in the previous world — clear the progress route, log, and (for
+    // a user-initiated action) tell them why nothing happened.
+    if (pushed && progressRoute.isActive) {
       navigator.removeRoute(progressRoute);
     }
     if (getIt.isRegistered<DomainLogger>()) {
@@ -70,7 +125,7 @@ Future<void> _launch(
         subDomain: 'demoEntryLauncher',
       );
     }
-    if (context.mounted) {
+    if (toastFailure && context.mounted) {
       context.showToast(
         tone: DesignSystemToastTone.error,
         title: context.messages.demoEnterFailedToast,

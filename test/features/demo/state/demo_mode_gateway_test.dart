@@ -291,7 +291,7 @@ void main() {
       },
     );
 
-    test('is a no-op while the demo is already active', () async {
+    test('is a no-op while an up-to-date demo is already active', () async {
       final gateway = buildGateway();
       await gateway.enterDemo(locale: const Locale('en'));
       activeContext = guestContext((await gateway.findDemoProfile())!);
@@ -309,6 +309,189 @@ void main() {
       await registry.createGuestProfile(name: 'Scratch');
       final gateway = buildGateway();
       expect(await gateway.demoProfileExists(), isFalse);
+    });
+  });
+
+  // The boot path: the active-profile marker persists across restarts, so a
+  // user who was inside the demo when a seed bump shipped comes back INTO
+  // the stale world. enterDemo's freshness check never runs for them.
+  group('refreshStaleDemoWorld', () {
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    /// Registers the demo world's storage as the ACTIVE generation's
+    /// services — what the gateway reads instead of opening a second
+    /// WorldHandle onto files this process already has open.
+    WorldHandle activateGeneration(Profile demo) {
+      final handle = WorldHandle.open(registry.rootFor(demo));
+      addTearDown(handle.close);
+      activeContext = guestContext(demo);
+      getIt
+        ..registerSingleton<JournalDb>(handle.journalDb)
+        ..registerSingleton<AiConfigRepository>(
+          AiConfigRepository(handle.aiConfigDb),
+        );
+      return handle;
+    }
+
+    Future<void> writeManifest(
+      Profile demo, {
+      required int seedVersion,
+      List<String> seededJournalIds = const [],
+    }) => DemoSeedManifest(
+      seedVersion: seedVersion,
+      seededAt: DateTime.utc(2026),
+      localeTag: 'en',
+      seededJournalIds: seededJournalIds,
+      seededDefinitionIds: const [],
+      seededAiConfigIds: const [],
+    ).write(registry.rootFor(demo));
+
+    test('a stale world holding no user work is wiped and reseeded with the '
+        'current content', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final stale = (await gateway.findDemoProfile())!;
+      await writeManifest(stale, seedVersion: demoSeedVersion - 1);
+      activateGeneration(stale);
+      activated.clear();
+      seededLocales.clear();
+
+      final reseeded = await gateway.refreshStaleDemoWorld(
+        locale: const Locale('fr'),
+      );
+
+      expect(reseeded, isTrue);
+      final fresh = (await gateway.findDemoProfile())!;
+      expect(fresh.id, isNot(stale.id), reason: 'a brand new world');
+      expect(seededLocales, ['fr']);
+      // Exits to the real world first so the stale databases are closed
+      // before their directory is deleted, then enters the new world.
+      expect(activated, [Profile.realProfileId, fresh.id]);
+      expect(registry.rootFor(stale).existsSync(), isFalse);
+      final manifest = await DemoSeedManifest.read(registry.rootFor(fresh));
+      expect(manifest!.seedVersion, demoSeedVersion);
+    });
+
+    test('a stale world holding user work RESUMES untouched — preserving '
+        'what the user made outranks seed freshness', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final stale = (await gateway.findDemoProfile())!;
+      await writeManifest(
+        stale,
+        seedVersion: demoSeedVersion - 1,
+        seededJournalIds: const ['seeded-task'],
+      );
+      final handle = activateGeneration(stale);
+      await handle.writeJournalEntity(
+        TestTaskFactory.create(id: 'user-task', title: 'My own mission'),
+      );
+      activated.clear();
+      seededLocales.clear();
+
+      final reseeded = await gateway.refreshStaleDemoWorld(
+        locale: const Locale('fr'),
+      );
+
+      expect(reseeded, isFalse);
+      expect(seededLocales, isEmpty, reason: 'never reseed over user work');
+      expect(activated, isEmpty, reason: 'no switch at all — just resume');
+      expect((await gateway.findDemoProfile())!.id, stale.id);
+      expect(registry.rootFor(stale).existsSync(), isTrue);
+      expect(
+        await handle.journalDb.journalEntityById('user-task'),
+        isNotNull,
+        reason: 'the user-created task survived the boot',
+      );
+    });
+
+    test('a world on the current seed version is left alone', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final current = (await gateway.findDemoProfile())!;
+      activateGeneration(current);
+      activated.clear();
+      seededLocales.clear();
+
+      final reseeded = await gateway.refreshStaleDemoWorld(
+        locale: const Locale('fr'),
+      );
+
+      expect(reseeded, isFalse);
+      expect(activated, isEmpty);
+      expect(seededLocales, isEmpty);
+      expect((await gateway.findDemoProfile())!.id, current.id);
+    });
+
+    test(
+      'is a no-op in the real world, however stale the demo profile',
+      () async {
+        final gateway = buildGateway();
+        await gateway.enterDemo(locale: const Locale('en'));
+        final stale = (await gateway.findDemoProfile())!;
+        await writeManifest(stale, seedVersion: demoSeedVersion - 1);
+        // Back in the real world: activeContext stays null.
+        activated.clear();
+        seededLocales.clear();
+
+        expect(
+          await gateway.refreshStaleDemoWorld(locale: const Locale('fr')),
+          isFalse,
+        );
+        expect(activated, isEmpty);
+        expect(seededLocales, isEmpty);
+        expect(registry.rootFor(stale).existsSync(), isTrue);
+      },
+    );
+
+    test('onReseedStarted fires only for a run that actually reseeds, and '
+        'before the wipe', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final stale = (await gateway.findDemoProfile())!;
+      final staleRoot = registry.rootFor(stale);
+      await writeManifest(stale, seedVersion: demoSeedVersion - 1);
+      activateGeneration(stale);
+
+      var startedWithWorldIntact = 0;
+      await gateway.refreshStaleDemoWorld(
+        locale: const Locale('en'),
+        onReseedStarted: () {
+          if (staleRoot.existsSync()) startedWithWorldIntact++;
+        },
+      );
+      expect(startedWithWorldIntact, 1);
+
+      // The fresh world is current, so a second pass decides against
+      // reseeding and must not raise progress at all.
+      final fresh = (await gateway.findDemoProfile())!;
+      await getIt.reset();
+      activateGeneration(fresh);
+      var startedAgain = 0;
+      await gateway.refreshStaleDemoWorld(
+        locale: const Locale('en'),
+        onReseedStarted: () => startedAgain++,
+      );
+      expect(startedAgain, 0);
+    });
+
+    test('enterDemo delegates to it when the demo is already active, so the '
+        '"Try the demo" tap is no longer a dead end', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final stale = (await gateway.findDemoProfile())!;
+      await writeManifest(stale, seedVersion: demoSeedVersion - 1);
+      activateGeneration(stale);
+      activated.clear();
+      seededLocales.clear();
+
+      await gateway.enterDemo(locale: const Locale('it'));
+
+      final fresh = (await gateway.findDemoProfile())!;
+      expect(fresh.id, isNot(stale.id));
+      expect(seededLocales, ['it']);
     });
   });
 

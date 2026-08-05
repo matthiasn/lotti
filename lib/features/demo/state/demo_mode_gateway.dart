@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/services.dart' show AssetBundle, rootBundle;
@@ -108,9 +109,15 @@ class DemoModeGateway {
   /// demo-created work — a stale world with user work resumes as-is, so an
   /// app upgrade that bumps the seed version can never silently destroy
   /// something the user made. [resetDemo] remains the explicit, confirmed
-  /// wipe. No-op while the demo is active.
+  /// wipe. While the demo is ALREADY active there is nothing to enter, so it
+  /// degrades to the same staleness repair — see [refreshStaleDemoWorld].
   Future<void> enterDemo({required Locale locale}) async {
-    if (isDemoActive) return;
+    if (isDemoActive) {
+      // Already inside: "Try the demo" has nothing to enter, but the world
+      // underfoot may be stale — see [refreshStaleDemoWorld].
+      await refreshStaleDemoWorld(locale: locale);
+      return;
+    }
     final existing = await findDemoProfile();
     if (existing != null) {
       if (await _hasCurrentSeed(existing) || await _hasUserWork(existing)) {
@@ -120,6 +127,41 @@ class DemoModeGateway {
       await registry.deleteGuestProfile(existing.id);
     }
     await _createAndEnter(locale);
+  }
+
+  /// Reseeds a stale demo world the app is ALREADY sitting in.
+  ///
+  /// [enterDemo]'s freshness check can only ever repair a world it is about
+  /// to enter. But the active-profile marker persists across restarts, so a
+  /// user who was inside the demo when an app update bumped
+  /// [demoSeedVersion] boots straight back into the stale world — and
+  /// "Try the demo" is a no-op there, because the demo is already active.
+  /// Without this, an explicit [resetDemo] would be the only way out, and
+  /// new seed content would never reach the people already in the demo.
+  ///
+  /// Reseeds ONLY when the active world holds no demo-created work.
+  /// Preserving user work outranks freshness, exactly as on the entry path:
+  /// a stale world WITH user work keeps resuming untouched, and a scan
+  /// failure counts as user work. Returns whether it reseeded.
+  ///
+  /// No-op outside the demo world and for an up-to-date world, so it is
+  /// safe to call unconditionally on every generation's first frame.
+  ///
+  /// [onReseedStarted] fires once the decision is made and BEFORE the wipe
+  /// begins, so the caller can raise blocking progress only for the run
+  /// that actually reseeds — an up-to-date world must not flash one.
+  Future<bool> refreshStaleDemoWorld({
+    required Locale locale,
+    FutureOr<void> Function()? onReseedStarted,
+  }) async {
+    if (!isDemoActive) return false;
+    final existing = await findDemoProfile();
+    if (existing == null) return false;
+    if (await _hasCurrentSeed(existing)) return false;
+    if (await _activeWorldHasUserWork(existing)) return false;
+    await onReseedStarted?.call();
+    await resetDemo(locale: locale);
+    return true;
   }
 
   /// Switches back to the real world. The demo profile is KEPT (resumable);
@@ -263,30 +305,67 @@ class DemoModeGateway {
   Future<bool> _hasUserWork(Profile profile) async {
     WorldHandle? handle;
     try {
-      final root = registry.rootFor(profile);
-      DemoSeedManifest? manifest;
-      try {
-        manifest = await DemoSeedManifest.read(root);
-      } catch (_) {
-        manifest = null;
-      }
-      final seededJournalIds = {...?manifest?.seededJournalIds};
-      final seededAiIds = {...?manifest?.seededAiConfigIds};
-
-      handle = WorldHandle.open(root);
-      final journalIds = await handle.journalDb.allNonDeletedJournalEntityIds();
-      if (journalIds.any((id) => !seededJournalIds.contains(id))) {
-        return true;
-      }
-      final providers = await AiConfigRepository(
-        handle.aiConfigDb,
-      ).getConfigsByType(AiConfigType.inferenceProvider);
-      return providers.any((config) => !seededAiIds.contains(config.id));
+      handle = WorldHandle.open(registry.rootFor(profile));
+      final opened = handle;
+      return await _hasUserWorkIn(
+        profile: profile,
+        journalIds: opened.journalDb.allNonDeletedJournalEntityIds,
+        inferenceProviders: () => AiConfigRepository(
+          opened.aiConfigDb,
+        ).getConfigsByType(AiConfigType.inferenceProvider),
+      );
     } catch (_) {
       return true;
     } finally {
       await handle?.close();
     }
+  }
+
+  /// [_hasUserWork] for the world that is CURRENTLY active.
+  ///
+  /// Same predicate, different source: the active world's databases are
+  /// already open in this service generation, so it reads them through
+  /// getIt instead of opening a SECOND [WorldHandle] onto the same SQLite
+  /// files.
+  Future<bool> _activeWorldHasUserWork(Profile profile) async {
+    try {
+      return await _hasUserWorkIn(
+        profile: profile,
+        journalIds: getIt<JournalDb>().allNonDeletedJournalEntityIds,
+        inferenceProviders: () => getIt<AiConfigRepository>().getConfigsByType(
+          AiConfigType.inferenceProvider,
+        ),
+      );
+    } catch (_) {
+      return true;
+    }
+  }
+
+  /// The shared user-work predicate: rows that the manifest does not claim.
+  ///
+  /// A missing/malformed manifest excludes nothing (so every row reads as
+  /// user work), and any failure propagates to the callers, which report
+  /// `true` — a scan failure can never green-light a deletion.
+  Future<bool> _hasUserWorkIn({
+    required Profile profile,
+    required Future<List<String>> Function() journalIds,
+    required Future<List<AiConfig>> Function() inferenceProviders,
+  }) async {
+    DemoSeedManifest? manifest;
+    try {
+      manifest = await DemoSeedManifest.read(registry.rootFor(profile));
+    } catch (_) {
+      manifest = null;
+    }
+    final seededJournalIds = {...?manifest?.seededJournalIds};
+    final seededAiIds = {...?manifest?.seededAiConfigIds};
+
+    final ids = await journalIds();
+    if (ids.any((id) => !seededJournalIds.contains(id))) {
+      return true;
+    }
+    final providers = await inferenceProviders();
+    return providers.any((config) => !seededAiIds.contains(config.id));
   }
 
   Future<void> _createAndEnter(Locale locale) async {

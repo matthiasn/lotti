@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -56,9 +59,34 @@ class _DemoModeScaffoldState extends ConsumerState<DemoModeScaffold> {
     // Drain a failure reported while no scaffold was mounted — the apply
     // can fail in the window between generation teardown and this
     // generation's first frame.
-    WidgetsBinding.instance.addPostFrameCallback(
-      (_) => _onCopyFailureReported(),
-    );
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _onCopyFailureReported();
+      unawaited(_refreshStaleDemoWorld());
+    });
+  }
+
+  /// Repairs a demo world that went stale underfoot.
+  ///
+  /// This scaffold mounts once per service generation, so its first frame IS
+  /// the "booted into a world" signal — for a cold launch that resumes the
+  /// demo just as much as for a switch into it. That matters because the
+  /// active-profile marker persists across restarts: a user who was inside
+  /// the demo when an app update bumped the seed version would otherwise
+  /// boot back into the stale world forever, with "Try the demo" hidden
+  /// (they are already in it) and only an explicit Reset to escape.
+  ///
+  /// The gateway owns the decision — and refuses to wipe a world holding
+  /// user work. Failures are swallowed by the launcher, which logs and
+  /// toasts: a stale world that cannot be repaired must still be usable.
+  Future<void> _refreshStaleDemoWorld() async {
+    if (!mounted || !ref.read(demoModeActiveProvider)) return;
+    // The same guard the copy-failure notice needs: `sheetContext` resolves
+    // the router's navigator, which on the first frame of a generation may
+    // still point at the outgoing tree's dead element. Reading providers or
+    // Localizations off that context throws.
+    final target = widget.sheetContext?.call() ?? context;
+    if (!target.mounted) return;
+    await launchStaleDemoRefresh(target, gateway: widget.gateway);
   }
 
   @override
