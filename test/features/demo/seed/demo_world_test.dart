@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
+import 'package:lotti/utils/image_utils.dart';
 
 void main() {
   group('ManualDemoWorld.penguinLogistics', () {
@@ -129,6 +131,62 @@ void main() {
       );
       for (final item in world.checklistItems) {
         expect(item.data.linkedChecklists, const [manualHabitatChecklistId]);
+      }
+    });
+
+    test('taskBrowseTasks is the curated browse page: hero first, then the '
+        'feeder/cargo/passenger rows the manual documents', () {
+      final world = ManualDemoWorld.penguinLogistics();
+
+      expect(
+        world.taskBrowseTasks.map((task) => task.meta.id),
+        const [
+          manualOrbitalHabitatTaskId,
+          manualFishFeederTaskId,
+          manualSardineCargoTaskId,
+          manualPenguinPassengerTaskId,
+        ],
+      );
+      // The named getters and the full task list agree on the entities.
+      expect(
+        world.fishFeederTask,
+        same(world.taskById(manualFishFeederTaskId)),
+      );
+      expect(
+        world.sardineCargoTask,
+        same(world.taskById(manualSardineCargoTaskId)),
+      );
+      expect(
+        world.penguinPassengerTask,
+        same(world.taskById(manualPenguinPassengerTaskId)),
+      );
+    });
+
+    test('installMedia copies every bundled cover into the document-relative '
+        'path production cover-art widgets resolve', () async {
+      final documents = Directory.systemTemp.createTempSync('lotti_world_');
+      addTearDown(() => documents.delete(recursive: true));
+      final world = ManualDemoWorld.penguinLogistics();
+
+      final installed = await world.installMedia(documents);
+
+      expect(installed, hasLength(world.coverImages.length));
+      for (final coverImage in world.coverImages) {
+        final target = File(
+          getFullImagePath(
+            coverImage,
+            documentsDirectory: documents.path,
+          ),
+        );
+        expect(
+          target.existsSync(),
+          isTrue,
+          reason: '${coverImage.meta.id} must land at the production path',
+        );
+        // Byte identity with the repo asset, so the demo world shows the
+        // exact artwork the manual documents.
+        final asset = File(manualDemoCoverAssets[coverImage.meta.id]!);
+        expect(target.lengthSync(), asset.lengthSync());
       }
     });
   });

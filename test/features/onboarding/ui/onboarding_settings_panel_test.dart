@@ -1,8 +1,11 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -17,6 +20,7 @@ import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart'
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -544,6 +548,8 @@ void main() {
 
     testWidgets('a failed delete surfaces an error toast and keeps the demo '
         'rows instead of failing silently', (tester) async {
+      final logger = MockDomainLogger();
+      getIt.registerSingleton<DomainLogger>(logger);
       when(() => gateway.isDemoActive).thenReturn(false);
       when(gateway.demoProfileExists).thenAnswer((_) async => true);
       when(gateway.deleteDemo).thenAnswer(
@@ -573,6 +579,78 @@ void main() {
         findsOneWidget,
         reason: 'the demo still exists, so its rows stay',
       );
+      verify(
+        () => logger.error(
+          LogDomain.general,
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'onboardingSettingsDeleteDemo',
+        ),
+      ).called(1);
+    });
+
+    testWidgets('the exit row opens the demo exit sheet', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(true);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+      // The sheet's candidate load runs against the production getIt path.
+      final db = MockJournalDb();
+      when(
+        () => db.getJournalEntities(
+          types: any(named: 'types'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          ids: any(named: 'ids'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((_) async => const []);
+      when(() => db.linksForEntryIds(any())).thenAnswer((_) async => const []);
+      final aiRepo = MockAiConfigRepository();
+      when(
+        () => aiRepo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => const []);
+      final demoRoot = Directory.systemTemp.createTempSync('lotti_onb_demo_');
+      addTearDown(() => demoRoot.delete(recursive: true));
+      getIt
+        ..registerSingleton<JournalDb>(db)
+        ..registerSingleton<AiConfigRepository>(aiRepo)
+        ..registerSingleton<Directory>(demoRoot);
+
+      await pumpWithGateway(tester);
+      await tester.ensureVisible(find.text('Exit demo'));
+      await tester.tap(find.text('Exit demo'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Leave the demo?'),
+        findsOneWidget,
+        reason: 'the row must hand over to the exit sheet, not exit directly',
+      );
+      verifyNever(gateway.exitDemo);
+    });
+
+    testWidgets('reset from OUTSIDE the demo also asks for confirmation, '
+        'and cancelling leaves the world untouched', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(false);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(tester);
+
+      await tester.ensureVisible(find.text('Reset demo data'));
+      await tester.tap(find.text('Reset demo data'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Reset the demo world? Everything you changed there will be lost.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => gateway.resetDemo(locale: any(named: 'locale')));
     });
 
     testWidgets('reset asks for confirmation and hands over to the reseed '

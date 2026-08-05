@@ -7,7 +7,9 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -99,6 +101,56 @@ void main() {
         findsOneWidget,
         reason: 'the failed tap must not stay silent',
       );
+    });
+
+    testWidgets('a failure AFTER the progress route is fully installed '
+        'removes exactly that route and logs the failure', (tester) async {
+      final logger = MockDomainLogger();
+      getIt.registerSingleton<DomainLogger>(logger);
+      addTearDown(getIt.reset);
+      final entered = Completer<void>();
+      when(
+        () => gateway.enterDemo(locale: any(named: 'locale')),
+      ).thenAnswer((_) => entered.future);
+
+      await tester.pumpWidget(
+        host(
+          builder: (context) => TextButton(
+            onPressed: () =>
+                unawaited(launchDemoEnter(context, gateway: gateway)),
+            child: const Text('go'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('go'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(find.byType(DemoEnteringProgressPage), findsOneWidget);
+
+      // The seed fails while the user is looking at the progress page.
+      entered.completeError(StateError('seed boom'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(
+        find.byType(DemoEnteringProgressPage),
+        findsNothing,
+        reason: 'the user must not be stranded on the progress page',
+      );
+      expect(find.text('go'), findsOneWidget);
+      expect(
+        find.text("Couldn't open the demo world — try again."),
+        findsWidgets,
+      );
+      verify(
+        () => logger.error(
+          LogDomain.general,
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'demoEntryLauncher',
+        ),
+      ).called(1);
     });
 
     testWidgets('without a gateway or ProfileSwitcherScope it is a no-op', (

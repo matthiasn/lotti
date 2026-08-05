@@ -1,23 +1,46 @@
 import 'dart:io';
-import 'dart:ui' show Locale;
 
+import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/app_root.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
+import 'package:lotti/features/demo/seed/demo_seed_text.dart';
+import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
+/// Serves the repo's real asset files from disk, standing in for
+/// `rootBundle` (tests run with the repository root as working directory).
+class _FileSystemAssetBundle extends CachingAssetBundle {
+  @override
+  Future<ByteData> load(String key) async {
+    final bytes = await File(key).readAsBytes();
+    return ByteData.sublistView(bytes);
+  }
+}
+
 void main() {
+  TestWidgetsFlutterBinding.ensureInitialized();
+
+  setUpAll(registerAllFallbackValues);
   late Directory realRoot;
   late ProfileRegistry registry;
   late List<String> activated;
@@ -384,6 +407,173 @@ void main() {
         () => gateway.exitWithCopy(selectedIds: {'x'}),
         throwsStateError,
       );
+    });
+  });
+
+  group('default seams (no test overrides)', () {
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    test('the default profile-context read resolves the active generation '
+        'from getIt', () async {
+      final gateway = DemoModeGateway(
+        registry: registry,
+        activate: (id) async => activated.add(id),
+      );
+      expect(
+        gateway.isDemoActive,
+        isFalse,
+        reason: 'no ProfileContext registered means the real world',
+      );
+
+      final demo = await registry.createGuestProfile(name: 'Demo');
+      getIt.registerSingleton<ProfileContext>(guestContext(demo));
+
+      expect(
+        gateway.isDemoActive,
+        isTrue,
+        reason: 'a registered guest ProfileContext IS the demo generation',
+      );
+    });
+
+    test('the default seed runner runs the real DemoSeeder against the '
+        'freshly created world, in the requested locale', () async {
+      getIt.registerSingleton<EntitiesCacheService>(MockEntitiesCacheService());
+      final gateway = DemoModeGateway(
+        registry: registry,
+        activate: (id) async => activated.add(id),
+        profileContext: () => activeContext,
+        bundle: _FileSystemAssetBundle(),
+        clock: () => DateTime(2026, 8, 5, 10),
+      );
+
+      await gateway.enterDemo(locale: const Locale('fr'));
+
+      final profile = (await gateway.findDemoProfile())!;
+      final manifest = await DemoSeedManifest.read(registry.rootFor(profile));
+      expect(manifest, isNotNull);
+      expect(manifest!.isCurrentVersion, isTrue);
+      expect(manifest.localeTag, 'fr');
+      expect(manifest.seededJournalIds, isNotEmpty);
+
+      // The seeded content really landed in THIS world's journal database,
+      // localized through the French catalog.
+      final world = WorldHandle.open(registry.rootFor(profile));
+      addTearDown(world.close);
+      final hero = await world.journalDb.journalEntityById(
+        manualOrbitalHabitatTaskId,
+      );
+      final expectedTitle = demoSeedTextForLocale(const Locale('fr'))(
+        'Inspect orbital penguin habitat',
+        'unused-de',
+      );
+      expect((hero! as Task).data.title, expectedTitle);
+    });
+
+    test('exitWithCopy without overrides reads the demo generation and '
+        'applies through the real generation services', () async {
+      getIt.registerSingleton<EntitiesCacheService>(MockEntitiesCacheService());
+      final demoProfile = await registry.createGuestProfile(name: 'Demo');
+      final demoRoot = registry.rootFor(demoProfile);
+      final demoHandle = WorldHandle.open(demoRoot);
+      addTearDown(demoHandle.close);
+      await demoHandle.writeJournalEntity(
+        TestTaskFactory.create(id: 'user-task', title: 'Cross the worlds'),
+      );
+
+      final persistence = MockPersistenceLogic();
+      final fts = MockFts5Db();
+      when(() => persistence.updateMetadata(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      when(
+        () => persistence.createDbEntity(
+          any(),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(() => fts.insertText(any())).thenAnswer((_) async {});
+
+      // The DEMO generation's services are the active getIt bindings.
+      getIt
+        ..registerSingleton<JournalDb>(demoHandle.journalDb)
+        ..registerSingleton<AiConfigRepository>(
+          AiConfigRepository(demoHandle.aiConfigDb),
+        )
+        ..registerSingleton<Directory>(demoRoot);
+      activeContext = guestContext(demoProfile);
+
+      final gateway = DemoModeGateway(
+        registry: registry,
+        activate: (id) async {
+          activated.add(id);
+          activeContext = null;
+          // The profile switch: rebind getIt to the REAL generation.
+          getIt
+            ..unregister<JournalDb>()
+            ..unregister<AiConfigRepository>()
+            ..unregister<Directory>()
+            ..registerSingleton<JournalDb>(MockJournalDb())
+            ..registerSingleton<AiConfigRepository>(MockAiConfigRepository())
+            ..registerSingleton<Directory>(realRoot)
+            ..registerSingleton<PersistenceLogic>(persistence)
+            ..registerSingleton<Fts5Db>(fts);
+        },
+        profileContext: () => activeContext,
+        seedRunner: (_, _) async {},
+      );
+
+      final copied = await gateway.exitWithCopy(selectedIds: {'user-task'});
+
+      expect(copied, 1);
+      expect(activated, [Profile.realProfileId]);
+      final written =
+          verify(
+                () => persistence.createDbEntity(
+                  captureAny(),
+                  shouldAddGeolocation: false,
+                ),
+              ).captured.single
+              as Task;
+      expect(written.data.title, 'Cross the worlds');
+      expect(
+        written.meta.id,
+        isNot('user-task'),
+        reason: 'copies must arrive under fresh real-world ids',
+      );
+      verify(() => fts.insertText(any())).called(1);
+    });
+  });
+
+  group('scope resolution', () {
+    testWidgets('demoModeGatewayOf and maybeDemoModeGatewayOf build a '
+        'gateway wired to the ambient switcher', (tester) async {
+      final switcher = MockProfileSwitcher();
+      when(() => switcher.registry).thenReturn(registry);
+      when(() => switcher.switchTo(any())).thenAnswer((_) async {});
+
+      DemoModeGateway? viaOf;
+      DemoModeGateway? viaMaybe;
+      await tester.pumpWidget(
+        ProfileSwitcherScope(
+          switcher: switcher,
+          child: Builder(
+            builder: (context) {
+              viaOf = demoModeGatewayOf(context);
+              viaMaybe = maybeDemoModeGatewayOf(context);
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      expect(viaOf!.registry, same(registry));
+      expect(viaMaybe!.registry, same(registry));
+
+      // The built gateway's activate hook IS the ambient switcher.
+      await viaOf!.exitDemo();
+      verify(() => switcher.switchTo(Profile.realProfileId)).called(1);
     });
   });
 

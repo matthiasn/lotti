@@ -2,13 +2,16 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/demo/copy/demo_copy_candidates.dart';
 import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/entity_factories.dart';
@@ -300,6 +303,172 @@ void main() {
         selectedIds: any(named: 'selectedIds'),
         selectedAiConfigIds: any(named: 'selectedAiConfigIds'),
       ),
+    );
+  });
+
+  testWidgets('without an explicit gateway and without a '
+      'ProfileSwitcherScope the call is a no-op', (tester) async {
+    await tester.pumpWidget(
+      MediaQuery(
+        data: const MediaQueryData(size: Size(390, 844)),
+        child: MaterialApp(
+          theme: resolveTestTheme(),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: Scaffold(
+            body: Builder(
+              builder: (context) => TextButton(
+                onPressed: () => unawaited(showDemoExitSheet(context)),
+                child: const Text('open'),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('open'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Leave the demo?'),
+      findsNothing,
+      reason: 'no gateway can be resolved, so no sheet may open',
+    );
+  });
+
+  testWidgets('a failed copy returns to the pick step with an error toast '
+      'and logs through the domain logger', (tester) async {
+    final logger = MockDomainLogger();
+    getIt.registerSingleton<DomainLogger>(logger);
+    addTearDown(getIt.reset);
+    when(
+      () => gateway.exitWithCopy(
+        selectedIds: any(named: 'selectedIds'),
+        selectedAiConfigIds: any(named: 'selectedAiConfigIds'),
+      ),
+    ).thenAnswer((_) async => throw StateError('copy failed'));
+
+    await tester.pumpWidget(
+      host(
+        () async => DemoCopyCandidates(
+          tasks: [task],
+          entries: const [],
+          aiProviders: const [],
+        ),
+      ),
+    );
+    await open(tester);
+    await tester.tap(find.text('Take my work with me…'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Pack fish crates'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Copy and exit'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(
+      find.text('Pack fish crates'),
+      findsOneWidget,
+      reason: 'the pick step (with the selection UI) must come back',
+    );
+    expect(
+      find.text("Couldn't finish leaving the demo — try again."),
+      findsWidgets,
+    );
+    verify(
+      () => logger.error(
+        LogDomain.general,
+        any(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'demoExitSheet',
+      ),
+    ).called(1);
+  });
+
+  testWidgets('select all tapped twice clears the selection and disables '
+      'the confirm CTA again', (tester) async {
+    await tester.pumpWidget(
+      host(
+        () async => DemoCopyCandidates(
+          tasks: [task],
+          entries: [note],
+          aiProviders: const [],
+        ),
+      ),
+    );
+    await open(tester);
+    await tester.tap(find.text('Take my work with me…'));
+    await tester.pumpAndSettle();
+
+    DesignSystemButton confirmButton() => tester.widget<DesignSystemButton>(
+      find.widgetWithText(DesignSystemButton, 'Copy and exit'),
+    );
+
+    await tester.tap(find.text('Select all'));
+    await tester.pumpAndSettle();
+    expect(confirmButton().onPressed, isNotNull);
+
+    await tester.tap(find.text('Select all'));
+    await tester.pumpAndSettle();
+    expect(
+      confirmButton().onPressed,
+      isNull,
+      reason: 'toggling select-all off must clear every selection',
+    );
+  });
+
+  testWidgets('cancel on the pick step closes the sheet without copying', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(
+        () async => DemoCopyCandidates(
+          tasks: [task],
+          entries: const [],
+          aiProviders: const [],
+        ),
+      ),
+    );
+    await open(tester);
+    await tester.tap(find.text('Take my work with me…'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Cancel'));
+    await tester.tap(find.text('Cancel'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Copy and exit'), findsNothing);
+    verifyNever(
+      () => gateway.exitWithCopy(
+        selectedIds: any(named: 'selectedIds'),
+        selectedAiConfigIds: any(named: 'selectedAiConfigIds'),
+      ),
+    );
+  });
+
+  testWidgets('media without any text is labelled by its localized entry '
+      'date', (tester) async {
+    final image = TestImageFactory.create(id: 'img-1');
+    await tester.pumpWidget(
+      host(
+        () async => DemoCopyCandidates(
+          tasks: const [],
+          entries: [image],
+          aiProviders: const [],
+        ),
+      ),
+    );
+    await open(tester);
+    await tester.tap(find.text('Take my work with me…'));
+    await tester.pumpAndSettle();
+
+    final expected = DateFormat.yMMMd('en').format(image.meta.dateFrom);
+    expect(
+      find.text(expected),
+      findsOneWidget,
+      reason: 'a text-less image row must fall back to the entry date',
     );
   });
 }

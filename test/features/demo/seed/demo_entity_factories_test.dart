@@ -73,6 +73,15 @@ void main() {
       expect(image.data.capturedAt, testFixedDate);
       expect(image.entryText, isNull);
     });
+
+    test('a caption becomes the image entry text', () {
+      final image = TestImageFactory.create(
+        id: 'img-8',
+        plainText: 'Habitat inspection photo',
+      );
+
+      expect(image.entryText?.plainText, 'Habitat inspection photo');
+    });
   });
 
   group('TestChecklistItemFactory', () {

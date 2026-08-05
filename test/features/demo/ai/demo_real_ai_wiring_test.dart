@@ -134,6 +134,53 @@ void main() {
       verifyNever(() => h.persistence.upsertEntityDefinition(any()));
     });
 
+    test('a seeded world larger than one query page is stamped completely — '
+        'pagination must keep reading past the first 200 rows', () async {
+      final tasks = [for (var i = 0; i < 201; i++) task('seeded-$i')];
+      final db = MockJournalDb();
+      final persistence = MockPersistenceLogic();
+      when(
+        () => db.getCategoryById(manualDemoCategoryId),
+      ).thenAnswer((_) async => category());
+      when(
+        () => db.getJournalEntities(
+          types: any(named: 'types'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          ids: any(named: 'ids'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((invocation) async {
+        final offset = invocation.namedArguments[#offset] as int;
+        final limit = invocation.namedArguments[#limit] as int;
+        return tasks.skip(offset).take(limit).toList();
+      });
+      when(
+        () => persistence.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
+      when(
+        () => persistence.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await wireDemoWorldToRealProfile(
+        profileId: 'real-profile',
+        journalDb: db,
+        persistence: persistence,
+      );
+
+      verify(
+        () => persistence.updateTask(
+          journalEntityId: any(named: 'journalEntityId'),
+          taskData: any(named: 'taskData'),
+        ),
+      ).called(201);
+    });
+
     test('a missing seeded category (deleted by the user) is skipped without '
         'throwing', () async {
       final h = harness(seededCategory: null, tasks: [task('seeded-1')]);

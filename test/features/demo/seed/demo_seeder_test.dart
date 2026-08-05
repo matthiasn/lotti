@@ -14,8 +14,10 @@ import 'package:lotti/get_it.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 /// Serves the repo's real asset files from disk, standing in for
@@ -313,6 +315,49 @@ void main() {
         manualDemoCategoryId,
       );
       expect(category?.name, 'Pinguinbetrieb');
+    });
+
+    test('a flag substrate that loses a default fails the seed loudly '
+        'instead of shipping a world with wrong flags', () async {
+      registerAllFallbackValues();
+      final brokenDb = MockJournalDb();
+      // initConfigFlags appears to run, but the read-back finds nothing —
+      // the shape of a broken settings substrate.
+      when(
+        () => brokenDb.insertFlagIfNotExists(any()),
+      ).thenAnswer((_) async {});
+      when(
+        () => brokenDb.deleteConfigFlag(any()),
+      ).thenAnswer((_) async => true);
+      when(
+        () => brokenDb.getConfigFlagByName(any()),
+      ).thenAnswer((_) async => null);
+      final brokenWorld = MockWorldHandle();
+      when(() => brokenWorld.root).thenReturn(worldRoot);
+      when(() => brokenWorld.journalDb).thenReturn(brokenDb);
+      when(
+        () => brokenWorld.writeEntityDefinition(any()),
+      ).thenAnswer((_) async {});
+      when(() => brokenWorld.writeAiConfig(any())).thenAnswer((_) async {});
+      when(
+        () => brokenWorld.writeJournalEntity(any()),
+      ).thenAnswer((_) async {});
+      when(() => brokenWorld.writeEntryLink(any())).thenAnswer((_) async {});
+
+      await expectLater(
+        DemoSeeder(
+          world: brokenWorld,
+          bundle: _FileSystemAssetBundle(),
+          clock: () => seedTime,
+        ).seed(locale: const Locale('en')),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('missing after initConfigFlags'),
+          ),
+        ),
+      );
     });
   });
 }

@@ -213,4 +213,21 @@ void main() {
     expect(candidates.tasks.map((task) => task.meta.id), ['task-a']);
     expect(candidates.aiProviders.map((p) => p.id), ['provider-a']);
   });
+
+  test('a journal larger than one query page is offered completely — '
+      'pagination must keep reading past the first 200 rows', () async {
+    for (var i = 0; i < 201; i++) {
+      await world.writeJournalEntity(
+        entry('entry-${i.toString().padLeft(3, '0')}', 'Note $i'),
+      );
+    }
+
+    final candidates = await load();
+
+    expect(
+      candidates.entries,
+      hasLength(201),
+      reason: 'row 201 sits on the second page and must not be dropped',
+    );
+  });
 }

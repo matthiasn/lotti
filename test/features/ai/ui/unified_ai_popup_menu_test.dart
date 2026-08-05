@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
 import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
@@ -471,6 +472,59 @@ void main() {
             find.byType(UnifiedAiSkillsList),
             findsNothing,
             reason: 'the doomed fixture request must never be offered',
+          );
+        },
+      );
+
+      testWidgets(
+        'completing the guided setup retries the intercepted tap: the '
+        'skills modal opens after the sheet closes',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              UnifiedAiPopUpMenu(
+                journalEntity: testTaskEntity,
+                linkedFromId: null,
+              ),
+              overrides: demoOverrides([provider('fixture-provider')]),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          expect(find.text('AI in the demo is pretend'), findsOneWidget);
+
+          // Walk the guided flow to a connected provider.
+          await tester.tap(find.text('Set up real AI'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.tap(find.text('Gemini'), warnIfMissed: false);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 400));
+          tester
+              .widget<OnboardingApiKeyPanel>(
+                find.byType(OnboardingApiKeyPanel),
+              )
+              .onConnected();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 400));
+
+          // Closing the success beat pops the sheet and retries the tap.
+          await tester.tap(find.text('Continue'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 400));
+
+          expect(
+            find.byType(UnifiedAiSkillsList),
+            findsOneWidget,
+            reason: 'the originally intercepted action must now proceed',
           );
         },
       );

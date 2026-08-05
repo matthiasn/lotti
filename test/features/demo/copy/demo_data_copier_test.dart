@@ -380,7 +380,126 @@ void main() {
     });
   });
 
+  group('prepare defaults', () {
+    test('the default id factory issues fresh UUIDs and the default staging '
+        'directory lands in the OS temp dir', () async {
+      await seedSourceWorld();
+      final copier = DemoDataCopier();
+
+      final plan = await copier.prepare(
+        selectedIds: {'task-1'},
+        sourceDb: source.journalDb,
+        sourceRoot: sourceRoot,
+      );
+      final staging = plan.media.single.stagedFile.parent;
+      addTearDown(() => staging.delete(recursive: true));
+
+      final uuidPattern = RegExp(
+        r'^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+      );
+      for (final entity in plan.entities) {
+        expect(
+          entity.meta.id,
+          matches(uuidPattern),
+          reason: 'default remapping must issue v4 UUIDs',
+        );
+      }
+      expect(
+        plan.entities.map((entity) => entity.meta.id),
+        isNot(contains('task-1')),
+      );
+      expect(plan.media.single.stagedFile.existsSync(), isTrue);
+      expect(p.basename(staging.path), startsWith('lotti_demo_copy_'));
+    });
+  });
+
+  group('audio media', () {
+    test('audio recordings travel like images: bytes staged under the new '
+        'id, directory rewritten to the demo import path', () async {
+      final audio = JournalAudio(
+        meta: TestMetadataFactory.create(id: 'audio-1', createdAt: created),
+        data: AudioData(
+          dateFrom: created,
+          dateTo: created,
+          audioFile: 'note.m4a',
+          audioDirectory: '/audio/2026-07-20/',
+          duration: const Duration(seconds: 3),
+        ),
+      );
+      File(p.join(sourceRoot.path, 'audio', '2026-07-20', 'note.m4a'))
+        ..createSync(recursive: true)
+        ..writeAsBytesSync([9, 8, 7]);
+      await source.writeJournalEntity(audio);
+
+      final copier = DemoDataCopier(newId: sequentialIds());
+      final plan = await copier.prepare(
+        selectedIds: {'audio-1'},
+        sourceDb: source.journalDb,
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+
+      final copied = plan.entities.whereType<JournalAudio>().single;
+      expect(copied.meta.id, 'new-1');
+      expect(copied.data.audioDirectory, demoImportMediaDirectory);
+      expect(
+        copied.data.audioFile,
+        'new-1.m4a',
+        reason: 'fresh name derived from the new id, extension kept',
+      );
+      final staged = plan.media.single;
+      expect(staged.relativeTarget, '${demoImportMediaDirectory}new-1.m4a');
+      expect(staged.stagedFile.readAsBytesSync(), [9, 8, 7]);
+    });
+  });
+
   group('apply', () {
+    test('label definitions referenced by the copies are upserted when '
+        'absent and left alone when present', () async {
+      LabelDefinition label(String id) => LabelDefinition(
+        id: id,
+        name: 'Label $id',
+        color: '#1F9CF5',
+        createdAt: created,
+        updatedAt: created,
+        vectorClock: null,
+        private: false,
+      );
+      final plan = DemoCopyPlan(
+        entities: const [],
+        links: const [],
+        definitions: [label('label-new'), label('label-old')],
+        media: const [],
+      );
+      final persistence = MockPersistenceLogic();
+      final targetDb = MockJournalDb();
+      when(
+        () => targetDb.getLabelDefinitionById('label-new'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => targetDb.getLabelDefinitionById('label-old'),
+      ).thenAnswer((_) async => label('label-old'));
+      when(
+        () => persistence.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
+
+      await DemoDataCopier(newId: sequentialIds()).apply(
+        plan,
+        persistence: persistence,
+        targetJournalDb: targetDb,
+        targetRoot: targetRoot,
+      );
+
+      final upserted = verify(
+        () => persistence.upsertEntityDefinition(captureAny()),
+      ).captured;
+      expect(
+        upserted.map((definition) => (definition as EntityDefinition).id),
+        ['label-new'],
+        reason: 'an existing label must never be clobbered by a re-copy',
+      );
+    });
+
     test('moves media, upserts absent definitions, writes entities through '
         'PersistenceLogic with fresh clocks, then recreates links', () async {
       await seedSourceWorld();

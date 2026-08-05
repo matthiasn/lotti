@@ -120,6 +120,8 @@ import 'package:lotti/features/notifications/scheduler/notification_scheduler.da
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/services/onboarding_task_structuring_service.dart';
+import 'package:lotti/features/profiles/service/profile_switcher.dart';
+import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -1336,6 +1338,10 @@ class MockObjectBoxOps extends Mock implements ObjectBoxOps {}
 class MockEmbeddingService extends Mock implements EmbeddingService {}
 
 class MockDemoModeGateway extends Mock implements DemoModeGateway {}
+
+class MockProfileSwitcher extends Mock implements ProfileSwitcher {}
+
+class MockWorldHandle extends Mock implements WorldHandle {}
 
 class MockProfileResolver extends Mock implements ProfileResolver {}
 

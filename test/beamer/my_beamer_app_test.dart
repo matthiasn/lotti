@@ -1,15 +1,27 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:beamer/beamer.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/app_root.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
+import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
+import 'package:lotti/features/demo/ui/demo_mode_banner.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/profiles/model/profile.dart' as profiles;
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/repository/profile_registry.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
@@ -458,6 +470,138 @@ void main() {
           UrlLauncherPlatform.instance = originalUrlLauncher;
           debugDefaultTargetPlatformOverride = null;
         }
+      },
+    );
+
+    testWidgets(
+      'in a demo world the banner exit opens the exit sheet through a '
+      "context INSIDE the router's navigator",
+      (tester) async {
+        final mockMatrix = MockMatrixService();
+        when(
+          mockMatrix.getIncomingKeyVerificationStream,
+        ).thenAnswer((_) => const Stream<KeyVerification>.empty());
+        when(
+          () => mockMatrix.incomingKeyVerificationRunnerStream,
+        ).thenAnswer((_) => const Stream<KeyVerificationRunner>.empty());
+        final mockOutboxService = MockOutboxService();
+        when(
+          () => mockOutboxService.notLoggedInGateStream,
+        ).thenAnswer((_) => const Stream<void>.empty());
+
+        // The exit sheet's candidate load runs against the production
+        // getIt path in the active (demo) generation.
+        final journalDb = getIt<JournalDb>() as MockJournalDb;
+        when(
+          () => journalDb.getJournalEntities(
+            types: any(named: 'types'),
+            starredStatuses: any(named: 'starredStatuses'),
+            privateStatuses: any(named: 'privateStatuses'),
+            flaggedStatuses: any(named: 'flaggedStatuses'),
+            ids: any(named: 'ids'),
+            limit: any(named: 'limit'),
+            offset: any(named: 'offset'),
+          ),
+        ).thenAnswer((_) async => const []);
+        when(
+          () => journalDb.linksForEntryIds(any()),
+        ).thenAnswer((_) async => const []);
+        final aiRepo = MockAiConfigRepository();
+        when(
+          () => aiRepo.getConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) async => const []);
+        final demoRoot = Directory.systemTemp.createTempSync('lotti_beamer_');
+        addTearDown(() => demoRoot.delete(recursive: true));
+        getIt
+          ..registerSingleton<AiConfigRepository>(aiRepo)
+          ..registerSingleton<Directory>(demoRoot);
+
+        final guestContext = ProfileContext.forProfile(
+          profile: profiles.Profile(
+            id: 'demo-guest',
+            type: profiles.ProfileType.guest,
+            name: 'Demo',
+            dirName: 'demo-guest',
+            createdAt: DateTime(2026, 8, 5),
+          ),
+          root: demoRoot,
+        );
+        final switcher = MockProfileSwitcher();
+        when(() => switcher.switchTo(any())).thenAnswer((_) async {});
+        final registry = ProfileRegistry(realRoot: demoRoot);
+        when(() => switcher.registry).thenReturn(registry);
+
+        await tester.pumpWidget(
+          ProfileSwitcherScope(
+            switcher: switcher,
+            child: ProviderScope(
+              overrides: [
+                profileContextProvider.overrideWithValue(guestContext),
+                themingControllerProvider.overrideWith(
+                  ReadyThemingController.new,
+                ),
+                enableTooltipsProvider.overrideWith(
+                  (ref) => Stream.value(true),
+                ),
+                zoomControllerProvider.overrideWith(TestZoomController.new),
+                agentInitializationProvider.overrideWith((ref) async {}),
+                dayProcessingRuntimeProvider.overrideWithValue(
+                  MockDayProcessingRuntime(),
+                ),
+                matrixServiceProvider.overrideWithValue(mockMatrix),
+                loginStateStreamProvider.overrideWith(
+                  (ref) => Stream.value(LoginState.loggedIn),
+                ),
+                outboxServiceProvider.overrideWithValue(mockOutboxService),
+                audioRecorderControllerProvider.overrideWith(
+                  () => StubAudioRecorderController(
+                    AudioRecorderState(
+                      status: AudioRecorderStatus.stopped,
+                      progress: Duration.zero,
+                      vu: -20,
+                      dBFS: -160,
+                      showIndicator: false,
+                      modalVisible: false,
+                    ),
+                  ),
+                ),
+                shouldAutoShowWhatsNewProvider.overrideWith(
+                  (ref) async => false,
+                ),
+              ],
+              child: MyBeamerApp(navService: mockNavService),
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(
+          find.byType(DemoModeBanner),
+          findsOneWidget,
+          reason: 'a guest world must carry the persistent demo banner',
+        );
+
+        // The banner sits ABOVE the router's navigator; its exit action
+        // must still be able to present the sheet (via the sheetContext
+        // seam resolving the navigator's own context).
+        await tester.tap(
+          find.descendant(
+            of: find.byType(DemoModeBanner),
+            matching: find.byType(DesignSystemButton),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        expect(
+          find.byType(DemoExitSheetContent),
+          findsOneWidget,
+          reason: 'the exit sheet must open from the banner',
+        );
+
+        // Drain pending timers from provider initialization.
+        await tester.pumpWidget(const SizedBox.shrink());
+        await tester.pumpAndSettle();
       },
     );
   });
