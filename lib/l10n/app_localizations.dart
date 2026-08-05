@@ -8405,17 +8405,41 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 item copied to your journal} other{{count} items copied to your journal}}'**
   String demoCopyToast(int count);
 
+  /// No description provided for @demoDeleteFailedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t delete the demo data — try again.'**
+  String get demoDeleteFailedToast;
+
+  /// No description provided for @demoEnterFailedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t open the demo world — try again.'**
+  String get demoEnterFailedToast;
+
   /// No description provided for @demoEnteringProgress.
   ///
   /// In en, this message translates to:
   /// **'Setting up the demo world…'**
   String get demoEnteringProgress;
 
+  /// No description provided for @demoExitCandidatesError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t check for work to copy. You can still exit the demo.'**
+  String get demoExitCandidatesError;
+
   /// No description provided for @demoExitConfirm.
   ///
   /// In en, this message translates to:
   /// **'Exit demo'**
   String get demoExitConfirm;
+
+  /// No description provided for @demoExitFailedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t finish leaving the demo — try again.'**
+  String get demoExitFailedToast;
 
   /// No description provided for @demoExitSheetBody.
   ///

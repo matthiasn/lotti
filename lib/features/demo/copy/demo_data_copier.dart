@@ -1,8 +1,10 @@
 import 'dart:io';
 
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
@@ -50,8 +52,14 @@ class DemoCopyPlan {
   /// other entries → tasks).
   final List<JournalEntity> entities;
 
-  /// Closure-internal links, both ends already remapped.
-  final List<({String fromId, String toId})> links;
+  /// Closure-internal links, both ends already remapped. The relationship
+  /// semantics ([EntryLinkType]) and the `collapsed` flag travel with each
+  /// link so a typed relationship (blocks/follows-up/…) created in the demo
+  /// keeps its meaning in the real world.
+  final List<
+    ({String fromId, String toId, EntryLinkType linkType, bool collapsed})
+  >
+  links;
 
   /// Category/label definitions referenced by [entities], carried with their
   /// ORIGINAL ids (upserted idempotently into the real world).
@@ -180,6 +188,13 @@ class DemoDataCopier {
           meta: newMeta,
           data: task.data.copyWith(
             checklistIds: mapKept(task.data.checklistIds),
+            // The cover image travels in the closure (see [_childIds]), so
+            // its remapped id keeps the art attached; an id that did not
+            // travel (seeded or deleted image) is dropped rather than left
+            // dangling into the demo world.
+            coverArtId: task.data.coverArtId == null
+                ? null
+                : idMap[task.data.coverArtId],
           ),
         ),
         checklist: (checklist) async => checklist.copyWith(
@@ -278,7 +293,12 @@ class DemoDataCopier {
       entities: entities,
       links: [
         for (final link in internalLinks.values)
-          (fromId: idMap[link.fromId]!, toId: idMap[link.toId]!),
+          (
+            fromId: idMap[link.fromId]!,
+            toId: idMap[link.toId]!,
+            linkType: entryLinkTypeOf(link),
+            collapsed: link.collapsed ?? false,
+          ),
       ],
       definitions: definitions,
       media: media,
@@ -373,6 +393,13 @@ class DemoDataCopier {
   /// default `fromSync: false`, so copied AI setup replicates to peers like
   /// any locally created config.
   ///
+  /// [targetFts] is the REAL generation's FTS5 index. `createDbEntity`
+  /// deliberately never touches FTS5 (only the update path and manual
+  /// rebuilds do), so without indexing here every copied title and note
+  /// would be invisible to full-text search and duplicate detection until
+  /// the user edits it. Indexing is best-effort per entity — an FTS hiccup
+  /// must not abort the copy.
+  ///
   /// Returns the number of entities plus AI configs written.
   Future<int> apply(
     DemoCopyPlan plan, {
@@ -380,6 +407,7 @@ class DemoDataCopier {
     required JournalDb targetJournalDb,
     required Directory targetRoot,
     AiConfigRepository? targetAiConfigs,
+    Fts5Db? targetFts,
   }) async {
     for (final staged in plan.media) {
       final target = File('${targetRoot.path}${staged.relativeTarget}');
@@ -411,15 +439,31 @@ class DemoDataCopier {
       // preserving id, createdAt, dateFrom and dateTo — createDbEntity
       // itself never touches the metadata it is handed.
       final stamped = await persistence.updateMetadata(entity.meta);
+      final withStampedMeta = entity.copyWith(meta: stamped);
       final applied = await persistence.createDbEntity(
-        entity.copyWith(meta: stamped),
+        withStampedMeta,
         shouldAddGeolocation: false,
       );
-      if (applied ?? false) copied++;
+      if (applied ?? false) {
+        copied++;
+        if (targetFts != null) {
+          try {
+            await targetFts.insertText(withStampedMeta);
+          } catch (_) {
+            // Search indexing is recoverable via the maintenance FTS
+            // rebuild; the copy itself must not fail on it.
+          }
+        }
+      }
     }
 
     for (final link in plan.links) {
-      await persistence.createLink(fromId: link.fromId, toId: link.toId);
+      await persistence.createLink(
+        fromId: link.fromId,
+        toId: link.toId,
+        linkType: link.linkType,
+        collapsed: link.collapsed,
+      );
     }
 
     if (plan.aiConfigs.isNotEmpty) {
@@ -467,7 +511,13 @@ class DemoDataCopier {
   }
 
   Iterable<String> _childIds(JournalEntity entity) => entity.maybeMap(
-    task: (task) => task.data.checklistIds ?? const <String>[],
+    task: (task) => [
+      ...task.data.checklistIds ?? const <String>[],
+      // Cover art is referenced by id, not by link — without following it
+      // here a demo-created task would arrive with art that only exists in
+      // the demo world.
+      ?task.data.coverArtId,
+    ],
     checklist: (checklist) => checklist.data.linkedChecklistItems,
     orElse: () => const <String>[],
   );

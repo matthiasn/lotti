@@ -631,4 +631,11 @@ Ejecuta la prueba del alimentador, adjunta la imagen de telemetría y luego soli
   'Add your own checklist item': 'Añade tu propio elemento a la lista',
   'Create a brand-new task': 'Crea una tarea totalmente nueva',
   'Record a voice note': 'Graba una nota de voz',
+  'Walk pressure seals A–F': 'Recorre los sellos de presión A–F',
+  'Count all 37 emperor penguins': 'Cuenta los 37 pingüinos emperador',
+  'Request Mission Control clearance':
+      'Solicita la autorización del control de misión',
+  'Pre-launch checks': 'Comprobaciones previas al lanzamiento',
+  'Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.':
+      'Recorrido de sellos completado: A–F aguantaron a 101,3 kPa durante la noche. El recuento confirmó los 37 pingüinos, incluido el que dormía en la red de carga.',
 };

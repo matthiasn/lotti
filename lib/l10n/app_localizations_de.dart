@@ -4997,10 +4997,26 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get demoDeleteFailedToast =>
+      'Die Demo-Daten konnten nicht gelöscht werden — versuch es noch mal.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Die Demo-Welt konnte nicht geöffnet werden — versuch es noch mal.';
+
+  @override
   String get demoEnteringProgress => 'Demo-Welt wird eingerichtet…';
 
   @override
+  String get demoExitCandidatesError =>
+      'Deine Arbeit zum Kopieren konnte nicht geprüft werden. Du kannst die Demo trotzdem verlassen.';
+
+  @override
   String get demoExitConfirm => 'Demo beenden';
+
+  @override
+  String get demoExitFailedToast =>
+      'Das Verlassen der Demo hat nicht geklappt — versuch es noch mal.';
 
   @override
   String get demoExitSheetBody =>

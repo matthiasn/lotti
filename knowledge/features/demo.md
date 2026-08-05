@@ -116,13 +116,18 @@ the checklist wiring, **cut off at any manifest-listed id**.
 
 The crossing runs in two phases around the switch: `prepare` reads the full
 closure into memory while the demo generation is still active (fresh uuid
-per journal entity, internal references remapped, media staged to a temp
-directory, targeting `/demo_import/` under the real root); `apply` runs
-after the switch and writes through `PersistenceLogic`, so every copy gets a
-real-world vector clock and syncs like any other entity. Category and label
-definitions travel with their **original** ids and are upserted idempotently;
-so are user-created AI configs (per-device configuration, not content that
-could collide).
+per journal entity, internal references — checklist wiring and a task's
+`coverArtId` — remapped, media staged to a temp directory, targeting
+`/demo_import/` under the real root); `apply` runs after the switch and
+writes through `PersistenceLogic`, so every copy gets a real-world vector
+clock and syncs like any other entity. Entry links keep their relationship
+semantics (`EntryLinkType`) and `collapsed` flag across the crossing, and
+each applied entity is indexed into the real world's FTS5 table —
+`createDbEntity` deliberately never touches FTS, so without this the copies
+would be invisible to search until edited. Category and label definitions
+travel with their **original** ids and are upserted idempotently; so are
+user-created AI configs (per-device configuration, not content that could
+collide).
 
 Deliberate v1 exclusions, documented rather than accidental:
 
@@ -152,6 +157,19 @@ active (demo) generation's `AiConfigRepository` into the demo's own
 settings row offers the same flow proactively. The key stays inside the demo
 world unless the user copies the AI setup over on exit; the explicit
 copy-over remains the single demo→real crossing point.
+
+Connecting alone is not enough for the seeded tasks: they were written
+straight into the world, so they carry neither an agent nor a
+`TaskData.profileId`, and `ProfileAutomationResolver.resolveForTask` would
+find nothing to run. The moment the key panel reports a connected provider,
+[`demo_real_ai_wiring.dart`](../../lib/features/demo/ai/demo_real_ai_wiring.dart)
+points the demo world at the provider's bundled profile
+(`onboardingSeededProfileId`): the seeded category gets it as
+`defaultProfileId` (only if the user hasn't set one), and every non-deleted
+task without a `profileId` — seeded fixtures plus tasks created before
+connecting — is stamped with it. Both writes are idempotent, run
+fire-and-forget inside the demo generation, and a failure only degrades back
+to the pre-connect behavior (logged, never surfaced).
 
 # Entry points and chrome
 

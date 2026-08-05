@@ -2190,8 +2190,12 @@
       }
     }
   },
+  "demoDeleteFailedToast": "Datele demo nu au putut fi șterse — încercați din nou.",
+  "demoEnterFailedToast": "Lumea demo nu a putut fi deschisă — încercați din nou.",
   "demoEnteringProgress": "Se pregătește lumea demo…",
+  "demoExitCandidatesError": "Nu s-a putut verifica lucrul de copiat. Puteți totuși ieși din demo.",
   "demoExitConfirm": "Ieșiți din demo",
+  "demoExitFailedToast": "Ieșirea din demo nu a putut fi finalizată — încercați din nou.",
   "demoExitSheetBody": "Lumea dvs. demo rămâne salvată — puteți reveni oricând.",
   "demoExitSheetTitle": "Părăsiți demo-ul?",
   "demoExitTakeWork": "Luați-vă munca cu dvs.…",

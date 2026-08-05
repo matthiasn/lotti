@@ -8,10 +8,15 @@ documents root (existing installs never move a byte); **guest** profiles
 
 ## What it does for the user
 
-- **Total separation.** A guest world cannot read or write the real journal:
-  it has its own databases, files, and settings, a fresh sync identity, and
-  no sync stack at all — the Matrix pipeline is never even constructed there,
-  so real credentials are never read.
+- **Separation by default.** A guest world cannot read or write the real
+  journal: it has its own databases, files, and settings, a fresh sync
+  identity, and no sync stack at all — the Matrix pipeline is never even
+  constructed there, so real credentials are never read.
+- **Crossing over is explicit.** The one sanctioned crossing is the demo
+  exit flow: on leaving, the user can choose to copy their own demo-created
+  work (tasks, entries, media, connected AI setup) into the real journal.
+  Seeded demo content is excluded and never travels; nothing is copied
+  without the user picking it.
 - **Seamless switching.** Entering or leaving a guest world happens in-app,
   behind a brief splash, without restarting the app. A crash mid-demo reopens
   the same world on the next launch.

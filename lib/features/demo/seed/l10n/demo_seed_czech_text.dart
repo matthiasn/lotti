@@ -596,4 +596,10 @@ Proveď test krmítka, přilož obrázek telemetrie a požádej o povolení ke s
       'Přidej vlastní položku do kontrolního seznamu',
   'Create a brand-new task': 'Vytvoř úplně nový úkol',
   'Record a voice note': 'Nahraj hlasovou poznámku',
+  'Walk pressure seals A–F': 'Projít tlaková těsnění A–F',
+  'Count all 37 emperor penguins': 'Spočítat všech 37 tučňáků císařských',
+  'Request Mission Control clearance': 'Vyžádat povolení řízení mise',
+  'Pre-launch checks': 'Předstartovní kontroly',
+  'Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.':
+      'Obchůzka těsnění dokončena: A–F přes noc držela 101,3 kPa. Nástup potvrdil všech 37 tučňáků, včetně toho, který spal v nákladní síti.',
 };

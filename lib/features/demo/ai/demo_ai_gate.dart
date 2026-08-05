@@ -45,8 +45,18 @@ final demoRealAiAvailableProvider = FutureProvider<bool>((ref) async {
   final seeded = {...?manifest?.seededAiConfigIds};
   // Subscribed after the manifest await; safe because the repository's
   // watch stream replays the current config snapshot to every subscriber.
-  final providers = await ref.watch(_inferenceProviderConfigsProvider.future);
-  return providers.any((config) => !seeded.contains(config.id));
+  // A config read failure degrades the same direction as a missing
+  // manifest: report real AI as available, so the nudge never blocks a
+  // working setup (and a broken config stream never turns the AI tap into
+  // a silent no-op through an errored provider).
+  try {
+    final providers = await ref.watch(
+      _inferenceProviderConfigsProvider.future,
+    );
+    return providers.any((config) => !seeded.contains(config.id));
+  } catch (_) {
+    return true;
+  }
 });
 
 /// Whether an AI trigger should be intercepted with the real-AI setup nudge:

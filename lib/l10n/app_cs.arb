@@ -2197,8 +2197,12 @@
       }
     }
   },
+  "demoDeleteFailedToast": "Demo data se nepodařilo smazat — zkus to znovu.",
+  "demoEnterFailedToast": "Demo svět se nepodařilo otevřít — zkus to znovu.",
   "demoEnteringProgress": "Připravuji demo svět…",
+  "demoExitCandidatesError": "Nepodařilo se zkontrolovat práci ke zkopírování. Demo můžeš přesto opustit.",
   "demoExitConfirm": "Ukončit demo",
+  "demoExitFailedToast": "Odchod z dema se nepodařilo dokončit — zkus to znovu.",
   "demoExitSheetBody": "Tvůj demo svět zůstane uložený — můžeš se kdykoli vrátit.",
   "demoExitSheetTitle": "Opustit demo?",
   "demoExitTakeWork": "Vzít si práci s sebou…",

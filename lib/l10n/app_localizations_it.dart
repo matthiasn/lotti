@@ -5022,10 +5022,25 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get demoDeleteFailedToast =>
+      'Impossibile eliminare i dati demo — riprova.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Impossibile aprire il mondo demo — riprova.';
+
+  @override
   String get demoEnteringProgress => 'Preparazione del mondo demo…';
 
   @override
+  String get demoExitCandidatesError =>
+      'Impossibile controllare il lavoro da copiare. Puoi comunque uscire dalla demo.';
+
+  @override
   String get demoExitConfirm => 'Esci dalla demo';
+
+  @override
+  String get demoExitFailedToast => 'Impossibile uscire dalla demo — riprova.';
 
   @override
   String get demoExitSheetBody =>

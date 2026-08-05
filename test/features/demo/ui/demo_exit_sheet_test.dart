@@ -118,6 +118,79 @@ void main() {
     await tester.pump();
   });
 
+  testWidgets('the plain exit waits for the candidate query — leaving before '
+      'it resolves could bypass the copy picker', (tester) async {
+    final candidates = Completer<DemoCopyCandidates>();
+    await tester.pumpWidget(host(() => candidates.future));
+    await tester.tap(find.text('open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    DesignSystemButton exitButton() => tester.widget<DesignSystemButton>(
+      find.widgetWithText(DesignSystemButton, 'Exit demo'),
+    );
+    expect(
+      exitButton().onPressed,
+      isNull,
+      reason: 'exit is disabled while candidates are still loading',
+    );
+
+    candidates.complete(
+      DemoCopyCandidates(
+        tasks: [task],
+        entries: const [],
+        aiProviders: const [],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(exitButton().onPressed, isNotNull);
+    expect(find.text('Take my work with me…'), findsOneWidget);
+  });
+
+  testWidgets('a failed candidate load surfaces a notice instead of silently '
+      'hiding the copy option, and keeps the plain exit working', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      host(() async => throw StateError('journal read failed')),
+    );
+    await open(tester);
+
+    expect(
+      find.text(
+        "Couldn't check for work to copy. You can still exit the demo.",
+      ),
+      findsOneWidget,
+    );
+    expect(find.text('Take my work with me…'), findsNothing);
+    final exitButton = tester.widget<DesignSystemButton>(
+      find.widgetWithText(DesignSystemButton, 'Exit demo'),
+    );
+    expect(exitButton.onPressed, isNotNull);
+  });
+
+  testWidgets('a failed exit returns to the confirm step with an error '
+      'toast instead of hanging on the spinner', (tester) async {
+    when(gateway.exitDemo).thenAnswer(
+      (_) async => throw StateError('switch failed'),
+    );
+    await tester.pumpWidget(host(() async => DemoCopyCandidates.empty));
+    await open(tester);
+
+    await tester.tap(find.text('Exit demo'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+
+    expect(find.text('Leave the demo?'), findsOneWidget);
+    // findsWidgets (not findsOneWidget): mid-flight the SnackBar's hero
+    // transition briefly keeps two copies of the toast text in the tree.
+    expect(
+      find.text("Couldn't finish leaving the demo — try again."),
+      findsWidgets,
+    );
+  });
+
   testWidgets('selection flow: nothing preselected, select all toggles, '
       'confirm copies exactly the selection', (tester) async {
     stubExitWithCopy();

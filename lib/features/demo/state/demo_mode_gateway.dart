@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/app_root.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
@@ -201,6 +202,7 @@ class DemoModeGateway {
     targetJournalDb: getIt<JournalDb>(),
     targetRoot: getIt<Directory>(),
     targetAiConfigs: getIt<AiConfigRepository>(),
+    targetFts: getIt.isRegistered<Fts5Db>() ? getIt<Fts5Db>() : null,
   );
 
   /// Whether [profile]'s world was seeded by the current seed content. A

@@ -4962,10 +4962,25 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get demoDeleteFailedToast =>
+      'Demodataene kunne ikke slettes — prøv igen.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Demoverdenen kunne ikke åbnes — prøv igen.';
+
+  @override
   String get demoEnteringProgress => 'Gør demoverdenen klar…';
 
   @override
+  String get demoExitCandidatesError =>
+      'Kunne ikke tjekke dit arbejde til kopiering. Du kan stadig forlade demoen.';
+
+  @override
   String get demoExitConfirm => 'Afslut demo';
+
+  @override
+  String get demoExitFailedToast => 'Kunne ikke forlade demoen — prøv igen.';
 
   @override
   String get demoExitSheetBody =>

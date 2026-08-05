@@ -2430,8 +2430,12 @@
       }
     }
   },
+  "demoDeleteFailedToast": "Impossibile eliminare i dati demo — riprova.",
+  "demoEnterFailedToast": "Impossibile aprire il mondo demo — riprova.",
   "demoEnteringProgress": "Preparazione del mondo demo…",
+  "demoExitCandidatesError": "Impossibile controllare il lavoro da copiare. Puoi comunque uscire dalla demo.",
   "demoExitConfirm": "Esci dalla demo",
+  "demoExitFailedToast": "Impossibile uscire dalla demo — riprova.",
   "demoExitSheetBody": "Il tuo mondo demo resta salvato — puoi tornare quando vuoi.",
   "demoExitSheetTitle": "Uscire dalla demo?",
   "demoExitTakeWork": "Porta il mio lavoro con me…",

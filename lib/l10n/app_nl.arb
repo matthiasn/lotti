@@ -2429,8 +2429,12 @@
       }
     }
   },
+  "demoDeleteFailedToast": "Kon de demogegevens niet verwijderen — probeer het opnieuw.",
+  "demoEnterFailedToast": "Kon de demowereld niet openen — probeer het opnieuw.",
   "demoEnteringProgress": "Demowereld wordt klaargezet…",
+  "demoExitCandidatesError": "Kon je werk om te kopiëren niet controleren. Je kunt de demo toch verlaten.",
   "demoExitConfirm": "Demo afsluiten",
+  "demoExitFailedToast": "Kon de demo niet verlaten — probeer het opnieuw.",
   "demoExitSheetBody": "Je demowereld blijft bewaard — je kunt altijd terugkomen.",
   "demoExitSheetTitle": "Demo verlaten?",
   "demoExitTakeWork": "Mijn werk meenemen…",

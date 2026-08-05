@@ -2765,8 +2765,12 @@
       }
     }
   },
+  "demoDeleteFailedToast": "Couldn't delete the demo data — try again.",
+  "demoEnterFailedToast": "Couldn't open the demo world — try again.",
   "demoEnteringProgress": "Setting up the demo world…",
+  "demoExitCandidatesError": "Couldn't check for work to copy. You can still exit the demo.",
   "demoExitConfirm": "Exit demo",
+  "demoExitFailedToast": "Couldn't finish leaving the demo — try again.",
   "demoExitSheetBody": "Your demo world stays saved — you can come back anytime.",
   "demoExitSheetTitle": "Leave the demo?",
   "demoExitTakeWork": "Take my work with me…",

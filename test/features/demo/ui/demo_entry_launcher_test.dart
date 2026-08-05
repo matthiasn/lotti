@@ -71,7 +71,9 @@ void main() {
     });
 
     testWidgets('a failed entry removes the progress route instead of '
-        'stranding the user on it', (tester) async {
+        'stranding the user on it, and surfaces an error toast', (
+      tester,
+    ) async {
       when(
         () => gateway.enterDemo(locale: any(named: 'locale')),
       ).thenAnswer((_) async => throw StateError('seed boom'));
@@ -92,6 +94,11 @@ void main() {
 
       expect(find.byType(DemoEnteringProgressPage), findsNothing);
       expect(find.text('go'), findsOneWidget, reason: 'host page restored');
+      expect(
+        find.text("Couldn't open the demo world — try again."),
+        findsOneWidget,
+        reason: 'the failed tap must not stay silent',
+      );
     });
 
     testWidgets('without a gateway or ProfileSwitcherScope it is a no-op', (

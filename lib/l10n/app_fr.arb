@@ -2190,8 +2190,12 @@
       }
     }
   },
+  "demoDeleteFailedToast": "Impossible de supprimer les données démo — réessaie.",
+  "demoEnterFailedToast": "Impossible d'ouvrir le monde démo — réessaie.",
   "demoEnteringProgress": "Préparation du monde démo…",
+  "demoExitCandidatesError": "Impossible de vérifier ton travail à copier. Tu peux quand même quitter la démo.",
   "demoExitConfirm": "Quitter la démo",
+  "demoExitFailedToast": "Impossible de quitter la démo — réessaie.",
   "demoExitSheetBody": "Ton monde démo reste enregistré — tu peux revenir à tout moment.",
   "demoExitSheetTitle": "Quitter la démo ?",
   "demoExitTakeWork": "Emporter mon travail…",

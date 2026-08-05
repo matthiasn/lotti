@@ -149,8 +149,10 @@ class OnboardingWelcomeModal {
 
     if (demoRequested) {
       // Deliberately records NEITHER completed nor skipped: exploring the
-      // demo must not burn the real FTUE cadence — the welcome keeps its
-      // auto-show budget for when the user returns to their real world.
+      // demo must not retire the welcome, so it keeps offering itself when
+      // the user returns to their real world. The shown-count bump the
+      // caller recorded before opening stands — `recordShown` counts actual
+      // displays by design, and this display genuinely happened.
       if (context.mounted) {
         await launchDemoEnter(context, gateway: demoGateway);
       }

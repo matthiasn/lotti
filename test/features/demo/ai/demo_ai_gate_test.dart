@@ -124,6 +124,25 @@ void main() {
       expect(await container.read(demoRealAiAvailableProvider.future), isTrue);
     });
 
+    test('a failing config stream fails open (true — never nudge, and never '
+        'surface an errored provider to the AI tap)', () async {
+      final repository = MockAiConfigRepository();
+      when(
+        () => repository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer(
+        (_) => Stream<List<AiConfig>>.error(StateError('db closed')),
+      );
+      final container = buildContainer(
+        seedManifest: manifest(['fixture-a']),
+        repository: repository,
+        profileContext: context(guest: true),
+      );
+
+      expect(await container.read(demoRealAiAvailableProvider.future), isTrue);
+      // The gate therefore does not intercept the tap.
+      expect(await shouldNudgeForRealAi(container), isFalse);
+    });
+
     test('flips reactively when the user connects a real provider', () async {
       final repository = MockAiConfigRepository();
       // Mirrors the production repository stream: replays the current

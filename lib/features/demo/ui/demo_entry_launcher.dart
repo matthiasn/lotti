@@ -4,6 +4,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/get_it.dart';
@@ -55,7 +57,8 @@ Future<void> _launch(
     // Success: the profile switch has replaced the whole tree; the old
     // navigator (and its progress route) no longer exists.
   } catch (exception, stackTrace) {
-    // Still in the previous world — clear the progress route and log.
+    // Still in the previous world — clear the progress route, log, and tell
+    // the user why nothing happened (the tap must not fail silently).
     if (progressRoute.isActive) {
       navigator.removeRoute(progressRoute);
     }
@@ -65,6 +68,12 @@ Future<void> _launch(
         exception,
         stackTrace: stackTrace,
         subDomain: 'demoEntryLauncher',
+      );
+    }
+    if (context.mounted) {
+      context.showToast(
+        tone: DesignSystemToastTone.error,
+        title: context.messages.demoEnterFailedToast,
       );
     }
   }

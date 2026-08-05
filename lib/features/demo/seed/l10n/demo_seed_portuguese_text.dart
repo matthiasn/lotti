@@ -558,4 +558,11 @@ const _copy = <String, String>{
       'Adicione seu próprio item à lista de verificação',
   'Create a brand-new task': 'Crie uma tarefa totalmente nova',
   'Record a voice note': 'Grave uma nota de voz',
+  'Walk pressure seals A–F': 'Percorra os selos de pressão A–F',
+  'Count all 37 emperor penguins': 'Conte todos os 37 pinguins-imperadores',
+  'Request Mission Control clearance':
+      'Solicite a autorização do Controle da Missão',
+  'Pre-launch checks': 'Verificações pré-lançamento',
+  'Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.':
+      'Ronda dos selos concluída: A–F aguentaram 101,3 kPa durante a noite. A chamada confirmou os 37 pinguins, incluindo o que dormia na rede de carga.',
 };

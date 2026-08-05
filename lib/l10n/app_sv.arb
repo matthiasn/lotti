@@ -2430,8 +2430,12 @@
       }
     }
   },
+  "demoDeleteFailedToast": "Demodatan kunde inte raderas — försök igen.",
+  "demoEnterFailedToast": "Demovärlden kunde inte öppnas — försök igen.",
   "demoEnteringProgress": "Gör i ordning demovärlden…",
+  "demoExitCandidatesError": "Det gick inte att kontrollera ditt arbete att kopiera. Du kan ändå lämna demon.",
   "demoExitConfirm": "Avsluta demon",
+  "demoExitFailedToast": "Det gick inte att lämna demon — försök igen.",
   "demoExitSheetBody": "Din demovärld sparas — du kan komma tillbaka när som helst.",
   "demoExitSheetTitle": "Lämna demon?",
   "demoExitTakeWork": "Ta med mitt arbete…",

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/demo/ui/demo_ai_setup_sheet.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
@@ -22,6 +23,7 @@ Future<void> pumpFlow(
   required VoidCallback onConnected,
   required VoidCallback onClose,
   DemoAiSetupStep initialStep = DemoAiSetupStep.intro,
+  DemoWorldWiring? wireWorld,
 }) async {
   await tester.pumpWidget(
     makeTestableWidgetNoScroll(
@@ -31,6 +33,7 @@ Future<void> pumpFlow(
             onConnected: onConnected,
             onClose: onClose,
             initialStep: initialStep,
+            wireWorld: wireWorld,
           ),
         ),
       ),
@@ -104,6 +107,69 @@ void main() {
     expect(find.byType(OnboardingApiKeyPanel), findsOneWidget);
     // The key panel is headed by the chosen provider's name.
     expect(find.text('Gemini'), findsOneWidget);
+  });
+
+  testWidgets('a connected provider wires the demo world to its bundled '
+      'profile and advances to the success beat', (tester) async {
+    var connected = false;
+    final wiredTypes = <InferenceProviderType>[];
+    await pumpFlow(
+      tester,
+      onConnected: () => connected = true,
+      onClose: () {},
+      wireWorld: (type) async => wiredTypes.add(type),
+    );
+
+    await tester.tap(find.text('Set up real AI'));
+    await settleStep(tester);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Gemini'), warnIfMissed: false);
+    await settleStep(tester);
+    await tester.pump(const Duration(milliseconds: 400));
+
+    // Drive the key panel's success callback directly — the panel's own
+    // provider-creation path needs a live backend and is covered by its
+    // own tests.
+    tester
+        .widget<OnboardingApiKeyPanel>(find.byType(OnboardingApiKeyPanel))
+        .onConnected();
+    await settleStep(tester);
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(connected, isTrue);
+    expect(
+      wiredTypes,
+      [InferenceProviderType.gemini],
+      reason:
+          'the seeded tasks/category must be pointed at the connected '
+          "provider's bundled profile",
+    );
+    expect(find.text('Real AI is live'), findsOneWidget);
+  });
+
+  testWidgets('a wiring failure is swallowed — the success beat still '
+      'shows', (tester) async {
+    await pumpFlow(
+      tester,
+      onConnected: () {},
+      onClose: () {},
+      wireWorld: (_) async => throw StateError('demo db closed'),
+    );
+
+    await tester.tap(find.text('Set up real AI'));
+    await settleStep(tester);
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.tap(find.text('Gemini'), warnIfMissed: false);
+    await settleStep(tester);
+    await tester.pump(const Duration(milliseconds: 400));
+
+    tester
+        .widget<OnboardingApiKeyPanel>(find.byType(OnboardingApiKeyPanel))
+        .onConnected();
+    await settleStep(tester);
+    await tester.pump(const Duration(milliseconds: 400));
+
+    expect(find.text('Real AI is live'), findsOneWidget);
   });
 
   testWidgets('the success beat closes via its continue CTA', (tester) async {

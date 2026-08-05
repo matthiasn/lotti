@@ -2,8 +2,9 @@
 
 Demo mode lets a new user explore a fully working Lotti — the Intergalactic
 Penguin Logistics play world — without committing any real data. The demo is
-a separate sandbox world with its own databases and files; nothing in it ever
-mixes with the real journal, and nothing syncs.
+a separate sandbox world with its own databases and files; nothing syncs, and
+nothing reaches the real journal except work the user explicitly picks to
+copy over in the exit sheet.
 
 ## What it does for the user
 
@@ -31,7 +32,8 @@ lib/features/demo/
 ├── state/   DemoModeGateway — enter/resume/reseed/exit/delete decisions
 ├── ui/      banner + scaffold, entry launcher & Try button, exit sheet,
 │            real-AI setup sheet
-├── ai/      real-AI availability gate (nudge decision)
+├── ai/      real-AI availability gate (nudge decision) + the wiring that
+│            points seeded tasks/category at the connected real profile
 └── copy/    exit copy-over: candidate discovery + the copier
 ```
 

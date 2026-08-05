@@ -19,6 +19,7 @@ import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 /// Mobile / legacy wrapper that keeps the `SliverBoxAdapterPage` chrome and
@@ -141,7 +142,25 @@ class _OnboardingSettingsBodyState
       confirmLabel: context.messages.demoSettingsDeleteTitle,
     );
     if (!confirmed || !mounted) return;
-    await gateway.deleteDemo();
+    try {
+      await gateway.deleteDemo();
+    } catch (exception, stackTrace) {
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomain.general,
+          exception,
+          stackTrace: stackTrace,
+          subDomain: 'onboardingSettingsDeleteDemo',
+        );
+      }
+      if (mounted) {
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.demoDeleteFailedToast,
+        );
+      }
+      return;
+    }
     if (!mounted) return;
     context.showToast(
       tone: DesignSystemToastTone.success,

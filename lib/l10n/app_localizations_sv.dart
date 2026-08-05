@@ -4964,10 +4964,26 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get demoDeleteFailedToast =>
+      'Demodatan kunde inte raderas — försök igen.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Demovärlden kunde inte öppnas — försök igen.';
+
+  @override
   String get demoEnteringProgress => 'Gör i ordning demovärlden…';
 
   @override
+  String get demoExitCandidatesError =>
+      'Det gick inte att kontrollera ditt arbete att kopiera. Du kan ändå lämna demon.';
+
+  @override
   String get demoExitConfirm => 'Avsluta demon';
+
+  @override
+  String get demoExitFailedToast =>
+      'Det gick inte att lämna demon — försök igen.';
 
   @override
   String get demoExitSheetBody =>

@@ -167,10 +167,6 @@ void main() {
 
       // The whole closure travelled: task + checklist + item + note + image.
       expect(plan.entities, hasLength(5));
-      final byOldTitleOrType = {
-        for (final entity in plan.entities)
-          entity.runtimeType.toString(): entity,
-      };
       final newIds = plan.entities.map((e) => e.meta.id).toSet();
       expect(newIds, hasLength(5));
       expect(
@@ -204,12 +200,13 @@ void main() {
       expect(order.indexOf(item), lessThan(order.indexOf(checklist)));
       expect(order.indexOf(checklist), lessThan(order.indexOf(task)));
 
-      // Links remapped to the fresh ids.
+      // Links remapped to the fresh ids, keeping their (basic) semantics.
       expect(plan.links, hasLength(2));
       for (final link in plan.links) {
         expect(link.fromId, task.meta.id);
-        expect({link.toId}, isNotEmpty);
         expect(newIds, contains(link.toId));
+        expect(link.linkType, EntryLinkType.basic);
+        expect(link.collapsed, isFalse);
       }
 
       // Media staged under the new name, bytes intact, target rewritten.
@@ -240,7 +237,121 @@ void main() {
         ).existsSync(),
         isTrue,
       );
-      expect(byOldTitleOrType, isNotEmpty);
+    });
+
+    test('typed links keep their relationship semantics and collapsed flag '
+        'through the plan', () async {
+      await seedSourceWorld();
+      final blocker = TestTaskFactory.create(
+        id: 'task-2',
+        title: 'Blocking mission',
+        createdAt: created,
+        dateFrom: created,
+        dateTo: created,
+      );
+      await source.writeJournalEntity(blocker);
+      await source.writeEntryLink(
+        EntryLink.blocks(
+          id: 'link-blocks',
+          fromId: 'task-2',
+          toId: 'task-1',
+          createdAt: created,
+          updatedAt: created,
+          vectorClock: null,
+          collapsed: true,
+        ),
+      );
+      final copier = DemoDataCopier(newId: sequentialIds());
+
+      final plan = await copier.prepare(
+        selectedIds: {'task-1', 'task-2'},
+        sourceDb: source.journalDb,
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+
+      final blocks = plan.links.singleWhere(
+        (link) => link.linkType == EntryLinkType.blocks,
+      );
+      expect(blocks.collapsed, isTrue);
+      final tasksById = {
+        for (final task in plan.entities.whereType<Task>())
+          task.data.title: task.meta.id,
+      };
+      expect(blocks.fromId, tasksById['Blocking mission']);
+      expect(blocks.toId, tasksById['My mission']);
+    });
+
+    test('cover art travels with its task: the image joins the closure and '
+        'the coverArtId is remapped; a non-traveling id is dropped', () async {
+      await seedSourceWorld();
+      // Task whose cover image is referenced ONLY via coverArtId (no link).
+      final coverImage = JournalImage(
+        meta: TestMetadataFactory.create(id: 'cover-1', createdAt: created),
+        data: ImageData(
+          capturedAt: created,
+          imageId: 'cover-image-id',
+          imageFile: 'cover-1.jpg',
+          imageDirectory: '/images/2026-07-20/',
+        ),
+      );
+      final coveredBase = TestTaskFactory.create(
+        id: 'task-covered',
+        title: 'Covered mission',
+        createdAt: created,
+        dateFrom: created,
+        dateTo: created,
+      );
+      final covered = coveredBase.copyWith(
+        data: coveredBase.data.copyWith(coverArtId: 'cover-1'),
+      );
+      // Task whose coverArtId points at a SEEDED image — it must not carry
+      // a dangling demo-world id into the real journal.
+      final danglingBase = TestTaskFactory.create(
+        id: 'task-dangling',
+        title: 'Dangling mission',
+        createdAt: created,
+        dateFrom: created,
+        dateTo: created,
+      );
+      final dangling = danglingBase.copyWith(
+        data: danglingBase.data.copyWith(coverArtId: 'seeded-cover'),
+      );
+      await source.writeJournalEntity(coverImage);
+      await source.writeJournalEntity(covered);
+      await source.writeJournalEntity(dangling);
+      await DemoSeedManifest(
+        seedVersion: demoSeedVersion,
+        seededAt: created.toUtc(),
+        localeTag: 'en',
+        seededJournalIds: const ['seeded-cover'],
+        seededDefinitionIds: const [],
+        seededAiConfigIds: const [],
+      ).write(sourceRoot);
+      final copier = DemoDataCopier(newId: sequentialIds());
+
+      final plan = await copier.prepare(
+        selectedIds: {'task-covered', 'task-dangling'},
+        sourceDb: source.journalDb,
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+
+      final image = plan.entities.whereType<JournalImage>().single;
+      final byTitle = {
+        for (final task in plan.entities.whereType<Task>())
+          task.data.title: task,
+      };
+      expect(
+        byTitle['Covered mission']!.data.coverArtId,
+        image.meta.id,
+        reason: 'the cover image traveled and the reference was remapped',
+      );
+      expect(
+        byTitle['Dangling mission']!.data.coverArtId,
+        isNull,
+        reason: 'a seeded cover id must not dangle into the real world',
+      );
     });
 
     test('seeded ids cut the closure off (a note linked from a selected task '
@@ -314,6 +425,8 @@ void main() {
         () => persistence.createLink(
           fromId: any(named: 'fromId'),
           toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+          collapsed: any(named: 'collapsed'),
         ),
       ).thenAnswer((_) async => true);
 
@@ -364,10 +477,78 @@ void main() {
         () => persistence.createLink(
           fromId: captureAny(named: 'fromId'),
           toId: captureAny(named: 'toId'),
+          linkType: any(named: 'linkType'),
+          collapsed: any(named: 'collapsed'),
         ),
       ).captured;
       expect(linkCalls, hasLength(4)); // 2 links x (fromId, toId)
     });
+
+    test(
+      'indexes every written entity in the target FTS5 index (createDbEntity '
+      'never does), and an index failure does not abort the copy',
+      () async {
+        await seedSourceWorld();
+        final copier = DemoDataCopier(newId: sequentialIds());
+        final plan = await copier.prepare(
+          selectedIds: {'task-1'},
+          sourceDb: source.journalDb,
+          sourceRoot: sourceRoot,
+          stagingDir: stagingDir,
+        );
+
+        final persistence = MockPersistenceLogic();
+        final targetDb = MockJournalDb();
+        final targetFts = MockFts5Db();
+        when(
+          () => targetDb.getCategoryById(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => persistence.upsertEntityDefinition(any()),
+        ).thenAnswer((_) async => 1);
+        when(() => persistence.updateMetadata(any())).thenAnswer(
+          (invocation) async =>
+              invocation.positionalArguments.first as Metadata,
+        );
+        when(
+          () => persistence.createDbEntity(
+            any(),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          ),
+        ).thenAnswer((_) async => true);
+        when(
+          () => persistence.createLink(
+            fromId: any(named: 'fromId'),
+            toId: any(named: 'toId'),
+            linkType: any(named: 'linkType'),
+            collapsed: any(named: 'collapsed'),
+          ),
+        ).thenAnswer((_) async => true);
+        // The task's index write fails; everything else succeeds.
+        when(() => targetFts.insertText(any())).thenAnswer((invocation) async {
+          final entity = invocation.positionalArguments.first as JournalEntity;
+          if (entity is Task) throw StateError('fts locked');
+        });
+
+        final copied = await copier.apply(
+          plan,
+          persistence: persistence,
+          targetJournalDb: targetDb,
+          targetRoot: targetRoot,
+          targetFts: targetFts,
+        );
+
+        expect(copied, 5, reason: 'the FTS failure must not abort the copy');
+        final indexed = verify(
+          () => targetFts.insertText(captureAny()),
+        ).captured.cast<JournalEntity>();
+        expect(
+          indexed.map((entity) => entity.meta.id).toSet(),
+          plan.entities.map((entity) => entity.meta.id).toSet(),
+          reason: 'every applied entity is offered to the FTS index',
+        );
+      },
+    );
 
     test('an already-present definition is NOT overwritten (idempotent '
         're-copy keeps real-world edits)', () async {
@@ -406,6 +587,8 @@ void main() {
         () => persistence.createLink(
           fromId: any(named: 'fromId'),
           toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+          collapsed: any(named: 'collapsed'),
         ),
       ).thenAnswer((_) async => true);
 

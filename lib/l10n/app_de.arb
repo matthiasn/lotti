@@ -2190,8 +2190,12 @@
       }
     }
   },
+  "demoDeleteFailedToast": "Die Demo-Daten konnten nicht gelöscht werden — versuch es noch mal.",
+  "demoEnterFailedToast": "Die Demo-Welt konnte nicht geöffnet werden — versuch es noch mal.",
   "demoEnteringProgress": "Demo-Welt wird eingerichtet…",
+  "demoExitCandidatesError": "Deine Arbeit zum Kopieren konnte nicht geprüft werden. Du kannst die Demo trotzdem verlassen.",
   "demoExitConfirm": "Demo beenden",
+  "demoExitFailedToast": "Das Verlassen der Demo hat nicht geklappt — versuch es noch mal.",
   "demoExitSheetBody": "Deine Demo-Welt bleibt gespeichert — du kannst jederzeit zurückkommen.",
   "demoExitSheetTitle": "Demo verlassen?",
   "demoExitTakeWork": "Meine Arbeit mitnehmen…",

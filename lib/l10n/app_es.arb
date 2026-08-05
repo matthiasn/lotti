@@ -2190,8 +2190,12 @@
       }
     }
   },
+  "demoDeleteFailedToast": "No se pudieron borrar los datos de la demo — inténtalo de nuevo.",
+  "demoEnterFailedToast": "No se pudo abrir el mundo de demostración — inténtalo de nuevo.",
   "demoEnteringProgress": "Preparando el mundo de demostración…",
+  "demoExitCandidatesError": "No se pudo comprobar tu trabajo para copiar. Aun así puedes salir de la demo.",
   "demoExitConfirm": "Salir de la demo",
+  "demoExitFailedToast": "No se pudo salir de la demo — inténtalo de nuevo.",
   "demoExitSheetBody": "Tu mundo de demostración queda guardado — puedes volver cuando quieras.",
   "demoExitSheetTitle": "¿Salir de la demo?",
   "demoExitTakeWork": "Llevarme mi trabajo…",

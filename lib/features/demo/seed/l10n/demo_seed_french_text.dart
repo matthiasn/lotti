@@ -593,4 +593,11 @@ Lance le test du distributeur, joins l'image de télémétrie puis demande l'aut
   "Add your own checklist item": "Ajoute ton propre élément à la checklist",
   "Create a brand-new task": "Crée une toute nouvelle tâche",
   "Record a voice note": "Enregistre une note vocale",
+  "Walk pressure seals A–F": "Inspecter les joints de pression A–F",
+  "Count all 37 emperor penguins": "Compter les 37 manchots empereurs",
+  "Request Mission Control clearance":
+      "Demander l'autorisation de Mission Control",
+  "Pre-launch checks": "Vérifications avant lancement",
+  "Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.":
+      "Tournée des joints terminée : A–F ont tenu à 101,3 kPa pendant la nuit. L'appel a confirmé les 37 manchots, y compris celui endormi dans le filet de fret.",
 };

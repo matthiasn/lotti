@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   you can open the Intergalactic Penguin Logistics demo — a fully populated
   workspace with tasks, checklists, cover art, logged time and a guided "first
   mission" — living in its own sandbox with separate databases and no sync, so
-  nothing in it ever mixes with your real journal. A persistent banner marks
+  nothing reaches your real journal unless you copy it over. A persistent banner marks
   the demo while it is active, and you can leave at any time: exiting keeps the
   demo resumable, and the exit sheet offers to copy the tasks and entries you
   created there (and any AI setup you connected) into your real journal. The

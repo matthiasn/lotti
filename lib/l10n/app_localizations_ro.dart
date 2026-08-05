@@ -5047,10 +5047,26 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get demoDeleteFailedToast =>
+      'Datele demo nu au putut fi șterse — încercați din nou.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Lumea demo nu a putut fi deschisă — încercați din nou.';
+
+  @override
   String get demoEnteringProgress => 'Se pregătește lumea demo…';
 
   @override
+  String get demoExitCandidatesError =>
+      'Nu s-a putut verifica lucrul de copiat. Puteți totuși ieși din demo.';
+
+  @override
   String get demoExitConfirm => 'Ieșiți din demo';
+
+  @override
+  String get demoExitFailedToast =>
+      'Ieșirea din demo nu a putut fi finalizată — încercați din nou.';
 
   @override
   String get demoExitSheetBody =>

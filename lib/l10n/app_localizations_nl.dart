@@ -4974,10 +4974,26 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get demoDeleteFailedToast =>
+      'Kon de demogegevens niet verwijderen — probeer het opnieuw.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Kon de demowereld niet openen — probeer het opnieuw.';
+
+  @override
   String get demoEnteringProgress => 'Demowereld wordt klaargezet…';
 
   @override
+  String get demoExitCandidatesError =>
+      'Kon je werk om te kopiëren niet controleren. Je kunt de demo toch verlaten.';
+
+  @override
   String get demoExitConfirm => 'Demo afsluiten';
+
+  @override
+  String get demoExitFailedToast =>
+      'Kon de demo niet verlaten — probeer het opnieuw.';
 
   @override
   String get demoExitSheetBody =>

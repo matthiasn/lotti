@@ -2429,8 +2429,12 @@
       }
     }
   },
+  "demoDeleteFailedToast": "Não foi possível eliminar os dados da demonstração — tenta novamente.",
+  "demoEnterFailedToast": "Não foi possível abrir o mundo de demonstração — tenta novamente.",
   "demoEnteringProgress": "A preparar o mundo de demonstração…",
+  "demoExitCandidatesError": "Não foi possível verificar o teu trabalho para copiar. Podes sair da demonstração na mesma.",
   "demoExitConfirm": "Sair da demo",
+  "demoExitFailedToast": "Não foi possível concluir a saída da demonstração — tenta novamente.",
   "demoExitSheetBody": "O teu mundo de demonstração fica guardado — podes voltar quando quiseres.",
   "demoExitSheetTitle": "Sair da demo?",
   "demoExitTakeWork": "Levar o meu trabalho…",

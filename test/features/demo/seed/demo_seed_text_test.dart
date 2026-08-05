@@ -2,6 +2,9 @@ import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
+import 'package:lotti/features/demo/seed/demo_tutorial_content.dart';
+import 'package:lotti/features/demo/seed/demo_world.dart';
+import 'package:lotti/features/demo/seed/demo_world_ai.dart';
 import 'package:lotti/features/demo/seed/l10n/demo_seed_czech_text.dart';
 import 'package:lotti/features/demo/seed/l10n/demo_seed_danish_text.dart';
 import 'package:lotti/features/demo/seed/l10n/demo_seed_dutch_text.dart';
@@ -66,6 +69,55 @@ void main() {
 
     test('unsupported language codes fall back to English', () {
       expect(demoSeedTextForLocale(const Locale('fi'))(heroEn, heroDe), heroEn);
+    });
+
+    test('every demo seed key resolves through every catalog', () {
+      // The authoritative key set: every English string the demo seed
+      // builders actually pass through their translate function. Collected
+      // by running the builders with a recording translator, so the set is
+      // whitespace-exact — the same lookups `demoSeedTextForLocale`
+      // performs at seed time.
+      final usedKeys = <String>{};
+      String record(String en, String de) {
+        usedKeys.add(en);
+        return en;
+      }
+
+      ManualDemoWorld.penguinLogistics(translate: record);
+      DemoTutorialContent.build(translate: record);
+      final now = DateTime(2026, 7, 17);
+      demoAiProviders(record, now);
+      demoAiModels(record, now);
+      demoAiProfiles(record, now);
+      demoAiSkills(record, now);
+      expect(usedKeys, isNotEmpty);
+
+      final catalogs = <String, String? Function(String)>{
+        'fr': manualScreenshotFrenchText,
+        'it': manualScreenshotItalianText,
+        'es': manualScreenshotSpanishText,
+        'cs': manualScreenshotCzechText,
+        'nl': manualScreenshotDutchText,
+        'ro': manualScreenshotRomanianText,
+        'pt': manualScreenshotPortugueseText,
+        'da': manualScreenshotDanishText,
+        'sv': manualScreenshotSwedishText,
+      };
+      final missingByCatalog = {
+        for (final entry in catalogs.entries)
+          entry.key: [
+            for (final key in usedKeys)
+              if (entry.value(key) == null) key,
+          ],
+      }..removeWhere((_, missing) => missing.isEmpty);
+      expect(
+        missingByCatalog,
+        isEmpty,
+        reason:
+            'These catalogs silently fall back to English for demo seed '
+            'keys — divergent-whitespace or missing entries: '
+            '$missingByCatalog',
+      );
     });
   });
 

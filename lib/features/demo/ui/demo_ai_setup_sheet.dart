@@ -1,12 +1,20 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/demo/ai/demo_real_ai_wiring.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_connect_panel.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_hero.dart';
 import 'package:lotti/features/onboarding/ui/widgets/onboarding_success_view.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// The guided "enable real AI in the demo" flow.
 ///
@@ -136,6 +144,24 @@ class _DemoAiSetupScaffold extends StatelessWidget {
 
 enum DemoAiSetupStep { intro, connect, apiKey, success }
 
+/// Points the demo world's seeded content at the connected provider's
+/// bundled profile ([onboardingSeededProfileId]), so AI skills on seeded
+/// tasks resolve a runnable profile instead of logging "no profile
+/// configured". Injectable so widget tests can observe the call without a
+/// live database.
+typedef DemoWorldWiring =
+    Future<void> Function(InferenceProviderType providerType);
+
+Future<void> _defaultWireWorld(InferenceProviderType providerType) async {
+  final profileId = onboardingSeededProfileId(providerType);
+  if (profileId == null) return;
+  await wireDemoWorldToRealProfile(
+    profileId: profileId,
+    journalDb: getIt<JournalDb>(),
+    persistence: getIt<PersistenceLogic>(),
+  );
+}
+
 /// The step flow: intro → connect → apiKey → success. Public (with a
 /// [initialStep] seam) so widget tests can pump it without the route.
 @visibleForTesting
@@ -144,6 +170,7 @@ class DemoAiSetupFlow extends StatefulWidget {
     required this.onConnected,
     required this.onClose,
     this.initialStep = DemoAiSetupStep.intro,
+    this.wireWorld,
     super.key,
   });
 
@@ -156,6 +183,9 @@ class DemoAiSetupFlow extends StatefulWidget {
 
   final DemoAiSetupStep initialStep;
 
+  /// Test seam; production wires the active demo generation's services.
+  final DemoWorldWiring? wireWorld;
+
   @override
   State<DemoAiSetupFlow> createState() => _DemoAiSetupFlowState();
 }
@@ -163,6 +193,24 @@ class DemoAiSetupFlow extends StatefulWidget {
 class _DemoAiSetupFlowState extends State<DemoAiSetupFlow> {
   late DemoAiSetupStep _step = widget.initialStep;
   late InferenceProviderType _type;
+
+  /// Fire-and-forget on purpose: the success beat must not wait on the
+  /// stamping writes, and a wiring failure only degrades seeded tasks back
+  /// to the pre-connect behavior (logged, never surfaced as a crash).
+  Future<void> _runWiring() async {
+    try {
+      await (widget.wireWorld ?? _defaultWireWorld)(_type);
+    } catch (exception, stackTrace) {
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomain.general,
+          exception,
+          stackTrace: stackTrace,
+          subDomain: 'demoAiSetupWiring',
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -203,6 +251,7 @@ class _DemoAiSetupFlowState extends State<DemoAiSetupFlow> {
           onBack: () => setState(() => _step = DemoAiSetupStep.connect),
           onConnected: () {
             widget.onConnected();
+            unawaited(_runWiring());
             setState(() => _step = DemoAiSetupStep.success);
           },
         );

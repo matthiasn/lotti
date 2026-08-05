@@ -10,6 +10,8 @@ import 'package:lotti/features/demo/copy/demo_copy_candidates.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -75,6 +77,16 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
   void initState() {
     super.initState();
     _candidates = (widget.loadCandidates ?? _loadFromActiveWorld)();
+    // Log a failed candidate load exactly once; the confirm step also
+    // surfaces it (see [_buildConfirm]) so the copy option never vanishes
+    // silently. The derived future swallows the error on purpose — the
+    // FutureBuilder consumes the original.
+    unawaited(
+      _candidates.then<void>(
+        (_) {},
+        onError: _logError,
+      ),
+    );
   }
 
   static Future<DemoCopyCandidates> _loadFromActiveWorld() =>
@@ -95,7 +107,14 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
       await widget.gateway.exitDemo();
     } catch (exception, stackTrace) {
       _logError(exception, stackTrace);
-      if (mounted) setState(() => _step = _ExitStep.confirm);
+      if (mounted) {
+        setState(() => _step = _ExitStep.confirm);
+        // Tell the user why the sheet snapped back instead of exiting.
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.demoExitFailedToast,
+        );
+      }
     }
   }
 
@@ -113,7 +132,13 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
       );
     } catch (exception, stackTrace) {
       _logError(exception, stackTrace);
-      if (mounted) setState(() => _step = _ExitStep.pick);
+      if (mounted) {
+        setState(() => _step = _ExitStep.pick);
+        context.showToast(
+          tone: DesignSystemToastTone.error,
+          title: context.messages.demoExitFailedToast,
+        );
+      }
     }
   }
 
@@ -142,6 +167,10 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
     return FutureBuilder<DemoCopyCandidates>(
       future: _candidates,
       builder: (context, snapshot) {
+        // The exit decision waits for the candidate query (a fast local
+        // read): leaving before it resolves could silently bypass the copy
+        // picker for a user who did create work in the demo.
+        final resolved = snapshot.connectionState == ConnectionState.done;
         final hasCandidates = snapshot.data?.isNotEmpty ?? false;
         return Column(
           mainAxisSize: MainAxisSize.min,
@@ -167,7 +196,7 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
               label: messages.demoExitConfirm,
               size: DesignSystemButtonSize.large,
               fullWidth: true,
-              onPressed: () => unawaited(_exitPlain()),
+              onPressed: resolved ? () => unawaited(_exitPlain()) : null,
             ),
             if (hasCandidates) ...[
               SizedBox(height: tokens.spacing.step3),
@@ -177,6 +206,18 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
                 size: DesignSystemButtonSize.large,
                 fullWidth: true,
                 onPressed: () => setState(() => _step = _ExitStep.pick),
+              ),
+            ],
+            if (snapshot.hasError) ...[
+              // A failed candidate read must not silently remove the copy
+              // option — say so; the plain exit stays available.
+              SizedBox(height: tokens.spacing.step3),
+              Text(
+                messages.demoExitCandidatesError,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.body.bodySmall.copyWith(
+                  color: tokens.colors.alert.error.ink,
+                ),
               ),
             ],
             SizedBox(height: tokens.spacing.step2),

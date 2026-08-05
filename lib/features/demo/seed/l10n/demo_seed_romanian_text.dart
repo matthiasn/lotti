@@ -582,4 +582,11 @@ Rulați testul distribuitorului, atașați imaginea de telemetrie, apoi solicita
       'Adăugați propriul element în lista de verificare',
   'Create a brand-new task': 'Creați o sarcină complet nouă',
   'Record a voice note': 'Înregistrați o notă vocală',
+  'Walk pressure seals A–F': 'Verificați etanșările de presiune A–F',
+  'Count all 37 emperor penguins': 'Numărați toți cei 37 de pinguini imperiali',
+  'Request Mission Control clearance':
+      'Solicitați autorizația Controlului misiunii',
+  'Pre-launch checks': 'Verificări înainte de lansare',
+  'Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.':
+      'Turul etanșărilor finalizat: A–F au menținut 101,3 kPa peste noapte. Apelul a confirmat toți cei 37 de pinguini, inclusiv pe cel adormit în plasa de marfă.',
 };

@@ -5018,10 +5018,26 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get demoDeleteFailedToast =>
+      'Demo data se nepodařilo smazat — zkus to znovu.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Demo svět se nepodařilo otevřít — zkus to znovu.';
+
+  @override
   String get demoEnteringProgress => 'Připravuji demo svět…';
 
   @override
+  String get demoExitCandidatesError =>
+      'Nepodařilo se zkontrolovat práci ke zkopírování. Demo můžeš přesto opustit.';
+
+  @override
   String get demoExitConfirm => 'Ukončit demo';
+
+  @override
+  String get demoExitFailedToast =>
+      'Odchod z dema se nepodařilo dokončit — zkus to znovu.';
 
   @override
   String get demoExitSheetBody =>

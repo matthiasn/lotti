@@ -557,4 +557,11 @@ Voer de voedertest uit, voeg de telemetrieafbeelding toe en vraag daarna toestem
   "Add your own checklist item": "Voeg je eigen checklistitem toe",
   "Create a brand-new task": "Maak een gloednieuwe taak aan",
   "Record a voice note": "Neem een spraaknotitie op",
+  "Walk pressure seals A–F": "Drukafdichtingen A–F nalopen",
+  "Count all 37 emperor penguins": "Alle 37 keizerspinguïns tellen",
+  "Request Mission Control clearance":
+      "Toestemming van Mission Control aanvragen",
+  "Pre-launch checks": "Controles voor de lancering",
+  "Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.":
+      "Afdichtingsronde voltooid: A–F hielden 's nachts 101,3 kPa. Het appel bevestigde alle 37 pinguïns, inclusief die ene die in het vrachtnet sliep.",
 };

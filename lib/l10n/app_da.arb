@@ -2430,8 +2430,12 @@
       }
     }
   },
+  "demoDeleteFailedToast": "Demodataene kunne ikke slettes — prøv igen.",
+  "demoEnterFailedToast": "Demoverdenen kunne ikke åbnes — prøv igen.",
   "demoEnteringProgress": "Gør demoverdenen klar…",
+  "demoExitCandidatesError": "Kunne ikke tjekke dit arbejde til kopiering. Du kan stadig forlade demoen.",
   "demoExitConfirm": "Afslut demo",
+  "demoExitFailedToast": "Kunne ikke forlade demoen — prøv igen.",
   "demoExitSheetBody": "Din demoverden bliver gemt — du kan altid vende tilbage.",
   "demoExitSheetTitle": "Forlad demoen?",
   "demoExitTakeWork": "Tag mit arbejde med…",

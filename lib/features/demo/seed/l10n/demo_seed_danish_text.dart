@@ -544,4 +544,11 @@ const _copy = <String, String>{
   "Add your own checklist item": "Tilføj dit eget punkt til tjeklisten",
   "Create a brand-new task": "Opret en helt ny opgave",
   "Record a voice note": "Optag en talebesked",
+  "Walk pressure seals A–F": "Gennemgå tryktætninger A–F",
+  "Count all 37 emperor penguins": "Tæl alle 37 kejserpingviner",
+  "Request Mission Control clearance":
+      "Anmod om godkendelse fra Mission Control",
+  "Pre-launch checks": "Tjek før opsendelse",
+  "Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.":
+      "Tætningsrunde fuldført: A–F holdt 101,3 kPa natten over. Navneopråbet bekræftede alle 37 pingviner, inklusive den der sov i fragtnettet.",
 };

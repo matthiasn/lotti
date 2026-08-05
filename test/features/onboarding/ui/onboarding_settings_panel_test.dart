@@ -542,6 +542,39 @@ void main() {
       expect(find.text('Delete demo data'), findsNothing);
     });
 
+    testWidgets('a failed delete surfaces an error toast and keeps the demo '
+        'rows instead of failing silently', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(false);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+      when(gateway.deleteDemo).thenAnswer(
+        (_) async => throw StateError('directory locked'),
+      );
+
+      await pumpWithGateway(tester);
+
+      await tester.ensureVisible(find.text('Delete demo data'));
+      await tester.tap(find.text('Delete demo data'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete demo data').last);
+      await tester.pumpAndSettle();
+
+      verify(gateway.deleteDemo).called(1);
+      expect(
+        find.text("Couldn't delete the demo data — try again."),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Demo data deleted'),
+        findsNothing,
+        reason: 'the success toast must not show on failure',
+      );
+      expect(
+        find.text('Return to the demo workspace'),
+        findsOneWidget,
+        reason: 'the demo still exists, so its rows stay',
+      );
+    });
+
     testWidgets('reset asks for confirmation and hands over to the reseed '
         'launcher', (tester) async {
       when(() => gateway.isDemoActive).thenReturn(true);

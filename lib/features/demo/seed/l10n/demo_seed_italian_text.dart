@@ -107,7 +107,7 @@ const _copy = <String, String>{
   "Voice memo: Europa sardines are colder than the diplomatic protocol requires.":
       "Voce: Europa sardines sono più fredde di quanto richiede il protocollo diplomatico.",
   "Project Waddle voice memo. Europa sardine cargo is holding at minus eighteen degrees. All 37 emperor penguins are present. Recalibrate the zero-gravity fish feeder before the launch review, and ask Sir Flaps-a-Lot to stop saluting the pressure gauge.":
-      "Il carico di sardine Europa sta tenendo a meno di diciotto gradi. Tutti i 37 pinguini imperatori sono presenti. Ricalibrare l'alimentatore di pesce zero-gravità prima della recensione di lancio, e chiedere a Sir Flaps-a-Lot di smettere di salutare il manometro.",
+      "Memo vocale di Project Waddle. Il carico di sardine Europa sta tenendo a meno diciotto gradi. Tutti i 37 pinguini imperatori sono presenti. Ricalibrare l'alimentatore di pesce a gravità zero prima della revisione di lancio, e chiedere a Sir Flaps-a-Lot di smettere di salutare il manometro.",
   "Europa cold-chain check: sardines stable, emperor penguin roll call complete, feeder calibration still pending.":
       "Europa freddo-chain check: sardine stabili, imperatore pinguino roll chiamata completa, feeder calibrazione ancora in sospeso.",
   "All 37 emperor penguins": "Tutti i 37 pinguini imperatori",
@@ -395,7 +395,7 @@ const _copy = <String, String>{
   "Tomorrow starts with the orbital penguin habitat inspection":
       "Domani inizia con l'ispezione orbitale dei pinguini",
   "Tomorrow I need to inspect the orbital penguin habitat before Mission Control wakes up, run the emperor penguin roll call, and negotiate the sardine futures contract with Reykjavik. At eleven we have the Project Waddle launch review. Please protect lunch because apparently coffee is not a vegetable. In the afternoon I need ninety minutes for the zero-gravity fish feeder, a legal review called Is a penguin a passenger, and the board briefing. Add a buffer before the live habitat demo, then leave thirty minutes for a walk and a debrief with Sir Flaps-a-Lot. Nothing important should begin after five.":
-      "Domani devo ispezionare l'habitat del pinguino orbitale prima che il Controllo Missione si svegli, eseguire la chiamata del pinguino dell'imperatore, e negoziare il contratto del futuro sardina con Reykjavik. A undici abbiamo la recensione di lancio del Progetto Waddle. Proteggere il pranzo perché apparentemente il caffè non è un vegetale.",
+      "Domani devo ispezionare l'habitat orbitale dei pinguini prima che il Controllo Missione si svegli, eseguire l'appello dei pinguini imperatori e negoziare il contratto dei futures sulle sardine con Reykjavik. Alle undici abbiamo la revisione di lancio del Progetto Waddle. Per favore proteggi il pranzo perché a quanto pare il caffè non è un vegetale. Nel pomeriggio mi servono novanta minuti per l'alimentatore di pesce a gravità zero, una revisione legale chiamata Un pinguino è un passeggero, e il briefing del consiglio. Aggiungi un margine prima della demo dal vivo dell'habitat, poi lascia trenta minuti per una passeggiata e un debriefing con Sir Flaps-a-Lot. Niente di importante deve iniziare dopo le cinque.",
   "Orbital habitat inspection": "Ispezione dell'habitat orbitale",
   "Zero-gravity fish feeder": "Alimentatore di pesce a gravità zero",
   "Best done before Mission Control and the penguins get chatty":
@@ -513,7 +513,7 @@ const _copy = <String, String>{
   "Explain each proposed wording change without flattery.":
       "Spiegare ogni cambiamento di formulazione proposto senza adulazione.",
   "Speak like a calm flight director who respects both evidence and penguins. Put the operational decision first.":
-      "Parlare come un direttore di volo calmo che rispetta sia le prove che i pinguini.",
+      "Parlare come un direttore di volo calmo che rispetta sia le prove che i pinguini. Metti prima la decisione operativa.",
   "Dry warmth is welcome. Never turn a safety warning into a joke.":
       "Il calore asciutto è benvenuto. Mai trasformare un avviso di sicurezza in uno scherzo.",
   "Ask one clarifying question when telemetry is ambiguous, then propose the smallest safe next step.":
@@ -546,7 +546,7 @@ const _copy = <String, String>{
   "Put seal anomalies first and make the final launch call explicit.":
       "Mettere le anomalie del sigillo prima e rendere esplicita la chiamata di lancio finale.",
   "## Result\n\n- Evidence now leads each finding.\n- Reports end with a plain-language launch recommendation.":
-      "## Risultato - Le prove ora portano ogni ricerca. - I report finiscono con una raccomandazione di lancio in lingua semplice.",
+      "## Risultato\n\n- Le prove ora aprono ogni constatazione.\n- I report terminano con una raccomandazione di lancio in linguaggio semplice.",
   "Promoted pressure evidence and added an explicit go/no-go ending.":
       "Promosso prove di pressione e aggiunto un esplicito go/no-go finale.",
   "Admiral Pebble is appropriately skeptical, but should ask fewer questions when a launch hold is already obvious.":
@@ -565,4 +565,11 @@ const _copy = <String, String>{
       "Aggiungi una voce tutta tua alla lista di controllo",
   "Create a brand-new task": "Crea un'attività nuova di zecca",
   "Record a voice note": "Registra una nota vocale",
+  "Walk pressure seals A–F": "Ispezionare i sigilli di pressione A–F",
+  "Count all 37 emperor penguins": "Contare tutti i 37 pinguini imperatori",
+  "Request Mission Control clearance":
+      "Richiedere l'autorizzazione del Controllo missione",
+  "Pre-launch checks": "Controlli pre-lancio",
+  "Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.":
+      "Giro dei sigilli completato: A–F hanno tenuto a 101,3 kPa durante la notte. L'appello ha confermato tutti i 37 pinguini, incluso quello addormentato nella rete da carico.",
 };
