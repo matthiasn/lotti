@@ -3264,14 +3264,6 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ative esta opção para reenviar automaticamente uploads de anexos com falha quando a conexão for restaurada.';
 
   @override
-  String get configFlagShowSyncActivityIndicator =>
-      'Mostrar indicador de atividade de sincronização';
-
-  @override
-  String get configFlagShowSyncActivityIndicatorDescription =>
-      'Mostrar um status de sincronização silenciosa na barra lateral; as contagens de fila aparecem apenas enquanto o trabalho está pendente.';
-
-  @override
   String get conflictApplyButton => 'Aplicar';
 
   @override
@@ -10383,24 +10375,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get surveyYesButton => 'Sim';
 
   @override
-  String get syncActivityIdle => 'ocioso';
-
-  @override
   String get syncActivityInboxLabel => 'Caixa de entrada';
 
   @override
-  String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Atividade de sincronização. Caixa de saída: $outbox. Caixa de entrada: $inbox. Abra a caixa de saída de sincronização.';
-  }
-
-  @override
   String get syncActivityOutboxLabel => 'Caixa de saída';
-
-  @override
-  String get syncActivitySyncingTitle => 'Sincronizando';
-
-  @override
-  String get syncActivityTitle => 'Sincronizar';
 
   @override
   String get syncAddDeviceAction => 'Adicionar dispositivo';

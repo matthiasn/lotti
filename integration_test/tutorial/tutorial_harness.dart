@@ -53,7 +53,6 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
-import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -513,7 +512,6 @@ class TutorialAppHarness {
       ..registerSingleton<AgentDatabase>(agentDatabase)
       ..registerSingleton<UpdateNotifications>(updateNotifications)
       ..registerSingleton<UserActivityService>(userActivityService)
-      ..registerSingleton<SyncActivitySignaler>(SyncActivitySignaler())
       ..registerSingleton<SecureStorage>(MockSecureStorage())
       ..registerSingleton<MatrixService>(matrixService)
       ..registerSingleton<OutboxService>(outboxService)

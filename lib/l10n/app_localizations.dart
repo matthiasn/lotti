@@ -5520,18 +5520,6 @@ abstract class AppLocalizations {
   /// **'Enable this to automatically resend failed attachment uploads when the connection is restored.'**
   String get configFlagResendAttachmentsDescription;
 
-  /// No description provided for @configFlagShowSyncActivityIndicator.
-  ///
-  /// In en, this message translates to:
-  /// **'Show sync activity indicator'**
-  String get configFlagShowSyncActivityIndicator;
-
-  /// No description provided for @configFlagShowSyncActivityIndicatorDescription.
-  ///
-  /// In en, this message translates to:
-  /// **'Show a quiet sync status in the sidebar; queue counts appear only while work is pending.'**
-  String get configFlagShowSyncActivityIndicatorDescription;
-
   /// No description provided for @conflictApplyButton.
   ///
   /// In en, this message translates to:
@@ -17559,41 +17547,17 @@ abstract class AppLocalizations {
   /// **'Yes'**
   String get surveyYesButton;
 
-  /// No description provided for @syncActivityIdle.
-  ///
-  /// In en, this message translates to:
-  /// **'idle'**
-  String get syncActivityIdle;
-
   /// No description provided for @syncActivityInboxLabel.
   ///
   /// In en, this message translates to:
   /// **'Inbox'**
   String get syncActivityInboxLabel;
 
-  /// No description provided for @syncActivityIndicatorSemantics.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync activity. Outbox: {outbox}. Inbox: {inbox}. Open sync outbox.'**
-  String syncActivityIndicatorSemantics(int outbox, int inbox);
-
   /// No description provided for @syncActivityOutboxLabel.
   ///
   /// In en, this message translates to:
   /// **'Outbox'**
   String get syncActivityOutboxLabel;
-
-  /// No description provided for @syncActivitySyncingTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Syncing'**
-  String get syncActivitySyncingTitle;
-
-  /// No description provided for @syncActivityTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Sync'**
-  String get syncActivityTitle;
 
   /// No description provided for @syncAddDeviceAction.
   ///

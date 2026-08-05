@@ -3245,14 +3245,6 @@ class AppLocalizationsNl extends AppLocalizations {
       'Schakel dit in om mislukte bijlageuploads automatisch opnieuw te verzenden wanneer de verbinding hersteld is.';
 
   @override
-  String get configFlagShowSyncActivityIndicator =>
-      'Sync-activiteitsindicator tonen';
-
-  @override
-  String get configFlagShowSyncActivityIndicatorDescription =>
-      'Een status van rustige synchronisatie tonen in de zijbalk; wachtrijtellingen verschijnen alleen terwijl het werk nog in behandeling is.';
-
-  @override
   String get conflictApplyButton => 'Toepassen';
 
   @override
@@ -10313,24 +10305,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get surveyYesButton => 'Ja.';
 
   @override
-  String get syncActivityIdle => 'stationair';
-
-  @override
   String get syncActivityInboxLabel => 'Postvak IN';
 
   @override
-  String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Synchronisatie activiteit. Postvak UIT: ${outbox}Inbox: ${inbox}Open synchronisatie-outbox.';
-  }
-
-  @override
   String get syncActivityOutboxLabel => 'Postvak UIT';
-
-  @override
-  String get syncActivitySyncingTitle => 'Synchroniseren';
-
-  @override
-  String get syncActivityTitle => 'Synchroniseren';
 
   @override
   String get syncAddDeviceAction => 'Apparaat toevoegen';

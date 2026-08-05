@@ -3233,14 +3233,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Aktivér dette for automatisk at sende mislykkede vedhæftede uploads igen, når forbindelsen genoprettes.';
 
   @override
-  String get configFlagShowSyncActivityIndicator =>
-      'Indikator for vis synkroniseret aktivitet';
-
-  @override
-  String get configFlagShowSyncActivityIndicatorDescription =>
-      'Vis en stille synkroniseringsstatus i sidebaren; Køoptællinger vises kun, mens arbejdet er i gang.';
-
-  @override
   String get conflictApplyButton => 'Ansøg';
 
   @override
@@ -10287,24 +10279,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get surveyYesButton => 'Ja';
 
   @override
-  String get syncActivityIdle => 'Ledig';
-
-  @override
   String get syncActivityInboxLabel => 'Indbakke';
 
   @override
-  String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Synkroniser aktivitet. Udboks: $outbox. Indbakke: $inbox. Åbn sync outbox.';
-  }
-
-  @override
   String get syncActivityOutboxLabel => 'Udboks';
-
-  @override
-  String get syncActivitySyncingTitle => 'Synkronisering';
-
-  @override
-  String get syncActivityTitle => 'Sync';
 
   @override
   String get syncAddDeviceAction => 'Tilføj enhed';

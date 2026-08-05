@@ -1448,8 +1448,6 @@
   "configFlagRecordLocationDescription": "Enregistrer automatiquement ta position avec les nouvelles entrées. Cela facilite l'organisation et la recherche basées sur la localisation.",
   "configFlagResendAttachments": "Renvoyer les pièces jointes",
   "configFlagResendAttachmentsDescription": "Active cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.",
-  "configFlagShowSyncActivityIndicator": "Afficher l'indicateur d'activité de synchronisation",
-  "configFlagShowSyncActivityIndicatorDescription": "Affiche un état de synchronisation discret dans la barre latérale ; les compteurs de file apparaissent uniquement quand du travail est en attente.",
   "conflictApplyButton": "Appliquer",
   "conflictApplyFailedTitle": "Impossible d'appliquer la résolution",
   "conflictBannerAgoDays": "{count, plural, =1{il y a 1 jour} other{il y a {count} jours}}",
@@ -4104,22 +4102,8 @@
   "surveyValueAnd": "et",
   "surveyValueBetween": "Doit être compris entre",
   "surveyYesButton": "Oui",
-  "syncActivityIdle": "Inactif",
   "syncActivityInboxLabel": "Entrée",
-  "syncActivityIndicatorSemantics": "Activité de synchronisation. Boîte d'envoi : {outbox}. Boîte de réception : {inbox}. Ouvrir la boîte d'envoi de synchronisation.",
-  "@syncActivityIndicatorSemantics": {
-    "placeholders": {
-      "outbox": {
-        "type": "int"
-      },
-      "inbox": {
-        "type": "int"
-      }
-    }
-  },
   "syncActivityOutboxLabel": "Sortie",
-  "syncActivitySyncingTitle": "Synchronisation",
-  "syncActivityTitle": "Synchronisation",
   "syncAddDeviceAction": "Ajouter un appareil",
   "syncAddDeviceConnected": "Le nouvel appareil a rejoint — termine la vérification par émojis avant l’envoi.",
   "syncAddDeviceCopyCode": "Copier le code d’appairage",

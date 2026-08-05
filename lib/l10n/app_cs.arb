@@ -1455,8 +1455,6 @@
   "configFlagRecordLocationDescription": "Automaticky zaznamenejte vaši polohu s novými záznamy. To pomáhá s organizací a vyhledáváním podle polohy.",
   "configFlagResendAttachments": "Odeslat přílohy znovu",
   "configFlagResendAttachmentsDescription": "Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.",
-  "configFlagShowSyncActivityIndicator": "Zobrazit indikátor aktivity synchronizace",
-  "configFlagShowSyncActivityIndicatorDescription": "Zobrazí nenápadný stav synchronizace v postranním panelu; počty ve frontě se objeví jen tehdy, když něco čeká.",
   "conflictApplyButton": "Použít",
   "conflictApplyFailedTitle": "Konflikt se nepodařilo vyřešit",
   "conflictBannerAgoDays": "{count, plural, =1{před 1 dnem} few{před {count} dny} other{před {count} dní}}",
@@ -4111,22 +4109,8 @@
   "surveyValueAnd": "a",
   "surveyValueBetween": "Musí být mezi",
   "surveyYesButton": "Ano",
-  "syncActivityIdle": "nečinné",
   "syncActivityInboxLabel": "Příchozí",
-  "syncActivityIndicatorSemantics": "Aktivita synchronizace. Odchozí: {outbox}. Příchozí: {inbox}. Otevřít odchozí frontu synchronizace.",
-  "@syncActivityIndicatorSemantics": {
-    "placeholders": {
-      "outbox": {
-        "type": "int"
-      },
-      "inbox": {
-        "type": "int"
-      }
-    }
-  },
   "syncActivityOutboxLabel": "Odchozí",
-  "syncActivitySyncingTitle": "Synchronizace",
-  "syncActivityTitle": "Sync",
   "syncAddDeviceAction": "Přidat zařízení",
   "syncAddDeviceConnected": "Nové zařízení se připojilo – před odesláním dokonči ověření pomocí emoji.",
   "syncAddDeviceCopyCode": "Kopírovat párovací kód",

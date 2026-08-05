@@ -3274,14 +3274,6 @@ class AppLocalizationsCs extends AppLocalizations {
       'Povolte toto nastavení pro automatické opětovné odeslání neúspěšného nahrávání příloh po obnovení připojení.';
 
   @override
-  String get configFlagShowSyncActivityIndicator =>
-      'Zobrazit indikátor aktivity synchronizace';
-
-  @override
-  String get configFlagShowSyncActivityIndicatorDescription =>
-      'Zobrazí nenápadný stav synchronizace v postranním panelu; počty ve frontě se objeví jen tehdy, když něco čeká.';
-
-  @override
   String get conflictApplyButton => 'Použít';
 
   @override
@@ -10414,24 +10406,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get surveyYesButton => 'Ano';
 
   @override
-  String get syncActivityIdle => 'nečinné';
-
-  @override
   String get syncActivityInboxLabel => 'Příchozí';
 
   @override
-  String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Aktivita synchronizace. Odchozí: $outbox. Příchozí: $inbox. Otevřít odchozí frontu synchronizace.';
-  }
-
-  @override
   String get syncActivityOutboxLabel => 'Odchozí';
-
-  @override
-  String get syncActivitySyncingTitle => 'Synchronizace';
-
-  @override
-  String get syncActivityTitle => 'Sync';
 
   @override
   String get syncAddDeviceAction => 'Přidat zařízení';

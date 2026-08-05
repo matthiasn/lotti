@@ -122,7 +122,6 @@ Future<String? Function()> _registerMatrixSyncStack({
     updateNotifications: getIt<UpdateNotifications>(),
     attachmentIngestor: queueAttachmentIngestor,
     sentEventRegistry: sentEventRegistry,
-    activitySignaler: getIt<SyncActivitySignaler>(),
   );
 
   final matrixService = MatrixService(
@@ -161,7 +160,6 @@ Future<String? Function()> _registerMatrixSyncStack({
         matrixService: matrixService,
         sequenceLogService: syncSequenceLogService,
         domainLogger: domainLogger,
-        activitySignaler: getIt<SyncActivitySignaler>(),
       ),
     );
 

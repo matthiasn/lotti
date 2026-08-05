@@ -29,7 +29,7 @@ import '../../../../widget_test_utils.dart';
 /// derived from `FlagsBody.defaultDisplayedItems`: these tests supply their own
 /// `displayedItems`, and asserting against the production list would make this
 /// a tautology.
-const _displayedFlagCount = 12;
+const _displayedFlagCount = 11;
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -102,11 +102,6 @@ void main() {
           const ConfigFlag(
             name: dailyOsOnboardingEnabledFlag,
             description: 'Enable the Daily OS onboarding walkthrough?',
-            status: false,
-          ),
-          const ConfigFlag(
-            name: showSyncActivityIndicatorFlag,
-            description: 'Show sync status in the sidebar.',
             status: false,
           ),
           const ConfigFlag(
@@ -335,18 +330,6 @@ void main() {
             expectedToggle: const ConfigFlag(
               name: enableAiSummaryTtsFlag,
               description: 'Enable local AI summary playback?',
-              status: true,
-            ),
-          ),
-          (
-            name: 'sync-activity-indicator',
-            title: (m) => m.configFlagShowSyncActivityIndicator,
-            description: (m) =>
-                m.configFlagShowSyncActivityIndicatorDescription,
-            icon: Icons.network_check_rounded,
-            expectedToggle: const ConfigFlag(
-              name: showSyncActivityIndicatorFlag,
-              description: 'Show sync status in the sidebar.',
               status: true,
             ),
           ),
@@ -807,11 +790,6 @@ void main() {
               description: "Enable What's New feature?",
               status: false,
             ),
-            const ConfigFlag(
-              name: showSyncActivityIndicatorFlag,
-              description: 'Show sync status in the sidebar.',
-              status: false,
-            ),
             // Previously uncovered flags:
             const ConfigFlag(
               name: recordLocationFlag,
@@ -1134,11 +1112,6 @@ void main() {
         description: 'Resend Attachments?',
         status: false,
       ),
-      const ConfigFlag(
-        name: showSyncActivityIndicatorFlag,
-        description: 'Show sync status in the sidebar.',
-        status: false,
-      ),
     };
 
     ProfileContext guestContext() => ProfileContext.forProfile(
@@ -1182,10 +1155,6 @@ void main() {
           find.text(context.messages.configFlagResendAttachments),
           findsNothing,
         );
-        expect(
-          find.text(context.messages.configFlagShowSyncActivityIndicator),
-          findsNothing,
-        );
         expect(tester.takeException(), isNull);
       },
     );
@@ -1204,17 +1173,13 @@ void main() {
         await tester.pump(const Duration(milliseconds: 100));
 
         final context = tester.element(find.byType(FlagsPage));
-        expect(find.byType(DesignSystemListItem), findsNWidgets(4));
+        expect(find.byType(DesignSystemListItem), findsNWidgets(3));
         expect(
           find.text(context.messages.configFlagEnableMatrix),
           findsOneWidget,
         );
         expect(
           find.text(context.messages.configFlagResendAttachments),
-          findsOneWidget,
-        );
-        expect(
-          find.text(context.messages.configFlagShowSyncActivityIndicator),
           findsOneWidget,
         );
       },

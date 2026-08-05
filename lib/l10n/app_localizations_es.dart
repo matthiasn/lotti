@@ -3277,14 +3277,6 @@ class AppLocalizationsEs extends AppLocalizations {
       'Activar para reenviar automáticamente las cargas de archivos adjuntos fallidas cuando se restablezca la conexión.';
 
   @override
-  String get configFlagShowSyncActivityIndicator =>
-      'Mostrar indicador de actividad de sincronización';
-
-  @override
-  String get configFlagShowSyncActivityIndicatorDescription =>
-      'Muestra un estado de sincronización discreto en la barra lateral; los recuentos de cola aparecen solo cuando hay trabajo pendiente.';
-
-  @override
   String get conflictApplyButton => 'Aplicar';
 
   @override
@@ -10436,24 +10428,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get surveyYesButton => 'Sí';
 
   @override
-  String get syncActivityIdle => 'inactiva';
-
-  @override
   String get syncActivityInboxLabel => 'Entrada';
 
   @override
-  String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Actividad de sincronización. Bandeja de salida: $outbox. Bandeja de entrada: $inbox. Abrir bandeja de salida de sincronización.';
-  }
-
-  @override
   String get syncActivityOutboxLabel => 'Salida';
-
-  @override
-  String get syncActivitySyncingTitle => 'Sincronizando';
-
-  @override
-  String get syncActivityTitle => 'Sincronización';
 
   @override
   String get syncAddDeviceAction => 'Añadir dispositivo';

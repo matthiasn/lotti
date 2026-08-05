@@ -731,66 +731,10 @@ void main() {
     );
 
     testWidgets(
-      'belowSettings slot renders BELOW the Settings row in expanded mode '
-      'and stays hidden in collapsed mode',
-      (tester) async {
-        const slotKey = Key('below-settings-slot');
-        const slot = SizedBox(
-          key: slotKey,
-          height: 18,
-          child: Text('sync activity'),
-        );
-        final settings = DesktopSidebarDestination(
-          label: 'Settings',
-          iconBuilder: ({required bool active}) => const Icon(Icons.settings),
-        );
-
-        await tester.pumpWidget(
-          wrap(
-            DesktopNavigationSidebar(
-              destinations: buildDestinations(),
-              activeIndex: 0,
-              onDestinationSelected: (_) {},
-              settingsDestination: settings,
-              belowSettings: slot,
-            ),
-          ),
-        );
-        await tester.pump();
-        expect(find.byKey(slotKey), findsOneWidget);
-
-        final settingsY = tester.getCenter(find.text('Settings')).dy;
-        final slotY = tester.getCenter(find.byKey(slotKey)).dy;
-        expect(
-          slotY,
-          greaterThan(settingsY),
-          reason: 'belowSettings must sit below the Settings row',
-        );
-
-        // Collapsed mode — same suppression rule as aboveSettings.
-        await tester.pumpWidget(
-          wrap(
-            DesktopNavigationSidebar(
-              destinations: buildDestinations(),
-              activeIndex: 0,
-              onDestinationSelected: (_) {},
-              settingsDestination: settings,
-              belowSettings: slot,
-              collapsed: true,
-            ),
-          ),
-        );
-        await tester.pump();
-        expect(find.byKey(slotKey), findsNothing);
-      },
-    );
-
-    testWidgets(
       'footerBand spans the rail edge to edge while every other slot keeps '
       'the gutters',
       (tester) async {
         const bandKey = Key('footer-band');
-        const belowKey = Key('below-settings');
         final settings = DesktopSidebarDestination(
           label: 'Settings',
           iconBuilder: ({required bool active}) => const Icon(Icons.settings),
@@ -805,7 +749,6 @@ void main() {
               settingsDestination: settings,
               width: 256,
               footerBand: const SizedBox(key: bandKey, height: 20),
-              belowSettings: const SizedBox(key: belowKey, height: 18),
             ),
           ),
         );
@@ -813,7 +756,6 @@ void main() {
 
         final sidebar = tester.getRect(find.byType(DesktopNavigationSidebar));
         final band = tester.getRect(find.byKey(bandKey));
-        final below = tester.getRect(find.byKey(belowKey));
         final settingsRow = tester.getRect(find.text('Settings'));
 
         // The whole point of the slot: the footer's divider can define the
@@ -822,16 +764,10 @@ void main() {
         expect(band.right, sidebar.right);
         expect(band.width, sidebar.width);
 
-        // Its neighbours are unaffected — the sync strip still sits inside the
-        // gutters, so its hover wash cannot run to the rail edge.
-        expect(below.left, greaterThan(sidebar.left));
-        expect(below.right, lessThan(sidebar.right));
         expect(settingsRow.left, greaterThan(sidebar.left));
 
-        // Order: Settings, then the optional ambient strip, with the footer
-        // band last so it remains the stable bottom edge of the sidebar.
-        expect(below.top, greaterThanOrEqualTo(settingsRow.bottom));
-        expect(band.top, greaterThanOrEqualTo(below.bottom));
+        // Order: Settings, then the footer band as the stable bottom edge.
+        expect(band.top, greaterThanOrEqualTo(settingsRow.bottom));
       },
     );
 

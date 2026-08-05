@@ -1448,8 +1448,6 @@
   "configFlagRecordLocationDescription": "Zeichnet automatisch deinen Standort mit neuen Einträgen auf. Dies hilft bei der ortsbezogenen Organisation und Suche.",
   "configFlagResendAttachments": "Anhänge erneut senden",
   "configFlagResendAttachmentsDescription": "Aktiviere diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.",
-  "configFlagShowSyncActivityIndicator": "Sync-Aktivitätsanzeige einblenden",
-  "configFlagShowSyncActivityIndicatorDescription": "Zeigt einen dezenten Synchronisierungsstatus in der Seitenleiste; Warteschlangenzahlen erscheinen nur, wenn Arbeit ansteht.",
   "conflictApplyButton": "Übernehmen",
   "conflictApplyFailedTitle": "Konflikt konnte nicht angewendet werden",
   "conflictBannerAgoDays": "{count, plural, =1{vor 1 Tag} other{vor {count} Tagen}}",
@@ -4104,22 +4102,8 @@
   "surveyValueAnd": "und",
   "surveyValueBetween": "Muss zwischen liegen",
   "surveyYesButton": "Ja",
-  "syncActivityIdle": "inaktiv",
   "syncActivityInboxLabel": "Posteingang",
-  "syncActivityIndicatorSemantics": "Sync-Aktivität. Postausgang: {outbox}. Posteingang: {inbox}. Sync-Postausgang öffnen.",
-  "@syncActivityIndicatorSemantics": {
-    "placeholders": {
-      "outbox": {
-        "type": "int"
-      },
-      "inbox": {
-        "type": "int"
-      }
-    }
-  },
   "syncActivityOutboxLabel": "Postausgang",
-  "syncActivitySyncingTitle": "Sync läuft",
-  "syncActivityTitle": "Sync",
   "syncAddDeviceAction": "Gerät hinzufügen",
   "syncAddDeviceConnected": "Das neue Gerät ist beigetreten – schließe vor dem Senden die Emoji-Verifizierung ab.",
   "syncAddDeviceCopyCode": "Kopplungscode kopieren",

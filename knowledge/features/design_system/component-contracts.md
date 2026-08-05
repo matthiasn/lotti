@@ -245,10 +245,9 @@ Two contracts beyond the sizing:
   four actions read size and colour from it, which is what lets an `SvgPicture`
   tint itself to match the font icons beside it — and why a glyph must resolve
   the theme in its **own** `build`, below where the row installs it.
-- **The footer band is always the desktop sidebar's final child.** The optional
-  gutter-aligned sync activity strip uses `belowSettings` immediately above it.
-  Removing that strip removes its spacer too, so the contact band neither moves
-  nor leaves a hole when the flag changes.
+- **The footer band is always the desktop sidebar's final child.** Status stays
+  in destination trailing slots rather than adding a second footer row, so the
+  contact band never moves or leaves a conditional hole.
 
 Its `ExcludeSemantics` sits **above** the `InkWell`, which is the shape
 `DesignSystemInlineAction` above warns against — safe here for the same reason
@@ -265,12 +264,12 @@ yet") cannot borrow the *identity* grammar of the secondary outlined chip or
 an alert tone it has not earned; the sync device roster's "This device" and
 keyless "Unverified" chips are the canonical pair that must not match.
 
-`OutboxTrailingBadge` applies that same grammar beside Settings: `↑ count` is
-an outlined neutral pill, where the arrow identifies the outgoing queue and the
-number comes from `outboxPendingCountProvider`. Pending work is routine sync
-state, not an error, so neither the fill nor the danger tone belongs there. The
-pill disappears while the richer sync activity strip is enabled, avoiding two
-views of the same outgoing depth.
+`OutboxTrailingBadge` applies that same grammar beside Settings with up to two
+outlined neutral pills. `↓ count` identifies incoming work from
+`inboundQueueDepthProvider`; `↑ count` identifies outgoing work from
+`outboxPendingCountProvider`. Each direction disappears independently at zero,
+and the whole trailing group disappears while sync is disabled. Pending work is
+routine sync state, not an error, so neither fill nor danger tone belongs there.
 
 # Inline callouts
 

@@ -1619,8 +1619,6 @@
   "configFlagRecordLocationDescription": "Registrer automatisk din placering med nye indførsler. Dette hjælper med lokationsbaseret organisering og søgning.",
   "configFlagResendAttachments": "Sendte vedhæftede filer igen",
   "configFlagResendAttachmentsDescription": "Aktivér dette for automatisk at sende mislykkede vedhæftede uploads igen, når forbindelsen genoprettes.",
-  "configFlagShowSyncActivityIndicator": "Indikator for vis synkroniseret aktivitet",
-  "configFlagShowSyncActivityIndicatorDescription": "Vis en stille synkroniseringsstatus i sidebaren; Køoptællinger vises kun, mens arbejdet er i gang.",
   "conflictApplyButton": "Ansøg",
   "conflictApplyFailedTitle": "Kunne ikke anvende opløsning",
   "conflictBannerAgoDays": "{count, plural, =1{1 dag siden} other{{count} dage siden}}",
@@ -4656,22 +4654,8 @@
   "surveyValueAnd": "og",
   "surveyValueBetween": "Må være imellem",
   "surveyYesButton": "Ja",
-  "syncActivityIdle": "Ledig",
   "syncActivityInboxLabel": "Indbakke",
-  "syncActivityIndicatorSemantics": "Synkroniser aktivitet. Udboks: {outbox}. Indbakke: {inbox}. Åbn sync outbox.",
-  "@syncActivityIndicatorSemantics": {
-    "placeholders": {
-      "outbox": {
-        "type": "int"
-      },
-      "inbox": {
-        "type": "int"
-      }
-    }
-  },
   "syncActivityOutboxLabel": "Udboks",
-  "syncActivitySyncingTitle": "Synkronisering",
-  "syncActivityTitle": "Sync",
   "syncAddDeviceAction": "Tilføj enhed",
   "syncAddDeviceConnected": "Den nye enhed er kommet med – fuldfør emoji-bekræftelsen, før du sender.",
   "syncAddDeviceCopyCode": "Kopiér parringskode",

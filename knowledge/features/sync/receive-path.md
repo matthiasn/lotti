@@ -296,6 +296,8 @@ The backfill settings page hosts the operator surface:
 - `_QueueDepthScope` subscribes to `InboundQueue.depthChanges` (seeded by a
   one-shot `depthSnapshot()`) and shows total, per-producer breakdown and
   abandoned count.
+- The desktop Settings destination reuses the same live depth through
+  `inboundQueueDepthProvider` for its neutral outlined `↓ count` badge.
 - `_AdvancedRecoveryGroup` drives
   `QueuePipelineCoordinator.triggerBridge()` (kick catch-up), retry of skipped
   rows, and the reset / retire-stuck backfill controls.

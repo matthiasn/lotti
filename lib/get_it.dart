@@ -66,7 +66,6 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/services/sync_node_capability_probe.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/conflict_notification_observer.dart';
-import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_persistence.dart';
 import 'package:lotti/features/tasks/state/saved_filters/saved_task_filters_repository.dart';
@@ -124,10 +123,6 @@ Future<void> registerSingletons({
     ..registerSingleton<UpdateNotifications>(
       UpdateNotifications(),
       dispose: (notifications) => notifications.dispose(),
-    )
-    ..registerSingleton<SyncActivitySignaler>(
-      SyncActivitySignaler(),
-      dispose: (signaler) => signaler.dispose(),
     )
     ..registerSingleton<JournalDb>(JournalDb())
     ..registerSingleton<AgentDatabase>(AgentDatabase())

@@ -3281,14 +3281,6 @@ class AppLocalizationsFr extends AppLocalizations {
       'Active cette option pour renvoyer automatiquement les téléchargements de pièces jointes ayant échoué lorsque la connexion est rétablie.';
 
   @override
-  String get configFlagShowSyncActivityIndicator =>
-      'Afficher l\'indicateur d\'activité de synchronisation';
-
-  @override
-  String get configFlagShowSyncActivityIndicatorDescription =>
-      'Affiche un état de synchronisation discret dans la barre latérale ; les compteurs de file apparaissent uniquement quand du travail est en attente.';
-
-  @override
   String get conflictApplyButton => 'Appliquer';
 
   @override
@@ -10479,24 +10471,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get surveyYesButton => 'Oui';
 
   @override
-  String get syncActivityIdle => 'Inactif';
-
-  @override
   String get syncActivityInboxLabel => 'Entrée';
 
   @override
-  String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Activité de synchronisation. Boîte d\'envoi : $outbox. Boîte de réception : $inbox. Ouvrir la boîte d\'envoi de synchronisation.';
-  }
-
-  @override
   String get syncActivityOutboxLabel => 'Sortie';
-
-  @override
-  String get syncActivitySyncingTitle => 'Synchronisation';
-
-  @override
-  String get syncActivityTitle => 'Synchronisation';
 
   @override
   String get syncAddDeviceAction => 'Ajouter un appareil';

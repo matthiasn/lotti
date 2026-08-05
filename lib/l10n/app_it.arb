@@ -1619,8 +1619,6 @@
   "configFlagRecordLocationDescription": "Registra automaticamente la tua posizione con nuove voci. Questo aiuta con l'organizzazione basata sulla posizione e la ricerca.",
   "configFlagResendAttachments": "Rispondere agli allegati",
   "configFlagResendAttachmentsDescription": "Abilita questo per rivendere automaticamente gli upload di allegati falliti quando la connessione viene ripristinata.",
-  "configFlagShowSyncActivityIndicator": "Mostra l'indicatore di attività di sincronizzazione",
-  "configFlagShowSyncActivityIndicatorDescription": "Mostra uno stato di sincronizzazione tranquillo nella barra laterale; i conti della coda appaiono solo mentre il lavoro è in attesa.",
   "conflictApplyButton": "Applicare",
   "conflictApplyFailedTitle": "Non è possibile applicare la risoluzione",
   "conflictBannerAgoDays": "{count, plural, =1{1 giorno fa} other{{count} giorni fa}}",
@@ -4656,22 +4654,8 @@
   "surveyValueAnd": "e",
   "surveyValueBetween": "Dev'essere tra",
   "surveyYesButton": "Sì.",
-  "syncActivityIdle": "Idle",
   "syncActivityInboxLabel": "Posta in arrivo",
-  "syncActivityIndicatorSemantics": "Posta in arrivo: {outbox}. Posta in arrivo: {inbox}.",
-  "@syncActivityIndicatorSemantics": {
-    "placeholders": {
-      "outbox": {
-        "type": "int"
-      },
-      "inbox": {
-        "type": "int"
-      }
-    }
-  },
   "syncActivityOutboxLabel": "Posta in uscita",
-  "syncActivitySyncingTitle": "Synch",
-  "syncActivityTitle": "Traduzione:",
   "syncAddDeviceAction": "Aggiungi dispositivo",
   "syncAddDeviceConnected": "Il nuovo dispositivo si è unito: completa la verifica con emoji prima di inviare.",
   "syncAddDeviceCopyCode": "Copia codice di abbinamento",

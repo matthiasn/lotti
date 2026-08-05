@@ -69,7 +69,6 @@ const Map<String, bool> _flagValues = {
   enableVectorSearchFlag: true,
   enableWhatsNewFlag: true,
   dailyOsOnboardingEnabledFlag: false,
-  showSyncActivityIndicatorFlag: true,
   enableForkHealingFlag: false,
   logSlowQueriesFlag: false,
 };

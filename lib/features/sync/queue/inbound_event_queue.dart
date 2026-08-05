@@ -9,7 +9,6 @@ import 'package:lotti/features/sync/queue/inbound_queue_models.dart';
 import 'package:lotti/features/sync/queue/inbound_queue_resurrection.dart';
 import 'package:lotti/features/sync/queue/queue_depth_emitter.dart';
 import 'package:lotti/features/sync/queue/queue_marker_advancer.dart';
-import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
@@ -33,12 +32,10 @@ class InboundQueue {
     required this._db,
     required this._logging,
     Duration? leaseDuration,
-    this._activitySignaler,
   }) : _leaseDuration = leaseDuration ?? SyncTuning.inboundWorkerLeaseDuration;
 
   final SyncDatabase _db;
   final DomainLogger _logging;
-  final SyncActivitySignaler? _activitySignaler;
   final Duration _leaseDuration;
 
   late final QueueDepthEmitter _depthEmitter = QueueDepthEmitter(
@@ -408,7 +405,6 @@ class InboundQueue {
       'markerAdvanced=$markerAdvanced',
       subDomain: _logSubCommit,
     );
-    _activitySignaler?.pulseRx();
     _depthEmitter.schedule();
   }
 

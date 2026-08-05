@@ -3217,14 +3217,6 @@ class AppLocalizationsEn extends AppLocalizations {
       'Enable this to automatically resend failed attachment uploads when the connection is restored.';
 
   @override
-  String get configFlagShowSyncActivityIndicator =>
-      'Show sync activity indicator';
-
-  @override
-  String get configFlagShowSyncActivityIndicatorDescription =>
-      'Show a quiet sync status in the sidebar; queue counts appear only while work is pending.';
-
-  @override
   String get conflictApplyButton => 'Apply';
 
   @override
@@ -10213,24 +10205,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get surveyYesButton => 'Yes';
 
   @override
-  String get syncActivityIdle => 'idle';
-
-  @override
   String get syncActivityInboxLabel => 'Inbox';
 
   @override
-  String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Sync activity. Outbox: $outbox. Inbox: $inbox. Open sync outbox.';
-  }
-
-  @override
   String get syncActivityOutboxLabel => 'Outbox';
-
-  @override
-  String get syncActivitySyncingTitle => 'Syncing';
-
-  @override
-  String get syncActivityTitle => 'Sync';
 
   @override
   String get syncAddDeviceAction => 'Add device';

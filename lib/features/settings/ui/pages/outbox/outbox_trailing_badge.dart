@@ -1,40 +1,51 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
-import 'package:lotti/utils/consts.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
-/// Standalone outgoing-count pill for pending outbox items, rendered in a
-/// trailing slot (e.g. alongside Settings on the desktop navigation sidebar).
+/// Compact incoming/outgoing sync queue pills rendered in a trailing slot
+/// (e.g. alongside Settings on the desktop navigation sidebar).
 ///
-/// Only renders when sync is enabled and there are pending items. The
-/// upward arrow identifies the outgoing direction. The neutral outline
-/// communicates ordinary queued work rather than an error. The pill is also
-/// suppressed when the sidebar sync activity indicator is active — the
-/// indicator already shows the outbox depth, so showing both would double up.
+/// Only renders when sync is enabled and at least one queue has pending work.
+/// Down/up arrows identify the incoming/outgoing directions, while the neutral
+/// outline communicates ordinary queued work rather than an error.
 class OutboxTrailingBadge extends ConsumerWidget {
   const OutboxTrailingBadge({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final indicatorEnabled =
-        ref.watch(configFlagProvider(showSyncActivityIndicatorFlag)).value ??
-        false;
-    if (indicatorEnabled) {
-      return const SizedBox.shrink();
-    }
     final connectionState = ref.watch(outboxConnectionStateProvider).value;
     if (connectionState != OutboxConnectionState.online) {
       return const SizedBox.shrink();
     }
-    final count = ref.watch(outboxPendingCountProvider).value ?? 0;
-    if (count == 0) {
+    final incomingCount = ref.watch(inboundQueueDepthProvider).value ?? 0;
+    final outgoingCount = ref.watch(outboxPendingCountProvider).value ?? 0;
+    if (incomingCount == 0 && outgoingCount == 0) {
       return const SizedBox.shrink();
     }
-    return DesignSystemBadge.outlined(
-      label: '↑ $count',
-      tone: DesignSystemBadgeTone.neutral,
+
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (incomingCount > 0)
+          DesignSystemBadge.outlined(
+            label: '↓ $incomingCount',
+            tone: DesignSystemBadgeTone.neutral,
+            semanticLabel:
+                '${context.messages.syncActivityInboxLabel}: $incomingCount',
+          ),
+        if (incomingCount > 0 && outgoingCount > 0)
+          SizedBox(width: context.designTokens.spacing.step1),
+        if (outgoingCount > 0)
+          DesignSystemBadge.outlined(
+            label: '↑ $outgoingCount',
+            tone: DesignSystemBadgeTone.neutral,
+            semanticLabel:
+                '${context.messages.syncActivityOutboxLabel}: $outgoingCount',
+          ),
+      ],
     );
   }
 }

@@ -76,7 +76,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
     this.onToggleCollapsed,
     this.aboveSettings,
     this.footerBand,
-    this.belowSettings,
     super.key,
   });
 
@@ -129,7 +128,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
   final Widget? aboveSettings;
 
   /// Optional **full-bleed** band pinned to the bottom of the expanded
-  /// sidebar, after [belowSettings].
+  /// sidebar.
   ///
   /// Unlike every other slot, this one is laid out edge to edge rather than
   /// inside the rail's horizontal gutters — it owns whatever inset it wants.
@@ -139,12 +138,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
   ///
   /// Suppressed in [collapsed] mode for the same reason as [aboveSettings].
   final Widget? footerBand;
-
-  /// Optional widget rendered below Settings and directly above [footerBand],
-  /// inside the rail's horizontal gutters like the rows above it. The Lotti
-  /// app uses this slot for the ambient sync activity indicator. Suppressed in
-  /// [collapsed] mode for the same reason as [aboveSettings].
-  final Widget? belowSettings;
 
   @override
   Widget build(BuildContext context) {
@@ -252,14 +245,6 @@ class DesktopNavigationSidebar extends StatelessWidget {
               ),
             ),
           ),
-
-          // Optional ambient indicator immediately above the stable footer.
-          // It stays inside the rail's gutters, and disappears without leaving
-          // a spacer when inactive.
-          if (!collapsed && belowSettings != null) ...[
-            SizedBox(height: tokens.spacing.step3),
-            Padding(padding: gutter, child: belowSettings),
-          ],
 
           // Full-bleed band pinned last. Deliberately outside `gutter` — see
           // [footerBand]. Sized to the full rail rather than left to

@@ -5,11 +5,9 @@ import 'package:clock/clock.dart';
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:get_it/get_it.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
-import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -17,76 +15,6 @@ import '../../../mocks/mocks.dart';
 import 'outbox_state_controller_test_helpers.dart';
 
 void main() {
-  group('Sync activity providers', () {
-    late SyncActivitySignaler signaler;
-    late ProviderContainer container;
-
-    setUp(() {
-      signaler = SyncActivitySignaler();
-      // Reset getIt because the syncActivitySignalerProvider resolves
-      // through it; the OutboxStateController group above doesn't
-      // touch getIt so this is the first registration.
-      if (GetIt.I.isRegistered<SyncActivitySignaler>()) {
-        GetIt.I.unregister<SyncActivitySignaler>();
-      }
-      GetIt.I.registerSingleton<SyncActivitySignaler>(signaler);
-      container = ProviderContainer();
-    });
-
-    tearDown(() async {
-      container.dispose();
-      await signaler.dispose();
-      if (GetIt.I.isRegistered<SyncActivitySignaler>()) {
-        GetIt.I.unregister<SyncActivitySignaler>();
-      }
-    });
-
-    test('syncActivitySignalerProvider returns the getIt singleton', () {
-      final resolved = container.read(syncActivitySignalerProvider);
-      expect(identical(resolved, signaler), isTrue);
-    });
-
-    test('syncActivityTxPulsesProvider forwards every TX pulse', () async {
-      final received = <DateTime>[];
-      final sub = container.listen<AsyncValue<DateTime>>(
-        syncActivityTxPulsesProvider,
-        (
-          _,
-          next,
-        ) {
-          if (next is AsyncData<DateTime>) received.add(next.value);
-        },
-      );
-
-      signaler
-        ..pulseTx()
-        ..pulseTx();
-      await pumpEventQueue();
-
-      expect(received, hasLength(2));
-      sub.close();
-    });
-
-    test('syncActivityRxPulsesProvider forwards every RX pulse', () async {
-      final received = <DateTime>[];
-      final sub = container.listen<AsyncValue<DateTime>>(
-        syncActivityRxPulsesProvider,
-        (
-          _,
-          next,
-        ) {
-          if (next is AsyncData<DateTime>) received.add(next.value);
-        },
-      );
-
-      signaler.pulseRx();
-      await pumpEventQueue();
-
-      expect(received, hasLength(1));
-      sub.close();
-    });
-  });
-
   group('inboundQueueDepthProvider — _inboundQueueDepthStream', () {
     late SyncDatabase db;
     late MockDomainLogger logging;

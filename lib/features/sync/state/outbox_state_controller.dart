@@ -2,8 +2,6 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:meta/meta.dart';
@@ -64,39 +62,8 @@ Stream<int> outboxPendingCount(Ref ref) {
   return syncDb.watchOutboxCount();
 }
 
-/// Looks up the global [SyncActivitySignaler]. Resolved through `getIt`
-/// so tests that swap in a custom signaler do not need a parallel
-/// override in every consumer.
-final Provider<SyncActivitySignaler> syncActivitySignalerProvider =
-    Provider.autoDispose<SyncActivitySignaler>(
-      syncActivitySignaler,
-      name: 'syncActivitySignalerProvider',
-    );
-SyncActivitySignaler syncActivitySignaler(Ref ref) =>
-    getIt<SyncActivitySignaler>();
-
-/// Per-packet TX pulses for the sidebar sync activity indicator. Emits
-/// once per outbound event committed to the homeserver.
-final StreamProvider<DateTime> syncActivityTxPulsesProvider =
-    StreamProvider.autoDispose<DateTime>(
-      syncActivityTxPulses,
-      name: 'syncActivityTxPulsesProvider',
-    );
-Stream<DateTime> syncActivityTxPulses(Ref ref) =>
-    ref.watch(syncActivitySignalerProvider).txPulses;
-
-/// Per-packet RX pulses for the sidebar sync activity indicator. Emits
-/// once per inbound event applied locally.
-final StreamProvider<DateTime> syncActivityRxPulsesProvider =
-    StreamProvider.autoDispose<DateTime>(
-      syncActivityRxPulses,
-      name: 'syncActivityRxPulsesProvider',
-    );
-Stream<DateTime> syncActivityRxPulses(Ref ref) =>
-    ref.watch(syncActivitySignalerProvider).rxPulses;
-
 /// Live depth of the inbound queue (active rows the worker can still
-/// drain). Used by the sidebar sync activity indicator. Resolves the
+/// drain). Used by the incoming Settings badge. Resolves the
 /// queue lazily via `MatrixService.queueCoordinator` because the
 /// coordinator is created during app boot, not during provider
 /// construction.

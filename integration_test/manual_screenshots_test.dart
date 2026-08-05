@@ -28,7 +28,6 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
-import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/features/whats_new/state/whats_new_controller.dart';
 import 'package:lotti/get_it.dart';
@@ -230,7 +229,6 @@ Future<_InMemoryFullAppHarness> _setUpInMemoryFullAppHarness() async {
   );
   final updateNotifications = UpdateNotifications();
   final userActivityService = UserActivityService();
-  final syncActivitySignaler = SyncActivitySignaler();
   final aiConfigRepository = AiConfigRepository(
     AiConfigDb(inMemoryDatabase: true),
   );
@@ -252,7 +250,6 @@ Future<_InMemoryFullAppHarness> _setUpInMemoryFullAppHarness() async {
     ..registerSingleton<AgentDatabase>(agentDatabase)
     ..registerSingleton<UpdateNotifications>(updateNotifications)
     ..registerSingleton<UserActivityService>(userActivityService)
-    ..registerSingleton<SyncActivitySignaler>(syncActivitySignaler)
     ..registerSingleton<SecureStorage>(MockSecureStorage())
     ..registerSingleton<MatrixService>(matrixService)
     ..registerSingleton<OutboxService>(outboxService)

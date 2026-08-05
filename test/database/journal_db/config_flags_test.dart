@@ -88,7 +88,6 @@ void main() {
         // rollout migration force-enables it when its release lever is
         // intentionally pulled.
         dailyOsOnboardingEnabledFlag: false,
-        showSyncActivityIndicatorFlag: false,
       };
 
       for (final entry in defaults.entries) {
@@ -161,28 +160,30 @@ void main() {
       },
     );
 
-    test('deletes a retired flag left behind by an older install', () async {
-      // Flags are only ever seeded, never removed, and the settings page
-      // lists whatever rows the table holds. So dropping a flag's seed call
-      // is not enough — an upgraded install would keep rendering a toggle
-      // that no code reads. Simulate that install by writing the row back.
-      const retired = 'enable_sync_actor';
-      await db.upsertConfigFlag(
-        const ConfigFlag(
-          name: retired,
-          description: 'Enable Sync Actor (isolate-based sync)?',
-          status: true,
-        ),
-      );
-      expect(await db.getConfigFlagByName(retired), isNotNull);
+    test('deletes retired flags left behind by older installs', () async {
+      // Dropping a seed call is not enough: upgraded installs retain the
+      // persisted row and keep emitting it to flag observers. Simulate those
+      // installs by writing every retired row back before initialization.
+      for (final retired in retiredConfigFlags) {
+        await db.upsertConfigFlag(
+          ConfigFlag(
+            name: retired,
+            description: 'Retired test flag: $retired',
+            status: true,
+          ),
+        );
+        expect(await db.getConfigFlagByName(retired), isNotNull);
+      }
 
       await initConfigFlags(db, inMemoryDatabase: true);
 
-      expect(await db.getConfigFlagByName(retired), isNull);
       final names = (await db.watchConfigFlags().first)
           .map((f) => f.name)
           .toSet();
-      expect(names, isNot(contains(retired)));
+      for (final retired in retiredConfigFlags) {
+        expect(await db.getConfigFlagByName(retired), isNull);
+        expect(names, isNot(contains(retired)));
+      }
     });
 
     test('a retired flag is never seeded, not even transiently', () async {

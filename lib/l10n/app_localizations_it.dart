@@ -3276,14 +3276,6 @@ class AppLocalizationsIt extends AppLocalizations {
       'Abilita questo per rivendere automaticamente gli upload di allegati falliti quando la connessione viene ripristinata.';
 
   @override
-  String get configFlagShowSyncActivityIndicator =>
-      'Mostra l\'indicatore di attività di sincronizzazione';
-
-  @override
-  String get configFlagShowSyncActivityIndicatorDescription =>
-      'Mostra uno stato di sincronizzazione tranquillo nella barra laterale; i conti della coda appaiono solo mentre il lavoro è in attesa.';
-
-  @override
   String get conflictApplyButton => 'Applicare';
 
   @override
@@ -10427,24 +10419,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get surveyYesButton => 'Sì.';
 
   @override
-  String get syncActivityIdle => 'Idle';
-
-  @override
   String get syncActivityInboxLabel => 'Posta in arrivo';
 
   @override
-  String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Posta in arrivo: $outbox. Posta in arrivo: $inbox.';
-  }
-
-  @override
   String get syncActivityOutboxLabel => 'Posta in uscita';
-
-  @override
-  String get syncActivitySyncingTitle => 'Synch';
-
-  @override
-  String get syncActivityTitle => 'Traduzione:';
 
   @override
   String get syncAddDeviceAction => 'Aggiungi dispositivo';

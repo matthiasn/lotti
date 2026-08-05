@@ -1619,8 +1619,6 @@
   "configFlagRecordLocationDescription": "Registrera automatiskt din plats med nya poster. Detta hjälper till med platsbaserad organisering och sökning.",
   "configFlagResendAttachments": "Skicka bilagor på nytt",
   "configFlagResendAttachmentsDescription": "Aktivera detta för att automatiskt skicka om misslyckade bilagor när anslutningen återställs.",
-  "configFlagShowSyncActivityIndicator": "Visa synkroniseringsaktivitetsindikator",
-  "configFlagShowSyncActivityIndicatorDescription": "Visa en tyst synkroniseringsstatus i sidofältet; Köräkningar visas endast medan arbete pågår.",
   "conflictApplyButton": "Ansök",
   "conflictApplyFailedTitle": "Kunde inte applicera upplösning",
   "conflictBannerAgoDays": "{count, plural, =1{1 dag sedan} other{{count} dagar sedan}}",
@@ -4656,22 +4654,8 @@
   "surveyValueAnd": "och",
   "surveyValueBetween": "Måste vara mitt emellan",
   "surveyYesButton": "Ja",
-  "syncActivityIdle": "vila",
   "syncActivityInboxLabel": "Inkorg",
-  "syncActivityIndicatorSemantics": "Synkronisera aktiviteten. Utbox: {outbox}. Inkorg: {inbox}. Öppna synkutkorgen.",
-  "@syncActivityIndicatorSemantics": {
-    "placeholders": {
-      "outbox": {
-        "type": "int"
-      },
-      "inbox": {
-        "type": "int"
-      }
-    }
-  },
   "syncActivityOutboxLabel": "Utbox",
-  "syncActivitySyncingTitle": "Synkronisering",
-  "syncActivityTitle": "Synk",
   "syncAddDeviceAction": "Lägg till enhet",
   "syncAddDeviceConnected": "Den nya enheten har anslutit – slutför emoji-verifieringen innan du skickar.",
   "syncAddDeviceCopyCode": "Kopiera parkopplingskod",
