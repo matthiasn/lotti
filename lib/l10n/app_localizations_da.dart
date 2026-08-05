@@ -9271,6 +9271,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsHabitsTitle => 'Vaner';
 
   @override
+  String get settingsHealthImportAccessHint =>
+      'Nogle data kunne ikke læses. Hvis du har slået Lottis adgang fra i enhedens privatlivsindstillinger for sundhed, kan Lotti ikke bede om den igen — slå den til der.';
+
+  @override
   String get settingsHealthImportActivity => 'Aktivitet';
 
   @override
@@ -9308,6 +9312,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Hvilepuls, gangpuls og variabilitet';
 
   @override
+  String get settingsHealthImportOpenSettings => 'Åbn indstillinger';
+
+  @override
   String settingsHealthImportQuickRange(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -9343,6 +9350,10 @@ class AppLocalizationsDa extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get settingsHealthImportStatusNoDataOrAccess =>
+      'Ingen data — tjek Lottis adgang i din sundhedsapp';
 
   @override
   String get settingsHealthImportStatusPermissionDenied =>

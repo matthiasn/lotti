@@ -9272,6 +9272,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsHabitsTitle => 'Habiter';
 
   @override
+  String get settingsHealthImportAccessHint =>
+      'Vissa data kunde inte läsas. Om du stängde av Lottis åtkomst i enhetens sekretessinställningar för hälsa kan Lotti inte begära den igen — slå på åtkomsten där.';
+
+  @override
   String get settingsHealthImportActivity => 'Aktivitet';
 
   @override
@@ -9309,6 +9313,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vilopuls, gångpuls och variabilitet';
 
   @override
+  String get settingsHealthImportOpenSettings => 'Öppna inställningar';
+
+  @override
   String settingsHealthImportQuickRange(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -9344,6 +9351,10 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get settingsHealthImportStatusNoDataOrAccess =>
+      'Inga data — kontrollera Lottis åtkomst i din hälsoapp';
 
   @override
   String get settingsHealthImportStatusPermissionDenied =>

@@ -32,10 +32,25 @@ at der ingen var, at adgang blev nægtet, eller at importen mislykkedes.
 dage** sætter begge datoer på én gang; at ændre intervallet starter ikke i sig
 selv en import.
 
-Dit operativsystem kan bede om tilladelse til sundhedsdata. Lotti kan kun
-læse de typer, du giver adgang til. Hvis en forventet datafamilie mangler, så
-tjek appens sundhedstilladelser i telefonens systemindstillinger, og prøv
-importen igen.
+## Når en række ikke henter noget
+
+Dit operativsystem beder om tilladelse til sundhedsdata, første gang Lotti læser
+en datafamilie, og Lotti kan kun læse de typer, du giver adgang til. Der spørges
+**én gang pr. datafamilie** — blodtryk er én enkelt forespørgsel, der dækker både
+det systoliske og det diastoliske tal — og der spørges ikke af sig selv igen bagefter.
+Et tryk på rækken prøver importen igen og beder kun om de tilladelser, der stadig
+er uafklarede; en type, du allerede har svaret på, giver ingen ny dialog, fordi
+systemet ikke viser den en gang til.
+
+En række, der ikke læste noget og aldrig har hentet en eneste måling, siger
+**Ingen data — tjek Lottis adgang i din sundhedsapp**, og knappen **Åbn indstillinger**
+dukker op under listen. Det er en opfordring til at tjekke efter, ikke en dom:
+Apple fortæller bevidst ikke en app, om den må læse en type, så Lotti kan ikke
+skelne "du har ingen målinger af den slags" fra "du har slået det fra". Hvis du
+har slået det fra — på iPhone under **Indstillinger → Helbred → Dataadgang og enheder →
+Lotti**, på Android i Health Connect — er det kun der, du kan slå det
+til igen; Lotti kan ikke vise den dialog en gang til. Tryk derefter på rækken
+igen for at importere.
 
 Sundhedsimport vises ikke på desktop, fordi de underliggende mobile
 sundhedslagre ikke er tilgængelige der. Importerede observationer kan stadig

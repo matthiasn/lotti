@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -6,6 +8,7 @@ import 'package:health/health.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/database/logging_types.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -61,6 +64,14 @@ void main() {
     // Every import path now logs its outcome, so the logger has to resolve.
     getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
+    // HealthKit's answer to "do I have read access?" — Apple will not disclose
+    // it, so every path through the permission gate has to cope with `null`.
+    // Individual tests override it to exercise Health Connect's definitive
+    // `true`/`false`.
+    when(
+      () => mockHealthService.hasPermissions(any()),
+    ).thenAnswer((_) async => null);
+
     healthImport = HealthImport(
       persistenceLogic: mockPersistenceLogic,
       db: mockJournalDb,
@@ -115,8 +126,47 @@ void main() {
     );
   }
 
+  /// Makes every type look like one Lotti has imported before.
+  ///
+  /// An empty read is only reported as [HealthImportStatus.noDataOrAccess] when
+  /// the category has *never* yielded a sample, so a test about anything else
+  /// has to say which side of that it is on.
+  void stubStoredHistory() {
+    when(() => mockJournalDb.latestQuantitativeByType(any())).thenAnswer((
+      invocation,
+    ) async {
+      final dataType = invocation.positionalArguments.first as String;
+      final at = DateTime(2024);
+      return QuantitativeEntry(
+        data: DiscreteQuantityData(
+          dateFrom: at,
+          dateTo: at,
+          value: 1,
+          dataType: dataType,
+          unit: 'unit',
+        ),
+        meta: Metadata(
+          id: 'history',
+          createdAt: at,
+          updatedAt: at,
+          dateFrom: at,
+          dateTo: at,
+        ),
+      );
+    });
+  }
+
   /// Grants authorization and returns [dataPoints] from every read.
+  ///
+  /// `hasPermissions` answers `null` — HealthKit's answer, since Apple will not
+  /// disclose read authorization — so the permission gate still raises the
+  /// authorization request, which is the behaviour most of these tests assert
+  /// on. Health Connect's definitive `true`/`false` is exercised in
+  /// `health_permission_gate_test.dart`.
   void stubHealthStore({List<HealthDataPoint> dataPoints = const []}) {
+    when(
+      () => mockHealthService.hasPermissions(any()),
+    ).thenAnswer((_) async => null);
     when(
       () => mockHealthService.requestAuthorization(any()),
     ).thenAnswer((_) async => true);
@@ -468,36 +518,51 @@ void main() {
   });
 
   group('authorizeHealth', () {
-    test('should return false on desktop platforms', () async {
-      expect(await healthImport.authorizeHealth([HealthDataType.STEPS]), false);
+    test('denies on desktop without reaching the health store', () async {
+      expect(
+        await healthImport.authorizeHealth(
+          [HealthDataType.STEPS],
+          userInitiated: true,
+        ),
+        HealthAuthorization.denied,
+      );
+      verifyNever(() => mockHealthService.hasPermissions(any()));
+      verifyNever(() => mockHealthService.requestAuthorization(any()));
     });
 
-    test('should delegate to health service on mobile', () async {
+    test('asks for the whole permission family, not the one type', () async {
       final mobileImport = createMobileHealthImport();
-
-      when(
-        () => mockHealthService.requestAuthorization(any()),
-      ).thenAnswer((_) async => true);
+      stubHealthStore();
 
       expect(
-        await mobileImport.authorizeHealth([HealthDataType.STEPS]),
-        true,
+        await mobileImport.authorizeHealth(
+          [HealthDataType.STEPS],
+          userInitiated: true,
+        ),
+        HealthAuthorization.undisclosed,
       );
+      // STEPS alone would be a second sheet the next time FLIGHTS_CLIMBED is
+      // imported; the family is authorized in one request.
       verify(
-        () => mockHealthService.requestAuthorization([HealthDataType.STEPS]),
+        () => mockHealthService.requestAuthorization(activityTypes),
       ).called(1);
     });
 
-    test('should return false when health service denies auth', () async {
+    test('reports denied when the platform refuses to raise a sheet', () async {
       final mobileImport = createMobileHealthImport();
-
+      when(
+        () => mockHealthService.hasPermissions(any()),
+      ).thenAnswer((_) async => null);
       when(
         () => mockHealthService.requestAuthorization(any()),
       ).thenAnswer((_) async => false);
 
       expect(
-        await mobileImport.authorizeHealth([HealthDataType.HEART_RATE]),
-        false,
+        await mobileImport.authorizeHealth(
+          [HealthDataType.RESTING_HEART_RATE],
+          userInitiated: true,
+        ),
+        HealthAuthorization.denied,
       );
     });
   });
@@ -610,6 +675,7 @@ void main() {
     test('an empty range is a success importing zero samples', () async {
       final mobileImport = createMobileHealthImport();
       stubHealthStore();
+      stubStoredHistory();
 
       final result = await mobileImport.fetchHealthData(
         types: [HealthDataType.HEART_RATE],
@@ -619,6 +685,160 @@ void main() {
 
       expect(result.isSuccess, isTrue);
       expect(result.sampleCount, 0);
+    });
+
+    group('an empty read that may be a permission problem', () {
+      test(
+        'is reported as noDataOrAccess when nothing was ever stored',
+        () async {
+          final mobileImport = createMobileHealthImport();
+          stubHealthStore();
+          when(
+            () => mockJournalDb.latestQuantitativeByType(any()),
+          ).thenAnswer((_) async => null);
+
+          final result = await mobileImport.fetchHealthData(
+            types: bpTypes,
+            dateFrom: DateTime(2024, 3),
+            dateTo: DateTime(2024, 3, 2),
+          );
+
+          // The reported symptom: blood pressure switched off in Settings →
+          // Privacy & Security → Health imports nothing, HealthKit reports the
+          // authorization as fine, and the row used to show a green tick reading
+          // "No new samples".
+          expect(result.status, HealthImportStatus.noDataOrAccess);
+          expect(result.isSuccess, isFalse);
+        },
+      );
+
+      test('is an ordinary empty import once history exists', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        stubStoredHistory();
+
+        final result = await mobileImport.fetchHealthData(
+          types: bpTypes,
+          dateFrom: DateTime(2024, 3),
+          dateTo: DateTime(2024, 3, 2),
+        );
+
+        expect(result.status, HealthImportStatus.imported);
+        expect(result.sampleCount, 0);
+      });
+
+      test('checks every requested type before concluding', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
+
+        await mobileImport.fetchHealthData(
+          types: bpTypes,
+          dateFrom: DateTime(2024, 3),
+          dateTo: DateTime(2024, 3, 2),
+        );
+
+        for (final type in bpTypes) {
+          verify(
+            () => mockJournalDb.latestQuantitativeByType(type.toString()),
+          ).called(1);
+        }
+      });
+
+      test('stops at the first type with history', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
+        stubStoredHistory();
+
+        await mobileImport.fetchHealthData(
+          types: bpTypes,
+          dateFrom: DateTime(2024, 3),
+          dateTo: DateTime(2024, 3, 2),
+        );
+
+        verifyNever(
+          () => mockJournalDb.latestQuantitativeByType(
+            'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+          ),
+        );
+      });
+
+      test(
+        'is never claimed when the platform confirmed read access',
+        () async {
+          final mobileImport = createMobileHealthImport();
+          stubHealthStore();
+          // Health Connect said yes, so an empty read really does mean there
+          // is nothing there — asserting a permission problem would be a lie,
+          // and the DB need not even be consulted.
+          when(
+            () => mockHealthService.hasPermissions(any()),
+          ).thenAnswer((_) async => true);
+
+          final result = await mobileImport.fetchHealthData(
+            types: bpTypes,
+            dateFrom: DateTime(2024, 3),
+            dateTo: DateTime(2024, 3, 2),
+          );
+
+          expect(result.status, HealthImportStatus.imported);
+          verifyNever(() => mockJournalDb.latestQuantitativeByType(any()));
+        },
+      );
+
+      test('is not claimed when samples did come back', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore(
+          dataPoints: [
+            makeNumericDataPoint(
+              type: HealthDataType.BLOOD_PRESSURE_SYSTOLIC,
+              value: 118,
+              dateFrom: DateTime(2024, 3),
+              dateTo: DateTime(2024, 3),
+            ),
+          ],
+        );
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
+
+        final result = await mobileImport.fetchHealthData(
+          types: bpTypes,
+          dateFrom: DateTime(2024, 3),
+          dateTo: DateTime(2024, 3, 2),
+        );
+
+        expect(result.status, HealthImportStatus.imported);
+        expect(result.sampleCount, 1);
+      });
+
+      test('logs a warning naming access as the suspect', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
+
+        await mobileImport.fetchHealthData(
+          types: bpTypes,
+          dateFrom: DateTime(2024, 3),
+          dateTo: DateTime(2024, 3, 2),
+        );
+
+        verify(
+          () => mockDomainLogger.log(
+            LogDomain.health,
+            any(that: contains('read access may be off')),
+            subDomain: 'fetchHealthData',
+            level: InsightLevel.warn,
+          ),
+        ).called(1);
+      });
     });
 
     // Sleep-duplication invariant, parameterized over the full contract.
@@ -940,6 +1160,7 @@ void main() {
         if (++call == 1) throw Exception('first one explodes');
         return [];
       });
+      stubStoredHistory();
 
       final results = await Future.wait([
         mobileImport.fetchHealthData(
@@ -1126,6 +1347,164 @@ void main() {
     });
   });
 
+  // Which imports may re-raise a system authorization sheet, and which may not.
+  // This is the reported bug: opening a dashboard asked again every time, and
+  // once a type is switched off in Settings → Privacy & Security → Health there
+  // is nothing in that sheet to answer.
+  group('who may re-ask for permission', () {
+    test('a dashboard delta asks once and then stays quiet', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        stubStoredHistory();
+
+        mobileImport
+          ..fetchHealthDataDelta('HealthDataType.BLOOD_PRESSURE_SYSTOLIC')
+          ..fetchHealthDataDelta('HealthDataType.BLOOD_PRESSURE_DIASTOLIC');
+        async.flushMicrotasks();
+
+        // Two charts, one card, one sheet — and none at all on the next visit.
+        verify(() => mockHealthService.requestAuthorization(any())).called(1);
+      });
+    });
+
+    test('a workout delta does not re-ask either', () async {
+      final mobileImport = createMobileHealthImport();
+      stubHealthStore();
+      when(() => mockJournalDb.latestWorkout()).thenAnswer((_) async => null);
+
+      await mobileImport.getWorkoutsHealthDataDelta();
+      await mobileImport.getWorkoutsHealthDataDelta();
+
+      verify(() => mockHealthService.requestAuthorization(any())).called(1);
+    });
+
+    test('a cumulative delta does not re-ask either', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        stubStoredHistory();
+
+        mobileImport.fetchHealthDataDelta('cumulative_step_count');
+        // Past the ten-minute throttle, so the second call really does run.
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(minutes: 11));
+        mobileImport.fetchHealthDataDelta('cumulative_step_count');
+        async.flushMicrotasks();
+
+        verify(() => mockHealthService.requestAuthorization(any())).called(1);
+      });
+    });
+
+    test('the settings page asks again on every tap', () async {
+      final mobileImport = createMobileHealthImport();
+      stubHealthStore();
+      stubStoredHistory();
+
+      await mobileImport.fetchHealthData(
+        types: bpTypes,
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024, 1, 2),
+      );
+      await mobileImport.fetchHealthData(
+        types: bpTypes,
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024, 1, 2),
+      );
+
+      // Tapping a row is the user saying "try again" — the one moment when
+      // re-raising the sheet is what they want.
+      verify(() => mockHealthService.requestAuthorization(any())).called(2);
+    });
+
+    test('the settings page asks again for activity too', () async {
+      final mobileImport = createMobileHealthImport();
+      stubHealthStore();
+      stubStoredHistory();
+
+      await mobileImport.getActivityHealthData(
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024, 1, 2),
+      );
+      await mobileImport.getActivityHealthData(
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024, 1, 2),
+      );
+
+      verify(() => mockHealthService.requestAuthorization(any())).called(2);
+    });
+
+    test('the settings page asks again for workouts too', () async {
+      final mobileImport = createMobileHealthImport();
+      stubHealthStore();
+      final at = DateTime(2024);
+      when(() => mockJournalDb.latestWorkout()).thenAnswer(
+        (_) async => WorkoutEntry(
+          data: WorkoutData(
+            dateFrom: at,
+            dateTo: at,
+            workoutType: 'running',
+            energy: null,
+            distance: null,
+            source: null,
+            id: 'workout',
+          ),
+          meta: Metadata(
+            id: 'workout',
+            createdAt: at,
+            updatedAt: at,
+            dateFrom: at,
+            dateTo: at,
+          ),
+        ),
+      );
+
+      await mobileImport.getWorkoutsHealthData(
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024, 1, 2),
+      );
+      await mobileImport.getWorkoutsHealthData(
+        dateFrom: DateTime(2024),
+        dateTo: DateTime(2024, 1, 2),
+      );
+
+      verify(() => mockHealthService.requestAuthorization(any())).called(2);
+    });
+
+    test('a user-initiated ask unblocks the deltas behind it', () {
+      fakeAsync((async) {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        stubStoredHistory();
+
+        mobileImport.fetchHealthDataDelta(
+          'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+        );
+        async.flushMicrotasks();
+        verify(() => mockHealthService.requestAuthorization(any())).called(1);
+
+        // The page's own import shares the gate's memory, so granting access
+        // there is not asked for a third time by the next chart.
+        unawaited(
+          mobileImport.fetchHealthData(
+            types: bpTypes,
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024, 1, 2),
+          ),
+        );
+        async.flushMicrotasks();
+        verify(() => mockHealthService.requestAuthorization(any())).called(1);
+
+        mobileImport.fetchHealthDataDelta(
+          'HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+        );
+        async.flushMicrotasks();
+        verifyNever(() => mockHealthService.requestAuthorization(any()));
+      });
+    });
+  });
+
   group('delta type mapping', () {
     test('maps BLOOD_PRESSURE to systolic and diastolic', () {
       fakeAsync((async) {
@@ -1139,11 +1518,13 @@ void main() {
         mobileImport.fetchHealthDataDelta('BLOOD_PRESSURE');
         async.flushMicrotasks();
 
+        // Twice: once to anchor the delta's start date, once to decide whether
+        // an empty read means "nothing new" or "nothing ever".
         verify(
           () => mockJournalDb.latestQuantitativeByType(
             'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
           ),
-        ).called(1);
+        ).called(2);
 
         // Exactly one authorization request. It used to be two — the delta
         // path asked, then handed off to `fetchHealthData`, which asked again,
@@ -1171,9 +1552,12 @@ void main() {
 
         verify(
           () => mockJournalDb.latestQuantitativeByType('HealthDataType.WEIGHT'),
-        ).called(1);
+        ).called(2);
+        // Weight is authorized with the rest of the body-measurement family:
+        // the four are one switch to the user, and asking per type is what put
+        // several sheets in a row in front of one dashboard.
         verify(
-          () => mockHealthService.requestAuthorization([HealthDataType.WEIGHT]),
+          () => mockHealthService.requestAuthorization(bodyMeasurementTypes),
         ).called(1);
       });
     });
@@ -1291,7 +1675,7 @@ void main() {
 
         verify(
           () => mockJournalDb.latestQuantitativeByType('cumulative_step_count'),
-        ).called(1);
+        ).called(2);
         verify(
           () => mockHealthService.requestAuthorization(activityTypes),
         ).called(1);
@@ -1351,6 +1735,90 @@ void main() {
       verifyNever(
         () => mockHealthService.getTotalStepsInInterval(any(), any()),
       );
+    });
+
+    group('an all-zero range that may be a permission problem', () {
+      test(
+        'is reported as noDataOrAccess when nothing was ever stored',
+        () async {
+          final mobileImport = createMobileHealthImport();
+          stubHealthStore();
+          when(
+            () => mockJournalDb.latestQuantitativeByType(any()),
+          ).thenAnswer((_) async => null);
+
+          final result = await mobileImport.getActivityHealthData(
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024, 1, 2),
+          );
+
+          expect(result.status, HealthImportStatus.noDataOrAccess);
+        },
+      );
+
+      test('writes no fabricated zero-step days', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
+
+        await mobileImport.getActivityHealthData(
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        );
+
+        // The check happens before the write: a range Lotti was not allowed to
+        // read must not leave "0 steps" entries behind, which would then chart
+        // as real days and mask the problem forever after.
+        verifyNever(() => mockPersistenceLogic.createQuantitativeEntry(any()));
+      });
+
+      test('is an ordinary import once history exists', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        stubStoredHistory();
+
+        final result = await mobileImport.getActivityHealthData(
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        );
+
+        expect(result.status, HealthImportStatus.imported);
+      });
+
+      test('is not claimed when a single day read above zero', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        when(
+          () => mockJournalDb.latestQuantitativeByType(any()),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockHealthService.getTotalStepsInInterval(any(), any()),
+        ).thenAnswer((_) async => 1);
+
+        final result = await mobileImport.getActivityHealthData(
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        );
+
+        expect(result.status, HealthImportStatus.imported);
+      });
+
+      test('is never claimed when the platform confirmed access', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        when(
+          () => mockHealthService.hasPermissions(any()),
+        ).thenAnswer((_) async => true);
+
+        final result = await mobileImport.getActivityHealthData(
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        );
+
+        expect(result.status, HealthImportStatus.imported);
+      });
     });
 
     test('writes one entry per day per metric and counts them', () async {
@@ -1427,6 +1895,71 @@ void main() {
 
       expect(result.status, HealthImportStatus.permissionDenied);
       verifyNever(() => mockPersistenceLogic.createWorkoutEntry(any()));
+    });
+
+    group('an empty read that may be a permission problem', () {
+      test('is reported as noDataOrAccess when none was ever stored', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        when(() => mockJournalDb.latestWorkout()).thenAnswer((_) async => null);
+
+        final result = await mobileImport.getWorkoutsHealthData(
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        );
+
+        expect(result.status, HealthImportStatus.noDataOrAccess);
+      });
+
+      test('is an ordinary empty import once a workout exists', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        final at = DateTime(2024);
+        when(() => mockJournalDb.latestWorkout()).thenAnswer(
+          (_) async => WorkoutEntry(
+            data: WorkoutData(
+              dateFrom: at,
+              dateTo: at,
+              workoutType: 'running',
+              energy: null,
+              distance: null,
+              source: null,
+              id: 'workout',
+            ),
+            meta: Metadata(
+              id: 'workout',
+              createdAt: at,
+              updatedAt: at,
+              dateFrom: at,
+              dateTo: at,
+            ),
+          ),
+        );
+
+        final result = await mobileImport.getWorkoutsHealthData(
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        );
+
+        expect(result.status, HealthImportStatus.imported);
+        expect(result.sampleCount, 0);
+      });
+
+      test('is never claimed when the platform confirmed access', () async {
+        final mobileImport = createMobileHealthImport();
+        stubHealthStore();
+        when(
+          () => mockHealthService.hasPermissions(any()),
+        ).thenAnswer((_) async => true);
+
+        final result = await mobileImport.getWorkoutsHealthData(
+          dateFrom: DateTime(2024),
+          dateTo: DateTime(2024, 1, 2),
+        );
+
+        expect(result.status, HealthImportStatus.imported);
+        verifyNever(() => mockJournalDb.latestWorkout());
+      });
     });
 
     test('maps a workout data point onto a workout entry', () async {
@@ -1713,7 +2246,14 @@ void main() {
       stubHealthStore();
 
       final second = await mobileImport.getWorkoutsHealthDataDelta();
-      expect(second.isSuccess, isTrue);
+      expect(second.status, isNot(HealthImportStatus.failed));
+      verify(
+        () => mockHealthService.getHealthDataFromTypes(
+          types: workoutTypes,
+          startTime: any(named: 'startTime'),
+          endTime: any(named: 'endTime'),
+        ),
+      ).called(1);
     });
 
     test('a failing DB read is logged against the delta sub-domain', () async {

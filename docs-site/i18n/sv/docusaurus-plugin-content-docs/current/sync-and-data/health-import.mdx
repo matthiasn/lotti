@@ -31,9 +31,24 @@ att det inte fanns några, att åtkomst nekades eller att importen misslyckades.
 **Senaste 7 / 30 / 90 dagarna** ställer in båda datumen på en gång; att ändra
 intervallet startar inte i sig någon import.
 
-Ditt operativsystem kan be om behörighet för hälsodata. Lotti kan bara läsa
-de typer du beviljar. Om en förväntad datafamilj saknas, kontrollera appens
-hälsobehörigheter i telefonens systeminställningar och försök importera igen.
+## När en rad inte hämtar något
+
+Ditt operativsystem ber om behörighet för hälsodata första gången Lotti läser en
+datafamilj, och Lotti kan bara läsa de typer du beviljar. Det frågas **en gång per
+datafamilj** — blodtryck är en enda förfrågan som täcker både det systoliska och
+det diastoliska värdet — och sedan frågas det inte av sig självt igen. Ett
+tryck på raden gör om importen och begär bara de behörigheter som fortfarande är
+oavgjorda; en typ du redan har svarat på ger ingen ny fråga, eftersom systemet
+inte visar den en andra gång.
+
+En rad som inte läste något och aldrig har hämtat ett enda värde säger **Inga data
+— kontrollera Lottis åtkomst i din hälsoapp**, och knappen **Öppna inställningar** dyker
+upp under listan. Det är en uppmaning att kontrollera, inte en dom: Apple berättar
+medvetet inte för en app om den får läsa en typ, så Lotti kan inte skilja ”du har
+inga sådana mätvärden” från ”du har stängt av det här”. Om du stängde av det — på
+iPhone under **Inställningar → Hälsa → Dataåtkomst och enheter → Lotti**, på
+Android i Health Connect — går det bara att slå på igen där; Lotti kan inte visa
+den frågan en andra gång. Tryck sedan på raden igen för att importera.
 
 Hälsoimporten visas inte på skrivbordet eftersom de underliggande mobila
 hälsolagren inte finns där. Importerade observationer kan ändå ses i de

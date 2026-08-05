@@ -5,6 +5,33 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.2]
+### Fixed
+- **Health imports stop asking for permission you have already answered.** Lotti
+  requested authorization on *every* import, including the background ones a
+  dashboard starts for each of its health cards on open. Once a data type has
+  been answered for — allowed, or switched off in your device's health privacy
+  settings — asking again cannot change anything, and what you got was a sheet
+  with nothing in it to answer, every time you opened the dashboard. Access is
+  now asked for once per session, and again only when you tap a row on
+  Settings → Advanced → Health Import, which is when asking is the point.
+- **Blood pressure asks once instead of twice.** The blood-pressure card charts
+  systolic and diastolic as two separate series, so it started two independent
+  imports and each one raised its own permission request — two prompts, back to
+  back, for a single switch. Each kind of data is now authorized as the family
+  it belongs to: one prompt for blood pressure, one for sleep, one for body
+  measurements.
+- **An import blocked by permissions no longer reports success.** With a data
+  type switched off, Apple Health reports the authorization as fine and then
+  returns nothing, so the row showed a green tick reading "No new samples" — the
+  same thing it says when you are simply up to date. A category that read
+  nothing and has never brought in a single sample now says so, and the page
+  offers a shortcut to the system settings where read access is turned back on.
+  Apple does not disclose whether an app may read a type, so this is worded as
+  something to check rather than a verdict.
+- **A blocked activity import no longer writes days of zero steps.** It wrote
+  one entry per day before noticing it had read nothing, and those zeros then
+  charted as real days.
+
 ### Changed
 - **Task agent suggestions now appear while the agent is still working.** They
   used to arrive all at once when the whole wake finished, which meant waiting

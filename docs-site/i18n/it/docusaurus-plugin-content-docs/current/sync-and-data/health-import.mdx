@@ -32,10 +32,24 @@ l'importazione non è riuscita. **Importa tutto** esegue ogni riga a turno. Le
 scorciatoie **Ultimi 7 / 30 / 90 giorni** impostano entrambe le date in una
 volta; cambiare l'intervallo non avvia un'importazione da solo.
 
-Il sistema operativo può chiederti il permesso per i dati sanitari. Lotti può
-leggere solo i tipi che concedi. Se una famiglia di dati attesa manca,
-controlla i permessi di salute dell'app nelle impostazioni di sistema del
-telefono e riprova quell'importazione.
+## Quando una riga non porta nulla
+
+Il sistema operativo chiede il permesso per i dati sanitari la prima volta che
+Lotti legge una famiglia, e Lotti può leggere solo i tipi che concedi. Lo chiede
+**una volta per famiglia di dati** — la pressione sanguigna è un'unica richiesta
+che copre sia la sistolica sia la diastolica — e in seguito non lo richiede da solo.
+Toccare la riga riprova l'importazione e richiede solo i permessi ancora da
+decidere; un tipo a cui hai già risposto non produce alcuna nuova richiesta,
+perché il sistema non la mostra una seconda volta.
+
+Una riga che non ha letto nulla e non ha mai portato un solo dato mostra **Nessun
+dato — controlla l'accesso di Lotti nella tua app Salute**, e sotto l'elenco compare il pulsante **Apri
+impostazioni**. È un invito a controllare, non un verdetto: Apple di proposito non
+dice a un'app se può leggere un tipo, quindi Lotti non distingue «non hai letture
+di questo genere» da «lo hai disattivato». Se lo hai disattivato — su iPhone in
+**Impostazioni → Salute → Accesso ai dati e dispositivi → Lotti**, su Android in Health
+Connect — solo lì puoi riattivarlo; Lotti non può mostrare quella richiesta una
+seconda volta. Poi tocca di nuovo la riga per importare.
 
 L'importazione della salute non è mostrata sul desktop perché gli archivi di
 salute mobili sottostanti non sono disponibili lì. Le osservazioni importate

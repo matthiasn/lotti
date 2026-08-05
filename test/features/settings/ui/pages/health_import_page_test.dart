@@ -16,9 +16,24 @@ import 'package:lotti/logic/health_import.dart';
 import 'package:lotti/utils/platform.dart' as platform;
 import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
+// ignore: depend_on_referenced_packages
+import 'package:permission_handler_platform_interface/permission_handler_platform_interface.dart'
+    show PermissionHandlerPlatform;
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+
+/// Fake [PermissionHandlerPlatform] recording whether the page handed off to
+/// the operating system's settings.
+class _RecordingPermissionHandler extends PermissionHandlerPlatform {
+  int openAppSettingsCalls = 0;
+
+  @override
+  Future<bool> openAppSettings() async {
+    openAppSettingsCalls++;
+    return true;
+  }
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -195,6 +210,126 @@ void main() {
         find.text('Health data is only available on iOS and Android'),
         findsOneWidget,
       );
+    });
+  });
+
+  // The escape hatch for the reported bug: a data type switched off in
+  // Settings → Privacy & Security → Health cannot be re-prompted by HealthKit,
+  // so the page has to point the user at the only place that can fix it.
+  group('the access callout', () {
+    const hint =
+        'Some data could not be read. If you turned Lotti’s access off in '
+        'your device’s health privacy settings, Lotti cannot ask for it again '
+        '— turn it back on there.';
+
+    Finder openSettingsButton() => find.widgetWithText(
+      DesignSystemButton,
+      'Open settings',
+    );
+
+    testWidgets('is absent before anything has run', (tester) async {
+      stubImports(const HealthImportResult.imported(0));
+      await pumpPage(tester);
+
+      expect(find.text(hint), findsNothing);
+      expect(openSettingsButton(), findsNothing);
+    });
+
+    testWidgets('is absent after an ordinary empty import', (tester) async {
+      stubImports(const HealthImportResult.imported(0));
+      await pumpPage(tester);
+
+      await tapRow(tester, 'Blood Pressure');
+      await tester.pumpAndSettle();
+
+      expect(openSettingsButton(), findsNothing);
+    });
+
+    testWidgets('appears when a run suspects an access problem', (
+      tester,
+    ) async {
+      stubImports(const HealthImportResult.noDataOrAccess());
+      await pumpPage(tester);
+
+      await tapRow(tester, 'Blood Pressure');
+      await tester.pumpAndSettle();
+
+      expect(find.text(hint), findsOneWidget);
+      expect(openSettingsButton(), findsOneWidget);
+    });
+
+    testWidgets('appears when a run was refused outright', (tester) async {
+      stubImports(const HealthImportResult.permissionDenied());
+      await pumpPage(tester);
+
+      await tapRow(tester, 'Blood Pressure');
+      await tester.pumpAndSettle();
+
+      expect(openSettingsButton(), findsOneWidget);
+    });
+
+    testWidgets('is absent after an unrelated failure', (tester) async {
+      // A health store that threw is not something the privacy settings fix;
+      // sending the user there would be a wrong lead.
+      stubImports(HealthImportResult.failed(Exception('kaboom')));
+      await pumpPage(tester);
+
+      await tapRow(tester, 'Blood Pressure');
+      await tester.pumpAndSettle();
+
+      expect(openSettingsButton(), findsNothing);
+    });
+
+    testWidgets('goes away once the range moves on', (tester) async {
+      stubImports(const HealthImportResult.noDataOrAccess());
+      await pumpPage(tester);
+
+      await tapRow(tester, 'Blood Pressure');
+      await tester.pumpAndSettle();
+      expect(openSettingsButton(), findsOneWidget);
+
+      setDateTimeFor(tester, 'Start')(DateTime(2020));
+      await tester.pumpAndSettle();
+
+      expect(openSettingsButton(), findsNothing);
+    });
+
+    testWidgets('hands off to the operating system when pressed', (
+      tester,
+    ) async {
+      final originalPlatform = PermissionHandlerPlatform.instance;
+      final permissionHandler = _RecordingPermissionHandler();
+      PermissionHandlerPlatform.instance = permissionHandler;
+      addTearDown(() => PermissionHandlerPlatform.instance = originalPlatform);
+
+      stubImports(const HealthImportResult.noDataOrAccess());
+      await pumpPage(tester);
+
+      await tapRow(tester, 'Blood Pressure');
+      await tester.pumpAndSettle();
+
+      await tester.ensureVisible(openSettingsButton());
+      await tester.pumpAndSettle();
+      await tester.tap(openSettingsButton());
+      await tester.pumpAndSettle();
+
+      expect(permissionHandler.openAppSettingsCalls, 1);
+    });
+
+    testWidgets('a suspected access problem reads as a warning, not an error', (
+      tester,
+    ) async {
+      stubImports(const HealthImportResult.noDataOrAccess());
+      await pumpPage(tester);
+
+      await tapRow(tester, 'Blood Pressure');
+      await tester.pumpAndSettle();
+
+      expect(
+        rowFor(tester, 'Blood Pressure').subtitle,
+        'No data — check Lotti’s access in your health app',
+      );
+      expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
     });
   });
 
@@ -421,7 +556,9 @@ void main() {
         rowFor(tester, 'Heart Rate').subtitle,
         'Access denied — allow Lotti in your health app',
       );
-      expect(find.byIcon(Icons.error_outline_rounded), findsOneWidget);
+      // A padlock, not an error cross: nothing malfunctioned, and the glyph
+      // should point at where this is fixed rather than alarm about it.
+      expect(find.byIcon(Icons.lock_outline_rounded), findsOneWidget);
     });
 
     testWidgets('a failure is surfaced rather than swallowed', (tester) async {
@@ -592,6 +729,7 @@ void main() {
         for (final result in <HealthImportResult>[
           const HealthImportResult.imported(1),
           const HealthImportResult.permissionDenied(),
+          const HealthImportResult.noDataOrAccess(),
           const HealthImportResult.unsupportedPlatform(),
           const HealthImportResult.noMatchingTypes(),
           HealthImportResult.failed(Exception('x')),

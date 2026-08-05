@@ -11,15 +11,23 @@ sources:
   - id: import
     resource: ../../lib/logic/health_import.dart
     title: HealthImport — the queue, the gate and the per-type fetchers
-    last_modified: 2026-08-04
+    last_modified: 2026-08-05
   - id: result
     resource: ../../lib/logic/health_import_result.dart
     title: HealthImportResult — the outcome type every request returns
-    last_modified: 2026-08-04
+    last_modified: 2026-08-05
+  - id: types
+    resource: ../../lib/logic/health_data_types.dart
+    title: The type families — the unit of permission, not of presentation
+    last_modified: 2026-08-05
+  - id: permission
+    resource: ../../lib/logic/health_permission_gate.dart
+    title: HealthPermissionGate — when the system authorization sheet may be raised
+    last_modified: 2026-08-05
   - id: service
     resource: ../../lib/services/health_service.dart
     title: HealthService — the plugin seam that owns the configure() handshake
-    last_modified: 2026-08-04
+    last_modified: 2026-08-05
   - id: controller
     resource: ../../lib/features/settings/state/health_import_controller.dart
     title: HealthImportController — the settings page's state
@@ -106,6 +114,60 @@ Public methods must not call each other: the callee would wait on a gate its own
 caller holds. That is why each has a private `_`-prefixed twin, and why
 `_fetchHealthDataDelta` calls `_fetchHealthData`, not `fetchHealthData`.
 
+# Asking for permission
+
+Serializing the requests was only half of it: **nothing decided whether to ask at
+all.** `requestAuthorization` ran on every import, background deltas included, so
+opening a dashboard raised a system sheet each time — and once a data type is
+determined (allowed, or switched off in Settings → Privacy & Security → Health)
+that sheet has nothing in it the user can answer. `HealthPermissionGate` is the
+decision, and every import now goes through it.
+
+**Read access is a tri-state, and the third value is the common one on iOS.**
+
+| Platform | `hasPermissions` (READ) | `requestAuthorization` |
+|---|---|---|
+| Health Connect | `true` / `false` — definitive | did the user grant it |
+| HealthKit | **`null`** — Apple will not disclose it | only that a sheet was *shown* without error |
+
+Apple's refusal is deliberate: knowing an app had been denied would itself leak
+health information. `HealthAuthorization.undisclosed` is that answer, and it means
+"read anyway and let the result speak".
+
+```mermaid
+stateDiagram-v2
+  [*] --> Check: ensure(types, userInitiated)
+  Check --> Granted: hasPermissions == true<br/>(no sheet at all)
+  Check --> Quiet: already asked this session<br/>&& !userInitiated
+  Check --> Ask: undetermined, or the user asked
+  Quiet --> [*]: denied / undisclosed, no sheet
+  Ask --> Denied: platform refused to raise it
+  Ask --> Undisclosed: sheet shown, iOS says nothing more
+  Ask --> Recheck: sheet shown, platform discloses
+  Recheck --> Granted
+  Recheck --> Denied
+```
+
+Two rules, each fixing a visible defect:
+
+- **Ask for the family, not the type.** `expandToPermissionFamilies` widens a
+  request to the whole family in `health_data_types.dart` before anything is
+  asked. The blood-pressure card mounts one `HealthObservationsController` *per
+  series*, so it starts two independent imports — systolic and diastolic — and
+  each used to raise its own request: two prompts, back to back, for one switch
+  in the user's mind. Families are disjoint, which the test suite asserts;
+  overlapping ones would make the authorized set depend on which type asked.
+- **Ask once per session, unless the user asked.** The gate remembers what it has
+  requested and stays quiet afterwards. `userInitiated: true` bypasses that memory
+  and is passed by the three public entry points — the Health Import page's
+  methods — while `_fetchHealthDataDelta` and `getWorkoutsHealthDataDelta` pass
+  `false`. A tap on a row is the user saying "try again"; a chart they are merely
+  looking at is not.
+
+The memory is per-instance and per-session on purpose: a permission granted in
+system settings while Lotti was backgrounded is picked up on the next launch
+without ceremony.
+
 # The delta queue
 
 `fetchHealthDataDelta` never blocks its caller — a chart must not wait on the
@@ -142,8 +204,29 @@ render per row.
 | `imported` | Reached the store and completed. `sampleCount` may be `0` — a successful import of nothing | success tone |
 | `unsupportedPlatform` | Desktop: there is no health store | warning tone |
 | `permissionDenied` | The store refused read access; only the user can change it | warning tone |
+| `noDataOrAccess` | Read nothing, and this category has never yielded a sample — access is the likeliest cause | warning tone |
 | `noMatchingTypes` | No requested type resolved to a value of the plugin's enum — a stale dashboard configuration | error tone |
 | `failed` | The store threw; `error` carries what | error tone |
+
+**`noDataOrAccess` exists because iOS makes `permissionDenied` undetectable.**
+With a type switched off, HealthKit reports the authorization as successful and
+then returns nothing, so a genuine refusal was rendered as a green tick reading
+"No new samples" — identical to being up to date. The discriminator is history:
+an empty read is only reported this way when the category has **never** produced
+a stored sample, checked against `latestQuantitativeByType` (or `latestWorkout`).
+It is a suspicion, not a verdict — someone who has never recorded a blood-pressure
+reading gets it too — so it is worded as something to check, and it is never
+raised when `hasPermissions` confirmed access, because then an empty read really
+does mean there is nothing there.
+
+The activity path checks **before writing**. It writes one aggregated entry per
+calendar day regardless of value, so noticing afterwards would already have left
+a run of fabricated zero-step days behind, which then chart as real.
+
+`HealthImportState.needsAccessCheck` raises the page's access callout on either
+of the two access outcomes, and `HealthImportController.openHealthSettings` is
+the escape hatch: once a type has been answered for, HealthKit will not present
+it again, so only the system settings can turn it back on.
 
 `sampleCount` counts **source samples the database accepted**. Two consequences
 follow, and both are deliberate:
@@ -222,6 +305,11 @@ paths recover a missing id themselves; the Android BMI computation dereferences
 it unconditionally. Every method here awaits `_ensureConfigured` first, once per
 service, and a failed handshake is not cached — a transient error must not poison
 every later call.
+
+Its surface is `requestAuthorization`, `hasPermissions`, `getTotalStepsInInterval`
+and `getHealthDataFromTypes`. `hasPermissions` is the one the plugin documents as
+the check to make *before* requesting authorization, and not making it is what
+raised a sheet on every import.
 
 # Related
 

@@ -43,6 +43,25 @@ class HealthService {
     return _health.requestAuthorization(types, permissions: permissions);
   }
 
+  /// Whether read access to [types] has already been granted.
+  ///
+  /// Tri-state, and the third state is the common one on iOS: Apple will not
+  /// disclose read authorization — knowing an app had been denied would itself
+  /// leak health information — so HealthKit answers `null` for a READ query and
+  /// only Health Connect returns a real `true`/`false`.
+  ///
+  /// The plugin documents this as the check to make *before*
+  /// [requestAuthorization]; skipping it is what made Lotti raise an
+  /// authorization sheet on every import whether or not one could achieve
+  /// anything. See `HealthPermissionGate`.
+  Future<bool?> hasPermissions(
+    List<HealthDataType> types, {
+    List<HealthDataAccess>? permissions,
+  }) async {
+    await _ensureConfigured();
+    return _health.hasPermissions(types, permissions: permissions);
+  }
+
   Future<int?> getTotalStepsInInterval(
     DateTime startTime,
     DateTime endTime,

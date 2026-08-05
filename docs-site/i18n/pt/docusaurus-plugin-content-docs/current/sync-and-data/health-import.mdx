@@ -32,10 +32,25 @@ falhou. **Importar tudo** executa cada linha por vez. Os atalhos
 **Últimos 7 / 30 / 90 dias** definem as duas datas de uma vez; a alteração do
 intervalo não inicia uma importação por si só.
 
-Seu sistema operacional pode solicitar permissão para dados de saúde. O Lotti
-só consegue ler os tipos que você concede. Se uma família de dados esperada
-estiver faltando, verifique as permissões de saúde do aplicativo nas
-configurações do sistema do telefone e tente essa importação novamente.
+## Quando uma linha não traz nada
+
+Seu sistema operacional pede permissão para dados de saúde na primeira vez que o
+Lotti lê uma família, e o Lotti só consegue ler os tipos que você concede. Ele
+pergunta **uma vez por família de dados** — pressão arterial é um único pedido que
+cobre a sistólica e a diastólica — e depois não pergunta de novo por conta
+própria. Tocar na linha repete a importação e solicita apenas as permissões ainda
+indefinidas; um tipo que você já respondeu não gera nenhum aviso novo, porque o
+sistema não o exibe uma segunda vez.
+
+Uma linha que não leu nada e nunca trouxe uma única amostra diz **Sem dados —
+verifique o acesso do Lotti no seu app de saúde**, e o botão **Abrir configurações** aparece
+abaixo da lista. Isso é um convite a verificar, não um veredito: a Apple
+deliberadamente não informa a um aplicativo se ele pode ler um tipo, então o Lotti
+não distingue "você não tem leituras desse tipo" de "você desativou isso". Se você
+desativou — no iPhone em **Ajustes → Saúde → Acesso a Dados e Dispositivos → Lotti**, no
+Android no Health Connect — só é possível reativar por lá; o Lotti não consegue
+exibir esse pedido uma segunda vez. Depois, toque na linha novamente para
+importar.
 
 A importação de saúde não é exibida no desktop porque os armazenamentos de
 saúde móveis subjacentes não estão disponíveis lá. As observações importadas

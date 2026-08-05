@@ -32,10 +32,25 @@ import is mislukt. **Alles importeren** voert elke rij om beurten uit. De
 snelkoppelingen **Laatste 7 / 30 / 90 dagen** zetten beide datums in één keer;
 het wijzigen van het bereik start niet vanzelf een import.
 
-Je besturingssysteem kan om toestemming voor gezondheidsgegevens vragen. Lotti kan
-alleen de typen lezen die jij toestaat. Als een verwachte gegevensfamilie ontbreekt,
-controleer dan de gezondheidsmachtigingen van de app in de systeeminstellingen van
-de telefoon en probeer die import opnieuw.
+## Als een rij niets oplevert
+
+Je besturingssysteem vraagt om toestemming voor gezondheidsgegevens de eerste keer
+dat Lotti een familie leest, en Lotti kan alleen de typen lezen die jij toestaat.
+Er wordt **één keer per gegevensfamilie** gevraagd — bloeddruk is één verzoek voor
+zowel de bovendruk als de onderdruk — en daarna wordt er niet uit zichzelf
+opnieuw gevraagd. Op de rij tikken probeert de import opnieuw en vraagt alleen om
+rechten die nog onbeslist zijn; een type waarop je al hebt geantwoord levert geen
+nieuwe melding op, omdat het systeem die geen tweede keer toont.
+
+Een rij die niets heeft gelezen en nog nooit één meting heeft opgehaald, zegt
+**Geen gegevens — controleer Lotti's toegang in je gezondheidsapp**, en onder de lijst
+verschijnt de knop **Instellingen openen**. Dit is een uitnodiging om te
+controleren, geen oordeel: Apple vertelt een app bewust niet of die een type mag
+lezen, dus Lotti kan "je hebt geen metingen van dit soort" niet onderscheiden van
+"je hebt dit uitgezet". Heb je het uitgezet — op de iPhone via **Instellingen →
+Gezondheid → Datatoegang en apparaten → Lotti**, op Android in Health Connect — dan
+kun je het alleen daar weer aanzetten; Lotti kan die vraag geen tweede keer
+stellen. Tik daarna nogmaals op de rij om te importeren.
 
 Gezondheidsimport wordt niet getoond op desktop, omdat de onderliggende mobiele
 gezondheidsopslag daar niet beschikbaar is. Geïmporteerde waarnemingen zijn na

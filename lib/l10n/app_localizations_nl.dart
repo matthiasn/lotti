@@ -9293,6 +9293,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get settingsHabitsTitle => 'Gewoontes';
 
   @override
+  String get settingsHealthImportAccessHint =>
+      'Sommige gegevens konden niet worden gelezen. Als je Lotti’s toegang hebt uitgeschakeld in de gezondheidsprivacyinstellingen van je apparaat, kan Lotti er niet opnieuw om vragen — zet die daar weer aan.';
+
+  @override
   String get settingsHealthImportActivity => 'Activiteit';
 
   @override
@@ -9330,6 +9334,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Rust, wandelen en variabiliteit';
 
   @override
+  String get settingsHealthImportOpenSettings => 'Instellingen openen';
+
+  @override
   String settingsHealthImportQuickRange(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -9365,6 +9372,10 @@ class AppLocalizationsNl extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get settingsHealthImportStatusNoDataOrAccess =>
+      'Geen gegevens — controleer Lotti’s toegang in je gezondheidsapp';
 
   @override
   String get settingsHealthImportStatusPermissionDenied =>

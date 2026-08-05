@@ -4284,6 +4284,7 @@
   "settingsHabitsSearchHint": "Søgevaner...",
   "settingsHabitsSubtitle": "Styr dine vaner og rutiner",
   "settingsHabitsTitle": "Vaner",
+  "settingsHealthImportAccessHint": "Nogle data kunne ikke læses. Hvis du har slået Lottis adgang fra i enhedens privatlivsindstillinger for sundhed, kan Lotti ikke bede om den igen — slå den til der.",
   "settingsHealthImportActivity": "Aktivitet",
   "settingsHealthImportActivityDescription": "Skridt, etager og gåafstand",
   "settingsHealthImportAll": "Importér alt",
@@ -4295,6 +4296,7 @@
   "settingsHealthImportFromDate": "Start",
   "settingsHealthImportHeartRate": "Puls",
   "settingsHealthImportHeartRateDescription": "Hvilepuls, gangpuls og variabilitet",
+  "settingsHealthImportOpenSettings": "Åbn indstillinger",
   "settingsHealthImportQuickRange": "{days, plural, =1{Seneste døgn} other{Seneste {days} dage}}",
   "@settingsHealthImportQuickRange": {
     "placeholders": {
@@ -4315,6 +4317,7 @@
       }
     }
   },
+  "settingsHealthImportStatusNoDataOrAccess": "Ingen data — tjek Lottis adgang i din sundhedsapp",
   "settingsHealthImportStatusPermissionDenied": "Adgang nægtet — giv Lotti adgang i din sundhedsapp",
   "settingsHealthImportStatusRunning": "Importerer…",
   "settingsHealthImportStatusUnsupportedType": "Denne datatype understøttes ikke længere",

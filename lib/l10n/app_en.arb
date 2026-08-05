@@ -4743,6 +4743,7 @@
   "settingsHabitsSearchHint": "Search habits…",
   "settingsHabitsSubtitle": "Manage your habits and routines",
   "settingsHabitsTitle": "Habits",
+  "settingsHealthImportAccessHint": "Some data could not be read. If you turned Lotti’s access off in your device’s health privacy settings, Lotti cannot ask for it again — turn it back on there.",
   "settingsHealthImportActivity": "Activity",
   "settingsHealthImportActivityDescription": "Steps, flights climbed and walking distance",
   "settingsHealthImportAll": "Import all",
@@ -4754,6 +4755,7 @@
   "settingsHealthImportFromDate": "Start",
   "settingsHealthImportHeartRate": "Heart Rate",
   "settingsHealthImportHeartRateDescription": "Resting rate, walking rate and variability",
+  "settingsHealthImportOpenSettings": "Open settings",
   "settingsHealthImportQuickRange": "{days, plural, =1{Last day} other{Last {days} days}}",
   "@settingsHealthImportQuickRange": {
     "placeholders": {
@@ -4774,6 +4776,7 @@
       }
     }
   },
+  "settingsHealthImportStatusNoDataOrAccess": "No data — check Lotti’s access in your health app",
   "settingsHealthImportStatusPermissionDenied": "Access denied — allow Lotti in your health app",
   "settingsHealthImportStatusRunning": "Importing…",
   "settingsHealthImportStatusUnsupportedType": "This data type is no longer supported",

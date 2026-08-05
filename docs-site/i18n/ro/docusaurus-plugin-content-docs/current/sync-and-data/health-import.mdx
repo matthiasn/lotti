@@ -20,6 +20,24 @@ Importurile disponibile sunt:
 
 Fiecare rând importă numai propria familie de date în intervalul afișat și raportează apoi, sub numele său, ce s-a întâmplat: câte valori au sosit, că nu a existat niciuna, că accesul a fost refuzat sau că importul a eșuat. **Importați tot** rulează fiecare rând pe rând. Scurtăturile **Ultimele 7 / 30 / 90 zile** setează ambele date deodată; schimbarea intervalului nu pornește singură un import.
 
-Sistemul de operare poate cere permisiunea pentru datele de sănătate. Lotti poate citi doar tipurile pe care le permiteți. Dacă lipsește o familie de date așteptată, verificați permisiunile de sănătate ale aplicației în setările de sistem ale telefonului și încercați din nou importul.
+## Când un rând nu aduce nimic
+
+Sistemul de operare cere permisiunea pentru datele de sănătate prima dată când
+Lotti citește o familie de date, iar Lotti poate citi doar tipurile pe care le
+permiteți. Întreabă **o singură dată pentru fiecare familie de date** — tensiunea
+arterială este o singură cerere care acoperă atât valoarea sistolică, cât și cea
+diastolică — și apoi nu mai întreabă de la sine. Atingerea rândului reia importul și solicită
+doar permisiunile rămase nedecise; un tip la care ați răspuns deja nu produce
+nicio solicitare nouă, pentru că sistemul nu o mai afișează a doua oară.
+
+Un rând care nu a citit nimic și nu a adus niciodată nicio măsurătoare afișează
+**Fără date — verificați accesul Lotti în aplicația de sănătate**, iar sub listă apare butonul
+**Deschideți setările**. Este un îndemn la verificare, nu un verdict: Apple nu
+dezvăluie în mod deliberat unei aplicații dacă are voie să citească un tip, așa că
+Lotti nu poate deosebi „nu aveți astfel de măsurători” de „ați dezactivat acest
+lucru”. Dacă l-ați dezactivat — pe iPhone în **Setări → Sănătate → Acces la date și
+dispozitive → Lotti**, pe Android în Health Connect — doar acolo îl
+puteți reactiva; Lotti nu poate afișa acea cerere a doua oară. Apoi atingeți din
+nou rândul pentru a importa.
 
 Importul de sănătate nu este afișat pe desktop, deoarece stocările mobile de sănătate nu sunt disponibile acolo. Observațiile importate pot fi totuși văzute în tablourile de bord Lotti relevante după ce s-au sincronizat pe alt dispozitiv.

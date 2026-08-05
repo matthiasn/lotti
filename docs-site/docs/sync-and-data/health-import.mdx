@@ -31,9 +31,25 @@ failed. **Import all** runs every row in turn. The **Last 7 / 30 / 90 days**
 shortcuts set both dates at once; changing the range does not start an import by
 itself.
 
-Your operating system may ask for health-data permission. Lotti can only read
-the types you grant. If an expected data family is missing, check the app's
-health permissions in the phone's system settings and try that import again.
+## When a row brings back nothing
+
+Your operating system asks for health-data permission the first time Lotti reads
+a family, and Lotti can only read the types you grant. It asks **once per data
+family** — blood pressure is a single request covering both the systolic and
+diastolic readings — and it does not keep asking on its own afterwards. Tapping
+a row retries the import and requests any permission that is still undetermined;
+a type you have already answered for produces no new prompt, because the system
+will not present it a second time.
+
+A row that read nothing and has never brought in a single sample says **No data —
+check Lotti's access in your health app**, and an **Open settings** button appears
+below the list. This is a prompt to check rather than a verdict: Apple
+deliberately does not tell an app whether it is allowed to read a type, so Lotti
+cannot distinguish "you have no readings of this kind" from "you have turned this
+access off". If you did turn it off, restore it in the health settings themselves
+— on iPhone under **Settings → Health → Data Access &amp; Devices → Lotti**, on
+Android in Health Connect. That is the only way back; Lotti cannot raise the
+prompt again itself. Afterwards, tap the row to import.
 
 Health Import is not shown on desktop because the underlying mobile health
 stores are not available there. Imported observations can still be viewed in

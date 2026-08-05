@@ -9450,6 +9450,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get settingsHabitsTitle => 'Habitudes';
 
   @override
+  String get settingsHealthImportAccessHint =>
+      'Certaines données n’ont pas pu être lues. Si tu as désactivé l’accès de Lotti dans les réglages de confidentialité santé de ton appareil, Lotti ne peut plus le demander — réactive-le là-bas.';
+
+  @override
   String get settingsHealthImportActivity => 'Activité';
 
   @override
@@ -9487,6 +9491,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Au repos, à la marche et variabilité cardiaque';
 
   @override
+  String get settingsHealthImportOpenSettings => 'Ouvrir les réglages';
+
+  @override
   String settingsHealthImportQuickRange(int days) {
     String _temp0 = intl.Intl.pluralLogic(
       days,
@@ -9522,6 +9529,10 @@ class AppLocalizationsFr extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get settingsHealthImportStatusNoDataOrAccess =>
+      'Aucune donnée — vérifie l’accès de Lotti dans ton app de santé';
 
   @override
   String get settingsHealthImportStatusPermissionDenied =>

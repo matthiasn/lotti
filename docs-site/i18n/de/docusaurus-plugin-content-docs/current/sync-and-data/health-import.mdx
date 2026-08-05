@@ -32,10 +32,25 @@ fehlgeschlagen ist. **Alles importieren** führt alle Zeilen nacheinander aus.
 Die Kurzwahl **Letzte 7 / 30 / 90 Tage** setzt Start- und Enddatum auf einmal;
 eine Änderung des Zeitraums startet noch keinen Import.
 
-Dein Betriebssystem fragt möglicherweise nach einer Berechtigung für
-Gesundheitsdaten. Lotti kann nur freigegebene Datentypen lesen. Fehlt eine
-erwartete Datenart, prüfe die Gesundheitsberechtigungen der App in den
-Systemeinstellungen und versuche den Import erneut.
+## Wenn eine Zeile nichts bringt
+
+Dein Betriebssystem fragt nach der Berechtigung für Gesundheitsdaten, wenn Lotti
+eine Datenart zum ersten Mal liest, und Lotti kann nur freigegebene Typen lesen.
+Gefragt wird **einmal pro Datenart** — der Blutdruck ist eine einzige Anfrage für
+den systolischen und den diastolischen Wert zusammen — und danach wird von sich aus nicht
+weiter gefragt. Ein Tippen auf die Zeile wiederholt den Import und fordert nur
+noch offene Berechtigungen an; bei einem Typ, den du schon beantwortet hast,
+erscheint keine neue Abfrage, weil das System sie kein zweites Mal zeigt.
+
+Eine Zeile, die nichts gelesen und noch nie einen einzigen Wert geliefert hat,
+meldet **Keine Daten – prüfe Lottis Zugriff in deiner Health-App**, und unter der Liste
+erscheint die Schaltfläche **Einstellungen öffnen**. Das ist eine Aufforderung
+zum Nachsehen, kein Urteil: Apple verrät einer App bewusst nicht, ob sie einen
+Typ lesen darf, also kann Lotti „du hast keine solchen Werte“ nicht von „du hast
+das abgeschaltet“ unterscheiden. Hast du es abgeschaltet — auf dem iPhone unter
+**Einstellungen → Health → Datenzugriff und Geräte → Lotti**, auf Android in
+Health Connect — dann geht es nur dort wieder an; Lotti kann diese Abfrage kein
+zweites Mal auslösen. Tippe danach die Zeile erneut an, um zu importieren.
 
 Auf dem Desktop wird der Gesundheitsimport nicht gezeigt, weil die mobilen
 Gesundheitsspeicher dort nicht verfügbar sind. Nach der Synchronisierung kannst
