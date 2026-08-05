@@ -181,6 +181,31 @@ keeps its own mirrored coverage in `wake_result_test.dart`. A workflow behavior
 belongs in exactly one facade suite; collaborator-level unit coverage remains
 in the collaborator's mirrored test file.
 
+### Documented exception: `UnifiedAiInferenceRepository` facade suites
+
+`UnifiedAiInferenceRepository` coordinates prompt selection, multimodal model
+execution, streamed tool calls, response persistence, and post-processing. Its
+facade coverage is split into responsibility-owned suites:
+
+- `unified_ai_inference_repository_test.dart` — prompt selection, constructor
+  and compatibility guards, and JSON extraction;
+- `unified_ai_inference_repository_execution_test.dart` — text, image, audio,
+  reasoning, usage-attribution, and failure-path execution;
+- `unified_ai_inference_repository_post_processing_test.dart` — response-entry
+  creation and journal post-processing;
+- `unified_ai_inference_repository_concurrency_test.dart` — concurrent entity
+  changes and streamed tool-call accumulation;
+- `unified_ai_inference_repository_tools_test.dart` — normal tool dispatch,
+  checklist batching, and auto-completion;
+- `unified_ai_inference_repository_tool_edges_test.dart` — language reruns,
+  invalid tool payloads, and recovery paths.
+
+Shared deterministic fixtures, mock wiring, stream builders, and lifecycle
+cleanup live in `unified_ai_inference_repository_test_helpers.dart`, which has
+no `main()`. A repository behavior belongs in exactly one facade suite;
+collaborator-level unit coverage remains in the collaborator's mirrored test
+file.
+
 ## Mocktail global-state hygiene
 
 Mocktail stores argument matchers (`any`, `captureAny`) in **process-global**

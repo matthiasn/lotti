@@ -21,8 +21,8 @@ decomposition itself.
 | PR | Original suite | Baseline lines | Intended ownership boundary | Status |
 |---:|---|---:|---|---|
 | 1 | `sync_sequence_log_service_test.dart` | 6,871 | receive, backfill, population, covered clocks, facade/cache | Merged (#3804) |
-| 2 | `task_agent_workflow_test.dart` | 9,132 | wake execution, persistence, prompt/context delegation, workflow shell | In progress |
-| 3 | `unified_ai_inference_repository_test.dart` | 8,593 | inference execution, tool-call processing, post-processing, repository shell | Planned |
+| 2 | `task_agent_workflow_test.dart` | 9,132 | wake execution, persistence, prompt/context delegation, workflow shell | Merged (#3806) |
+| 3 | `unified_ai_inference_repository_test.dart` | 8,593 | inference execution, tool-call processing, post-processing, repository shell | In progress |
 | 4 | `eval_constraints_test.dart` | 8,228 | split the test-only constraint framework and mirror its focused source files | Planned |
 | 5 | `outbox_service_test.dart` | 7,820 | send pipeline, queue/database behavior, retry/maintenance, service shell | Planned |
 | 6 | `day_agent_workflow_test.dart` | 7,379 | day wake execution, context/prompt construction, persistence, workflow shell | Planned |
@@ -80,3 +80,14 @@ Shared deterministic fixtures and mock wiring live in a helper library with no
 
 The split preserves all 173 test declarations. The largest resulting
 executable suite is 2,333 lines.
+
+### PR 3 — unified AI inference facade
+
+The unified inference suite is split by prompt selection and repository-shell
+behavior, multimodal inference execution, response post-processing,
+concurrency, normal tool dispatch, and tool recovery paths. Shared lifecycle,
+deterministic fixtures, and stream builders live in a helper library with no
+`main()`.
+
+The split preserves all 115 conventional test declarations and the Glados
+property test. The largest resulting executable suite is 2,368 lines.
