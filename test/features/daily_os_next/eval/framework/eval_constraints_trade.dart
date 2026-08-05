@@ -42,8 +42,9 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
   // identify at least one piece of work that was actually left out or only
   // partially represented.
   final placed = _placedTaskIds(outcome);
+  final placements = _estimatedTaskPlacements(outcome);
   final shortenedTasks = {
-    for (final entry in _estimatedTaskPlacements(outcome).entries)
+    for (final entry in placements.entries)
       if (entry.value.allocatedMinutes < entry.value.estimateMinutes) entry.key,
   };
   final deferred = [
@@ -58,7 +59,7 @@ EvalConstraintResult scoreSurfacedConflict(EvalRunOutcome outcome) {
   }
   final namedCasualties = [
     for (final taskId in deferred)
-      if (_taskTradeIsNamed(outcome, taskId)) taskId,
+      if (_taskTradeIsNamed(outcome, taskId, placements: placements)) taskId,
   ];
   return EvalConstraintResult(
     id: id,
@@ -77,11 +78,17 @@ typedef _TradeDisclosureEvidence = ({
   bool retractsAll,
 });
 
+final _subjectConjunctPattern = RegExp(
+  r'\s*(?:,\s*(?:and\s+)?|\s+(?:and|&)\s+)',
+  caseSensitive: false,
+);
+
 _TradeDisclosureEvidence _tradeDisclosureEvidence(
   EvalRunOutcome outcome,
   String taskId,
-  String prose,
-) {
+  String prose, {
+  required Map<String, _EstimatedTaskPlacement> placements,
+}) {
   final task = outcome.inputs.taskById(taskId);
   if (task == null) {
     return (
@@ -90,7 +97,7 @@ _TradeDisclosureEvidence _tradeDisclosureEvidence(
       retractsAll: false,
     );
   }
-  final placement = _estimatedTaskPlacements(outcome)[taskId];
+  final placement = placements[taskId];
   final structuralRemainder = placement == null
       ? task.estimateMinutes
       : placement.estimateMinutes - placement.allocatedMinutes;
@@ -442,12 +449,7 @@ bool _subjectIsOnlyCorpusTaskReferences(
   String subject,
   List<EvalCorpusTask> corpus,
 ) {
-  final conjuncts = subject.split(
-    RegExp(
-      r'\s*(?:,\s*(?:and\s+)?|\s+(?:and|&)\s+)',
-      caseSensitive: false,
-    ),
-  );
+  final conjuncts = subject.split(_subjectConjunctPattern);
   if (conjuncts.length < 2) return false;
   return conjuncts.every((conjunct) {
     return corpus.any(
@@ -465,20 +467,13 @@ bool _subjectContainsTaskReference(
   required String taskId,
   required String taskTitle,
 }) {
-  return subject
-      .split(
-        RegExp(
-          r'\s*(?:,\s*(?:and\s+)?|\s+(?:and|&)\s+)',
-          caseSensitive: false,
-        ),
-      )
-      .any((conjunct) {
-        return _subjectMatchesTaskReference(
-          conjunct,
-          taskId: taskId,
-          taskTitle: taskTitle,
-        );
-      });
+  return subject.split(_subjectConjunctPattern).any((conjunct) {
+    return _subjectMatchesTaskReference(
+      conjunct,
+      taskId: taskId,
+      taskTitle: taskTitle,
+    );
+  });
 }
 
 bool _subjectMatchesTaskReference(
@@ -556,8 +551,9 @@ bool _subjectStartsWithTaskReference(
 
 bool _taskTradeIsNamed(
   EvalRunOutcome outcome,
-  String taskId,
-) {
+  String taskId, {
+  required Map<String, _EstimatedTaskPlacement> placements,
+}) {
   final affirmativeNamedDispositions = <String>{};
   final deniedNamedDispositions = <String>{};
   var retractsAllDispositions = false;
@@ -568,7 +564,12 @@ bool _taskTradeIsNamed(
       final namesTask =
           _taskIdNamed(taskId, prose) || _titleNamed(outcome, taskId, prose);
       if (!namesTask) continue;
-      final evidence = _tradeDisclosureEvidence(outcome, taskId, prose);
+      final evidence = _tradeDisclosureEvidence(
+        outcome,
+        taskId,
+        prose,
+        placements: placements,
+      );
       affirmativeNamedDispositions.addAll(evidence.affirmative);
       deniedNamedDispositions.addAll(evidence.denied);
       retractsAllDispositions |= evidence.retractsAll;

@@ -108,7 +108,7 @@ EvalConstraintResult scoreTaskWorkIsTyped(EvalRunOutcome outcome) {
 
 /// Whether [call] escalates under the reason the prompt names for an
 /// unsatisfiable directive, which needs no further explanation to count.
-bool _namesDirectiveReason(EvalToolCall call, Set<String> answering) =>
+bool _namesDirectiveReason(EvalToolCall call) =>
     switch (call.arguments['reasons']) {
       final List<Object?> list =>
         list.map((r) => '$r').contains('directiveUnsatisfiable'),
@@ -177,17 +177,11 @@ EvalConstraintResult scoreDirectiveHonoured(EvalRunOutcome outcome) {
           // exists or it does not — rather than semantic, because refereeing
           // what a note *means* by substring match is what got this scorer
           // wrong twice already.
-          (_namesDirectiveReason(call, answeringReasons) ||
+          (_namesDirectiveReason(call) ||
               '${call.arguments['note'] ?? ''}'.trim().isNotEmpty))
         call,
   ];
-  final escalatedAsDirective = escalations.any(
-    (call) => switch (call.arguments['reasons']) {
-      final List<Object?> list =>
-        list.map((r) => '$r').contains('directiveUnsatisfiable'),
-      _ => false,
-    },
-  );
+  final escalatedAsDirective = escalations.any(_namesDirectiveReason);
 
   // Prose the model attached to the plan, where a representation names its
   // commitment.
@@ -417,35 +411,9 @@ Set<String> _placedTaskIds(EvalRunOutcome outcome) => {
       ?block.taskId,
 };
 
-/// Whether [prose] mentions the title of [taskId].
-bool _titleNamed(EvalRunOutcome outcome, String taskId, String prose) {
-  final title = outcome.inputs.taskById(taskId)?.title.trim();
-  if (title == null || title.isEmpty) return false;
-  if (RegExp(
-    r'\btask\s+' + RegExp.escape(title) + r'\b',
-    caseSensitive: false,
-  ).hasMatch(prose)) {
-    return true;
-  }
-  return _allowsBareTaskTitle(title) &&
-      RegExp(
-        r'(?:^|[^\w-])' + RegExp.escape(title) + r'(?=$|[^\w-])',
-        caseSensitive: false,
-      ).hasMatch(prose);
-}
-
-bool _taskIdNamed(String taskId, String prose) => RegExp(
-  r'(?:^|[^\w-])' + RegExp.escape(taskId) + r'(?=$|[^\w-])',
-  caseSensitive: false,
-).hasMatch(prose);
-
 /// Blocks that consume capacity — `dropped` ones are recorded but not
 /// scheduled, matching `scheduledMinutesFor` in the parser.
 List<PlannedBlock> _scheduled(EvalRunOutcome outcome) => [
   for (final block in outcome.blocks)
     if (block.state != PlannedBlockState.dropped) block,
 ];
-
-String _hhmm(DateTime time) =>
-    '${time.hour.toString().padLeft(2, '0')}:'
-    '${time.minute.toString().padLeft(2, '0')}';

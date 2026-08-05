@@ -4,6 +4,10 @@ import 'eval_models.dart';
 
 /// Deterministic plan builders shared by the focused constraint suites.
 final planDate = DateTime(2026, 7, 18);
+final _dayId =
+    'dayplan-${planDate.year}-'
+    '${planDate.month.toString().padLeft(2, '0')}-'
+    '${planDate.day.toString().padLeft(2, '0')}';
 
 PlannedBlock block({
   required String id,
@@ -18,8 +22,8 @@ PlannedBlock block({
 }) => PlannedBlock(
   id: id,
   categoryId: 'cat-1',
-  startTime: DateTime(2026, 7, 18, startHour),
-  endTime: DateTime(2026, 7, 18, endHour),
+  startTime: DateTime(planDate.year, planDate.month, planDate.day, startHour),
+  endTime: DateTime(planDate.year, planDate.month, planDate.day, endHour),
   taskId: taskId,
   note: note,
   reason: reason,
@@ -49,7 +53,7 @@ EvalRunOutcome outcome({
   Set<String> createdTaskIds = const {},
 }) => EvalRunOutcome(
   inputs: EvalFixtureInputs(
-    dayId: 'dayplan-2026-07-18',
+    dayId: _dayId,
     planDate: planDate,
     corpus: corpus,
     decidedTaskIds: decidedTaskIds,

@@ -635,88 +635,51 @@ bool _hasAuditablePartialDisclosure({
       }
       if (disclosure.canQualify) hasMatchingSplit = true;
     }
-    for (final match in _partialRemainingPattern.allMatches(reason)) {
-      if (_evidenceFallsInsideTaskReference(
-            reason,
-            match,
-            taskId: taskId,
-            taskTitle: taskTitle,
-          ) ||
-          _tradeEvidenceHasExplicitNonTaskSubject(
-            reason,
-            match,
-            taskId: taskId,
-            taskTitle: taskTitle,
-          ) ||
-          _remainderDescribesContinuity(reason, match) ||
-          _evidenceIsSpeculative(reason, match)) {
-        continue;
-      }
-      if (_evidenceNamesAnotherTask(
-        reason,
-        match,
-        taskId: taskId,
-        taskTitle: taskTitle,
-        corpus: corpus,
-      )) {
-        continue;
-      }
-      if (!_remainderIsRelatedToTask(reason, match)) continue;
-      if (_matchClauseIsNegated(
-        reason,
-        match,
-        taskId: taskId,
-        taskTitle: taskTitle,
-        corpus: corpus,
-      )) {
-        return false;
-      }
-      final declaredRemaining = int.tryParse(match.group(1) ?? '');
-      if (declaredRemaining != remainingMinutes) return false;
-      if (disclosure.canQualify && _remainderIsTaskBound(reason, match)) {
-        reasonHasBoundRemainder = true;
-      }
-    }
-    for (final match in _partialLeadingRemainingPattern.allMatches(reason)) {
-      if (_evidenceFallsInsideTaskReference(
-            reason,
-            match,
-            taskId: taskId,
-            taskTitle: taskTitle,
-          ) ||
-          _tradeEvidenceHasExplicitNonTaskSubject(
-            reason,
-            match,
-            taskId: taskId,
-            taskTitle: taskTitle,
-          ) ||
-          _remainderDescribesContinuity(reason, match) ||
-          _evidenceIsSpeculative(reason, match)) {
-        continue;
-      }
-      if (_evidenceNamesAnotherTask(
-        reason,
-        match,
-        taskId: taskId,
-        taskTitle: taskTitle,
-        corpus: corpus,
-      )) {
-        continue;
-      }
-      if (!_remainderIsRelatedToTask(reason, match)) continue;
-      if (_matchClauseIsNegated(
-        reason,
-        match,
-        taskId: taskId,
-        taskTitle: taskTitle,
-        corpus: corpus,
-      )) {
-        return false;
-      }
-      final declaredRemaining = int.tryParse(match.group(1) ?? '');
-      if (declaredRemaining != remainingMinutes) return false;
-      if (disclosure.canQualify && _remainderIsTaskBound(reason, match)) {
-        reasonHasBoundRemainder = true;
+    for (final pattern in [
+      _partialRemainingPattern,
+      _partialLeadingRemainingPattern,
+    ]) {
+      for (final match in pattern.allMatches(reason)) {
+        if (_evidenceFallsInsideTaskReference(
+              reason,
+              match,
+              taskId: taskId,
+              taskTitle: taskTitle,
+            ) ||
+            _tradeEvidenceHasExplicitNonTaskSubject(
+              reason,
+              match,
+              taskId: taskId,
+              taskTitle: taskTitle,
+            ) ||
+            _remainderDescribesContinuity(reason, match) ||
+            _evidenceIsSpeculative(reason, match)) {
+          continue;
+        }
+        if (_evidenceNamesAnotherTask(
+          reason,
+          match,
+          taskId: taskId,
+          taskTitle: taskTitle,
+          corpus: corpus,
+        )) {
+          continue;
+        }
+        if (!_remainderIsRelatedToTask(reason, match)) continue;
+        if (_matchClauseIsNegated(
+          reason,
+          match,
+          taskId: taskId,
+          taskTitle: taskTitle,
+          corpus: corpus,
+        )) {
+          return false;
+        }
+        final declaredRemaining = int.tryParse(match.group(1) ?? '');
+        if (declaredRemaining != remainingMinutes) return false;
+        if (disclosure.canQualify && _remainderIsTaskBound(reason, match)) {
+          reasonHasBoundRemainder = true;
+        }
       }
     }
     if (reasonMentionsPartial && reasonHasBoundRemainder) {
@@ -1688,11 +1651,6 @@ List<RegExp> _taskReferencePatterns(String taskId, String taskTitle) {
         caseSensitive: false,
       ),
   ];
-}
-
-bool _allowsBareTaskTitle(String title) {
-  final normalized = title.trim().toLowerCase();
-  return normalized != 'a' && normalized != 'i';
 }
 
 bool _evidenceFallsInsideTaskReference(

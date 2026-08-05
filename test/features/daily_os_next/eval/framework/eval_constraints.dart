@@ -8,6 +8,37 @@ part 'eval_constraints_estimates.dart';
 part 'eval_constraints_schedule.dart';
 part 'eval_constraints_trade.dart';
 
+/// Whether [prose] mentions the title of [taskId].
+bool _titleNamed(EvalRunOutcome outcome, String taskId, String prose) {
+  final title = outcome.inputs.taskById(taskId)?.title.trim();
+  if (title == null || title.isEmpty) return false;
+  if (RegExp(
+    r'\btask\s+' + RegExp.escape(title) + r'\b',
+    caseSensitive: false,
+  ).hasMatch(prose)) {
+    return true;
+  }
+  return _allowsBareTaskTitle(title) &&
+      RegExp(
+        r'(?:^|[^\w-])' + RegExp.escape(title) + r'(?=$|[^\w-])',
+        caseSensitive: false,
+      ).hasMatch(prose);
+}
+
+bool _taskIdNamed(String taskId, String prose) => RegExp(
+  r'(?:^|[^\w-])' + RegExp.escape(taskId) + r'(?=$|[^\w-])',
+  caseSensitive: false,
+).hasMatch(prose);
+
+bool _allowsBareTaskTitle(String title) {
+  final normalized = title.trim().toLowerCase();
+  return normalized != 'a' && normalized != 'i';
+}
+
+String _hhmm(DateTime time) =>
+    '${time.hour.toString().padLeft(2, '0')}:'
+    '${time.minute.toString().padLeft(2, '0')}';
+
 /// Objective constraints the day planner's output is scored against.
 ///
 /// Every scorer here is a pure function over an [EvalRunOutcome] — no I/O, no

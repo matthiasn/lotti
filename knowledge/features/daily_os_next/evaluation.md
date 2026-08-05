@@ -467,13 +467,15 @@ builders live in `eval_constraints_test_helpers.dart`, which has no `main()`.
   escalation whose status note is merely non-empty. Both are wholly heuristic.
   `blockerBeforeBlocked` is mixed: a pass from actual blocker ordering and an
   unexcused ordering failure remain objective, while a pass that relies on a
-  reason naming a blocker is heuristic. The semantic paths catch the important
-  failure mode of saying nothing, but their string and structural presence tests
-  can pass without demonstrating comprehension. They remain visible per
-  constraint as weak priors, carry a caveat into the JSON and judge bundle, and
-  only those heuristic outcomes are excluded from the objective model
-  leaderboard. A reviewer must inspect the plan, changes, reasons, and status
-  notes before calling a heuristic green result good reasoning.
+  reason naming a blocker is heuristic. Every scheduled occurrence is evaluated
+  independently, including value-equal duplicate blocks; duplicate-id scoring
+  remains the separate `uniqueBlockIds` responsibility. The semantic paths catch
+  the important failure mode of saying nothing, but their string and structural
+  presence tests can pass without demonstrating comprehension. They remain
+  visible per constraint as weak priors, carry a caveat into the JSON and judge
+  bundle, and only those heuristic outcomes are excluded from the objective
+  model leaderboard. A reviewer must inspect the plan, changes, reasons, and
+  status notes before calling a heuristic green result good reasoning.
   `withinCapacityByEstimate` is mixed for the same reason: full-estimate
   accounting and failures remain objective. A pass is marked heuristic and
   excluded from the objective headline rate only when parsing free-form partial

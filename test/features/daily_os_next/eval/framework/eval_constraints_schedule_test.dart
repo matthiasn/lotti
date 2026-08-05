@@ -182,6 +182,25 @@ void main() {
         expect(result.detail, isNot(contains('task-stale')));
       },
     );
+
+    test('a dropped decided task does not count as placed', () {
+      final result = scoreDecidedTasksPlaced(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-1',
+              state: PlannedBlockState.dropped,
+            ),
+          ],
+          decidedTaskIds: const ['task-1'],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+    });
   });
 
   group('blockerBeforeBlocked', () {
@@ -385,6 +404,30 @@ void main() {
 
       expect(result.passed, isFalse);
       expect(result.detail, contains('task-blocker'));
+    });
+
+    test('evaluates value-equal blocked blocks independently', () {
+      final duplicate = block(
+        id: 'duplicate',
+        startHour: 9,
+        endHour: 10,
+        taskId: 'task-blocked',
+        reason: 'High priority work for the morning.',
+      );
+
+      final result = scoreBlockerBeforeBlocked(
+        outcome(
+          blocks: [duplicate, duplicate.copyWith()],
+          corpus: const [blocker, blocked],
+        ),
+      );
+
+      expect(result.passed, isFalse);
+      expect(
+        result.detail.split('; '),
+        hasLength(2),
+        reason: 'each scheduled occurrence must be scored independently',
+      );
     });
 
     test('treats a status-only BLOCKED task as blocked', () {
@@ -591,6 +634,25 @@ void main() {
 
     test('is not applicable when nothing is expected to be omitted', () {
       expect(scoreExpectedOmissionsHonoured(outcome()).isApplicable, isFalse);
+    });
+
+    test('dropping work the scenario wanted omitted honours the omission', () {
+      final result = scoreExpectedOmissionsHonoured(
+        outcome(
+          blocks: [
+            block(
+              id: 'a',
+              startHour: 9,
+              endHour: 10,
+              taskId: 'task-stale',
+              state: PlannedBlockState.dropped,
+            ),
+          ],
+          expectedOmissions: const {'task-stale'},
+        ),
+      );
+
+      expect(result.passed, isTrue);
     });
   });
 

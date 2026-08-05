@@ -184,46 +184,6 @@ void main() {
 
       expect(result.passed, isFalse);
     });
-
-    test('a dropped decided task does not count as placed', () {
-      final result = scoreDecidedTasksPlaced(
-        outcome(
-          blocks: [
-            block(
-              id: 'a',
-              startHour: 9,
-              endHour: 10,
-              taskId: 'task-1',
-              state: PlannedBlockState.dropped,
-            ),
-          ],
-          decidedTaskIds: const ['task-1'],
-        ),
-      );
-
-      expect(result.passed, isFalse);
-    });
-
-    test('dropping work the scenario wanted omitted honours the omission', () {
-      // The other direction of the same inconsistency: a dropped stale task
-      // used to fail the omission constraint even though it was not scheduled.
-      final result = scoreExpectedOmissionsHonoured(
-        outcome(
-          blocks: [
-            block(
-              id: 'a',
-              startHour: 9,
-              endHour: 10,
-              taskId: 'task-stale',
-              state: PlannedBlockState.dropped,
-            ),
-          ],
-          expectedOmissions: const {'task-stale'},
-        ),
-      );
-
-      expect(result.passed, isTrue);
-    });
   });
 
   group('taskWorkIsTyped', () {
