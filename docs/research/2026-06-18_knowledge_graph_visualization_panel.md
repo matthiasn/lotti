@@ -248,3 +248,19 @@ Sources: pub.dev (`graphview`, `flutter_graph_view`, `vyuh_node_flow`, `flame`,
 - Off-thread isolate precedent: `third_party/flutter_onnxruntime`.
 - Existing viz patterns: `lib/widgets/charts/`, `lib/features/dashboards/`,
   `lib/features/insights/` (see ADR 0025).
+
+## Review scorecard history
+
+The legacy live crop was reviewed qualitatively before a numeric rubric existed,
+so it remains **not rated** rather than receiving a retrospective score. The
+panel then rated the local-first concept at **9.0/10**. After implementation and
+desktop screenshot review on 2026-08-05, the build rated **8.6/10** overall:
+
+| Checkpoint | Information architecture | Graph navigation | Visual polish | Accessibility | Overall |
+|---|---:|---:|---:|---:|---:|
+| Legacy whole-map crop | Not rated | Not rated | Below the commissioned bar | Not rated | Not rated |
+| Local-first concept | — | — | — | — | 9.0/10 |
+| Implemented local workspace | 9.0 | 8.7 | 7.9 | 8.8 | 8.6/10 |
+
+The remaining gap to the concept score is finishing real-media visual capture
+verification and refining the canvas composition around persistent controls.

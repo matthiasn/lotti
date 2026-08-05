@@ -6814,6 +6814,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get knowledgeGraphCloseDetails => 'Close details';
 
   @override
+  String get knowledgeGraphDensity => 'Density';
+
+  @override
+  String get knowledgeGraphDensityBalanced => 'Balanced';
+
+  @override
+  String get knowledgeGraphDensityCalm => 'Calm';
+
+  @override
+  String get knowledgeGraphDensityExplore => 'Explore';
+
+  @override
   String get knowledgeGraphEmpty => 'No links to explore yet';
 
   @override
@@ -6824,6 +6836,36 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get knowledgeGraphError => 'Couldn\'t load the knowledge graph';
+
+  @override
+  String get knowledgeGraphFilterCategories => 'Categories';
+
+  @override
+  String get knowledgeGraphFilterRecency => 'Recency';
+
+  @override
+  String get knowledgeGraphFilterRelations => 'Relationships';
+
+  @override
+  String get knowledgeGraphFilters => 'Filters';
+
+  @override
+  String get knowledgeGraphFilterTaskStatus => 'Task status';
+
+  @override
+  String get knowledgeGraphFilterTypes => 'Types';
+
+  @override
+  String get knowledgeGraphForward => 'Forward';
+
+  @override
+  String get knowledgeGraphLast30Days => 'Last 30 days';
+
+  @override
+  String get knowledgeGraphLast7Days => 'Last 7 days';
+
+  @override
+  String get knowledgeGraphLast90Days => 'Last 90 days';
 
   @override
   String knowledgeGraphLinkedSection(int count) {
@@ -6872,7 +6914,21 @@ class AppLocalizationsEn extends AppLocalizations {
   String get knowledgeGraphNodeTypeTask => 'Task';
 
   @override
+  String get knowledgeGraphOneHop => '1 hop';
+
+  @override
   String get knowledgeGraphOpenDetails => 'Open details';
+
+  @override
+  String knowledgeGraphPhotosSection(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'PHOTOS · $count',
+      one: 'PHOTO · 1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get knowledgeGraphRecenter => 'Recenter';
@@ -6882,6 +6938,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get knowledgeGraphRelationAiSource => 'AI source';
+
+  @override
+  String get knowledgeGraphRelationAssociation => 'linked entry';
 
   @override
   String get knowledgeGraphRelationChecklist => 'checklist';
@@ -6906,6 +6965,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Explore links';
+
+  @override
+  String get knowledgeGraphTopologyOverview => 'Topology overview';
+
+  @override
+  String get knowledgeGraphTwoHops => '2 hops';
+
+  @override
+  String get knowledgeGraphViewConnections => 'Connections';
+
+  @override
+  String get knowledgeGraphViewGraph => 'Graph';
 
   @override
   String knowledgeGraphWalkHint(int count) {

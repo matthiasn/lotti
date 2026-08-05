@@ -3590,10 +3590,24 @@
   "knowledgeGraphAgeYesterday": "yesterday",
   "knowledgeGraphBack": "Back",
   "knowledgeGraphCloseDetails": "Close details",
+  "knowledgeGraphDensity": "Density",
+  "knowledgeGraphDensityBalanced": "Balanced",
+  "knowledgeGraphDensityCalm": "Calm",
+  "knowledgeGraphDensityExplore": "Explore",
   "knowledgeGraphEmpty": "No links to explore yet",
   "knowledgeGraphEntryLoadError": "Couldn't load this entry",
   "knowledgeGraphEntryNotFound": "Entry not found",
   "knowledgeGraphError": "Couldn't load the knowledge graph",
+  "knowledgeGraphFilterCategories": "Categories",
+  "knowledgeGraphFilterRecency": "Recency",
+  "knowledgeGraphFilterRelations": "Relationships",
+  "knowledgeGraphFilters": "Filters",
+  "knowledgeGraphFilterTaskStatus": "Task status",
+  "knowledgeGraphFilterTypes": "Types",
+  "knowledgeGraphForward": "Forward",
+  "knowledgeGraphLast30Days": "Last 30 days",
+  "knowledgeGraphLast7Days": "Last 7 days",
+  "knowledgeGraphLast90Days": "Last 90 days",
   "knowledgeGraphLinkedSection": "LINKED · {count}",
   "@knowledgeGraphLinkedSection": {
     "placeholders": {
@@ -3620,10 +3634,20 @@
   "knowledgeGraphNodeTypeProject": "Project",
   "knowledgeGraphNodeTypeRating": "Rating",
   "knowledgeGraphNodeTypeTask": "Task",
+  "knowledgeGraphOneHop": "1 hop",
   "knowledgeGraphOpenDetails": "Open details",
+  "knowledgeGraphPhotosSection": "{count, plural, =1{PHOTO · 1} other{PHOTOS · {count}}}",
+  "@knowledgeGraphPhotosSection": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "knowledgeGraphRecenter": "Recenter",
   "knowledgeGraphRecentToOlder": "recent → older",
   "knowledgeGraphRelationAiSource": "AI source",
+  "knowledgeGraphRelationAssociation": "linked entry",
   "knowledgeGraphRelationChecklist": "checklist",
   "knowledgeGraphRelationInProject": "in project",
   "knowledgeGraphRelationLinkedTask": "linked task",
@@ -3632,6 +3656,10 @@
   "knowledgeGraphSummarySection": "SUMMARY",
   "knowledgeGraphTitle": "Knowledge graph",
   "knowledgeGraphTooltip": "Explore links",
+  "knowledgeGraphTopologyOverview": "Topology overview",
+  "knowledgeGraphTwoHops": "2 hops",
+  "knowledgeGraphViewConnections": "Connections",
+  "knowledgeGraphViewGraph": "Graph",
   "knowledgeGraphWalkHint": "Tap a node to walk · {count, plural, =1{1 node} other{{count} nodes}}",
   "@knowledgeGraphWalkHint": {
     "placeholders": {

@@ -4,6 +4,20 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4]
+### Changed
+- **The task knowledge graph is now a readable local workspace.** Instead of
+  presenting the whole topology as a field of mostly anonymous dots, it shows a
+  bounded one- or two-hop neighbourhood with prioritized full labels, stronger
+  edges, exact-count aggregates for dense groups and photos, and a small
+  topology map for long-distance jumps. A Connections list offers the same
+  navigation grouped by relationship and direction, while density and filters
+  control what remains visible. Task cover art now also appears directly in its
+  circular graph node for faster visual recognition. The compact task inspector
+  surfaces cover art and related photos, keeps long titles intact, and leaves
+  the detailed AI brief collapsed until requested. Keyboard, reduced-motion,
+  high-contrast, and screen-reader navigation are supported.
+
 ## [1.0.3]
 ### Added
 - **Getting in touch is now one tap from the navigation.** Four equal contact

@@ -10,6 +10,8 @@ on:
       - "tools/matrix_provisioner/**"
       - "tool/task_agent_model_eval_judge.py"
       - "tool/task_agent_model_eval_judge_test.py"
+      - "tool/pr_screenshot_publish.py"
+      - "tool/pr_screenshot_publish_test.py"
       - ".github/workflows/python-tools-ci.yml"
   pull_request:
     branches: [main]
@@ -17,6 +19,8 @@ on:
       - "tools/matrix_provisioner/**"
       - "tool/task_agent_model_eval_judge.py"
       - "tool/task_agent_model_eval_judge_test.py"
+      - "tool/pr_screenshot_publish.py"
+      - "tool/pr_screenshot_publish_test.py"
       - ".github/workflows/python-tools-ci.yml"
 
 concurrency:
@@ -34,6 +38,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -64,6 +70,8 @@ jobs:
 
     steps:
       - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@v5
@@ -75,3 +83,21 @@ jobs:
 
       - name: Test
         run: python -m unittest tool/task_agent_model_eval_judge_test.py
+
+  pr-screenshot-publisher:
+    name: PR Screenshot Publisher (test)
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+
+      - name: Test
+        working-directory: tool
+        run: python -m unittest pr_screenshot_publish_test.py

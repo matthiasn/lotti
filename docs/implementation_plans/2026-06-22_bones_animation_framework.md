@@ -183,14 +183,14 @@ Round 2 stress-tested the locked decisions. The decisions held; the panel added 
 ### 6.4 Biggest residual risks (carry into build)
 1. **Pivot correctness** — auto-rig is ~70% right per joint; the **human-correction UI + gap-detection gauntlet must be built to the same standard as the auto-rigger**, or characters tear and pop. Fund it as first-class.
 2. **Perf discipline** — the hybrid is cheap *only* with §6.1 guardrails; without them it passes on a fresh Pixel and dies at minute 4 on a Moto G.
-3. **`drawAtlas` is net-new in this repo** (`knowledge_graph_poc` uses `drawImageRect` as the closest precedent) — budget time for the `RSTransform`/rect/color arrays + single-atlas `ui.Image` lifetime.
+3. **`drawAtlas` is net-new in this repo** (`knowledge_graph` uses `drawImageRect` as the closest precedent) — budget time for the `RSTransform`/rect/color arrays + single-atlas `ui.Image` lifetime.
 4. **Profile-resolution friction** in the dev-only rig run — resolved by D3's direct-call bypass; confirm the rig skill not riding the standard trigger UI is acceptable.
 
 ## 7. Build sequencing (next phase — POC first)
 
 1. **Pure-Dart engine + rig format** (`model/`, `engine/`): RigSpec/Pose/Clip, FK solver, clip evaluator, face solver, autonomic layer. Fully unit-tested (D4), no Flutter.
 2. **Hand-authored sample rig + atlas** (bypass AI initially): one cat-in-a-suit, baked atlas with blink/squash keyframes, to de-risk the runtime independently of rigging reliability.
-3. **Film-strip render harness** under `flutter test` (`PictureRecorder.toImage` per the `knowledge_graph_poc` pattern) → emit walk/run/sit/jump + face/blink strips + GIF/APNG. **First reviewable deliverable.**
+3. **Film-strip render harness** under `flutter test` (`PictureRecorder.toImage` per the `knowledge_graph` pattern) → emit walk/run/sit/jump + face/blink strips + GIF/APNG. **First reviewable deliverable.**
 4. **CustomPainter runtime** (hybrid `drawAtlas` + per-part draws) + `CharacterView` widget + Ticker-in-State, behind `enableCharacterFlag`. Profile on the named low-end device.
 5. **Rigging skill + gap-detection + human-correction UI** (the AI half) — only after the runtime + film strips prove the rig format.
 6. Panel rates the built outcome against §6.2.

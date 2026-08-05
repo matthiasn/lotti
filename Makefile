@@ -490,3 +490,22 @@ tutorial_video_publish:
 	cd tools/tutorial_videos && python3 -m tutorial_videos publish \
 	  --scenario $(TUTORIAL_SCENARIO) --locale $(TUTORIAL_LOCALE) \
 	  --device $(TUTORIAL_DEVICE)
+
+# Uploads external before/after PNGs to an immutable, commit-addressed R2
+# prefix. Requires the same R2_* .env values and boto3 as tutorial publishing.
+PR_SCREENSHOT_PYTHON ?= python3
+PR_SCREENSHOT_SOURCE ?=
+PR_SCREENSHOT_TOPIC ?=
+PR_SCREENSHOT_COMMIT ?= $(shell git rev-parse HEAD)
+PR_SCREENSHOT_ENV ?= .env
+PR_SCREENSHOT_ARGS = --source "$(PR_SCREENSHOT_SOURCE)" \
+	--topic "$(PR_SCREENSHOT_TOPIC)" --commit "$(PR_SCREENSHOT_COMMIT)" \
+	--env-file "$(PR_SCREENSHOT_ENV)"
+
+.PHONY: pr_screenshots_publish
+pr_screenshots_publish:
+	@test -n "$(PR_SCREENSHOT_SOURCE)" || \
+	  (echo "PR_SCREENSHOT_SOURCE is required" && exit 1)
+	@test -n "$(PR_SCREENSHOT_TOPIC)" || \
+	  (echo "PR_SCREENSHOT_TOPIC is required" && exit 1)
+	$(PR_SCREENSHOT_PYTHON) tool/pr_screenshot_publish.py $(PR_SCREENSHOT_ARGS)
