@@ -182,7 +182,10 @@ Once a full round is active, the sender fetches undecoded rows and performs
 decode, preparation, persistence and enqueue inside each retained item action.
 One malformed payload therefore cannot abort the rest of its page. Failed rows
 are logged and retained in the result while later work continues. Hidden journal
-links remain part of the replicated history. Journal and agent links are
+links remain part of the replicated history. Journal entries complete first;
+the sender then reads serialized link rows in bounded source-ID pages, so it can
+check later-page endpoint outcomes without retaining every link payload for the
+whole interval. Journal and agent links are
 dependent items: a link is retained without enqueue when either in-range
 endpoint fails, and retry preserves entity-before-link ordering. The End barrier
 is not queued while any failures remain: the sheet summarizes them and retry

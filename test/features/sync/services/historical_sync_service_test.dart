@@ -74,6 +74,22 @@ Future<void> _insertEntries(JournalDb db, List<JournalEntity> entries) async {
   });
 }
 
+class _TrackingJournalDb extends JournalDb {
+  _TrackingJournalDb() : super(inMemoryDatabase: true);
+
+  final linkSourcePageSizes = <int>[];
+  void Function()? onLinkRowsQuery;
+
+  @override
+  Future<List<LinkedDbEntry>> linkRowsFromIdsIncludingHidden(
+    List<String> fromIds,
+  ) {
+    linkSourcePageSizes.add(fromIds.length);
+    onLinkRowsQuery?.call();
+    return super.linkRowsFromIdsIncludingHidden(fromIds);
+  }
+}
+
 /// Preserves the old tests' per-call repository choice while exercising a
 /// freshly assembled [HistoricalSyncService] with explicit dependencies.
 class _HistoricalSyncHarness {
@@ -123,7 +139,7 @@ void main() {
   });
 
   group('HistoricalSyncService', () {
-    late JournalDb journalDb;
+    late _TrackingJournalDb journalDb;
     late _HistoricalSyncHarness historicalSync;
     late MockOutboxService outboxService;
     late MockDomainLogger mockDomainLogger;
@@ -132,11 +148,14 @@ void main() {
     late List<dynamic> loggedExceptions;
 
     setUpAll(() {
-      journalDb = JournalDb(inMemoryDatabase: true);
+      journalDb = _TrackingJournalDb();
     });
 
     setUp(() async {
       await clearAllTables(journalDb);
+      journalDb
+        ..linkSourcePageSizes.clear()
+        ..onLinkRowsQuery = null;
 
       outboxService = MockOutboxService();
       mockDomainLogger = MockDomainLogger();
@@ -506,10 +525,18 @@ void main() {
         );
         final target = _buildJournalEntry(
           id: 'link-target',
-          timestamp: timestamp.add(const Duration(minutes: 1)),
+          timestamp: timestamp.add(const Duration(minutes: 100)),
           text: 'Target',
         );
-        await _insertEntries(journalDb, [source, target]);
+        final fillers = List.generate(
+          99,
+          (index) => _buildJournalEntry(
+            id: 'link-filler-$index',
+            timestamp: timestamp.add(Duration(minutes: index + 1)),
+            text: 'Filler $index',
+          ),
+        );
+        await _insertEntries(journalDb, [source, ...fillers, target]);
         await journalDb.upsertEntryLink(
           _buildEntryLink(
             id: 'target-dependent-link',
@@ -520,6 +547,10 @@ void main() {
         );
         var failTarget = true;
         final attempts = <String>[];
+        final entityAttemptsAtLinkQuery = <int>[];
+        journalDb.onLinkRowsQuery = () {
+          entityAttemptsAtLinkQuery.add(attempts.length);
+        };
         when(
           () => outboxService.enqueueMessageOrThrow(any()),
         ).thenAnswer((invocation) async {
@@ -539,12 +570,21 @@ void main() {
 
         final result = await historicalSync.reSyncInterval(
           start: timestamp.subtract(const Duration(hours: 1)),
-          end: timestamp.add(const Duration(hours: 1)),
+          end: timestamp.add(const Duration(hours: 3)),
           agentRepository: mockAgentRepo,
           includeAgentEntities: false,
         );
 
-        expect(attempts, ['link-source', 'link-target']);
+        expect(attempts, hasLength(101));
+        expect(attempts.first, source.id);
+        expect(attempts.last, target.id);
+        expect(attempts, isNot(contains('target-dependent-link')));
+        expect(journalDb.linkSourcePageSizes, [100, 1]);
+        expect(
+          entityAttemptsAtLinkQuery,
+          [101, 101],
+          reason: 'link payload pages are read only after every entity attempt',
+        );
         expect(
           result.failures.map((failure) => failure.itemId),
           ['link-target', 'target-dependent-link'],
@@ -554,15 +594,9 @@ void main() {
         final retried = await result.retryFailures();
 
         expect(retried.failures, isEmpty);
-        expect(
-          attempts,
-          [
-            'link-source',
-            'link-target',
-            'link-target',
-            'target-dependent-link',
-          ],
-        );
+        expect(attempts, hasLength(103));
+        expect(attempts[101], target.id);
+        expect(attempts.last, 'target-dependent-link');
       });
 
       test('isolates a malformed entry-link row before enqueue', () async {

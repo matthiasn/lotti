@@ -48,9 +48,9 @@ merge of two users' work.
   calendar as the rest of the app. Progress remains visible until every row has
   been attempted; raw rows are decoded inside the item boundary, so an isolated
   failure names the affected row and can be retried without requeueing
-everything that succeeded. Hidden journal-link state is included, and journal
-or agent links wait for failed in-range endpoints to queue, including across
-retries. During that full initial
+  everything that succeeded. Hidden journal-link state is read in bounded
+  pages, and journal or agent links wait for failed in-range endpoints to queue,
+  including across retries. During that full initial
   transfer, the new device starts holding off automatic history requests before
   it logs in, so even the first queue drain cannot ask for data that is about to
   arrive; a failed or disconnected transfer releases that hold automatically,
@@ -61,7 +61,7 @@ retries. During that full initial
   second device shows which account it is about to join and a six-character
   check code that the inviting device derives independently and displays too —
   so a wrong or stale code is something to back out of rather than discover
-  afterwards. A CLI-provisioned first device has no peer displaying a code, so
+  afterward. A CLI-provisioned first device has no peer displaying a code, so
   it skips this comparison and starts configuration immediately. A code from a
   different Lotti release says so instead of calling itself invalid.
 - **Lets the user manage the device roster.** The sync status page lists every

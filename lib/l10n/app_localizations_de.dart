@@ -7298,8 +7298,8 @@ class AppLocalizationsDe extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       total,
       locale: localeName,
-      other: 'Nachrichten',
-      one: 'Nachricht',
+      other: 'Einträge',
+      one: 'Eintrag',
     );
     return '$succeeded von $total $_temp0 eingereiht';
   }

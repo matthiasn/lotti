@@ -2987,7 +2987,7 @@
   "maintenanceReSyncJournalEntities": "Journal-Einträge",
   "maintenanceReSyncLast30Days": "Letzte 30 Tage",
   "maintenanceReSyncPartialDescription": "{failed, plural, =1{1 Eintrag ist fehlgeschlagen. Versuche nur diesen Eintrag erneut.} other{{failed} Einträge sind fehlgeschlagen. Versuche nur diese Einträge erneut.}}",
-  "maintenanceReSyncPartialTitle": "{succeeded} von {total} {total, plural, =1{Nachricht} other{Nachrichten}} eingereiht",
+  "maintenanceReSyncPartialTitle": "{succeeded} von {total} {total, plural, =1{Eintrag} other{Einträge}} eingereiht",
   "maintenanceReSyncRetryFailed": "Fehlgeschlagene Einträge erneut versuchen",
   "maintenanceReSyncSelectAtLeastOne": "Wähle mindestens einen Entitätstyp aus",
   "maintenanceReSyncSending": "Nachrichten werden vorbereitet",

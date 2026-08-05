@@ -349,7 +349,6 @@ class HistoricalSyncService {
       var processed = 0;
       var failed = 0;
       final entryQueueState = <String, bool>{};
-      final pendingLinkRows = <LinkedDbEntry>[];
       onProgress?.call(
         const ReSyncProgress(
           phase: ReSyncPhase.journalEntities,
@@ -371,9 +370,6 @@ class HistoricalSyncService {
         for (final id in pageEntryIds) {
           entryQueueState[id] = false;
         }
-        pendingLinkRows.addAll(
-          await _journalDb.linkRowsFromIdsIncludingHidden(pageEntryIds),
-        );
 
         for (final dbEntity in dbEntities) {
           JournalEntity? preparedEntry;
@@ -415,56 +411,77 @@ class HistoricalSyncService {
         );
       }
 
-      for (final entryLinkRow in pendingLinkRows) {
-        EntryLink? preparedLink;
-        Future<void> enqueueLink() async {
+      Future<void> stageLinksForSources(List<String> sourceIds) async {
+        final linkRows = await _journalDb.linkRowsFromIdsIncludingHidden(
+          sourceIds,
+        );
+        for (final entryLinkRow in linkRows) {
+          EntryLink? preparedLink;
+          Future<void> enqueueLink() async {
+            final blocked = _blockedDependencies(
+              entryQueueState,
+              entryLinkRow.fromId,
+              entryLinkRow.toId,
+            );
+            if (blocked.isNotEmpty) {
+              throw StateError(
+                'Journal link dependencies '
+                '${blocked.join(', ')} are not queued',
+              );
+            }
+            final entryLink = preparedLink ??= entryLinkFromLinkedDbEntry(
+              entryLinkRow,
+            );
+            await _outboxService.enqueueMessageOrThrow(
+              SyncMessage.entryLink(
+                status: SyncEntryStatus.update,
+                entryLink: entryLink,
+              ),
+            );
+          }
+
           final blocked = _blockedDependencies(
             entryQueueState,
             entryLinkRow.fromId,
             entryLinkRow.toId,
           );
           if (blocked.isNotEmpty) {
-            throw StateError(
-              'Journal link dependencies ${blocked.join(', ')} are not queued',
+            failures.defer(
+              phase: ReSyncPhase.journalEntities,
+              itemType: ReSyncItemType.entryLink,
+              itemId: entryLinkRow.id,
+              dependencyItemIds: blocked,
+              retryAction: enqueueLink,
             );
+            processed++;
+            failed++;
+            continue;
           }
-          final entryLink = preparedLink ??= entryLinkFromLinkedDbEntry(
-            entryLinkRow,
-          );
-          await _outboxService.enqueueMessageOrThrow(
-            SyncMessage.entryLink(
-              status: SyncEntryStatus.update,
-              entryLink: entryLink,
-            ),
-          );
-        }
 
-        final blocked = _blockedDependencies(
-          entryQueueState,
-          entryLinkRow.fromId,
-          entryLinkRow.toId,
-        );
-        if (blocked.isNotEmpty) {
-          failures.defer(
+          final linkQueued = await failures.attempt(
             phase: ReSyncPhase.journalEntities,
             itemType: ReSyncItemType.entryLink,
             itemId: entryLinkRow.id,
-            dependencyItemIds: blocked,
-            retryAction: enqueueLink,
+            action: enqueueLink,
           );
           processed++;
-          failed++;
-          continue;
+          if (!linkQueued) failed++;
         }
+      }
 
-        final linkQueued = await failures.attempt(
-          phase: ReSyncPhase.journalEntities,
-          itemType: ReSyncItemType.entryLink,
-          itemId: entryLinkRow.id,
-          action: enqueueLink,
-        );
-        processed++;
-        if (!linkQueued) failed++;
+      // Retain the entry outcome map until all links have been staged, but
+      // fetch and release serialized link payloads in bounded source-ID pages
+      // instead of buffering them for the whole interval.
+      final linkSourceIdPage = <String>[];
+      for (final sourceId in entryQueueState.keys) {
+        linkSourceIdPage.add(sourceId);
+        if (linkSourceIdPage.length == pageSize) {
+          await stageLinksForSources(linkSourceIdPage);
+          linkSourceIdPage.clear();
+        }
+      }
+      if (linkSourceIdPage.isNotEmpty) {
+        await stageLinksForSources(linkSourceIdPage);
       }
 
       onProgress?.call(

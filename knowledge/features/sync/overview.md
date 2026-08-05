@@ -304,7 +304,9 @@ every journal entity, entry link, agent entity and agent link: decode,
 preparation, persistence or enqueue failure is logged with its payload family
 and id, collected in `ReSyncResult`, and never aborts later rows or phases.
 Journal links include hidden relationship state and are staged only after the
-whole interval's entries have been attempted. A journal or agent link whose
+whole interval's entries have been attempted; their serialized rows are then
+read and released in bounded source-ID pages rather than retained for the full
+interval. A journal or agent link whose
 in-range source or target did not queue is retained as a dependent failure;
 retry always attempts entity failures first and queues the link only after its
 dependencies succeed. The modal reports the successful and failed counts, lists the
