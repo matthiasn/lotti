@@ -139,9 +139,11 @@ void main() {
 
         registerProcessLogging();
         final info = await resolveActiveProfile();
+        final lifecycleHolder = AppLifecycleHolder();
+        addTearDown(lifecycleHolder.dispose);
         final context = await bootstrapProfileServices(
           info,
-          lifecycleHolder: AppLifecycleHolder(),
+          lifecycleHolder: lifecycleHolder,
           restoreWindow: false,
         );
 
@@ -198,9 +200,11 @@ void main() {
     test('registers the world-scoped primitives against the OS root', () async {
       registerProcessLogging();
       final info = await resolveActiveProfile();
+      final lifecycleHolder = AppLifecycleHolder();
+      addTearDown(lifecycleHolder.dispose);
       final context = await bootstrapProfileServices(
         info,
-        lifecycleHolder: AppLifecycleHolder(),
+        lifecycleHolder: lifecycleHolder,
         restoreWindow: false,
         registerLateAndOptional: false,
       );

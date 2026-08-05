@@ -153,6 +153,10 @@ void main() {
         await registry.setActiveProfile(guest1.id);
 
         final holder = AppLifecycleHolder();
+        // The real bootstrap attaches an AppLifecycleListener to the
+        // binding; leaked, it would assert on lifecycle transitions
+        // dispatched by unrelated tests later in the same runner.
+        addTearDown(holder.dispose);
         registerProcessLogging();
         await bootstrapProfileServices(
           await resolveActiveProfile(),
