@@ -7,6 +7,16 @@
 - **Never pass `--coverage` to an ad-hoc `flutter test <file>` run.** It rewrites the shared `coverage/lcov.info` with only that file's data, clobbering a full-suite report someone else may be relying on. Generate coverage only through the `make` targets (`make test` / `make coverage` / `make coverage_standard`), which manage `coverage/` as a unit.
 - Prefer `tester.pump(duration)` over `tester.pumpAndSettle()` (10s default timeout → hangs if an animation never settles). Never pass `pumpAndSettle` a duration > 1s.
 
+## Shared process state
+
+The optimized CI runner executes many test files in one isolate.
+`test/flutter_test_config.dart` therefore restores the shared baseline after
+every test for Mocktail matchers, DevLogger output and captured logs, Google
+Fonts runtime fetching, Drift's multiple-database warning policy, and GetIt's
+reassignment policy. Tests still own every GetIt registration, stream,
+database, timer, and platform-channel handler they create; clean those up in
+the suite's teardown.
+
 ## Aged-history cost gates
 
 Daily OS cost regressions live under

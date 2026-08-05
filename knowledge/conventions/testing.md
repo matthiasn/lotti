@@ -11,7 +11,7 @@ sources:
   - id: test-readme
     resource: ../../test/README.md
     title: Test guidelines
-    last_modified: 2026-07-25
+    last_modified: 2026-08-05
   - id: agents-md
     resource: ../../AGENTS.md
     title: Repository guidelines
@@ -44,9 +44,12 @@ Two consequences:
 - **Passing locally proves less than it looks.** A file that passes alone can
   still be the file that breaks CI.
 
-`test/flutter_test_config.dart` registers a global `tearDown(resetMocktailState)`
-for exactly this reason. [`test/README.md`](../../test/README.md) carries the full
-account of the Mocktail case; do not re-derive it here.
+`test/flutter_test_config.dart` registers global teardown for exactly this
+reason. It resets Mocktail's matcher state and restores the process-wide test
+baseline for DevLogger, Google Fonts, Drift warnings, and GetIt's reassignment
+policy after every test. Suite-owned GetIt registrations and resources still
+belong to the suite that created them. [`test/README.md`](../../test/README.md)
+carries the full account of the Mocktail case; do not re-derive it here.
 
 # Fake time is mandatory
 

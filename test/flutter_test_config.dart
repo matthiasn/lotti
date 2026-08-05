@@ -3,12 +3,23 @@ import 'dart:io';
 
 import 'package:drift/drift.dart' show driftRuntimeOptions;
 import 'package:flutter_test/flutter_test.dart';
+import 'package:get_it/get_it.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:mocktail/mocktail.dart';
 
 import 'test_utils/clipboard_test_context.dart';
 import 'test_utils/native_drag_drop_test_context.dart';
+
+/// Restores process-wide test configuration without disposing suite-owned
+/// registrations or resources.
+void resetSharedTestGlobals({required bool allowFontDownloads}) {
+  GoogleFonts.config.allowRuntimeFetching = allowFontDownloads;
+  driftRuntimeOptions.dontWarnAboutMultipleDatabases = true;
+  DevLogger.suppressOutput = true;
+  DevLogger.clear();
+  GetIt.I.allowReassignment = false;
+}
 
 /// Runs before every test file. Use this to set global test configuration
 /// that keeps tests fast and deterministic across runners (flutter test,
@@ -48,6 +59,15 @@ Future<void> testExecutable(FutureOr<void> Function() testMain) async {
   // stubs live on the mock instances, so setUpAll-created stubs keep
   // working.
   tearDown(resetMocktailState);
+
+  // Restore the process-wide configuration that individual tests are allowed
+  // to override. GetIt registrations remain the owning suite's responsibility;
+  // only its reassignment policy is reset here.
+  tearDown(
+    () => resetSharedTestGlobals(
+      allowFontDownloads: allowFontDownloads,
+    ),
+  );
 
   await testMain();
 }
