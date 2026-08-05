@@ -1,5 +1,16 @@
 # Knowledge Bundle Update Log
 
+## 2026-08-06
+* **Addition**: New feature concept
+  [Backup and restore](features/backup-and-restore.md) — the authoritative
+  profile-root inventory, include/rebuild/exclude/reject path policy, strict
+  manifest invariants, privacy boundary, and the lifecycle separation between
+  migration copies, complete profile capture, and rollback-safe restore.
+* **Implementation**: Extended [Backup and restore](features/backup-and-restore.md)
+  with the verified quiesced staging lifecycle: double source validation,
+  SQLite integrity and schema checks, staged manifest verification, fail-closed
+  cleanup, and atomic publication.
+
 ## 2026-08-05
 * **Correction**: [Demo mode](features/demo.md) — the fixture-ownership rule
   is now "additive only" rather than "never grow the fixture". The penguin

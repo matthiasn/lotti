@@ -177,6 +177,10 @@ void main() {
           lifecycleHolder: holder,
           restoreWindow: false,
         );
+        // Registration starts editor-state and onboarding database work in
+        // background isolates. Finish that generation's startup requests
+        // before the switch deliberately closes its database channels.
+        await settlePendingDbWork();
         final journalDbGen1 = getIt<JournalDb>();
         expect(getIt<ProfileContext>().profile.id, guest1.id);
 

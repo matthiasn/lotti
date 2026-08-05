@@ -41,7 +41,9 @@ void main() {
         // unverified device is excluded instead of halting all sends.
         expect(client.shareKeysWith, ShareKeysWith.directlyVerifiedOnly);
 
-        final dbFile = File('${tempDir.path}/matrix/custom_db.db');
+        final dbFile = File(
+          '${tempDir.path}/$matrixDatabaseDirectoryName/custom_db.db',
+        );
         expect(dbFile.existsSync(), isTrue);
       },
     );
@@ -62,7 +64,8 @@ void main() {
       addTearDown(() async => client.dispose());
 
       expect(client.clientName, 'lotti');
-      final dbFile = File('${tempDir.path}/matrix/lotti_sync.db');
+      expect(matrixDatabaseRelativePath, 'matrix/lotti_sync.db');
+      final dbFile = File('${tempDir.path}/$matrixDatabaseRelativePath');
       expect(dbFile.existsSync(), isTrue);
     });
   });
