@@ -451,6 +451,104 @@ individually reviewable items, deduplicates identical proposals within a wake,
 keeps only the newest `update_running_timer` proposal (retracting older pending
 ones), and suppresses proposals that would not change current state.
 
+The builder **flushes at every turn boundary that queued a proposal**, not once
+at the end of the wake. A wake spends most of its wall clock on round trips the
+user cannot see — the separate `update_report` turn, its forced retry, and any
+report-editor pass — so holding proposals until `WakeOutputWriter` ran meant
+the agent had decided what to suggest a full inference or three before anything
+appeared. `TaskAgentStrategy.flushChangeSet` closes that gap; the end-of-wake
+build is now a final flush that picks up whatever the last turn staged.
+
+A flush is only half the job: writing the change set does **not** refresh the
+UI. The suggestion providers re-query when `agentUpdateStreamProvider` emits,
+`AgentSyncService.upsertEntity` does not notify, and `_notifyWakeCompletion`
+(`agent_wiring.dart`) fires only after `execute` returns. So each flush calls
+`UpdateNotifications.notifyUiOnly` itself — `notifyUiOnly`, never `notify`,
+because `notify` also feeds `localUpdateStream`, which drives wake
+orchestration and would let a wake re-trigger itself. Without that call the
+whole feature is invisible.
+
+The `incremental` flag separates the two modes. A mid-wake flush is narrow on
+purpose; the end-of-wake build is the only one allowed to reshape existing
+sets:
+
+|  | incremental flush | end-of-wake build |
+| --- | --- | --- |
+| Dedups against | pre-wake sets + own set | same |
+| Writes to | own set only | consolidates everything into one survivor |
+| Split groups | held back | released |
+| Inbox alert | never | always, exactly once |
+| Runs relative to `applyStaged` | before | after |
+| Transaction | its own (`runInTransaction` at the call site) | `WakeOutputWriter`'s |
+
+Repeated flushes are safe by construction:
+
+- The builder tracks the **fingerprints** it has already written, and appends
+  only what is new. Fingerprints rather than a positional watermark because
+  `_items` is not append-only — a fresh `update_running_timer` proposal drops
+  the earlier one.
+- An incremental flush **never writes to a pre-wake set**. Consolidating early
+  would retire it, which marks its pending items retracted and copies them into
+  the survivor as pending — and `applyStaged` then skips the original row it
+  staged, because it is no longer pending, leaving the copy open forever. Only
+  the final build consolidates, and by then retractions have landed.
+- A set the user resolved mid-wake is **never appended to**. Pending queries
+  return only `pending`/`partiallyResolved`, so a proposal added to a resolved
+  row would persist but be invisible in both the UI and the ledger. The flush
+  opens a fresh set instead.
+- **Split groups are held back** until the end of the wake. A
+  `create_follow_up_task` and the `migrate_checklist_item`s targeting its
+  placeholder share a `groupId`; surfacing the follow-up alone would let the
+  user reject it mid-wake, and `cascadeRejectMigrationItems` only sees the
+  items present at that moment — migrations flushed afterwards would reference
+  a rejected placeholder and could never be confirmed.
+- Items dropped by dedup are deliberately **not** marked flushed, so an item an
+  early flush suppressed against a still-open proposal gets one more chance
+  once that proposal is retracted.
+- A failed flush advances nothing: the items stay staged and the end-of-wake
+  build writes them. Each flush runs in its own transaction, so a failure part
+  way through cannot leave a superseded-timer `ChangeDecisionEntity` behind for
+  the retry to duplicate.
+- **The inbox alert fires once, from the final build only.** An incremental
+  flush must not raise it: the count would come from its own set while
+  `createTaskSuggestion` retracts the pre-wake row, and a second flush
+  appending to the same set reuses its id as the `idSeed`, so a row the user
+  already dismissed could never be revived for the later suggestions. The
+  final build alerts even when it has nothing left to persist — otherwise a
+  wake whose proposals all landed mid-conversation would never ring the bell.
+  `raiseInboxAlert` **re-reads the set** before alerting: the card has been on
+  screen since the first flush, so the user may have resolved items on it, and
+  the snapshot this builder wrote would report an inflated count or raise a
+  fresh active row for a card they already cleared. Alerting stays
+  fire-and-forget — a failed re-read skips the alert rather than failing the
+  wake.
+- **Superseded running timers are resolved by the final build.** The timer ids
+  come from everything the wake proposed, not just what the current pass is
+  writing: on a consolidation-only build the replacement was already flushed,
+  so keying on the new items alone would leave a pre-wake proposal for the same
+  timer pending. Matches inside the builder's own set are excluded so the
+  replacement cannot retract itself.
+- **A wake that dies after a flush still alerts.** `WakeOutputWriter` never
+  runs, so the workflow's failure path calls `raiseInboxAlert` itself;
+  otherwise committed, on-screen suggestions would never ring the bell.
+  Consolidation is deliberately *not* attempted there — it retires the pre-wake
+  sets, and the staged retractions that must land first die with the wake. The
+  surplus card is folded by the next wake's end-of-wake build. Because nothing
+  was consolidated, that alert is **skipped** when a pre-wake set is still
+  pending: `createTaskSuggestion` retracts every other open row for the task,
+  so alerting from the wake's set alone would drop those older suggestions out
+  of the inbox. Their existing row is still open and still accurate.
+
+A wake with pre-existing proposals therefore shows a second card while it runs,
+which the final build folds into one. That is the deliberate trade for never
+touching a set the retraction step still needs. The end-of-wake build is
+consequently never a no-op when the wake wrote anything: it still has to fold
+the pre-wake sets and raise the alert.
+
+Retractions keep their end-of-wake placement for the opposite reason they used
+to: proposals now land *first*, so the suggestion list can never read empty
+between a retraction and its replacement.
+
 ```mermaid
 sequenceDiagram
   participant Agent as TaskAgentStrategy
@@ -463,8 +561,12 @@ sequenceDiagram
   participant Journal as Journal DB
   participant Inbox as ChangeSetNotificationService
 
-  Agent->>Builder: queue deferred tool proposals
-  Builder->>Store: persist ChangeSetEntity(pending)
+  loop each turn that queued a proposal
+    Agent->>Builder: queue deferred tool proposals
+    Builder->>Store: flush new items into ChangeSetEntity(pending)
+    Store-->>Card: suggestions appear while the wake runs
+  end
+  Agent->>Builder: final flush at end of wake
   User->>Card: confirm, reject, or Confirm all
   Card->>Confirm: confirm or reject pending item(s)
   Confirm->>Store: reload persisted change set

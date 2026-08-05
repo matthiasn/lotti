@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 
 import '../test_utils.dart';
@@ -74,6 +75,64 @@ void main() {
       expect(entry.resolvedBy, equals(DecisionActor.user));
       expect(entry.verdict, equals(ChangeDecisionVerdict.confirmed));
       expect(entry.reason, equals('User approved'));
+    });
+  });
+
+  group('sticky rejection keys', () {
+    // Read twice per wake — once per incremental change-set flush, once for
+    // the end-of-wake write — so the derivation lives on the ledger rather
+    // than at each call site.
+
+    test('collects only rejected verdicts, ignoring other outcomes', () {
+      final ledger = ProposalLedger(
+        open: const [],
+        resolved: [
+          makeLedgerEntry(
+            fingerprint: 'fp-rejected',
+            status: ChangeItemStatus.rejected,
+            verdict: ChangeDecisionVerdict.rejected,
+          ),
+          makeLedgerEntry(
+            fingerprint: 'fp-confirmed',
+            status: ChangeItemStatus.confirmed,
+            verdict: ChangeDecisionVerdict.confirmed,
+          ),
+          makeLedgerEntry(fingerprint: 'fp-open'),
+        ],
+      );
+
+      expect(ledger.rejectedFingerprints, {'fp-rejected'});
+    });
+
+    test('keys rejected summaries so a reworded re-proposal still blocks', () {
+      final ledger = ProposalLedger(
+        open: const [],
+        resolved: [
+          makeLedgerEntry(
+            toolName: 'add_checklist_item',
+            args: const {'title': 'Ship the release'},
+            humanSummary: 'Add "Ship the release"',
+            verdict: ChangeDecisionVerdict.rejected,
+          ),
+        ],
+      );
+
+      expect(
+        ledger.rejectedDisplayKeys,
+        equals({
+          ChangeItem.displayDuplicateKeyFromParts(
+            'add_checklist_item',
+            'Add "Ship the release"',
+            args: const {'title': 'Ship the release'},
+          ),
+        }),
+      );
+    });
+
+    test('both are empty for a ledger with nothing rejected', () {
+      const ledger = ProposalLedger.empty();
+      expect(ledger.rejectedFingerprints, isEmpty);
+      expect(ledger.rejectedDisplayKeys, isEmpty);
     });
   });
 }

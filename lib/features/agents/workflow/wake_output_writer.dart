@@ -4,7 +4,6 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
-import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -223,12 +222,14 @@ class WakeOutputWriter {
       }
 
       // 10a. Apply any retractions the agent staged during the conversation.
-      // Deferred to here — and run before the build below — so the retraction
-      // and the new proposals commit in one transaction. Persisting
-      // retractions mid-conversation (their old behavior) emptied the
-      // suggestion list for the seconds until this end-of-wake build landed
-      // the replacements; staging closes that gap. Running before build also
-      // lets the builder's dedup see the freshly-retracted statuses.
+      // Deferred to here so the suggestion list never reads empty: proposals
+      // flush at each turn boundary during the conversation, so by the time a
+      // retraction lands its replacement is already on screen. Persisting
+      // retractions mid-conversation (their original behavior) emptied the
+      // list for the seconds until the proposals arrived. Running before the
+      // build below also lets the final flush's dedup see the freshly
+      // retracted statuses — which is what gives an item suppressed by an
+      // earlier flush its second chance.
       //
       // Churn guard: weaker models routinely retract an open proposal AND
       // re-propose an identical one in the same wake. That retract-then-re-add
@@ -243,34 +244,20 @@ class WakeOutputWriter {
         skipFingerprints: changeSetBuilder.proposedFingerprints,
       );
 
-      // 10b. Persist deferred change set (if any items were accumulated).
-      // Pass the full pending sets so the builder can merge into an
-      // existing one rather than creating a duplicate entity.
+      // 10b. Final flush of the deferred change set. Turn-boundary flushes
+      // during the conversation have usually written most of these items
+      // already; this call picks up whatever the last turn staged, and is a
+      // no-op when the builder has nothing new. Pass the full pending sets so
+      // a builder that never flushed can still merge into an existing set
+      // rather than creating a duplicate entity.
       //
-      // Reuse the proposal ledger we already fetched at step 5 to derive
-      // rejected fingerprints — avoids a second round-trip to the
-      // repository for the same data.
-      final rejectedFingerprints = ledger.resolved
-          .where((e) => e.verdict == ChangeDecisionVerdict.rejected)
-          .map((e) => e.fingerprint)
-          .toSet();
-      final rejectedDisplayKeys = {
-        for (final entry in ledger.resolved)
-          if (entry.verdict == ChangeDecisionVerdict.rejected)
-            if (ChangeItem.displayDuplicateKeyFromParts(
-                  entry.toolName,
-                  entry.humanSummary,
-                  args: entry.args,
-                )
-                case final String key)
-              key,
-      };
-
+      // Reuse the proposal ledger we already fetched at step 5 for the sticky
+      // rejection keys — avoids a second round-trip for the same data.
       await changeSetBuilder.build(
         _sync,
         existingPendingSets: pendingSets,
-        rejectedFingerprints: rejectedFingerprints,
-        rejectedDisplayKeys: rejectedDisplayKeys,
+        rejectedFingerprints: ledger.rejectedFingerprints,
+        rejectedDisplayKeys: ledger.rejectedDisplayKeys,
       );
 
       // 11. Persist state.

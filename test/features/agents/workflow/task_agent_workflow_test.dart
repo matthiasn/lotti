@@ -35,6 +35,7 @@ import 'package:lotti/features/notifications/repository/notification_repository.
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/time_service.dart';
@@ -149,6 +150,9 @@ void main() {
   setUp(() async {
     mockAgentRepository = MockAgentRepository();
     mockSyncService = MockAgentSyncService();
+    // A real sync service always exposes its repository; individual tests
+    // re-stub specific ids on `mockAgentRepository`.
+    when(() => mockSyncService.repository).thenReturn(mockAgentRepository);
     mockConversationManager = MockConversationManager();
     mockConversationRepository = MockConversationRepository(
       mockConversationManager,
@@ -6901,6 +6905,58 @@ not describe task configuration or tool activity as progress.
             verifyToolWasDeferred(
               mockConversationManager: mockConversationManager,
               mockJournalRepository: mockJournalRepository,
+            );
+          },
+        );
+
+        test(
+          'an incremental flush notifies the UI so suggestions appear mid-wake',
+          () async {
+            // Writing the change set is not enough: the suggestion providers
+            // re-query only when `agentUpdateStreamProvider` emits, and
+            // `AgentSyncService` does not notify on upsert. Without a UI
+            // notification per flush the proposals stay invisible until
+            // `_notifyWakeCompletion` fires after the whole wake returns —
+            // i.e. the feature would do nothing at all.
+            // `setUpTestGetIt` already registers a MockUpdateNotifications;
+            // use that instance so the production lookup and the assertions
+            // land on the same object. It lives for the whole file, so drop
+            // interactions recorded by earlier tests first.
+            final updateNotifications =
+                getIt<UpdateNotifications>() as MockUpdateNotifications;
+            clearInteractions(updateNotifications);
+            when(
+              () => updateNotifications.notifyUiOnly(any()),
+            ).thenReturn(null);
+
+            final result = await executeWithToolCallOnRealTask(
+              'update_task_estimate',
+              '{"minutes":60}',
+              task: taskForUpdates,
+            );
+
+            expect(result.success, isTrue);
+            final notified = verify(
+              () => updateNotifications.notifyUiOnly(captureAny()),
+            ).captured.cast<Set<String>>();
+            expect(
+              notified,
+              isNotEmpty,
+              reason: 'the flush must announce itself to the UI',
+            );
+            expect(
+              notified.expand((ids) => ids),
+              containsAll(<String>[agentId, taskId]),
+              reason: 'the task page watches both ids',
+            );
+            // notifyUiOnly, not notify: `notify` also feeds
+            // `localUpdateStream`, which drives wake orchestration and would
+            // let a wake re-trigger itself.
+            verifyNever(
+              () => updateNotifications.notify(
+                any(),
+                fromSync: any(named: 'fromSync'),
+              ),
             );
           },
         );

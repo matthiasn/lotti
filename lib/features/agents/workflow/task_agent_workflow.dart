@@ -57,6 +57,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:openai_dart/openai_dart.dart';

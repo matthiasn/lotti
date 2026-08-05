@@ -352,6 +352,11 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // Non-fatal: continue with execution even if audit fails.
     }
 
+    // Visible to the failure path below: incremental flushes commit as they
+    // go, so a wake that dies later still has suggestions on disk that need
+    // finalizing.
+    ChangeSetBuilder? flushedChangeSets;
+
     try {
       final executor = AgentToolExecutor(
         syncService: syncService,
@@ -412,6 +417,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         },
       );
 
+      flushedChangeSets = changeSetBuilder;
+
       final retractionService = SuggestionRetractionService(
         syncService: syncService,
         domainLogger: domainLogger,
@@ -427,6 +434,47 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         runKey: runKey,
         taskId: taskId,
         changeSetBuilder: changeSetBuilder,
+        // Surface proposals at each turn boundary instead of making the user
+        // wait out the report turn, its forced retry and any report-editor
+        // pass. `pendingSets` is the pre-wake snapshot: an incremental flush
+        // dedups against it but never writes to it — consolidation waits for
+        // the end-of-wake build, which runs after staged retractions land.
+        //
+        // Wrapped in a transaction because a flush is retried on the next
+        // turn boundary: a superseded running-timer match writes a
+        // `ChangeDecisionEntity` before the change set itself, so a failure
+        // in between would otherwise leave that decision behind and the retry
+        // would mint a second one for the same match. The end-of-wake build
+        // gets its atomicity from `WakeOutputWriter`'s own transaction —
+        // `runInTransaction` nests, so both paths are covered exactly once.
+        flushChangeSet: () async {
+          await syncService.runInTransaction(
+            () => changeSetBuilder.build(
+              syncService,
+              existingPendingSets: pendingSets,
+              rejectedFingerprints: ledger.rejectedFingerprints,
+              rejectedDisplayKeys: ledger.rejectedDisplayKeys,
+              incremental: true,
+            ),
+          );
+          // Writing the change set is not enough to show it: the suggestion
+          // providers re-query only when `agentUpdateStreamProvider` emits,
+          // and `AgentSyncService` does not notify on upsert. Without this the
+          // flush is invisible until `_notifyWakeCompletion` fires after the
+          // whole wake returns — which is the wait this feature exists to
+          // remove.
+          //
+          // `notifyUiOnly` rather than `notify`: the latter also feeds
+          // `localUpdateStream`, which drives wake orchestration and would let
+          // a wake re-trigger itself.
+          if (getIt.isRegistered<UpdateNotifications>()) {
+            getIt<UpdateNotifications>().notifyUiOnly({
+              agentId,
+              taskId,
+              agentNotification,
+            });
+          }
+        },
         retractionService: retractionService,
         resolveTaskMetadata: () =>
             ChangeProposalFilter.resolveTaskMetadata(journalDb, taskId),
@@ -819,6 +867,19 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       );
     } catch (e, s) {
       _logError('wake failed', error: e, stackTrace: s);
+
+      // Suggestions flushed mid-wake are already committed and stay visible;
+      // `WakeOutputWriter` never ran, so nothing else will raise their inbox
+      // alert. Consolidation is deliberately NOT attempted here: it retires
+      // the pre-wake sets, and the staged retractions that would have to land
+      // first die with this wake. The surplus card is folded by the next
+      // wake's end-of-wake build instead.
+      // `raiseInboxAlert` swallows its own failures — it must never mask the
+      // error that actually killed the wake.
+      await flushedChangeSets?.raiseInboxAlert(
+        syncService,
+        unconsolidatedSets: pendingSets,
+      );
 
       // Update failure count in state.
       try {

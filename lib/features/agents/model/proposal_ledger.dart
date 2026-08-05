@@ -1,5 +1,6 @@
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 
 /// A single row in the proposal ledger — one `ChangeItem` the agent has
 /// ever produced for a given task, annotated with its current lifecycle
@@ -99,4 +100,30 @@ class ProposalLedger {
   final List<ChangeSetEntity> pendingSets;
 
   bool get isEmpty => open.isEmpty && resolved.isEmpty;
+
+  /// Structural fingerprints of proposals the user has rejected.
+  ///
+  /// `ChangeSetBuilder` merges these into its dedup set so a rejection stays
+  /// sticky after the change set that carried it was resolved. Derived here
+  /// rather than at each call site because the wake reads it twice — once per
+  /// incremental flush, once for the end-of-wake write.
+  Set<String> get rejectedFingerprints => {
+    for (final entry in resolved)
+      if (entry.verdict == ChangeDecisionVerdict.rejected) entry.fingerprint,
+  };
+
+  /// The same sticky rejection rule keyed on the user-facing summary, which
+  /// catches a re-proposal whose tool arguments changed shape but which reads
+  /// identically to the one already turned down.
+  Set<String> get rejectedDisplayKeys => {
+    for (final entry in resolved)
+      if (entry.verdict == ChangeDecisionVerdict.rejected)
+        if (ChangeItem.displayDuplicateKeyFromParts(
+              entry.toolName,
+              entry.humanSummary,
+              args: entry.args,
+            )
+            case final String key)
+          key,
+  };
 }

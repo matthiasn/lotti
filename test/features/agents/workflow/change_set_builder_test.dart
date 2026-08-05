@@ -924,6 +924,833 @@ void main() {
         );
       },
     );
+    test(
+      'the final build alerts even when flushes already wrote everything',
+      () async {
+        // The common multi-turn outcome: the final build has nothing left to
+        // persist. It must still raise the wake's one alert, or the bell never
+        // rings for a wake whose proposals all landed mid-conversation.
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        await builder.build(mockSyncService, incremental: true);
+
+        await builder.build(mockSyncService);
+
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: 'task-001',
+            suggestionCount: 1,
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'no alert when the user cleared the flushed card mid-wake',
+      () async {
+        // The card has been on screen since the first flush, so the user can
+        // resolve it before the wake ends. Alerting from the stale snapshot
+        // would raise a fresh active row for a card they already cleared.
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(mockSyncService, incremental: true);
+
+        when(() => mockRepository.getEntity(flushed!.id)).thenAnswer(
+          (_) async => flushed!.copyWith(
+            status: ChangeSetStatus.resolved,
+            resolvedAt: DateTime(2026, 8, 5),
+            items: [
+              flushed.items.single.copyWith(status: ChangeItemStatus.confirmed),
+            ],
+          ),
+        );
+
+        await builder.build(mockSyncService);
+
+        verifyNever(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: any(named: 'linkedTaskId'),
+            suggestionCount: any(named: 'suggestionCount'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'alerts on the re-read count, not the count it wrote',
+      () async {
+        // Partially resolved: two proposed, one confirmed mid-wake, so the
+        // bell must say one — not the two the snapshot still carries.
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        await builder.addItem(
+          toolName: 'update_task_priority',
+          args: {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+        );
+        final flushed = await builder.build(mockSyncService, incremental: true);
+
+        when(() => mockRepository.getEntity(flushed!.id)).thenAnswer(
+          (_) async => flushed!.copyWith(
+            status: ChangeSetStatus.partiallyResolved,
+            items: [
+              flushed.items.first.copyWith(status: ChangeItemStatus.confirmed),
+              flushed.items.last,
+            ],
+          ),
+        );
+
+        await builder.build(mockSyncService);
+
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: 'task-001',
+            suggestionCount: 1,
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a failed re-read skips the alert instead of failing the wake',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(mockSyncService, incremental: true);
+
+        when(
+          () => mockRepository.getEntity(flushed!.id),
+        ).thenThrow(Exception('read failed'));
+
+        await expectLater(builder.build(mockSyncService), completes);
+        verifyNever(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: any(named: 'linkedTaskId'),
+            suggestionCount: any(named: 'suggestionCount'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'raiseInboxAlert is idempotent, so the failure path cannot double-alert',
+      () async {
+        // The workflow calls this directly when a wake dies after a flush:
+        // WakeOutputWriter never runs, so nothing else would ring the bell for
+        // suggestions that are already committed and on screen.
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        await builder.build(mockSyncService, incremental: true);
+
+        await builder.raiseInboxAlert(mockSyncService);
+        await builder.raiseInboxAlert(mockSyncService);
+        await builder.build(mockSyncService);
+
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: 'task-001',
+            suggestionCount: 1,
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'the failure path does not alert over still-open older suggestions',
+      () async {
+        // The failure path alerts without consolidating, and
+        // `createTaskSuggestion` retracts every other open row for the task —
+        // so alerting from the wake's set alone would drop the pre-wake
+        // suggestions out of the inbox.
+        final preWake = makeTestChangeSet(
+          id: 'cs-pre-wake',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+        );
+        when(
+          () => mockRepository.getEntity('cs-pre-wake'),
+        ).thenAnswer((_) async => preWake);
+
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+          incremental: true,
+        );
+        expect(
+          flushed,
+          isNotNull,
+          reason: 'the alert assertions below are vacuous without a flush',
+        );
+
+        await builder.raiseInboxAlert(
+          mockSyncService,
+          unconsolidatedSets: [preWake],
+        );
+
+        verifyNever(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: any(named: 'linkedTaskId'),
+            suggestionCount: any(named: 'suggestionCount'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'the failure path alerts when older suggestions are already resolved',
+      () async {
+        final preWake = makeTestChangeSet(
+          id: 'cs-pre-wake',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+        );
+        when(() => mockRepository.getEntity('cs-pre-wake')).thenAnswer(
+          (_) async => preWake.copyWith(status: ChangeSetStatus.resolved),
+        );
+
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+          incremental: true,
+        );
+        expect(
+          flushed,
+          isNotNull,
+          reason: 'the alert assertions below are vacuous without a flush',
+        );
+
+        await builder.raiseInboxAlert(
+          mockSyncService,
+          unconsolidatedSets: [preWake],
+        );
+
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: 'task-001',
+            suggestionCount: 1,
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('raiseInboxAlert is a no-op when no flush ever landed', () async {
+      await builder.raiseInboxAlert(mockSyncService);
+
+      verifyNever(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: any(named: 'linkedTaskId'),
+          suggestionCount: any(named: 'suggestionCount'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          category: any(named: 'category'),
+          idSeed: any(named: 'idSeed'),
+        ),
+      );
+    });
+
+    test('only the final build raises the inbox alert', () async {
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 120},
+        humanSummary: 'Set estimate to 2 hours',
+      );
+
+      await builder.build(mockSyncService, incremental: true);
+      verifyNever(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: any(named: 'linkedTaskId'),
+          suggestionCount: any(named: 'suggestionCount'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          category: any(named: 'category'),
+          idSeed: any(named: 'idSeed'),
+        ),
+      );
+
+      await builder.addItem(
+        toolName: 'update_task_priority',
+        args: {'priority': 'P1'},
+        humanSummary: 'Set priority to P1',
+      );
+      await builder.build(mockSyncService);
+
+      // One alert, carrying the full count — not one per flush, each
+      // retracting the last.
+      verify(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: 'task-001',
+          suggestionCount: 2,
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          category: any(named: 'category'),
+          idSeed: any(named: 'idSeed'),
+        ),
+      ).called(1);
+    });
+  });
+
+  group('incremental flush', () {
+    // The wake calls build() at every turn boundary so suggestions reach the
+    // user while the agent is still working, instead of all at once when the
+    // wake ends. Each flush must append only what it added.
+
+    test(
+      'second flush appends into the same set instead of duplicating',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final first = await builder.build(mockSyncService);
+
+        await builder.addItem(
+          toolName: 'update_task_priority',
+          args: {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+        );
+        final second = await builder.build(mockSyncService);
+
+        // One card, not two: the second flush lands in the set the first created.
+        expect(second!.id, first!.id);
+        expect(
+          second.items.map((i) => i.toolName),
+          ['update_task_estimate', 'update_task_priority'],
+          reason:
+              'the estimate must appear exactly once, followed by the new '
+              'priority item',
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.cast<ChangeSetEntity>();
+        expect(captured, hasLength(2), reason: 'one write per flush');
+        expect(captured.first.items, hasLength(1));
+        expect(captured.last.items, hasLength(2));
+      },
+    );
+
+    test('a flush with nothing new staged writes nothing', () async {
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 120},
+        humanSummary: 'Set estimate to 2 hours',
+      );
+      final first = await builder.build(mockSyncService);
+      clearInteractions(mockSyncService);
+
+      // The report turn stages no proposals, then the wake's final build runs.
+      final second = await builder.build(mockSyncService);
+
+      expect(second, same(first), reason: 'returns the set as it stands');
+      verifyNever(() => mockSyncService.upsertEntity(any()));
+    });
+
+    test(
+      'consolidates pre-wake sets once, not again on every later flush',
+      () async {
+        final stale = makeTestChangeSet(
+          id: 'cs-stale',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+          createdAt: DateTime(2026, 5),
+        );
+
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        await builder.build(mockSyncService, existingPendingSets: [stale]);
+        clearInteractions(mockSyncService);
+
+        await builder.addItem(
+          toolName: 'update_task_priority',
+          args: {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+        );
+        // The caller passes the same pre-wake snapshot every flush — the
+        // builder must not retire `stale` a second time.
+        final second = await builder.build(
+          mockSyncService,
+          existingPendingSets: [stale],
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.cast<ChangeSetEntity>();
+        expect(
+          captured,
+          hasLength(1),
+          reason: 'only the survivor is rewritten; no second retirement write',
+        );
+        expect(captured.single.id, second!.id);
+        expect(
+          captured.single.status,
+          ChangeSetStatus.pending,
+          reason: 'the survivor stays pending',
+        );
+        expect(
+          second.items.map((i) => i.humanSummary),
+          ['Start the task', 'Set estimate to 2 hours', 'Set priority to P1'],
+        );
+      },
+    );
+
+    test('an item suppressed by an early flush gets a second chance', () async {
+      // The agent re-proposes something an open pending set already carries.
+      // The early flush drops it — but the wake retracts that open proposal
+      // before the final build, and the item must then land.
+      final open = makeTestChangeSet(
+        id: 'cs-open',
+        items: const [
+          ChangeItem(
+            toolName: 'update_task_priority',
+            args: {'priority': 'P1'},
+            humanSummary: 'Set priority to P1',
+          ),
+        ],
+      );
+
+      await builder.addItem(
+        toolName: 'update_task_priority',
+        args: {'priority': 'P1'},
+        humanSummary: 'Set priority to P1',
+      );
+      final first = await builder.build(
+        mockSyncService,
+        existingPendingSets: [open],
+      );
+      expect(
+        first,
+        isNull,
+        reason: 'blocked by the identical open proposal, so nothing is written',
+      );
+      verifyNever(() => mockSyncService.upsertEntity(any()));
+
+      // The retraction lands: the open item now reads as retracted, which no
+      // longer blocks a re-proposal.
+      when(() => mockRepository.getEntity('cs-open')).thenAnswer(
+        (_) async => open.copyWith(
+          items: [
+            open.items.single.copyWith(status: ChangeItemStatus.retracted),
+          ],
+        ),
+      );
+
+      final second = await builder.build(
+        mockSyncService,
+        existingPendingSets: [open],
+      );
+
+      expect(
+        second!.items.where((i) => i.status == ChangeItemStatus.pending),
+        hasLength(1),
+        reason: 'the suppressed item is retried once the blocker is retracted',
+      );
+    });
+
+    test(
+      'a superseded running-timer item does not strand the flush watermark',
+      () async {
+        // `addItem` drops the earlier proposal for the same timer, so `_items`
+        // shrinks — a positional watermark would slide onto the wrong item and
+        // silently swallow the replacement.
+        await builder.addItem(
+          toolName: 'update_running_timer',
+          args: {'timerId': 'timer-1', 'action': 'stop'},
+          humanSummary: 'Stop the running timer',
+        );
+        await builder.build(mockSyncService);
+
+        await builder.addItem(
+          toolName: 'update_running_timer',
+          args: {'timerId': 'timer-1', 'action': 'keep'},
+          humanSummary: 'Keep the running timer',
+        );
+        expect(
+          builder.items,
+          hasLength(1),
+          reason: 'the replacement dropped the earlier proposal',
+        );
+
+        final second = await builder.build(mockSyncService);
+
+        expect(
+          second!.items.map((i) => i.humanSummary),
+          contains('Keep the running timer'),
+          reason: 'the replacement must still be written',
+        );
+      },
+    );
+
+    test(
+      'an incremental flush never writes to a pre-wake set',
+      () async {
+        // Consolidating early retires the pre-wake set, which marks its
+        // pending items retracted and copies them into the survivor as
+        // pending. The end-of-wake `applyStaged` then finds the row it staged
+        // no longer pending and skips it — leaving the copy open forever, even
+        // though the agent was told the retraction succeeded.
+        final preWake = makeTestChangeSet(
+          id: 'cs-pre-wake',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+        );
+
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+          incremental: true,
+        );
+
+        expect(
+          flushed!.id,
+          isNot('cs-pre-wake'),
+          reason: 'the flush opens its own set rather than merging',
+        );
+        final written = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.cast<ChangeSetEntity>();
+        expect(
+          written.map((cs) => cs.id),
+          everyElement(isNot('cs-pre-wake')),
+          reason: 'the pre-wake set is neither retired nor rewritten',
+        );
+        expect(
+          written.single.items.map((i) => i.humanSummary),
+          ['Set estimate to 2 hours'],
+          reason: "the pre-wake item is not copied into the wake's set",
+        );
+      },
+    );
+
+    test(
+      'an incremental flush starts a new set when the user resolved the last one',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final first = await builder.build(mockSyncService, incremental: true);
+
+        // The user confirms everything on the card while the wake runs on.
+        when(() => mockRepository.getEntity(first!.id)).thenAnswer(
+          (_) async => first!.copyWith(
+            status: ChangeSetStatus.resolved,
+            resolvedAt: DateTime(2026, 8, 5),
+            items: [
+              first.items.single.copyWith(status: ChangeItemStatus.confirmed),
+            ],
+          ),
+        );
+        clearInteractions(mockSyncService);
+
+        await builder.addItem(
+          toolName: 'update_task_priority',
+          args: {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+        );
+        final second = await builder.build(mockSyncService, incremental: true);
+
+        expect(
+          second!.id,
+          isNot(first!.id),
+          reason:
+              'appending to a resolved set would hide the proposal — '
+              'pending queries only return pending/partiallyResolved',
+        );
+        expect(second.status, ChangeSetStatus.pending);
+        expect(
+          second.items.map((i) => i.humanSummary),
+          ['Set priority to P1'],
+        );
+      },
+    );
+
+    test(
+      'an incremental flush holds back a split group until the wake ends',
+      () async {
+        // The follow-up and the migrations that target its placeholder must
+        // appear together: surfacing the follow-up alone lets the user reject
+        // it mid-wake, and the cascade that rejects its migrations only sees
+        // the items present at that moment.
+        final placeholder = await builder.addFollowUpTask(
+          args: {'title': 'Ship the release'},
+          humanSummary: 'Create follow-up "Ship the release"',
+        );
+        await builder.addBatchItem(
+          toolName: 'migrate_checklist_items',
+          args: {
+            'targetTaskId': placeholder,
+            'items': [
+              {'id': 'item-1', 'title': 'Tag the build'},
+            ],
+          },
+          summaryPrefix: 'Migrate',
+          groupId: placeholder,
+        );
+
+        final incremental = await builder.build(
+          mockSyncService,
+          incremental: true,
+        );
+        expect(
+          incremental,
+          isNull,
+          reason: 'the whole split group is held back, so nothing is written',
+        );
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+
+        final finalSet = await builder.build(mockSyncService);
+
+        expect(
+          finalSet!.items.map((i) => i.toolName),
+          containsAll(<String>[
+            'create_follow_up_task',
+            'migrate_checklist_item',
+          ]),
+          reason: 'the group lands atomically in the end-of-wake build',
+        );
+      },
+    );
+
+    test(
+      'the final build folds pre-wake sets even with nothing new to write',
+      () async {
+        // Every item reached the user via an incremental flush, so the final
+        // build has no new items — but it is the only pass allowed to
+        // consolidate, and skipping it would leave the task with two cards.
+        final preWake = makeTestChangeSet(
+          id: 'cs-pre-wake',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+        );
+
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+          incremental: true,
+        );
+        clearInteractions(mockSyncService);
+
+        final finalSet = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+        );
+
+        expect(finalSet!.id, flushed!.id, reason: 'the wake set survives');
+        expect(
+          finalSet.items.map((i) => i.humanSummary),
+          containsAll(<String>['Set estimate to 2 hours', 'Start the task']),
+          reason: 'the pre-wake item is folded in',
+        );
+        final written = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.cast<ChangeSetEntity>();
+        final retired = written.firstWhere((cs) => cs.id == 'cs-pre-wake');
+        expect(
+          retired.status,
+          ChangeSetStatus.resolved,
+          reason: 'the surplus set is retired so only one card remains',
+        );
+      },
+    );
+
+    test(
+      'a wake that proposes nothing leaves existing sets untouched',
+      () async {
+        // The consolidation-only pass must not turn a no-op wake into a writer.
+        final preWake = makeTestChangeSet(id: 'cs-a');
+        final other = makeTestChangeSet(
+          id: 'cs-b',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+        );
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake, other],
+        );
+
+        expect(result, isNull);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
+
+    test(
+      'the final build retracts a pre-wake timer the flush superseded',
+      () async {
+        // The replacement was flushed, so `deduped` is empty by the time the
+        // consolidation-only pass runs and no timer id would otherwise reach
+        // the supersession search — leaving the obsolete pre-wake action
+        // pending in the survivor.
+        final preWake = makeTestChangeSet(
+          id: 'cs-pre-wake',
+          items: const [
+            ChangeItem(
+              toolName: 'update_running_timer',
+              args: {'timerId': 'timer-1', 'action': 'stop'},
+              humanSummary: 'Stop the running timer',
+            ),
+          ],
+        );
+
+        await builder.addItem(
+          toolName: 'update_running_timer',
+          args: {'timerId': 'timer-1', 'action': 'keep'},
+          humanSummary: 'Keep the running timer',
+        );
+        final flushed = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+          incremental: true,
+        );
+        expect(
+          flushed!.items.single.humanSummary,
+          'Keep the running timer',
+          reason: 'the replacement lands in the wake set, untouched',
+        );
+
+        final finalSet = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+        );
+
+        final bySummary = {
+          for (final item in finalSet!.items) item.humanSummary: item.status,
+        };
+        expect(
+          bySummary['Stop the running timer'],
+          ChangeItemStatus.retracted,
+          reason: 'the superseded pre-wake proposal is resolved, not carried',
+        );
+        expect(
+          bySummary['Keep the running timer'],
+          ChangeItemStatus.pending,
+          reason: 'the replacement must not retract itself',
+        );
+      },
+    );
+
+    test('a failed flush leaves items staged for the next one', () async {
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 120},
+        humanSummary: 'Set estimate to 2 hours',
+      );
+
+      when(
+        () => mockSyncService.upsertEntity(any()),
+      ).thenThrow(Exception('write failed'));
+      await expectLater(
+        builder.build(mockSyncService),
+        throwsA(isA<Exception>()),
+      );
+
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+      final retry = await builder.build(mockSyncService);
+
+      expect(
+        retry!.items,
+        hasLength(1),
+        reason: 'the watermark only advances on a successful write',
+      );
+    });
   });
 
   group('build', () {
