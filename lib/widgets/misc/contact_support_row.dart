@@ -41,9 +41,8 @@ const contactSupportDiscordKey = Key('contact-support-discord');
 /// lives in [DesignSystemContactRow]; this widget only supplies the localized
 /// wording and the four destinations.
 ///
-/// The written affordance opens a `mailto:` — email is the deliberate first
-/// step, with the Manual, the repository, and the community invite as the
-/// glyphs beside it.
+/// Email is the first glyph, followed by the Manual, the repository, and the
+/// community invite. All four use the same icon-button treatment.
 class ContactSupportRow extends ConsumerWidget {
   const ContactSupportRow({super.key});
 
@@ -52,18 +51,17 @@ class ContactSupportRow extends ConsumerWidget {
     final messages = context.messages;
 
     return DesignSystemContactRow(
-      label: messages.contactUsLabel,
-      // The one row here that is not a brand mark, so it takes the plain
-      // envelope: it says "this opens mail" without competing with the three
-      // logos beside it.
-      labelIcon: MdiIcons.emailOutline,
-      labelKey: contactSupportEmailKey,
-      onLabelPressed: () => unawaited(
-        _launchSupportUri(
-          contactEmailUri(subject: messages.contactUsEmailSubject),
-        ),
-      ),
       actions: [
+        DesignSystemContactAction(
+          icon: const Icon(MdiIcons.emailOutline),
+          label: messages.contactUsLabel,
+          iconKey: contactSupportEmailKey,
+          onPressed: () => unawaited(
+            _launchSupportUri(
+              contactEmailUri(subject: messages.contactUsEmailSubject),
+            ),
+          ),
+        ),
         DesignSystemContactAction(
           icon: const Icon(MdiIcons.bookOpenPageVariantOutline),
           label: messages.navSidebarManualLabel,

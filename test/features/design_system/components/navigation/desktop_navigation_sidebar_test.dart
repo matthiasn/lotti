@@ -816,8 +816,8 @@ void main() {
         final below = tester.getRect(find.byKey(belowKey));
         final settingsRow = tester.getRect(find.text('Settings'));
 
-        // The whole point of the slot: 32 px more than a padded row gets,
-        // which is what lets the Contact Us footer hold one line at 256.
+        // The whole point of the slot: the footer's divider can define the
+        // rail edge while the action group owns its own compact inset.
         expect(band.left, sidebar.left);
         expect(band.right, sidebar.right);
         expect(band.width, sidebar.width);
@@ -828,9 +828,10 @@ void main() {
         expect(below.right, lessThan(sidebar.right));
         expect(settingsRow.left, greaterThan(sidebar.left));
 
-        // Order: Settings, then the band, then the ambient strip last.
-        expect(band.top, greaterThanOrEqualTo(settingsRow.bottom));
-        expect(below.top, greaterThanOrEqualTo(band.bottom));
+        // Order: Settings, then the optional ambient strip, with the footer
+        // band last so it remains the stable bottom edge of the sidebar.
+        expect(below.top, greaterThanOrEqualTo(settingsRow.bottom));
+        expect(band.top, greaterThanOrEqualTo(below.bottom));
       },
     );
 
@@ -850,8 +851,8 @@ void main() {
       );
       await tester.pump();
 
-      // The icon-only rail is 72 px — narrower than the three glyphs the band
-      // carries, never mind the label.
+      // The icon-only rail is 72 px — narrower than the four glyphs the band
+      // carries.
       expect(find.byKey(bandKey), findsNothing);
     });
   });

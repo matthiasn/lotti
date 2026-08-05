@@ -6,13 +6,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.3]
 ### Added
-- **Getting in touch is now one tap from the navigation.** A Contact Us line
-  sits at the foot of the sidebar on desktop, below Settings, and at the bottom
-  of the More sheet on a phone. Tapping the words opens a mail draft to the
-  project; beside them are three marks — the manual, which opens in your
-  language, the source repository, and the Discord community. All four leave
-  Lotti and open in your browser or mail app. On a collapsed sidebar the line
-  goes away with the other labels, and the manual is still in Settings.
+- **Getting in touch is now one tap from the navigation.** Four equal contact
+  buttons close the More sheet on a phone and sit pinned to the sidebar's
+  lower-right corner on desktop. The envelope opens a mail draft to the
+  project, followed by the manual in your language, the source repository, and
+  the Discord community. Active sync details stack directly above without
+  moving the contact row. Otherwise, queued outgoing work appears beside
+  Settings as a quiet outlined upward count instead of a red error-like badge.
+  All four contact actions leave Lotti and open in your browser or mail app. On
+  a collapsed sidebar the row goes away, and the manual is still in Settings.
 
 ### Fixed
 - **Initial Sync setup no longer gets stuck on impossible checks or one bad

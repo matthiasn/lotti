@@ -128,24 +128,21 @@ class DesktopNavigationSidebar extends StatelessWidget {
   /// detail cards would not fit the icon-only rail.
   final Widget? aboveSettings;
 
-  /// Optional **full-bleed** band rendered under the Settings row, above
-  /// [belowSettings].
+  /// Optional **full-bleed** band pinned to the bottom of the expanded
+  /// sidebar, after [belowSettings].
   ///
   /// Unlike every other slot, this one is laid out edge to edge rather than
   /// inside the rail's horizontal gutters — it owns whatever inset it wants.
   /// The Lotti app uses it for the Contact Us footer, which is a band with a
-  /// rule across the rail rather than a row in a column of rows, and which
-  /// needs the gutters back: at the default 256 px width its label and three
-  /// glyphs do not fit the 224 px a padded slot would offer.
+  /// rule across the rail rather than a row in a column of rows. The actions
+  /// own their compact inset while the rule remains full width.
   ///
   /// Suppressed in [collapsed] mode for the same reason as [aboveSettings].
   final Widget? footerBand;
 
-  /// Optional widget rendered at the very bottom of the expanded layout,
+  /// Optional widget rendered below Settings and directly above [footerBand],
   /// inside the rail's horizontal gutters like the rows above it. The Lotti
-  /// app uses this slot to host the ambient sync activity indicator (variant
-  /// D4a) so the LED strip sits flush against the bottom of the rail — which
-  /// is why [footerBand] goes *above* it rather than below. Suppressed in
+  /// app uses this slot for the ambient sync activity indicator. Suppressed in
   /// [collapsed] mode for the same reason as [aboveSettings].
   final Widget? belowSettings;
 
@@ -256,22 +253,22 @@ class DesktopNavigationSidebar extends StatelessWidget {
             ),
           ),
 
-          // Full-bleed band under the padded column. Deliberately outside
-          // `gutter` — see [footerBand]. Sized to the full rail rather than
-          // left to shrink-wrap: the enclosing column is start-aligned, so a
-          // band that did not stretch itself would collapse to its content
-          // and the slot's one promise — the whole width — would hold only
-          // for children that happened to ask for it.
-          if (!collapsed && footerBand != null)
-            SizedBox(width: double.infinity, child: footerBand),
-
-          // Optional ambient indicator slot pinned to the bottom, back inside
-          // the rail's gutters. Hidden in collapsed mode for the same reason
-          // as [aboveSettings].
+          // Optional ambient indicator immediately above the stable footer.
+          // It stays inside the rail's gutters, and disappears without leaving
+          // a spacer when inactive.
           if (!collapsed && belowSettings != null) ...[
             SizedBox(height: tokens.spacing.step3),
             Padding(padding: gutter, child: belowSettings),
           ],
+
+          // Full-bleed band pinned last. Deliberately outside `gutter` — see
+          // [footerBand]. Sized to the full rail rather than left to
+          // shrink-wrap: the enclosing column is start-aligned, so a band that
+          // did not stretch itself would collapse to its content and the
+          // slot's one promise — the whole width — would hold only for
+          // children that happened to ask for it.
+          if (!collapsed && footerBand != null)
+            SizedBox(width: double.infinity, child: footerBand),
         ],
       ),
     );
