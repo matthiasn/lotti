@@ -543,9 +543,7 @@ void main() {
       // Reset mock to return 3 on next DB query (simulating that
       // counter 3 was marked as received by covered VC processing).
       reset(mockDb);
-      when(
-        () => mockDb.updateHostActivity(any(), any()),
-      ).thenAnswer((_) async => 1);
+      restoreSyncSequenceLogDefaults(mockDb);
       when(
         () => mockDb.getLastCounterForHost(aliceHostId),
       ).thenAnswer((_) async => 3);
@@ -557,17 +555,8 @@ void main() {
       ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
       when(
-        () => mockDb.getCountersForHostInRange(any(), any(), any()),
-      ).thenAnswer((_) async => <int>{});
-      when(
         () => mockDb.batchInsertSequenceEntries(any()),
       ).thenAnswer((_) async {});
-      when(
-        () => mockDb.getPendingEntriesByPayloadId(
-          payloadType: any(named: 'payloadType'),
-          payloadId: any(named: 'payloadId'),
-        ),
-      ).thenAnswer((_) async => []);
 
       final gaps = await service.recordReceivedEntry(
         entryId: 'entry-5',
@@ -616,9 +605,7 @@ void main() {
         // On next call, cache miss → re-queries DB
         // But this time mock returns 2 (no covered VC to advance it)
         reset(mockDb);
-        when(
-          () => mockDb.updateHostActivity(any(), any()),
-        ).thenAnswer((_) async => 1);
+        restoreSyncSequenceLogDefaults(mockDb);
         when(
           () => mockDb.getLastCounterForHost(aliceHostId),
         ).thenAnswer((_) async => 2);
@@ -629,17 +616,8 @@ void main() {
           () => mockDb.recordSequenceEntry(any()),
         ).thenAnswer((_) async => 1);
         when(
-          () => mockDb.getCountersForHostInRange(any(), any(), any()),
-        ).thenAnswer((_) async => <int>{});
-        when(
           () => mockDb.batchInsertSequenceEntries(any()),
         ).thenAnswer((_) async {});
-        when(
-          () => mockDb.getPendingEntriesByPayloadId(
-            payloadType: any(named: 'payloadType'),
-            payloadId: any(named: 'payloadId'),
-          ),
-        ).thenAnswer((_) async => []);
 
         final gaps = await service.recordReceivedEntry(
           entryId: 'entry-5',

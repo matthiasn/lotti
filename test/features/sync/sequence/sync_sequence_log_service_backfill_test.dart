@@ -804,13 +804,11 @@ void main() {
         // Sanity check: a second identical-counter record hits the cached
         // bound and does NOT rescan the range.
         clearInteractions(mockDb);
+        restoreSyncSequenceLogDefaults(mockDb);
         clearInteractions(mockLogging);
         when(
           () => mockDb.getLastCounterForHost(aliceHostId),
         ).thenAnswer((_) async => lastSeen);
-        when(
-          () => mockDb.updateHostActivity(any(), any()),
-        ).thenAnswer((_) async => 1);
         when(
           () => mockDb.getHostLastSeen(aliceHostId),
         ).thenAnswer((_) async => DateTime(2025, 1, 1));
@@ -820,12 +818,6 @@ void main() {
         when(
           () => mockDb.recordSequenceEntry(any()),
         ).thenAnswer((_) async => 1);
-        when(
-          () => mockDb.getPendingEntriesByPayloadId(
-            payloadType: any(named: 'payloadType'),
-            payloadId: any(named: 'payloadId'),
-          ),
-        ).thenAnswer((_) async => []);
         when(
           () => mockLogging.log(
             any<LogDomain>(),
@@ -844,6 +836,7 @@ void main() {
 
         // Retire: this must clear the materialized-bound cache.
         clearInteractions(mockDb);
+        restoreSyncSequenceLogDefaults(mockDb);
         clearInteractions(mockLogging);
         when(
           () => mockDb.retireExhaustedRequestedEntries(
@@ -876,12 +869,10 @@ void main() {
         // `_materializedUpperBound`, since `_lastCounterCache` is already
         // invalidated by any concurrent `recordSequenceEntry` path.
         clearInteractions(mockDb);
+        restoreSyncSequenceLogDefaults(mockDb);
         when(
           () => mockDb.getLastCounterForHost(aliceHostId),
         ).thenAnswer((_) async => lastSeen);
-        when(
-          () => mockDb.updateHostActivity(any(), any()),
-        ).thenAnswer((_) async => 1);
         when(
           () => mockDb.getHostLastSeen(aliceHostId),
         ).thenAnswer((_) async => DateTime(2025, 1, 1));
@@ -892,17 +883,8 @@ void main() {
           () => mockDb.recordSequenceEntry(any()),
         ).thenAnswer((_) async => 1);
         when(
-          () => mockDb.getPendingEntriesByPayloadId(
-            payloadType: any(named: 'payloadType'),
-            payloadId: any(named: 'payloadId'),
-          ),
-        ).thenAnswer((_) async => []);
-        when(
           () => mockDb.getCountersForHostInRange(any(), any(), any()),
         ).thenAnswer((_) async => <int>{});
-        when(
-          () => mockDb.batchInsertSequenceEntries(any()),
-        ).thenAnswer((_) async {});
 
         await service.recordReceivedEntry(
           entryId: 'post-retire',

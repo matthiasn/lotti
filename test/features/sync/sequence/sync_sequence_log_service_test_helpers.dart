@@ -814,6 +814,7 @@ class RealSequenceLogTestBench {
         loggingService: logging,
       ),
     );
+    addTearDown(bench.close);
     bench.service.onMissingEntriesDetected = () {
       bench.missingCallbackCount++;
     };
@@ -841,8 +842,13 @@ class RealSequenceLogTestBench {
   final SyncDatabase database;
   final SyncSequenceLogService service;
   int missingCallbackCount = 0;
+  bool _closed = false;
 
-  Future<void> close() => database.close();
+  Future<void> close() async {
+    if (_closed) return;
+    _closed = true;
+    await database.close();
+  }
 }
 
 Future<void> expectObservedCounter({
@@ -868,13 +874,32 @@ SyncSequenceLogItem createLogItem(
     hostId: hostId,
     counter: counter,
     entryId: entryId,
-    payloadType: 0, // SyncSequencePayloadType.journalEntity.index
+    payloadType: SyncSequencePayloadType.journalEntity.index,
     originatingHostId: originatingHostId,
     status: status.index,
     createdAt: DateTime(2024),
     updatedAt: DateTime(2024),
     requestCount: 0,
   );
+}
+
+/// Restores the default database stubs after a test resets or clears its mock.
+void restoreSyncSequenceLogDefaults(MockSyncDatabase mockDb) {
+  when(
+    () => mockDb.updateHostActivity(any(), any()),
+  ).thenAnswer((_) async => 1);
+  when(
+    () => mockDb.getCountersForHostInRange(any(), any(), any()),
+  ).thenAnswer((_) async => <int>{});
+  when(
+    () => mockDb.batchInsertSequenceEntries(any()),
+  ).thenAnswer((_) async {});
+  when(
+    () => mockDb.getPendingEntriesByPayloadId(
+      payloadType: any(named: 'payloadType'),
+      payloadId: any(named: 'payloadId'),
+    ),
+  ).thenAnswer((_) async => []);
 }
 
 /// Registers the fallback values shared by the split facade suites.
@@ -919,28 +944,13 @@ class SyncSequenceLogServiceTestBench {
         subDomain: any(named: 'subDomain'),
       ),
     ).thenReturn(null);
-    when(
-      () => mockDb.updateHostActivity(any(), any()),
-    ).thenAnswer((_) async => 1);
-    when(
-      () => mockDb.getCountersForHostInRange(any(), any(), any()),
-    ).thenAnswer((_) async => <int>{});
-    when(
-      () => mockDb.batchInsertSequenceEntries(any()),
-    ).thenAnswer((_) async {});
+    restoreSyncSequenceLogDefaults(mockDb);
     when(
       () => mockDb.getHostLastSeen(aliceHostId),
     ).thenAnswer((_) async => DateTime(2025, 1, 1));
     when(
       () => mockDb.getHostLastSeen(bobHostId),
     ).thenAnswer((_) async => DateTime(2025, 1, 1));
-    when(
-      () => mockDb.getPendingEntriesByPayloadId(
-        payloadType: any(named: 'payloadType'),
-        payloadId: any(named: 'payloadId'),
-      ),
-    ).thenAnswer((_) async => []);
-
     return SyncSequenceLogServiceTestBench._(
       mockDb: mockDb,
       mockVcService: mockVcService,
