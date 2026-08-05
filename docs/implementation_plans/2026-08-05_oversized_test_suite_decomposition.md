@@ -22,8 +22,8 @@ decomposition itself.
 |---:|---|---:|---|---|
 | 1 | `sync_sequence_log_service_test.dart` | 6,871 | receive, backfill, population, covered clocks, facade/cache | Merged (#3804) |
 | 2 | `task_agent_workflow_test.dart` | 9,132 | wake execution, persistence, prompt/context delegation, workflow shell | Merged (#3806) |
-| 3 | `unified_ai_inference_repository_test.dart` | 8,593 | inference execution, tool-call processing, post-processing, repository shell | In progress |
-| 4 | `eval_constraints_test.dart` | 8,228 | split the test-only constraint framework and mirror its focused source files | Planned |
+| 3 | `unified_ai_inference_repository_test.dart` | 8,593 | inference execution, tool-call processing, post-processing, repository shell | Merged (#3807) |
+| 4 | `eval_constraints_test.dart` | 8,228 | split the test-only constraint framework and mirror its focused source files | In progress |
 | 5 | `outbox_service_test.dart` | 7,820 | send pipeline, queue/database behavior, retry/maintenance, service shell | Planned |
 | 6 | `day_agent_workflow_test.dart` | 7,379 | day wake execution, context/prompt construction, persistence, workflow shell | Planned |
 | 7 | `wake_orchestrator_test.dart` | 6,905 | scheduling, drain/claim lifecycle, recovery, orchestrator shell | Planned |
@@ -91,3 +91,15 @@ deterministic fixtures, and stream builders live in a helper library with no
 
 The split preserves all 115 conventional test declarations and the Glados
 property test. The largest resulting executable suite is 2,368 lines.
+
+### PR 4 — evaluation constraints framework
+
+The test-only evaluation framework now keeps constraint IDs and the ordered
+registry in a small shell, with schedule, estimate, trade-off, and content
+scoring in focused part files. Each source responsibility has one mirrored test
+suite, while deterministic block/outcome builders live in a helper library with
+no `main()`.
+
+The split preserves all 341 conventional test declarations, 24 groups, and the
+Glados property test. The largest resulting executable suite is 3,908 lines;
+the largest focused source part is 1,849 lines.
