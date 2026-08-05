@@ -447,15 +447,34 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         // would mint a second one for the same match. The end-of-wake build
         // gets its atomicity from `WakeOutputWriter`'s own transaction —
         // `runInTransaction` nests, so both paths are covered exactly once.
-        flushChangeSet: () => syncService.runInTransaction(
-          () => changeSetBuilder.build(
-            syncService,
-            existingPendingSets: pendingSets,
-            rejectedFingerprints: ledger.rejectedFingerprints,
-            rejectedDisplayKeys: ledger.rejectedDisplayKeys,
-            incremental: true,
-          ),
-        ),
+        flushChangeSet: () async {
+          await syncService.runInTransaction(
+            () => changeSetBuilder.build(
+              syncService,
+              existingPendingSets: pendingSets,
+              rejectedFingerprints: ledger.rejectedFingerprints,
+              rejectedDisplayKeys: ledger.rejectedDisplayKeys,
+              incremental: true,
+            ),
+          );
+          // Writing the change set is not enough to show it: the suggestion
+          // providers re-query only when `agentUpdateStreamProvider` emits,
+          // and `AgentSyncService` does not notify on upsert. Without this the
+          // flush is invisible until `_notifyWakeCompletion` fires after the
+          // whole wake returns — which is the wait this feature exists to
+          // remove.
+          //
+          // `notifyUiOnly` rather than `notify`: the latter also feeds
+          // `localUpdateStream`, which drives wake orchestration and would let
+          // a wake re-trigger itself.
+          if (getIt.isRegistered<UpdateNotifications>()) {
+            getIt<UpdateNotifications>().notifyUiOnly({
+              agentId,
+              taskId,
+              agentNotification,
+            });
+          }
+        },
         retractionService: retractionService,
         resolveTaskMetadata: () =>
             ChangeProposalFilter.resolveTaskMetadata(journalDb, taskId),
@@ -858,7 +877,10 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       final flushed = flushedChangeSets;
       if (flushed != null) {
         try {
-          await flushed.raiseInboxAlert(syncService);
+          await flushed.raiseInboxAlert(
+            syncService,
+            unconsolidatedSets: pendingSets,
+          );
         } catch (alertError, alertStack) {
           _logError(
             'failed to alert for suggestions flushed before the failure',

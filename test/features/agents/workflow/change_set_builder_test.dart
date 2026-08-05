@@ -1090,6 +1090,112 @@ void main() {
       },
     );
 
+    test(
+      'the failure path does not alert over still-open older suggestions',
+      () async {
+        // The failure path alerts without consolidating, and
+        // `createTaskSuggestion` retracts every other open row for the task —
+        // so alerting from the wake's set alone would drop the pre-wake
+        // suggestions out of the inbox.
+        final preWake = makeTestChangeSet(
+          id: 'cs-pre-wake',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+        );
+        when(
+          () => mockRepository.getEntity('cs-pre-wake'),
+        ).thenAnswer((_) async => preWake);
+
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+          incremental: true,
+        );
+        expect(
+          flushed,
+          isNotNull,
+          reason: 'the alert assertions below are vacuous without a flush',
+        );
+
+        await builder.raiseInboxAlert(
+          mockSyncService,
+          unconsolidatedSets: [preWake],
+        );
+
+        verifyNever(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: any(named: 'linkedTaskId'),
+            suggestionCount: any(named: 'suggestionCount'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'the failure path alerts when older suggestions are already resolved',
+      () async {
+        final preWake = makeTestChangeSet(
+          id: 'cs-pre-wake',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+        );
+        when(() => mockRepository.getEntity('cs-pre-wake')).thenAnswer(
+          (_) async => preWake.copyWith(status: ChangeSetStatus.resolved),
+        );
+
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+          incremental: true,
+        );
+        expect(
+          flushed,
+          isNotNull,
+          reason: 'the alert assertions below are vacuous without a flush',
+        );
+
+        await builder.raiseInboxAlert(
+          mockSyncService,
+          unconsolidatedSets: [preWake],
+        );
+
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: 'task-001',
+            suggestionCount: 1,
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        ).called(1);
+      },
+    );
+
     test('raiseInboxAlert is a no-op when no flush ever landed', () async {
       await builder.raiseInboxAlert(mockSyncService);
 
@@ -1563,6 +1669,61 @@ void main() {
 
         expect(result, isNull);
         verifyNever(() => mockSyncService.upsertEntity(any()));
+      },
+    );
+
+    test(
+      'the final build retracts a pre-wake timer the flush superseded',
+      () async {
+        // The replacement was flushed, so `deduped` is empty by the time the
+        // consolidation-only pass runs and no timer id would otherwise reach
+        // the supersession search — leaving the obsolete pre-wake action
+        // pending in the survivor.
+        final preWake = makeTestChangeSet(
+          id: 'cs-pre-wake',
+          items: const [
+            ChangeItem(
+              toolName: 'update_running_timer',
+              args: {'timerId': 'timer-1', 'action': 'stop'},
+              humanSummary: 'Stop the running timer',
+            ),
+          ],
+        );
+
+        await builder.addItem(
+          toolName: 'update_running_timer',
+          args: {'timerId': 'timer-1', 'action': 'keep'},
+          humanSummary: 'Keep the running timer',
+        );
+        final flushed = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+          incremental: true,
+        );
+        expect(
+          flushed!.items.single.humanSummary,
+          'Keep the running timer',
+          reason: 'the replacement lands in the wake set, untouched',
+        );
+
+        final finalSet = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+        );
+
+        final bySummary = {
+          for (final item in finalSet!.items) item.humanSummary: item.status,
+        };
+        expect(
+          bySummary['Stop the running timer'],
+          ChangeItemStatus.retracted,
+          reason: 'the superseded pre-wake proposal is resolved, not carried',
+        );
+        expect(
+          bySummary['Keep the running timer'],
+          ChangeItemStatus.pending,
+          reason: 'the replacement must not retract itself',
+        );
       },
     );
 

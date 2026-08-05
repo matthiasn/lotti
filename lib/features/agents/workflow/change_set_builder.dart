@@ -408,12 +408,21 @@ class ChangeSetBuilder {
       return incremental ? _persistedSet : raiseInboxAlert(syncService);
     }
 
-    final dedupedRunningTimerIds = runningTimerIds(deduped);
-    final supersededRunningTimerItems = dedupedRunningTimerIds.isNotEmpty
+    // Keyed on everything this wake proposed, not just what this pass is
+    // writing: on a consolidation-only final build the replacement was
+    // already flushed, so `deduped` is empty and a pre-wake proposal for the
+    // same timer would survive as pending — inflating the ledger and leaving
+    // an obsolete action the UI's latest-timer filter merely hides.
+    //
+    // Matches inside this builder's own set are excluded: those are the
+    // replacements being kept, and they must not retract themselves.
+    final supersededRunningTimerItems = proposedRunningTimerIds.isNotEmpty
         ? locatePendingRunningTimerUpdates(
-            writableSets,
-            dedupedRunningTimerIds,
-          )
+                writableSets,
+                proposedRunningTimerIds,
+              )
+              .where((match) => match.changeSet.id != ownSetId)
+              .toList(growable: false)
         : const <
             ({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})
           >[];
@@ -529,15 +538,37 @@ class ChangeSetBuilder {
   ///
   /// Idempotent — at most one alert per wake, whichever caller gets there
   /// first.
-  Future<ChangeSetEntity?> raiseInboxAlert(AgentSyncService syncService) async {
+  Future<ChangeSetEntity?> raiseInboxAlert(
+    AgentSyncService syncService, {
+    List<ChangeSetEntity> unconsolidatedSets = const [],
+  }) async {
     final persisted = _persistedSet;
     if (_notified || persisted == null) return persisted;
     _notified = true;
 
+    // The failure path alerts without consolidating, so other sets may still
+    // hold actionable proposals. `createTaskSuggestion` retracts every other
+    // open row for the task, so alerting from this set alone would drop those
+    // older suggestions out of the inbox. Their existing row is still open and
+    // still accurate — leave it, and let the next wake's consolidated alert
+    // cover everything.
+    for (final other in unconsolidatedSets) {
+      if (other.id == persisted.id) continue;
+      final latest = await _reReadOrNull(syncService, other.id);
+      if (latest == null || isPendingLike(latest.status)) {
+        domainLogger?.log(
+          LogDomain.agentWorkflow,
+          'Skipping inbox alert — older pending suggestions are still open '
+          'and this alert would retract their row',
+          subDomain: 'changeSetBuilder',
+        );
+        return persisted;
+      }
+    }
+
     ChangeSetEntity current;
     try {
-      final latest = await syncService.repository.getEntity(persisted.id);
-      current = latest is ChangeSetEntity ? latest : persisted;
+      current = await _reReadOrNull(syncService, persisted.id) ?? persisted;
     } catch (e) {
       // Alerting is fire-and-forget (see [notifyTaskNeedsAttention]) and must
       // never fail a wake. Skip rather than fall back to the snapshot: alerting
@@ -556,6 +587,16 @@ class ChangeSetBuilder {
 
     await notifyTaskNeedsAttention(current);
     return persisted;
+  }
+
+  /// Re-reads a change set, returning `null` when it is missing or not a
+  /// [ChangeSetEntity]. Throws only if the repository itself throws.
+  Future<ChangeSetEntity?> _reReadOrNull(
+    AgentSyncService syncService,
+    String id,
+  ) async {
+    final latest = await syncService.repository.getEntity(id);
+    return latest is ChangeSetEntity ? latest : null;
   }
 
   /// Fires (or refreshes) a `taskSuggestion` row in the synced-notifications

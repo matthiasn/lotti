@@ -459,6 +459,15 @@ the agent had decided what to suggest a full inference or three before anything
 appeared. `TaskAgentStrategy.flushChangeSet` closes that gap; the end-of-wake
 build is now a final flush that picks up whatever the last turn staged.
 
+A flush is only half the job: writing the change set does **not** refresh the
+UI. The suggestion providers re-query when `agentUpdateStreamProvider` emits,
+`AgentSyncService.upsertEntity` does not notify, and `_notifyWakeCompletion`
+(`agent_wiring.dart`) fires only after `execute` returns. So each flush calls
+`UpdateNotifications.notifyUiOnly` itself — `notifyUiOnly`, never `notify`,
+because `notify` also feeds `localUpdateStream`, which drives wake
+orchestration and would let a wake re-trigger itself. Without that call the
+whole feature is invisible.
+
 The `incremental` flag separates the two modes. A mid-wake flush is narrow on
 purpose; the end-of-wake build is the only one allowed to reshape existing
 sets:
@@ -513,12 +522,22 @@ Repeated flushes are safe by construction:
   fresh active row for a card they already cleared. Alerting stays
   fire-and-forget — a failed re-read skips the alert rather than failing the
   wake.
+- **Superseded running timers are resolved by the final build.** The timer ids
+  come from everything the wake proposed, not just what the current pass is
+  writing: on a consolidation-only build the replacement was already flushed,
+  so keying on the new items alone would leave a pre-wake proposal for the same
+  timer pending. Matches inside the builder's own set are excluded so the
+  replacement cannot retract itself.
 - **A wake that dies after a flush still alerts.** `WakeOutputWriter` never
   runs, so the workflow's failure path calls `raiseInboxAlert` itself;
   otherwise committed, on-screen suggestions would never ring the bell.
   Consolidation is deliberately *not* attempted there — it retires the pre-wake
   sets, and the staged retractions that must land first die with the wake. The
-  surplus card is folded by the next wake's end-of-wake build.
+  surplus card is folded by the next wake's end-of-wake build. Because nothing
+  was consolidated, that alert is **skipped** when a pre-wake set is still
+  pending: `createTaskSuggestion` retracts every other open row for the task,
+  so alerting from the wake's set alone would drop those older suggestions out
+  of the inbox. Their existing row is still open and still accurate.
 
 A wake with pre-existing proposals therefore shows a second card while it runs,
 which the final build folds into one. That is the deliberate trade for never
