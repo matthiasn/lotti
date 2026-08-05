@@ -80,10 +80,11 @@ getIt: getIt is reset on every switch, the registry must survive them.
    deliberately not world-scoped — the rationale per item is in
    [ADR 0049](../../docs/adr/0049-profile-scoped-storage-and-demo-mode.md).
 5. **Demo media stays best-effort and tenant-local.** A demo manifest starts
-   checksum reconciliation of its R2 catalog after bootstrap, tracked in
-   `StartupTasks` rather than awaited. Downloads land only below the active
-   guest root; slow, corrupt, or unavailable objects cannot fail seeding or
-   boot and are retried on the next startup.
+   checksum reconciliation of its R2 catalog after bootstrap without awaiting
+   it or adding it to switch-blocking `StartupTasks`. Downloads land only below
+   the active guest root; slow, corrupt, or unavailable objects cannot fail
+   seeding or boot, leaving the demo cancels in-flight requests, and the next
+   startup retries anything incomplete.
 
 The audit test
 [`test/features/profiles/service/world_handle_test.dart`](../../test/features/profiles/service/world_handle_test.dart)

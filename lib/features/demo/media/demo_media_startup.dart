@@ -1,11 +1,14 @@
+import 'dart:async';
+
 import 'package:get_it/get_it.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_hydrator.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/startup_tasks.dart';
 import 'package:meta/meta.dart';
+
+typedef DemoMediaHydrationLaunch = void Function(Future<void> hydration);
 
 /// Starts best-effort R2 media reconciliation for the active demo world.
 ///
@@ -20,6 +23,7 @@ Future<void> registerDemoMediaHydration({
   required List<DemoMediaAsset> catalog,
   @visibleForTesting DemoMediaDownload? download,
   @visibleForTesting void Function()? closeDownloader,
+  @visibleForTesting DemoMediaHydrationLaunch? launch,
 }) async {
   if (!profile.isGuest) return;
 
@@ -77,7 +81,6 @@ Future<void> registerDemoMediaHydration({
     hydrator,
     dispose: (service) => service.dispose(),
   );
-  serviceLocator<StartupTasks>().track(
-    hydrator.hydrate().then((_) {}),
-  );
+  final hydration = hydrator.hydrate().then((_) {});
+  (launch ?? unawaited)(hydration);
 }

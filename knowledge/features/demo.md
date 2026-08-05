@@ -154,19 +154,21 @@ files live only in Cloudflare R2; the app bundle contains no demo artwork.
 After each profile bootstrap, `registerDemoMediaHydration` first proves the
 active guest is this product demo by reading its seed manifest. It filters the
 current catalog to image ids that manifest actually owns — essential when an
-older demo is resumed to protect user work — and tracks a bounded-concurrency
-`DemoMediaHydrator` in `StartupTasks` without awaiting it. Existing files are
-accepted only when their digest matches. Missing or corrupt objects download to
-`.part`, pass the catalog checksum, and rename atomically inside that guest
-root. Individual failures are logged and contained; placeholders remain usable
-and the next startup retries the incomplete catalog.
+older demo is resumed to protect user work — and launches a bounded-concurrency
+`DemoMediaHydrator` without awaiting or registering it as switch-blocking
+startup work. Its getIt disposal callback cancels in-flight requests when the
+user leaves the demo. Existing files are accepted only when their digest
+matches. Missing or corrupt objects download to `.part`, pass the catalog
+checksum, and rename atomically inside that guest root. Individual failures are
+logged and contained; placeholders remain usable and the next startup retries
+the incomplete catalog.
 
 ```mermaid
 flowchart LR
     B[Profile bootstrap] --> M{Guest with demo manifest?}
     M -->|No| S[Skip]
     M -->|Yes| C[Filter catalog to seeded image ids]
-    C --> H[Track background hydrator]
+    C --> H[Launch background hydrator]
     H --> V{Local SHA-256 matches?}
     V -->|Yes| K[Keep file]
     V -->|No| D[Download R2 object to .part]

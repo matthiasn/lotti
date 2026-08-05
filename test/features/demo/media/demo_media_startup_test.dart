@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:typed_data';
 
@@ -11,7 +12,6 @@ import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/startup_tasks.dart';
 import 'package:path/path.dart' as p;
 
 import '../../../mocks/mocks.dart';
@@ -22,8 +22,7 @@ void main() {
 
   setUp(() {
     services = GetIt.asNewInstance()
-      ..registerSingleton<DomainLogger>(MockDomainLogger())
-      ..registerSingleton<StartupTasks>(StartupTasks());
+      ..registerSingleton<DomainLogger>(MockDomainLogger());
     root = Directory.systemTemp.createTempSync('demo_media_startup_');
   });
 
@@ -94,6 +93,7 @@ void main() {
       seededAiConfigIds: const [],
     ).write(root);
     final requested = <Uri>[];
+    late Future<void> hydration;
 
     await registerDemoMediaHydration(
       serviceLocator: services,
@@ -103,8 +103,9 @@ void main() {
         requested.add(uri);
         return seededBytes;
       },
+      launch: (future) => hydration = future,
     );
-    await services<StartupTasks>().settle();
+    await hydration;
 
     expect(requested, [seeded.uri]);
     expect(
@@ -114,5 +115,44 @@ void main() {
       seededBytes,
     );
     expect(services.isRegistered<DemoMediaHydrator>(), isTrue);
+  });
+
+  test('launches hydration without waiting for the network', () async {
+    final bytes = Uint8List.fromList([8, 9, 10]);
+    final seeded = asset('slow-image', bytes);
+    await DemoSeedManifest(
+      seedVersion: demoSeedVersion,
+      seededAt: DateTime(2026, 8, 5),
+      localeTag: 'en',
+      seededJournalIds: [seeded.id],
+      seededDefinitionIds: const [],
+      seededAiConfigIds: const [],
+    ).write(root);
+    final response = Completer<Uint8List>();
+    late Future<void> hydration;
+
+    await registerDemoMediaHydration(
+      serviceLocator: services,
+      profile: context(ProfileType.guest),
+      catalog: [seeded],
+      download: (uri) => response.future,
+      launch: (future) => hydration = future,
+    );
+
+    expect(
+      File(
+        p.joinAll([root.path, ...seeded.relativePath.split('/')]),
+      ).existsSync(),
+      isFalse,
+    );
+
+    response.complete(bytes);
+    await hydration;
+    expect(
+      File(
+        p.joinAll([root.path, ...seeded.relativePath.split('/')]),
+      ).readAsBytesSync(),
+      bytes,
+    );
   });
 }
