@@ -103,3 +103,6 @@ Each ADR should contain:
 - [`0045-exclude-unverified-devices-from-key-sharing.md`](./0045-exclude-unverified-devices-from-key-sharing.md)
 - [`0046-sync-actor-isolate-removed-and-how-to-rebuild.md`](./0046-sync-actor-isolate-removed-and-how-to-rebuild.md)
 - [`0047-lean-keyboard-command-catalog-metadata.md`](./0047-lean-keyboard-command-catalog-metadata.md)
+- [`0048-one-device-runs-the-coordinator-digest.md`](./0048-one-device-runs-the-coordinator-digest.md)
+- [`0049-profile-scoped-storage-and-demo-mode.md`](./0049-profile-scoped-storage-and-demo-mode.md)
+- [`0050-multi-tenant-worlds.md`](./0050-multi-tenant-worlds.md)
