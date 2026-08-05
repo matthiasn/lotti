@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/database/objectbox_embedding_store.dart';
 import 'package:lotti/features/ai/database/sharded_embedding_store.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/profiles/profile_paths.dart';
 import 'package:lotti/features/sync/matrix/client.dart';
@@ -370,6 +371,17 @@ abstract final class ProfileBackupCatalog {
       required: false,
       rationale:
           'Waveform previews are a bounded cache derived from audio files.',
+    ),
+    ProfileBackupStore(
+      id: 'legacy-day-processing-outbox',
+      relativePath: legacyDayProcessingOutboxDirectory,
+      kind: BackupStoreKind.directory,
+      treatment: BackupPathTreatment.exclude,
+      sensitivity: BackupSensitivity.none,
+      required: false,
+      rationale:
+          'The mandatory startup migration imports every recoverable legacy '
+          'job into day_processing.sqlite before backup can be requested.',
     ),
     ProfileBackupStore(
       id: 'diagnostic-logs',

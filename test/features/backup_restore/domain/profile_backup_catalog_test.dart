@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/backup_restore/domain/profile_backup_catalog.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
 
 void main() {
   group('ProfileBackupCatalog', () {
@@ -114,6 +115,7 @@ void main() {
         'backup/db.2026-08-06.sqlite',
         'logs/general-2026-08-06.log',
         'logs/general.log.tmp.123.456.media',
+        '$legacyDayProcessingOutboxDirectory/job.json.tmp.1737000000000000.4242.media',
       ]) {
         expect(
           ProfileBackupCatalog.classify(path).treatment,

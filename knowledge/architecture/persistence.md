@@ -344,8 +344,11 @@ The implementation-consumable profile inventory now lives in
 `ProfileBackupCatalog`. It includes authoritative databases, media and sync
 sidecars; marks FTS, ObjectBox embeddings and waveform previews rebuildable;
 excludes logs, sibling guest worlds, the device-global profile registry and the
-legacy `backup/` directory; and rejects SQLite journal companions as evidence
-that strict quiescence has not been proven. `QuiescedProfileSnapshotService`
+legacy `backup/` directory. It also excludes the legacy Daily OS file outbox
+after its mandatory startup import into `day_processing.sqlite`, including
+recovered atomic scratch files retained for rollback. SQLite journal companions
+remain a hard rejection because they show that strict quiescence has not been
+proven. `QuiescedProfileSnapshotService`
 can then copy a closed profile into a partial stage, rehash the source, validate
 SQLite integrity and schema versions, verify the manifest against the payload,
 and publish with one rename. It does not stop writers; lifecycle orchestration

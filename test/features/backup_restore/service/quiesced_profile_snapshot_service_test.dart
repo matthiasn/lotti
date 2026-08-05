@@ -5,6 +5,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/backup_restore/domain/profile_backup_manifest.dart';
 import 'package:lotti/features/backup_restore/service/quiesced_profile_snapshot_service.dart';
+import 'package:lotti/features/daily_os_next/services/day_processing_startup.dart';
 import 'package:path/path.dart' as p;
 import 'package:sqlite3/sqlite3.dart';
 
@@ -211,6 +212,32 @@ void main() {
       expect(stagingParent.listSync(), isEmpty);
     });
 
+    test('rejects a required database represented by a directory', () async {
+      Directory(p.join(sourceRoot.path, 'db.sqlite')).createSync();
+      createWalDatabase(
+        'settings.sqlite',
+        schemaVersion: 1,
+        value: 'profile setting',
+      );
+
+      await expectLater(
+        service().stage(
+          sourceRoot: sourceRoot,
+          stagingParent: stagingParent,
+          appVersion: '1.0.4+4285',
+          profileType: 'real',
+        ),
+        throwsA(
+          isA<ProfileSnapshotValidationException>().having(
+            (error) => error.message,
+            'message',
+            contains('must be a regular file'),
+          ),
+        ),
+      );
+      expect(stagingParent.listSync(), isEmpty);
+    });
+
     test('rejects symbolic links in included source content', () async {
       createRequiredDatabases();
       final external = File(p.join(testRoot.path, 'outside.jpg'))
@@ -260,6 +287,40 @@ void main() {
     });
 
     test(
+      'rejects a missing staging path beneath a symlinked source ancestor',
+      () async {
+        createRequiredDatabases();
+        final stagingLink = Link(p.join(testRoot.path, 'source-link'))
+          ..createSync(sourceRoot.path);
+        final nested = Directory(
+          p.join(stagingLink.path, 'created-by-snapshot', 'staging'),
+        );
+
+        await expectLater(
+          service().stage(
+            sourceRoot: sourceRoot,
+            stagingParent: nested,
+            appVersion: '1.0.4+4285',
+            profileType: 'real',
+          ),
+          throwsA(
+            isA<ProfileSnapshotException>().having(
+              (error) => error.message,
+              'message',
+              contains('Resolved snapshot source'),
+            ),
+          ),
+        );
+        expect(
+          Directory(
+            p.join(sourceRoot.path, 'created-by-snapshot'),
+          ).existsSync(),
+          isFalse,
+        );
+      },
+    );
+
+    test(
       'stages a verified closed WAL world and omits non-authority',
       () async {
         createRequiredDatabases();
@@ -282,6 +343,7 @@ void main() {
           'objectbox_embeddings_sharded/default/data.mdb',
           'audio_waveforms/ab/cache.json',
           'fts5_db.sqlite',
+          '$legacyDayProcessingOutboxDirectory/job.json.tmp.1737000000000000.4242.media',
         ]) {
           final file = File(p.join(sourceRoot.path, path));
           file.parent.createSync(recursive: true);
@@ -327,6 +389,7 @@ void main() {
           'objectbox_embeddings_sharded/default/data.mdb',
           'audio_waveforms/ab/cache.json',
           'fts5_db.sqlite',
+          '$legacyDayProcessingOutboxDirectory/job.json.tmp.1737000000000000.4242.media',
           'profiles.json',
         ]) {
           expect(manifestPaths, isNot(contains(excludedPath)));

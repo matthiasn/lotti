@@ -35,10 +35,11 @@ lib/features/backup_restore/
 └── README.md
 ```
 
-The catalog is deliberately conservative: known caches and diagnostics are
-omitted, unsafe transaction artifacts abort capture, and unknown profile files
-are included by default. That last rule makes storage additions fail toward a
-larger encrypted backup instead of silent data loss.
+The catalog is deliberately conservative: known caches, diagnostics, and
+superseded migration stores are omitted, unsafe transaction artifacts abort
+capture, and unknown profile files are included by default. That last rule
+makes storage additions fail toward a larger encrypted backup instead of
+silent data loss.
 
 The staging service scans one closed profile root, rejects journal companions
 and symbolic links, copies included bytes into a private partial directory,

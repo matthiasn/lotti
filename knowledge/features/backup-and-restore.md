@@ -20,6 +20,10 @@ sources:
     resource: ../../lib/features/backup_restore/service/quiesced_profile_snapshot_service.dart
     title: QuiescedProfileSnapshotService
     last_modified: 2026-08-06
+  - id: legacy-day-processing-outbox
+    resource: ../../lib/features/daily_os_next/services/day_processing_startup.dart
+    title: Legacy Daily OS file outbox boundary
+    last_modified: 2026-07-25
   - id: profile-paths
     resource: ../../lib/features/profiles/profile_paths.dart
     title: Profile root boundaries
@@ -80,6 +84,7 @@ rename is a compile-time change instead of documentation drift.
 | Onboarding | `onboarding_metrics.sqlite` | include when present | Profile-local progress and measurements |
 | AI configuration | `ai_config.sqlite` | include, credential-sensitive | Providers and profiles; API keys currently live here |
 | Daily OS | `day_processing.sqlite` | include when present | Durable day-processing outbox |
+| Legacy Daily OS outbox | `.day_processing_outbox/` | exclude | Mandatory startup migration imports every recoverable job into the SQLite outbox; retained files are a temporary rollback copy |
 | Matrix SDK | `matrix/lotti_sync.db` | include, credential-sensitive | Login session and encryption state; absent in guest worlds |
 | Full-text search | `fts5_db.sqlite` | rebuild | Derived from JournalDb |
 | ObjectBox embeddings | `objectbox_embeddings*` | rebuild | Derived vector indexes |

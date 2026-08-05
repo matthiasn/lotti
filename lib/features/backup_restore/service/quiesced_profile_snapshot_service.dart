@@ -124,6 +124,7 @@ class QuiescedProfileSnapshotService {
     required String profileType,
   }) async {
     _validateTreeBoundary(sourceRoot, stagingParent);
+    _validateResolvedTreeBoundary(sourceRoot, stagingParent);
     final createdAt = _now().toUtc();
 
     final inventory = await _scanIncludedEntries(sourceRoot);
@@ -137,7 +138,6 @@ class QuiescedProfileSnapshotService {
     }
 
     stagingParent.createSync(recursive: true);
-    _validateResolvedTreeBoundary(sourceRoot, stagingParent);
 
     final finalDirectory = Directory(
       p.join(stagingParent.path, 'profile-snapshot-$snapshotId'),
@@ -299,7 +299,7 @@ class QuiescedProfileSnapshotService {
     Directory stagingParent,
   ) {
     final source = p.normalize(sourceRoot.resolveSymbolicLinksSync());
-    final staging = p.normalize(stagingParent.resolveSymbolicLinksSync());
+    final staging = _resolveThroughExistingAncestor(stagingParent);
     if (p.equals(source, staging) ||
         p.isWithin(source, staging) ||
         p.isWithin(staging, source)) {
@@ -307,6 +307,32 @@ class QuiescedProfileSnapshotService {
         'Resolved snapshot source and staging directory may not overlap.',
       );
     }
+  }
+
+  static String _resolveThroughExistingAncestor(Directory directory) {
+    var ancestor = Directory(p.normalize(directory.absolute.path));
+    final missingSegments = <String>[];
+    while (FileSystemEntity.typeSync(ancestor.path, followLinks: false) ==
+        FileSystemEntityType.notFound) {
+      final parent = ancestor.parent;
+      // A filesystem root always exists; this guards only a broken platform
+      // implementation of the ancestor walk.
+      // coverage:ignore-start
+      if (p.equals(parent.path, ancestor.path)) {
+        throw ProfileSnapshotException(
+          'Unable to resolve snapshot staging path: ${directory.path}',
+        );
+      }
+      // coverage:ignore-end
+      missingSegments.add(p.basename(ancestor.path));
+      ancestor = parent;
+    }
+    return p.normalize(
+      p.joinAll([
+        ancestor.resolveSymbolicLinksSync(),
+        ...missingSegments.reversed,
+      ]),
+    );
   }
 
   static Future<List<_SnapshotSourceEntry>> _scanIncludedEntries(
@@ -375,13 +401,29 @@ class QuiescedProfileSnapshotService {
   }
 
   static void _validateRequiredStores(List<_SnapshotSourceEntry> inventory) {
-    final present = inventory.map((entry) => entry.relativePath).toSet();
+    final entriesByPath = {
+      for (final entry in inventory) entry.relativePath: entry,
+    };
     for (final store in ProfileBackupCatalog.stores) {
-      if (store.required &&
-          store.treatment == BackupPathTreatment.include &&
-          !present.contains(store.relativePath)) {
+      if (!store.required || store.treatment != BackupPathTreatment.include) {
+        continue;
+      }
+      final entry = entriesByPath[store.relativePath];
+      if (entry == null) {
         throw ProfileSnapshotValidationException(
           'Required profile store is missing: ${store.relativePath}',
+        );
+      }
+      final expectedKind = store.kind == BackupStoreKind.directory
+          ? _SnapshotEntryKind.directory
+          : _SnapshotEntryKind.file;
+      if (entry.kind != expectedKind) {
+        final expectedDescription = expectedKind == _SnapshotEntryKind.file
+            ? 'a regular file'
+            : 'a directory';
+        throw ProfileSnapshotValidationException(
+          'Required profile store ${store.relativePath} must be '
+          '$expectedDescription.',
         );
       }
     }
