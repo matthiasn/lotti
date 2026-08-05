@@ -329,6 +329,144 @@ void main() {
     );
   });
 
+  group('OnboardingSettingsBody — demo rows', () {
+    late MockDemoModeGateway gateway;
+
+    setUp(() async {
+      await getIt.reset();
+      gateway = MockDemoModeGateway();
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    Future<void> pumpWithGateway(WidgetTester tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          OnboardingSettingsBody(demoGateway: gateway),
+          mediaQueryData: mq,
+        ),
+      );
+      // Let the async demoProfileExists + funnel reads resolve.
+      await tester.pump(const Duration(milliseconds: 20));
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+
+    testWidgets('without a gateway (no ProfileSwitcherScope) no demo rows '
+        'render', (tester) async {
+      await pumpUntilLoaded(tester, find.text('Not started yet'));
+      expect(find.text('Try the demo workspace'), findsNothing);
+      expect(find.text('Exit demo'), findsNothing);
+      expect(find.text('Reset demo data'), findsNothing);
+      expect(find.text('Delete demo data'), findsNothing);
+    });
+
+    testWidgets('real world, no demo yet: only the Try row shows, and '
+        'tapping it enters the demo', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(false);
+      when(gateway.demoProfileExists).thenAnswer((_) async => false);
+      when(
+        () => gateway.enterDemo(locale: any(named: 'locale')),
+      ).thenAnswer((_) async {});
+
+      await pumpWithGateway(tester);
+
+      expect(find.text('Try the demo workspace'), findsOneWidget);
+      expect(find.text('Return to the demo workspace'), findsNothing);
+      expect(find.text('Exit demo'), findsNothing);
+      expect(find.text('Reset demo data'), findsNothing);
+      expect(find.text('Delete demo data'), findsNothing);
+
+      await tester.ensureVisible(find.text('Try the demo workspace'));
+      await tester.tap(find.text('Try the demo workspace'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      verify(() => gateway.enterDemo(locale: any(named: 'locale'))).called(1);
+    });
+
+    testWidgets('real world with an existing demo: Return + Reset + Delete', (
+      tester,
+    ) async {
+      when(() => gateway.isDemoActive).thenReturn(false);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(tester);
+
+      expect(find.text('Return to the demo workspace'), findsOneWidget);
+      expect(find.text('Reset demo data'), findsOneWidget);
+      expect(find.text('Delete demo data'), findsOneWidget);
+      expect(find.text('Exit demo'), findsNothing);
+    });
+
+    testWidgets('inside the demo: Exit + Reset only', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(true);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(tester);
+
+      expect(find.text('Exit demo'), findsOneWidget);
+      expect(find.text('Reset demo data'), findsOneWidget);
+      expect(find.text('Try the demo workspace'), findsNothing);
+      expect(find.text('Return to the demo workspace'), findsNothing);
+      expect(find.text('Delete demo data'), findsNothing);
+    });
+
+    testWidgets('delete asks for confirmation, deletes, toasts, and the row '
+        'set collapses back to Try', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(false);
+      var exists = true;
+      when(gateway.demoProfileExists).thenAnswer((_) async => exists);
+      when(gateway.deleteDemo).thenAnswer((_) async => exists = false);
+
+      await pumpWithGateway(tester);
+
+      await tester.ensureVisible(find.text('Delete demo data'));
+      await tester.tap(find.text('Delete demo data'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Delete the demo world and everything in it?'),
+        findsOneWidget,
+      );
+
+      // The confirm button carries the row title as its label.
+      await tester.tap(find.text('Delete demo data').last);
+      await tester.pumpAndSettle();
+
+      verify(gateway.deleteDemo).called(1);
+      expect(find.text('Demo data deleted'), findsOneWidget);
+      expect(find.text('Try the demo workspace'), findsOneWidget);
+      expect(find.text('Delete demo data'), findsNothing);
+    });
+
+    testWidgets('reset asks for confirmation and hands over to the reseed '
+        'launcher', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(true);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+      when(
+        () => gateway.resetDemo(locale: any(named: 'locale')),
+      ).thenAnswer((_) async {});
+
+      await pumpWithGateway(tester);
+
+      await tester.ensureVisible(find.text('Reset demo data'));
+      await tester.tap(find.text('Reset demo data'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Reset the demo world? Everything you changed there will be lost.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Reset demo data').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      verify(() => gateway.resetDemo(locale: any(named: 'locale'))).called(1);
+    });
+  });
+
   group('OnboardingSettingsPage', () {
     setUp(() async {
       await getIt.reset();

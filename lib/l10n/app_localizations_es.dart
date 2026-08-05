@@ -4966,6 +4966,98 @@ class AppLocalizationsEs extends AppLocalizations {
   String get deleteDeviceLabel => 'Quitar de la sincronización';
 
   @override
+  String get demoBannerExit => 'Salir';
+
+  @override
+  String get demoBannerLabel =>
+      'Mundo de demostración — tu diario permanece intacto';
+
+  @override
+  String get demoCopyBody =>
+      'Elige las tareas y entradas que quieres copiar a tu diario.';
+
+  @override
+  String get demoCopyConfirm => 'Copiar y salir';
+
+  @override
+  String get demoCopyProgress => 'Copiando tu trabajo…';
+
+  @override
+  String get demoCopySectionEntries => 'Entradas del diario';
+
+  @override
+  String get demoCopySectionTasks => 'Tareas';
+
+  @override
+  String get demoCopySelectAll => 'Seleccionar todo';
+
+  @override
+  String get demoCopyTitle => 'Llevarme mi trabajo';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elementos copiados a tu diario',
+      one: '1 elemento copiado a tu diario',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoEnteringProgress => 'Preparando el mundo de demostración…';
+
+  @override
+  String get demoExitConfirm => 'Salir de la demo';
+
+  @override
+  String get demoExitSheetBody =>
+      'Tu mundo de demostración queda guardado — puedes volver cuando quieras.';
+
+  @override
+  String get demoExitSheetTitle => '¿Salir de la demo?';
+
+  @override
+  String get demoExitTakeWork => 'Llevarme mi trabajo…';
+
+  @override
+  String get demoOnboardingExplore => 'Explorar con datos de ejemplo';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      '¿Eliminar el mundo de demostración y todos sus datos?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Eliminar datos de la demo';
+
+  @override
+  String get demoSettingsDeleteToast => 'Datos de la demo eliminados';
+
+  @override
+  String get demoSettingsExitTitle => 'Salir de la demo';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      '¿Restablecer el mundo de demostración? Todos tus cambios allí se perderán.';
+
+  @override
+  String get demoSettingsResetTitle => 'Restablecer datos de la demo';
+
+  @override
+  String get demoSettingsResumeTitle => 'Volver al mundo de demostración';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Explora Lotti con datos de ejemplo — tu diario permanece intacto';
+
+  @override
+  String get demoSettingsTryTitle => 'Probar el mundo de demostración';
+
+  @override
+  String get demoTryButton => 'Probar la demo';
+
+  @override
   String get designSystemActionVariantTitle => 'Con acción';
 
   @override

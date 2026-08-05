@@ -118,6 +118,14 @@ class ProfileSwitcherScope extends InheritedWidget {
     return scope!.switcher;
   }
 
+  /// Like [of], but null when no scope is mounted — for surfaces that also
+  /// build in bare test harnesses without profile plumbing.
+  static ProfileSwitcher? maybeOf(BuildContext context) {
+    return context
+        .dependOnInheritedWidgetOfExactType<ProfileSwitcherScope>()
+        ?.switcher;
+  }
+
   @override
   bool updateShouldNotify(ProfileSwitcherScope oldWidget) =>
       switcher != oldWidget.switcher;

@@ -4900,6 +4900,97 @@ class AppLocalizationsDa extends AppLocalizations {
   String get deleteDeviceLabel => 'Fjern fra synkronisering';
 
   @override
+  String get demoBannerExit => 'Afslut';
+
+  @override
+  String get demoBannerLabel => 'Demoverden — din dagbog forbliver urørt';
+
+  @override
+  String get demoCopyBody =>
+      'Vælg de opgaver og indlæg, du vil kopiere til din dagbog.';
+
+  @override
+  String get demoCopyConfirm => 'Kopiér og afslut';
+
+  @override
+  String get demoCopyProgress => 'Kopierer dit arbejde…';
+
+  @override
+  String get demoCopySectionEntries => 'Dagbogsindlæg';
+
+  @override
+  String get demoCopySectionTasks => 'Opgaver';
+
+  @override
+  String get demoCopySelectAll => 'Vælg alle';
+
+  @override
+  String get demoCopyTitle => 'Tag mit arbejde med';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elementer kopieret til din dagbog',
+      one: '1 element kopieret til din dagbog',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoEnteringProgress => 'Gør demoverdenen klar…';
+
+  @override
+  String get demoExitConfirm => 'Afslut demo';
+
+  @override
+  String get demoExitSheetBody =>
+      'Din demoverden bliver gemt — du kan altid vende tilbage.';
+
+  @override
+  String get demoExitSheetTitle => 'Forlad demoen?';
+
+  @override
+  String get demoExitTakeWork => 'Tag mit arbejde med…';
+
+  @override
+  String get demoOnboardingExplore => 'Udforsk med eksempeldata';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Slet demoverdenen og alle dens data?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Slet demodata';
+
+  @override
+  String get demoSettingsDeleteToast => 'Demodata slettet';
+
+  @override
+  String get demoSettingsExitTitle => 'Afslut demo';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Nulstil demoverdenen? Alle dine ændringer dér går tabt.';
+
+  @override
+  String get demoSettingsResetTitle => 'Nulstil demodata';
+
+  @override
+  String get demoSettingsResumeTitle => 'Tilbage til demoverdenen';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Udforsk Lotti med eksempeldata — din dagbog forbliver urørt';
+
+  @override
+  String get demoSettingsTryTitle => 'Prøv demoverdenen';
+
+  @override
+  String get demoTryButton => 'Prøv demoen';
+
+  @override
   String get designSystemActionVariantTitle => 'Med handling';
 
   @override

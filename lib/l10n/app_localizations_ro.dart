@@ -4984,6 +4984,98 @@ class AppLocalizationsRo extends AppLocalizations {
   String get deleteDeviceLabel => 'Eliminați din sincronizare';
 
   @override
+  String get demoBannerExit => 'Ieșire';
+
+  @override
+  String get demoBannerLabel => 'Lume demo — jurnalul dvs. rămâne neatins';
+
+  @override
+  String get demoCopyBody =>
+      'Alegeți sarcinile și însemnările de copiat în jurnalul dvs.';
+
+  @override
+  String get demoCopyConfirm => 'Copiați și ieșiți';
+
+  @override
+  String get demoCopyProgress => 'Se copiază munca dvs.…';
+
+  @override
+  String get demoCopySectionEntries => 'Însemnări în jurnal';
+
+  @override
+  String get demoCopySectionTasks => 'Sarcini';
+
+  @override
+  String get demoCopySelectAll => 'Selectați tot';
+
+  @override
+  String get demoCopyTitle => 'Luați-vă munca cu dvs.';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de elemente copiate în jurnalul dvs.',
+      few: '$count elemente copiate în jurnalul dvs.',
+      one: '1 element copiat în jurnalul dvs.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoEnteringProgress => 'Se pregătește lumea demo…';
+
+  @override
+  String get demoExitConfirm => 'Ieșiți din demo';
+
+  @override
+  String get demoExitSheetBody =>
+      'Lumea dvs. demo rămâne salvată — puteți reveni oricând.';
+
+  @override
+  String get demoExitSheetTitle => 'Părăsiți demo-ul?';
+
+  @override
+  String get demoExitTakeWork => 'Luați-vă munca cu dvs.…';
+
+  @override
+  String get demoOnboardingExplore => 'Explorați cu date de exemplu';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Ștergeți lumea demo și toate datele ei?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Ștergeți datele demo';
+
+  @override
+  String get demoSettingsDeleteToast => 'Datele demo au fost șterse';
+
+  @override
+  String get demoSettingsExitTitle => 'Ieșiți din demo';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Resetați lumea demo? Toate modificările dvs. de acolo se vor pierde.';
+
+  @override
+  String get demoSettingsResetTitle => 'Resetați datele demo';
+
+  @override
+  String get demoSettingsResumeTitle => 'Reveniți la lumea demo';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Explorați Lotti cu date de exemplu — jurnalul dvs. rămâne neatins';
+
+  @override
+  String get demoSettingsTryTitle => 'Încercați lumea demo';
+
+  @override
+  String get demoTryButton => 'Încercați demo-ul';
+
+  @override
   String get designSystemActionVariantTitle => 'Cu acțiune';
 
   @override

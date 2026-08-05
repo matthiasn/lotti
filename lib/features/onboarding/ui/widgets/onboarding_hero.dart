@@ -278,6 +278,7 @@ class OnboardingHeroPanel extends StatelessWidget {
   const OnboardingHeroPanel({
     required this.onConnect,
     required this.onSkip,
+    this.onExploreDemo,
     this.heroStyle = OnboardingHeroStyle.constellation,
     this.heroHeight = 276,
     super.key,
@@ -286,6 +287,12 @@ class OnboardingHeroPanel extends StatelessWidget {
   final OnboardingHeroStyle heroStyle;
   final VoidCallback onConnect;
   final VoidCallback onSkip;
+
+  /// When set, a low-emphasis "Explore with sample data" entry into the demo
+  /// world renders below the skip action. Null hides it (gallery/preview
+  /// hosts without demo plumbing).
+  final VoidCallback? onExploreDemo;
+
   final double heroHeight;
 
   @override
@@ -380,6 +387,18 @@ class OnboardingHeroPanel extends StatelessWidget {
                       size: DesignSystemButtonSize.large,
                     ),
                   ),
+                  if (onExploreDemo != null)
+                    Padding(
+                      padding: EdgeInsets.only(top: tokens.spacing.step1),
+                      child: DesignSystemButton(
+                        onPressed: onExploreDemo,
+                        label: context.messages.demoOnboardingExplore,
+                        variant: DesignSystemButtonVariant.tertiary,
+                        // Caption tier: this must not compete with the skip
+                        // action, let alone the primary CTA.
+                        size: DesignSystemButtonSize.dense,
+                      ),
+                    ),
                 ],
               ),
             ),

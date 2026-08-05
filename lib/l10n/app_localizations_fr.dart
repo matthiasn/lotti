@@ -4982,6 +4982,97 @@ class AppLocalizationsFr extends AppLocalizations {
   String get deleteDeviceLabel => 'Retirer de la synchronisation';
 
   @override
+  String get demoBannerExit => 'Quitter';
+
+  @override
+  String get demoBannerLabel => 'Monde démo — ton journal reste intact';
+
+  @override
+  String get demoCopyBody =>
+      'Choisis les tâches et les entrées à copier dans ton journal.';
+
+  @override
+  String get demoCopyConfirm => 'Copier et quitter';
+
+  @override
+  String get demoCopyProgress => 'Copie de ton travail…';
+
+  @override
+  String get demoCopySectionEntries => 'Entrées de journal';
+
+  @override
+  String get demoCopySectionTasks => 'Tâches';
+
+  @override
+  String get demoCopySelectAll => 'Tout sélectionner';
+
+  @override
+  String get demoCopyTitle => 'Emporter mon travail';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count éléments copiés dans ton journal',
+      one: '1 élément copié dans ton journal',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoEnteringProgress => 'Préparation du monde démo…';
+
+  @override
+  String get demoExitConfirm => 'Quitter la démo';
+
+  @override
+  String get demoExitSheetBody =>
+      'Ton monde démo reste enregistré — tu peux revenir à tout moment.';
+
+  @override
+  String get demoExitSheetTitle => 'Quitter la démo ?';
+
+  @override
+  String get demoExitTakeWork => 'Emporter mon travail…';
+
+  @override
+  String get demoOnboardingExplore => 'Explorer avec des données d\'exemple';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Supprimer le monde démo et toutes ses données ?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Supprimer les données de démo';
+
+  @override
+  String get demoSettingsDeleteToast => 'Données de démo supprimées';
+
+  @override
+  String get demoSettingsExitTitle => 'Quitter la démo';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Réinitialiser le monde démo ? Tous tes changements y seront perdus.';
+
+  @override
+  String get demoSettingsResetTitle => 'Réinitialiser les données de démo';
+
+  @override
+  String get demoSettingsResumeTitle => 'Revenir au monde démo';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Explore Lotti avec des données d\'exemple — ton journal reste intact';
+
+  @override
+  String get demoSettingsTryTitle => 'Essayer le monde démo';
+
+  @override
+  String get demoTryButton => 'Essayer la démo';
+
+  @override
   String get designSystemActionVariantTitle => 'Avec action';
 
   @override

@@ -4873,6 +4873,97 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteDeviceLabel => 'Remove from sync';
 
   @override
+  String get demoBannerExit => 'Exit';
+
+  @override
+  String get demoBannerLabel => 'Demo world — your journal is untouched';
+
+  @override
+  String get demoCopyBody =>
+      'Choose the tasks and entries to copy into your journal.';
+
+  @override
+  String get demoCopyConfirm => 'Copy and exit';
+
+  @override
+  String get demoCopyProgress => 'Copying your work…';
+
+  @override
+  String get demoCopySectionEntries => 'Journal entries';
+
+  @override
+  String get demoCopySectionTasks => 'Tasks';
+
+  @override
+  String get demoCopySelectAll => 'Select all';
+
+  @override
+  String get demoCopyTitle => 'Take my work with me';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items copied to your journal',
+      one: '1 item copied to your journal',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoEnteringProgress => 'Setting up the demo world…';
+
+  @override
+  String get demoExitConfirm => 'Exit demo';
+
+  @override
+  String get demoExitSheetBody =>
+      'Your demo world stays saved — you can come back anytime.';
+
+  @override
+  String get demoExitSheetTitle => 'Leave the demo?';
+
+  @override
+  String get demoExitTakeWork => 'Take my work with me…';
+
+  @override
+  String get demoOnboardingExplore => 'Explore with sample data';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Delete the demo world and everything in it?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Delete demo data';
+
+  @override
+  String get demoSettingsDeleteToast => 'Demo data deleted';
+
+  @override
+  String get demoSettingsExitTitle => 'Exit demo';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Reset the demo world? Everything you changed there will be lost.';
+
+  @override
+  String get demoSettingsResetTitle => 'Reset demo data';
+
+  @override
+  String get demoSettingsResumeTitle => 'Return to the demo workspace';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Explore Lotti with sample data — your journal stays untouched';
+
+  @override
+  String get demoSettingsTryTitle => 'Try the demo workspace';
+
+  @override
+  String get demoTryButton => 'Try the demo';
+
+  @override
   String get designSystemActionVariantTitle => 'With Action';
 
   @override

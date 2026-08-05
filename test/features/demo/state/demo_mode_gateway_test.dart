@@ -1,0 +1,359 @@
+import 'dart:io';
+import 'dart:ui' show Locale;
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/features/demo/copy/demo_data_copier.dart';
+import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
+import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/repository/profile_registry.dart';
+import 'package:lotti/get_it.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
+
+void main() {
+  late Directory realRoot;
+  late ProfileRegistry registry;
+  late List<String> activated;
+  late List<String> seededLocales;
+  ProfileContext? activeContext;
+
+  DemoModeGateway buildGateway({
+    Future<DemoCopyPlan> Function(Set<String>)? prepareCopy,
+    Future<int> Function(DemoCopyPlan)? applyCopy,
+  }) {
+    return DemoModeGateway(
+      registry: registry,
+      activate: (id) async => activated.add(id),
+      profileContext: () => activeContext,
+      seedRunner: (world, locale) async {
+        seededLocales.add(locale.toLanguageTag());
+        // Minimal marker write proving the seed ran against THIS world; the
+        // manifest is what enterDemo consults on the next entry.
+        await DemoSeedManifest(
+          seedVersion: demoSeedVersion,
+          seededAt: DateTime.utc(2026, 8, 5),
+          localeTag: locale.toLanguageTag(),
+          seededJournalIds: const [],
+          seededDefinitionIds: const [],
+          seededAiConfigIds: const [],
+        ).write(world.root);
+      },
+      prepareCopyOverride: prepareCopy,
+      applyCopyOverride: applyCopy,
+    );
+  }
+
+  ProfileContext guestContext(Profile profile) => ProfileContext.forProfile(
+    profile: profile,
+    root: registry.rootFor(profile),
+  );
+
+  setUp(() {
+    realRoot = Directory.systemTemp.createTempSync('lotti_gateway_');
+    registry = ProfileRegistry(realRoot: realRoot);
+    activated = [];
+    seededLocales = [];
+    activeContext = null;
+  });
+
+  tearDown(() async {
+    if (realRoot.existsSync()) {
+      await realRoot.delete(recursive: true);
+    }
+  });
+
+  group('enterDemo', () {
+    test('first entry creates the Demo guest profile, seeds it in the given '
+        'locale, and activates it', () async {
+      final gateway = buildGateway();
+      expect(await gateway.demoProfileExists(), isFalse);
+
+      await gateway.enterDemo(locale: const Locale('de'));
+
+      final profile = await gateway.findDemoProfile();
+      expect(profile, isNotNull);
+      expect(profile!.name, DemoModeGateway.demoProfileName);
+      expect(profile.isGuest, isTrue);
+      expect(seededLocales, ['de']);
+      expect(activated, [profile.id]);
+      // The seed ran against the new profile's own root.
+      final manifest = await DemoSeedManifest.read(registry.rootFor(profile));
+      expect(manifest?.localeTag, 'de');
+    });
+
+    test(
+      're-entry with a current manifest resumes WITHOUT reseeding',
+      () async {
+        final gateway = buildGateway();
+        await gateway.enterDemo(locale: const Locale('en'));
+        final first = (await gateway.findDemoProfile())!;
+        activated.clear();
+        seededLocales.clear();
+
+        await gateway.enterDemo(locale: const Locale('en'));
+
+        expect(seededLocales, isEmpty, reason: 'must resume, not reseed');
+        expect(activated, [first.id]);
+        expect((await gateway.findDemoProfile())!.id, first.id);
+      },
+    );
+
+    test('a stale manifest wipes and recreates the demo profile', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final first = (await gateway.findDemoProfile())!;
+      // Rewrite the manifest as if seeded by an older app version.
+      await DemoSeedManifest(
+        seedVersion: demoSeedVersion - 1,
+        seededAt: DateTime.utc(2026),
+        localeTag: 'en',
+        seededJournalIds: const [],
+        seededDefinitionIds: const [],
+        seededAiConfigIds: const [],
+      ).write(registry.rootFor(first));
+      activated.clear();
+      seededLocales.clear();
+
+      await gateway.enterDemo(locale: const Locale('fr'));
+
+      final second = (await gateway.findDemoProfile())!;
+      expect(second.id, isNot(first.id));
+      expect(seededLocales, ['fr']);
+      expect(activated, [second.id]);
+      expect(registry.rootFor(first).existsSync(), isFalse);
+    });
+
+    test(
+      'a missing manifest (never seeded) also wipes and recreates',
+      () async {
+        final orphan = await registry.createGuestProfile(name: 'Demo');
+        final gateway = buildGateway();
+
+        await gateway.enterDemo(locale: const Locale('en'));
+
+        final current = (await gateway.findDemoProfile())!;
+        expect(current.id, isNot(orphan.id));
+        expect(seededLocales, ['en']);
+      },
+    );
+
+    test('is a no-op while the demo is already active', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      activeContext = guestContext((await gateway.findDemoProfile())!);
+      activated.clear();
+      seededLocales.clear();
+
+      await gateway.enterDemo(locale: const Locale('en'));
+
+      expect(activated, isEmpty);
+      expect(seededLocales, isEmpty);
+    });
+
+    test('ignores guest profiles with other names (registry supports N '
+        'guests; v1 owns only the one named Demo)', () async {
+      await registry.createGuestProfile(name: 'Scratch');
+      final gateway = buildGateway();
+      expect(await gateway.demoProfileExists(), isFalse);
+    });
+  });
+
+  test('exitDemo activates the real profile and keeps the demo', () async {
+    final gateway = buildGateway();
+    await gateway.enterDemo(locale: const Locale('en'));
+    final demo = (await gateway.findDemoProfile())!;
+    activeContext = guestContext(demo);
+    activated.clear();
+
+    await gateway.exitDemo();
+
+    expect(activated, [Profile.realProfileId]);
+    expect(await gateway.demoProfileExists(), isTrue);
+    expect(registry.rootFor(demo).existsSync(), isTrue);
+  });
+
+  group('resetDemo', () {
+    test('while active: exits to real first, then deletes, recreates and '
+        're-enters', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final first = (await gateway.findDemoProfile())!;
+      activeContext = guestContext(first);
+      activated.clear();
+      seededLocales.clear();
+
+      // The registry refuses to delete the active profile, so resetDemo
+      // must persist the real marker before deleting. Mirror the real
+      // switcher: activation updates the registry's active marker.
+      final gatewayWithMarker = DemoModeGateway(
+        registry: registry,
+        activate: (id) async {
+          activated.add(id);
+          await registry.setActiveProfile(id);
+          if (id == Profile.realProfileId) activeContext = null;
+        },
+        profileContext: () => activeContext,
+        seedRunner: (world, locale) async =>
+            seededLocales.add(locale.toLanguageTag()),
+      );
+      await registry.setActiveProfile(first.id);
+
+      await gatewayWithMarker.resetDemo(locale: const Locale('en'));
+
+      final second = (await gatewayWithMarker.findDemoProfile())!;
+      expect(second.id, isNot(first.id));
+      expect(registry.rootFor(first).existsSync(), isFalse);
+      expect(seededLocales, ['en']);
+      expect(activated.first, Profile.realProfileId);
+      expect(activated.last, second.id);
+    });
+
+    test(
+      'from the real world: deletes and recreates without an exit hop',
+      () async {
+        final gateway = buildGateway();
+        await gateway.enterDemo(locale: const Locale('en'));
+        final first = (await gateway.findDemoProfile())!;
+        activated.clear();
+        seededLocales.clear();
+
+        await gateway.resetDemo(locale: const Locale('de'));
+
+        final second = (await gateway.findDemoProfile())!;
+        expect(second.id, isNot(first.id));
+        expect(activated, [second.id]);
+        expect(seededLocales, ['de']);
+      },
+    );
+  });
+
+  group('deleteDemo', () {
+    test('removes the profile and its directory tree', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final demo = (await gateway.findDemoProfile())!;
+
+      await gateway.deleteDemo();
+
+      expect(await gateway.demoProfileExists(), isFalse);
+      expect(registry.rootFor(demo).existsSync(), isFalse);
+    });
+
+    test('throws while the demo is active', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      activeContext = guestContext((await gateway.findDemoProfile())!);
+
+      await expectLater(gateway.deleteDemo, throwsStateError);
+      expect(await gateway.demoProfileExists(), isTrue);
+    });
+
+    test('is a no-op when no demo profile exists', () async {
+      final gateway = buildGateway();
+      await gateway.deleteDemo();
+      expect(await gateway.demoProfileExists(), isFalse);
+    });
+  });
+
+  group('exitWithCopy', () {
+    const plan = DemoCopyPlan(
+      entities: [],
+      links: [],
+      definitions: [],
+      media: [],
+    );
+
+    test(
+      'prepares from the demo side BEFORE the switch and applies AFTER',
+      () async {
+        final order = <String>[];
+        final gateway = DemoModeGateway(
+          registry: registry,
+          activate: (id) async => order.add('activate:$id'),
+          profileContext: () => activeContext,
+          seedRunner: (_, _) async {},
+          prepareCopyOverride: (ids) async {
+            order.add('prepare:${ids.single}');
+            return plan;
+          },
+          applyCopyOverride: (received) async {
+            order.add('apply');
+            expect(identical(received, plan), isTrue);
+            return 4;
+          },
+        );
+        final demo = await registry.createGuestProfile(name: 'Demo');
+        activeContext = guestContext(demo);
+
+        final copied = await gateway.exitWithCopy(selectedIds: {'task-1'});
+
+        expect(copied, 4);
+        expect(order, ['prepare:task-1', 'activate:real', 'apply']);
+      },
+    );
+
+    test('empty selection just exits', () async {
+      var prepared = false;
+      final gateway = buildGateway(
+        prepareCopy: (_) async {
+          prepared = true;
+          return plan;
+        },
+        applyCopy: (_) async => 0,
+      );
+      final demo = await registry.createGuestProfile(name: 'Demo');
+      activeContext = guestContext(demo);
+
+      final copied = await gateway.exitWithCopy(selectedIds: {});
+
+      expect(copied, 0);
+      expect(prepared, isFalse);
+      expect(activated, [Profile.realProfileId]);
+    });
+
+    test('throws outside the demo world', () async {
+      final gateway = buildGateway();
+      await expectLater(
+        () => gateway.exitWithCopy(selectedIds: {'x'}),
+        throwsStateError,
+      );
+    });
+  });
+
+  group('demoJournalEmptyProvider', () {
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    test('true only when the journal holds zero rows', () async {
+      final db = MockJournalDb();
+      when(db.countAllJournalEntries).thenAnswer((_) async => 0);
+      getIt.registerSingleton<JournalDb>(db);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(await container.read(demoJournalEmptyProvider.future), isTrue);
+    });
+
+    test('false when entries exist', () async {
+      final db = MockJournalDb();
+      when(db.countAllJournalEntries).thenAnswer((_) async => 7);
+      getIt.registerSingleton<JournalDb>(db);
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+
+      expect(await container.read(demoJournalEmptyProvider.future), isFalse);
+    });
+
+    test('false when no JournalDb is registered', () async {
+      final container = ProviderContainer();
+      addTearDown(container.dispose);
+      expect(await container.read(demoJournalEmptyProvider.future), isFalse);
+    });
+  });
+}

@@ -8303,6 +8303,162 @@ abstract class AppLocalizations {
   /// **'Remove from sync'**
   String get deleteDeviceLabel;
 
+  /// No description provided for @demoBannerExit.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit'**
+  String get demoBannerExit;
+
+  /// No description provided for @demoBannerLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo world — your journal is untouched'**
+  String get demoBannerLabel;
+
+  /// No description provided for @demoCopyBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose the tasks and entries to copy into your journal.'**
+  String get demoCopyBody;
+
+  /// No description provided for @demoCopyConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Copy and exit'**
+  String get demoCopyConfirm;
+
+  /// No description provided for @demoCopyProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Copying your work…'**
+  String get demoCopyProgress;
+
+  /// No description provided for @demoCopySectionEntries.
+  ///
+  /// In en, this message translates to:
+  /// **'Journal entries'**
+  String get demoCopySectionEntries;
+
+  /// No description provided for @demoCopySectionTasks.
+  ///
+  /// In en, this message translates to:
+  /// **'Tasks'**
+  String get demoCopySectionTasks;
+
+  /// No description provided for @demoCopySelectAll.
+  ///
+  /// In en, this message translates to:
+  /// **'Select all'**
+  String get demoCopySelectAll;
+
+  /// No description provided for @demoCopyTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Take my work with me'**
+  String get demoCopyTitle;
+
+  /// No description provided for @demoCopyToast.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 item copied to your journal} other{{count} items copied to your journal}}'**
+  String demoCopyToast(int count);
+
+  /// No description provided for @demoEnteringProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Setting up the demo world…'**
+  String get demoEnteringProgress;
+
+  /// No description provided for @demoExitConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit demo'**
+  String get demoExitConfirm;
+
+  /// No description provided for @demoExitSheetBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Your demo world stays saved — you can come back anytime.'**
+  String get demoExitSheetBody;
+
+  /// No description provided for @demoExitSheetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Leave the demo?'**
+  String get demoExitSheetTitle;
+
+  /// No description provided for @demoExitTakeWork.
+  ///
+  /// In en, this message translates to:
+  /// **'Take my work with me…'**
+  String get demoExitTakeWork;
+
+  /// No description provided for @demoOnboardingExplore.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore with sample data'**
+  String get demoOnboardingExplore;
+
+  /// No description provided for @demoSettingsDeleteConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete the demo world and everything in it?'**
+  String get demoSettingsDeleteConfirm;
+
+  /// No description provided for @demoSettingsDeleteTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete demo data'**
+  String get demoSettingsDeleteTitle;
+
+  /// No description provided for @demoSettingsDeleteToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Demo data deleted'**
+  String get demoSettingsDeleteToast;
+
+  /// No description provided for @demoSettingsExitTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Exit demo'**
+  String get demoSettingsExitTitle;
+
+  /// No description provided for @demoSettingsResetConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset the demo world? Everything you changed there will be lost.'**
+  String get demoSettingsResetConfirm;
+
+  /// No description provided for @demoSettingsResetTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reset demo data'**
+  String get demoSettingsResetTitle;
+
+  /// No description provided for @demoSettingsResumeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Return to the demo workspace'**
+  String get demoSettingsResumeTitle;
+
+  /// No description provided for @demoSettingsTrySubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore Lotti with sample data — your journal stays untouched'**
+  String get demoSettingsTrySubtitle;
+
+  /// No description provided for @demoSettingsTryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Try the demo workspace'**
+  String get demoSettingsTryTitle;
+
+  /// No description provided for @demoTryButton.
+  ///
+  /// In en, this message translates to:
+  /// **'Try the demo'**
+  String get demoTryButton;
+
   /// No description provided for @designSystemActionVariantTitle.
   ///
   /// In en, this message translates to:

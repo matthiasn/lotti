@@ -1,4 +1,5 @@
 import 'dart:typed_data';
+import 'dart:ui' show Locale;
 
 import 'package:drift/drift.dart' as drift;
 import 'package:genui/genui.dart' show CreateSurface;
@@ -198,6 +199,7 @@ void registerAllFallbackValues() {
   registerFallbackValue(fallbackSurveyData);
   registerFallbackValue(FakeLaunchOptions());
   registerFallbackValue(EntryLinkType.basic);
+  registerFallbackValue(const Locale('en'));
 
   // Logging
   registerFallbackValue(LogDomain.general);

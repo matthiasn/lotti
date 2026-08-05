@@ -58,6 +58,7 @@ void main() {
 
       final created = await creator.createAndActivate(
         seed: (world) => world.writeSetting('demo_seed_version', '1'),
+        name: 'Demo',
       );
 
       expect(activated, [created.id]);
@@ -77,6 +78,7 @@ void main() {
             await world.writeSetting('partial', 'x');
             throw StateError('seed boom');
           },
+          name: 'Demo',
         ),
         throwsStateError,
       );

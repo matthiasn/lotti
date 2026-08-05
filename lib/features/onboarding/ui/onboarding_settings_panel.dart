@@ -1,8 +1,13 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
+import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
@@ -11,6 +16,7 @@ import 'package:lotti/features/settings/ui/pages/sliver_box_adapter_page.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/modal/confirmation_modal.dart';
 
 /// Mobile / legacy wrapper that keeps the `SliverBoxAdapterPage` chrome and
 /// delegates content to [OnboardingSettingsBody], mirroring
@@ -29,7 +35,7 @@ class OnboardingSettingsPage extends StatelessWidget {
 }
 
 /// Top-level Settings surface that lets a user find their way back to the
-/// FTUE welcome flow at any time.
+/// FTUE welcome flow at any time, and manage the demo workspace.
 ///
 /// The replay *entry* is deliberately independent of `OnboardingWelcomeCadence`'s
 /// auto-show budget (`state/onboarding_trigger_service.dart`), which only
@@ -41,8 +47,15 @@ class OnboardingSettingsPage extends StatelessWidget {
 /// retire the auto-show gate via [markOnboardingWelcomeCompleted], exactly as
 /// the auto-show path does, so a replay-then-connect user is not auto-nagged
 /// again on the next cold start.
+///
+/// The demo rows resolve their [DemoModeGateway] from the ambient
+/// `ProfileSwitcherScope`; hosts without one (bare tests) simply don't show
+/// the demo section unless [demoGateway] is injected.
 class OnboardingSettingsBody extends StatefulWidget {
-  const OnboardingSettingsBody({super.key});
+  const OnboardingSettingsBody({this.demoGateway, super.key});
+
+  /// Test seam; production resolves via the ambient `ProfileSwitcherScope`.
+  final DemoModeGateway? demoGateway;
 
   @override
   State<OnboardingSettingsBody> createState() => _OnboardingSettingsBodyState();
@@ -50,11 +63,23 @@ class OnboardingSettingsBody extends StatefulWidget {
 
 class _OnboardingSettingsBodyState extends State<OnboardingSettingsBody> {
   late Future<bool> _reachedRealAha;
+  DemoModeGateway? _gateway;
+  var _gatewayResolved = false;
+  Future<bool>? _demoExists;
 
   @override
   void initState() {
     super.initState();
     _reachedRealAha = _loadReachedRealAha();
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (_gatewayResolved) return;
+    _gatewayResolved = true;
+    _gateway = widget.demoGateway ?? maybeDemoModeGatewayOf(context);
+    _demoExists = _gateway?.demoProfileExists();
   }
 
   /// Reads `OnboardingFunnelState.reachedRealAha` for the status row.
@@ -91,10 +116,93 @@ class _OnboardingSettingsBodyState extends State<OnboardingSettingsBody> {
     });
   }
 
+  Future<void> _resetDemo(DemoModeGateway gateway) async {
+    final confirmed = await showConfirmationModal(
+      context: context,
+      message: context.messages.demoSettingsResetConfirm,
+      confirmLabel: context.messages.demoSettingsResetTitle,
+    );
+    if (!confirmed || !mounted) return;
+    // Ends INSIDE the freshly seeded demo world (a generation switch), so
+    // no completion toast is possible — the reseeded world is the
+    // confirmation.
+    await launchDemoReset(context, gateway: gateway);
+  }
+
+  Future<void> _deleteDemo(DemoModeGateway gateway) async {
+    final confirmed = await showConfirmationModal(
+      context: context,
+      message: context.messages.demoSettingsDeleteConfirm,
+      confirmLabel: context.messages.demoSettingsDeleteTitle,
+    );
+    if (!confirmed || !mounted) return;
+    await gateway.deleteDemo();
+    if (!mounted) return;
+    context.showToast(
+      tone: DesignSystemToastTone.success,
+      title: context.messages.demoSettingsDeleteToast,
+    );
+    setState(() {
+      _demoExists = gateway.demoProfileExists();
+    });
+  }
+
+  List<DesignSystemListItem> _demoRows(
+    BuildContext context,
+    DsTokens tokens, {
+    required DemoModeGateway gateway,
+    required bool demoExists,
+  }) {
+    final m = context.messages;
+    if (gateway.isDemoActive) {
+      return [
+        DesignSystemListItem(
+          title: m.demoSettingsExitTitle,
+          leading: const SettingsIcon(icon: Icons.logout_rounded),
+          showDivider: true,
+          dividerIndent: SettingsIcon.dividerIndent(tokens),
+          onTap: () => showDemoExitSheet(context, gateway: gateway),
+        ),
+        DesignSystemListItem(
+          title: m.demoSettingsResetTitle,
+          leading: const SettingsIcon(icon: Icons.restart_alt_rounded),
+          dividerIndent: SettingsIcon.dividerIndent(tokens),
+          onTap: () => unawaited(_resetDemo(gateway)),
+        ),
+      ];
+    }
+    return [
+      DesignSystemListItem(
+        title: demoExists ? m.demoSettingsResumeTitle : m.demoSettingsTryTitle,
+        subtitle: m.demoSettingsTrySubtitle,
+        leading: const SettingsIcon(icon: Icons.science_outlined),
+        showDivider: demoExists,
+        dividerIndent: SettingsIcon.dividerIndent(tokens),
+        onTap: () => unawaited(launchDemoEnter(context, gateway: gateway)),
+      ),
+      if (demoExists) ...[
+        DesignSystemListItem(
+          title: m.demoSettingsResetTitle,
+          leading: const SettingsIcon(icon: Icons.restart_alt_rounded),
+          showDivider: true,
+          dividerIndent: SettingsIcon.dividerIndent(tokens),
+          onTap: () => unawaited(_resetDemo(gateway)),
+        ),
+        DesignSystemListItem(
+          title: m.demoSettingsDeleteTitle,
+          leading: const SettingsIcon(icon: Icons.delete_outline_rounded),
+          dividerIndent: SettingsIcon.dividerIndent(tokens),
+          onTap: () => unawaited(_deleteDemo(gateway)),
+        ),
+      ],
+    ];
+  }
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final m = context.messages;
+    final gateway = _gateway;
 
     return Padding(
       padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
@@ -104,34 +212,53 @@ class _OnboardingSettingsBodyState extends State<OnboardingSettingsBody> {
           final loading = snapshot.connectionState != ConnectionState.done;
           final activated = snapshot.data ?? false;
 
-          return DesignSystemGroupedList(
-            children: [
-              DesignSystemListItem(
-                title: m.settingsOnboardingStatusTitle,
-                subtitle: loading
-                    ? m.settingsOnboardingStatusLoading
-                    : (activated
-                          ? m.settingsOnboardingStatusActivated
-                          : m.settingsOnboardingStatusNotActivated),
-                leading: SettingsIcon(
-                  icon: activated
-                      ? Icons.check_circle_rounded
-                      : Icons.hourglass_empty_rounded,
-                ),
-                showDivider: true,
-                dividerIndent: SettingsIcon.dividerIndent(tokens),
-              ),
-              DesignSystemListItem(
-                title: activated
-                    ? m.settingsOnboardingReplayTitle
-                    : m.settingsOnboardingStartTitle,
-                subtitle: m.settingsOnboardingActionSubtitle,
-                leading: const SettingsIcon(icon: Icons.rocket_launch_rounded),
-                trailing: SettingsIcon.trailingChevron(tokens),
-                dividerIndent: SettingsIcon.dividerIndent(tokens),
-                onTap: _replay,
-              ),
-            ],
+          return FutureBuilder<bool>(
+            future: _demoExists,
+            builder: (context, demoSnapshot) {
+              final demoExists = demoSnapshot.data ?? false;
+              final demoRows = gateway == null
+                  ? const <DesignSystemListItem>[]
+                  : _demoRows(
+                      context,
+                      tokens,
+                      gateway: gateway,
+                      demoExists: demoExists,
+                    );
+
+              return DesignSystemGroupedList(
+                children: [
+                  DesignSystemListItem(
+                    title: m.settingsOnboardingStatusTitle,
+                    subtitle: loading
+                        ? m.settingsOnboardingStatusLoading
+                        : (activated
+                              ? m.settingsOnboardingStatusActivated
+                              : m.settingsOnboardingStatusNotActivated),
+                    leading: SettingsIcon(
+                      icon: activated
+                          ? Icons.check_circle_rounded
+                          : Icons.hourglass_empty_rounded,
+                    ),
+                    showDivider: true,
+                    dividerIndent: SettingsIcon.dividerIndent(tokens),
+                  ),
+                  DesignSystemListItem(
+                    title: activated
+                        ? m.settingsOnboardingReplayTitle
+                        : m.settingsOnboardingStartTitle,
+                    subtitle: m.settingsOnboardingActionSubtitle,
+                    leading: const SettingsIcon(
+                      icon: Icons.rocket_launch_rounded,
+                    ),
+                    trailing: SettingsIcon.trailingChevron(tokens),
+                    showDivider: demoRows.isNotEmpty,
+                    dividerIndent: SettingsIcon.dividerIndent(tokens),
+                    onTap: _replay,
+                  ),
+                  ...demoRows,
+                ],
+              );
+            },
           );
         },
       ),

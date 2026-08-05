@@ -4944,6 +4944,98 @@ class AppLocalizationsPt extends AppLocalizations {
   String get deleteDeviceLabel => 'Remover da sincronização';
 
   @override
+  String get demoBannerExit => 'Sair';
+
+  @override
+  String get demoBannerLabel =>
+      'Mundo de demonstração — o teu diário permanece intacto';
+
+  @override
+  String get demoCopyBody =>
+      'Escolhe as tarefas e entradas a copiar para o teu diário.';
+
+  @override
+  String get demoCopyConfirm => 'Copiar e sair';
+
+  @override
+  String get demoCopyProgress => 'A copiar o teu trabalho…';
+
+  @override
+  String get demoCopySectionEntries => 'Entradas do diário';
+
+  @override
+  String get demoCopySectionTasks => 'Tarefas';
+
+  @override
+  String get demoCopySelectAll => 'Selecionar tudo';
+
+  @override
+  String get demoCopyTitle => 'Levar o meu trabalho';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count itens copiados para o teu diário',
+      one: '1 item copiado para o teu diário',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoEnteringProgress => 'A preparar o mundo de demonstração…';
+
+  @override
+  String get demoExitConfirm => 'Sair da demo';
+
+  @override
+  String get demoExitSheetBody =>
+      'O teu mundo de demonstração fica guardado — podes voltar quando quiseres.';
+
+  @override
+  String get demoExitSheetTitle => 'Sair da demo?';
+
+  @override
+  String get demoExitTakeWork => 'Levar o meu trabalho…';
+
+  @override
+  String get demoOnboardingExplore => 'Explorar com dados de exemplo';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Apagar o mundo de demonstração e todos os seus dados?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Apagar dados da demo';
+
+  @override
+  String get demoSettingsDeleteToast => 'Dados da demo apagados';
+
+  @override
+  String get demoSettingsExitTitle => 'Sair da demo';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Repor o mundo de demonstração? Todas as tuas alterações aí serão perdidas.';
+
+  @override
+  String get demoSettingsResetTitle => 'Repor dados da demo';
+
+  @override
+  String get demoSettingsResumeTitle => 'Voltar ao mundo de demonstração';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Explora o Lotti com dados de exemplo — o teu diário permanece intacto';
+
+  @override
+  String get demoSettingsTryTitle => 'Experimentar o mundo de demonstração';
+
+  @override
+  String get demoTryButton => 'Experimentar a demo';
+
+  @override
   String get designSystemActionVariantTitle => 'Com ação';
 
   @override

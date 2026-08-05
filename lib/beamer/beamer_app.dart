@@ -21,6 +21,7 @@ import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_trigger_s
 import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/daily_os_next/state/selected_date_provider.dart';
 import 'package:lotti/features/daily_os_next/ui/widgets/sidebar_calendar.dart';
+import 'package:lotti/features/demo/ui/demo_mode_banner.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
@@ -1376,9 +1377,16 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
                   onZoomIn: zoomController.zoomIn,
                   onZoomOut: zoomController.zoomOut,
                   onZoomReset: zoomController.resetZoom,
-                  child: ZoomWrapper(
-                    scale: ref.watch(zoomControllerProvider),
-                    child: child ?? const SizedBox.shrink(),
+                  // The demo banner sits above the router's navigator, so
+                  // it survives every route change; the exit sheet needs a
+                  // context INSIDE that navigator to push from.
+                  child: DemoModeScaffold(
+                    sheetContext: () =>
+                        routerDelegate.navigatorKey.currentContext ?? context,
+                    child: ZoomWrapper(
+                      scale: ref.watch(zoomControllerProvider),
+                      child: child ?? const SizedBox.shrink(),
+                    ),
                   ),
                 ),
               );

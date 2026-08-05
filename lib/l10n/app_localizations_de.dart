@@ -4935,6 +4935,97 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteDeviceLabel => 'Aus Sync entfernen';
 
   @override
+  String get demoBannerExit => 'Beenden';
+
+  @override
+  String get demoBannerLabel => 'Demo-Welt — dein Journal bleibt unberührt';
+
+  @override
+  String get demoCopyBody =>
+      'Wähle aus, welche Aufgaben und Einträge in dein Journal kopiert werden sollen.';
+
+  @override
+  String get demoCopyConfirm => 'Kopieren und beenden';
+
+  @override
+  String get demoCopyProgress => 'Deine Arbeit wird kopiert…';
+
+  @override
+  String get demoCopySectionEntries => 'Journaleinträge';
+
+  @override
+  String get demoCopySectionTasks => 'Aufgaben';
+
+  @override
+  String get demoCopySelectAll => 'Alle auswählen';
+
+  @override
+  String get demoCopyTitle => 'Meine Arbeit mitnehmen';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge in dein Journal kopiert',
+      one: '1 Eintrag in dein Journal kopiert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoEnteringProgress => 'Demo-Welt wird eingerichtet…';
+
+  @override
+  String get demoExitConfirm => 'Demo beenden';
+
+  @override
+  String get demoExitSheetBody =>
+      'Deine Demo-Welt bleibt gespeichert — du kannst jederzeit zurückkommen.';
+
+  @override
+  String get demoExitSheetTitle => 'Demo verlassen?';
+
+  @override
+  String get demoExitTakeWork => 'Meine Arbeit mitnehmen…';
+
+  @override
+  String get demoOnboardingExplore => 'Mit Beispieldaten erkunden';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Demo-Welt und alle zugehörigen Daten löschen?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Demo-Daten löschen';
+
+  @override
+  String get demoSettingsDeleteToast => 'Demo-Daten gelöscht';
+
+  @override
+  String get demoSettingsExitTitle => 'Demo beenden';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Demo-Welt zurücksetzen? Alle deine Änderungen dort gehen verloren.';
+
+  @override
+  String get demoSettingsResetTitle => 'Demo-Daten zurücksetzen';
+
+  @override
+  String get demoSettingsResumeTitle => 'Zurück zur Demo-Welt';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Erkunde Lotti mit Beispieldaten — dein Journal bleibt unberührt';
+
+  @override
+  String get demoSettingsTryTitle => 'Demo-Welt ausprobieren';
+
+  @override
+  String get demoTryButton => 'Demo ausprobieren';
+
+  @override
   String get designSystemActionVariantTitle => 'Mit Aktion';
 
   @override

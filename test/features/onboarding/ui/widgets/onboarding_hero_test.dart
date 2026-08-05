@@ -461,6 +461,49 @@ void main() {
       expect(tester.takeException(), isNull);
     });
 
+    testWidgets('the demo entry renders only when onExploreDemo is wired, '
+        'and tapping it fires the callback', (tester) async {
+      var exploreCount = 0;
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          boundedPanel(
+            OnboardingHeroPanel(
+              onConnect: () {},
+              onSkip: () {},
+              onExploreDemo: () => exploreCount++,
+            ),
+          ),
+          mediaQueryData: reducedMotionMq,
+        ),
+      );
+      await tester.pump();
+
+      await tester.ensureVisible(find.text(messages.demoOnboardingExplore));
+      await tester.pump();
+      await tester.tap(find.text(messages.demoOnboardingExplore));
+      await tester.pump();
+
+      expect(exploreCount, 1);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('without onExploreDemo the demo entry is absent (gallery '
+        'and preview hosts)', (tester) async {
+      await pumpToleratingOverflow(
+        tester,
+        makeTestableWidget(
+          boundedPanel(
+            OnboardingHeroPanel(onConnect: () {}, onSkip: () {}),
+          ),
+          mediaQueryData: reducedMotionMq,
+        ),
+      );
+
+      expect(find.text(messages.demoOnboardingExplore), findsNothing);
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('invokes onSkip when the skip button is tapped', (
       tester,
     ) async {

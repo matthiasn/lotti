@@ -4955,6 +4955,98 @@ class AppLocalizationsCs extends AppLocalizations {
   String get deleteDeviceLabel => 'Odebrat ze synchronizace';
 
   @override
+  String get demoBannerExit => 'Ukončit';
+
+  @override
+  String get demoBannerLabel => 'Demo svět — tvůj deník zůstává nedotčený';
+
+  @override
+  String get demoCopyBody =>
+      'Vyber úkoly a záznamy, které chceš zkopírovat do svého deníku.';
+
+  @override
+  String get demoCopyConfirm => 'Zkopírovat a ukončit';
+
+  @override
+  String get demoCopyProgress => 'Kopíruji tvou práci…';
+
+  @override
+  String get demoCopySectionEntries => 'Záznamy v deníku';
+
+  @override
+  String get demoCopySectionTasks => 'Úkoly';
+
+  @override
+  String get demoCopySelectAll => 'Vybrat vše';
+
+  @override
+  String get demoCopyTitle => 'Vzít si práci s sebou';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count položek zkopírováno do tvého deníku',
+      few: '$count položky zkopírovány do tvého deníku',
+      one: '1 položka zkopírována do tvého deníku',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoEnteringProgress => 'Připravuji demo svět…';
+
+  @override
+  String get demoExitConfirm => 'Ukončit demo';
+
+  @override
+  String get demoExitSheetBody =>
+      'Tvůj demo svět zůstane uložený — můžeš se kdykoli vrátit.';
+
+  @override
+  String get demoExitSheetTitle => 'Opustit demo?';
+
+  @override
+  String get demoExitTakeWork => 'Vzít si práci s sebou…';
+
+  @override
+  String get demoOnboardingExplore => 'Prozkoumat s ukázkovými daty';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Smazat demo svět a všechna jeho data?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Smazat demo data';
+
+  @override
+  String get demoSettingsDeleteToast => 'Demo data smazána';
+
+  @override
+  String get demoSettingsExitTitle => 'Ukončit demo';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Obnovit demo svět do výchozího stavu? Všechny tvé změny tam budou ztraceny.';
+
+  @override
+  String get demoSettingsResetTitle => 'Obnovit demo data';
+
+  @override
+  String get demoSettingsResumeTitle => 'Vrátit se do demo světa';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Prozkoumej Lotti s ukázkovými daty — tvůj deník zůstane nedotčený';
+
+  @override
+  String get demoSettingsTryTitle => 'Vyzkoušet demo svět';
+
+  @override
+  String get demoTryButton => 'Vyzkoušet demo';
+
+  @override
   String get designSystemActionVariantTitle => 'S akcí';
 
   @override

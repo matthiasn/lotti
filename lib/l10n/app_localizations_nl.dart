@@ -4912,6 +4912,97 @@ class AppLocalizationsNl extends AppLocalizations {
   String get deleteDeviceLabel => 'Uit synchronisatie verwijderen';
 
   @override
+  String get demoBannerExit => 'Afsluiten';
+
+  @override
+  String get demoBannerLabel => 'Demowereld — je dagboek blijft onaangeroerd';
+
+  @override
+  String get demoCopyBody =>
+      'Kies de taken en notities die je naar je dagboek wilt kopiëren.';
+
+  @override
+  String get demoCopyConfirm => 'Kopiëren en afsluiten';
+
+  @override
+  String get demoCopyProgress => 'Je werk wordt gekopieerd…';
+
+  @override
+  String get demoCopySectionEntries => 'Dagboeknotities';
+
+  @override
+  String get demoCopySectionTasks => 'Taken';
+
+  @override
+  String get demoCopySelectAll => 'Alles selecteren';
+
+  @override
+  String get demoCopyTitle => 'Mijn werk meenemen';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items naar je dagboek gekopieerd',
+      one: '1 item naar je dagboek gekopieerd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoEnteringProgress => 'Demowereld wordt klaargezet…';
+
+  @override
+  String get demoExitConfirm => 'Demo afsluiten';
+
+  @override
+  String get demoExitSheetBody =>
+      'Je demowereld blijft bewaard — je kunt altijd terugkomen.';
+
+  @override
+  String get demoExitSheetTitle => 'Demo verlaten?';
+
+  @override
+  String get demoExitTakeWork => 'Mijn werk meenemen…';
+
+  @override
+  String get demoOnboardingExplore => 'Verkennen met voorbeeldgegevens';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Demowereld en alle bijbehorende gegevens verwijderen?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Demogegevens verwijderen';
+
+  @override
+  String get demoSettingsDeleteToast => 'Demogegevens verwijderd';
+
+  @override
+  String get demoSettingsExitTitle => 'Demo afsluiten';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Demowereld opnieuw instellen? Al je wijzigingen daar gaan verloren.';
+
+  @override
+  String get demoSettingsResetTitle => 'Demogegevens opnieuw instellen';
+
+  @override
+  String get demoSettingsResumeTitle => 'Terug naar de demowereld';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Verken Lotti met voorbeeldgegevens — je dagboek blijft onaangeroerd';
+
+  @override
+  String get demoSettingsTryTitle => 'Demowereld uitproberen';
+
+  @override
+  String get demoTryButton => 'Demo uitproberen';
+
+  @override
   String get designSystemActionVariantTitle => 'Met actie';
 
   @override
