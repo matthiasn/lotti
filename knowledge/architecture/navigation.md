@@ -5,7 +5,7 @@ description: Eight independent Beamer stacks behind one IndexedStack, the rules 
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-05T00:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-05T20:23:15Z }
 stale_after: 2027-02-05
 sources:
   - id: beamer-app
@@ -206,29 +206,35 @@ allows, until everything fits and the More slot disappears.
 
 # The one thing in the chrome that is not a destination
 
-`ContactSupportRow` — Contact Us, plus glyphs for the Manual, the repository and
-the Discord invite — is the exception to everything above. Nothing in it changes
-the tab index, opens a `BeamLocation`, or touches `NavService`; every one of its
-four targets leaves the app through `url_launcher`.
+`ContactSupportRow` — equal glyph buttons for email, the Manual, the repository
+and the Discord invite — is the exception to everything above. Nothing in it
+changes the tab index, opens a `BeamLocation`, or touches `NavService`; every
+one of its four targets leaves the app through `url_launcher`.
 
 That is why it renders **under a rule, below the last real destination**, on both
 form factors:
 
 | Form factor | Where | Suppressed when |
 |-------------|-------|-----------------|
-| Desktop | sidebar `footerBand`, under Settings and above the ambient sync strip | the sidebar is collapsed |
+| Desktop | sidebar `footerBand`, under Settings and below the optional ambient sync strip | the sidebar is collapsed |
 | Mobile | last child of the *More* sheet | never — the sheet is its only home |
 
 `footerBand` is the sidebar's one **full-bleed** slot: it spans the rail edge to
 edge rather than sitting inside the 16 px gutters every other row shares, and
-owns its own smaller inset. The footer needs those 32 px — see
-[component contracts](../features/design_system/component-contracts.md) for the
-arithmetic — and a rule that runs the full width reads as the foot of the panel
-rather than as a row that failed to line up. The sync LED strip stays *below* it
-and stays gutter-aligned, so it keeps reading as the rail's baseline and its
-hover wash cannot run to the edge. Collapsing the sidebar removes the band
-entirely — the icon-only rail is 72 px, narrower than the three glyphs alone —
-and the Manual stays reachable from Settings meanwhile.
+owns its own smaller inset. A rule that runs the full width reads as the foot of
+the panel rather than as a row that failed to line up. The band is always the
+expanded sidebar's final child. When enabled, the sync activity strip stays
+gutter-aligned in `belowSettings` immediately above it; when disabled, that slot
+and its spacer both disappear, so the footer remains pinned without a gap or
+jump. Collapsing the sidebar removes the band entirely — the icon-only rail is
+72 px, narrower than the four glyphs — and the Manual stays reachable from
+Settings meanwhile.
+
+The actions themselves are one right-aligned group. Email is a plain envelope
+button with the same 44 px target, colour, tooltip and semantics as Manual,
+GitHub and Discord; its localized “Contact Us” wording remains the accessible
+name rather than visible copy. With no label competing for width, all four
+targets fit on one line at the 200 px sidebar minimum.
 
 Two rules hold it together:
 

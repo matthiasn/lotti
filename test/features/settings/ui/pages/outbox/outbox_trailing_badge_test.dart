@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
@@ -11,7 +12,7 @@ import '../../../../../widget_test_utils.dart';
 
 void main() {
   group('OutboxTrailingBadge', () {
-    testWidgets('renders a danger-tone number badge when count > 0', (
+    testWidgets('renders a neutral outlined outgoing badge when count > 0', (
       tester,
     ) async {
       final syncDbMock = mockSyncDatabaseWithCount(4);
@@ -28,11 +29,23 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.text('4'), findsOneWidget);
+      expect(find.text('↑ 4'), findsOneWidget);
       final badge = tester.widget<DesignSystemBadge>(
         find.byType(DesignSystemBadge),
       );
-      expect(badge.tone, DesignSystemBadgeTone.danger);
+      expect(badge.tone, DesignSystemBadgeTone.neutral);
+
+      final decoratedBox = tester.widget<DecoratedBox>(
+        find
+            .descendant(
+              of: find.byType(DesignSystemBadge),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      final decoration = decoratedBox.decoration as BoxDecoration;
+      expect(decoration.color, isNull);
+      expect(decoration.border, isNotNull);
     });
 
     testWidgets('renders nothing when sync is disabled', (tester) async {
@@ -51,7 +64,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.byType(DesignSystemBadge), findsNothing);
-      expect(find.text('9'), findsNothing);
+      expect(find.text('↑ 9'), findsNothing);
     });
 
     testWidgets('renders nothing when count is 0', (tester) async {
@@ -97,7 +110,7 @@ void main() {
         await tester.pumpAndSettle();
 
         expect(find.byType(DesignSystemBadge), findsNothing);
-        expect(find.text('7'), findsNothing);
+        expect(find.text('↑ 7'), findsNothing);
       },
     );
   });

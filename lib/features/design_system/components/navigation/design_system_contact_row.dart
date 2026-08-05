@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/components/buttons/design_system_inline_action.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -35,62 +34,26 @@ class DesignSystemContactAction {
   final Key? iconKey;
 }
 
-/// The support footer: a labelled primary contact affordance on one side and
-/// a set of glyph-only external destinations on the other, under a rule.
+/// The support footer: one right-aligned group of glyph-only destinations
+/// under a rule.
 ///
 /// Both navigation surfaces host it — the desktop sidebar pins it beneath
 /// Settings, the mobile More sheet closes with it — so the two never drift
 /// apart in wording, order, or behaviour.
 ///
-/// ## Layout
-///
-/// The label and the glyph group are laid out as two units in a [Wrap], not
-/// as a [Row]. Where they both fit, the wrap's `spaceBetween` pushes them to
-/// opposite edges and the section reads as one line. Where they do not — the
-/// sidebar can be dragged down to `minSidebarWidth` (200), and a long
-/// translation at a large text scale eats the rest — the glyph group drops to
-/// its own line intact instead of the label being ellipsised down to nothing
-/// or the glyphs overflowing. Splitting the group as a unit is the reason for
-/// the wrap: individual glyphs wrapping would leave a ragged 2-then-1 stack.
-///
-/// **One line is the case that has to fit, not merely the lucky one**, and the
-/// width for it is hard-won. The desktop rail is 256 px at its default and the
-/// row needs 226 of them — 94 for the label, its leading glyph and the ink
-/// inset around them, plus 132 for three
-/// [DesignSystemFiveSlotNavBar.minTapTarget] glyphs. Two decisions bought that:
-/// the glyphs take the navigation tap floor rather than
-/// [TapTargets.minimum] (48 px targets overflowed by 18), and the sidebar
-/// renders this band **full-bleed** rather than inside its 16 px gutters
-/// (`DesktopNavigationSidebar.footerBand`), which is worth 32 px. Padded and at
-/// 48 px it missed by 20; padded alone it still missed by 1.7. The remaining
-/// ~30 px of slack is what a longer translation spends before wrapping.
+/// Every destination, including email, uses the same compact navigation target
+/// and ambient [IconTheme]. Keeping all four in one [Row] makes their spacing
+/// uniform and lets one trailing [Align] move the group as a unit. At the
+/// sidebar's 200 px minimum, four 44 px targets still fit inside the band's
+/// token inset without wrapping or overflow.
 class DesignSystemContactRow extends StatelessWidget {
   const DesignSystemContactRow({
-    required this.label,
-    required this.labelIcon,
-    required this.onLabelPressed,
     required this.actions,
-    this.labelKey,
     super.key,
   });
 
-  /// The written affordance — "Contact Us" and its translations.
-  final String label;
-
-  /// Leading glyph on the written affordance. It is the only thing marking
-  /// that row as a control while the pointer is elsewhere, since a caption-tier
-  /// action carries neither fill nor border at rest.
-  final IconData labelIcon;
-
-  /// Invoked when the written affordance is activated.
-  final VoidCallback onLabelPressed;
-
-  /// The glyph-only destinations, rendered in order from the label outwards.
+  /// The glyph-only destinations, rendered in the order supplied.
   final List<DesignSystemContactAction> actions;
-
-  /// Optional key on the label's tap target, for the same reason as
-  /// [DesignSystemContactAction.iconKey].
-  final Key? labelKey;
 
   @override
   Widget build(BuildContext context) {
@@ -108,39 +71,21 @@ class DesignSystemContactRow extends StatelessWidget {
         SizedBox(height: tokens.spacing.step2),
         Padding(
           padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
-          child: Wrap(
-            alignment: WrapAlignment.spaceBetween,
-            crossAxisAlignment: WrapCrossAlignment.center,
-            runSpacing: tokens.spacing.step2,
-            children: [
-              // `IntrinsicWidth` because `DesignSystemInlineAction` ends in an
-              // `Align` that takes every pixel a bounded parent offers — which is
-              // what lets its ink shrink-wrap inside a stretching column, but in
-              // a `Wrap` would hand the label the whole run and push the glyphs
-              // to a second line at every width.
-              IntrinsicWidth(
-                child: DesignSystemInlineAction(
-                  key: labelKey,
-                  onTap: onLabelPressed,
-                  semanticsLabel: label,
-                  label: label,
-                  leadingIcon: labelIcon,
-                ),
+          child: Align(
+            alignment: Alignment.centerRight,
+            child: IconTheme.merge(
+              data: IconThemeData(
+                size: IconSizes.m,
+                color: tokens.colors.text.mediumEmphasis,
               ),
-              IconTheme.merge(
-                data: IconThemeData(
-                  size: IconSizes.m,
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    for (final action in actions)
-                      _ContactIconAction(action: action),
-                  ],
-                ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  for (final action in actions)
+                    _ContactIconAction(action: action),
+                ],
               ),
-            ],
+            ),
           ),
         ),
       ],
@@ -156,9 +101,8 @@ class DesignSystemContactRow extends StatelessWidget {
 /// folded into it.** That control pins its target to [TapTargets.minimum] and
 /// documents the 48×48 result as a *layout* commitment belonging in card
 /// headers and panel corners — it says in as many words not to put it in a
-/// dense row. This footer is a dense row, in a rail whose usable width is 224
-/// px: three of those targets plus a label do not fit, and the row would wrap
-/// at the default sidebar width. It takes
+/// dense row. This footer is a dense row, in a rail whose usable width is 184
+/// px at its minimum: four of those targets would not fit. It takes
 /// [DesignSystemFiveSlotNavBar.minTapTarget] instead — the floor the rest of
 /// this app's navigation chrome already uses, and still above the 44 px
 /// platform guidance for touch.

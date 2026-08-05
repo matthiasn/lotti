@@ -5,7 +5,7 @@ description: The repeating patterns that are contract rather than coincidence �
 resource: ../../../lib/features/design_system/components
 tags: [design-system, components, accessibility, layout]
 status: stable
-generated: { by: claude-code/fable-5, at: 2026-07-28T21:20:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-05T20:23:15Z }
 stale_after: 2027-02-08
 sources:
   - id: components
@@ -208,11 +208,14 @@ a danger primary, where the neutral outlined treatment reads as Cancel
 
 ## In a dense row instead: `DesignSystemContactRow`
 
-The support footer both navigation surfaces close with — a written affordance
-on one side, glyph-only external destinations on the other, under a rule. The
-desktop sidebar pins it beneath Settings; the mobile More sheet ends with it.
-See [navigation](../../architecture/navigation.md) for why nothing in it is an
-app destination.
+The support footer both navigation surfaces close with — four equal,
+glyph-only external destinations under a rule. Email comes first, followed by
+the Manual, GitHub and Discord. The envelope is intentionally no longer a
+labelled or otherwise privileged affordance: all four actions take the same
+target, icon theme, hover treatment, tooltip and semantic construction. The
+desktop sidebar pins the group beneath Settings; the mobile More sheet ends
+with it. See [navigation](../../architecture/navigation.md) for why nothing in
+it is an app destination.
 
 **Its glyphs are deliberately not `DesignSystemIconAction`, and folding the two
 together would break the row.** That control pins its target to
@@ -223,41 +226,29 @@ dense row. This *is* a dense row, in the narrowest column the app has. It takes
 app's navigation chrome already uses, still above the 44 px platform guidance
 for touch.
 
-**The width is the whole design problem, and it took two decisions to solve.**
-At `defaultSidebarWidth` the rail is 256 px and the row needs 226 — 94 for the
-label, its leading glyph and the ink around them, plus 132 for three glyph
-targets. A padded slot offers 224, so at 48 px targets the row overflowed by 20
-and at 44 px it still missed by **1.7**, wrapping at the *default* width rather
-than only at the dragged-down minimum. The second decision is
-`DesktopNavigationSidebar.footerBand`: this band renders **full-bleed**, outside
-the rail's 16 px gutters, and owns its own smaller inset. That is worth 32 px
-and leaves ~30 px of slack for longer translations. The component test asserts
-the width *budget* rather than a laid-out line, because the test font is far
-wider than Inter and would otherwise be what the assertion measured.
+**The four controls move as one trailing group.** One `Align.centerRight` owns
+the placement, and one `Row(mainAxisSize: min)` owns the uninterrupted action
+order. Four 44 px targets need 176 px; even the 200 px minimum sidebar leaves
+184 px inside the band's `spacing.step3` inset, so the group stays on one line
+without depending on label length or text scale. The component test pins that
+budget and verifies every target has the same square geometry.
 
 The rule spends none of that inset — it runs edge to edge, because a divider
 stopping short of both edges reads as a row that failed to line up rather than
 as the foot of the panel. Only the content below it is inset.
 
-The label itself is a `DesignSystemInlineAction`: caption tier, matching the
-sidebar's own saved-filter rows, with a leading envelope. Reaching for the
-component rather than an open-coded `InkWell` is what fixed the hover state —
-an unpadded tap target painted its fill flush against the glyphs, which read as
-a rendering fault rather than as a control.
-
 Two contracts beyond the sizing:
 
 - **The glyph is a `Widget`, not an `IconData`.** Material Design Icons has no
-  Discord mark and has deprecated its GitHub one, so two of the three travel as
-  bundled monochrome vector assets. The row installs one `IconTheme` and every
-  glyph reads size and colour from it, which is what lets an `SvgPicture` tint
-  itself to match the font icons beside it — and why a glyph must resolve the
-  theme in its **own** `build`, below where the row installs it.
-- **The label and the glyph group wrap as two units, never as five children.**
-  `WrapAlignment.spaceBetween` pushes them to opposite edges on one line and
-  drops the group intact to a second line when they do not fit. Letting the
-  glyphs wrap individually would leave a ragged 2-then-1 stack, and letting the
-  label take the pressure instead would ellipsise it to nothing.
+  Discord mark and has deprecated its GitHub one, so two of the four travel as
+  bundled monochrome vector assets. The row installs one `IconTheme` and all
+  four actions read size and colour from it, which is what lets an `SvgPicture`
+  tint itself to match the font icons beside it — and why a glyph must resolve
+  the theme in its **own** `build`, below where the row installs it.
+- **The footer band is always the desktop sidebar's final child.** The optional
+  gutter-aligned sync activity strip uses `belowSettings` immediately above it.
+  Removing that strip removes its spacer too, so the contact band neither moves
+  nor leaves a hole when the flag changes.
 
 Its `ExcludeSemantics` sits **above** the `InkWell`, which is the shape
 `DesignSystemInlineAction` above warns against — safe here for the same reason
@@ -273,6 +264,13 @@ fill on the outlined shape. It exists so a quiet status ("Unverified, no keys
 yet") cannot borrow the *identity* grammar of the secondary outlined chip or
 an alert tone it has not earned; the sync device roster's "This device" and
 keyless "Unverified" chips are the canonical pair that must not match.
+
+`OutboxTrailingBadge` applies that same grammar beside Settings: `↑ count` is
+an outlined neutral pill, where the arrow identifies the outgoing queue and the
+number comes from `outboxPendingCountProvider`. Pending work is routine sync
+state, not an error, so neither the fill nor the danger tone belongs there. The
+pill disappears while the richer sync activity strip is enabled, avoiding two
+views of the same outgoing depth.
 
 # Inline callouts
 

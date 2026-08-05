@@ -729,13 +729,13 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   .read(paneWidthControllerProvider.notifier)
                   .toggleSidebarCollapsed(),
               aboveSettings: const _DesktopSidebarAboveSettings(),
-              // The Contact Us band spans the rail edge to edge; the sync LED
-              // strip stays inside the gutters and stays last, so it keeps
-              // reading as the rail's baseline.
+              // The sync strip stays gutter-aligned directly above the
+              // full-width Contact Us band. The band itself remains the
+              // stable bottom edge whether the strip is present or absent.
               footerBand: const ContactSupportRow(),
               belowSettings: showSyncIndicator
                   ? const SyncActivityIndicator()
-                  : SizedBox(height: context.designTokens.spacing.step3),
+                  : null,
             ),
           ),
           ResizableDivider(

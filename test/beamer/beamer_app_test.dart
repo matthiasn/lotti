@@ -28,6 +28,7 @@ import 'package:lotti/features/design_system/components/navigation/design_system
 import 'package:lotti/features/design_system/components/navigation/desktop_navigation_sidebar.dart';
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
@@ -1422,10 +1423,20 @@ void main() {
         greaterThan(tester.getRect(find.text('Settings')).bottom),
       );
       // And inside the rail, not floating over the content pane.
-      final sidebar = tester.getRect(find.byType(DesktopNavigationSidebar));
+      final sidebarFinder = find.byType(DesktopNavigationSidebar);
+      final sidebar = tester.getRect(sidebarFinder);
+      final contact = tester.getRect(find.byType(ContactSupportRow));
       expect(
-        tester.getRect(find.byType(ContactSupportRow)).right,
+        contact.right,
         lessThanOrEqualTo(sidebar.right),
+      );
+      expect(
+        sidebar.bottom - contact.bottom,
+        closeTo(
+          tester.element(sidebarFinder).designTokens.spacing.step3,
+          0.5,
+        ),
+        reason: 'the inactive sync slot must not leave a footer gap',
       );
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -1456,9 +1467,9 @@ void main() {
       await tester.tap(find.byKey(desktopSidebarToggleKey));
       await tester.pump();
 
-      // The icon-only rail is 72 px wide — narrower than the three glyphs
-      // alone. The footer goes away with the labels rather than overflowing,
-      // the same as the activity summary above Settings.
+      // The icon-only rail is 72 px wide — narrower than the four glyphs.
+      // The footer disappears rather than overflowing, the same as the
+      // activity summary above Settings.
       expect(find.byType(ContactSupportRow), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
@@ -1491,7 +1502,20 @@ void main() {
           ],
         );
 
-        expect(find.byType(SyncActivityIndicator), findsOneWidget);
+        final sync = tester.getRect(find.byType(SyncActivityIndicator));
+        final contact = tester.getRect(find.byType(ContactSupportRow));
+        expect(sync.bottom, lessThanOrEqualTo(contact.top));
+
+        final sidebarFinder = find.byType(DesktopNavigationSidebar);
+        final sidebar = tester.getRect(sidebarFinder);
+        expect(
+          sidebar.bottom - contact.bottom,
+          closeTo(
+            tester.element(sidebarFinder).designTokens.spacing.step3,
+            0.5,
+          ),
+          reason: 'the contact band remains pinned while sync stacks above it',
+        );
 
         await tester.pumpWidget(const SizedBox.shrink());
         await tester.pump();

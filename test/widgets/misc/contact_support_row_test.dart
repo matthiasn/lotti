@@ -67,7 +67,7 @@ void main() {
   }
 
   group('ContactSupportRow destinations', () {
-    testWidgets('the written affordance opens a mail draft to the project', (
+    testWidgets('the mail icon opens a mail draft to the project', (
       tester,
     ) async {
       await pumpRow(tester);
@@ -290,10 +290,22 @@ void main() {
   });
 
   group('ContactSupportRow presentation', () {
-    testWidgets('renders the localized label', (tester) async {
+    testWidgets('uses the localized contact label for the mail action', (
+      tester,
+    ) async {
+      final handle = tester.ensureSemantics();
       await pumpRow(tester, locale: const Locale('de'));
 
-      expect(find.text('Kontaktiere uns'), findsOneWidget);
+      expect(find.text('Kontaktiere uns'), findsNothing);
+      expect(find.bySemanticsLabel('Kontaktiere uns'), findsOneWidget);
+      final tooltip = tester.widget<Tooltip>(
+        find.ancestor(
+          of: find.byKey(contactSupportEmailKey),
+          matching: find.byType(Tooltip),
+        ),
+      );
+      expect(tooltip.message, 'Kontaktiere uns');
+      handle.dispose();
     });
 
     testWidgets('renders both brand marks from their bundled assets', (
@@ -318,10 +330,9 @@ void main() {
       // The marks are monochrome files; without the icon-theme tint they
       // would paint solid black on a dark rail.
       //
-      // Anchored on the Manual glyph specifically, not the first `Icon` in the
-      // tree: the label's leading envelope is rendered by
-      // `DesignSystemInlineAction`, which styles its own glyph and sits outside
-      // the icon theme the row installs for its brand marks.
+      // Anchored on the Manual glyph specifically so this remains independent
+      // of icon order while still proving font glyphs and brand marks inherit
+      // the same row theme.
       final manualTheme = IconTheme.of(
         tester.element(
           find

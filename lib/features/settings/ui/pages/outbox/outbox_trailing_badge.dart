@@ -5,13 +5,14 @@ import 'package:lotti/features/design_system/components/badges/design_system_bad
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/utils/consts.dart';
 
-/// Standalone count pill for pending outbox items, rendered in a trailing slot
-/// (e.g. alongside Settings on the desktop navigation sidebar).
+/// Standalone outgoing-count pill for pending outbox items, rendered in a
+/// trailing slot (e.g. alongside Settings on the desktop navigation sidebar).
 ///
 /// Only renders when sync is enabled and there are pending items. The
-/// pill is also suppressed when the sidebar sync activity indicator is
-/// active — the indicator already shows the outbox depth, so showing
-/// both would double up.
+/// upward arrow identifies the outgoing direction. The neutral outline
+/// communicates ordinary queued work rather than an error. The pill is also
+/// suppressed when the sidebar sync activity indicator is active — the
+/// indicator already shows the outbox depth, so showing both would double up.
 class OutboxTrailingBadge extends ConsumerWidget {
   const OutboxTrailingBadge({super.key});
 
@@ -31,9 +32,9 @@ class OutboxTrailingBadge extends ConsumerWidget {
     if (count == 0) {
       return const SizedBox.shrink();
     }
-    return DesignSystemBadge.number(
-      value: '$count',
-      tone: DesignSystemBadgeTone.danger,
+    return DesignSystemBadge.outlined(
+      label: '↑ $count',
+      tone: DesignSystemBadgeTone.neutral,
     );
   }
 }
