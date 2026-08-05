@@ -181,9 +181,10 @@ no longer blocked while the partial or declined flow continues.
 Once a full round is active, the sender fetches undecoded rows and performs
 decode, preparation, persistence and enqueue inside each retained item action.
 One malformed payload therefore cannot abort the rest of its page. Failed rows
-are logged and retained in the result while later work continues. Entry links
-are dependent items: a link is retained without enqueue when its parent journal
-entry fails, and retry preserves parent-before-link ordering. The End barrier
+are logged and retained in the result while later work continues. Hidden journal
+links remain part of the replicated history. Journal and agent links are
+dependent items: a link is retained without enqueue when either in-range
+endpoint fails, and retry preserves entity-before-link ordering. The End barrier
 is not queued while any failures remain: the sheet summarizes them and retry
 acts only on those retained rows. A successful retry completes the round;
 dismissing the sheet during staging, retry or the partial summary aborts it,

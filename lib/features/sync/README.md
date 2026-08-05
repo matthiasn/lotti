@@ -48,8 +48,9 @@ merge of two users' work.
   calendar as the rest of the app. Progress remains visible until every row has
   been attempted; raw rows are decoded inside the item boundary, so an isolated
   failure names the affected row and can be retried without requeueing
-  everything that succeeded. A journal link waits for its parent entry to
-  queue, including across retries. During that full initial
+everything that succeeded. Hidden journal-link state is included, and journal
+or agent links wait for failed in-range endpoints to queue, including across
+retries. During that full initial
   transfer, the new device starts holding off automatic history requests before
   it logs in, so even the first queue drain cannot ask for data that is about to
   arrive; a failed or disconnected transfer releases that hold automatically,

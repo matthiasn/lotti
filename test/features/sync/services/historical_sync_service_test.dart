@@ -497,6 +497,74 @@ void main() {
         },
       );
 
+      test('defers an entry link until its target queues', () async {
+        final timestamp = DateTime(2024, 1, 17, 12);
+        final source = _buildJournalEntry(
+          id: 'link-source',
+          timestamp: timestamp,
+          text: 'Source',
+        );
+        final target = _buildJournalEntry(
+          id: 'link-target',
+          timestamp: timestamp.add(const Duration(minutes: 1)),
+          text: 'Target',
+        );
+        await _insertEntries(journalDb, [source, target]);
+        await journalDb.upsertEntryLink(
+          _buildEntryLink(
+            id: 'target-dependent-link',
+            fromId: source.id,
+            toId: target.id,
+            timestamp: timestamp,
+          ),
+        );
+        var failTarget = true;
+        final attempts = <String>[];
+        when(
+          () => outboxService.enqueueMessageOrThrow(any()),
+        ).thenAnswer((invocation) async {
+          final message = invocation.positionalArguments.single as SyncMessage;
+          switch (message) {
+            case SyncJournalEntity(:final id):
+              attempts.add(id);
+              if (failTarget && id == target.id) {
+                throw StateError('target unavailable');
+              }
+            case SyncEntryLink(:final entryLink):
+              attempts.add(entryLink.id);
+            default:
+          }
+          sentMessages.add(message);
+        });
+
+        final result = await historicalSync.reSyncInterval(
+          start: timestamp.subtract(const Duration(hours: 1)),
+          end: timestamp.add(const Duration(hours: 1)),
+          agentRepository: mockAgentRepo,
+          includeAgentEntities: false,
+        );
+
+        expect(attempts, ['link-source', 'link-target']);
+        expect(
+          result.failures.map((failure) => failure.itemId),
+          ['link-target', 'target-dependent-link'],
+        );
+
+        failTarget = false;
+        final retried = await result.retryFailures();
+
+        expect(retried.failures, isEmpty);
+        expect(
+          attempts,
+          [
+            'link-source',
+            'link-target',
+            'link-target',
+            'target-dependent-link',
+          ],
+        );
+      });
+
       test('isolates a malformed entry-link row before enqueue', () async {
         final timestamp = DateTime(2024, 1, 18);
         final parent = _buildJournalEntry(
@@ -613,6 +681,43 @@ void main() {
         expect(linkMessages.first.entryLink.id, equals(link.id));
       });
 
+      test('enqueues hidden entry links as replicated state', () async {
+        final timestamp = DateTime(2024, 3, 2);
+        final source = _buildJournalEntry(
+          id: 'hidden-source',
+          timestamp: timestamp,
+          text: 'Source',
+        );
+        final target = _buildJournalEntry(
+          id: 'hidden-target',
+          timestamp: timestamp.add(const Duration(minutes: 1)),
+          text: 'Target',
+        );
+        await _insertEntries(journalDb, [source, target]);
+        await journalDb.upsertEntryLink(
+          EntryLink.basic(
+            id: 'hidden-history-link',
+            fromId: source.id,
+            toId: target.id,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            vectorClock: const VectorClock({'node': 1}),
+            hidden: true,
+          ),
+        );
+
+        await historicalSync.reSyncInterval(
+          start: timestamp.subtract(const Duration(hours: 1)),
+          end: timestamp.add(const Duration(hours: 1)),
+          agentRepository: mockAgentRepo,
+          includeAgentEntities: false,
+        );
+
+        final link = sentMessages.whereType<SyncEntryLink>().single.entryLink;
+        expect(link.id, 'hidden-history-link');
+        expect(link.hidden, isTrue);
+      });
+
       test('reports paged journal progress through completion', () async {
         final baseDate = DateTime(2024, 3);
         final entryA = _buildJournalEntry(
@@ -652,7 +757,7 @@ void main() {
           progress.any(
             (event) =>
                 event.phase == ReSyncPhase.journalEntities &&
-                event.processed == 3 &&
+                event.processed == 2 &&
                 !event.isComplete,
           ),
           isTrue,
@@ -872,6 +977,91 @@ void main() {
           ).called(9);
         },
       );
+
+      test('defers an agent link until its entity endpoint queues', () async {
+        final timestamp = DateTime(2025, 1, 10, 12);
+        final identity = AgentDomainEntity.agent(
+          id: 'dependency-agent',
+          agentId: 'dependency-agent',
+          kind: 'task_agent',
+          displayName: 'Dependency Agent',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'dependency-state',
+          config: const AgentConfig(),
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          vectorClock: const VectorClock({'node': 1}),
+        );
+        final state = AgentDomainEntity.agentState(
+          id: 'dependency-state',
+          agentId: identity.id,
+          slots: const AgentSlots(),
+          updatedAt: timestamp.add(const Duration(minutes: 1)),
+          vectorClock: const VectorClock({'node': 2}),
+        );
+        final link = agent_model.AgentLink.agentState(
+          id: 'dependency-agent-link',
+          fromId: identity.id,
+          toId: state.id,
+          createdAt: timestamp,
+          updatedAt: timestamp,
+          vectorClock: const VectorClock({'node': 3}),
+        );
+        await populateAgentDb(entities: [identity, state], links: [link]);
+        var failState = true;
+        final attempts = <String>[];
+        when(
+          () => outboxService.enqueueMessageOrThrow(any()),
+        ).thenAnswer((invocation) async {
+          final message = invocation.positionalArguments.single as SyncMessage;
+          switch (message) {
+            case SyncAgentEntity(:final agentEntity):
+              final id = agentEntity!.id;
+              attempts.add(id);
+              if (failState && id == state.id) {
+                throw StateError('state unavailable');
+              }
+            case SyncAgentLink(:final agentLink):
+              attempts.add(agentLink!.id);
+            default:
+          }
+          sentMessages.add(message);
+        });
+
+        final result = await historicalSync.reSyncInterval(
+          start: timestamp.subtract(const Duration(hours: 1)),
+          end: timestamp.add(const Duration(hours: 1)),
+          agentRepository: agentRepo,
+          includeJournalEntities: false,
+        );
+
+        expect(attempts, [identity.id, state.id]);
+        expect(
+          result.failures.map((failure) => failure.itemId),
+          [state.id, link.id],
+        );
+        expect(result.hasFailures, isTrue);
+
+        final stillFailing = await result.retryFailures();
+
+        expect(
+          stillFailing.failures.map((failure) => failure.itemId),
+          [state.id, link.id],
+        );
+        expect(attempts, [identity.id, state.id, state.id]);
+
+        failState = false;
+        final retried = await stillFailing.retryFailures();
+
+        expect(retried.failures, isEmpty);
+        expect(retried.hasFailures, isFalse);
+        expect(
+          attempts,
+          [identity.id, state.id, state.id, state.id, link.id],
+        );
+      });
 
       test('isolates malformed agent entity and link rows', () async {
         final timestamp = DateTime(2025, 1, 11, 9);

@@ -244,12 +244,12 @@ class _ReSyncFailureCollector {
     required ReSyncPhase phase,
     required ReSyncItemType itemType,
     required String itemId,
-    required String dependencyItemId,
+    required Set<String> dependencyItemIds,
     required Future<void> Function() retryAction,
   }) {
     final error = StateError(
-      'Historical sync deferred because parent item '
-      '$dependencyItemId was not queued',
+      'Historical sync deferred because dependencies '
+      '${dependencyItemIds.join(', ')} were not queued',
     );
     final stackTrace = StackTrace.current;
     final failure = ReSyncFailure(
@@ -264,6 +264,12 @@ class _ReSyncFailureCollector {
     _failures.add(failure);
   }
 }
+
+Set<String> _blockedDependencies(
+  Map<String, bool> queueState,
+  String fromId,
+  String toId,
+) => {fromId, toId}.where((id) => queueState[id] == false).toSet();
 
 /// Stages persisted journal and agent history into the Sync outbox.
 ///
@@ -342,6 +348,8 @@ class HistoricalSyncService {
     if (includeJournalEntities) {
       var processed = 0;
       var failed = 0;
+      final entryQueueState = <String, bool>{};
+      final pendingLinkRows = <LinkedDbEntry>[];
       onProgress?.call(
         const ReSyncProgress(
           phase: ReSyncPhase.journalEntities,
@@ -350,46 +358,25 @@ class HistoricalSyncService {
         ),
       );
 
-      // 1. Re-sync journal entities and their links.
-      //
-      // The unbounded `countJournalEntries()` precount was misleading
-      // (it counts every entry, not just the interval) and unnecessary
-      // because the page loop already terminates on the first empty page.
-      // Drive the pagination off the empty-page sentinel instead, and
-      // batch link lookups per page so a single round-trip serves the
-      // whole page instead of one query per entry (was N+1 on long
-      // intervals).
+      // Queue every journal row before its links. The full interval's queue
+      // state must be known before a link can safely decide whether either
+      // endpoint failed, including a target that lives on a later page.
       for (var page = 0; ; page++) {
         final dbEntities = await _journalDb
             .orderedJournalInterval(start, end, pageSize, page * pageSize)
             .get();
-        if (dbEntities.isEmpty) {
-          onProgress?.call(
-            ReSyncProgress(
-              phase: ReSyncPhase.journalEntities,
-              processed: processed,
-              total: processed,
-              isComplete: true,
-              failed: failed,
-            ),
-          );
-          break;
-        }
+        if (dbEntities.isEmpty) break;
 
-        final pageEntryIds = dbEntities.map((row) => row.id).toSet();
-        final allPageLinkRows = await _journalDb
-            .linksFromIds(
-              pageEntryIds.toList(),
-            )
-            .get();
-        final linkRowsByFromId = <String, List<LinkedDbEntry>>{};
-        for (final row in allPageLinkRows) {
-          linkRowsByFromId.putIfAbsent(row.fromId, () => []).add(row);
+        final pageEntryIds = dbEntities.map((row) => row.id).toList();
+        for (final id in pageEntryIds) {
+          entryQueueState[id] = false;
         }
+        pendingLinkRows.addAll(
+          await _journalDb.linkRowsFromIdsIncludingHidden(pageEntryIds),
+        );
 
         for (final dbEntity in dbEntities) {
           JournalEntity? preparedEntry;
-          var parentQueued = false;
           final queued = await failures.attempt(
             phase: ReSyncPhase.journalEntities,
             itemType: ReSyncItemType.journalEntity,
@@ -411,54 +398,11 @@ class HistoricalSyncService {
                   includeAttachments: true,
                 ),
               );
-              parentQueued = true;
+              entryQueueState[dbEntity.id] = true;
             },
           );
           processed++;
           if (!queued) failed++;
-
-          final entryLinkRows = linkRowsByFromId[dbEntity.id] ?? const [];
-          for (final entryLinkRow in entryLinkRows) {
-            EntryLink? preparedLink;
-            Future<void> enqueueLink() async {
-              if (!parentQueued) {
-                throw StateError(
-                  'Parent journal entity ${dbEntity.id} is not queued',
-                );
-              }
-              final entryLink = preparedLink ??= entryLinkFromLinkedDbEntry(
-                entryLinkRow,
-              );
-              await _outboxService.enqueueMessageOrThrow(
-                SyncMessage.entryLink(
-                  status: SyncEntryStatus.update,
-                  entryLink: entryLink,
-                ),
-              );
-            }
-
-            if (!queued) {
-              failures.defer(
-                phase: ReSyncPhase.journalEntities,
-                itemType: ReSyncItemType.entryLink,
-                itemId: entryLinkRow.id,
-                dependencyItemId: dbEntity.id,
-                retryAction: enqueueLink,
-              );
-              processed++;
-              failed++;
-              continue;
-            }
-
-            final linkQueued = await failures.attempt(
-              phase: ReSyncPhase.journalEntities,
-              itemType: ReSyncItemType.entryLink,
-              itemId: entryLinkRow.id,
-              action: enqueueLink,
-            );
-            processed++;
-            if (!linkQueued) failed++;
-          }
         }
 
         onProgress?.call(
@@ -470,6 +414,68 @@ class HistoricalSyncService {
           ),
         );
       }
+
+      for (final entryLinkRow in pendingLinkRows) {
+        EntryLink? preparedLink;
+        Future<void> enqueueLink() async {
+          final blocked = _blockedDependencies(
+            entryQueueState,
+            entryLinkRow.fromId,
+            entryLinkRow.toId,
+          );
+          if (blocked.isNotEmpty) {
+            throw StateError(
+              'Journal link dependencies ${blocked.join(', ')} are not queued',
+            );
+          }
+          final entryLink = preparedLink ??= entryLinkFromLinkedDbEntry(
+            entryLinkRow,
+          );
+          await _outboxService.enqueueMessageOrThrow(
+            SyncMessage.entryLink(
+              status: SyncEntryStatus.update,
+              entryLink: entryLink,
+            ),
+          );
+        }
+
+        final blocked = _blockedDependencies(
+          entryQueueState,
+          entryLinkRow.fromId,
+          entryLinkRow.toId,
+        );
+        if (blocked.isNotEmpty) {
+          failures.defer(
+            phase: ReSyncPhase.journalEntities,
+            itemType: ReSyncItemType.entryLink,
+            itemId: entryLinkRow.id,
+            dependencyItemIds: blocked,
+            retryAction: enqueueLink,
+          );
+          processed++;
+          failed++;
+          continue;
+        }
+
+        final linkQueued = await failures.attempt(
+          phase: ReSyncPhase.journalEntities,
+          itemType: ReSyncItemType.entryLink,
+          itemId: entryLinkRow.id,
+          action: enqueueLink,
+        );
+        processed++;
+        if (!linkQueued) failed++;
+      }
+
+      onProgress?.call(
+        ReSyncProgress(
+          phase: ReSyncPhase.journalEntities,
+          processed: processed,
+          total: processed,
+          isComplete: true,
+          failed: failed,
+        ),
+      );
     }
 
     // A re-sync is the only path that sends agent data, so it is also the last
@@ -491,6 +497,7 @@ class HistoricalSyncService {
     ) async => clock == null ? await stamp(item) : item;
 
     if (includeAgentEntities) {
+      final agentEntityQueueState = <String, bool>{};
       // 2. Re-sync agent entities and links updated in the same interval.
       await _reSyncPaginated(
         countFetcher: () => _agentRepository.countEntitiesInInterval(
@@ -505,6 +512,7 @@ class HistoricalSyncService {
               offset: offset,
             ),
         enqueueAction: (row) async {
+          agentEntityQueueState[row.id] = false;
           AgentDomainEntity? preparedEntity;
           return failures.attempt(
             phase: ReSyncPhase.agentEntities,
@@ -536,6 +544,7 @@ class HistoricalSyncService {
                   status: SyncEntryStatus.update,
                 ),
               );
+              agentEntityQueueState[row.id] = true;
             },
           );
         },
@@ -572,35 +581,62 @@ class HistoricalSyncService {
         ),
         enqueueAction: (row) async {
           agent_model.AgentLink? preparedLink;
+          Future<void> enqueueLink() async {
+            final blocked = _blockedDependencies(
+              agentEntityQueueState,
+              row.fromId,
+              row.toId,
+            );
+            if (blocked.isNotEmpty) {
+              throw StateError(
+                'Agent link dependencies ${blocked.join(', ')} are not queued',
+              );
+            }
+            var toSend = preparedLink ??= AgentDbConversions.fromLinkRow(row);
+            toSend = await stampIfClockless(
+              toSend,
+              toSend.vectorClock,
+              (l) => _vectorClockService.withVcScope<agent_model.AgentLink>(
+                () async {
+                  final stamped = l.copyWith(
+                    vectorClock: await _vectorClockService.getNextVectorClock(
+                      previous: l.vectorClock,
+                    ),
+                  );
+                  await _agentRepository.upsertLink(stamped);
+                  return stamped;
+                },
+              ),
+            );
+            preparedLink = toSend;
+            await _outboxService.enqueueMessageOrThrow(
+              SyncMessage.agentLink(
+                agentLink: toSend,
+                status: SyncEntryStatus.update,
+              ),
+            );
+          }
+
+          final blocked = _blockedDependencies(
+            agentEntityQueueState,
+            row.fromId,
+            row.toId,
+          );
+          if (blocked.isNotEmpty) {
+            failures.defer(
+              phase: ReSyncPhase.agentLinks,
+              itemType: ReSyncItemType.agentLink,
+              itemId: row.id,
+              dependencyItemIds: blocked,
+              retryAction: enqueueLink,
+            );
+            return false;
+          }
           return failures.attempt(
             phase: ReSyncPhase.agentLinks,
             itemType: ReSyncItemType.agentLink,
             itemId: row.id,
-            action: () async {
-              var toSend = preparedLink ??= AgentDbConversions.fromLinkRow(row);
-              toSend = await stampIfClockless(
-                toSend,
-                toSend.vectorClock,
-                (l) => _vectorClockService.withVcScope<agent_model.AgentLink>(
-                  () async {
-                    final stamped = l.copyWith(
-                      vectorClock: await _vectorClockService.getNextVectorClock(
-                        previous: l.vectorClock,
-                      ),
-                    );
-                    await _agentRepository.upsertLink(stamped);
-                    return stamped;
-                  },
-                ),
-              );
-              preparedLink = toSend;
-              await _outboxService.enqueueMessageOrThrow(
-                SyncMessage.agentLink(
-                  agentLink: toSend,
-                  status: SyncEntryStatus.update,
-                ),
-              );
-            },
+            action: enqueueLink,
           );
         },
         pageSize: pageSize,

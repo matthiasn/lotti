@@ -302,10 +302,12 @@ reachable from *Backfill sync* as the **Agent vector clocks** recovery action.
 The historical sweep fetches undecoded journal and agent rows, then isolates
 every journal entity, entry link, agent entity and agent link: decode,
 preparation, persistence or enqueue failure is logged with its payload family
-and id, collected in `ReSyncResult`, and never aborts later rows or phases. A
-journal link whose parent entry did not queue is retained as a dependent
-failure; retry always attempts the parent first and queues the link only after
-that succeeds. The modal reports the successful and failed counts, lists the
+and id, collected in `ReSyncResult`, and never aborts later rows or phases.
+Journal links include hidden relationship state and are staged only after the
+whole interval's entries have been attempted. A journal or agent link whose
+in-range source or target did not queue is retained as a dependent failure;
+retry always attempts entity failures first and queues the link only after its
+dependencies succeed. The modal reports the successful and failed counts, lists the
 failed ids, and retries only those retained actions. During onboarding, the
 exact suppression round remains active until all failed rows succeed;
 dismissing the sheet while staging or retrying aborts the round, and the
