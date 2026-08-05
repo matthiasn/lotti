@@ -874,21 +874,12 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // the pre-wake sets, and the staged retractions that would have to land
       // first die with this wake. The surplus card is folded by the next
       // wake's end-of-wake build instead.
-      final flushed = flushedChangeSets;
-      if (flushed != null) {
-        try {
-          await flushed.raiseInboxAlert(
-            syncService,
-            unconsolidatedSets: pendingSets,
-          );
-        } catch (alertError, alertStack) {
-          _logError(
-            'failed to alert for suggestions flushed before the failure',
-            error: alertError,
-            stackTrace: alertStack,
-          );
-        }
-      }
+      // `raiseInboxAlert` swallows its own failures — it must never mask the
+      // error that actually killed the wake.
+      await flushedChangeSets?.raiseInboxAlert(
+        syncService,
+        unconsolidatedSets: pendingSets,
+      );
 
       // Update failure count in state.
       try {

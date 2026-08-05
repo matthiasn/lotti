@@ -546,46 +546,45 @@ class ChangeSetBuilder {
     if (_notified || persisted == null) return persisted;
     _notified = true;
 
-    // The failure path alerts without consolidating, so other sets may still
-    // hold actionable proposals. `createTaskSuggestion` retracts every other
-    // open row for the task, so alerting from this set alone would drop those
-    // older suggestions out of the inbox. Their existing row is still open and
-    // still accurate — leave it, and let the next wake's consolidated alert
-    // cover everything.
-    for (final other in unconsolidatedSets) {
-      if (other.id == persisted.id) continue;
-      final latest = await _reReadOrNull(syncService, other.id);
-      if (latest == null || isPendingLike(latest.status)) {
-        domainLogger?.log(
-          LogDomain.agentWorkflow,
-          'Skipping inbox alert — older pending suggestions are still open '
-          'and this alert would retract their row',
-          subDomain: 'changeSetBuilder',
-        );
-        return persisted;
-      }
-    }
-
-    ChangeSetEntity current;
     try {
-      current = await _reReadOrNull(syncService, persisted.id) ?? persisted;
+      // The failure path alerts without consolidating, so other sets may still
+      // hold actionable proposals. `createTaskSuggestion` retracts every other
+      // open row for the task, so alerting from this set alone would drop
+      // those older suggestions out of the inbox. Their existing row is still
+      // open and still accurate — leave it, and let the next wake's
+      // consolidated alert cover everything.
+      for (final other in unconsolidatedSets) {
+        if (other.id == persisted.id) continue;
+        final latest = await _reReadOrNull(syncService, other.id);
+        if (latest == null || isPendingLike(latest.status)) {
+          domainLogger?.log(
+            LogDomain.agentWorkflow,
+            'Skipping inbox alert — older pending suggestions are still open '
+            'and this alert would retract their row',
+            subDomain: 'changeSetBuilder',
+          );
+          return persisted;
+        }
+      }
+
+      final current =
+          await _reReadOrNull(syncService, persisted.id) ?? persisted;
+      // A set the user fully resolved needs no alert; `notifyTaskNeedsAttention`
+      // makes the same call per item via its pending count.
+      if (!isPendingLike(current.status)) return persisted;
+
+      await notifyTaskNeedsAttention(current);
     } catch (e) {
       // Alerting is fire-and-forget (see [notifyTaskNeedsAttention]) and must
-      // never fail a wake. Skip rather than fall back to the snapshot: alerting
-      // from stale items is the very thing this re-read exists to prevent.
+      // never fail a wake — least of all the failure path, where throwing here
+      // would mask the error that actually killed the wake. Skipping beats
+      // alerting from the stale snapshot, which is what the re-read prevents.
       domainLogger?.log(
         LogDomain.agentWorkflow,
         'Skipping inbox alert — could not re-read the flushed change set',
         subDomain: 'changeSetBuilder',
       );
-      return persisted;
     }
-
-    // A set the user fully resolved needs no alert; `notifyTaskNeedsAttention`
-    // makes the same call per item via its pending count.
-    if (!isPendingLike(current.status)) return persisted;
-
-    await notifyTaskNeedsAttention(current);
     return persisted;
   }
 
