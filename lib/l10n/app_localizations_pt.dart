@@ -4967,8 +4967,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get demoBannerExit => 'Sair';
 
   @override
-  String get demoBannerLabel =>
-      'Mundo de demonstração — o teu diário permanece intacto';
+  String get demoBannerLabel => 'Mundo demo';
+
+  @override
+  String get demoBannerSubtitle => 'O teu diário permanece intacto';
 
   @override
   String get demoCopyBody =>

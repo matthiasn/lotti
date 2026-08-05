@@ -5005,7 +5005,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get demoBannerExit => 'Quitter';
 
   @override
-  String get demoBannerLabel => 'Monde démo — ton journal reste intact';
+  String get demoBannerLabel => 'Monde démo';
+
+  @override
+  String get demoBannerSubtitle => 'Ton journal reste intact';
 
   @override
   String get demoCopyBody =>

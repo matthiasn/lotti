@@ -4923,7 +4923,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get demoBannerExit => 'Afslut';
 
   @override
-  String get demoBannerLabel => 'Demoverden — din dagbog forbliver urørt';
+  String get demoBannerLabel => 'Demoverden';
+
+  @override
+  String get demoBannerSubtitle => 'Din dagbog er urørt';
 
   @override
   String get demoCopyBody =>

@@ -135,14 +135,28 @@ class _DemoModeScaffoldState extends ConsumerState<DemoModeScaffold> {
 
 /// The persistent top strip marking demo mode.
 ///
+/// Two lines, not one: a single `bodySmall` row read as chrome and was
+/// ignored. The identity line names the world, the quieter second line
+/// carries the reassurance that the real journal is untouched — which is the
+/// part users actually need and the part that was being skimmed past.
+///
 /// Visual grammar follows the `DesignSystemInlineCallout` contract for a
-/// message surface: `background.level02` fill, warning-toned hairline
-/// (bottom edge only — the strip spans the full width) and leading glyph in
-/// the same tone, body copy in `bodySmall`/high emphasis. The whole strip
-/// opens the exit sheet; the trailing button is the explicit affordance for
-/// the same action.
+/// message surface: `background.level02` fill and a warning-toned hairline
+/// (bottom edge only — the strip spans the full width). The leading glyph is
+/// the 🐧 penguin: Material has no penguin icon and this repo does not add
+/// image assets for chrome, so it is rendered as text through the same
+/// typography token as the identity line — the token's `fontFamilyFallback`
+/// already lists the platform emoji fonts. It is decorative and excluded
+/// from semantics; the identity line carries the meaning on its own.
+///
+/// The whole strip opens the exit sheet; the trailing button is the explicit
+/// affordance for the same action.
 class DemoModeBanner extends StatelessWidget {
   const DemoModeBanner({this.sheetContext, this.gateway, super.key});
+
+  /// Decorative only, and deliberately NOT an ARB value: a literal in the
+  /// catalogs would invite translators to move, replace or drop it.
+  static const String _penguin = '\u{1F427}';
 
   final BuildContext Function()? sheetContext;
   final DemoModeGateway? gateway;
@@ -175,20 +189,51 @@ class DemoModeBanner extends StatelessWidget {
             child: Padding(
               padding: EdgeInsets.symmetric(
                 horizontal: tokens.spacing.step4,
-                vertical: tokens.spacing.step2,
+                vertical: tokens.spacing.step3,
               ),
               child: Row(
                 children: [
-                  Icon(Icons.science_outlined, size: IconSizes.s, color: tone),
+                  // Same style as the identity line beside it, so the two sit
+                  // on one optical line; emoji glyphs render larger than
+                  // their nominal em, which is what gives it presence.
+                  ExcludeSemantics(
+                    child: Text(
+                      _penguin,
+                      style: tokens.typography.styles.subtitle.subtitle1,
+                    ),
+                  ),
                   SizedBox(width: tokens.spacing.step3),
                   Expanded(
-                    child: Text(
-                      context.messages.demoBannerLabel,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.highEmphasis,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          context.messages.demoBannerLabel,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.subtitle.subtitle1
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                        ),
+                        SizedBox(height: tokens.spacing.step1),
+                        Text(
+                          context.messages.demoBannerSubtitle,
+                          // Two lines, because at 390px the column left over
+                          // beside the glyph and the exit button cannot hold
+                          // this sentence in one — and truncating the very
+                          // reassurance the banner exists to give would be
+                          // the worst thing to cut. The strip's height is
+                          // reserved structurally, so growing is safe.
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                      ],
                     ),
                   ),
                   SizedBox(width: tokens.spacing.step3),

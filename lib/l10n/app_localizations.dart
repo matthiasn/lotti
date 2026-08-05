@@ -8348,8 +8348,14 @@ abstract class AppLocalizations {
   /// No description provided for @demoBannerLabel.
   ///
   /// In en, this message translates to:
-  /// **'Demo world — your journal is untouched'**
+  /// **'Demo world'**
   String get demoBannerLabel;
+
+  /// No description provided for @demoBannerSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Your journal is untouched'**
+  String get demoBannerSubtitle;
 
   /// No description provided for @demoCopyBody.
   ///

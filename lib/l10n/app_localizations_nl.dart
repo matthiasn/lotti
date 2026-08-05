@@ -4935,7 +4935,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get demoBannerExit => 'Afsluiten';
 
   @override
-  String get demoBannerLabel => 'Demowereld — je dagboek blijft onaangeroerd';
+  String get demoBannerLabel => 'Demowereld';
+
+  @override
+  String get demoBannerSubtitle => 'Je dagboek blijft onaangeroerd';
 
   @override
   String get demoCopyBody =>

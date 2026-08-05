@@ -4983,7 +4983,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get demoBannerExit => 'Esci';
 
   @override
-  String get demoBannerLabel => 'Mondo demo — il tuo diario resta intatto';
+  String get demoBannerLabel => 'Mondo demo';
+
+  @override
+  String get demoBannerSubtitle => 'Il tuo diario resta intatto';
 
   @override
   String get demoCopyBody =>
