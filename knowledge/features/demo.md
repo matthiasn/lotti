@@ -263,7 +263,7 @@ The world is 28 tasks in four clusters (launch readiness, habitat
 engineering, logistics & supply, colony life) across three categories, wired
 by ~110 `linked_entries` rows to each other and to 20 notes, 11 logged-time
 records and the nine bundled cover photos. That web is what the
-[knowledge graph](../../lib/features/knowledge_graph_poc/README.md) walks:
+[knowledge graph](../../lib/features/knowledge_graph/README.md) walks:
 it BFSes two hops from the focus task, so a fixture of isolated tasks would
 render a single node. Four hub tasks carry six or more neighbours; every
 task carries at least two, and the whole task web sits within three hops of

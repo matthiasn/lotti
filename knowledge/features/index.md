@@ -55,7 +55,7 @@ what it does for a user; these describe how it runs.
 
 # Exploratory
 
-* [Knowledge-graph explorer](knowledge_graph_poc.md) - a walkable ego-centric graph view.
+* [Knowledge-graph explorer](knowledge_graph.md) - a walkable ego-centric graph view.
 
 # Related
 
