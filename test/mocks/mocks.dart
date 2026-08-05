@@ -839,6 +839,14 @@ class FakeEventData extends Fake implements EventData {}
 
 class FakeTaskData extends Fake implements TaskData {}
 
+class FakeTask extends Fake implements Task {}
+
+class FakeImageData extends Fake implements ImageData {}
+
+class FakeAudioData extends Fake implements AudioData {}
+
+class FakeAiResponseData extends Fake implements AiResponseData {}
+
 /// Task stand-in serving a fixed [data] payload and deterministic metadata —
 /// for tests that only read `data`/`meta`.
 class MockTask extends Mock implements Task {
