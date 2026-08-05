@@ -166,6 +166,7 @@ ChatCompletionMessageToolCall _toolCall({
   Future<String?> Function()? resolveRunningTimerId,
   Future<String?> Function(String taskId)? resolveLinkableTaskTitle,
   Future<Set<String>> Function()? resolveExistingTaskRelations,
+  Future<void> Function()? flushChangeSet,
 }) {
   const agentId = 'agent-001';
   const taskId = 'task-001';
@@ -207,6 +208,7 @@ ChatCompletionMessageToolCall _toolCall({
     resolveRunningTimerId: resolveRunningTimerId,
     resolveLinkableTaskTitle: resolveLinkableTaskTitle,
     resolveExistingTaskRelations: resolveExistingTaskRelations,
+    flushChangeSet: flushChangeSet,
   );
 
   return (strategy: strategy, builder: csBuilder);
@@ -2269,6 +2271,116 @@ void main() {
             ),
           ),
         ).called(1);
+      });
+    });
+
+    group('turn-boundary change-set flush', () {
+      // Proposals reach the user while the agent is still working instead of
+      // waiting out the report turn, its forced retry and the editor pass.
+
+      test('flushes once per turn that queued a proposal', () async {
+        var flushes = 0;
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          flushChangeSet: () async => flushes++,
+        );
+
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            _toolCall(
+              id: 'call-1',
+              name: 'update_task_priority',
+              args: {'priority': 'P1'},
+            ),
+            _toolCall(
+              id: 'call-2',
+              name: 'update_task_estimate',
+              args: {'minutes': 60},
+            ),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, hasLength(2));
+        expect(
+          flushes,
+          1,
+          reason:
+              'the whole turn batch is written by a single flush, not one '
+              'write per tool call',
+        );
+      });
+
+      test('does not flush on a turn that queued nothing', () async {
+        var flushes = 0;
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          flushChangeSet: () async => flushes++,
+        );
+        when(
+          () => mockExecutor.execute(
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+            targetEntityId: any(named: 'targetEntityId'),
+            resolveCategoryId: any(named: 'resolveCategoryId'),
+            executeHandler: any(named: 'executeHandler'),
+            readVectorClock: any(named: 'readVectorClock'),
+          ),
+        ).thenAnswer(
+          (_) async =>
+              const ToolExecutionResult(success: true, output: 'recorded'),
+        );
+
+        // `record_observations` is private agent memory, not a proposal.
+        await bench.strategy.processToolCalls(
+          toolCalls: [
+            _toolCall(
+              id: 'call-1',
+              name: 'record_observations',
+              args: {
+                'observations': [
+                  {'kind': 'operational', 'content': 'noted'},
+                ],
+              },
+            ),
+          ],
+          manager: mockManager,
+        );
+
+        expect(bench.builder.items, isEmpty);
+        expect(flushes, 0, reason: 'nothing new to show the user');
+      });
+
+      test('a failing flush does not abort the turn', () async {
+        final bench = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          flushChangeSet: () async => throw Exception('write failed'),
+        );
+
+        final action = await bench.strategy.processToolCalls(
+          toolCalls: [
+            _toolCall(
+              id: 'call-1',
+              name: 'update_task_priority',
+              args: {'priority': 'P1'},
+            ),
+          ],
+          manager: mockManager,
+        );
+
+        expect(
+          action,
+          ConversationAction.continueConversation,
+          reason: 'the wake carries on; the end-of-wake build retries the item',
+        );
+        expect(
+          bench.builder.items,
+          hasLength(1),
+          reason: 'the proposal stays staged for the final write',
+        );
       });
     });
 

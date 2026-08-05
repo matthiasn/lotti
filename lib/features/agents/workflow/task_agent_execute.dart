@@ -427,6 +427,17 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         runKey: runKey,
         taskId: taskId,
         changeSetBuilder: changeSetBuilder,
+        // Surface proposals at each turn boundary instead of making the user
+        // wait out the report turn, its forced retry and any report-editor
+        // pass. `pendingSets` is the pre-wake snapshot: the builder only
+        // consolidates against it on its first flush, and re-reads the
+        // survivor from the repository on every later one.
+        flushChangeSet: () => changeSetBuilder.build(
+          syncService,
+          existingPendingSets: pendingSets,
+          rejectedFingerprints: ledger.rejectedFingerprints,
+          rejectedDisplayKeys: ledger.rejectedDisplayKeys,
+        ),
         retractionService: retractionService,
         resolveTaskMetadata: () =>
             ChangeProposalFilter.resolveTaskMetadata(journalDb, taskId),

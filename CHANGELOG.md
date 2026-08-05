@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.2]
 ### Changed
+- **Task agent suggestions now appear while the agent is still working.** They
+  used to arrive all at once when the whole wake finished, which meant waiting
+  out the agent's report writing even though it had already decided what to
+  suggest. Suggestions now show up as soon as the agent proposes them, and
+  arrive in waves when it works through several rounds. A wake still produces a
+  single suggestion card, and nothing changes about reviewing or confirming
+  them.
 - **Full-screen photos now follow phone rotation.** The rest of Lotti remains
   portrait-only on iPhone and Android phones, but opening a journal image or event photo
   temporarily permits either landscape direction. Wide cover art is contained

@@ -87,6 +87,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     this.resolveRunningTimerId,
     this.resolveLinkableTaskTitle,
     this.resolveExistingTaskRelations,
+    this.flushChangeSet,
   });
 
   /// The [AgentToolExecutor] that wraps handler calls with enforcement and
@@ -122,8 +123,18 @@ class TaskAgentStrategy extends ConversationStrategy {
   ///
   /// When provided, tools listed in [AgentToolRegistry.deferredTools] are
   /// routed to the builder instead of being executed immediately. The change
-  /// set is persisted at the end of the wake via [ChangeSetBuilder.build].
+  /// set is persisted incrementally via [flushChangeSet], and a final time at
+  /// the end of the wake.
   final ChangeSetBuilder? changeSetBuilder;
+
+  /// Persists whatever [changeSetBuilder] has staged so far.
+  ///
+  /// Called at every turn boundary that queued a proposal, so the user sees
+  /// suggestions while the agent is still working instead of waiting for the
+  /// report turn, its forced retry and any report-editor pass to finish
+  /// first — the wake's remaining round trips are the bulk of its latency.
+  /// Left unset by callers that want the end-of-wake write only.
+  final Future<void> Function()? flushChangeSet;
 
   /// Optional service for handling agent-autonomous `retract_suggestions`
   /// tool calls. When omitted, the tool call is rejected with an error
@@ -186,11 +197,10 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// Retractions the agent requested via `retract_suggestions` this wake.
   ///
   /// They are validated immediately (so the LLM gets accurate per-entry
-  /// feedback) but their persistence is deferred to the end of the wake so it
-  /// commits atomically with the new proposals — otherwise the suggestion list
-  /// flashes empty for the seconds between a mid-wake retraction write and the
-  /// end-of-wake proposal write. Applied by the workflow via
-  /// [SuggestionRetractionService.applyStaged].
+  /// feedback) but their persistence is deferred to the end of the wake, after
+  /// the last proposal flush — otherwise the suggestion list flashes empty
+  /// between a mid-wake retraction write and the proposals that replace it.
+  /// Applied by the workflow via [SuggestionRetractionService.applyStaged].
   final _stagedRetractions = <StagedRetraction>[];
 
   /// Target item keys (`'<changeSetId>:<itemIndex>'`) already staged this wake,
@@ -222,6 +232,8 @@ class TaskAgentStrategy extends ConversationStrategy {
   }) async {
     // Persist the assistant message (the one that requested tool calls).
     await _recordAssistantMessage(toolCalls: toolCalls);
+
+    final stagedBeforeTurn = changeSetBuilder?.items.length ?? 0;
 
     for (final call in toolCalls) {
       final toolName = call.function.name;
@@ -410,6 +422,24 @@ class TaskAgentStrategy extends ConversationStrategy {
       );
       if (result.success) {
         _recordSuccessfulMutation(toolName, args);
+      }
+    }
+
+    // Surface whatever this turn proposed before spending another round trip
+    // on the report. A failure here is not fatal: the builder only advances
+    // its flushed watermark on a successful write, so the items stay staged
+    // and the end-of-wake build picks them up.
+    if (changeSetBuilder != null &&
+        changeSetBuilder!.items.length > stagedBeforeTurn) {
+      try {
+        await flushChangeSet?.call();
+      } catch (e, s) {
+        developer.log(
+          'Incremental change-set flush failed; deferring to end of wake',
+          name: 'TaskAgentStrategy',
+          error: e,
+          stackTrace: s,
+        );
       }
     }
 

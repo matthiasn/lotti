@@ -926,6 +926,232 @@ void main() {
     );
   });
 
+  group('incremental flush', () {
+    // The wake calls build() at every turn boundary so suggestions reach the
+    // user while the agent is still working, instead of all at once when the
+    // wake ends. Each flush must append only what it added.
+
+    test(
+      'second flush appends into the same set instead of duplicating',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final first = await builder.build(mockSyncService);
+
+        await builder.addItem(
+          toolName: 'update_task_priority',
+          args: {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+        );
+        final second = await builder.build(mockSyncService);
+
+        // One card, not two: the second flush lands in the set the first created.
+        expect(second!.id, first!.id);
+        expect(
+          second.items.map((i) => i.toolName),
+          ['update_task_estimate', 'update_task_priority'],
+          reason:
+              'the estimate must appear exactly once, followed by the new '
+              'priority item',
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.cast<ChangeSetEntity>();
+        expect(captured, hasLength(2), reason: 'one write per flush');
+        expect(captured.first.items, hasLength(1));
+        expect(captured.last.items, hasLength(2));
+      },
+    );
+
+    test('a flush with nothing new staged writes nothing', () async {
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 120},
+        humanSummary: 'Set estimate to 2 hours',
+      );
+      final first = await builder.build(mockSyncService);
+      clearInteractions(mockSyncService);
+
+      // The report turn stages no proposals, then the wake's final build runs.
+      final second = await builder.build(mockSyncService);
+
+      expect(second, same(first), reason: 'returns the set as it stands');
+      verifyNever(() => mockSyncService.upsertEntity(any()));
+    });
+
+    test(
+      'consolidates pre-wake sets once, not again on every later flush',
+      () async {
+        final stale = makeTestChangeSet(
+          id: 'cs-stale',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+          createdAt: DateTime(2026, 5),
+        );
+
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        await builder.build(mockSyncService, existingPendingSets: [stale]);
+        clearInteractions(mockSyncService);
+
+        await builder.addItem(
+          toolName: 'update_task_priority',
+          args: {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+        );
+        // The caller passes the same pre-wake snapshot every flush — the
+        // builder must not retire `stale` a second time.
+        final second = await builder.build(
+          mockSyncService,
+          existingPendingSets: [stale],
+        );
+
+        final captured = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.cast<ChangeSetEntity>();
+        expect(
+          captured,
+          hasLength(1),
+          reason: 'only the survivor is rewritten; no second retirement write',
+        );
+        expect(captured.single.id, second!.id);
+        expect(
+          captured.single.status,
+          ChangeSetStatus.pending,
+          reason: 'the survivor stays pending',
+        );
+        expect(
+          second.items.map((i) => i.humanSummary),
+          ['Start the task', 'Set estimate to 2 hours', 'Set priority to P1'],
+        );
+      },
+    );
+
+    test('an item suppressed by an early flush gets a second chance', () async {
+      // The agent re-proposes something an open pending set already carries.
+      // The early flush drops it — but the wake retracts that open proposal
+      // before the final build, and the item must then land.
+      final open = makeTestChangeSet(
+        id: 'cs-open',
+        items: const [
+          ChangeItem(
+            toolName: 'update_task_priority',
+            args: {'priority': 'P1'},
+            humanSummary: 'Set priority to P1',
+          ),
+        ],
+      );
+
+      await builder.addItem(
+        toolName: 'update_task_priority',
+        args: {'priority': 'P1'},
+        humanSummary: 'Set priority to P1',
+      );
+      final first = await builder.build(
+        mockSyncService,
+        existingPendingSets: [open],
+      );
+      expect(
+        first,
+        isNull,
+        reason: 'blocked by the identical open proposal, so nothing is written',
+      );
+      verifyNever(() => mockSyncService.upsertEntity(any()));
+
+      // The retraction lands: the open item now reads as retracted, which no
+      // longer blocks a re-proposal.
+      when(() => mockRepository.getEntity('cs-open')).thenAnswer(
+        (_) async => open.copyWith(
+          items: [
+            open.items.single.copyWith(status: ChangeItemStatus.retracted),
+          ],
+        ),
+      );
+
+      final second = await builder.build(
+        mockSyncService,
+        existingPendingSets: [open],
+      );
+
+      expect(
+        second!.items.where((i) => i.status == ChangeItemStatus.pending),
+        hasLength(1),
+        reason: 'the suppressed item is retried once the blocker is retracted',
+      );
+    });
+
+    test(
+      'a superseded running-timer item does not strand the flush watermark',
+      () async {
+        // `addItem` drops the earlier proposal for the same timer, so `_items`
+        // shrinks — a positional watermark would slide onto the wrong item and
+        // silently swallow the replacement.
+        await builder.addItem(
+          toolName: 'update_running_timer',
+          args: {'timerId': 'timer-1', 'action': 'stop'},
+          humanSummary: 'Stop the running timer',
+        );
+        await builder.build(mockSyncService);
+
+        await builder.addItem(
+          toolName: 'update_running_timer',
+          args: {'timerId': 'timer-1', 'action': 'keep'},
+          humanSummary: 'Keep the running timer',
+        );
+        expect(
+          builder.items,
+          hasLength(1),
+          reason: 'the replacement dropped the earlier proposal',
+        );
+
+        final second = await builder.build(mockSyncService);
+
+        expect(
+          second!.items.map((i) => i.humanSummary),
+          contains('Keep the running timer'),
+          reason: 'the replacement must still be written',
+        );
+      },
+    );
+
+    test('a failed flush leaves items staged for the next one', () async {
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 120},
+        humanSummary: 'Set estimate to 2 hours',
+      );
+
+      when(
+        () => mockSyncService.upsertEntity(any()),
+      ).thenThrow(Exception('write failed'));
+      await expectLater(
+        builder.build(mockSyncService),
+        throwsA(isA<Exception>()),
+      );
+
+      when(() => mockSyncService.upsertEntity(any())).thenAnswer((_) async {});
+      final retry = await builder.build(mockSyncService);
+
+      expect(
+        retry!.items,
+        hasLength(1),
+        reason: 'the watermark only advances on a successful write',
+      );
+    });
+  });
+
   group('build', () {
     test('returns null when no items', () async {
       final result = await builder.build(mockSyncService);

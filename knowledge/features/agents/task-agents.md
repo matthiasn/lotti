@@ -451,6 +451,34 @@ individually reviewable items, deduplicates identical proposals within a wake,
 keeps only the newest `update_running_timer` proposal (retracting older pending
 ones), and suppresses proposals that would not change current state.
 
+The builder **flushes at every turn boundary that queued a proposal**, not once
+at the end of the wake. A wake spends most of its wall clock on round trips the
+user cannot see — the separate `update_report` turn, its forced retry, and any
+report-editor pass — so holding proposals until `WakeOutputWriter` ran meant
+the agent had decided what to suggest a full inference or three before anything
+appeared. `TaskAgentStrategy.flushChangeSet` closes that gap; the end-of-wake
+build is now a final flush that picks up whatever the last turn staged.
+
+Repeated flushes are safe by construction:
+
+- The builder tracks the **fingerprints** it has already written, and appends
+  only what is new. Fingerprints rather than a positional watermark because
+  `_items` is not append-only — a fresh `update_running_timer` proposal drops
+  the earlier one.
+- The first flush consolidates the caller's pre-wake snapshot and retires its
+  surplus sets; later flushes consolidate against the set this builder wrote,
+  so a multi-turn wake still produces exactly one card and never re-retires.
+- Items dropped by dedup are deliberately **not** marked flushed. Staged
+  retractions still land at the end of the wake, just before the final build,
+  so an item an early flush suppressed against a still-open proposal gets one
+  more chance once that proposal is gone.
+- A failed flush advances nothing: the items stay staged and the end-of-wake
+  build writes them.
+
+Retractions keep their end-of-wake placement for the opposite reason they used
+to: proposals now land *first*, so the suggestion list can never read empty
+between a retraction and its replacement.
+
 ```mermaid
 sequenceDiagram
   participant Agent as TaskAgentStrategy
@@ -463,8 +491,12 @@ sequenceDiagram
   participant Journal as Journal DB
   participant Inbox as ChangeSetNotificationService
 
-  Agent->>Builder: queue deferred tool proposals
-  Builder->>Store: persist ChangeSetEntity(pending)
+  loop each turn that queued a proposal
+    Agent->>Builder: queue deferred tool proposals
+    Builder->>Store: flush new items into ChangeSetEntity(pending)
+    Store-->>Card: suggestions appear while the wake runs
+  end
+  Agent->>Builder: final flush at end of wake
   User->>Card: confirm, reject, or Confirm all
   Card->>Confirm: confirm or reject pending item(s)
   Confirm->>Store: reload persisted change set
