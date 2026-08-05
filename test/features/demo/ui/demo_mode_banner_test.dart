@@ -138,17 +138,19 @@ void main() {
       );
     });
 
-    // Both banner lines are single-line with ellipsis, so an overflow shows
-    // up as truncated copy rather than a yellow-stripe assertion. German is
-    // the longest register of the eleven catalogs, and 390 the narrowest
-    // supported width — the combination that fails first.
+    // Every string in the strip ellipsises at its own line budget — one
+    // line for the identity line and the exit label, two for the subtitle —
+    // so an overflow shows up as silently truncated copy rather than a
+    // yellow-stripe assertion. German is the longest register of the eleven
+    // catalogs, and 390 the narrowest supported width: the combination that
+    // fails first.
     for (final surface in const [
       (label: 'mobile', size: Size(390, 844)),
       (label: 'desktop', size: Size(1280, 800)),
     ]) {
       for (final locale in const [Locale('en'), Locale('de')]) {
         testWidgets(
-          'neither line truncates at ${surface.label} width in '
+          'nothing truncates at ${surface.label} width in '
           '${locale.languageCode}',
           (tester) async {
             tester.view.physicalSize = surface.size;
@@ -164,9 +166,14 @@ void main() {
             );
 
             final messages = await AppLocalizations.delegate.load(locale);
+            // The exit label belongs in this sweep, not in a presence
+            // check: DesignSystemButton renders it with maxLines: 1 and
+            // ellipsis, so a label too wide for the dense button clips
+            // silently and `find.text` still matches it.
             for (final line in [
               messages.demoBannerLabel,
               messages.demoBannerSubtitle,
+              messages.demoBannerExit,
             ]) {
               final paragraph = tester.renderObject<RenderParagraph>(
                 find.text(line),
@@ -177,8 +184,6 @@ void main() {
                 reason: '"$line" ellipsised at ${surface.size.width}px',
               );
             }
-            // The exit affordance keeps its full label beside them.
-            expect(find.text(messages.demoBannerExit), findsOneWidget);
           },
         );
       }
