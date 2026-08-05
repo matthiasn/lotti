@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
+import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -338,8 +340,21 @@ void main() {
           await syncDb.reservedSequenceCountersForHost(hostId: crashHost),
           [4],
         );
-        // Startup broadcast + the reconciled marker.
-        expect(await syncDb.watchOutboxCount().first, greaterThanOrEqualTo(2));
+        // The queued messages contain exactly one unresolvable marker for
+        // the burned counter — and none for the merely-reserved one.
+        final queued = await syncDb.oldestOutboxItems(50);
+        final markers = queued
+            .map(
+              (item) => SyncMessage.fromJson(
+                jsonDecode(item.message) as Map<String, dynamic>,
+              ),
+            )
+            .whereType<SyncBackfillResponse>()
+            .where((message) => message.hostId == crashHost)
+            .toList();
+        expect(markers, hasLength(1));
+        expect(markers.single.counter, 3);
+        expect(markers.single.unresolvable, isTrue);
         // The reconciled world kept the crashed process's host identity.
         expect(await getIt<VectorClockService>().getHost(), crashHost);
       },
