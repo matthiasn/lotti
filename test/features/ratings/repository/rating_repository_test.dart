@@ -19,6 +19,7 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -69,6 +70,7 @@ void main() {
   );
 
   setUpAll(() {
+    registerAllFallbackValues();
     registerFallbackValue(testRatingEntry);
     registerFallbackValue(fallbackLink);
     registerFallbackValue(
@@ -542,8 +544,6 @@ void main() {
     group('sequence-log integration', () {
       late MockSyncSequenceLogService mockSequenceLog;
       late MockDomainLogger mockDomainLogger;
-
-      setUpAll(() => registerFallbackValue(testVectorClock));
 
       setUp(() {
         mockSequenceLog = MockSyncSequenceLogService();

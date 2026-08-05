@@ -1,14 +1,17 @@
 import 'dart:io';
+import 'dart:ui' show SemanticsAction;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:photo_view/photo_view.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
@@ -367,6 +370,42 @@ void main() {
           expect(shrink.height, 0.0);
         },
       );
+
+      testWidgets('tapping cover art opens the full-screen image viewer', (
+        tester,
+      ) async {
+        final image = buildJournalImage();
+        createInvalidImageFile(image);
+
+        await tester.pumpWidget(
+          buildSubject(image, height: 225, width: 400),
+        );
+        await tester.pump();
+
+        expect(find.byType(HeroPhotoViewRouteWrapper), findsNothing);
+        final semantics = tester.getSemantics(
+          find.byType(CoverArtBackground),
+        );
+        expect(semantics.label, 'Photo');
+        expect(
+          semantics.getSemanticsData().hasAction(SemanticsAction.tap),
+          isTrue,
+        );
+
+        await tester.tap(find.byType(CoverArtBackground));
+        await tester.pump();
+        await tester.pump();
+
+        expect(find.byType(HeroPhotoViewRouteWrapper), findsOneWidget);
+        final viewer = tester.widget<HeroPhotoViewRouteWrapper>(
+          find.byType(HeroPhotoViewRouteWrapper),
+        );
+        expect(viewer.file.path, getFullImagePath(image));
+        expect(viewer.heroTag, 'task_cover_art_image-1');
+        final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
+        expect(photoView.enableRotation, isTrue);
+        expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      });
     });
 
     testWidgets('renders SizedBox.shrink when entry is not JournalImage', (

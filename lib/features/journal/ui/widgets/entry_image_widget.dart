@@ -50,18 +50,7 @@ class EntryImageWidget extends ConsumerWidget {
     return GestureDetector(
       onTap: () {
         focusNode.unfocus();
-        Navigator.of(context, rootNavigator: true).push(
-          PageRouteBuilder<void>(
-            opaque: false,
-            barrierColor: Theme.of(
-              context,
-            ).colorScheme.scrim.withValues(alpha: 0.82),
-            pageBuilder: (context, animation, secondaryAnimation) =>
-                HeroPhotoViewRouteWrapper(
-                  file: file,
-                ),
-          ),
-        );
+        showFullscreenImageViewer(context, file: file);
       },
       child: ColoredBox(
         color: Colors.black,
@@ -85,17 +74,44 @@ class EntryImageWidget extends ConsumerWidget {
   }
 }
 
+/// Opens [file] in the shared full-screen, zoomable image viewer.
+///
+/// [heroTag] identifies the source image for the transition. Callers outside
+/// [EntryImageWidget] should provide a distinct tag so another image on the
+/// current route cannot be selected as the Hero source.
+void showFullscreenImageViewer(
+  BuildContext context, {
+  required File file,
+  Object heroTag = 'entry_img',
+}) {
+  Navigator.of(context, rootNavigator: true).push(
+    PageRouteBuilder<void>(
+      opaque: false,
+      barrierColor: Theme.of(
+        context,
+      ).colorScheme.scrim.withValues(alpha: 0.82),
+      pageBuilder: (context, animation, secondaryAnimation) =>
+          HeroPhotoViewRouteWrapper(
+            file: file,
+            heroTag: heroTag,
+          ),
+    ),
+  );
+}
+
 // from https://github.com/bluefireteam/photo_view/blob/master/example/lib/screens/examples/hero_example.dart
 class HeroPhotoViewRouteWrapper extends StatefulWidget {
   const HeroPhotoViewRouteWrapper({
     required this.file,
     super.key,
     this.backgroundDecoration,
+    this.heroTag = 'entry_img',
     this.imageExporter,
   });
 
   final File file;
   final BoxDecoration? backgroundDecoration;
+  final Object heroTag;
 
   /// Saves the image to a platform-appropriate destination. Defaults to
   /// [defaultImageExporter]; injected in tests to avoid real platform channels.
@@ -257,6 +273,7 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                 Positioned.fill(
                   child: PhotoView(
                     imageProvider: imageProvider,
+                    enableRotation: true,
                     backgroundDecoration:
                         widget.backgroundDecoration ??
                         BoxDecoration(
@@ -264,8 +281,8 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                         ),
                     controller: _photoController,
                     scaleStateController: _scaleStateController,
-                    heroAttributes: const PhotoViewHeroAttributes(
-                      tag: 'entry_img',
+                    heroAttributes: PhotoViewHeroAttributes(
+                      tag: widget.heroTag,
                     ),
                     minScale: PhotoViewComputedScale.contained,
                     maxScale: PhotoViewComputedScale.covered * 4,

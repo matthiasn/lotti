@@ -17,6 +17,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   surfaces cover art and related photos, keeps long titles intact, and leaves
   the detailed AI brief collapsed until requested. Keyboard, reduced-motion,
   high-contrast, and screen-reader navigation are supported.
+- **Task cover art now opens full screen.** Tap the artwork at the top of a task
+  to use the same zoom, rotation and download viewer as linked photos.
 
 ## [1.0.3]
 ### Added
