@@ -1106,7 +1106,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                     right: tokens.spacing.step5,
                     child: SizedBox(
                       width: (size.width * 0.34).clamp(360.0, 460.0),
-                      child: EntryDetailSidebar(
+                      child: _DeferredEntryDetailSidebar(
                         key: ValueKey(_focusId),
                         entryId: _focusId,
                         onClose: () => setState(() => _detailsOpen = false),
@@ -1157,6 +1157,55 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
           );
         },
       ),
+    );
+  }
+}
+
+/// Defers the nested detail navigator until after the graph's layout callback.
+///
+/// [KnowledgeGraphView] builds its responsive workspace from a [LayoutBuilder].
+/// [EntryDetailSidebar] activates a nested [Navigator] route through Flutter's
+/// overlay portal. Activating that subtree while the layout builder is inside
+/// `performLayout` can reattach one of the task page's own layout builders and
+/// trip Flutter's render-object mutation guard. The first frame reserves the
+/// panel slot; the post-frame rebuild activates the navigator in the normal
+/// build phase.
+class _DeferredEntryDetailSidebar extends StatefulWidget {
+  const _DeferredEntryDetailSidebar({
+    required this.entryId,
+    required this.onClose,
+    required this.tokens,
+    super.key,
+  });
+
+  final String entryId;
+  final VoidCallback onClose;
+  final DsTokens tokens;
+
+  @override
+  State<_DeferredEntryDetailSidebar> createState() =>
+      _DeferredEntryDetailSidebarState();
+}
+
+class _DeferredEntryDetailSidebarState
+    extends State<_DeferredEntryDetailSidebar> {
+  bool _active = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => _active = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (!_active) return const SizedBox.expand();
+    return EntryDetailSidebar(
+      entryId: widget.entryId,
+      onClose: widget.onClose,
+      tokens: widget.tokens,
     );
   }
 }

@@ -1933,10 +1933,16 @@ void main() {
 
         // Tap the inspector's Open button → `_detailsOpen = true`.
         await tester.tap(find.byIcon(Icons.open_in_full_rounded));
-        // One frame mounts the overlay; a second lets the (async) controller
-        // build resolve to its null value so the sidebar swaps its initial
-        // spinner for the data shell.
+        // The graph itself is built from a LayoutBuilder callback. Mount only a
+        // stable slot in that layout frame; activating the nested Navigator
+        // there would mutate its overlay subtree during layout.
         await tester.pump();
+        expect(find.byType(EntryDetailSidebar), findsNothing);
+
+        // The next build activates the sidebar outside the layout callback; a
+        // final frame lets the async controller resolve to its null data shell.
+        await tester.pump();
+        expect(find.byType(EntryDetailSidebar), findsOneWidget);
         await tester.pump();
 
         // The full-details overlay is now rendered above the inspector. With the
@@ -1944,6 +1950,16 @@ void main() {
         // shell (proving the cheap path, not the heavy `_DetailBody`).
         expect(find.byType(EntryDetailSidebar), findsOneWidget);
         expect(find.text('Entry not found'), findsOneWidget);
+
+        final wideWidth = tester.getSize(find.byType(EntryDetailSidebar)).width;
+        tester.view.physicalSize = const Size(1000, 800);
+        await tester.pump();
+        await tester.pump();
+        expect(
+          tester.getSize(find.byType(EntryDetailSidebar)).width,
+          lessThan(wideWidth),
+        );
+        expect(tester.takeException(), isNull);
 
         // Tap the overlay's close button → `_detailsOpen = false`.
         await tester.tap(find.byIcon(Icons.close_rounded));
