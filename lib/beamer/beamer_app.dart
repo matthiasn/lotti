@@ -66,6 +66,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/uuid.dart';
+import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
 import 'package:lotti/widgets/misc/time_recording_indicator.dart';
@@ -728,6 +729,10 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   .read(paneWidthControllerProvider.notifier)
                   .toggleSidebarCollapsed(),
               aboveSettings: const _DesktopSidebarAboveSettings(),
+              // The Contact Us band spans the rail edge to edge; the sync LED
+              // strip stays inside the gutters and stays last, so it keeps
+              // reading as the rail's baseline.
+              footerBand: const ContactSupportRow(),
               belowSettings: showSyncIndicator
                   ? const SyncActivityIndicator()
                   : SizedBox(height: context.designTokens.spacing.step3),

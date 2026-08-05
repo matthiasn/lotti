@@ -75,6 +75,7 @@ class DesktopNavigationSidebar extends StatelessWidget {
     this.collapsedWidth = 72,
     this.onToggleCollapsed,
     this.aboveSettings,
+    this.footerBand,
     this.belowSettings,
     super.key,
   });
@@ -127,11 +128,25 @@ class DesktopNavigationSidebar extends StatelessWidget {
   /// detail cards would not fit the icon-only rail.
   final Widget? aboveSettings;
 
-  /// Optional widget rendered immediately below the Settings row in the
-  /// expanded layout. The Lotti app uses this slot to host the ambient
-  /// sync activity indicator (variant D4a) so the LED strip sits flush
-  /// against the bottom of the rail. Suppressed in [collapsed] mode for
-  /// the same reason as [aboveSettings].
+  /// Optional **full-bleed** band rendered under the Settings row, above
+  /// [belowSettings].
+  ///
+  /// Unlike every other slot, this one is laid out edge to edge rather than
+  /// inside the rail's horizontal gutters — it owns whatever inset it wants.
+  /// The Lotti app uses it for the Contact Us footer, which is a band with a
+  /// rule across the rail rather than a row in a column of rows, and which
+  /// needs the gutters back: at the default 256 px width its label and three
+  /// glyphs do not fit the 224 px a padded slot would offer.
+  ///
+  /// Suppressed in [collapsed] mode for the same reason as [aboveSettings].
+  final Widget? footerBand;
+
+  /// Optional widget rendered at the very bottom of the expanded layout,
+  /// inside the rail's horizontal gutters like the rows above it. The Lotti
+  /// app uses this slot to host the ambient sync activity indicator (variant
+  /// D4a) so the LED strip sits flush against the bottom of the rail — which
+  /// is why [footerBand] goes *above* it rather than below. Suppressed in
+  /// [collapsed] mode for the same reason as [aboveSettings].
   final Widget? belowSettings;
 
   @override
@@ -139,13 +154,16 @@ class DesktopNavigationSidebar extends StatelessWidget {
     final tokens = context.designTokens;
     final effectiveWidth = collapsed ? collapsedWidth : width;
 
+    // Horizontal gutters live on the *children*, not on this container, so a
+    // slot can opt out of them. Only [footerBand] does: everything else is a
+    // row in a column of rows and shares one rail.
+    final gutter = EdgeInsets.symmetric(horizontal: tokens.spacing.step5);
+
     return Container(
       width: effectiveWidth,
-      padding: EdgeInsets.fromLTRB(
-        tokens.spacing.step5,
-        tokens.spacing.step6,
-        tokens.spacing.step5,
-        tokens.spacing.step3,
+      padding: EdgeInsets.only(
+        top: tokens.spacing.step6,
+        bottom: tokens.spacing.step3,
       ),
       decoration: BoxDecoration(
         // Sidebar sits on the lighter `background.level02` so it reads as a
@@ -158,78 +176,101 @@ class DesktopNavigationSidebar extends StatelessWidget {
             ? CrossAxisAlignment.center
             : CrossAxisAlignment.start,
         children: [
-          _SidebarLogoRow(
-            collapsed: collapsed,
-            onToggle: onToggleCollapsed,
-          ),
-          const SizedBox(height: 24),
-
-          // Navigation destinations (scrollable for short windows)
           Expanded(
-            child: SingleChildScrollView(
+            child: Padding(
+              padding: gutter,
               child: Column(
                 crossAxisAlignment: collapsed
                     ? CrossAxisAlignment.center
                     : CrossAxisAlignment.start,
                 children: [
-                  for (var i = 0; i < destinations.length; i++) ...[
-                    _DesktopSidebarNavItem(
-                      destination: destinations[i],
-                      active: i == activeIndex && !isSettingsActive,
-                      collapsed: collapsed,
-                      onTap: () => onDestinationSelected(i),
+                  _SidebarLogoRow(
+                    collapsed: collapsed,
+                    onToggle: onToggleCollapsed,
+                  ),
+                  const SizedBox(height: 24),
+
+                  // Navigation destinations (scrollable for short windows)
+                  Expanded(
+                    child: SingleChildScrollView(
+                      child: Column(
+                        crossAxisAlignment: collapsed
+                            ? CrossAxisAlignment.center
+                            : CrossAxisAlignment.start,
+                        children: [
+                          for (var i = 0; i < destinations.length; i++) ...[
+                            _DesktopSidebarNavItem(
+                              destination: destinations[i],
+                              active: i == activeIndex && !isSettingsActive,
+                              collapsed: collapsed,
+                              onTap: () => onDestinationSelected(i),
+                            ),
+                            // Render the destination's expanded subtree only when
+                            // the destination is active and the sidebar is not
+                            // collapsed — keeps icon-only mode visually stable.
+                            if (!collapsed &&
+                                i == activeIndex &&
+                                !isSettingsActive &&
+                                destinations[i].expandedChildBuilder !=
+                                    null) ...[
+                              SizedBox(height: tokens.spacing.step3),
+                              destinations[i].expandedChildBuilder!(),
+                            ],
+                            if (i < destinations.length - 1)
+                              SizedBox(height: tokens.spacing.step4),
+                          ],
+                        ],
+                      ),
                     ),
-                    // Render the destination's expanded subtree only when
-                    // the destination is active and the sidebar is not
-                    // collapsed — keeps icon-only mode visually stable.
-                    if (!collapsed &&
-                        i == activeIndex &&
-                        !isSettingsActive &&
-                        destinations[i].expandedChildBuilder != null) ...[
-                      SizedBox(height: tokens.spacing.step3),
-                      destinations[i].expandedChildBuilder!(),
-                    ],
-                    if (i < destinations.length - 1)
+                  ),
+
+                  // Optional transient-activity slot. Hidden in collapsed mode because
+                  // the compact metrics do not fit the icon-only rail.
+                  if (!collapsed && aboveSettings != null) ...[
+                    SizedBox(height: tokens.spacing.step5),
+                    aboveSettings!,
+                    SizedBox(height: tokens.spacing.step5),
+                  ],
+
+                  if (utilityDestination != null) ...[
+                    _DesktopSidebarNavItem(
+                      destination: utilityDestination!,
+                      active: false,
+                      collapsed: collapsed,
+                      onTap: onUtilitySelected,
+                    ),
+                    if (settingsDestination != null)
                       SizedBox(height: tokens.spacing.step4),
                   ],
+
+                  // Settings at the bottom
+                  if (settingsDestination != null)
+                    _DesktopSidebarNavItem(
+                      destination: settingsDestination!,
+                      active: isSettingsActive,
+                      collapsed: collapsed,
+                      onTap: onSettingsSelected,
+                    ),
                 ],
               ),
             ),
           ),
 
-          // Optional transient-activity slot. Hidden in collapsed mode because
-          // the compact metrics do not fit the icon-only rail.
-          if (!collapsed && aboveSettings != null) ...[
-            SizedBox(height: tokens.spacing.step5),
-            aboveSettings!,
-            SizedBox(height: tokens.spacing.step5),
-          ],
+          // Full-bleed band under the padded column. Deliberately outside
+          // `gutter` — see [footerBand]. Sized to the full rail rather than
+          // left to shrink-wrap: the enclosing column is start-aligned, so a
+          // band that did not stretch itself would collapse to its content
+          // and the slot's one promise — the whole width — would hold only
+          // for children that happened to ask for it.
+          if (!collapsed && footerBand != null)
+            SizedBox(width: double.infinity, child: footerBand),
 
-          if (utilityDestination != null) ...[
-            _DesktopSidebarNavItem(
-              destination: utilityDestination!,
-              active: false,
-              collapsed: collapsed,
-              onTap: onUtilitySelected,
-            ),
-            if (settingsDestination != null)
-              SizedBox(height: tokens.spacing.step4),
-          ],
-
-          // Settings at the bottom
-          if (settingsDestination != null)
-            _DesktopSidebarNavItem(
-              destination: settingsDestination!,
-              active: isSettingsActive,
-              collapsed: collapsed,
-              onTap: onSettingsSelected,
-            ),
-
-          // Optional ambient indicator slot pinned beneath Settings.
-          // Hidden in collapsed mode for the same reason as [aboveSettings].
+          // Optional ambient indicator slot pinned to the bottom, back inside
+          // the rail's gutters. Hidden in collapsed mode for the same reason
+          // as [aboveSettings].
           if (!collapsed && belowSettings != null) ...[
             SizedBox(height: tokens.spacing.step3),
-            belowSettings!,
+            Padding(padding: gutter, child: belowSettings),
           ],
         ],
       ),

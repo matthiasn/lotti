@@ -3562,6 +3562,18 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get contactUsDiscordLabel => 'Discord';
+
+  @override
+  String get contactUsEmailSubject => 'Feedback su Lotti';
+
+  @override
+  String get contactUsGithubLabel => 'GitHub';
+
+  @override
+  String get contactUsLabel => 'Contattaci';
+
+  @override
   String get copyAsMarkdown => 'Copia come Markdown';
 
   @override

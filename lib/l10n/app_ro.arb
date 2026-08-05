@@ -1615,6 +1615,10 @@
       }
     }
   },
+  "contactUsDiscordLabel": "Discord",
+  "contactUsEmailSubject": "Feedback despre Lotti",
+  "contactUsGithubLabel": "GitHub",
+  "contactUsLabel": "Contactați-ne",
   "copyAsMarkdown": "Copiați ca Markdown",
   "copyAsText": "Copiați ca text",
   "correctionExampleCancel": "Anulați",

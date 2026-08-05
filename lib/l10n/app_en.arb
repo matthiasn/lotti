@@ -2044,6 +2044,10 @@
       }
     }
   },
+  "contactUsDiscordLabel": "Discord",
+  "contactUsEmailSubject": "Lotti feedback",
+  "contactUsGithubLabel": "GitHub",
+  "contactUsLabel": "Contact Us",
   "copyAsMarkdown": "Copy as Markdown",
   "copyAsText": "Copy as text",
   "correctionExampleCancel": "Cancel",

@@ -1,17 +1,25 @@
 ---
 type: Architecture
 title: Navigation and app shell
-description: Eight independent Beamer stacks behind one IndexedStack, and the rules that decide which chrome each route gets.
+description: Eight independent Beamer stacks behind one IndexedStack, the rules that decide which chrome each route gets, and the one footer in that chrome that leaves the app entirely.
 resource: ../../lib/beamer
 tags: [architecture, navigation, beamer, routing, app-shell]
 status: stable
-generated: { by: codex/5, at: 2026-07-28T23:33:17+02:00 }
-stale_after: 2027-01-27
+generated: { by: claude-code/opus-5, at: 2026-08-05T00:00:00Z }
+stale_after: 2027-02-05
 sources:
   - id: beamer-app
     resource: ../../lib/beamer/beamer_app.dart
     title: MyBeamerApp and AppScreen
-    last_modified: 2026-07-24
+    last_modified: 2026-08-05
+  - id: contact-support-row
+    resource: ../../lib/widgets/misc/contact_support_row.dart
+    title: ContactSupportRow — the Contact Us footer, wired to its destinations
+    last_modified: 2026-08-05
+  - id: more-sheet
+    resource: ../../lib/widgets/nav_bar/mobile_nav_more_sheet.dart
+    title: Mobile More overflow sheet
+    last_modified: 2026-08-05
   - id: settings-location
     resource: ../../lib/beamer/locations/settings_location.dart
     title: SettingsLocation — the settings page stack and its pop targets
@@ -196,6 +204,46 @@ Journal are the primary destinations that survive the narrowest window; the rest
 start behind a *More* sheet and are promoted into their own slots as width
 allows, until everything fits and the More slot disappears.
 
+# The one thing in the chrome that is not a destination
+
+`ContactSupportRow` — Contact Us, plus glyphs for the Manual, the repository and
+the Discord invite — is the exception to everything above. Nothing in it changes
+the tab index, opens a `BeamLocation`, or touches `NavService`; every one of its
+four targets leaves the app through `url_launcher`.
+
+That is why it renders **under a rule, below the last real destination**, on both
+form factors:
+
+| Form factor | Where | Suppressed when |
+|-------------|-------|-----------------|
+| Desktop | sidebar `footerBand`, under Settings and above the ambient sync strip | the sidebar is collapsed |
+| Mobile | last child of the *More* sheet | never — the sheet is its only home |
+
+`footerBand` is the sidebar's one **full-bleed** slot: it spans the rail edge to
+edge rather than sitting inside the 16 px gutters every other row shares, and
+owns its own smaller inset. The footer needs those 32 px — see
+[component contracts](../features/design_system/component-contracts.md) for the
+arithmetic — and a rule that runs the full width reads as the foot of the panel
+rather than as a row that failed to line up. The sync LED strip stays *below* it
+and stays gutter-aligned, so it keeps reading as the rail's baseline and its
+hover wash cannot run to the edge. Collapsing the sidebar removes the band
+entirely — the icon-only rail is 72 px, narrower than the three glyphs alone —
+and the Manual stays reachable from Settings meanwhile.
+
+Two rules hold it together:
+
+- **The Manual URL is resolved in exactly one place.** Both the Settings tree row
+  and this footer call `manualUriForCurrentLocale`, so a stored language override
+  cannot send one of them to a different locale than the other. Resolution is
+  deliberately split from opening, because the footer wraps every launch in its
+  own guard.
+- **A launch that fails must not throw.** The row fires launches without
+  awaiting them, so an uncaught rejection — a desktop with no mail client is the
+  ordinary case — would surface as an unhandled async error instead of the
+  no-op the user actually experiences. `_launchSupportUri` catches it, and
+  reports through `DomainLogger.error` rather than `log`, which is gated on the
+  navigation domain being enabled.
+
 # Where to look
 
 | Concern | File |
@@ -204,6 +252,10 @@ allows, until everything fits and the More slot disappears.
 | Delegate definitions | [`lib/beamer/beamer_delegates.dart`](../../lib/beamer/beamer_delegates.dart) |
 | Per-tab locations and path patterns | [`lib/beamer/locations/`](../../lib/beamer/locations) |
 | Index, delegate registry, flag gating | [`lib/services/nav_service.dart`](../../lib/services/nav_service.dart) |
+| Mobile overflow sheet | [`lib/widgets/nav_bar/mobile_nav_more_sheet.dart`](../../lib/widgets/nav_bar/mobile_nav_more_sheet.dart) |
+| Contact Us footer, wired | [`lib/widgets/misc/contact_support_row.dart`](../../lib/widgets/misc/contact_support_row.dart) |
+| Contact Us footer, presentation | [`lib/features/design_system/components/navigation/design_system_contact_row.dart`](../../lib/features/design_system/components/navigation/design_system_contact_row.dart) |
+| External addresses | [`lib/utils/support_links.dart`](../../lib/utils/support_links.dart) |
 
 Related: [the settings feature](../features/settings.md) for the tree that
 `SettingsLocation` routes into.

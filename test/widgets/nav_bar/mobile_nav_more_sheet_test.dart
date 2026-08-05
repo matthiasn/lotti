@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/nav_bar/mobile_nav_more_sheet.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
@@ -198,6 +199,72 @@ void main() {
         tester.element(find.byIcon(Icons.folder_outlined)),
       );
       expect(activeIcon.color, dsTokensLight.colors.interactive.enabled);
+    });
+  });
+
+  group('showMobileNavMoreSheet contact footer', () {
+    testWidgets('closes the sheet with the Contact Us footer', (tester) async {
+      await pumpAndOpenSheet(
+        tester,
+        items: [
+          MobileNavMoreSheetItem(
+            label: 'Projects',
+            icon: const Icon(Icons.folder_outlined),
+            onSelected: () {},
+          ),
+        ],
+      );
+
+      expect(find.byType(ContactSupportRow), findsOneWidget);
+    });
+
+    testWidgets('places the footer below every destination row', (
+      tester,
+    ) async {
+      await pumpAndOpenSheet(
+        tester,
+        items: [
+          for (final label in ['Projects', 'Habits', 'Calendar'])
+            MobileNavMoreSheetItem(
+              label: label,
+              icon: const Icon(Icons.folder_outlined),
+              onSelected: () {},
+            ),
+        ],
+      );
+
+      // Mobile has no persistent chrome to pin the footer to, so the sheet is
+      // where it lands — but below the destinations, never among them.
+      final footerTop = tester.getRect(find.byType(ContactSupportRow)).top;
+      for (final label in ['Projects', 'Habits', 'Calendar']) {
+        expect(
+          tester.getRect(find.text(label)).bottom,
+          lessThanOrEqualTo(footerTop),
+        );
+      }
+    });
+
+    testWidgets('keeps the footer out of the destination rows', (tester) async {
+      await pumpAndOpenSheet(
+        tester,
+        items: [
+          MobileNavMoreSheetItem(
+            label: 'Projects',
+            icon: const Icon(Icons.folder_outlined),
+            onSelected: () {},
+          ),
+        ],
+      );
+
+      // Destination rows carry a chevron; nothing in the footer navigates
+      // within the app, so no row down there may imply that it does.
+      expect(
+        find.descendant(
+          of: find.byType(ContactSupportRow),
+          matching: find.byIcon(Icons.chevron_right_rounded),
+        ),
+        findsNothing,
+      );
     });
   });
 }

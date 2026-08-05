@@ -3573,6 +3573,18 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get contactUsDiscordLabel => 'Discord';
+
+  @override
+  String get contactUsEmailSubject => 'Feedback despre Lotti';
+
+  @override
+  String get contactUsGithubLabel => 'GitHub';
+
+  @override
+  String get contactUsLabel => 'Contactați-ne';
+
+  @override
   String get copyAsMarkdown => 'Copiați ca Markdown';
 
   @override

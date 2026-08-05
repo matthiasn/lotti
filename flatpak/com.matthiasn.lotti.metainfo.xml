@@ -39,6 +39,7 @@
   <releases>
     <release version="1.0.3" date="2026-08-05">
       <description>
+        <p>Added: getting in touch is now one tap from the navigation. A Contact Us line sits at the foot of the sidebar on desktop, below Settings, and at the bottom of the More sheet on a phone. Tapping the words opens a mail draft to the project; beside them are three marks — the manual, which opens in your language, the source repository, and the Discord community. All four leave Lotti and open in your browser or mail app. On a collapsed sidebar the line goes away with the other labels, and the manual is still in Settings.</p>
         <p>Fixed: initial Sync setup no longer gets stuck on impossible checks or one bad row. A first device skips the comparison code that only a second device can verify, while added devices still confirm it. Message history now clearly offers All, custom ranges use the full calendar including the year, and one malformed history row no longer stops the remaining history from being queued. The summary names failed rows and retries only those rows.</p>
       </description>
     </release>

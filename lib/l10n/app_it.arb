@@ -1802,6 +1802,10 @@
       }
     }
   },
+  "contactUsDiscordLabel": "Discord",
+  "contactUsEmailSubject": "Feedback su Lotti",
+  "contactUsGithubLabel": "GitHub",
+  "contactUsLabel": "Contattaci",
   "copyAsMarkdown": "Copia come Markdown",
   "copyAsText": "Copia come testo",
   "correctionExampleCancel": "Annulla",

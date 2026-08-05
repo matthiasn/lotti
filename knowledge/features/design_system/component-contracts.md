@@ -11,7 +11,11 @@ sources:
   - id: components
     resource: ../../../lib/features/design_system/components
     title: Design-system components
-    last_modified: 2026-08-01
+    last_modified: 2026-08-05
+  - id: contact-row
+    resource: ../../../lib/features/design_system/components/navigation/design_system_contact_row.dart
+    title: DesignSystemContactRow — the support footer both navigation surfaces close with
+    last_modified: 2026-08-05
   - id: navbar
     resource: ../../../lib/widgets/nav_bar/design_system_bottom_navigation_bar.dart
     title: Bottom navigation shell
@@ -201,6 +205,66 @@ default error token as its surface.
 accent on both border and label — for a demoted-but-*positive* action beside
 a danger primary, where the neutral outlined treatment reads as Cancel
 ("Verify" next to "Remove" must still look like a good idea).
+
+## In a dense row instead: `DesignSystemContactRow`
+
+The support footer both navigation surfaces close with — a written affordance
+on one side, glyph-only external destinations on the other, under a rule. The
+desktop sidebar pins it beneath Settings; the mobile More sheet ends with it.
+See [navigation](../../architecture/navigation.md) for why nothing in it is an
+app destination.
+
+**Its glyphs are deliberately not `DesignSystemIconAction`, and folding the two
+together would break the row.** That control pins its target to
+`TapTargets.minimum` and treats the resulting 48×48 as a layout commitment for
+card headers and panel corners — it says in as many words not to put it in a
+dense row. This *is* a dense row, in the narrowest column the app has. It takes
+`DesignSystemFiveSlotNavBar.minTapTarget` instead: the floor the rest of this
+app's navigation chrome already uses, still above the 44 px platform guidance
+for touch.
+
+**The width is the whole design problem, and it took two decisions to solve.**
+At `defaultSidebarWidth` the rail is 256 px and the row needs 226 — 94 for the
+label, its leading glyph and the ink around them, plus 132 for three glyph
+targets. A padded slot offers 224, so at 48 px targets the row overflowed by 20
+and at 44 px it still missed by **1.7**, wrapping at the *default* width rather
+than only at the dragged-down minimum. The second decision is
+`DesktopNavigationSidebar.footerBand`: this band renders **full-bleed**, outside
+the rail's 16 px gutters, and owns its own smaller inset. That is worth 32 px
+and leaves ~30 px of slack for longer translations. The component test asserts
+the width *budget* rather than a laid-out line, because the test font is far
+wider than Inter and would otherwise be what the assertion measured.
+
+The rule spends none of that inset — it runs edge to edge, because a divider
+stopping short of both edges reads as a row that failed to line up rather than
+as the foot of the panel. Only the content below it is inset.
+
+The label itself is a `DesignSystemInlineAction`: caption tier, matching the
+sidebar's own saved-filter rows, with a leading envelope. Reaching for the
+component rather than an open-coded `InkWell` is what fixed the hover state —
+an unpadded tap target painted its fill flush against the glyphs, which read as
+a rendering fault rather than as a control.
+
+Two contracts beyond the sizing:
+
+- **The glyph is a `Widget`, not an `IconData`.** Material Design Icons has no
+  Discord mark and has deprecated its GitHub one, so two of the three travel as
+  bundled monochrome vector assets. The row installs one `IconTheme` and every
+  glyph reads size and colour from it, which is what lets an `SvgPicture` tint
+  itself to match the font icons beside it — and why a glyph must resolve the
+  theme in its **own** `build`, below where the row installs it.
+- **The label and the glyph group wrap as two units, never as five children.**
+  `WrapAlignment.spaceBetween` pushes them to opposite edges on one line and
+  drops the group intact to a second line when they do not fit. Letting the
+  glyphs wrap individually would leave a ragged 2-then-1 stack, and letting the
+  label take the pressure instead would ellipsise it to nothing.
+
+Its `ExcludeSemantics` sits **above** the `InkWell`, which is the shape
+`DesignSystemInlineAction` above warns against — safe here for the same reason
+it is safe in `DesignSystemIconAction`: the outer `Semantics` republishes
+`onTap`, so the node it exposes is still activatable. That is the condition,
+not an exception to the rule. A test drives each glyph through
+`SemanticsAction.tap` rather than trusting it.
 
 # Status without an alert: the neutral badge tone
 
