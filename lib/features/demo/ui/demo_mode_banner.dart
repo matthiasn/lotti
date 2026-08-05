@@ -193,13 +193,15 @@ class DemoModeBanner extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  // Same style as the identity line beside it, so the two sit
-                  // on one optical line; emoji glyphs render larger than
-                  // their nominal em, which is what gives it presence.
+                  // Sized against the whole two-line block rather than the
+                  // identity line alone: an emoji is drawn well inside its
+                  // em box, so at the identity line's own size it reads as
+                  // a speck beside two lines of text instead of anchoring
+                  // them.
                   ExcludeSemantics(
                     child: Text(
                       _penguin,
-                      style: tokens.typography.styles.subtitle.subtitle1,
+                      style: tokens.typography.styles.heading.heading2,
                     ),
                   ),
                   SizedBox(width: tokens.spacing.step3),
