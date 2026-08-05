@@ -1520,6 +1520,97 @@ void main() {
         );
       },
     );
+
+    test(
+      'retires resolved payload mappings beyond the canonical vector clock, '
+      'clears pending stale hints, and is idempotent on duplicate repair',
+      () async {
+        final database = db!;
+        final createdAt = DateTime(2024, 3, 15, 10);
+
+        Future<void> insert({
+          required String hostId,
+          required int counter,
+          required String entryId,
+          required SyncSequenceStatus status,
+        }) {
+          return database.recordSequenceEntry(
+            SyncSequenceLogCompanion(
+              hostId: Value(hostId),
+              counter: Value(counter),
+              entryId: Value(entryId),
+              payloadType: Value(SyncSequencePayloadType.agentEntity.index),
+              status: Value(status.index),
+              jsonPath: const Value('/agent_entities/versioned.json'),
+              createdAt: Value(createdAt),
+              updatedAt: Value(createdAt),
+            ),
+          );
+        }
+
+        await insert(
+          hostId: 'host-a',
+          counter: 3,
+          entryId: 'versioned-payload',
+          status: SyncSequenceStatus.received,
+        );
+        await insert(
+          hostId: 'host-a',
+          counter: 5,
+          entryId: 'versioned-payload',
+          status: SyncSequenceStatus.received,
+        );
+        await insert(
+          hostId: 'host-b',
+          counter: 4,
+          entryId: 'versioned-payload',
+          status: SyncSequenceStatus.requested,
+        );
+        await insert(
+          hostId: 'host-a',
+          counter: 6,
+          entryId: 'other-payload',
+          status: SyncSequenceStatus.backfilled,
+        );
+
+        final repaired = await database.retireInvalidPayloadMappings(
+          payloadType: SyncSequencePayloadType.agentEntity,
+          payloadId: 'versioned-payload',
+          payloadCounters: const {'host-a': 3, 'host-b': 2},
+          now: DateTime(2024, 3, 15, 11),
+        );
+
+        expect(repaired, 2);
+        final valid = await database.getEntryByHostAndCounter('host-a', 3);
+        expect(valid?.entryId, 'versioned-payload');
+        expect(valid?.status, SyncSequenceStatus.received.index);
+
+        final retired = await database.getEntryByHostAndCounter('host-a', 5);
+        expect(retired?.entryId, isNull);
+        expect(retired?.jsonPath, isNull);
+        expect(retired?.status, SyncSequenceStatus.unresolvable.index);
+        expect(retired?.createdAt, createdAt);
+
+        final pending = await database.getEntryByHostAndCounter('host-b', 4);
+        expect(pending?.entryId, isNull);
+        expect(pending?.jsonPath, isNull);
+        expect(pending?.status, SyncSequenceStatus.requested.index);
+
+        final unrelated = await database.getEntryByHostAndCounter('host-a', 6);
+        expect(unrelated?.entryId, 'other-payload');
+        expect(unrelated?.status, SyncSequenceStatus.backfilled.index);
+
+        expect(
+          await database.retireInvalidPayloadMappings(
+            payloadType: SyncSequencePayloadType.agentEntity,
+            payloadId: 'versioned-payload',
+            payloadCounters: const {'host-a': 3, 'host-b': 2},
+            now: DateTime(2024, 3, 15, 12),
+          ),
+          0,
+        );
+      },
+    );
   });
 
   group('recordOwnUnresolvableSequenceCounter - default now -', () {

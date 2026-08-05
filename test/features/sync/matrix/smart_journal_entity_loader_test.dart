@@ -181,6 +181,181 @@ void main() {
       expect(targetFile.lengthSync(), greaterThan(0));
     });
 
+    test(
+      'exact attachment id reads the referenced journal generation even '
+      'after the stable path and disk cache advance',
+      () async {
+        const relJson = '/text_entries/2024-01-01/versioned.text.json';
+
+        JournalEntry entry(int revision, String text) => JournalEntry(
+          meta: Metadata(
+            id: 'versioned',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15 + revision),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            vectorClock: VectorClock({'remote-host': revision}),
+          ),
+          entryText: EntryText(plainText: text),
+        );
+
+        MockEvent descriptor({
+          required String eventId,
+          required JournalEntry payload,
+        }) {
+          final result = MockEvent();
+          when(() => result.eventId).thenReturn(eventId);
+          when(() => result.attachmentMimetype).thenReturn('application/json');
+          when(() => result.content).thenReturn({'relativePath': relJson});
+          when(result.downloadAndDecryptAttachment).thenAnswer(
+            (_) async => MatrixFile(
+              bytes: Uint8List.fromList(
+                utf8.encode(jsonEncode(payload.toJson())),
+              ),
+              name: '$eventId.json',
+            ),
+          );
+          return result;
+        }
+
+        final older = entry(3, 'referenced generation');
+        final newer = entry(30, 'newer path generation');
+        final olderDescriptor = descriptor(
+          eventId: 'journal-payload-older',
+          payload: older,
+        );
+        final newerDescriptor = descriptor(
+          eventId: 'journal-payload-newer',
+          payload: newer,
+        );
+        final index = AttachmentIndex()
+          ..record(olderDescriptor)
+          ..record(newerDescriptor);
+
+        final targetFile = File(
+          path.join(tempDir.path, stripLeadingSlashes(relJson)),
+        )..createSync(recursive: true);
+        targetFile.writeAsStringSync(jsonEncode(newer.toJson()));
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+        final loaded = await loader.load(
+          jsonPath: relJson,
+          incomingVectorClock: const VectorClock({'remote-host': 3}),
+          attachmentEventId: 'journal-payload-older',
+        );
+
+        expect(loaded.meta.vectorClock, older.meta.vectorClock);
+        expect(loaded.entryText?.plainText, 'referenced generation');
+        verify(olderDescriptor.downloadAndDecryptAttachment).called(1);
+        verifyNever(newerDescriptor.downloadAndDecryptAttachment);
+
+        final cached = JournalEntity.fromJson(
+          jsonDecode(targetFile.readAsStringSync()) as Map<String, dynamic>,
+        );
+        expect(cached.meta.vectorClock, newer.meta.vectorClock);
+        expect(cached.entryText?.plainText, 'newer path generation');
+
+        // A path-only envelope from an older sender remains readable by the
+        // new receiver. It deliberately retains legacy latest-by-path/cache
+        // semantics, which is the documented rollout limit until both peers
+        // emit exact attachment ids.
+        final legacyLoaded = await loader.load(
+          jsonPath: relJson,
+          incomingVectorClock: const VectorClock({'remote-host': 3}),
+        );
+        expect(legacyLoaded.meta.vectorClock, newer.meta.vectorClock);
+        expect(legacyLoaded.entryText?.plainText, 'newer path generation');
+      },
+    );
+
+    test(
+      'exact attachment miss ignores a newer path descriptor and disk cache '
+      'until catch-up rebuilds the referenced event after restart',
+      () async {
+        const relJson = '/text_entries/2024-01-01/restart.text.json';
+
+        JournalEntry entry(int revision) => JournalEntry(
+          meta: Metadata(
+            id: 'restart',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15 + revision),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            vectorClock: VectorClock({'remote-host': revision}),
+          ),
+          entryText: EntryText(plainText: 'revision $revision'),
+        );
+
+        MockEvent descriptor({
+          required String eventId,
+          required JournalEntry payload,
+        }) {
+          final result = MockEvent();
+          when(() => result.eventId).thenReturn(eventId);
+          when(() => result.attachmentMimetype).thenReturn('application/json');
+          when(() => result.content).thenReturn({'relativePath': relJson});
+          when(result.downloadAndDecryptAttachment).thenAnswer(
+            (_) async => MatrixFile(
+              bytes: Uint8List.fromList(
+                utf8.encode(jsonEncode(payload.toJson())),
+              ),
+              name: '$eventId.json',
+            ),
+          );
+          return result;
+        }
+
+        final older = entry(3);
+        final newer = entry(30);
+        final olderDescriptor = descriptor(
+          eventId: 'restart-payload-older',
+          payload: older,
+        );
+        final newerDescriptor = descriptor(
+          eventId: 'restart-payload-newer',
+          payload: newer,
+        );
+        final restartedIndex = AttachmentIndex()..record(newerDescriptor);
+        File(path.join(tempDir.path, stripLeadingSlashes(relJson)))
+          ..createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(newer.toJson()));
+
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: restartedIndex,
+          loggingService: loggingService,
+        );
+
+        await expectLater(
+          loader.load(
+            jsonPath: relJson,
+            incomingVectorClock: const VectorClock({'remote-host': 3}),
+            attachmentEventId: 'restart-payload-older',
+          ),
+          throwsA(
+            isA<FileSystemException>().having(
+              (error) => error.message,
+              'message',
+              contains('attachment descriptor not yet available'),
+            ),
+          ),
+        );
+        verifyNever(newerDescriptor.downloadAndDecryptAttachment);
+
+        restartedIndex.record(olderDescriptor);
+        final loaded = await loader.load(
+          jsonPath: relJson,
+          incomingVectorClock: const VectorClock({'remote-host': 3}),
+          attachmentEventId: 'restart-payload-older',
+        );
+
+        expect(loaded.meta.vectorClock, older.meta.vectorClock);
+        verify(olderDescriptor.downloadAndDecryptAttachment).called(1);
+      },
+    );
+
     test('ensures missing image media via AttachmentIndex', () async {
       final image = JournalImage(
         meta: Metadata(

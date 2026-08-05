@@ -25,8 +25,9 @@ extension _OutboxBundleHandler on SyncEventProcessor {
   /// the unpacker so duplicate detection and sequence-log accounting run as
   /// they do for individually-delivered entities.
   Future<SyncOutboxBundle?> _resolveOutboxBundleManifest(
-    String? jsonPath,
-  ) async {
+    String? jsonPath, {
+    String? attachmentEventId,
+  }) async {
     // Phase-by-phase timing so a single grep on
     // `processor.resolve.outboxBundle.timing` answers "where is the time
     // going" without guesswork. Numbers in milliseconds, comparable
@@ -75,11 +76,18 @@ extension _OutboxBundleHandler on SyncEventProcessor {
       jsonPath: jp,
       targetFile: targetFile,
       typeName: 'outboxBundle',
+      attachmentEventId: attachmentEventId,
     );
     fetchMs = fetchSw.elapsedMilliseconds;
     fromDescriptor = manifestJson != null;
 
     if (manifestJson == null) {
+      if (attachmentEventId != null) {
+        throw FileSystemException(
+          'attachment descriptor not yet available',
+          jp,
+        );
+      }
       // Fall back to disk if the descriptor is not yet registered (text
       // event arrived before the file event made it through catch-up).
       final diskSw = Stopwatch()..start();

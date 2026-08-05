@@ -39,7 +39,8 @@ extension _AgentHandlers on SyncEventProcessor {
 
   /// Resolves an agent payload from a sync message: inline first, then
   /// fetches from [AttachmentIndex] descriptor (like [SmartJournalEntityLoader]
-  /// does for journal entities), falling back to disk.
+  /// does for journal entities). Envelopes carrying an [attachmentEventId]
+  /// require that exact descriptor; legacy envelopes may fall back to disk.
   ///
   /// Agent entity files can be updated in-place (e.g. ChangeSetEntity
   /// pending → resolved), so reading from disk alone risks stale data when
@@ -55,6 +56,7 @@ extension _AgentHandlers on SyncEventProcessor {
   Future<T?> _resolveAgentPayload<T>({
     required T? inline,
     required String? jsonPath,
+    required String? attachmentEventId,
     required T Function(Map<String, dynamic>) fromJson,
     required String typeName,
   }) async {
@@ -90,6 +92,8 @@ extension _AgentHandlers on SyncEventProcessor {
       jsonPath: jp,
       targetFile: file,
       typeName: typeName,
+      attachmentEventId: attachmentEventId,
+      writeToDisk: attachmentEventId == null,
     );
     if (fetched != null) {
       try {
@@ -105,7 +109,14 @@ extension _AgentHandlers on SyncEventProcessor {
       }
     }
 
-    // No descriptor available — fall back to disk.
+    if (attachmentEventId != null) {
+      throw FileSystemException(
+        'attachment descriptor not yet available for exact $typeName payload',
+        jp,
+      );
+    }
+
+    // No descriptor available on a legacy envelope — fall back to disk.
     try {
       final jsonString = await file.readAsString();
       return fromJson(json.decode(jsonString) as Map<String, dynamic>);
@@ -129,6 +140,7 @@ extension _AgentHandlers on SyncEventProcessor {
   ) => _resolveAgentPayload(
     inline: msg.agentEntity,
     jsonPath: msg.jsonPath,
+    attachmentEventId: msg.attachmentEventId,
     fromJson: AgentDomainEntity.fromJson,
     typeName: 'agentEntity',
   );
@@ -137,6 +149,7 @@ extension _AgentHandlers on SyncEventProcessor {
       _resolveAgentPayload(
         inline: msg.agentLink,
         jsonPath: msg.jsonPath,
+        attachmentEventId: msg.attachmentEventId,
         fromJson: AgentLink.fromJson,
         typeName: 'agentLink',
       );
@@ -638,6 +651,10 @@ extension _AgentHandlers on SyncEventProcessor {
       return;
     }
     try {
+      final isExact = msg.attachmentEventId != null;
+      final canonicalVectorClock = isExact
+          ? (await agentRepository!.getEntity(entity.id))?.vectorClock
+          : null;
       final gaps = await _sequenceLogService.recordReceivedEntry(
         entryId: entity.id,
         vectorClock: entity.vectorClock!,
@@ -645,6 +662,8 @@ extension _AgentHandlers on SyncEventProcessor {
         coveredVectorClocks: msg.coveredVectorClocks,
         payloadType: SyncSequencePayloadType.agentEntity,
         jsonPath: msg.jsonPath,
+        payloadVectorClock: isExact ? entity.vectorClock : null,
+        canonicalPayloadVectorClock: canonicalVectorClock,
       );
       if (gaps.isNotEmpty) {
         _trace(
@@ -673,6 +692,10 @@ extension _AgentHandlers on SyncEventProcessor {
       return;
     }
     try {
+      final isExact = msg.attachmentEventId != null;
+      final canonicalVectorClock = isExact
+          ? (await agentRepository!.getLinkById(link.id))?.vectorClock
+          : null;
       final gaps = await _sequenceLogService.recordReceivedEntry(
         entryId: link.id,
         vectorClock: link.vectorClock!,
@@ -680,6 +703,8 @@ extension _AgentHandlers on SyncEventProcessor {
         coveredVectorClocks: msg.coveredVectorClocks,
         payloadType: SyncSequencePayloadType.agentLink,
         jsonPath: msg.jsonPath,
+        payloadVectorClock: isExact ? link.vectorClock : null,
+        canonicalPayloadVectorClock: canonicalVectorClock,
       );
       if (gaps.isNotEmpty) {
         _trace(

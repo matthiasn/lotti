@@ -3,7 +3,8 @@ import 'dart:async';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:matrix/matrix.dart';
 
-/// Lightweight, in-memory index mapping relativePath -> latest attachment event.
+/// Lightweight, in-memory index mapping both relative paths and exact Matrix
+/// event ids to attachment events.
 ///
 /// Used by the apply phase to locate download descriptors for JSON files based
 /// on the path referenced in the text message. Populated passively by the
@@ -23,6 +24,7 @@ class AttachmentIndex {
   final bool verboseLogging;
 
   final Map<String, Event> _byPath = <String, Event>{};
+  final Map<String, Event> _byEventId = <String, Event>{};
 
   // Per-eventId idempotency guard. Keyed by eventId so repeated observations
   // of the same Matrix event (from live scan + catch-up + backfill passes)
@@ -72,6 +74,9 @@ class AttachmentIndex {
         // For robustness, also record a variant without the leading slash in
         // case callers use that form.
         _byPath[noSlash] = e;
+        if (eventId != null) {
+          _byEventId[eventId] = e;
+        }
         if (verboseLogging) {
           _logging?.log(
             LogDomain.sync,
@@ -120,6 +125,24 @@ class AttachmentIndex {
             ? 'attachmentIndex.miss path=$relativePath alt=$key2'
             : 'attachmentIndex.hit path=$relativePath id=${_safeEventId(hit) ?? '?'}',
         subDomain: 'attachmentIndex.find',
+      );
+    }
+    return hit;
+  }
+
+  /// Returns the attachment event with the exact Matrix [eventId].
+  ///
+  /// Unlike [find], this lookup preserves older generations after a newer
+  /// attachment reuses the same relative path.
+  Event? findByEventId(String eventId) {
+    final hit = _byEventId[eventId];
+    if (verboseLogging) {
+      _logging?.log(
+        LogDomain.sync,
+        hit == null
+            ? 'attachmentIndex.miss eventId=$eventId'
+            : 'attachmentIndex.hit eventId=$eventId',
+        subDomain: 'attachmentIndex.findByEventId',
       );
     }
     return hit;

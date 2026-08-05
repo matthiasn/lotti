@@ -2,18 +2,22 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart' show setUpTestGetIt, tearDownTestGetIt;
 import 'sync_event_processor_test_helpers.dart';
 
@@ -161,6 +165,163 @@ void main() {
             roundTripped.meta.vectorClock,
             const VectorClock({'host-A': 3}),
           );
+        },
+      );
+
+      test(
+        'exact attachment id resolves the referenced manifest generation '
+        'after the stable path advances',
+        () async {
+          const bundleRelativePath = '/outbox_bundles/versioned.json';
+
+          Map<String, dynamic> manifest(String childId) => <String, dynamic>{
+            'version': 1,
+            'entries': [
+              <String, dynamic>{
+                'envelope': SyncMessage.aiConfigDelete(
+                  id: childId,
+                ).toJson(),
+              },
+            ],
+          };
+
+          MockEvent descriptor({
+            required String eventId,
+            required Map<String, dynamic> payload,
+          }) {
+            final result = MockEvent();
+            when(() => result.eventId).thenReturn(eventId);
+            when(
+              () => result.attachmentMimetype,
+            ).thenReturn('application/json');
+            when(
+              () => result.content,
+            ).thenReturn({'relativePath': bundleRelativePath});
+            when(result.downloadAndDecryptAttachment).thenAnswer(
+              (_) async => MatrixFile(
+                bytes: Uint8List.fromList(utf8.encode(jsonEncode(payload))),
+                name: '$eventId.json',
+              ),
+            );
+            return result;
+          }
+
+          final olderDescriptor = descriptor(
+            eventId: 'manifest-event-older',
+            payload: manifest('from-referenced-manifest'),
+          );
+          final newerDescriptor = descriptor(
+            eventId: 'manifest-event-newer',
+            payload: manifest('from-newer-path-manifest'),
+          );
+          final index = AttachmentIndex()
+            ..record(olderDescriptor)
+            ..record(newerDescriptor);
+          final exactProcessor = SyncEventProcessor(
+            loggingService: loggingService,
+            updateNotifications: updateNotifications,
+            aiConfigRepository: aiConfigRepository,
+            savedTaskFiltersRepository: savedTaskFiltersRepository,
+            settingsDb: settingsDb,
+            journalEntityLoader: journalEntityLoader,
+            documentsDirectory: tempDir,
+            attachmentIndex: index,
+          );
+
+          File(
+              path.join(
+                tempDir.path,
+                stripLeadingSlashes(bundleRelativePath),
+              ),
+            )
+            ..parent.createSync(recursive: true)
+            ..writeAsStringSync(
+              jsonEncode(manifest('from-newer-disk-manifest')),
+            );
+
+          final resolved = await exactProcessor
+              .resolveOutboxBundleManifestForTesting(
+                bundleRelativePath,
+                attachmentEventId: 'manifest-event-older',
+              );
+
+          expect(resolved, isNotNull);
+          expect(
+            (resolved!.children.single as SyncAiConfigDelete).id,
+            'from-referenced-manifest',
+          );
+          verify(olderDescriptor.downloadAndDecryptAttachment).called(1);
+          verifyNever(newerDescriptor.downloadAndDecryptAttachment);
+        },
+      );
+
+      test(
+        'exact manifest miss stays retryable and never falls back to a newer '
+        'descriptor or an existing disk cache',
+        () async {
+          const bundleRelativePath = '/outbox_bundles/pending-exact.json';
+          final newerManifest = <String, dynamic>{
+            'version': 1,
+            'entries': [
+              <String, dynamic>{
+                'envelope': const SyncMessage.aiConfigDelete(
+                  id: 'newer-only',
+                ).toJson(),
+              },
+            ],
+          };
+          final newerDescriptor = MockEvent();
+          when(
+            () => newerDescriptor.eventId,
+          ).thenReturn('manifest-event-newer-only');
+          when(
+            () => newerDescriptor.attachmentMimetype,
+          ).thenReturn('application/json');
+          when(
+            () => newerDescriptor.content,
+          ).thenReturn({'relativePath': bundleRelativePath});
+          when(newerDescriptor.downloadAndDecryptAttachment).thenAnswer(
+            (_) async => MatrixFile(
+              bytes: Uint8List.fromList(
+                utf8.encode(jsonEncode(newerManifest)),
+              ),
+              name: 'newer.json',
+            ),
+          );
+          final index = AttachmentIndex()..record(newerDescriptor);
+          final exactProcessor = SyncEventProcessor(
+            loggingService: loggingService,
+            updateNotifications: updateNotifications,
+            aiConfigRepository: aiConfigRepository,
+            savedTaskFiltersRepository: savedTaskFiltersRepository,
+            settingsDb: settingsDb,
+            journalEntityLoader: journalEntityLoader,
+            documentsDirectory: tempDir,
+            attachmentIndex: index,
+          );
+          File(
+              path.join(
+                tempDir.path,
+                stripLeadingSlashes(bundleRelativePath),
+              ),
+            )
+            ..parent.createSync(recursive: true)
+            ..writeAsStringSync(jsonEncode(newerManifest));
+
+          await expectLater(
+            exactProcessor.resolveOutboxBundleManifestForTesting(
+              bundleRelativePath,
+              attachmentEventId: 'manifest-event-not-yet-indexed',
+            ),
+            throwsA(
+              isA<FileSystemException>().having(
+                (error) => error.message,
+                'message',
+                contains('attachment descriptor not yet available'),
+              ),
+            ),
+          );
+          verifyNever(newerDescriptor.downloadAndDecryptAttachment);
         },
       );
 

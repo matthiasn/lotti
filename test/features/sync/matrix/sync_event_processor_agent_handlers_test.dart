@@ -3337,15 +3337,146 @@ void main() {
         );
 
         test(
-          'fetches agent link from descriptor when file is missing',
+          'exact attachment binding keeps an older envelope on its payload '
+          'generation after the path advances',
           () async {
+            const relativePath = '/agent_entities/agent-versioned.json';
+            const olderClock = VectorClock({'remote-host': 3});
+            const newerClock = VectorClock({'remote-host': 30});
+            const coveredClocks = [
+              VectorClock({'remote-host': 1}),
+              VectorClock({'remote-host': 2}),
+            ];
+            final olderEntity = AgentDomainEntity.agentState(
+              id: 'agent-versioned',
+              agentId: 'agent-versioned',
+              revision: 3,
+              slots: const AgentSlots(),
+              updatedAt: DateTime(2024, 3, 15),
+              vectorClock: olderClock,
+            );
+            final newerEntity = AgentDomainEntity.agentState(
+              id: 'agent-versioned',
+              agentId: 'agent-versioned',
+              revision: 30,
+              slots: const AgentSlots(),
+              updatedAt: DateTime(2024, 3, 16),
+              vectorClock: newerClock,
+            );
+
+            MockEvent descriptor({
+              required String eventId,
+              required AgentDomainEntity entity,
+            }) {
+              final result = MockEvent();
+              when(() => result.eventId).thenReturn(eventId);
+              when(
+                () => result.attachmentMimetype,
+              ).thenReturn('application/json');
+              when(
+                () => result.content,
+              ).thenReturn({'relativePath': relativePath});
+              when(result.downloadAndDecryptAttachment).thenAnswer(
+                (_) async => MatrixFile(
+                  bytes: Uint8List.fromList(
+                    utf8.encode(jsonEncode(entity.toJson())),
+                  ),
+                  name: '$eventId.json',
+                ),
+              );
+              return result;
+            }
+
+            final olderDescriptor = descriptor(
+              eventId: 'older-payload-event',
+              entity: olderEntity,
+            );
+            final newerDescriptor = descriptor(
+              eventId: 'newer-payload-event',
+              entity: newerEntity,
+            );
+            attachmentIndex
+              ..record(olderDescriptor)
+              ..record(newerDescriptor);
+
+            AgentDomainEntity? storedEntity;
+            when(
+              () => mockAgentRepo.getEntity(olderEntity.id),
+            ).thenAnswer((_) async => storedEntity);
+            when(() => mockAgentRepo.upsertEntity(any())).thenAnswer((
+              call,
+            ) async {
+              storedEntity =
+                  call.positionalArguments.first as AgentDomainEntity;
+            });
+
+            final sequenceLog = MockSyncSequenceLogService();
+            when(
+              () => sequenceLog.recordReceivedEntry(
+                entryId: any(named: 'entryId'),
+                vectorClock: any(named: 'vectorClock'),
+                originatingHostId: any(named: 'originatingHostId'),
+                coveredVectorClocks: any(named: 'coveredVectorClocks'),
+                payloadType: any(named: 'payloadType'),
+                jsonPath: any(named: 'jsonPath'),
+                payloadVectorClock: any(named: 'payloadVectorClock'),
+                canonicalPayloadVectorClock: any(
+                  named: 'canonicalPayloadVectorClock',
+                ),
+              ),
+            ).thenAnswer((_) async => []);
+            final exactProcessor = SyncEventProcessor(
+              loggingService: loggingService,
+              updateNotifications: updateNotifications,
+              aiConfigRepository: aiConfigRepository,
+              savedTaskFiltersRepository: savedTaskFiltersRepository,
+              settingsDb: settingsDb,
+              journalEntityLoader: journalEntityLoader,
+              attachmentIndex: attachmentIndex,
+              sequenceLogService: sequenceLog,
+            )..agentRepository = mockAgentRepo;
+
+            const message = SyncMessage.agentEntity(
+              status: SyncEntryStatus.update,
+              jsonPath: relativePath,
+              attachmentEventId: 'older-payload-event',
+              originatingHostId: 'remote-host',
+              coveredVectorClocks: coveredClocks,
+            );
+            when(() => event.text).thenReturn(encodeMessage(message));
+
+            await exactProcessor.process(event: event, journalDb: journalDb);
+
+            verify(() => mockAgentRepo.upsertEntity(olderEntity)).called(1);
+            verifyNever(() => mockAgentRepo.upsertEntity(newerEntity));
+            verify(
+              () => sequenceLog.recordReceivedEntry(
+                entryId: olderEntity.id,
+                vectorClock: olderClock,
+                originatingHostId: 'remote-host',
+                coveredVectorClocks: coveredClocks,
+                payloadType: SyncSequencePayloadType.agentEntity,
+                jsonPath: relativePath,
+                payloadVectorClock: olderClock,
+                canonicalPayloadVectorClock: olderClock,
+              ),
+            ).called(1);
+            verify(olderDescriptor.downloadAndDecryptAttachment).called(1);
+            verifyNever(newerDescriptor.downloadAndDecryptAttachment);
+          },
+        );
+
+        test(
+          'exact attachment fetches the agent link and supplies payload proof',
+          () async {
+            const linkClock = VectorClock({'remote-host': 4});
             final link = AgentLink.basic(
               id: 'link-desc',
               fromId: 'agent-1',
               toId: 'state-1',
               createdAt: DateTime(2024, 3, 15),
               updatedAt: DateTime(2024, 3, 15),
-              vectorClock: null,
+              vectorClock: linkClock,
             );
 
             final bytes = Uint8List.fromList(
@@ -3368,18 +3499,67 @@ void main() {
 
             attachmentIndex.record(linkDescriptorEvent);
 
+            AgentLink? storedLink;
+            when(
+              () => mockAgentRepo.getLinkById(link.id),
+            ).thenAnswer((_) async => storedLink);
+            when(() => mockAgentRepo.upsertLink(any())).thenAnswer((
+              call,
+            ) async {
+              storedLink = call.positionalArguments.first as AgentLink;
+            });
+            final sequenceLog = MockSyncSequenceLogService();
+            when(
+              () => sequenceLog.recordReceivedEntry(
+                entryId: any(named: 'entryId'),
+                vectorClock: any(named: 'vectorClock'),
+                originatingHostId: any(named: 'originatingHostId'),
+                coveredVectorClocks: any(named: 'coveredVectorClocks'),
+                payloadType: any(named: 'payloadType'),
+                jsonPath: any(named: 'jsonPath'),
+                payloadVectorClock: any(named: 'payloadVectorClock'),
+                canonicalPayloadVectorClock: any(
+                  named: 'canonicalPayloadVectorClock',
+                ),
+              ),
+            ).thenAnswer((_) async => []);
+            final exactProcessor = SyncEventProcessor(
+              loggingService: loggingService,
+              updateNotifications: updateNotifications,
+              aiConfigRepository: aiConfigRepository,
+              savedTaskFiltersRepository: savedTaskFiltersRepository,
+              settingsDb: settingsDb,
+              journalEntityLoader: journalEntityLoader,
+              attachmentIndex: attachmentIndex,
+              sequenceLogService: sequenceLog,
+            )..agentRepository = mockAgentRepo;
+
             const message = SyncMessage.agentLink(
               status: SyncEntryStatus.update,
               jsonPath: '/agent_links/link-desc.json',
+              attachmentEventId: 'link-desc-event-id',
+              originatingHostId: 'remote-host',
             );
             when(() => event.text).thenReturn(encodeMessage(message));
 
-            await processorWithIndex.process(
+            await exactProcessor.process(
               event: event,
               journalDb: journalDb,
             );
 
             verify(() => mockAgentRepo.upsertLink(link)).called(1);
+            verify(
+              () => sequenceLog.recordReceivedEntry(
+                entryId: link.id,
+                vectorClock: linkClock,
+                originatingHostId: 'remote-host',
+                coveredVectorClocks: null,
+                payloadType: SyncSequencePayloadType.agentLink,
+                jsonPath: '/agent_links/link-desc.json',
+                payloadVectorClock: linkClock,
+                canonicalPayloadVectorClock: linkClock,
+              ),
+            ).called(1);
             verify(linkDescriptorEvent.downloadAndDecryptAttachment).called(1);
           },
         );
@@ -3470,6 +3650,53 @@ void main() {
 
           verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
         });
+
+        test(
+          'exact attachment miss never falls back to an existing agent '
+          'sidecar at the same path',
+          () async {
+            final newerEntity = AgentDomainEntity.agent(
+              id: 'agent-exact-pending',
+              agentId: 'agent-exact-pending',
+              kind: 'task_agent',
+              displayName: 'Newer disk generation',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: 'state-30',
+              config: const AgentConfig(),
+              createdAt: DateTime(2024, 3, 15),
+              updatedAt: DateTime(2024, 3, 16),
+              vectorClock: const VectorClock({'remote-host': 30}),
+            );
+            const relativePath = '/agent_entities/agent-exact-pending.json';
+            final file = File(
+              path.join(tempDir.path, stripLeadingSlashes(relativePath)),
+            );
+            file.parent.createSync(recursive: true);
+            file.writeAsStringSync(jsonEncode(newerEntity.toJson()));
+
+            const message = SyncMessage.agentEntity(
+              status: SyncEntryStatus.update,
+              jsonPath: relativePath,
+              attachmentEventId: 'agent-payload-not-yet-indexed',
+            );
+            when(() => event.text).thenReturn(encodeMessage(message));
+
+            await expectLater(
+              processorWithIndex.process(event: event, journalDb: journalDb),
+              throwsA(
+                isA<FileSystemException>().having(
+                  (error) => error.message,
+                  'message',
+                  contains('attachment descriptor not yet available'),
+                ),
+              ),
+            );
+
+            verifyNever(() => mockAgentRepo.upsertEntity(any()));
+          },
+        );
 
         test('skips agent entity with corrupt descriptor JSON', () async {
           final bytes = Uint8List.fromList(utf8.encode('not valid json'));

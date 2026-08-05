@@ -533,7 +533,14 @@ class SyncEventProcessor {
         final resolved = await _outboxBundleUnpacker.prepare(
           event: event,
           msg: msg,
-          resolveSidecar: _resolveOutboxBundleManifest,
+          resolveSidecar:
+              ({
+                required jsonPath,
+                attachmentEventId,
+              }) => _resolveOutboxBundleManifest(
+                jsonPath,
+                attachmentEventId: attachmentEventId,
+              ),
           prepareChild: (childEvent, childMsg) =>
               _prepareForMessage(event: childEvent, syncMessage: childMsg),
         );
@@ -549,8 +556,12 @@ class SyncEventProcessor {
 
   @visibleForTesting
   Future<SyncOutboxBundle?> resolveOutboxBundleManifestForTesting(
-    String? jsonPath,
-  ) => _resolveOutboxBundleManifest(jsonPath);
+    String? jsonPath, {
+    String? attachmentEventId,
+  }) => _resolveOutboxBundleManifest(
+    jsonPath,
+    attachmentEventId: attachmentEventId,
+  );
 
   late final OutboxBundleUnpacker _outboxBundleUnpacker = OutboxBundleUnpacker(
     loggingService: _loggingService,

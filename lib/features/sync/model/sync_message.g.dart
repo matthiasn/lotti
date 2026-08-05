@@ -34,6 +34,7 @@ SyncJournalEntity _$SyncJournalEntityFromJson(Map<String, dynamic> json) =>
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
       status: $enumDecode(_$SyncEntryStatusEnumMap, json['status']),
+      attachmentEventId: json['attachmentEventId'] as String?,
       entryLinks: (json['entryLinks'] as List<dynamic>?)
           ?.map((e) => EntryLink.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -51,6 +52,7 @@ Map<String, dynamic> _$SyncJournalEntityToJson(SyncJournalEntity instance) =>
       'jsonPath': instance.jsonPath,
       'vectorClock': instance.vectorClock,
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
+      'attachmentEventId': instance.attachmentEventId,
       'entryLinks': instance.entryLinks,
       'originatingHostId': instance.originatingHostId,
       'coveredVectorClocks': instance.coveredVectorClocks,
@@ -234,6 +236,7 @@ SyncNotification _$SyncNotificationFromJson(Map<String, dynamic> json) =>
         json['vectorClock'] as Map<String, dynamic>,
       ),
       originatingHostId: json['originatingHostId'] as String,
+      attachmentEventId: json['attachmentEventId'] as String?,
       coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)
           ?.map((e) => VectorClock.fromJson(e as Map<String, dynamic>))
           .toList(),
@@ -246,6 +249,7 @@ Map<String, dynamic> _$SyncNotificationToJson(SyncNotification instance) =>
       'jsonPath': instance.jsonPath,
       'vectorClock': instance.vectorClock,
       'originatingHostId': instance.originatingHostId,
+      'attachmentEventId': instance.attachmentEventId,
       'coveredVectorClocks': instance.coveredVectorClocks,
       'runtimeType': instance.$type,
     };
@@ -476,6 +480,7 @@ SyncAgentEntity _$SyncAgentEntityFromJson(Map<String, dynamic> json) =>
               json['agentEntity'] as Map<String, dynamic>,
             ),
       jsonPath: json['jsonPath'] as String?,
+      attachmentEventId: json['attachmentEventId'] as String?,
       originatingHostId: json['originatingHostId'] as String?,
       coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)
           ?.map((e) => VectorClock.fromJson(e as Map<String, dynamic>))
@@ -488,6 +493,7 @@ Map<String, dynamic> _$SyncAgentEntityToJson(SyncAgentEntity instance) =>
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'agentEntity': instance.agentEntity,
       'jsonPath': instance.jsonPath,
+      'attachmentEventId': instance.attachmentEventId,
       'originatingHostId': instance.originatingHostId,
       'coveredVectorClocks': instance.coveredVectorClocks,
       'runtimeType': instance.$type,
@@ -500,6 +506,7 @@ SyncAgentLink _$SyncAgentLinkFromJson(Map<String, dynamic> json) =>
           ? null
           : AgentLink.fromJson(json['agentLink'] as Map<String, dynamic>),
       jsonPath: json['jsonPath'] as String?,
+      attachmentEventId: json['attachmentEventId'] as String?,
       originatingHostId: json['originatingHostId'] as String?,
       coveredVectorClocks: (json['coveredVectorClocks'] as List<dynamic>?)
           ?.map((e) => VectorClock.fromJson(e as Map<String, dynamic>))
@@ -512,6 +519,7 @@ Map<String, dynamic> _$SyncAgentLinkToJson(SyncAgentLink instance) =>
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
       'agentLink': instance.agentLink,
       'jsonPath': instance.jsonPath,
+      'attachmentEventId': instance.attachmentEventId,
       'originatingHostId': instance.originatingHostId,
       'coveredVectorClocks': instance.coveredVectorClocks,
       'runtimeType': instance.$type,
@@ -554,6 +562,7 @@ SyncAgentBundle _$SyncAgentBundleFromJson(Map<String, dynamic> json) =>
               .toList() ??
           const <SyncAgentLink>[],
       jsonPath: json['jsonPath'] as String?,
+      attachmentEventId: json['attachmentEventId'] as String?,
       originatingHostId: json['originatingHostId'] as String?,
       $type: json['runtimeType'] as String?,
     );
@@ -565,6 +574,7 @@ Map<String, dynamic> _$SyncAgentBundleToJson(SyncAgentBundle instance) =>
       'entities': instance.entities,
       'links': instance.links,
       'jsonPath': instance.jsonPath,
+      'attachmentEventId': instance.attachmentEventId,
       'originatingHostId': instance.originatingHostId,
       'runtimeType': instance.$type,
     };
@@ -575,6 +585,7 @@ SyncOutboxBundle _$SyncOutboxBundleFromJson(Map<String, dynamic> json) =>
           .map((e) => SyncMessage.fromJson(e as Map<String, dynamic>))
           .toList(),
       jsonPath: json['jsonPath'] as String?,
+      attachmentEventId: json['attachmentEventId'] as String?,
       originatingHostId: json['originatingHostId'] as String?,
       $type: json['runtimeType'] as String?,
     );
@@ -583,6 +594,7 @@ Map<String, dynamic> _$SyncOutboxBundleToJson(SyncOutboxBundle instance) =>
     <String, dynamic>{
       'children': instance.children,
       'jsonPath': instance.jsonPath,
+      'attachmentEventId': instance.attachmentEventId,
       'originatingHostId': instance.originatingHostId,
       'runtimeType': instance.$type,
     };

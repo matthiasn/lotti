@@ -68,6 +68,11 @@ sealed class SyncMessage with _$SyncMessage {
     required String jsonPath,
     required VectorClock? vectorClock,
     required SyncEntryStatus status,
+
+    /// Matrix event id of the exact JSON attachment generation referenced by
+    /// this envelope. Null only for legacy peers that identify payloads by
+    /// mutable `jsonPath`.
+    String? attachmentEventId,
     List<EntryLink>? entryLinks,
 
     /// The host UUID that created/modified this entry version.
@@ -195,6 +200,7 @@ sealed class SyncMessage with _$SyncMessage {
     required String jsonPath,
     required VectorClock vectorClock,
     required String originatingHostId,
+    String? attachmentEventId,
     List<VectorClock>? coveredVectorClocks,
   }) = SyncNotification;
 
@@ -341,6 +347,10 @@ sealed class SyncMessage with _$SyncMessage {
     AgentDomainEntity? agentEntity,
     String? jsonPath,
 
+    /// Matrix event id of the exact JSON attachment generation referenced by
+    /// this envelope. Legacy envelopes omit it and retain path-only fallback.
+    String? attachmentEventId,
+
     /// The host UUID that created/modified this agent entity version.
     /// Used for sequence tracking to detect gaps in sync.
     String? originatingHostId,
@@ -354,6 +364,7 @@ sealed class SyncMessage with _$SyncMessage {
     required SyncEntryStatus status,
     AgentLink? agentLink,
     String? jsonPath,
+    String? attachmentEventId,
 
     /// The host UUID that created/modified this agent link version.
     /// Used for sequence tracking to detect gaps in sync.
@@ -392,6 +403,7 @@ sealed class SyncMessage with _$SyncMessage {
     @Default(<SyncAgentEntity>[]) List<SyncAgentEntity> entities,
     @Default(<SyncAgentLink>[]) List<SyncAgentLink> links,
     String? jsonPath,
+    String? attachmentEventId,
     String? originatingHostId,
   }) = SyncAgentBundle;
 
@@ -405,6 +417,7 @@ sealed class SyncMessage with _$SyncMessage {
   const factory SyncMessage.outboxBundle({
     required List<SyncMessage> children,
     String? jsonPath,
+    String? attachmentEventId,
     String? originatingHostId,
   }) = SyncOutboxBundle;
 

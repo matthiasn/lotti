@@ -23,7 +23,10 @@ class PreparedOutboxSyncBundle {
 /// each `SyncJournalEntity` child's JSON to its on-disk cache before
 /// dispatch. The unpacker itself is filesystem-agnostic.
 typedef OutboxBundleSidecarResolver =
-    Future<SyncOutboxBundle?> Function(String? jsonPath);
+    Future<SyncOutboxBundle?> Function({
+      required String? jsonPath,
+      String? attachmentEventId,
+    });
 
 /// Runs the parent processor's per-type prepare on a single child of an
 /// outbox bundle. Returns the resolved [PreparedSyncEvent] for that child.
@@ -74,7 +77,10 @@ class OutboxBundleUnpacker {
   }) async {
     var bundle = msg;
     if (bundle.children.isEmpty) {
-      final resolved = await resolveSidecar(msg.jsonPath);
+      final resolved = await resolveSidecar(
+        jsonPath: msg.jsonPath,
+        attachmentEventId: msg.attachmentEventId,
+      );
       if (resolved == null) return null;
       bundle = resolved;
     }

@@ -842,10 +842,10 @@ return outboxBundle(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)?  journalEntity,TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult Function( AiConfig aiConfig,  SyncEntryStatus status)?  aiConfig,TResult Function( SyncNodeProfile profile)?  syncNodeProfile,TResult Function( String id,  bool? hardDelete)?  aiConfigDelete,TResult Function( SavedTaskFilter filter,  SyncEntryStatus status)?  savedTaskFilter,TResult Function( String id)?  savedTaskFilterDelete,TResult Function( String name,  String description,  bool status,  String? originatingHostId)?  configFlag,TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult Function( String userName,  int updatedAt,  SyncEntryStatus status)?  dailyOsUserName,TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)?  onboardingSnapshotBegin,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)?  onboardingSnapshotAccepted,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)?  onboardingTerminalCounters,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)?  onboardingSnapshotEnd,TResult Function( List<BackfillRequestEntry> entries,  String requesterId)?  backfillRequest,TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult Function( List<String> entryIds,  String requesterId)?  mediaRequest,TResult Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  consumptionEvent,TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? originatingHostId)?  agentBundle,TResult Function( List<SyncMessage> children,  String? jsonPath,  String? originatingHostId)?  outboxBundle,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  String? attachmentEventId,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)?  journalEntity,TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult Function( AiConfig aiConfig,  SyncEntryStatus status)?  aiConfig,TResult Function( SyncNodeProfile profile)?  syncNodeProfile,TResult Function( String id,  bool? hardDelete)?  aiConfigDelete,TResult Function( SavedTaskFilter filter,  SyncEntryStatus status)?  savedTaskFilter,TResult Function( String id)?  savedTaskFilterDelete,TResult Function( String name,  String description,  bool status,  String? originatingHostId)?  configFlag,TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult Function( String userName,  int updatedAt,  SyncEntryStatus status)?  dailyOsUserName,TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  String? attachmentEventId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)?  onboardingSnapshotBegin,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)?  onboardingSnapshotAccepted,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)?  onboardingTerminalCounters,TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)?  onboardingSnapshotEnd,TResult Function( List<BackfillRequestEntry> entries,  String requesterId)?  backfillRequest,TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult Function( List<String> entryIds,  String requesterId)?  mediaRequest,TResult Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  consumptionEvent,TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  agentBundle,TResult Function( List<SyncMessage> children,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  outboxBundle,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case SyncJournalEntity() when journalEntity != null:
-return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks,_that.includeAttachments);case SyncEntityDefinition() when entityDefinition != null:
+return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.attachmentEventId,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks,_that.includeAttachments);case SyncEntityDefinition() when entityDefinition != null:
 return entityDefinition(_that.entityDefinition,_that.status);case SyncEntryLink() when entryLink != null:
 return entryLink(_that.entryLink,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAiConfig() when aiConfig != null:
 return aiConfig(_that.aiConfig,_that.status);case SyncSyncNodeProfile() when syncNodeProfile != null:
@@ -856,7 +856,7 @@ return savedTaskFilterDelete(_that.id);case SyncConfigFlag() when configFlag != 
 return configFlag(_that.name,_that.description,_that.status,_that.originatingHostId);case SyncThemingSelection() when themingSelection != null:
 return themingSelection(_that.lightThemeName,_that.darkThemeName,_that.themeMode,_that.updatedAt,_that.status);case SyncDailyOsUserName() when dailyOsUserName != null:
 return dailyOsUserName(_that.userName,_that.updatedAt,_that.status);case SyncNotification() when notification != null:
-return notification(_that.id,_that.jsonPath,_that.vectorClock,_that.originatingHostId,_that.coveredVectorClocks);case SyncNotificationStateUpdate() when notificationStateUpdate != null:
+return notification(_that.id,_that.jsonPath,_that.vectorClock,_that.originatingHostId,_that.attachmentEventId,_that.coveredVectorClocks);case SyncNotificationStateUpdate() when notificationStateUpdate != null:
 return notificationStateUpdate(_that.id,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt);case SyncOnboardingSnapshotBegin() when onboardingSnapshotBegin != null:
 return onboardingSnapshotBegin(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.senderUserId,_that.senderDeviceId,_that.recipientUserId,_that.recipientDeviceId,_that.coverageUpperBounds,_that.leaseSeconds);case SyncOnboardingSnapshotAccepted() when onboardingSnapshotAccepted != null:
 return onboardingSnapshotAccepted(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.senderUserId,_that.senderDeviceId,_that.recipientHostId,_that.recipientDeviceId);case SyncOnboardingTerminalCounters() when onboardingTerminalCounters != null:
@@ -865,11 +865,11 @@ return onboardingSnapshotEnd(_that.protocolVersion,_that.roundId,_that.senderHos
 return backfillRequest(_that.entries,_that.requesterId);case SyncBackfillResponse() when backfillResponse != null:
 return backfillResponse(_that.hostId,_that.counter,_that.deleted,_that.unresolvable,_that.entryId,_that.payloadType,_that.payloadId);case SyncMediaRequest() when mediaRequest != null:
 return mediaRequest(_that.entryIds,_that.requesterId);case SyncAgentEntity() when agentEntity != null:
-return agentEntity(_that.status,_that.agentEntity,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentLink() when agentLink != null:
-return agentLink(_that.status,_that.agentLink,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);case SyncConsumptionEvent() when consumptionEvent != null:
+return agentEntity(_that.status,_that.agentEntity,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentLink() when agentLink != null:
+return agentLink(_that.status,_that.agentLink,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId,_that.coveredVectorClocks);case SyncConsumptionEvent() when consumptionEvent != null:
 return consumptionEvent(_that.event,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentBundle() when agentBundle != null:
-return agentBundle(_that.agentId,_that.wakeRunKey,_that.entities,_that.links,_that.jsonPath,_that.originatingHostId);case SyncOutboxBundle() when outboxBundle != null:
-return outboxBundle(_that.children,_that.jsonPath,_that.originatingHostId);case _:
+return agentBundle(_that.agentId,_that.wakeRunKey,_that.entities,_that.links,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId);case SyncOutboxBundle() when outboxBundle != null:
+return outboxBundle(_that.children,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId);case _:
   return orElse();
 
 }
@@ -887,10 +887,10 @@ return outboxBundle(_that.children,_that.jsonPath,_that.originatingHostId);case 
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)  journalEntity,required TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)  entityDefinition,required TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  entryLink,required TResult Function( AiConfig aiConfig,  SyncEntryStatus status)  aiConfig,required TResult Function( SyncNodeProfile profile)  syncNodeProfile,required TResult Function( String id,  bool? hardDelete)  aiConfigDelete,required TResult Function( SavedTaskFilter filter,  SyncEntryStatus status)  savedTaskFilter,required TResult Function( String id)  savedTaskFilterDelete,required TResult Function( String name,  String description,  bool status,  String? originatingHostId)  configFlag,required TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)  themingSelection,required TResult Function( String userName,  int updatedAt,  SyncEntryStatus status)  dailyOsUserName,required TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  List<VectorClock>? coveredVectorClocks)  notification,required TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)  notificationStateUpdate,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)  onboardingSnapshotBegin,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)  onboardingSnapshotAccepted,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)  onboardingTerminalCounters,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)  onboardingSnapshotEnd,required TResult Function( List<BackfillRequestEntry> entries,  String requesterId)  backfillRequest,required TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)  backfillResponse,required TResult Function( List<String> entryIds,  String requesterId)  mediaRequest,required TResult Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentEntity,required TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentLink,required TResult Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  consumptionEvent,required TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? originatingHostId)  agentBundle,required TResult Function( List<SyncMessage> children,  String? jsonPath,  String? originatingHostId)  outboxBundle,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  String? attachmentEventId,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)  journalEntity,required TResult Function( EntityDefinition entityDefinition,  SyncEntryStatus status)  entityDefinition,required TResult Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  entryLink,required TResult Function( AiConfig aiConfig,  SyncEntryStatus status)  aiConfig,required TResult Function( SyncNodeProfile profile)  syncNodeProfile,required TResult Function( String id,  bool? hardDelete)  aiConfigDelete,required TResult Function( SavedTaskFilter filter,  SyncEntryStatus status)  savedTaskFilter,required TResult Function( String id)  savedTaskFilterDelete,required TResult Function( String name,  String description,  bool status,  String? originatingHostId)  configFlag,required TResult Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)  themingSelection,required TResult Function( String userName,  int updatedAt,  SyncEntryStatus status)  dailyOsUserName,required TResult Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  String? attachmentEventId,  List<VectorClock>? coveredVectorClocks)  notification,required TResult Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)  notificationStateUpdate,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)  onboardingSnapshotBegin,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)  onboardingSnapshotAccepted,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)  onboardingTerminalCounters,required TResult Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)  onboardingSnapshotEnd,required TResult Function( List<BackfillRequestEntry> entries,  String requesterId)  backfillRequest,required TResult Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)  backfillResponse,required TResult Function( List<String> entryIds,  String requesterId)  mediaRequest,required TResult Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentEntity,required TResult Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  agentLink,required TResult Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)  consumptionEvent,required TResult Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)  agentBundle,required TResult Function( List<SyncMessage> children,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)  outboxBundle,}) {final _that = this;
 switch (_that) {
 case SyncJournalEntity():
-return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks,_that.includeAttachments);case SyncEntityDefinition():
+return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.attachmentEventId,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks,_that.includeAttachments);case SyncEntityDefinition():
 return entityDefinition(_that.entityDefinition,_that.status);case SyncEntryLink():
 return entryLink(_that.entryLink,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAiConfig():
 return aiConfig(_that.aiConfig,_that.status);case SyncSyncNodeProfile():
@@ -901,7 +901,7 @@ return savedTaskFilterDelete(_that.id);case SyncConfigFlag():
 return configFlag(_that.name,_that.description,_that.status,_that.originatingHostId);case SyncThemingSelection():
 return themingSelection(_that.lightThemeName,_that.darkThemeName,_that.themeMode,_that.updatedAt,_that.status);case SyncDailyOsUserName():
 return dailyOsUserName(_that.userName,_that.updatedAt,_that.status);case SyncNotification():
-return notification(_that.id,_that.jsonPath,_that.vectorClock,_that.originatingHostId,_that.coveredVectorClocks);case SyncNotificationStateUpdate():
+return notification(_that.id,_that.jsonPath,_that.vectorClock,_that.originatingHostId,_that.attachmentEventId,_that.coveredVectorClocks);case SyncNotificationStateUpdate():
 return notificationStateUpdate(_that.id,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt);case SyncOnboardingSnapshotBegin():
 return onboardingSnapshotBegin(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.senderUserId,_that.senderDeviceId,_that.recipientUserId,_that.recipientDeviceId,_that.coverageUpperBounds,_that.leaseSeconds);case SyncOnboardingSnapshotAccepted():
 return onboardingSnapshotAccepted(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.senderUserId,_that.senderDeviceId,_that.recipientHostId,_that.recipientDeviceId);case SyncOnboardingTerminalCounters():
@@ -910,11 +910,11 @@ return onboardingSnapshotEnd(_that.protocolVersion,_that.roundId,_that.senderHos
 return backfillRequest(_that.entries,_that.requesterId);case SyncBackfillResponse():
 return backfillResponse(_that.hostId,_that.counter,_that.deleted,_that.unresolvable,_that.entryId,_that.payloadType,_that.payloadId);case SyncMediaRequest():
 return mediaRequest(_that.entryIds,_that.requesterId);case SyncAgentEntity():
-return agentEntity(_that.status,_that.agentEntity,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentLink():
-return agentLink(_that.status,_that.agentLink,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);case SyncConsumptionEvent():
+return agentEntity(_that.status,_that.agentEntity,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentLink():
+return agentLink(_that.status,_that.agentLink,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId,_that.coveredVectorClocks);case SyncConsumptionEvent():
 return consumptionEvent(_that.event,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentBundle():
-return agentBundle(_that.agentId,_that.wakeRunKey,_that.entities,_that.links,_that.jsonPath,_that.originatingHostId);case SyncOutboxBundle():
-return outboxBundle(_that.children,_that.jsonPath,_that.originatingHostId);}
+return agentBundle(_that.agentId,_that.wakeRunKey,_that.entities,_that.links,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId);case SyncOutboxBundle():
+return outboxBundle(_that.children,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId);}
 }
 /// A variant of `when` that fallback to returning `null`
 ///
@@ -928,10 +928,10 @@ return outboxBundle(_that.children,_that.jsonPath,_that.originatingHostId);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)?  journalEntity,TResult? Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult? Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult? Function( AiConfig aiConfig,  SyncEntryStatus status)?  aiConfig,TResult? Function( SyncNodeProfile profile)?  syncNodeProfile,TResult? Function( String id,  bool? hardDelete)?  aiConfigDelete,TResult? Function( SavedTaskFilter filter,  SyncEntryStatus status)?  savedTaskFilter,TResult? Function( String id)?  savedTaskFilterDelete,TResult? Function( String name,  String description,  bool status,  String? originatingHostId)?  configFlag,TResult? Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult? Function( String userName,  int updatedAt,  SyncEntryStatus status)?  dailyOsUserName,TResult? Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult? Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)?  onboardingSnapshotBegin,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)?  onboardingSnapshotAccepted,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)?  onboardingTerminalCounters,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)?  onboardingSnapshotEnd,TResult? Function( List<BackfillRequestEntry> entries,  String requesterId)?  backfillRequest,TResult? Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult? Function( List<String> entryIds,  String requesterId)?  mediaRequest,TResult? Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult? Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult? Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  consumptionEvent,TResult? Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? originatingHostId)?  agentBundle,TResult? Function( List<SyncMessage> children,  String? jsonPath,  String? originatingHostId)?  outboxBundle,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String id,  String jsonPath,  VectorClock? vectorClock,  SyncEntryStatus status,  String? attachmentEventId,  List<EntryLink>? entryLinks,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks,  bool? includeAttachments)?  journalEntity,TResult? Function( EntityDefinition entityDefinition,  SyncEntryStatus status)?  entityDefinition,TResult? Function( EntryLink entryLink,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  entryLink,TResult? Function( AiConfig aiConfig,  SyncEntryStatus status)?  aiConfig,TResult? Function( SyncNodeProfile profile)?  syncNodeProfile,TResult? Function( String id,  bool? hardDelete)?  aiConfigDelete,TResult? Function( SavedTaskFilter filter,  SyncEntryStatus status)?  savedTaskFilter,TResult? Function( String id)?  savedTaskFilterDelete,TResult? Function( String name,  String description,  bool status,  String? originatingHostId)?  configFlag,TResult? Function( String lightThemeName,  String darkThemeName,  String themeMode,  int updatedAt,  SyncEntryStatus status)?  themingSelection,TResult? Function( String userName,  int updatedAt,  SyncEntryStatus status)?  dailyOsUserName,TResult? Function( String id,  String jsonPath,  VectorClock vectorClock,  String originatingHostId,  String? attachmentEventId,  List<VectorClock>? coveredVectorClocks)?  notification,TResult? Function( String id,  VectorClock vectorClock,  String originatingHostId,  DateTime? seenAt,  DateTime? actedOnAt,  DateTime? deletedAt)?  notificationStateUpdate,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientUserId,  String recipientDeviceId,  Map<String, int> coverageUpperBounds,  int leaseSeconds)?  onboardingSnapshotBegin,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String senderUserId,  String senderDeviceId,  String recipientHostId,  String recipientDeviceId)?  onboardingSnapshotAccepted,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  List<SyncCounterRange> ranges)?  onboardingTerminalCounters,TResult? Function( int protocolVersion,  String roundId,  String senderHostId,  String recipientUserId,  String recipientDeviceId,  OnboardingSyncEndReason reason)?  onboardingSnapshotEnd,TResult? Function( List<BackfillRequestEntry> entries,  String requesterId)?  backfillRequest,TResult? Function( String hostId,  int counter,  bool deleted,  bool? unresolvable,  String? entryId,  SyncSequencePayloadType? payloadType,  String? payloadId)?  backfillResponse,TResult? Function( List<String> entryIds,  String requesterId)?  mediaRequest,TResult? Function( SyncEntryStatus status,  AgentDomainEntity? agentEntity,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentEntity,TResult? Function( SyncEntryStatus status,  AgentLink? agentLink,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  agentLink,TResult? Function( AiConsumptionEvent event,  SyncEntryStatus status,  String? originatingHostId,  List<VectorClock>? coveredVectorClocks)?  consumptionEvent,TResult? Function( String agentId,  String wakeRunKey,  List<SyncAgentEntity> entities,  List<SyncAgentLink> links,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  agentBundle,TResult? Function( List<SyncMessage> children,  String? jsonPath,  String? attachmentEventId,  String? originatingHostId)?  outboxBundle,}) {final _that = this;
 switch (_that) {
 case SyncJournalEntity() when journalEntity != null:
-return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks,_that.includeAttachments);case SyncEntityDefinition() when entityDefinition != null:
+return journalEntity(_that.id,_that.jsonPath,_that.vectorClock,_that.status,_that.attachmentEventId,_that.entryLinks,_that.originatingHostId,_that.coveredVectorClocks,_that.includeAttachments);case SyncEntityDefinition() when entityDefinition != null:
 return entityDefinition(_that.entityDefinition,_that.status);case SyncEntryLink() when entryLink != null:
 return entryLink(_that.entryLink,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAiConfig() when aiConfig != null:
 return aiConfig(_that.aiConfig,_that.status);case SyncSyncNodeProfile() when syncNodeProfile != null:
@@ -942,7 +942,7 @@ return savedTaskFilterDelete(_that.id);case SyncConfigFlag() when configFlag != 
 return configFlag(_that.name,_that.description,_that.status,_that.originatingHostId);case SyncThemingSelection() when themingSelection != null:
 return themingSelection(_that.lightThemeName,_that.darkThemeName,_that.themeMode,_that.updatedAt,_that.status);case SyncDailyOsUserName() when dailyOsUserName != null:
 return dailyOsUserName(_that.userName,_that.updatedAt,_that.status);case SyncNotification() when notification != null:
-return notification(_that.id,_that.jsonPath,_that.vectorClock,_that.originatingHostId,_that.coveredVectorClocks);case SyncNotificationStateUpdate() when notificationStateUpdate != null:
+return notification(_that.id,_that.jsonPath,_that.vectorClock,_that.originatingHostId,_that.attachmentEventId,_that.coveredVectorClocks);case SyncNotificationStateUpdate() when notificationStateUpdate != null:
 return notificationStateUpdate(_that.id,_that.vectorClock,_that.originatingHostId,_that.seenAt,_that.actedOnAt,_that.deletedAt);case SyncOnboardingSnapshotBegin() when onboardingSnapshotBegin != null:
 return onboardingSnapshotBegin(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.senderUserId,_that.senderDeviceId,_that.recipientUserId,_that.recipientDeviceId,_that.coverageUpperBounds,_that.leaseSeconds);case SyncOnboardingSnapshotAccepted() when onboardingSnapshotAccepted != null:
 return onboardingSnapshotAccepted(_that.protocolVersion,_that.roundId,_that.senderHostId,_that.senderUserId,_that.senderDeviceId,_that.recipientHostId,_that.recipientDeviceId);case SyncOnboardingTerminalCounters() when onboardingTerminalCounters != null:
@@ -951,11 +951,11 @@ return onboardingSnapshotEnd(_that.protocolVersion,_that.roundId,_that.senderHos
 return backfillRequest(_that.entries,_that.requesterId);case SyncBackfillResponse() when backfillResponse != null:
 return backfillResponse(_that.hostId,_that.counter,_that.deleted,_that.unresolvable,_that.entryId,_that.payloadType,_that.payloadId);case SyncMediaRequest() when mediaRequest != null:
 return mediaRequest(_that.entryIds,_that.requesterId);case SyncAgentEntity() when agentEntity != null:
-return agentEntity(_that.status,_that.agentEntity,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentLink() when agentLink != null:
-return agentLink(_that.status,_that.agentLink,_that.jsonPath,_that.originatingHostId,_that.coveredVectorClocks);case SyncConsumptionEvent() when consumptionEvent != null:
+return agentEntity(_that.status,_that.agentEntity,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentLink() when agentLink != null:
+return agentLink(_that.status,_that.agentLink,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId,_that.coveredVectorClocks);case SyncConsumptionEvent() when consumptionEvent != null:
 return consumptionEvent(_that.event,_that.status,_that.originatingHostId,_that.coveredVectorClocks);case SyncAgentBundle() when agentBundle != null:
-return agentBundle(_that.agentId,_that.wakeRunKey,_that.entities,_that.links,_that.jsonPath,_that.originatingHostId);case SyncOutboxBundle() when outboxBundle != null:
-return outboxBundle(_that.children,_that.jsonPath,_that.originatingHostId);case _:
+return agentBundle(_that.agentId,_that.wakeRunKey,_that.entities,_that.links,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId);case SyncOutboxBundle() when outboxBundle != null:
+return outboxBundle(_that.children,_that.jsonPath,_that.attachmentEventId,_that.originatingHostId);case _:
   return null;
 
 }
@@ -967,13 +967,17 @@ return outboxBundle(_that.children,_that.jsonPath,_that.originatingHostId);case 
 @JsonSerializable()
 
 class SyncJournalEntity implements SyncMessage {
-  const SyncJournalEntity({required this.id, required this.jsonPath, required this.vectorClock, required this.status, final  List<EntryLink>? entryLinks, this.originatingHostId, final  List<VectorClock>? coveredVectorClocks, this.includeAttachments, final  String? $type}): _entryLinks = entryLinks,_coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'journalEntity';
+  const SyncJournalEntity({required this.id, required this.jsonPath, required this.vectorClock, required this.status, this.attachmentEventId, final  List<EntryLink>? entryLinks, this.originatingHostId, final  List<VectorClock>? coveredVectorClocks, this.includeAttachments, final  String? $type}): _entryLinks = entryLinks,_coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'journalEntity';
   factory SyncJournalEntity.fromJson(Map<String, dynamic> json) => _$SyncJournalEntityFromJson(json);
 
  final  String id;
  final  String jsonPath;
  final  VectorClock? vectorClock;
  final  SyncEntryStatus status;
+/// Matrix event id of the exact JSON attachment generation referenced by
+/// this envelope. Null only for legacy peers that identify payloads by
+/// mutable `jsonPath`.
+ final  String? attachmentEventId;
  final  List<EntryLink>? _entryLinks;
  List<EntryLink>? get entryLinks {
   final value = _entryLinks;
@@ -1035,16 +1039,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncJournalEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.status, status) || other.status == status)&&const DeepCollectionEquality().equals(other._entryLinks, _entryLinks)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks)&&(identical(other.includeAttachments, includeAttachments) || other.includeAttachments == includeAttachments));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncJournalEntity&&(identical(other.id, id) || other.id == id)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.status, status) || other.status == status)&&(identical(other.attachmentEventId, attachmentEventId) || other.attachmentEventId == attachmentEventId)&&const DeepCollectionEquality().equals(other._entryLinks, _entryLinks)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks)&&(identical(other.includeAttachments, includeAttachments) || other.includeAttachments == includeAttachments));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,jsonPath,vectorClock,status,const DeepCollectionEquality().hash(_entryLinks),originatingHostId,const DeepCollectionEquality().hash(_coveredVectorClocks),includeAttachments);
+int get hashCode => Object.hash(runtimeType,id,jsonPath,vectorClock,status,attachmentEventId,const DeepCollectionEquality().hash(_entryLinks),originatingHostId,const DeepCollectionEquality().hash(_coveredVectorClocks),includeAttachments);
 
 @override
 String toString() {
-  return 'SyncMessage.journalEntity(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, status: $status, entryLinks: $entryLinks, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks, includeAttachments: $includeAttachments)';
+  return 'SyncMessage.journalEntity(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, status: $status, attachmentEventId: $attachmentEventId, entryLinks: $entryLinks, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks, includeAttachments: $includeAttachments)';
 }
 
 
@@ -1055,7 +1059,7 @@ abstract mixin class $SyncJournalEntityCopyWith<$Res> implements $SyncMessageCop
   factory $SyncJournalEntityCopyWith(SyncJournalEntity value, $Res Function(SyncJournalEntity) _then) = _$SyncJournalEntityCopyWithImpl;
 @useResult
 $Res call({
- String id, String jsonPath, VectorClock? vectorClock, SyncEntryStatus status, List<EntryLink>? entryLinks, String? originatingHostId, List<VectorClock>? coveredVectorClocks, bool? includeAttachments
+ String id, String jsonPath, VectorClock? vectorClock, SyncEntryStatus status, String? attachmentEventId, List<EntryLink>? entryLinks, String? originatingHostId, List<VectorClock>? coveredVectorClocks, bool? includeAttachments
 });
 
 
@@ -1072,13 +1076,14 @@ class _$SyncJournalEntityCopyWithImpl<$Res>
 
 /// Create a copy of SyncMessage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? jsonPath = null,Object? vectorClock = freezed,Object? status = null,Object? entryLinks = freezed,Object? originatingHostId = freezed,Object? coveredVectorClocks = freezed,Object? includeAttachments = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? jsonPath = null,Object? vectorClock = freezed,Object? status = null,Object? attachmentEventId = freezed,Object? entryLinks = freezed,Object? originatingHostId = freezed,Object? coveredVectorClocks = freezed,Object? includeAttachments = freezed,}) {
   return _then(SyncJournalEntity(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,jsonPath: null == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
 as String,vectorClock: freezed == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
 as VectorClock?,status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
-as SyncEntryStatus,entryLinks: freezed == entryLinks ? _self._entryLinks : entryLinks // ignore: cast_nullable_to_non_nullable
+as SyncEntryStatus,attachmentEventId: freezed == attachmentEventId ? _self.attachmentEventId : attachmentEventId // ignore: cast_nullable_to_non_nullable
+as String?,entryLinks: freezed == entryLinks ? _self._entryLinks : entryLinks // ignore: cast_nullable_to_non_nullable
 as List<EntryLink>?,originatingHostId: freezed == originatingHostId ? _self.originatingHostId : originatingHostId // ignore: cast_nullable_to_non_nullable
 as String?,coveredVectorClocks: freezed == coveredVectorClocks ? _self._coveredVectorClocks : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
 as List<VectorClock>?,includeAttachments: freezed == includeAttachments ? _self.includeAttachments : includeAttachments // ignore: cast_nullable_to_non_nullable
@@ -1918,13 +1923,14 @@ as SyncEntryStatus,
 @JsonSerializable()
 
 class SyncNotification implements SyncMessage {
-  const SyncNotification({required this.id, required this.jsonPath, required this.vectorClock, required this.originatingHostId, final  List<VectorClock>? coveredVectorClocks, final  String? $type}): _coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'notification';
+  const SyncNotification({required this.id, required this.jsonPath, required this.vectorClock, required this.originatingHostId, this.attachmentEventId, final  List<VectorClock>? coveredVectorClocks, final  String? $type}): _coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'notification';
   factory SyncNotification.fromJson(Map<String, dynamic> json) => _$SyncNotificationFromJson(json);
 
  final  String id;
  final  String jsonPath;
  final  VectorClock vectorClock;
  final  String originatingHostId;
+ final  String? attachmentEventId;
  final  List<VectorClock>? _coveredVectorClocks;
  List<VectorClock>? get coveredVectorClocks {
   final value = _coveredVectorClocks;
@@ -1952,16 +1958,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncNotification&&(identical(other.id, id) || other.id == id)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncNotification&&(identical(other.id, id) || other.id == id)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.vectorClock, vectorClock) || other.vectorClock == vectorClock)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&(identical(other.attachmentEventId, attachmentEventId) || other.attachmentEventId == attachmentEventId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,id,jsonPath,vectorClock,originatingHostId,const DeepCollectionEquality().hash(_coveredVectorClocks));
+int get hashCode => Object.hash(runtimeType,id,jsonPath,vectorClock,originatingHostId,attachmentEventId,const DeepCollectionEquality().hash(_coveredVectorClocks));
 
 @override
 String toString() {
-  return 'SyncMessage.notification(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
+  return 'SyncMessage.notification(id: $id, jsonPath: $jsonPath, vectorClock: $vectorClock, originatingHostId: $originatingHostId, attachmentEventId: $attachmentEventId, coveredVectorClocks: $coveredVectorClocks)';
 }
 
 
@@ -1972,7 +1978,7 @@ abstract mixin class $SyncNotificationCopyWith<$Res> implements $SyncMessageCopy
   factory $SyncNotificationCopyWith(SyncNotification value, $Res Function(SyncNotification) _then) = _$SyncNotificationCopyWithImpl;
 @useResult
 $Res call({
- String id, String jsonPath, VectorClock vectorClock, String originatingHostId, List<VectorClock>? coveredVectorClocks
+ String id, String jsonPath, VectorClock vectorClock, String originatingHostId, String? attachmentEventId, List<VectorClock>? coveredVectorClocks
 });
 
 
@@ -1989,13 +1995,14 @@ class _$SyncNotificationCopyWithImpl<$Res>
 
 /// Create a copy of SyncMessage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? jsonPath = null,Object? vectorClock = null,Object? originatingHostId = null,Object? coveredVectorClocks = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? id = null,Object? jsonPath = null,Object? vectorClock = null,Object? originatingHostId = null,Object? attachmentEventId = freezed,Object? coveredVectorClocks = freezed,}) {
   return _then(SyncNotification(
 id: null == id ? _self.id : id // ignore: cast_nullable_to_non_nullable
 as String,jsonPath: null == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
 as String,vectorClock: null == vectorClock ? _self.vectorClock : vectorClock // ignore: cast_nullable_to_non_nullable
 as VectorClock,originatingHostId: null == originatingHostId ? _self.originatingHostId : originatingHostId // ignore: cast_nullable_to_non_nullable
-as String,coveredVectorClocks: freezed == coveredVectorClocks ? _self._coveredVectorClocks : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
+as String,attachmentEventId: freezed == attachmentEventId ? _self.attachmentEventId : attachmentEventId // ignore: cast_nullable_to_non_nullable
+as String?,coveredVectorClocks: freezed == coveredVectorClocks ? _self._coveredVectorClocks : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
 as List<VectorClock>?,
   ));
 }
@@ -2709,12 +2716,15 @@ as String,
 @JsonSerializable()
 
 class SyncAgentEntity implements SyncMessage {
-  const SyncAgentEntity({required this.status, this.agentEntity, this.jsonPath, this.originatingHostId, final  List<VectorClock>? coveredVectorClocks, final  String? $type}): _coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'agentEntity';
+  const SyncAgentEntity({required this.status, this.agentEntity, this.jsonPath, this.attachmentEventId, this.originatingHostId, final  List<VectorClock>? coveredVectorClocks, final  String? $type}): _coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'agentEntity';
   factory SyncAgentEntity.fromJson(Map<String, dynamic> json) => _$SyncAgentEntityFromJson(json);
 
  final  SyncEntryStatus status;
  final  AgentDomainEntity? agentEntity;
  final  String? jsonPath;
+/// Matrix event id of the exact JSON attachment generation referenced by
+/// this envelope. Legacy envelopes omit it and retain path-only fallback.
+ final  String? attachmentEventId;
 /// The host UUID that created/modified this agent entity version.
 /// Used for sequence tracking to detect gaps in sync.
  final  String? originatingHostId;
@@ -2749,16 +2759,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncAgentEntity&&(identical(other.status, status) || other.status == status)&&(identical(other.agentEntity, agentEntity) || other.agentEntity == agentEntity)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncAgentEntity&&(identical(other.status, status) || other.status == status)&&(identical(other.agentEntity, agentEntity) || other.agentEntity == agentEntity)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.attachmentEventId, attachmentEventId) || other.attachmentEventId == attachmentEventId)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,status,agentEntity,jsonPath,originatingHostId,const DeepCollectionEquality().hash(_coveredVectorClocks));
+int get hashCode => Object.hash(runtimeType,status,agentEntity,jsonPath,attachmentEventId,originatingHostId,const DeepCollectionEquality().hash(_coveredVectorClocks));
 
 @override
 String toString() {
-  return 'SyncMessage.agentEntity(status: $status, agentEntity: $agentEntity, jsonPath: $jsonPath, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
+  return 'SyncMessage.agentEntity(status: $status, agentEntity: $agentEntity, jsonPath: $jsonPath, attachmentEventId: $attachmentEventId, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
 }
 
 
@@ -2769,7 +2779,7 @@ abstract mixin class $SyncAgentEntityCopyWith<$Res> implements $SyncMessageCopyW
   factory $SyncAgentEntityCopyWith(SyncAgentEntity value, $Res Function(SyncAgentEntity) _then) = _$SyncAgentEntityCopyWithImpl;
 @useResult
 $Res call({
- SyncEntryStatus status, AgentDomainEntity? agentEntity, String? jsonPath, String? originatingHostId, List<VectorClock>? coveredVectorClocks
+ SyncEntryStatus status, AgentDomainEntity? agentEntity, String? jsonPath, String? attachmentEventId, String? originatingHostId, List<VectorClock>? coveredVectorClocks
 });
 
 
@@ -2786,11 +2796,12 @@ class _$SyncAgentEntityCopyWithImpl<$Res>
 
 /// Create a copy of SyncMessage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? status = null,Object? agentEntity = freezed,Object? jsonPath = freezed,Object? originatingHostId = freezed,Object? coveredVectorClocks = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? status = null,Object? agentEntity = freezed,Object? jsonPath = freezed,Object? attachmentEventId = freezed,Object? originatingHostId = freezed,Object? coveredVectorClocks = freezed,}) {
   return _then(SyncAgentEntity(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as SyncEntryStatus,agentEntity: freezed == agentEntity ? _self.agentEntity : agentEntity // ignore: cast_nullable_to_non_nullable
 as AgentDomainEntity?,jsonPath: freezed == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
+as String?,attachmentEventId: freezed == attachmentEventId ? _self.attachmentEventId : attachmentEventId // ignore: cast_nullable_to_non_nullable
 as String?,originatingHostId: freezed == originatingHostId ? _self.originatingHostId : originatingHostId // ignore: cast_nullable_to_non_nullable
 as String?,coveredVectorClocks: freezed == coveredVectorClocks ? _self._coveredVectorClocks : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
 as List<VectorClock>?,
@@ -2816,12 +2827,13 @@ $AgentDomainEntityCopyWith<$Res>? get agentEntity {
 @JsonSerializable()
 
 class SyncAgentLink implements SyncMessage {
-  const SyncAgentLink({required this.status, this.agentLink, this.jsonPath, this.originatingHostId, final  List<VectorClock>? coveredVectorClocks, final  String? $type}): _coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'agentLink';
+  const SyncAgentLink({required this.status, this.agentLink, this.jsonPath, this.attachmentEventId, this.originatingHostId, final  List<VectorClock>? coveredVectorClocks, final  String? $type}): _coveredVectorClocks = coveredVectorClocks,$type = $type ?? 'agentLink';
   factory SyncAgentLink.fromJson(Map<String, dynamic> json) => _$SyncAgentLinkFromJson(json);
 
  final  SyncEntryStatus status;
  final  AgentLink? agentLink;
  final  String? jsonPath;
+ final  String? attachmentEventId;
 /// The host UUID that created/modified this agent link version.
 /// Used for sequence tracking to detect gaps in sync.
  final  String? originatingHostId;
@@ -2856,16 +2868,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncAgentLink&&(identical(other.status, status) || other.status == status)&&(identical(other.agentLink, agentLink) || other.agentLink == agentLink)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncAgentLink&&(identical(other.status, status) || other.status == status)&&(identical(other.agentLink, agentLink) || other.agentLink == agentLink)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.attachmentEventId, attachmentEventId) || other.attachmentEventId == attachmentEventId)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId)&&const DeepCollectionEquality().equals(other._coveredVectorClocks, _coveredVectorClocks));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,status,agentLink,jsonPath,originatingHostId,const DeepCollectionEquality().hash(_coveredVectorClocks));
+int get hashCode => Object.hash(runtimeType,status,agentLink,jsonPath,attachmentEventId,originatingHostId,const DeepCollectionEquality().hash(_coveredVectorClocks));
 
 @override
 String toString() {
-  return 'SyncMessage.agentLink(status: $status, agentLink: $agentLink, jsonPath: $jsonPath, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
+  return 'SyncMessage.agentLink(status: $status, agentLink: $agentLink, jsonPath: $jsonPath, attachmentEventId: $attachmentEventId, originatingHostId: $originatingHostId, coveredVectorClocks: $coveredVectorClocks)';
 }
 
 
@@ -2876,7 +2888,7 @@ abstract mixin class $SyncAgentLinkCopyWith<$Res> implements $SyncMessageCopyWit
   factory $SyncAgentLinkCopyWith(SyncAgentLink value, $Res Function(SyncAgentLink) _then) = _$SyncAgentLinkCopyWithImpl;
 @useResult
 $Res call({
- SyncEntryStatus status, AgentLink? agentLink, String? jsonPath, String? originatingHostId, List<VectorClock>? coveredVectorClocks
+ SyncEntryStatus status, AgentLink? agentLink, String? jsonPath, String? attachmentEventId, String? originatingHostId, List<VectorClock>? coveredVectorClocks
 });
 
 
@@ -2893,11 +2905,12 @@ class _$SyncAgentLinkCopyWithImpl<$Res>
 
 /// Create a copy of SyncMessage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? status = null,Object? agentLink = freezed,Object? jsonPath = freezed,Object? originatingHostId = freezed,Object? coveredVectorClocks = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? status = null,Object? agentLink = freezed,Object? jsonPath = freezed,Object? attachmentEventId = freezed,Object? originatingHostId = freezed,Object? coveredVectorClocks = freezed,}) {
   return _then(SyncAgentLink(
 status: null == status ? _self.status : status // ignore: cast_nullable_to_non_nullable
 as SyncEntryStatus,agentLink: freezed == agentLink ? _self.agentLink : agentLink // ignore: cast_nullable_to_non_nullable
 as AgentLink?,jsonPath: freezed == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
+as String?,attachmentEventId: freezed == attachmentEventId ? _self.attachmentEventId : attachmentEventId // ignore: cast_nullable_to_non_nullable
 as String?,originatingHostId: freezed == originatingHostId ? _self.originatingHostId : originatingHostId // ignore: cast_nullable_to_non_nullable
 as String?,coveredVectorClocks: freezed == coveredVectorClocks ? _self._coveredVectorClocks : coveredVectorClocks // ignore: cast_nullable_to_non_nullable
 as List<VectorClock>?,
@@ -3025,7 +3038,7 @@ $AiConsumptionEventCopyWith<$Res> get event {
 @JsonSerializable()
 
 class SyncAgentBundle implements SyncMessage {
-  const SyncAgentBundle({required this.agentId, required this.wakeRunKey, final  List<SyncAgentEntity> entities = const <SyncAgentEntity>[], final  List<SyncAgentLink> links = const <SyncAgentLink>[], this.jsonPath, this.originatingHostId, final  String? $type}): _entities = entities,_links = links,$type = $type ?? 'agentBundle';
+  const SyncAgentBundle({required this.agentId, required this.wakeRunKey, final  List<SyncAgentEntity> entities = const <SyncAgentEntity>[], final  List<SyncAgentLink> links = const <SyncAgentLink>[], this.jsonPath, this.attachmentEventId, this.originatingHostId, final  String? $type}): _entities = entities,_links = links,$type = $type ?? 'agentBundle';
   factory SyncAgentBundle.fromJson(Map<String, dynamic> json) => _$SyncAgentBundleFromJson(json);
 
  final  String agentId;
@@ -3045,6 +3058,7 @@ class SyncAgentBundle implements SyncMessage {
 }
 
  final  String? jsonPath;
+ final  String? attachmentEventId;
  final  String? originatingHostId;
 
 @JsonKey(name: 'runtimeType')
@@ -3064,16 +3078,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncAgentBundle&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.wakeRunKey, wakeRunKey) || other.wakeRunKey == wakeRunKey)&&const DeepCollectionEquality().equals(other._entities, _entities)&&const DeepCollectionEquality().equals(other._links, _links)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncAgentBundle&&(identical(other.agentId, agentId) || other.agentId == agentId)&&(identical(other.wakeRunKey, wakeRunKey) || other.wakeRunKey == wakeRunKey)&&const DeepCollectionEquality().equals(other._entities, _entities)&&const DeepCollectionEquality().equals(other._links, _links)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.attachmentEventId, attachmentEventId) || other.attachmentEventId == attachmentEventId)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,agentId,wakeRunKey,const DeepCollectionEquality().hash(_entities),const DeepCollectionEquality().hash(_links),jsonPath,originatingHostId);
+int get hashCode => Object.hash(runtimeType,agentId,wakeRunKey,const DeepCollectionEquality().hash(_entities),const DeepCollectionEquality().hash(_links),jsonPath,attachmentEventId,originatingHostId);
 
 @override
 String toString() {
-  return 'SyncMessage.agentBundle(agentId: $agentId, wakeRunKey: $wakeRunKey, entities: $entities, links: $links, jsonPath: $jsonPath, originatingHostId: $originatingHostId)';
+  return 'SyncMessage.agentBundle(agentId: $agentId, wakeRunKey: $wakeRunKey, entities: $entities, links: $links, jsonPath: $jsonPath, attachmentEventId: $attachmentEventId, originatingHostId: $originatingHostId)';
 }
 
 
@@ -3084,7 +3098,7 @@ abstract mixin class $SyncAgentBundleCopyWith<$Res> implements $SyncMessageCopyW
   factory $SyncAgentBundleCopyWith(SyncAgentBundle value, $Res Function(SyncAgentBundle) _then) = _$SyncAgentBundleCopyWithImpl;
 @useResult
 $Res call({
- String agentId, String wakeRunKey, List<SyncAgentEntity> entities, List<SyncAgentLink> links, String? jsonPath, String? originatingHostId
+ String agentId, String wakeRunKey, List<SyncAgentEntity> entities, List<SyncAgentLink> links, String? jsonPath, String? attachmentEventId, String? originatingHostId
 });
 
 
@@ -3101,13 +3115,14 @@ class _$SyncAgentBundleCopyWithImpl<$Res>
 
 /// Create a copy of SyncMessage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? agentId = null,Object? wakeRunKey = null,Object? entities = null,Object? links = null,Object? jsonPath = freezed,Object? originatingHostId = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? agentId = null,Object? wakeRunKey = null,Object? entities = null,Object? links = null,Object? jsonPath = freezed,Object? attachmentEventId = freezed,Object? originatingHostId = freezed,}) {
   return _then(SyncAgentBundle(
 agentId: null == agentId ? _self.agentId : agentId // ignore: cast_nullable_to_non_nullable
 as String,wakeRunKey: null == wakeRunKey ? _self.wakeRunKey : wakeRunKey // ignore: cast_nullable_to_non_nullable
 as String,entities: null == entities ? _self._entities : entities // ignore: cast_nullable_to_non_nullable
 as List<SyncAgentEntity>,links: null == links ? _self._links : links // ignore: cast_nullable_to_non_nullable
 as List<SyncAgentLink>,jsonPath: freezed == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
+as String?,attachmentEventId: freezed == attachmentEventId ? _self.attachmentEventId : attachmentEventId // ignore: cast_nullable_to_non_nullable
 as String?,originatingHostId: freezed == originatingHostId ? _self.originatingHostId : originatingHostId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
@@ -3120,7 +3135,7 @@ as String?,
 @JsonSerializable()
 
 class SyncOutboxBundle implements SyncMessage {
-  const SyncOutboxBundle({required final  List<SyncMessage> children, this.jsonPath, this.originatingHostId, final  String? $type}): _children = children,$type = $type ?? 'outboxBundle';
+  const SyncOutboxBundle({required final  List<SyncMessage> children, this.jsonPath, this.attachmentEventId, this.originatingHostId, final  String? $type}): _children = children,$type = $type ?? 'outboxBundle';
   factory SyncOutboxBundle.fromJson(Map<String, dynamic> json) => _$SyncOutboxBundleFromJson(json);
 
  final  List<SyncMessage> _children;
@@ -3131,6 +3146,7 @@ class SyncOutboxBundle implements SyncMessage {
 }
 
  final  String? jsonPath;
+ final  String? attachmentEventId;
  final  String? originatingHostId;
 
 @JsonKey(name: 'runtimeType')
@@ -3150,16 +3166,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncOutboxBundle&&const DeepCollectionEquality().equals(other._children, _children)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is SyncOutboxBundle&&const DeepCollectionEquality().equals(other._children, _children)&&(identical(other.jsonPath, jsonPath) || other.jsonPath == jsonPath)&&(identical(other.attachmentEventId, attachmentEventId) || other.attachmentEventId == attachmentEventId)&&(identical(other.originatingHostId, originatingHostId) || other.originatingHostId == originatingHostId));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_children),jsonPath,originatingHostId);
+int get hashCode => Object.hash(runtimeType,const DeepCollectionEquality().hash(_children),jsonPath,attachmentEventId,originatingHostId);
 
 @override
 String toString() {
-  return 'SyncMessage.outboxBundle(children: $children, jsonPath: $jsonPath, originatingHostId: $originatingHostId)';
+  return 'SyncMessage.outboxBundle(children: $children, jsonPath: $jsonPath, attachmentEventId: $attachmentEventId, originatingHostId: $originatingHostId)';
 }
 
 
@@ -3170,7 +3186,7 @@ abstract mixin class $SyncOutboxBundleCopyWith<$Res> implements $SyncMessageCopy
   factory $SyncOutboxBundleCopyWith(SyncOutboxBundle value, $Res Function(SyncOutboxBundle) _then) = _$SyncOutboxBundleCopyWithImpl;
 @useResult
 $Res call({
- List<SyncMessage> children, String? jsonPath, String? originatingHostId
+ List<SyncMessage> children, String? jsonPath, String? attachmentEventId, String? originatingHostId
 });
 
 
@@ -3187,10 +3203,11 @@ class _$SyncOutboxBundleCopyWithImpl<$Res>
 
 /// Create a copy of SyncMessage
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') $Res call({Object? children = null,Object? jsonPath = freezed,Object? originatingHostId = freezed,}) {
+@pragma('vm:prefer-inline') $Res call({Object? children = null,Object? jsonPath = freezed,Object? attachmentEventId = freezed,Object? originatingHostId = freezed,}) {
   return _then(SyncOutboxBundle(
 children: null == children ? _self._children : children // ignore: cast_nullable_to_non_nullable
 as List<SyncMessage>,jsonPath: freezed == jsonPath ? _self.jsonPath : jsonPath // ignore: cast_nullable_to_non_nullable
+as String?,attachmentEventId: freezed == attachmentEventId ? _self.attachmentEventId : attachmentEventId // ignore: cast_nullable_to_non_nullable
 as String?,originatingHostId: freezed == originatingHostId ? _self.originatingHostId : originatingHostId // ignore: cast_nullable_to_non_nullable
 as String?,
   ));

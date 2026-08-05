@@ -3,9 +3,9 @@
 ## Scope
 
 This document began as a code-and-log investigation on 2026-03-12. Its
-executive diagrams, file map, and core flows were refreshed against the queue
-pipeline on 2026-08-01; sections that describe the retired live-scan pipeline
-are marked historical.
+executive diagrams, file map, core flows, and payload-generation findings were
+refreshed against the queue pipeline and exact attachment protocol on
+2026-08-06; sections that describe retired behavior are marked historical.
 
 It is not a target architecture document. It is a map of the current system,
 the recent fix history, and the code-backed failure surfaces that are relevant
@@ -133,9 +133,32 @@ Since the first draft of this document, two targeted fixes have landed:
   pagination into the durable inbound queue
 
 The log evidence below is still useful because it explains why those changes
-were necessary. The remaining open question is whether the agent
-text-event-to-attachment binding model is still producing synthetic gaps after
-those stabilizations.
+were necessary. The attachment-generation question that remained open in this
+update was closed by the exact payload binding work described next.
+
+## 2026-08-06 Payload Identity And Sequence Correctness Update
+
+Current JSON-backed envelopes bind their text event to the Matrix event id of
+the exact attachment generation uploaded for that send. The field is additive
+and optional: current peers enforce it, while path-only envelopes from older
+peers remain readable through the legacy compatibility path.
+
+The correctness boundary now has four parts:
+
+- the sender snapshots or retains the bytes claimed by the outbox row, uploads
+  those bytes, and writes the returned event id into `attachmentEventId`;
+- the receiver resolves that event id only, checks its declared path, and waits
+  rather than falling back to a newer descriptor or mutable disk cache;
+- exact journal sequence accounting accepts a mapping or covered clock only
+  when the decoded payload vector clock proves the announced counter; and
+- backfill validates payload existence and vector-clock coverage before a
+  resend, while canonical exact payloads retire contradictory historical
+  sequence bindings.
+
+Focused regressions cover reordered generations, duplicate descriptor
+observation, attachment delay, index rebuild after restart, stale event replay,
+covered backfill hints, and optional-field mixed-version decoding. The detailed
+runtime contracts live in the sync knowledge bundle linked from this document.
 
 ## 2026-03-12 Inbox And Logging Findings
 
@@ -317,7 +340,7 @@ the inbound queue's unique `event_id`.
 | Send path | `outbox/outbox_service.dart`, `matrix/matrix_message_sender.dart` | stage payloads, merge pending work, upload JSON and text events |
 | Receive path | `queue/queue_pipeline_coordinator.dart`, `queue/bridge_coordinator.dart`, `queue/inbound_event_queue.dart`, `queue/inbound_worker.dart`, `queue/queue_apply_adapter.dart` | live ingestion, anchored catch-up, durable dedupe, retry, ordered processing |
 | Receive diagnostics | `matrix/pipeline/matrix_stream_consumer.dart`, `matrix/pipeline/matrix_stream_processor.dart` | startup signal binding, Matrix Stats metrics, and apply-outcome diagnostics; not event ingestion |
-| Attachment resolution | `matrix/pipeline/attachment_index.dart`, `matrix/pipeline/attachment_ingestor.dart` | remember latest attachment by path and fetch/save payloads |
+| Attachment resolution | `matrix/pipeline/attachment_index.dart`, `matrix/pipeline/attachment_ingestor.dart` | retain exact generations by event id, preserve latest-by-path compatibility, and fetch/save payloads |
 | Apply path | `matrix/sync_event_processor.dart` | decode messages, resolve payloads, upsert journal/agent state |
 | Gap tracking | `sequence/sync_sequence_log_service.dart` | detect gaps, mark covered counters, resolve hints |
 | Backfill request loop | `backfill/backfill_request_service.dart`, `backfill/backfill_response_handler.dart` | ask for and answer missing counters |
@@ -337,7 +360,8 @@ flowchart TD
   E --> G["Store enriched SyncMessage"]
   G --> H["MatrixMessageSender.sendMessage"]
   H --> I["Upload file attachments first"]
-  I --> J["Send text event with base64 JSON payload"]
+  I --> J["Stamp exact attachment event id"]
+  J --> K["Send text event with base64 JSON payload"]
 ```
 
 ### Relevant code
@@ -345,16 +369,22 @@ flowchart TD
 `OutboxService._enqueueAgentPayload()`:
 
 - writes agent JSON to a stable path based on entity ID
+- retains the serialized entity/link inline in the pending row as the claimed
+  generation
 - merges `coveredVectorClocks` only if the previous outbox row is still pending
 - falls back to inserting a fresh row if the old row is no longer pending
 
-`MatrixMessageSender._enrichAndUploadAgentPayload()`:
+`MatrixPayloadSender.enrichAndUploadAgentPayload()`:
 
-- uploads the JSON file first
-- for `SyncAgentEntity`, strips the inline payload and keeps only `jsonPath`
+- uploads the claimed inline JSON bytes rather than re-reading a sidecar that a
+  newer enqueue may already have overwritten
+- records the returned Matrix file event id as `attachmentEventId`
+- for `SyncAgentEntity`, strips the inline payload after upload and keeps the
+  exact event id plus `jsonPath`
 - for `SyncAgentLink`, preserves the inline payload
 
-That last point is a major difference between agent entities and agent links.
+Journal, notification, and outbox-manifest sends stamp the same exact id after
+their successful uploads.
 
 ## 2. Receive Path
 
@@ -393,41 +423,47 @@ through `SyncEventProcessor` inside the appropriate transaction.
 `AttachmentIngestor.process()` records descriptors before companion payloads
 are applied.
 
-`AttachmentIndex` is intentionally simple:
+`AttachmentIndex` exposes two intentional views:
 
-- it maps `relativePath -> Event`
-- later events overwrite earlier ones for the same path
+- exact `eventId -> Event` retains every observed generation for current
+  envelopes
+- latest `relativePath -> Event` remains for legacy path-only envelopes
 
-That behavior is explicit in `attachment_index.dart`.
+An exact lookup also verifies the descriptor's normalized path. If the named
+event has not arrived, prepare remains retryable and never reads a different
+descriptor or the stable disk cache.
 
 ## 3. Gap Detection And Backfill
 
 ```mermaid
 flowchart TD
-  A["recordReceivedEntry(entryId, vectorClock, coveredVectorClocks)"] --> B["Pre-mark covered counters as received"]
-  B --> C["Compare current vectorClock against last seen counters"]
-  C --> D["Create missing counters when a gap exists"]
-  D --> E["BackfillRequestService batches missing counters"]
-  E --> F["SyncBackfillRequest"]
-  F --> G["BackfillResponseHandler on peer"]
-  G --> H["Resend payload or send hint / deleted / unresolvable"]
-  H --> I["SyncBackfillResponse"]
-  I --> J["handleBackfillResponse + resolvePendingHints"]
+  A["recordReceivedEntry(envelope VC, decoded payload VC)"] --> B["Keep only payload-proven covered clocks"]
+  B --> C["Reject unproven announced counters"]
+  C --> D["Detect gaps from proven counters"]
+  D --> E["Repair contradictory historical mappings"]
+  E --> F["BackfillRequestService batches missing counters"]
+  F --> G["SyncBackfillRequest"]
+  G --> H["BackfillResponseHandler on peer"]
+  H --> I["Verify payload VC before resend or hint"]
+  I --> J["SyncBackfillResponse"]
+  J --> K["handleBackfillResponse + resolvePendingHints"]
 ```
 
 ### Relevant code
 
-`SyncSequenceLogService.recordReceivedEntry()` does the work in this order:
+For exact journal envelopes, `SyncSequenceLogService.recordReceivedEntry()`
+does the work in this order:
 
 1. update host activity
-2. filter and pre-mark `coveredVectorClocks`
-3. detect gaps using the current vector clock
-4. upsert the actual `(hostId, counter)` records
-5. resolve pending hints
+2. filter `coveredVectorClocks` against the decoded payload vector clock and
+   pre-mark only proven counters
+3. reject any announced counter the decoded payload cannot prove
+4. detect gaps and upsert only proven `(hostId, counter)` records
+5. repair historical bindings against the canonical local payload clock
+6. resolve pending hints using the decoded payload clock
 
-That order is deliberate. It is also why a bad "current vector clock" can
-create a large false gap even if some older counters were correctly marked as
-covered.
+Legacy path-only envelopes keep the old single-clock behavior because the
+receiver cannot prove which mutable sidecar generation it read.
 
 ### Terminal outcomes: `burned` vs `unresolvable` (Drift v24)
 
@@ -579,11 +615,14 @@ High confidence that the retired snapshot collector caused the historical
 waves. The current queue path should be evaluated through its pagination
 bounds, durable ledger, and marker invariants instead.
 
-## Failure Surface 2: Agent Payload Resolution Can Mismatch Text Event Generation
+## Failure Surface 2: Agent Payload Generation Mismatch — Resolved For Exact Envelopes
 
-This remains a strong candidate for one class of false gap storms.
+This was a strong candidate for one class of false gap storms. The mechanism
+and log evidence below describe the path-only protocol before
+`attachmentEventId`; they are retained as failure history, not as the current
+exact-envelope contract.
 
-### What the code says
+### Historical mechanism
 
 #### Stable path reuse for agent entities
 
@@ -622,7 +661,7 @@ So the receiving text event for an agent entity can carry:
 
 but **not** the actual payload vector clock inline.
 
-#### Receiver resolves by latest attachment for that path
+#### Receiver resolved by latest attachment for that path
 
 `AttachmentIndex.record()` stores the last-seen attachment event for a path.
 
@@ -680,7 +719,7 @@ That exact combination is only possible if the current vector clock seen by the
 sequence log is already `42430` while the envelope still only covers the older
 versions.
 
-### Why this matters
+### Why this mattered
 
 This is the exact synthetic-gap mechanism:
 
@@ -696,10 +735,10 @@ flowchart TD
   H --> I["Backfill storm"]
 ```
 
-This is not just a vague idea. The mechanism is explicitly permitted by the
-current code shape.
+This is not just a vague idea. The mechanism was explicitly permitted by the
+old path-only code shape.
 
-### What is proven vs not yet proven
+### What the investigation proved before the fix
 
 Proven by code:
 
@@ -718,18 +757,24 @@ Not yet proven:
 - whether this is the only dominant source of false gaps across the whole log
 - whether journal payloads hit a similar issue in a different form
 
-### Confidence
+### Current invariant
 
-High confidence that this is a real correctness hazard.
+Current agent send rows retain their claimed inline bytes until upload. The
+sender uploads those bytes, stamps the returned Matrix event id, and only then
+strips a large entity from the text envelope. The receiver resolves that exact
+event id, verifies its path, and records sequence state from the decoded entity
+clock. A newer descriptor or disk sidecar at the same path is not eligible.
 
-Moderate-to-high confidence that it is a major contributor to the observed
-false gap storms.
+The old failure is therefore closed when the envelope contains
+`attachmentEventId`. A legacy path-only envelope still uses latest-by-path and
+disk fallback so old peers remain compatible; that compatibility path cannot
+offer the new causal guarantee.
 
-## Failure Surface 3: The Attachment Side Also Prefers Latest-By-Path
+## Failure Surface 3: Attachment Latest-By-Path Identity — Split Into Exact And Legacy Views
 
-This is related to Failure Surface 2 but worth separating.
+This historical mechanism is related to Failure Surface 2 but worth separating.
 
-### What the code says
+### Historical mechanism
 
 `AttachmentIngestor` treats agent payload files as legitimately mutable in
 place and always re-downloads them.
@@ -739,7 +784,7 @@ Its queueing logic is also keyed by normalized relative path.
 That means the attachment layer itself is optimized around "latest file for
 this path", not "exact file version that belonged to this text event".
 
-### Why it matters
+### Why it mattered
 
 Even if the direct descriptor lookup were not enough on its own, the rest of
 the attachment handling is reinforcing the same identity model:
@@ -750,13 +795,23 @@ the attachment handling is reinforcing the same identity model:
 That is a sensible design for cache freshness, but it is dangerous if the text
 event is supposed to be causally paired with one exact descriptor generation.
 
-### Confidence
+### Current invariant
 
-High confidence that this amplifies Failure Surface 2.
+`AttachmentIndex` now retains every valid descriptor by Matrix event id while
+also keeping the newest descriptor by normalized path. Exact envelopes use only
+the first view. Duplicate observation of one event id is idempotent; reordered
+events at the same path remain individually addressable. After an app restart,
+an exact payload whose descriptor has not yet been rebuilt stays retryable until
+catch-up observes that event. It never falls through to a newer path descriptor
+or existing disk cache.
 
-## Failure Surface 4: Backfill Can Answer From A Sequence Row Whose Payload VC Is Behind The Requested Counter
+Latest-by-path remains intentionally available only for legacy envelopes that
+do not carry an exact id. That is the mixed-version rollout limit, not the
+identity model for current peers.
 
-### What the code says
+## Failure Surface 4: Contradictory Backfill Answers — Resolved
+
+### Historical mechanism
 
 `BackfillResponseHandler._processBackfillEntry()` first does an exact lookup:
 
@@ -827,7 +882,7 @@ flowchart TD
   D --> F["Handler also sends unresolvable for 235080"]
 ```
 
-### Why it matters
+### Why this mattered
 
 This is a real correctness break, not only overhead.
 
@@ -839,7 +894,7 @@ It proves all of the following:
 - the handler can then discover that its own answer source is invalid and emit
   `unresolvable`
 
-What is not yet proven:
+What was not proven by the historical logs:
 
 - whether the inconsistent row comes from stale hints being preserved too long
 - whether it is downstream of the agent path/descriptor mismatch in Failure
@@ -848,14 +903,32 @@ What is not yet proven:
 
 But the contradiction itself is proven.
 
-### Confidence
+### Current invariant
 
-High confidence that this is a real correctness hazard and a real source of
-`unresolvable` churn.
+An exact sequence row is only an answer candidate after the responder loads the
+payload and distinguishes three cases:
 
-## Failure Surface 5: Duplicate And Stale Journal Events Still Mutate Sequence State
+- a missing payload reaches its per-type `deleted` handling;
+- a present payload with no vector clock, a missing host axis, or a counter
+  behind the request is rejected before any resend; and
+- a payload that proves the counter may be resent, with a hint when its clock
+  is ahead because it supersedes the requested version.
 
-### What the code says
+For an authoritative own-host rejection, the responder sends only
+`unresolvable`; it never sends the unproven payload alongside that terminal
+answer. For a foreign-host rejection, it searches later resolved rows and
+accepts only a candidate whose loaded payload clock covers the requested
+counter. If none does, it stays silent so another peer can answer.
+
+On the receive side, a hint arriving before its file-backed payload is stored
+durably. The later exact payload resolves it only with the decoded payload
+clock. Canonical exact journal apply also retires historical rows bound beyond
+that clock: resolved rows become reopenable `unresolvable`, actionable rows keep
+their status, and every repaired row loses the contradictory payload/path hint.
+
+## Failure Surface 5: Duplicate And Stale Journal Sequence Churn — Bounded By Payload Proof
+
+### Historical mechanism
 
 `SyncEventProcessor` still calls `recordReceivedEntry()` for journal entities
 in three important cases:
@@ -900,7 +973,7 @@ Examples:
 That proves the replay waves are repeatedly re-running covered-clock handling
 and not merely dropping old events at the edge.
 
-### Why it matters
+### Why this mattered
 
 This is the bridge between Failure Surface 1 and the rest of the damage.
 
@@ -912,9 +985,20 @@ touching the sequence log, which means:
 - repeated hint resolution attempts
 - repeated opportunities to reopen or mutate missing/backfill state
 
-### Confidence
+### Current invariant
 
-High confidence that this is real churn and a major amplifier.
+Journal duplicates still enter sequence accounting because a replay may resolve
+a pending backfill hint. Exact envelopes no longer trust the announced clock by
+itself, however. Covered clocks are accepted only when the decoded attachment
+clock covers them, and an announced counter beyond that decoded clock is
+rejected before gap detection or mapping. Replaying the same stale exact event
+therefore produces no synthetic gaps; rebuilding the service after restart does
+not change that result.
+
+The canonical local journal clock also drives the historical mapping repair on
+every exact apply. Duplicate repairs are idempotent because retired rows have
+already lost the payload binding. Legacy path-only events retain the historical
+single-clock behavior for compatibility and remain the rollout boundary.
 
 ## Implementation Note: `startupTimestamp` Is Now Misleading
 
@@ -938,81 +1022,30 @@ up to match reality.
 
 ## Test Coverage Map
 
-The current tests cover important pieces, but there is still a notable hole.
+The focused invariant coverage now includes:
 
-### Covered well
+- payload sender tests that prove a claimed older agent generation is uploaded
+  even after the stable sidecar advances, and that the returned file-event id
+  is stamped into journal, notification, agent, and bundle envelopes;
+- attachment-index and processor tests for reordered generations, duplicate
+  observation, exact path validation, missing-descriptor retry, and no fallback
+  to a newer descriptor or disk cache;
+- restart coverage showing an exact event remains pending until catch-up
+  rebuilds its referenced descriptor;
+- sequence/database regressions proving an unproven announced counter and its
+  unproven covered clocks create no gaps or mappings, while historical
+  contradictory bindings retire idempotently;
+- backfill tests proving null/behind payload clocks are rejected before resend,
+  verified covering candidates are used, and no payload is emitted alongside
+  an authoritative `unresolvable`; and
+- an integration flow where a hint arrives before its exact payload, the
+  decoded payload rejects a corrupt ahead envelope clock without synthetic
+  gaps, and replay remains idempotent after recreating the sequence service.
 
-- `matrix_message_sender_test.dart`
-  - agent entity file upload
-  - inline payload stripping
-  - descriptor-based vector clock adoption for journal entities
-
-- `outbox_service_test.dart`
-  - agent `coveredVectorClocks` merge while still pending
-  - fallback insert when the old row is no longer pending
-
-- `sync_event_processor_test.dart`
-  - descriptor-based agent resolution from `AttachmentIndex`
-  - startup handling of old `SyncBackfillRequest`
-  - agent sequence logging
-
-### Not covered by focused invariant tests
-
-There is no targeted test that proves the exact sequence-mapping
-contradiction end to end:
-
-1. `(hostId, counter)` resolves to a payload ID in the sequence log
-2. the current payload VC for that same payload is behind the requested counter
-3. backfill resends the payload
-4. backfill also sends `unresolvable`
-
-And there is still no targeted test that spans all of the following at once:
-
-1. same `SyncAgentEntity` ID reused across multiple sends
-2. same `jsonPath` reused across those sends
-3. older text event still carries only older `coveredVectorClocks`
-4. `AttachmentIndex` now points at the newer descriptor for that path
-5. `recordReceivedEntry()` uses the newer resolved vector clock
-6. a false large gap is produced
-
-That is the most important missing test for the current investigation.
-
-## Recommended Next Verification Work
-
-The next step should not be a speculative fix. It should be a narrow,
-reproducible test sequence.
-
-Recommended order:
-
-1. Add a focused test around `BackfillResponseHandler` plus sequence-log state
-   that reproduces:
-   - exact `(host, counter) -> payloadId` hit
-   - payload VC behind the requested counter
-   - resend + `unresolvable` in the same handling pass
-2. Add a focused test in `sync_event_processor_test.dart` or a pipeline test
-   that simulates:
-   - same agent entity path
-   - two or three versions
-   - older text event processed after the index was updated to the newest
-     descriptor
-3. Assert whether the sequence log receives:
-   - older covered clocks
-   - newer resolved vector clock
-   - and therefore emits the false gap
-4. Only after that decide the fix shape
-
-Likely fix directions to evaluate:
-
-- stop treating any exact sequence row with non-null `entryId` as immediately
-  answerable when the payload VC is already behind the requested counter
-- bind text events to their exact descriptor event ID instead of path-only
-  lookup
-- include the agent entity vector clock directly in the text envelope even when
-  payload is file-backed
-- refuse to use a resolved descriptor whose vector clock is ahead of the
-  envelope's declared coverage in a way that would synthesize new gaps
-
-Those are options, not conclusions.
+Mixed-version model tests cover every file-backed variant with and without the
+optional exact id. The loader test also locks in the intentional limitation:
+legacy path-only envelopes remain readable but select the current path/cache
+generation rather than gaining an exact guarantee retroactively.
 
 ## Summary
 
@@ -1021,22 +1054,22 @@ The current sync system has three important truths at the same time:
 1. the intended model is reasonable: ordered replication plus vector-clock
    dominance plus backfill
 2. the actual implementation is a tightly coupled feedback loop where small
-   causality mistakes get amplified into missing-counter storms
-3. two runtime failures were identified and fixed in the stabilization work:
+   causality mistakes can be amplified into missing-counter storms, so payload
+   proof is enforced at each boundary
+3. the investigation identified and closed four runtime hazards:
    - **Large room-history replay waves** — the legacy snapshot collector was
      first bounded and later removed when ingestion moved entirely to the
      durable queue pipeline.
-   - **Exact backfill mappings with stale VCs** — exact hits are now validated
-     against the payload's current vector clock before resend, and the covering
-     entry search now iterates past stale candidates.
+   - **Mutable-path payload identity** — current file-backed envelopes name the
+     exact attachment event and receivers never substitute another generation.
+   - **Unproven sequence mappings** — exact journal accounting uses the decoded
+     payload clock, filters covered clocks, and retires contradictory history.
+   - **Contradictory backfill answers** — responders validate the loaded payload
+     before resend and never pair an unproven payload with `unresolvable`.
 
-The agent path-based descriptor resolution model is still a strong candidate
-for one deeper source of false gaps, because it allows an older text event to
-be paired with a newer payload generation for the same `jsonPath`.
-
-At minimum, the remaining known concerns are:
-
-- a sequence/backfill integrity edge case for some agent counters (mitigated
-  by VC validation but not fully eliminated)
-- an agent attachment model that still looks structurally capable of creating
-  synthetic gaps
+The remaining rollout limitation is explicit rather than accidental: an older
+peer omits `attachmentEventId`, so a current receiver must use the path-based
+compatibility contract for that envelope. Exact causality is guaranteed only
+once the sending peer emits the additive field. Current envelopes remain
+decodable by older generated parsers because the field is optional/additive,
+but an old receiver naturally cannot enforce a field it does not understand.

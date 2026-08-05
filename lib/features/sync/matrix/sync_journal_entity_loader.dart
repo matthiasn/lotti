@@ -13,6 +13,7 @@ abstract class SyncJournalEntityLoader {
   Future<JournalEntity> load({
     required String jsonPath,
     VectorClock? incomingVectorClock,
+    String? attachmentEventId,
   });
 }
 
@@ -27,6 +28,7 @@ class FileSyncJournalEntityLoader implements SyncJournalEntityLoader {
   Future<JournalEntity> load({
     required String jsonPath,
     VectorClock? incomingVectorClock,
+    String? attachmentEventId,
   }) async {
     final documentsDirectory =
         this.documentsDirectory ?? getDocumentsDirectory();
