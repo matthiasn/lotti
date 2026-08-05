@@ -71,6 +71,13 @@ void main() {
       expect(profile.createdAt, now);
     });
 
+    test('copyWith without arguments retains hostId and name', () {
+      final same = guest().copyWith();
+
+      expect(same.hostId, 'host-abc');
+      expect(same.name, 'Demo');
+    });
+
     test('copyWith updates hostId without touching identity', () {
       final updated = guest().copyWith(hostId: 'host-new', name: 'Demo 2');
 
@@ -128,6 +135,18 @@ void main() {
       ).toJson();
 
       expect(ProfileRegistryState.tryFromJson(json), isNull);
+    });
+
+    test('a state with no real profile still yields a synthesized active '
+        'profile', () {
+      final state = ProfileRegistryState(
+        version: 1,
+        activeProfileId: 'gone',
+        profiles: [guest()],
+      );
+
+      expect(state.activeProfile.id, Profile.realProfileId);
+      expect(state.activeProfile.type, ProfileType.real);
     });
 
     test('dangling active marker falls back to the real profile', () {

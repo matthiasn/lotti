@@ -106,6 +106,21 @@ void main() {
   });
 
   group('updateProfile', () {
+    test('rejects unknown profiles', () async {
+      expect(
+        () => registry.updateProfile(
+          Profile(
+            id: 'nope',
+            type: ProfileType.guest,
+            name: 'ghost',
+            dirName: 'guest_profiles/nope',
+            createdAt: DateTime(2026),
+          ),
+        ),
+        throwsArgumentError,
+      );
+    });
+
     test('persists hostId written after first world boot', () async {
       final profile = await registry.createGuestProfile(name: 'Demo');
 
@@ -119,6 +134,13 @@ void main() {
   });
 
   group('deleteGuestProfile', () {
+    test('rejects unknown ids', () async {
+      expect(
+        () => registry.deleteGuestProfile('nope'),
+        throwsArgumentError,
+      );
+    });
+
     test('removes the entry and the directory tree', () async {
       final profile = await registry.createGuestProfile(name: 'Demo');
       final guestRoot = registry.rootFor(profile);

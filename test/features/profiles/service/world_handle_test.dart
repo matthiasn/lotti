@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/get_it.dart';
@@ -103,6 +104,16 @@ void main() {
         ),
       );
       await world.writeSetting('demo_seed_version', '1');
+      await world.writeAiConfig(
+        AiConfig.inferenceProvider(
+          id: 'seed-provider',
+          baseUrl: 'https://example.invalid',
+          apiKey: 'fake',
+          name: 'Mission Control Router',
+          createdAt: DateTime(2026, 7, 17),
+          inferenceProviderType: InferenceProviderType.genericOpenAi,
+        ),
+      );
       await world.close();
 
       // World content is real and readable back.
@@ -121,6 +132,10 @@ void main() {
       expect(
         await reopened.settingsDb.itemByKey('demo_seed_version'),
         '1',
+      );
+      expect(
+        await reopened.aiConfigDb.configById('seed-provider').getSingleOrNull(),
+        isNotNull,
       );
       // The world's own settings file exists → its future host ID lives
       // here, not in the real world's settings.sqlite.

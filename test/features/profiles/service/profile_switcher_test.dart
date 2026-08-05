@@ -9,9 +9,14 @@ import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/service_disposer.dart';
+import 'package:lotti/services/time_service.dart';
+import 'package:lotti/services/window_service.dart';
+import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/db_settle.dart';
+import '../../../mocks/mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -187,6 +192,57 @@ void main() {
         // The generation really was rebuilt: fresh database instances.
         expect(identical(getIt<JournalDb>(), journalDbGen1), isFalse);
         expect((await registry.load()).activeProfileId, guest2.id);
+      },
+    );
+
+    test(
+      'quiesce failures are contained, logged, and do not abort the switch',
+      () async {
+        await getIt.reset();
+        addTearDown(getIt.reset);
+        final domainLogger = MockDomainLogger();
+        when(
+          () => domainLogger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: any<String?>(named: 'subDomain'),
+          ),
+        ).thenAnswer((_) {});
+        final timeService = MockTimeService();
+        when(timeService.stop).thenThrow(StateError('timer boom'));
+        final windowService = MockWindowService();
+        when(windowService.detachForRestart).thenAnswer((_) {});
+        getIt
+          ..registerSingleton<DomainLogger>(domainLogger)
+          ..registerSingleton<TimeService>(timeService)
+          ..registerSingleton<WindowService>(windowService);
+
+        final guest = await registry.createGuestProfile(name: 'Demo');
+        var bootstrapped = false;
+        final switcher = ProfileSwitcher(
+          registry: registry,
+          lifecycleHolder: AppLifecycleHolder(),
+          onSwitchStarted: () async {},
+          onSwitchCompleted: () {},
+          settleFrame: () async {},
+          // Default teardown path: quiesce + dispose + getIt.reset.
+          bootstrapOverride: () async => bootstrapped = true,
+        );
+
+        await switcher.switchTo(guest.id);
+
+        expect(bootstrapped, isTrue);
+        verify(timeService.stop).called(1);
+        verify(windowService.detachForRestart).called(1);
+        verify(
+          () => domainLogger.error(
+            LogDomain.general,
+            any<Object>(),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            subDomain: 'profileSwitch_TimeService.stop',
+          ),
+        ).called(1);
       },
     );
 

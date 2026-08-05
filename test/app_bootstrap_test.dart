@@ -4,6 +4,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
@@ -12,6 +13,7 @@ import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -249,5 +251,62 @@ void main() {
       expect(sequenceLog.onMissingEntriesDetected, isNotNull);
       sequenceLog.onMissingEntriesDetected!.call();
     });
+
+    test(
+      'burn-pending counters from a crashed process are reconciled into '
+      'unresolvable markers at boot',
+      () async {
+        // Simulate the previous process: a persisted host id and a vector
+        // clock counter that was released (burned) but whose outbound
+        // marker never reached the outbox before the crash.
+        const crashHost = 'crash-host-1';
+        Future<Directory> provider() async => osRoot;
+        final priorSettings = SettingsDb(documentsDirectoryProvider: provider);
+        await priorSettings.saveSettingsItem(hostKey, crashHost);
+        await priorSettings.saveSettingsItem(nextAvailableCounterKey, '5');
+        await priorSettings.close();
+        final priorSync = SyncDatabase(documentsDirectoryProvider: provider);
+        await priorSync.markReservedSequenceCounterBurnPending(
+          hostId: crashHost,
+          counter: 3,
+        );
+        // A plain reserved counter (crash between reserve and write): must
+        // NOT be broadcast as unresolvable — only audited.
+        await priorSync.recordReservedSequenceCounter(
+          hostId: crashHost,
+          counter: 4,
+        );
+        await priorSync.close();
+
+        registerProcessLogging();
+        final info = await resolveActiveProfile();
+        final lifecycleHolder = AppLifecycleHolder();
+        addTearDown(lifecycleHolder.dispose);
+        await bootstrapProfileServices(
+          info,
+          lifecycleHolder: lifecycleHolder,
+          restoreWindow: false,
+          registerLateAndOptional: false,
+        );
+
+        // Reconciliation is fire-and-forget; settle it, then: the burn is
+        // terminal and its unresolvable marker is queued for peers.
+        await settlePendingDbWork();
+        final syncDb = getIt<SyncDatabase>();
+        expect(
+          await syncDb.burnPendingSequenceCountersForHost(hostId: crashHost),
+          isEmpty,
+        );
+        // The plain reservation was audited, not burned.
+        expect(
+          await syncDb.reservedSequenceCountersForHost(hostId: crashHost),
+          [4],
+        );
+        // Startup broadcast + the reconciled marker.
+        expect(await syncDb.watchOutboxCount().first, greaterThanOrEqualTo(2));
+        // The reconciled world kept the crashed process's host identity.
+        expect(await getIt<VectorClockService>().getHost(), crashHost);
+      },
+    );
   });
 }
