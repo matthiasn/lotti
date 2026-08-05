@@ -432,12 +432,22 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         // pass. `pendingSets` is the pre-wake snapshot: an incremental flush
         // dedups against it but never writes to it — consolidation waits for
         // the end-of-wake build, which runs after staged retractions land.
-        flushChangeSet: () => changeSetBuilder.build(
-          syncService,
-          existingPendingSets: pendingSets,
-          rejectedFingerprints: ledger.rejectedFingerprints,
-          rejectedDisplayKeys: ledger.rejectedDisplayKeys,
-          incremental: true,
+        //
+        // Wrapped in a transaction because a flush is retried on the next
+        // turn boundary: a superseded running-timer match writes a
+        // `ChangeDecisionEntity` before the change set itself, so a failure
+        // in between would otherwise leave that decision behind and the retry
+        // would mint a second one for the same match. The end-of-wake build
+        // gets its atomicity from `WakeOutputWriter`'s own transaction —
+        // `runInTransaction` nests, so both paths are covered exactly once.
+        flushChangeSet: () => syncService.runInTransaction(
+          () => changeSetBuilder.build(
+            syncService,
+            existingPendingSets: pendingSets,
+            rejectedFingerprints: ledger.rejectedFingerprints,
+            rejectedDisplayKeys: ledger.rejectedDisplayKeys,
+            incremental: true,
+          ),
         ),
         retractionService: retractionService,
         resolveTaskMetadata: () =>

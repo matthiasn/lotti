@@ -2353,6 +2353,62 @@ void main() {
         expect(flushes, 0, reason: 'nothing new to show the user');
       });
 
+      test(
+        'a repeat running-timer call is rejected, so no second flush',
+        () async {
+          // Review raised a case where a later turn revises an already-flushed
+          // `update_running_timer`: `addItem` drops the earlier proposal, so
+          // the staged count is unchanged and a count-based trigger would skip
+          // the flush. It is unreachable — `update_running_timer` is not an
+          // exploded batch tool, so the single-use guard rejects the repeat
+          // before the builder sees it. This pins that guard: if it ever
+          // loosens, the trigger (now keyed on fingerprints, not length) still
+          // has to fire.
+          var flushes = 0;
+          final bench = _createStrategy(
+            executor: mockExecutor,
+            syncService: mockSyncService,
+            resolveRunningTimerId: () async => 'timer-1',
+            flushChangeSet: () async => flushes++,
+          );
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              _toolCall(
+                id: 'call-1',
+                name: 'update_running_timer',
+                args: {'timerId': 'timer-1', 'action': 'stop'},
+              ),
+            ],
+            manager: mockManager,
+          );
+          expect(flushes, 1);
+          final afterFirstTurn = bench.builder.items.single;
+
+          await bench.strategy.processToolCalls(
+            toolCalls: [
+              _toolCall(
+                id: 'call-2',
+                name: 'update_running_timer',
+                args: {'timerId': 'timer-1', 'action': 'keep'},
+              ),
+            ],
+            manager: mockManager,
+          );
+
+          expect(
+            bench.builder.items.single,
+            afterFirstTurn,
+            reason: 'the repeat never reaches the builder, nothing is staged',
+          );
+          expect(
+            flushes,
+            1,
+            reason: 'nothing new was staged, so there is nothing to flush',
+          );
+        },
+      );
+
       test('a failing flush does not abort the turn', () async {
         final bench = _createStrategy(
           executor: mockExecutor,

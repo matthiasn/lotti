@@ -924,6 +924,73 @@ void main() {
         );
       },
     );
+    test(
+      'the final build alerts even when flushes already wrote everything',
+      () async {
+        // The common multi-turn outcome: the final build has nothing left to
+        // persist. It must still raise the wake's one alert, or the bell never
+        // rings for a wake whose proposals all landed mid-conversation.
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        await builder.build(mockSyncService, incremental: true);
+
+        await builder.build(mockSyncService);
+
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: 'task-001',
+            suggestionCount: 1,
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('only the final build raises the inbox alert', () async {
+      await builder.addItem(
+        toolName: 'update_task_estimate',
+        args: {'minutes': 120},
+        humanSummary: 'Set estimate to 2 hours',
+      );
+
+      await builder.build(mockSyncService, incremental: true);
+      verifyNever(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: any(named: 'linkedTaskId'),
+          suggestionCount: any(named: 'suggestionCount'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          category: any(named: 'category'),
+          idSeed: any(named: 'idSeed'),
+        ),
+      );
+
+      await builder.addItem(
+        toolName: 'update_task_priority',
+        args: {'priority': 'P1'},
+        humanSummary: 'Set priority to P1',
+      );
+      await builder.build(mockSyncService);
+
+      // One alert, carrying the full count — not one per flush, each
+      // retracting the last.
+      verify(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: 'task-001',
+          suggestionCount: 2,
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          category: any(named: 'category'),
+          idSeed: any(named: 'idSeed'),
+        ),
+      ).called(1);
+    });
   });
 
   group('incremental flush', () {
@@ -1265,6 +1332,84 @@ void main() {
           ]),
           reason: 'the group lands atomically in the end-of-wake build',
         );
+      },
+    );
+
+    test(
+      'the final build folds pre-wake sets even with nothing new to write',
+      () async {
+        // Every item reached the user via an incremental flush, so the final
+        // build has no new items — but it is the only pass allowed to
+        // consolidate, and skipping it would leave the task with two cards.
+        final preWake = makeTestChangeSet(
+          id: 'cs-pre-wake',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+        );
+
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+          incremental: true,
+        );
+        clearInteractions(mockSyncService);
+
+        final finalSet = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+        );
+
+        expect(finalSet!.id, flushed!.id, reason: 'the wake set survives');
+        expect(
+          finalSet.items.map((i) => i.humanSummary),
+          containsAll(<String>['Set estimate to 2 hours', 'Start the task']),
+          reason: 'the pre-wake item is folded in',
+        );
+        final written = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.cast<ChangeSetEntity>();
+        final retired = written.firstWhere((cs) => cs.id == 'cs-pre-wake');
+        expect(
+          retired.status,
+          ChangeSetStatus.resolved,
+          reason: 'the surplus set is retired so only one card remains',
+        );
+      },
+    );
+
+    test(
+      'a wake that proposes nothing leaves existing sets untouched',
+      () async {
+        // The consolidation-only pass must not turn a no-op wake into a writer.
+        final preWake = makeTestChangeSet(id: 'cs-a');
+        final other = makeTestChangeSet(
+          id: 'cs-b',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+        );
+
+        final result = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake, other],
+        );
+
+        expect(result, isNull);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
       },
     );
 

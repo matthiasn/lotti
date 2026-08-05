@@ -233,7 +233,12 @@ class TaskAgentStrategy extends ConversationStrategy {
     // Persist the assistant message (the one that requested tool calls).
     await _recordAssistantMessage(toolCalls: toolCalls);
 
-    final stagedBeforeTurn = changeSetBuilder?.items.length ?? 0;
+    // Fingerprints, not a count: `addItem` drops the previous
+    // `update_running_timer` proposal for the same timer when a later turn
+    // revises it, so a turn that replaces one leaves the length unchanged. A
+    // count-based trigger would skip the flush and leave the stale timer
+    // action on screen — confirmable — for the rest of the wake.
+    final stagedBeforeTurn = changeSetBuilder?.proposedFingerprints ?? const {};
 
     for (final call in toolCalls) {
       final toolName = call.function.name;
@@ -429,8 +434,10 @@ class TaskAgentStrategy extends ConversationStrategy {
     // on the report. A failure here is not fatal: the builder only advances
     // its flushed watermark on a successful write, so the items stay staged
     // and the end-of-wake build picks them up.
+    final stagedAfterTurn =
+        changeSetBuilder?.proposedFingerprints ?? const <String>{};
     if (changeSetBuilder != null &&
-        changeSetBuilder!.items.length > stagedBeforeTurn) {
+        !stagedBeforeTurn.containsAll(stagedAfterTurn)) {
       try {
         await flushChangeSet?.call();
       } catch (e, s) {

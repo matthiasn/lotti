@@ -468,7 +468,9 @@ sets:
 | Dedups against | pre-wake sets + own set | same |
 | Writes to | own set only | consolidates everything into one survivor |
 | Split groups | held back | released |
+| Inbox alert | never | always, exactly once |
 | Runs relative to `applyStaged` | before | after |
+| Transaction | its own (`runInTransaction` at the call site) | `WakeOutputWriter`'s |
 
 Repeated flushes are safe by construction:
 
@@ -495,11 +497,22 @@ Repeated flushes are safe by construction:
   early flush suppressed against a still-open proposal gets one more chance
   once that proposal is retracted.
 - A failed flush advances nothing: the items stay staged and the end-of-wake
-  build writes them.
+  build writes them. Each flush runs in its own transaction, so a failure part
+  way through cannot leave a superseded-timer `ChangeDecisionEntity` behind for
+  the retry to duplicate.
+- **The inbox alert fires once, from the final build only.** An incremental
+  flush must not raise it: the count would come from its own set while
+  `createTaskSuggestion` retracts the pre-wake row, and a second flush
+  appending to the same set reuses its id as the `idSeed`, so a row the user
+  already dismissed could never be revived for the later suggestions. The
+  final build alerts even when it has nothing left to persist — otherwise a
+  wake whose proposals all landed mid-conversation would never ring the bell.
 
 A wake with pre-existing proposals therefore shows a second card while it runs,
 which the final build folds into one. That is the deliberate trade for never
-touching a set the retraction step still needs.
+touching a set the retraction step still needs. The end-of-wake build is
+consequently never a no-op when the wake wrote anything: it still has to fold
+the pre-wake sets and raise the alert.
 
 Retractions keep their end-of-wake placement for the opposite reason they used
 to: proposals now land *first*, so the suggestion list can never read empty
