@@ -18,6 +18,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   a collapsed sidebar the row goes away, and the manual is still in Settings.
 
 ### Fixed
+- **A hovered row in the Add menu is no longer cut by the lines around it.**
+  Pointing at an action highlighted it, but the hairlines above and below stayed
+  drawn straight across the highlight, so the row read as two halves rather than
+  as one thing you were about to tap. Both now step out of the way while the
+  pointer is on the row — the same behaviour the settings lists already have —
+  and nothing shifts as they go.
 - **Initial Sync setup no longer gets stuck on impossible checks or one bad
   row.** A first device skips the comparison code that only a second device can
   verify, while added devices still confirm it. Message history now clearly

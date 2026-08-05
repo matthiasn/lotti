@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
+import 'package:lotti/features/design_system/components/lists/hover_divider_index.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/journal/state/image_paste_controller.dart';
@@ -60,7 +61,13 @@ class CreateEntryModal {
 }
 
 /// Builds the list of create entry items with dividers between them.
-class _CreateEntryMenuList extends ConsumerWidget {
+///
+/// Owns the sheet's hover index ([HoverDividerIndex]) because the hairlines
+/// are siblings of the rows, not children: only the list can see that the
+/// pointer is on row *i* and therefore that the rules above and below it must
+/// fade. Without it the hovered row was bisected top and bottom by the very
+/// lines the highlight is meant to replace.
+class _CreateEntryMenuList extends ConsumerStatefulWidget {
   const _CreateEntryMenuList({
     required this.linkedFromId,
     required this.categoryId,
@@ -70,7 +77,16 @@ class _CreateEntryMenuList extends ConsumerWidget {
   final String? categoryId;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<_CreateEntryMenuList> createState() =>
+      _CreateEntryMenuListState();
+}
+
+class _CreateEntryMenuListState extends ConsumerState<_CreateEntryMenuList>
+    with HoverDividerIndex<_CreateEntryMenuList> {
+  @override
+  Widget build(BuildContext context) {
+    final linkedFromId = widget.linkedFromId;
+    final categoryId = widget.categoryId;
     // Every visibility decision lands here, before the list exists, so the
     // divider loop below can treat "listed" and "rendered" as the same thing.
     // Letting an item collapse itself to a SizedBox after being listed is how
@@ -97,23 +113,65 @@ class _CreateEntryMenuList extends ConsumerWidget {
             .value ??
         false;
 
-    final items = <Widget>[
+    // Each row reports its own hover so the list can fade the pair of
+    // hairlines bracketing it. The index is positional, so it is bound here
+    // rather than inside the row widgets — a row does not know where in the
+    // sheet it landed.
+    ValueChanged<bool> hover(int index) =>
+        (hovered) => onRowHoverChanged(index, hovered: hovered);
+
+    // Built as builders, not widgets: a row's hover callback needs its final
+    // position in the list, which is only known once every conditional row
+    // above it has resolved.
+    final items = <Widget Function(ValueChanged<bool>)>[
       // Writing first — the same priority the task page's first-run card
       // teaches: type it down, structure it, say it. The long tail follows.
-      CreateTextItem(linkedFromId, categoryId: categoryId),
-      if (hostIsTask) CreateChecklistItem(linkedFromId),
-      CreateAudioItem(linkedFromId, categoryId: categoryId),
-      CreateTaskItem(linkedFromId, categoryId: categoryId),
-      if (enableEvents) CreateEventItem(linkedFromId, categoryId: categoryId),
+      (h) => CreateTextItem(
+        linkedFromId,
+        categoryId: categoryId,
+        onHoverChanged: h,
+      ),
+      if (hostIsTask)
+        (h) => CreateChecklistItem(linkedFromId, onHoverChanged: h),
+      (h) => CreateAudioItem(
+        linkedFromId,
+        categoryId: categoryId,
+        onHoverChanged: h,
+      ),
+      (h) => CreateTaskItem(
+        linkedFromId,
+        categoryId: categoryId,
+        onHoverChanged: h,
+      ),
+      if (enableEvents)
+        (h) => CreateEventItem(
+          linkedFromId,
+          categoryId: categoryId,
+          onHoverChanged: h,
+        ),
       // On a task host the Track time pill IS the timer — offering it here
       // a second time under a different name taxed every user with a
       // synonym.
-      if (linkedFromId != null && !hostIsTask) CreateTimerItem(linkedFromId!),
+      if (linkedFromId != null && !hostIsTask)
+        (h) => CreateTimerItem(linkedFromId, onHoverChanged: h),
       if (isMacOS || isMobile || isLinux || isWindows)
-        ImportImageItem(linkedFromId, categoryId: categoryId),
+        (h) => ImportImageItem(
+          linkedFromId,
+          categoryId: categoryId,
+          onHoverChanged: h,
+        ),
       if (isMacOS || isLinux)
-        CreateScreenshotItem(linkedFromId, categoryId: categoryId),
-      if (canPasteImage) PasteImageItem(linkedFromId, categoryId: categoryId),
+        (h) => CreateScreenshotItem(
+          linkedFromId,
+          categoryId: categoryId,
+          onHoverChanged: h,
+        ),
+      if (canPasteImage)
+        (h) => PasteImageItem(
+          linkedFromId,
+          categoryId: categoryId,
+          onHoverChanged: h,
+        ),
     ];
 
     final gutter = context.designTokens.spacing.step5;
@@ -121,9 +179,17 @@ class _CreateEntryMenuList extends ConsumerWidget {
       mainAxisSize: MainAxisSize.min,
       children: [
         for (var i = 0; i < items.length; i++) ...[
-          // Inset to the rows' gutter, matching the first-run card.
-          if (i > 0) DesignSystemDivider(indent: gutter),
-          items[i],
+          // Inset to the rows' gutter, matching the first-run card. The rule
+          // above row `i` is the one below row `i - 1`, so that is the index
+          // the mixin is asked about; it fades for a pointer on either side.
+          // Colour only — the divider is never removed, so the rows below the
+          // pointer cannot jump by 1 px on hover.
+          if (i > 0)
+            DesignSystemDivider(
+              indent: gutter,
+              color: hoverDividerColorFor(i - 1),
+            ),
+          items[i](hover(i)),
         ],
       ],
     );

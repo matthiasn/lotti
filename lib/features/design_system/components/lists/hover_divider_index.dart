@@ -49,10 +49,18 @@ class ListRowDivider {
 ///
 /// Consumers: the Config Flags list (`_FlagsList`), the Advanced →
 /// Maintenance list (`MaintenanceBody`), the Matrix sync maintenance list
-/// (`MatrixSyncMaintenanceBody`), and `DefinitionsListPage` — which owns
+/// (`MatrixSyncMaintenanceBody`), the "Add" sheet
+/// (`_CreateEntryMenuList`), and `DefinitionsListPage` — which owns
 /// the index on behalf of every settings definition list (categories,
 /// labels, habits, measurables, dashboards) and hands each row a
 /// [ListRowDivider] through `itemBuilder`, built by [dividerFor].
+///
+/// The hairline does not have to be the row's own. The "Add" sheet stands
+/// its rules up as *siblings* of the rows — standalone
+/// `DesignSystemDivider`s, so the inset applies on both edges — and feeds
+/// [hoverDividerColorFor] to their `color` instead. Only two things are
+/// required: the rows report hover, and the hairline can be recoloured
+/// without being removed.
 ///
 /// Only rows that report hover can drive this: `DesignSystemListItem`
 /// fires `onHoverChanged` only when it has an `onTap`. A list of

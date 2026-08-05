@@ -4,6 +4,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/ui/widgets/create/create_menu_list_item.dart';
 
+import '../../../../../test_utils/hover_divider_harness.dart';
 import '../../../../../widget_test_utils.dart';
 
 void main() {
@@ -14,6 +15,7 @@ void main() {
       String subtitle = 'Jot down details in a linked note.',
       bool opensSheet = false,
       VoidCallback? onTap,
+      ValueChanged<bool>? onHoverChanged,
     }) async {
       await tester.pumpWidget(
         makeTestableWidgetWithScaffold(
@@ -23,6 +25,7 @@ void main() {
             subtitle: subtitle,
             opensSheet: opensSheet,
             onTap: onTap ?? () {},
+            onHoverChanged: onHoverChanged,
           ),
         ),
       );
@@ -97,5 +100,39 @@ void main() {
         expect(item.subtitle, 'Jot down details in a linked note.');
       },
     );
+
+    group('onHoverChanged', () {
+      testWidgets(
+        'reports pointer enter and leave — the sheet owns the hairlines '
+        'bracketing this row and cannot see the pointer any other way',
+        (tester) async {
+          final reported = <bool>[];
+          await pump(tester, onHoverChanged: reported.add);
+
+          final gesture = await hoverListRow(
+            tester,
+            find.byType(CreateMenuListItem),
+          );
+          expect(reported, [true]);
+
+          await unhoverRows(tester, gesture);
+          expect(reported, [true, false]);
+        },
+      );
+
+      testWidgets(
+        'is optional — a row used outside a divided list passes none',
+        (tester) async {
+          await pump(tester);
+
+          expect(
+            tester
+                .widget<DesignSystemListItem>(find.byType(DesignSystemListItem))
+                .onHoverChanged,
+            isNull,
+          );
+        },
+      );
+    });
   });
 }

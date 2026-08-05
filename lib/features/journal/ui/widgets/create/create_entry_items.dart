@@ -32,15 +32,21 @@ class CreateEventItem extends ConsumerWidget {
   const CreateEventItem(
     this.linkedFromId, {
     this.categoryId,
+    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
 
+  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
+  /// bracketing the hovered row. See `_CreateEntryMenuList`.
+  final ValueChanged<bool>? onHoverChanged;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return CreateMenuListItem(
+      onHoverChanged: onHoverChanged,
       icon: Icons.event_rounded,
       title: context.messages.addActionAddEvent,
       subtitle: context.messages.addActionAddEventHint,
@@ -70,16 +76,22 @@ class CreateTaskItem extends ConsumerWidget {
   const CreateTaskItem(
     this.linkedFromId, {
     this.categoryId,
+    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
 
+  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
+  /// bracketing the hovered row. See `_CreateEntryMenuList`.
+  final ValueChanged<bool>? onHoverChanged;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final linked = linkedFromId != null;
     return CreateMenuListItem(
+      onHoverChanged: onHoverChanged,
       // `add_task`, not `task_alt`: the row creates a task, and the ticked
       // circle of `task_alt` painted "done" in the accent that elsewhere
       // means "create" — glyph and colour disagreeing about the verb.
@@ -123,9 +135,17 @@ class CreateTaskItem extends ConsumerWidget {
 /// disappears so the menu doesn't offer an action that would have nowhere
 /// to attach.
 class CreateChecklistItem extends ConsumerWidget {
-  const CreateChecklistItem(this.linkedFromId, {super.key});
+  const CreateChecklistItem(
+    this.linkedFromId, {
+    this.onHoverChanged,
+    super.key,
+  });
 
   final String? linkedFromId;
+
+  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
+  /// bracketing the hovered row. See `_CreateEntryMenuList`.
+  final ValueChanged<bool>? onHoverChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -135,6 +155,7 @@ class CreateChecklistItem extends ConsumerWidget {
     if (entry is! Task) return const SizedBox.shrink();
 
     return CreateMenuListItem(
+      onHoverChanged: onHoverChanged,
       icon: Icons.checklist_rounded,
       // The same strings the first-run card uses for the same action — one
       // action, one name AND one explanation, on every surface that offers
@@ -156,17 +177,23 @@ class CreateAudioItem extends ConsumerWidget {
   const CreateAudioItem(
     this.linkedFromId, {
     this.categoryId,
+    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
 
+  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
+  /// bracketing the hovered row. See `_CreateEntryMenuList`.
+  final ValueChanged<bool>? onHoverChanged;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final entryCreationService = ref.read(entryCreationServiceProvider);
 
     return CreateMenuListItem(
+      onHoverChanged: onHoverChanged,
       icon: Icons.mic_rounded,
       // The card's string, its chevron AND its subtitle: the
       // does-tapping-start-recording ambiguity belongs to the action, not to
@@ -194,10 +221,15 @@ class CreateAudioItem extends ConsumerWidget {
 class CreateTimerItem extends ConsumerWidget {
   const CreateTimerItem(
     this.linkedFromId, {
+    this.onHoverChanged,
     super.key,
   });
 
   final String linkedFromId;
+
+  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
+  /// bracketing the hovered row. See `_CreateEntryMenuList`.
+  final ValueChanged<bool>? onHoverChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -208,6 +240,7 @@ class CreateTimerItem extends ConsumerWidget {
     final entryCreationService = ref.read(entryCreationServiceProvider);
 
     return CreateMenuListItem(
+      onHoverChanged: onHoverChanged,
       icon: Icons.timer_outlined,
       // Verb + subtitle, because "Timer" alone never said the clock starts
       // the moment the row is tapped.
@@ -246,11 +279,16 @@ class CreateTextItem extends ConsumerWidget {
   const CreateTextItem(
     this.linkedFromId, {
     this.categoryId,
+    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
+
+  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
+  /// bracketing the hovered row. See `_CreateEntryMenuList`.
+  final ValueChanged<bool>? onHoverChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -261,6 +299,7 @@ class CreateTextItem extends ConsumerWidget {
         : ref.watch(entryControllerProvider(id)).value?.entry;
 
     return CreateMenuListItem(
+      onHoverChanged: onHoverChanged,
       icon: Icons.notes_rounded,
       // The first-run card's string — "Text Entry" and "Write a note" were
       // the same action wearing two names one tap apart.
@@ -298,15 +337,21 @@ class ImportImageItem extends ConsumerWidget {
   const ImportImageItem(
     this.linkedFromId, {
     this.categoryId,
+    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
 
+  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
+  /// bracketing the hovered row. See `_CreateEntryMenuList`.
+  final ValueChanged<bool>? onHoverChanged;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return CreateMenuListItem(
+      onHoverChanged: onHoverChanged,
       // Outlined, matching the stroke weight of every other leading glyph in
       // the sheet — the filled library icon was the one row shouting in
       // solid teal.
@@ -351,15 +396,21 @@ class CreateScreenshotItem extends ConsumerWidget {
   const CreateScreenshotItem(
     this.linkedFromId, {
     this.categoryId,
+    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
 
+  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
+  /// bracketing the hovered row. See `_CreateEntryMenuList`.
+  final ValueChanged<bool>? onHoverChanged;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     return CreateMenuListItem(
+      onHoverChanged: onHoverChanged,
       icon: Icons.screenshot_monitor_rounded,
       title: context.messages.addActionAddScreenshot,
       // Says what is captured (the screen) and where it goes — the row's
@@ -391,11 +442,16 @@ class PasteImageItem extends ConsumerWidget {
   const PasteImageItem(
     this.linkedFromId, {
     this.categoryId,
+    this.onHoverChanged,
     super.key,
   });
 
   final String? linkedFromId;
   final String? categoryId;
+
+  /// Forwarded to [CreateMenuListItem] so the sheet can fade the hairlines
+  /// bracketing the hovered row. See `_CreateEntryMenuList`.
+  final ValueChanged<bool>? onHoverChanged;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -405,6 +461,7 @@ class PasteImageItem extends ConsumerWidget {
     ));
 
     return CreateMenuListItem(
+      onHoverChanged: onHoverChanged,
       icon: Icons.content_paste_rounded,
       title: context.messages.addActionAddImageFromClipboard,
       subtitle: context.messages.addActionAddImageFromClipboardHint,

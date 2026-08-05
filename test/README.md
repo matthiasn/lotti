@@ -118,6 +118,15 @@ last one). The mixin still reports a colour for such a row — it is simply
 unobservable, so the harness skips asserting on it rather than pinning down
 dead state.
 
+**Where the hairlines are siblings of the rows**, not drawn by them — the "Add"
+sheet stands standalone `DesignSystemDivider`s between its rows — there is no
+`showDivider` to assert on and no `Divider` to read. Use
+`designSystemDividerColors(tester)` instead: the `DesignSystemDivider.color`
+values in render order, where `null` is an un-faded rule that kept its
+decorative token. The layout-stability half that `expectFadedRows` covers for
+row-drawn hairlines has to be asserted directly there (the divider count and the
+rows' rects must not change across hover).
+
 **Only tappable rows hover at all.** `DesignSystemListItem` fires
 `onHoverChanged` only when it has an `onTap`, so a list of non-tappable rows
 (the Logging settings switches) has no hover state to test.

@@ -5,6 +5,7 @@ import 'package:file_selector_platform_interface/file_selector_platform_interfac
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -2595,5 +2596,136 @@ void main() {
         },
       );
     });
+  });
+  // -------------------------------------------------------------------------
+  // onHoverChanged forwarding
+  // -------------------------------------------------------------------------
+
+  /// Every row in the "Add" sheet has to report its own hover, because the
+  /// hairlines bracketing it are its SIBLINGS in `_CreateEntryMenuList`, not
+  /// its children — the list is the only thing that can fade them. A row that
+  /// silently drops the callback leaves exactly one stripe of the sheet still
+  /// bisecting its highlight, which is the defect this table guards against
+  /// per item rather than trusting a single representative row.
+  group('onHoverChanged forwarding', () {
+    late EditorDb editorDb;
+
+    setUp(() async {
+      editorDb = EditorDb(inMemoryDatabase: true);
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..registerSingleton<EditorDb>(editorDb)
+            ..registerSingleton<EditorStateService>(EditorStateService());
+        },
+      );
+    });
+
+    tearDown(() async {
+      await tearDownTestGetIt();
+      await editorDb.close();
+    });
+
+    const taskHostId = 'hover-task-host';
+
+    /// One row under test: how to build it with a hover callback, plus the
+    /// overrides it needs to render at all.
+    final rows =
+        <
+          String,
+          ({
+            Widget Function(ValueChanged<bool>) build,
+            List<Override> overrides,
+          })
+        >{
+          'CreateTextItem': (
+            // A null host id keeps the row from watching an entry it does not
+            // need for this contract.
+            build: (h) => CreateTextItem(null, onHoverChanged: h),
+            overrides: const [],
+          ),
+          'CreateChecklistItem': (
+            build: (h) => CreateChecklistItem(taskHostId, onHoverChanged: h),
+            overrides: [
+              entryControllerProvider(taskHostId).overrideWith(
+                () => _TestEntryController(_makeTask(taskHostId)),
+              ),
+            ],
+          ),
+          'CreateAudioItem': (
+            build: (h) => CreateAudioItem('linked-id', onHoverChanged: h),
+            overrides: const [],
+          ),
+          'CreateTaskItem': (
+            build: (h) => CreateTaskItem('linked-id', onHoverChanged: h),
+            overrides: const [],
+          ),
+          'CreateEventItem': (
+            build: (h) => CreateEventItem('linked-id', onHoverChanged: h),
+            overrides: const [],
+          ),
+          'CreateTimerItem': (
+            build: (h) => CreateTimerItem(taskHostId, onHoverChanged: h),
+            overrides: [
+              entryControllerProvider(taskHostId).overrideWith(
+                () => _TestEntryController(_makeJournalEntry(taskHostId)),
+              ),
+            ],
+          ),
+          'ImportImageItem': (
+            build: (h) => ImportImageItem('linked-id', onHoverChanged: h),
+            overrides: const [],
+          ),
+          'CreateScreenshotItem': (
+            build: (h) => CreateScreenshotItem('linked-id', onHoverChanged: h),
+            overrides: const [],
+          ),
+          'PasteImageItem': (
+            build: (h) => PasteImageItem('linked-id', onHoverChanged: h),
+            overrides: const [],
+          ),
+        };
+
+    for (final MapEntry(key: name, value: row) in rows.entries) {
+      testWidgets('$name hands its hover straight to CreateMenuListItem', (
+        tester,
+      ) async {
+        // ignore: avoid_positional_boolean_parameters
+        void callback(bool hovered) {}
+
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            row.build(callback),
+            overrides: row.overrides,
+          ),
+        );
+        await tester.pump();
+
+        final item = tester.widget<CreateMenuListItem>(
+          find.byType(CreateMenuListItem),
+        );
+        // Identity, not just non-null: a row that invented its own closure
+        // would pass a `isNotNull` check while reporting to nobody.
+        expect(identical(item.onHoverChanged, callback), isTrue);
+      });
+    }
+
+    testWidgets(
+      'a row built without one passes null through — the sheet is the only '
+      'caller that needs the hook',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(const CreateTaskItem('linked-id')),
+        );
+        await tester.pump();
+
+        expect(
+          tester
+              .widget<CreateMenuListItem>(find.byType(CreateMenuListItem))
+              .onHoverChanged,
+          isNull,
+        );
+      },
+    );
   });
 }
