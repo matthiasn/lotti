@@ -28,8 +28,10 @@ class ProfileSwitcher {
     required this.onSwitchStarted,
     required this.onSwitchCompleted,
     @visibleForTesting Future<void> Function()? settleFrame,
-    @visibleForTesting Future<void> Function()? teardownOverride,
-    @visibleForTesting Future<void> Function()? bootstrapOverride,
+    // Test seams (also forwarded by LottiAppRoot's own seams); production
+    // callers must leave these null.
+    Future<void> Function()? teardownOverride,
+    Future<void> Function()? bootstrapOverride,
   }) : _settleFrame = settleFrame ?? _endOfFrame {
     _teardown = teardownOverride ?? _defaultTeardown;
     _bootstrap = bootstrapOverride ?? _bootstrapGeneration;

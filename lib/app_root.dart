@@ -16,10 +16,21 @@ class LottiAppRoot extends StatefulWidget {
     required this.registry,
     required this.lifecycleHolder,
     super.key,
+    @visibleForTesting this.appBuilder,
+    @visibleForTesting this.teardownOverride,
+    @visibleForTesting this.bootstrapOverride,
   });
 
   final ProfileRegistry registry;
   final AppLifecycleHolder lifecycleHolder;
+
+  /// Test seam: replaces MyBeamerApp so widget tests can exercise the
+  /// generation/splash machinery without booting the whole app shell.
+  final WidgetBuilder? appBuilder;
+
+  /// Test seams forwarded to the internally owned [ProfileSwitcher].
+  final Future<void> Function()? teardownOverride;
+  final Future<void> Function()? bootstrapOverride;
 
   @override
   State<LottiAppRoot> createState() => LottiAppRootState();
@@ -45,6 +56,8 @@ class LottiAppRootState extends State<LottiAppRoot> {
           _switching = false;
         });
       },
+      teardownOverride: widget.teardownOverride,
+      bootstrapOverride: widget.bootstrapOverride,
     );
   }
 
@@ -58,7 +71,9 @@ class LottiAppRootState extends State<LottiAppRoot> {
       child: ProviderScope(
         key: ValueKey('profile-gen-$_generation'),
         overrides: buildProviderOverrides(getIt<ProfileContext>()),
-        child: const MyBeamerApp(),
+        child: widget.appBuilder != null
+            ? Builder(builder: widget.appBuilder!)
+            : const MyBeamerApp(),
       ),
     );
   }

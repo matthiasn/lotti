@@ -1,13 +1,130 @@
+import 'dart:async';
 import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/app_root.dart';
+import 'package:lotti/database/database.dart';
+import 'package:lotti/database/maintenance.dart';
+import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart'
+    hide aiConfigRepositoryProvider;
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/profile_switcher.dart';
+import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/logging_service.dart';
+
+import 'mocks/mocks.dart';
 
 void main() {
+  group('LottiAppRoot', () {
+    late Directory realRoot;
+    late ProfileRegistry registry;
+
+    setUp(() async {
+      await getIt.reset();
+      realRoot = Directory.systemTemp.createTempSync('lotti_app_root_');
+      registry = ProfileRegistry(realRoot: realRoot);
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+      if (realRoot.existsSync()) {
+        await realRoot.delete(recursive: true);
+      }
+    });
+
+    void registerBridgeSingletons(Profile profile) {
+      getIt
+        ..registerSingleton<ProfileContext>(
+          ProfileContext.forProfile(
+            profile: profile,
+            root: registry.rootFor(profile),
+          ),
+        )
+        ..registerSingleton<Maintenance>(MockMaintenance())
+        ..registerSingleton<JournalDb>(MockJournalDb())
+        ..registerSingleton<SyncDatabase>(MockSyncDatabase())
+        ..registerSingleton<LoggingService>(MockLoggingService())
+        ..registerSingleton<OutboxService>(MockOutboxService())
+        ..registerSingleton<AiConfigRepository>(MockAiConfigRepository());
+    }
+
+    testWidgets(
+      'a switch shows the splash, then rebuilds a fresh generation',
+      (tester) async {
+        late Profile guest1;
+        late Profile guest2;
+        // Registry work is real file IO — it must run outside the
+        // FakeAsync test zone.
+        await tester.runAsync(() async {
+          guest1 = await registry.createGuestProfile(name: 'Demo 1');
+          guest2 = await registry.createGuestProfile(name: 'Demo 2');
+          await registry.setActiveProfile(guest1.id);
+        });
+        registerBridgeSingletons(guest1);
+
+        var generationBuilds = 0;
+        late BuildContext appContext;
+        final bootstrapGate = Completer<void>();
+        await tester.pumpWidget(
+          LottiAppRoot(
+            registry: registry,
+            lifecycleHolder: AppLifecycleHolder(),
+            appBuilder: (context) {
+              appContext = context;
+              generationBuilds++;
+              return const Text(
+                'generation-alive',
+                textDirection: TextDirection.ltr,
+              );
+            },
+            teardownOverride: () async {},
+            // Parks the switch after the splash is up, so the splash state
+            // is deterministically observable.
+            bootstrapOverride: () => bootstrapGate.future,
+          ),
+        );
+
+        expect(find.text('generation-alive'), findsOneWidget);
+        final buildsBeforeSwitch = generationBuilds;
+
+        final switcher = ProfileSwitcherScope.of(appContext);
+        late Future<void> pending;
+        await tester.runAsync(() async {
+          pending = switcher.switchTo(guest2.id);
+          // Let the registry IO and the splash setState land; the switch
+          // then blocks on the frame settle + the bootstrap gate.
+          await Future<void>.delayed(const Duration(milliseconds: 100));
+        });
+        await tester.pump();
+
+        // While switching, the whole tree is the splash.
+        expect(find.byType(ProfileSwitchSplash), findsOneWidget);
+        expect(find.text('generation-alive'), findsNothing);
+
+        bootstrapGate.complete();
+        await tester.runAsync(
+          () => Future<void>.delayed(const Duration(milliseconds: 50)),
+        );
+        await tester.pump();
+        await tester.runAsync(() => pending);
+        await tester.pump();
+
+        // A NEW generation was built (fresh ProviderScope key), not a
+        // resumed old one.
+        expect(find.text('generation-alive'), findsOneWidget);
+        expect(generationBuilds, greaterThan(buildsBeforeSwitch));
+        final reloaded = await tester.runAsync(() => registry.load());
+        expect(reloaded!.activeProfileId, guest2.id);
+      },
+    );
+  });
+
   group('ProfileSwitchSplash', () {
     testWidgets('shows a bare progress indicator with no app chrome', (
       tester,

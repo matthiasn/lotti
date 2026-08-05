@@ -4,12 +4,14 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/inert_outbox_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/services/vector_clock_service.dart';
@@ -223,6 +225,29 @@ void main() {
       );
       // ...and the bridge carries all 8 overrides including Matrix.
       expect(buildProviderOverrides(context), hasLength(8));
+
+      // The startup node-profile broadcast reaches the outbox: real sync
+      // wiring, end to end, without any network.
+      await settlePendingDbWork();
+      final syncDb = getIt<SyncDatabase>();
+      final countAfterBoot = await syncDb.watchOutboxCount().first;
+      expect(countAfterBoot, greaterThanOrEqualTo(1));
+
+      // Releasing a reserved vector clock burns the counter: the burn
+      // handler broadcasts an unresolvable backfill marker through the
+      // outbox so peers can close the gap.
+      final reservation = await getIt<VectorClockService>()
+          .reserveNextVectorClock();
+      await reservation.release();
+      await settlePendingDbWork();
+      final countAfterBurn = await syncDb.watchOutboxCount().first;
+      expect(countAfterBurn, greaterThan(countAfterBoot));
+
+      // The gap-detection hook is wired to the backfill nudge; invoking it
+      // must not throw (nudge is a no-op without missing entries).
+      final sequenceLog = getIt<SyncSequenceLogService>();
+      expect(sequenceLog.onMissingEntriesDetected, isNotNull);
+      sequenceLog.onMissingEntriesDetected!.call();
     });
   });
 }
