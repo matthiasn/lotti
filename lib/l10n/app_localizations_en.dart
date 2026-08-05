@@ -4877,6 +4877,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteDeviceLabel => 'Remove from sync';
 
   @override
+  String get demoActivatingProgress => 'Opening the demo world…';
+
+  @override
   String get demoAiNudgeBody =>
       'The demo world ships with fictional AI providers, so AI actions can\'t really run here. Connect your own AI account to use real AI inside the demo. Your key stays in this demo world unless you copy it over when you leave.';
 
@@ -4950,6 +4953,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t delete the demo data — try again.';
 
   @override
+  String demoDownloadingMediaProgress(int completed, int total) {
+    return 'Downloading demo images · $completed of $total';
+  }
+
+  @override
   String get demoEnterFailedToast =>
       'Couldn\'t open the demo world — try again.';
 
@@ -4979,6 +4987,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get demoOnboardingExplore => 'Explore with sample data';
+
+  @override
+  String get demoPreparingContentProgress => 'Preparing tasks and connections…';
 
   @override
   String get demoSettingsDeleteConfirm =>

@@ -2408,6 +2408,7 @@
   "defaultLanguage": "Standardsprog",
   "deleteButton": "Slet",
   "deleteDeviceLabel": "Fjern fra synkronisering",
+  "demoActivatingProgress": "Åbner demoverdenen…",
   "demoAiNudgeBody": "Demoverdenen indeholder fiktive AI-udbydere, så AI-handlinger kan ikke rigtig køre her. Forbind din egen AI-konto for at bruge rigtig AI i demoen. Din nøgle bliver i denne demoverden, medmindre du kopierer den med, når du forlader den.",
   "demoAiNudgeCancel": "Ikke nu",
   "demoAiNudgeConfirm": "Opsæt rigtig AI",
@@ -2435,6 +2436,17 @@
     }
   },
   "demoDeleteFailedToast": "Demodataene kunne ikke slettes — prøv igen.",
+  "demoDownloadingMediaProgress": "Downloader demobilleder · {completed} af {total}",
+  "@demoDownloadingMediaProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoEnterFailedToast": "Demoverdenen kunne ikke åbnes — prøv igen.",
   "demoEnteringProgress": "Gør demoverdenen klar…",
   "demoExitCandidatesError": "Kunne ikke tjekke dit arbejde til kopiering. Du kan stadig forlade demoen.",
@@ -2444,6 +2456,7 @@
   "demoExitSheetTitle": "Forlad demoen?",
   "demoExitTakeWork": "Tag mit arbejde med…",
   "demoOnboardingExplore": "Udforsk med eksempeldata",
+  "demoPreparingContentProgress": "Gør opgaver og forbindelser klar…",
   "demoSettingsDeleteConfirm": "Slet demoverdenen og alle dens data?",
   "demoSettingsDeleteTitle": "Slet demodata",
   "demoSettingsDeleteToast": "Demodata slettet",

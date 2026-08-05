@@ -1,6 +1,8 @@
 import 'dart:io';
 import 'dart:ui' show Locale;
 
+import 'package:crypto/crypto.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
@@ -23,6 +25,15 @@ final originalTaskIds = <String>[
   manualPenguinPassengerTaskId,
   manualHeadsetWalkTaskId,
 ];
+
+class _MemoryAssetBundle extends CachingAssetBundle {
+  _MemoryAssetBundle(this.assets);
+
+  final Map<String, Uint8List> assets;
+
+  @override
+  Future<ByteData> load(String key) async => ByteData.sublistView(assets[key]!);
+}
 
 void main() {
   group('ManualDemoWorld.penguinLogistics', () {
@@ -625,9 +636,75 @@ void main() {
         );
         // Byte identity with the repo asset, so the demo world shows the
         // exact artwork the manual documents.
-        final asset = File(manualDemoCoverAssets[coverImage.meta.id]!);
+        final source = manualDemoCoverMedia[coverImage.meta.id]!;
+        final asset = File(source.assetPath!);
         expect(target.lengthSync(), asset.lengthSync());
+        expect(
+          sha256.convert(asset.readAsBytesSync()).toString(),
+          source.sha256,
+          reason: '${coverImage.meta.id} must match its pinned digest',
+        );
+        final sourceUri = Uri.parse(source.sourceUrl!);
+        expect(sourceUri.pathSegments, contains(source.sha256));
+        expect(sourceUri.pathSegments.last, source.fileName);
       }
+    });
+
+    test('remote-first installation reports progress and has a verified '
+        'bundled fallback for production seeding', () async {
+      final bundleDocuments = Directory.systemTemp.createTempSync(
+        'lotti_world_bundle_',
+      );
+      final remoteDocuments = Directory.systemTemp.createTempSync(
+        'lotti_world_remote_',
+      );
+      final cacheRoot = Directory.systemTemp.createTempSync('lotti_world_r2_');
+      addTearDown(() => bundleDocuments.delete(recursive: true));
+      addTearDown(() => remoteDocuments.delete(recursive: true));
+      addTearDown(() => cacheRoot.delete(recursive: true));
+      final world = ManualDemoWorld.penguinLogistics();
+      final bytesByAsset = <String, Uint8List>{
+        for (final source in manualDemoCoverMedia.values)
+          source.assetPath!: File(source.assetPath!).readAsBytesSync(),
+      };
+      final bundleProgress = <(int, int)>[];
+
+      final bundled = await world.installMediaFromBundle(
+        _MemoryAssetBundle(bytesByAsset),
+        bundleDocuments,
+        onProgress: ({required completed, required total}) {
+          bundleProgress.add((completed, total));
+        },
+      );
+
+      expect(bundled, hasLength(world.coverImages.length));
+      expect(bundleProgress.first, (0, world.coverImages.length));
+      expect(bundleProgress.last, (
+        world.coverImages.length,
+        world.coverImages.length,
+      ));
+
+      final remoteProgress = <(int, int)>[];
+      final remote = await world.installMediaFromRemote(
+        remoteDocuments,
+        cacheRoot: cacheRoot,
+        fetchUrl: (uri) async {
+          final source = manualDemoCoverMedia.values.singleWhere(
+            (value) => value.sourceUrl == uri.toString(),
+          );
+          return bytesByAsset[source.assetPath!]!;
+        },
+        onProgress: ({required completed, required total}) {
+          remoteProgress.add((completed, total));
+        },
+      );
+
+      expect(remote, hasLength(world.coverImages.length));
+      expect(remoteProgress.first, (0, world.coverImages.length));
+      expect(remoteProgress.last, (
+        world.coverImages.length,
+        world.coverImages.length,
+      ));
     });
   });
 }

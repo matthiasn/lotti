@@ -2168,6 +2168,7 @@
   "defaultLanguage": "Idioma predeterminado",
   "deleteButton": "Eliminar",
   "deleteDeviceLabel": "Quitar de la sincronización",
+  "demoActivatingProgress": "Abriendo el mundo de demostración…",
   "demoAiNudgeBody": "El mundo de demostración incluye proveedores de IA ficticios, así que las acciones de IA no pueden ejecutarse de verdad aquí. Conecta tu propia cuenta de IA para usar IA real dentro de la demostración. Tu clave se queda en este mundo de demostración salvo que la copies al salir.",
   "demoAiNudgeCancel": "Ahora no",
   "demoAiNudgeConfirm": "Configurar IA real",
@@ -2195,6 +2196,17 @@
     }
   },
   "demoDeleteFailedToast": "No se pudieron borrar los datos de la demo — inténtalo de nuevo.",
+  "demoDownloadingMediaProgress": "Descargando imágenes de la demo · {completed} de {total}",
+  "@demoDownloadingMediaProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoEnterFailedToast": "No se pudo abrir el mundo de demostración — inténtalo de nuevo.",
   "demoEnteringProgress": "Preparando el mundo de demostración…",
   "demoExitCandidatesError": "No se pudo comprobar tu trabajo para copiar. Aun así puedes salir de la demo.",
@@ -2204,6 +2216,7 @@
   "demoExitSheetTitle": "¿Salir de la demo?",
   "demoExitTakeWork": "Llevarme mi trabajo…",
   "demoOnboardingExplore": "Explorar con datos de ejemplo",
+  "demoPreparingContentProgress": "Preparando tareas y conexiones…",
   "demoSettingsDeleteConfirm": "¿Eliminar el mundo de demostración y todos sus datos?",
   "demoSettingsDeleteTitle": "Eliminar datos de la demo",
   "demoSettingsDeleteToast": "Datos de la demo eliminados",

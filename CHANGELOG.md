@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.4]
 ### Changed
+- **Demo setup now makes remote media preparation visible and verifiable.**
+  Cover art is downloaded from immutable, checksum-pinned sources before the
+  demo world becomes active, with an exact progress count on the preparation
+  screen. Offline setup still works through verified bundled copies, while a
+  corrupt download fails safely without leaving a half-created demo behind.
 - **The task knowledge graph is now a readable local workspace.** Instead of
   presenting the whole topology as a field of mostly anonymous dots, it shows a
   bounded one- or two-hop neighbourhood with prioritized full labels, stronger

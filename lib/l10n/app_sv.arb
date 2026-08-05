@@ -2408,6 +2408,7 @@
   "defaultLanguage": "Standardspråk",
   "deleteButton": "Radera",
   "deleteDeviceLabel": "Ta bort från synkronisering",
+  "demoActivatingProgress": "Öppnar demovärlden…",
   "demoAiNudgeBody": "Demovärlden innehåller fiktiva AI-leverantörer, så AI-åtgärder kan inte köras på riktigt här. Anslut ditt eget AI-konto för att använda riktig AI i demon. Din nyckel stannar i den här demovärlden om du inte kopierar över den när du lämnar den.",
   "demoAiNudgeCancel": "Inte nu",
   "demoAiNudgeConfirm": "Ställ in riktig AI",
@@ -2435,6 +2436,17 @@
     }
   },
   "demoDeleteFailedToast": "Demodatan kunde inte raderas — försök igen.",
+  "demoDownloadingMediaProgress": "Hämtar demobilder · {completed} av {total}",
+  "@demoDownloadingMediaProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoEnterFailedToast": "Demovärlden kunde inte öppnas — försök igen.",
   "demoEnteringProgress": "Gör i ordning demovärlden…",
   "demoExitCandidatesError": "Det gick inte att kontrollera ditt arbete att kopiera. Du kan ändå lämna demon.",
@@ -2444,6 +2456,7 @@
   "demoExitSheetTitle": "Lämna demon?",
   "demoExitTakeWork": "Ta med mitt arbete…",
   "demoOnboardingExplore": "Utforska med exempeldata",
+  "demoPreparingContentProgress": "Förbereder uppgifter och kopplingar…",
   "demoSettingsDeleteConfirm": "Radera demovärlden och alla dess data?",
   "demoSettingsDeleteTitle": "Radera demodata",
   "demoSettingsDeleteToast": "Demodata raderade",

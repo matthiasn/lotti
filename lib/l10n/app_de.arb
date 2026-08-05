@@ -2168,6 +2168,7 @@
   "defaultLanguage": "Standardsprache",
   "deleteButton": "Löschen",
   "deleteDeviceLabel": "Aus Sync entfernen",
+  "demoActivatingProgress": "Demo-Welt wird geöffnet…",
   "demoAiNudgeBody": "Die Demo-Welt enthält fiktive KI-Anbieter, daher können KI-Aktionen hier nicht wirklich laufen. Verbinde dein eigenes KI-Konto, um echte KI in der Demo zu nutzen. Dein Schlüssel bleibt in dieser Demo-Welt, außer du kopierst ihn beim Verlassen mit.",
   "demoAiNudgeCancel": "Jetzt nicht",
   "demoAiNudgeConfirm": "Echte KI einrichten",
@@ -2195,6 +2196,17 @@
     }
   },
   "demoDeleteFailedToast": "Die Demo-Daten konnten nicht gelöscht werden — versuch es noch mal.",
+  "demoDownloadingMediaProgress": "Demo-Bilder werden geladen · {completed} von {total}",
+  "@demoDownloadingMediaProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoEnterFailedToast": "Die Demo-Welt konnte nicht geöffnet werden — versuch es noch mal.",
   "demoEnteringProgress": "Demo-Welt wird eingerichtet…",
   "demoExitCandidatesError": "Deine Arbeit zum Kopieren konnte nicht geprüft werden. Du kannst die Demo trotzdem verlassen.",
@@ -2204,6 +2216,7 @@
   "demoExitSheetTitle": "Demo verlassen?",
   "demoExitTakeWork": "Meine Arbeit mitnehmen…",
   "demoOnboardingExplore": "Mit Beispieldaten erkunden",
+  "demoPreparingContentProgress": "Aufgaben und Verbindungen werden vorbereitet…",
   "demoSettingsDeleteConfirm": "Demo-Welt und alle zugehörigen Daten löschen?",
   "demoSettingsDeleteTitle": "Demo-Daten löschen",
   "demoSettingsDeleteToast": "Demo-Daten gelöscht",

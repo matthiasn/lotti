@@ -333,7 +333,10 @@ void main() {
       'lotti-manual-tasks-',
     );
     documentsDirectory = testDocumentsDirectory;
-    final installedMedia = await world.installMedia(testDocumentsDirectory);
+    final installedMedia = await world.installMediaFromRemote(
+      testDocumentsDirectory,
+      fetchUrl: fetchManualDemoSeedMedia,
+    );
     await transcodeManualDemoMediaToPng(installedMedia);
 
     final entitiesCache = MockEntitiesCacheService();

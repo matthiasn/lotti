@@ -2175,6 +2175,7 @@
   "defaultLanguage": "Výchozí jazyk",
   "deleteButton": "Smazat",
   "deleteDeviceLabel": "Odebrat ze synchronizace",
+  "demoActivatingProgress": "Otevírám demo svět…",
   "demoAiNudgeBody": "Demo svět obsahuje fiktivní poskytovatele AI, takže AI akce tady doopravdy neproběhnou. Připoj svůj vlastní AI účet a používej v demu skutečnou AI. Tvůj klíč zůstane v tomto demo světě, pokud si ho při odchodu nezkopíruješ.",
   "demoAiNudgeCancel": "Teď ne",
   "demoAiNudgeConfirm": "Nastavit skutečnou AI",
@@ -2202,6 +2203,17 @@
     }
   },
   "demoDeleteFailedToast": "Demo data se nepodařilo smazat — zkus to znovu.",
+  "demoDownloadingMediaProgress": "Stahuji obrázky dema · {completed} z {total}",
+  "@demoDownloadingMediaProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoEnterFailedToast": "Demo svět se nepodařilo otevřít — zkus to znovu.",
   "demoEnteringProgress": "Připravuji demo svět…",
   "demoExitCandidatesError": "Nepodařilo se zkontrolovat práci ke zkopírování. Demo můžeš přesto opustit.",
@@ -2211,6 +2223,7 @@
   "demoExitSheetTitle": "Opustit demo?",
   "demoExitTakeWork": "Vzít si práci s sebou…",
   "demoOnboardingExplore": "Prozkoumat s ukázkovými daty",
+  "demoPreparingContentProgress": "Připravuji úkoly a propojení…",
   "demoSettingsDeleteConfirm": "Smazat demo svět a všechna jeho data?",
   "demoSettingsDeleteTitle": "Smazat demo data",
   "demoSettingsDeleteToast": "Demo data smazána",

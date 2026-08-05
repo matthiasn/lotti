@@ -4948,6 +4948,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get deleteDeviceLabel => 'Remover da sincronização';
 
   @override
+  String get demoActivatingProgress => 'A abrir o mundo de demonstração…';
+
+  @override
   String get demoAiNudgeBody =>
       'O mundo de demonstração inclui fornecedores de IA fictícios, por isso as ações de IA não podem realmente funcionar aqui. Liga a tua própria conta de IA para usar IA real dentro da demonstração. A tua chave fica neste mundo de demonstração, a menos que a copies ao sair.';
 
@@ -5021,6 +5024,11 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível eliminar os dados da demonstração — tenta novamente.';
 
   @override
+  String demoDownloadingMediaProgress(int completed, int total) {
+    return 'A transferir imagens da demonstração · $completed de $total';
+  }
+
+  @override
   String get demoEnterFailedToast =>
       'Não foi possível abrir o mundo de demonstração — tenta novamente.';
 
@@ -5050,6 +5058,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get demoOnboardingExplore => 'Explorar com dados de exemplo';
+
+  @override
+  String get demoPreparingContentProgress => 'A preparar tarefas e ligações…';
 
   @override
   String get demoSettingsDeleteConfirm =>

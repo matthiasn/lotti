@@ -2168,6 +2168,7 @@
   "defaultLanguage": "Langue par défaut",
   "deleteButton": "Supprimer",
   "deleteDeviceLabel": "Retirer de la synchronisation",
+  "demoActivatingProgress": "Ouverture du monde démo…",
   "demoAiNudgeBody": "Le monde démo contient des fournisseurs d'IA fictifs, les actions d'IA ne peuvent donc pas vraiment s'exécuter ici. Connecte ton propre compte d'IA pour utiliser une IA réelle dans la démo. Ta clé reste dans ce monde démo, sauf si tu la copies en partant.",
   "demoAiNudgeCancel": "Pas maintenant",
   "demoAiNudgeConfirm": "Configurer l'IA réelle",
@@ -2195,6 +2196,17 @@
     }
   },
   "demoDeleteFailedToast": "Impossible de supprimer les données démo — réessaie.",
+  "demoDownloadingMediaProgress": "Téléchargement des images de démo · {completed} sur {total}",
+  "@demoDownloadingMediaProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoEnterFailedToast": "Impossible d'ouvrir le monde démo — réessaie.",
   "demoEnteringProgress": "Préparation du monde démo…",
   "demoExitCandidatesError": "Impossible de vérifier ton travail à copier. Tu peux quand même quitter la démo.",
@@ -2204,6 +2216,7 @@
   "demoExitSheetTitle": "Quitter la démo ?",
   "demoExitTakeWork": "Emporter mon travail…",
   "demoOnboardingExplore": "Explorer avec des données d'exemple",
+  "demoPreparingContentProgress": "Préparation des tâches et des connexions…",
   "demoSettingsDeleteConfirm": "Supprimer le monde démo et toutes ses données ?",
   "demoSettingsDeleteTitle": "Supprimer les données de démo",
   "demoSettingsDeleteToast": "Données de démo supprimées",

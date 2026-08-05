@@ -4959,6 +4959,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get deleteDeviceLabel => 'Odebrat ze synchronizace';
 
   @override
+  String get demoActivatingProgress => 'Otevírám demo svět…';
+
+  @override
   String get demoAiNudgeBody =>
       'Demo svět obsahuje fiktivní poskytovatele AI, takže AI akce tady doopravdy neproběhnou. Připoj svůj vlastní AI účet a používej v demu skutečnou AI. Tvůj klíč zůstane v tomto demo světě, pokud si ho při odchodu nezkopíruješ.';
 
@@ -5033,6 +5036,11 @@ class AppLocalizationsCs extends AppLocalizations {
       'Demo data se nepodařilo smazat — zkus to znovu.';
 
   @override
+  String demoDownloadingMediaProgress(int completed, int total) {
+    return 'Stahuji obrázky dema · $completed z $total';
+  }
+
+  @override
   String get demoEnterFailedToast =>
       'Demo svět se nepodařilo otevřít — zkus to znovu.';
 
@@ -5062,6 +5070,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get demoOnboardingExplore => 'Prozkoumat s ukázkovými daty';
+
+  @override
+  String get demoPreparingContentProgress => 'Připravuji úkoly a propojení…';
 
   @override
   String get demoSettingsDeleteConfirm =>

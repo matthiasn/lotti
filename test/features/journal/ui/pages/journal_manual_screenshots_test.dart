@@ -213,7 +213,10 @@ void main() {
     documentsDirectory = await Directory.systemTemp.createTemp(
       'lotti-manual-journal-',
     );
-    final installedMedia = await world.installMedia(documentsDirectory);
+    final installedMedia = await world.installMediaFromRemote(
+      documentsDirectory,
+      fetchUrl: fetchManualDemoSeedMedia,
+    );
     await transcodeManualDemoMediaToPng(installedMedia);
 
     final missionControl = CategoryTestUtils.createTestCategory(

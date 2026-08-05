@@ -78,6 +78,7 @@ class TaskKnowledgeGraphPage extends ConsumerStatefulWidget {
   const TaskKnowledgeGraphPage({
     required this.taskId,
     this.mergeGraphData,
+    this.imageLoader,
     super.key,
   });
 
@@ -90,6 +91,10 @@ class TaskKnowledgeGraphPage extends ConsumerStatefulWidget {
     TaskGraphData expansion,
   )?
   mergeGraphData;
+
+  /// Optional deterministic image decoder for screenshot and widget hosts.
+  /// Production uses [decodeGraphImageFile].
+  final GraphImageLoader? imageLoader;
 
   @override
   ConsumerState<TaskKnowledgeGraphPage> createState() =>
@@ -281,6 +286,7 @@ class _TaskKnowledgeGraphPageState
       // Relaxed off the main thread in the provider so the first frame
       // renders without a layout pass on the UI thread.
       layout: visibleData.layout,
+      imageLoader: widget.imageLoader,
     );
   }
 

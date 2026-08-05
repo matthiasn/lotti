@@ -2407,6 +2407,7 @@
   "defaultLanguage": "Standaardtaal",
   "deleteButton": "Verwijderen",
   "deleteDeviceLabel": "Uit synchronisatie verwijderen",
+  "demoActivatingProgress": "Demowereld openen…",
   "demoAiNudgeBody": "De demowereld bevat fictieve AI-providers, dus AI-acties kunnen hier niet echt draaien. Koppel je eigen AI-account om echte AI in de demo te gebruiken. Je sleutel blijft in deze demowereld, tenzij je hem meekopieert bij het verlaten.",
   "demoAiNudgeCancel": "Niet nu",
   "demoAiNudgeConfirm": "Echte AI instellen",
@@ -2434,6 +2435,17 @@
     }
   },
   "demoDeleteFailedToast": "Kon de demogegevens niet verwijderen — probeer het opnieuw.",
+  "demoDownloadingMediaProgress": "Demoafbeeldingen downloaden · {completed} van {total}",
+  "@demoDownloadingMediaProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoEnterFailedToast": "Kon de demowereld niet openen — probeer het opnieuw.",
   "demoEnteringProgress": "Demowereld wordt klaargezet…",
   "demoExitCandidatesError": "Kon je werk om te kopiëren niet controleren. Je kunt de demo toch verlaten.",
@@ -2443,6 +2455,7 @@
   "demoExitSheetTitle": "Demo verlaten?",
   "demoExitTakeWork": "Mijn werk meenemen…",
   "demoOnboardingExplore": "Verkennen met voorbeeldgegevens",
+  "demoPreparingContentProgress": "Taken en verbindingen voorbereiden…",
   "demoSettingsDeleteConfirm": "Demowereld en alle bijbehorende gegevens verwijderen?",
   "demoSettingsDeleteTitle": "Demogegevens verwijderen",
   "demoSettingsDeleteToast": "Demogegevens verwijderd",

@@ -14,6 +14,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
+import 'package:lotti/features/demo/seed/demo_seed_media.dart';
+import 'package:lotti/features/demo/seed/demo_seed_progress.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
@@ -59,7 +61,7 @@ void main() {
       registry: registry,
       activate: (id) async => activated.add(id),
       profileContext: () => activeContext,
-      seedRunner: (world, locale) async {
+      seedRunner: (world, locale, _) async {
         seededLocales.add(locale.toLanguageTag());
         // Minimal marker write proving the seed ran against THIS world; the
         // manifest is what enterDemo consults on the next entry.
@@ -100,9 +102,13 @@ void main() {
     test('first entry creates the Demo guest profile, seeds it in the given '
         'locale, and activates it', () async {
       final gateway = buildGateway();
+      final progress = <DemoSeedProgress>[];
       expect(await gateway.demoProfileExists(), isFalse);
 
-      await gateway.enterDemo(locale: const Locale('de'));
+      await gateway.enterDemo(
+        locale: const Locale('de'),
+        onProgress: progress.add,
+      );
 
       final profile = await gateway.findDemoProfile();
       expect(profile, isNotNull);
@@ -113,6 +119,10 @@ void main() {
       // The seed ran against the new profile's own root.
       final manifest = await DemoSeedManifest.read(registry.rootFor(profile));
       expect(manifest?.localeTag, 'de');
+      expect(
+        progress.map((value) => value.phase),
+        [DemoSeedPhase.preparing, DemoSeedPhase.activating],
+      );
     });
 
     test(
@@ -530,7 +540,7 @@ void main() {
           if (id == Profile.realProfileId) activeContext = null;
         },
         profileContext: () => activeContext,
-        seedRunner: (world, locale) async =>
+        seedRunner: (world, locale, _) async =>
             seededLocales.add(locale.toLanguageTag()),
       );
       await registry.setActiveProfile(first.id);
@@ -608,7 +618,7 @@ void main() {
           registry: registry,
           activate: (id) async => order.add('activate:$id'),
           profileContext: () => activeContext,
-          seedRunner: (_, _) async {},
+          seedRunner: (_, _, _) async {},
           prepareCopyOverride: (ids, aiIds) async {
             order.add('prepare:${ids.single}+${aiIds.single}');
             return plan;
@@ -786,6 +796,10 @@ void main() {
         activate: (id) async => activated.add(id),
         profileContext: () => activeContext,
         bundle: _FileSystemAssetBundle(),
+        seedMediaInstaller: DemoSeedMediaInstaller(
+          bundle: _FileSystemAssetBundle(),
+          fetchUrl: (_) async => throw const SocketException('offline in test'),
+        ),
         clock: () => DateTime(2026, 8, 5, 10),
       );
 
@@ -862,7 +876,7 @@ void main() {
             ..registerSingleton<Fts5Db>(fts);
         },
         profileContext: () => activeContext,
-        seedRunner: (_, _) async {},
+        seedRunner: (_, _, _) async {},
       );
 
       final copied = await gateway.exitWithCopy(selectedIds: {'user-task'});

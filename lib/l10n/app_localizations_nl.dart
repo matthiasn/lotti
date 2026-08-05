@@ -4916,6 +4916,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get deleteDeviceLabel => 'Uit synchronisatie verwijderen';
 
   @override
+  String get demoActivatingProgress => 'Demowereld openen…';
+
+  @override
   String get demoAiNudgeBody =>
       'De demowereld bevat fictieve AI-providers, dus AI-acties kunnen hier niet echt draaien. Koppel je eigen AI-account om echte AI in de demo te gebruiken. Je sleutel blijft in deze demowereld, tenzij je hem meekopieert bij het verlaten.';
 
@@ -4989,6 +4992,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon de demogegevens niet verwijderen — probeer het opnieuw.';
 
   @override
+  String demoDownloadingMediaProgress(int completed, int total) {
+    return 'Demoafbeeldingen downloaden · $completed van $total';
+  }
+
+  @override
   String get demoEnterFailedToast =>
       'Kon de demowereld niet openen — probeer het opnieuw.';
 
@@ -5018,6 +5026,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get demoOnboardingExplore => 'Verkennen met voorbeeldgegevens';
+
+  @override
+  String get demoPreparingContentProgress =>
+      'Taken en verbindingen voorbereiden…';
 
   @override
   String get demoSettingsDeleteConfirm =>

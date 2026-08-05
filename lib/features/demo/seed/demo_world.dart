@@ -11,6 +11,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/demo/seed/demo_dates.dart';
 import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
 import 'package:lotti/features/demo/seed/demo_ids.dart';
+import 'package:lotti/features/demo/seed/demo_seed_media.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/utils/image_utils.dart';
 
@@ -92,24 +93,56 @@ final String manualHeadsetWalkCoverImageId = demoUuid(
   'manual-penguin-headset-walk-cover',
 );
 
-final Map<String, String> manualDemoCoverAssets = <String, String>{
-  manualHabitatCoverImageId:
-      'assets/design_system/manual_task_cover_habitat.webp',
-  manualRollCallCoverImageId:
-      'assets/design_system/manual_task_cover_roll_call.webp',
-  manualLaunchReviewCoverImageId:
-      'assets/design_system/manual_task_cover_launch_review.webp',
-  manualLunchCoverImageId: 'assets/design_system/manual_task_cover_lunch.webp',
-  manualSardineFuturesCoverImageId:
-      'assets/design_system/manual_task_cover_sardine_futures.webp',
-  manualFishFeederCoverImageId:
-      'assets/design_system/manual_task_cover_feeder.webp',
-  manualSardineCargoCoverImageId:
-      'assets/design_system/manual_task_cover_cargo.webp',
-  manualPenguinPassengerCoverImageId:
-      'assets/design_system/manual_task_cover_legal.webp',
-  manualHeadsetWalkCoverImageId:
-      'assets/design_system/manual_task_cover_headset_walk.webp',
+const _demoSeedMediaBaseUrl =
+    'https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/demo-seed-media';
+
+DemoSeedMediaSource _demoCoverMedia({
+  required String fileName,
+  required String sha256,
+}) => DemoSeedMediaSource(
+  fileName: fileName,
+  sha256: sha256,
+  sourceUrl: '$_demoSeedMediaBaseUrl/$sha256/$fileName',
+  assetPath: 'assets/design_system/$fileName',
+);
+
+final Map<String, DemoSeedMediaSource> manualDemoCoverMedia = {
+  manualHabitatCoverImageId: _demoCoverMedia(
+    fileName: 'manual_task_cover_habitat.webp',
+    sha256: '93fd246b1cd6d8bfaf2481c86c04183cf0b407629cfbea11c0ecc668f84cd7e7',
+  ),
+  manualRollCallCoverImageId: _demoCoverMedia(
+    fileName: 'manual_task_cover_roll_call.webp',
+    sha256: '990fc5cb2c1c1241762cef41328d85fc7aa20f68c087d175aa8980504e6363c7',
+  ),
+  manualLaunchReviewCoverImageId: _demoCoverMedia(
+    fileName: 'manual_task_cover_launch_review.webp',
+    sha256: '049f8c2b61a00bff209e3724b45b1dd436b06b38f1268ad4b92b6d6d97de1d7d',
+  ),
+  manualLunchCoverImageId: _demoCoverMedia(
+    fileName: 'manual_task_cover_lunch.webp',
+    sha256: '59bc7eac24720315f9847c8c927b611c0efdfc2f9c540d35507f4a7da0c6610f',
+  ),
+  manualSardineFuturesCoverImageId: _demoCoverMedia(
+    fileName: 'manual_task_cover_sardine_futures.webp',
+    sha256: '729dc0a2ab2126e7988af7ead9988c1b7333e349a782ac2e365ed9916d55fbe5',
+  ),
+  manualFishFeederCoverImageId: _demoCoverMedia(
+    fileName: 'manual_task_cover_feeder.webp',
+    sha256: '9c77bd8bd2c3daaec79929eedb2cbe58c7ca76e1c9d18bac5887fdea7aa0ebb0',
+  ),
+  manualSardineCargoCoverImageId: _demoCoverMedia(
+    fileName: 'manual_task_cover_cargo.webp',
+    sha256: 'fdd13bba93d14f85ee7bdf779403710c90b5689089ed1aefd4cbefb8aa8f2427',
+  ),
+  manualPenguinPassengerCoverImageId: _demoCoverMedia(
+    fileName: 'manual_task_cover_legal.webp',
+    sha256: '6afa475279cfe9cf9eb54b6d8407f03a469b391d9d848146d2f03c45d61da5df',
+  ),
+  manualHeadsetWalkCoverImageId: _demoCoverMedia(
+    fileName: 'manual_task_cover_headset_walk.webp',
+    sha256: 'e98b257648a07310ee56db528b18a6f00e8a88cf45dde09e0395739a2df31957',
+  ),
 };
 
 // ---------------------------------------------------------------------------
@@ -420,7 +453,7 @@ class ManualDemoWorld {
         private: false,
       ),
     ];
-    final coverImages = manualDemoCoverAssets.entries.map((entry) {
+    final coverImages = manualDemoCoverMedia.entries.map((entry) {
       return JournalImage(
         meta: Metadata(
           id: entry.key,
@@ -433,7 +466,7 @@ class ManualDemoWorld {
         data: ImageData(
           capturedAt: anchor,
           imageId: '${entry.key}-file',
-          imageFile: entry.value.split('/').last,
+          imageFile: entry.value.fileName,
           imageDirectory: '/manual_demo/',
         ),
       );
@@ -2013,41 +2046,50 @@ class ManualDemoWorld {
       await target.parent.create(recursive: true);
       installedFiles.add(
         await File(
-          manualDemoCoverAssets[coverImage.meta.id]!,
+          manualDemoCoverMedia[coverImage.meta.id]!.assetPath!,
         ).copy(target.path),
       );
     }
     return installedFiles;
   }
 
-  /// Copies the bundled artwork out of [bundle] (e.g. `rootBundle`) into the
-  /// document-relative paths used by production cover-art widgets.
+  /// Installs checksum-pinned remote artwork into the document-relative paths
+  /// used by production cover-art widgets.
   ///
-  /// The production twin of [installMedia]: the nine cover webp files ship
-  /// inside the app bundle (`assets/design_system/`), so seeding a demo world
-  /// on a device must read them through the asset bundle rather than dart:io.
+  /// When the network is unavailable, the production path falls back to the
+  /// verified copies in [bundle]. Manual captures use
+  /// [installMediaFromRemote] so missing R2 objects cannot be hidden by that
+  /// fallback.
   Future<List<File>> installMediaFromBundle(
     AssetBundle bundle,
-    Directory documentsDirectory,
-  ) async {
-    final installedFiles = <File>[];
-    for (final coverImage in coverImages) {
-      final target = File(
-        getFullImagePath(
-          coverImage,
-          documentsDirectory: documentsDirectory.path,
-        ),
+    Directory documentsDirectory, {
+    DemoSeedMediaProgressCallback? onProgress,
+  }) => DemoSeedMediaInstaller(bundle: bundle).install(
+    documentsDirectory: documentsDirectory,
+    images: coverImages,
+    sources: manualDemoCoverMedia,
+    onProgress: onProgress,
+  );
+
+  /// Installs the manual fixture from its checksum-pinned remote sources.
+  ///
+  /// Unlike production demo entry, this has no bundled fallback: a manual
+  /// capture must prove the R2 seed catalog is complete instead of silently
+  /// rendering whatever happened to remain in the application bundle.
+  Future<List<File>> installMediaFromRemote(
+    Directory documentsDirectory, {
+    DemoSeedUrlFetcher? fetchUrl,
+    Directory? cacheRoot,
+    DemoSeedMediaProgressCallback? onProgress,
+  }) =>
+      DemoSeedMediaInstaller(
+        fetchUrl: fetchUrl,
+        cacheRoot: cacheRoot,
+      ).install(
+        documentsDirectory: documentsDirectory,
+        images: coverImages,
+        sources: manualDemoCoverMedia,
+        allowAssetFallback: false,
+        onProgress: onProgress,
       );
-      await target.parent.create(recursive: true);
-      final data = await bundle.load(
-        manualDemoCoverAssets[coverImage.meta.id]!,
-      );
-      await target.writeAsBytes(
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-        flush: true,
-      );
-      installedFiles.add(target);
-    }
-    return installedFiles;
-  }
 }

@@ -4,8 +4,10 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/demo/seed/demo_seed_progress.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_circular_progress.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -17,7 +19,10 @@ import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
-  setUpAll(registerAllFallbackValues);
+  setUpAll(() {
+    registerAllFallbackValues();
+    registerFallbackValue((DemoSeedProgress _) {});
+  });
 
   late MockDemoModeGateway gateway;
 
@@ -42,13 +47,59 @@ void main() {
     );
   }
 
+  testWidgets('progress page distinguishes media download from preparation', (
+    tester,
+  ) async {
+    final progress = ValueNotifier<DemoSeedProgress>(
+      const DemoSeedProgress.preparing(),
+    );
+    addTearDown(progress.dispose);
+
+    await tester.pumpWidget(
+      host(
+        builder: (_) => DemoEnteringProgressPage(progress: progress),
+      ),
+    );
+    expect(find.text('Setting up the demo world…'), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+
+    progress.value = const DemoSeedProgress.downloadingMedia(
+      completed: 3,
+      total: 9,
+    );
+    await tester.pump();
+
+    expect(find.text('Downloading demo images · 3 of 9'), findsOneWidget);
+    final indicator = tester.widget<DesignSystemCircularProgress>(
+      find.byType(DesignSystemCircularProgress),
+    );
+    expect(indicator.value, closeTo(1 / 3, 0.0001));
+    expect(find.text('3/9'), findsOneWidget);
+
+    progress.value = const DemoSeedProgress.writingContent();
+    await tester.pump();
+    expect(find.text('Preparing tasks and connections…'), findsOneWidget);
+
+    progress.value = const DemoSeedProgress.activating();
+    await tester.pump();
+    expect(find.text('Opening the demo world…'), findsOneWidget);
+  });
+
   group('launchDemoEnter', () {
     testWidgets('shows the blocking progress route and enters with the '
         'ambient locale', (tester) async {
       final entered = Completer<void>();
+      DemoSeedProgressCallback? reportProgress;
       when(
-        () => gateway.enterDemo(locale: any(named: 'locale')),
-      ).thenAnswer((_) => entered.future);
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((invocation) {
+        reportProgress =
+            invocation.namedArguments[#onProgress] as DemoSeedProgressCallback;
+        return entered.future;
+      });
 
       await tester.pumpWidget(
         host(
@@ -66,7 +117,20 @@ void main() {
 
       expect(find.byType(DemoEnteringProgressPage), findsOneWidget);
       expect(find.text('Demo-Welt wird eingerichtet…'), findsOneWidget);
-      verify(() => gateway.enterDemo(locale: const Locale('de'))).called(1);
+      reportProgress!(
+        const DemoSeedProgress.downloadingMedia(completed: 2, total: 9),
+      );
+      await tester.pump();
+      expect(
+        find.text('Demo-Bilder werden geladen · 2 von 9'),
+        findsOneWidget,
+      );
+      verify(
+        () => gateway.enterDemo(
+          locale: const Locale('de'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
 
       entered.complete();
       await tester.pump();
@@ -77,7 +141,10 @@ void main() {
       tester,
     ) async {
       when(
-        () => gateway.enterDemo(locale: any(named: 'locale')),
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          onProgress: any(named: 'onProgress'),
+        ),
       ).thenAnswer((_) async => throw StateError('seed boom'));
 
       await tester.pumpWidget(
@@ -110,7 +177,10 @@ void main() {
       addTearDown(getIt.reset);
       final entered = Completer<void>();
       when(
-        () => gateway.enterDemo(locale: any(named: 'locale')),
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          onProgress: any(named: 'onProgress'),
+        ),
       ).thenAnswer((_) => entered.future);
 
       await tester.pumpWidget(
@@ -176,7 +246,10 @@ void main() {
     ) async {
       final reset = Completer<void>();
       when(
-        () => gateway.resetDemo(locale: any(named: 'locale')),
+        () => gateway.resetDemo(
+          locale: any(named: 'locale'),
+          onProgress: any(named: 'onProgress'),
+        ),
       ).thenAnswer((_) => reset.future);
 
       await tester.pumpWidget(
@@ -193,8 +266,67 @@ void main() {
       await tester.pump(const Duration(milliseconds: 400));
 
       expect(find.byType(DemoEnteringProgressPage), findsOneWidget);
-      verify(() => gateway.resetDemo(locale: const Locale('en'))).called(1);
+      verify(
+        () => gateway.resetDemo(
+          locale: const Locale('en'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
       reset.complete();
+      await tester.pump();
+    });
+  });
+
+  group('launchStaleDemoRefresh', () {
+    testWidgets('waits for the gateway before showing progress, then forwards '
+        'seed progress without a failure toast', (tester) async {
+      final refresh = Completer<bool>();
+      DemoSeedProgressCallback? reportProgress;
+      VoidCallback? onReseedStarted;
+      when(
+        () => gateway.refreshStaleDemoWorld(
+          locale: any(named: 'locale'),
+          onReseedStarted: any(named: 'onReseedStarted'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((invocation) {
+        onReseedStarted =
+            invocation.namedArguments[#onReseedStarted] as VoidCallback;
+        reportProgress =
+            invocation.namedArguments[#onProgress] as DemoSeedProgressCallback;
+        return refresh.future;
+      });
+
+      await tester.pumpWidget(
+        host(
+          builder: (context) => TextButton(
+            onPressed: () =>
+                unawaited(launchStaleDemoRefresh(context, gateway: gateway)),
+            child: const Text('refresh'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('refresh'));
+      await tester.pump();
+
+      expect(find.byType(DemoEnteringProgressPage), findsNothing);
+      onReseedStarted!();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      reportProgress!(
+        const DemoSeedProgress.downloadingMedia(completed: 5, total: 9),
+      );
+      await tester.pump();
+
+      expect(find.text('Downloading demo images · 5 of 9'), findsOneWidget);
+      verify(
+        () => gateway.refreshStaleDemoWorld(
+          locale: const Locale('en'),
+          onReseedStarted: any(named: 'onReseedStarted'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
+      refresh.complete(true);
       await tester.pump();
     });
   });
@@ -227,7 +359,10 @@ void main() {
       tester,
     ) async {
       when(
-        () => gateway.enterDemo(locale: any(named: 'locale')),
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          onProgress: any(named: 'onProgress'),
+        ),
       ).thenAnswer((_) async {});
 
       await tester.pumpWidget(button(demoActive: false, journalEmpty: true));
@@ -237,7 +372,12 @@ void main() {
       await tester.tap(find.text('Try the demo'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      verify(() => gateway.enterDemo(locale: any(named: 'locale'))).called(1);
+      verify(
+        () => gateway.enterDemo(
+          locale: any(named: 'locale'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).called(1);
     });
   });
 }

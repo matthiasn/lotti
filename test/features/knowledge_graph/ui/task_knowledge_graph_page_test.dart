@@ -253,6 +253,7 @@ void main() {
     Size surface = const Size(390, 844),
     Future<TaskGraphData> Function(TaskGraphData, TaskGraphData)?
     mergeGraphData,
+    GraphImageLoader? imageLoader,
     List<Override> extraOverrides = const [],
   }) async {
     await tester.pumpWidget(
@@ -260,6 +261,7 @@ void main() {
         TaskKnowledgeGraphPage(
           taskId: taskId,
           mergeGraphData: mergeGraphData,
+          imageLoader: imageLoader,
         ),
         mediaQueryData: MediaQueryData(size: surface),
         overrides: [providerOverride, ...extraOverrides],
@@ -424,6 +426,28 @@ void main() {
     expect(find.byType(KnowledgeGraphView), findsNothing);
     expect(find.text(l10n.knowledgeGraphError), findsNothing);
     expect(find.text(l10n.knowledgeGraphTitle), findsOneWidget);
+  });
+
+  testWidgets('forwards an injected image loader to the graph view', (
+    tester,
+  ) async {
+    Future<Never> imageLoader(String _, int _) async =>
+        throw StateError('The no-image scenario must not invoke the loader');
+    await pumpPage(
+      tester,
+      taskGraphProvider(taskId).overrideWith(
+        (ref) async => multiNodeData(),
+      ),
+      imageLoader: imageLoader,
+    );
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<KnowledgeGraphView>(find.byType(KnowledgeGraphView))
+          .imageLoader,
+      same(imageLoader),
+    );
   });
 
   testWidgets(

@@ -2743,6 +2743,7 @@
   "defaultLanguage": "Default Language",
   "deleteButton": "Delete",
   "deleteDeviceLabel": "Remove from sync",
+  "demoActivatingProgress": "Opening the demo world…",
   "demoAiNudgeBody": "The demo world ships with fictional AI providers, so AI actions can't really run here. Connect your own AI account to use real AI inside the demo. Your key stays in this demo world unless you copy it over when you leave.",
   "demoAiNudgeCancel": "Not now",
   "demoAiNudgeConfirm": "Set up real AI",
@@ -2770,6 +2771,17 @@
     }
   },
   "demoDeleteFailedToast": "Couldn't delete the demo data — try again.",
+  "demoDownloadingMediaProgress": "Downloading demo images · {completed} of {total}",
+  "@demoDownloadingMediaProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoEnterFailedToast": "Couldn't open the demo world — try again.",
   "demoEnteringProgress": "Setting up the demo world…",
   "demoExitCandidatesError": "Couldn't check for work to copy. You can still exit the demo.",
@@ -2779,6 +2791,7 @@
   "demoExitSheetTitle": "Leave the demo?",
   "demoExitTakeWork": "Take my work with me…",
   "demoOnboardingExplore": "Explore with sample data",
+  "demoPreparingContentProgress": "Preparing tasks and connections…",
   "demoSettingsDeleteConfirm": "Delete the demo world and everything in it?",
   "demoSettingsDeleteTitle": "Delete demo data",
   "demoSettingsDeleteToast": "Demo data deleted",

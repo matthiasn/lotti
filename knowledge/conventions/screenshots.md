@@ -15,7 +15,11 @@ sources:
   - id: makefile
     resource: ../../Makefile
     title: manual_screenshots targets and their staging directories
-    last_modified: 2026-07-31
+    last_modified: 2026-08-06
+  - id: manual-demo-media
+    resource: ../../test/helpers/manual_demo_world.dart
+    title: Remote-only manual fixture media transport
+    last_modified: 2026-08-06
   - id: gitignore
     resource: ../../.gitignore
     title: The `screenshots` ignore rule
@@ -60,6 +64,16 @@ Which home an image belongs in follows from who regenerates it:
 `make manual_screenshots` stages captures and the materialized catalog under
 the gitignored `build/manual_capture/` and `build/manual_media/` directories;
 only the CI publish step talks to R2, using the `R2_*` repository secrets.
+
+The manual's Intergalactic Penguin Logistics fixture also reads its source
+cover art from R2, under immutable
+`demo-seed-media/<sha256>/<filename>` keys. This is input to capture, separate
+from the generated `manual/screenshots/` output. Manual suites deliberately
+disable the production bundled fallback so a missing object or checksum drift
+fails the capture. Flutter's widget-test binding returns HTTP 400 for every
+in-process `HttpClient`, so the opt-in harness transports those public bytes
+through `curl`; `DemoSeedMediaInstaller` still performs the authoritative
+SHA-256 verification before the files enter the fixture.
 
 It is a loop over two smaller targets, and CI uses those directly rather than
 the loop: `manual_screenshots_shard` captures **one** locale and converts only

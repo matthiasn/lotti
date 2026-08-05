@@ -2408,6 +2408,7 @@
   "defaultLanguage": "Lingua di default",
   "deleteButton": "Cancella",
   "deleteDeviceLabel": "Rimuovi dalla sincronizzazione",
+  "demoActivatingProgress": "Apertura del mondo demo…",
   "demoAiNudgeBody": "Il mondo demo include provider di IA fittizi, quindi le azioni di IA non possono davvero funzionare qui. Collega il tuo account IA per usare l'IA reale nella demo. La tua chiave resta in questo mondo demo, a meno che tu non la copi quando esci.",
   "demoAiNudgeCancel": "Non ora",
   "demoAiNudgeConfirm": "Configura l'IA reale",
@@ -2435,6 +2436,17 @@
     }
   },
   "demoDeleteFailedToast": "Impossibile eliminare i dati demo — riprova.",
+  "demoDownloadingMediaProgress": "Download delle immagini demo · {completed} di {total}",
+  "@demoDownloadingMediaProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoEnterFailedToast": "Impossibile aprire il mondo demo — riprova.",
   "demoEnteringProgress": "Preparazione del mondo demo…",
   "demoExitCandidatesError": "Impossibile controllare il lavoro da copiare. Puoi comunque uscire dalla demo.",
@@ -2444,6 +2456,7 @@
   "demoExitSheetTitle": "Uscire dalla demo?",
   "demoExitTakeWork": "Porta il mio lavoro con me…",
   "demoOnboardingExplore": "Esplora con dati di esempio",
+  "demoPreparingContentProgress": "Preparazione di attività e collegamenti…",
   "demoSettingsDeleteConfirm": "Eliminare il mondo demo e tutti i suoi dati?",
   "demoSettingsDeleteTitle": "Elimina i dati demo",
   "demoSettingsDeleteToast": "Dati demo eliminati",

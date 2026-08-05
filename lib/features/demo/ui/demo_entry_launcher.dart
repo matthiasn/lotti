@@ -1,9 +1,12 @@
 import 'dart:async';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/demo/seed/demo_seed_progress.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_circular_progress.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -23,9 +26,9 @@ import 'package:lotti/services/domain_logging.dart';
 Future<void> launchDemoEnter(
   BuildContext context, {
   DemoModeGateway? gateway,
-}) => _launch(context, gateway, (g, locale, showProgress) {
+}) => _launch(context, gateway, (g, locale, showProgress, onProgress) {
   showProgress();
-  return g.enterDemo(locale: locale);
+  return g.enterDemo(locale: locale, onProgress: onProgress);
 });
 
 /// Reseeds the demo world the app is ALREADY in when its seed content has
@@ -47,9 +50,10 @@ Future<void> launchStaleDemoRefresh(
 }) => _launch(
   context,
   gateway,
-  (g, locale, showProgress) => g.refreshStaleDemoWorld(
+  (g, locale, showProgress, onProgress) => g.refreshStaleDemoWorld(
     locale: locale,
     onReseedStarted: showProgress,
+    onProgress: onProgress,
   ),
   toastFailure: false,
 );
@@ -61,9 +65,9 @@ Future<void> launchStaleDemoRefresh(
 Future<void> launchDemoReset(
   BuildContext context, {
   DemoModeGateway? gateway,
-}) => _launch(context, gateway, (g, locale, showProgress) {
+}) => _launch(context, gateway, (g, locale, showProgress, onProgress) {
   showProgress();
-  return g.resetDemo(locale: locale);
+  return g.resetDemo(locale: locale, onProgress: onProgress);
 });
 
 Future<void> _launch(
@@ -73,6 +77,7 @@ Future<void> _launch(
     DemoModeGateway gateway,
     Locale locale,
     VoidCallback showProgress,
+    DemoSeedProgressCallback onProgress,
   )
   action, {
 
@@ -89,9 +94,12 @@ Future<void> _launch(
   }
   final locale = Localizations.localeOf(context);
   final navigator = Navigator.of(context, rootNavigator: true);
+  final progress = ValueNotifier<DemoSeedProgress>(
+    const DemoSeedProgress.preparing(),
+  );
   final progressRoute = MaterialPageRoute<void>(
     fullscreenDialog: true,
-    builder: (_) => const DemoEnteringProgressPage(),
+    builder: (_) => DemoEnteringProgressPage(progress: progress),
   );
   // Pushed by the action, not here: an action that may decide to do nothing
   // must not flash a blocking page on the way to that decision.
@@ -102,8 +110,10 @@ Future<void> _launch(
     unawaited(navigator.push(progressRoute));
   }
 
+  void updateProgress(DemoSeedProgress next) => progress.value = next;
+
   try {
-    await action(resolved, locale, showProgress);
+    await action(resolved, locale, showProgress, updateProgress);
     // A switch has replaced the whole tree, progress route included. An
     // action that decided to do NOTHING leaves this generation alive, so a
     // route raised on the way there has to come back off — otherwise the
@@ -131,6 +141,8 @@ Future<void> _launch(
         title: context.messages.demoEnterFailedToast,
       );
     }
+  } finally {
+    progress.dispose();
   }
 }
 
@@ -138,7 +150,9 @@ Future<void> _launch(
 /// seeded. Back navigation is disabled — the switch must not be interrupted
 /// mid-seed.
 class DemoEnteringProgressPage extends StatelessWidget {
-  const DemoEnteringProgressPage({super.key});
+  const DemoEnteringProgressPage({required this.progress, super.key});
+
+  final ValueListenable<DemoSeedProgress> progress;
 
   @override
   Widget build(BuildContext context) {
@@ -146,26 +160,70 @@ class DemoEnteringProgressPage extends StatelessWidget {
     return PopScope(
       canPop: false,
       child: Scaffold(
-        body: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const CircularProgressIndicator(),
-              SizedBox(height: tokens.spacing.step5),
-              Text(
-                context.messages.demoEnteringProgress,
-                textAlign: TextAlign.center,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
+        body: ValueListenableBuilder<DemoSeedProgress>(
+          valueListenable: progress,
+          builder: (context, value, _) => Center(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                _DemoProgressIndicator(progress: value),
+                SizedBox(height: tokens.spacing.step5),
+                Text(
+                  context.messages.demoEnteringProgress,
+                  textAlign: TextAlign.center,
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
                 ),
-              ),
-            ],
+                if (value.phase != DemoSeedPhase.preparing) ...[
+                  SizedBox(height: tokens.spacing.step3),
+                  Text(
+                    _phaseLabel(context, value),
+                    textAlign: TextAlign.center,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.mediumEmphasis,
+                    ),
+                  ),
+                ],
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
+
+class _DemoProgressIndicator extends StatelessWidget {
+  const _DemoProgressIndicator({required this.progress});
+
+  final DemoSeedProgress progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = progress.fraction;
+    if (fraction == null) return const CircularProgressIndicator();
+    return DesignSystemCircularProgress(
+      value: fraction,
+      size: DesignSystemCircularProgressSize.large,
+      center: Text('${progress.completed}/${progress.total}'),
+      semanticsLabel: _phaseLabel(context, progress),
+    );
+  }
+}
+
+String _phaseLabel(BuildContext context, DemoSeedProgress progress) =>
+    switch (progress.phase) {
+      DemoSeedPhase.preparing => context.messages.demoEnteringProgress,
+      DemoSeedPhase.downloadingMedia =>
+        context.messages.demoDownloadingMediaProgress(
+          progress.completed,
+          progress.total,
+        ),
+      DemoSeedPhase.writingContent =>
+        context.messages.demoPreparingContentProgress,
+      DemoSeedPhase.activating => context.messages.demoActivatingProgress,
+    };
 
 /// "Try the demo" call to action for empty states.
 ///

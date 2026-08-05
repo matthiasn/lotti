@@ -4904,6 +4904,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get deleteDeviceLabel => 'Fjern fra synkronisering';
 
   @override
+  String get demoActivatingProgress => 'Åbner demoverdenen…';
+
+  @override
   String get demoAiNudgeBody =>
       'Demoverdenen indeholder fiktive AI-udbydere, så AI-handlinger kan ikke rigtig køre her. Forbind din egen AI-konto for at bruge rigtig AI i demoen. Din nøgle bliver i denne demoverden, medmindre du kopierer den med, når du forlader den.';
 
@@ -4977,6 +4980,11 @@ class AppLocalizationsDa extends AppLocalizations {
       'Demodataene kunne ikke slettes — prøv igen.';
 
   @override
+  String demoDownloadingMediaProgress(int completed, int total) {
+    return 'Downloader demobilleder · $completed af $total';
+  }
+
+  @override
   String get demoEnterFailedToast =>
       'Demoverdenen kunne ikke åbnes — prøv igen.';
 
@@ -5005,6 +5013,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get demoOnboardingExplore => 'Udforsk med eksempeldata';
+
+  @override
+  String get demoPreparingContentProgress =>
+      'Gør opgaver og forbindelser klar…';
 
   @override
   String get demoSettingsDeleteConfirm =>

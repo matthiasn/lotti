@@ -170,6 +170,28 @@
       }
     },
     {
+      "id": "tasks/knowledge-graph",
+      "title": "Task knowledge graph",
+      "sourceTest": "test/features/knowledge_graph/ui/knowledge_graph_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "knowledge_graph_mobile_light.png",
+        "mobile-dark": "knowledge_graph_mobile_dark.png",
+        "desktop-light": "knowledge_graph_desktop_light.png",
+        "desktop-dark": "knowledge_graph_desktop_dark.png"
+      }
+    },
+    {
+      "id": "tasks/knowledge-graph-connections",
+      "title": "Task connections list",
+      "sourceTest": "test/features/knowledge_graph/ui/knowledge_graph_manual_screenshots_test.dart",
+      "variants": {
+        "mobile-light": "knowledge_graph_connections_mobile_light.png",
+        "mobile-dark": "knowledge_graph_connections_mobile_dark.png",
+        "desktop-light": "knowledge_graph_connections_desktop_light.png",
+        "desktop-dark": "knowledge_graph_connections_desktop_dark.png"
+      }
+    },
+    {
       "id": "tasks/agent-card",
       "title": "Assigned task agent summary",
       "sourceTest": "test/features/tasks/ui/widgets/task_manual_screenshots_test.dart",

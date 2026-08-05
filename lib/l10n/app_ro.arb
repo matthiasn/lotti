@@ -2168,6 +2168,7 @@
   "defaultLanguage": "Limbă implicită",
   "deleteButton": "Ștergeți",
   "deleteDeviceLabel": "Eliminați din sincronizare",
+  "demoActivatingProgress": "Se deschide lumea demo…",
   "demoAiNudgeBody": "Lumea demo include furnizori de IA fictivi, așa că acțiunile de IA nu pot rula cu adevărat aici. Conectați contul dvs. de IA pentru a folosi IA reală în demo. Cheia dvs. rămâne în această lume demo, cu excepția cazului în care o copiați la ieșire.",
   "demoAiNudgeCancel": "Nu acum",
   "demoAiNudgeConfirm": "Configurați IA reală",
@@ -2195,6 +2196,17 @@
     }
   },
   "demoDeleteFailedToast": "Datele demo nu au putut fi șterse — încercați din nou.",
+  "demoDownloadingMediaProgress": "Se descarcă imaginile demo · {completed} din {total}",
+  "@demoDownloadingMediaProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoEnterFailedToast": "Lumea demo nu a putut fi deschisă — încercați din nou.",
   "demoEnteringProgress": "Se pregătește lumea demo…",
   "demoExitCandidatesError": "Nu s-a putut verifica lucrul de copiat. Puteți totuși ieși din demo.",
@@ -2204,6 +2216,7 @@
   "demoExitSheetTitle": "Părăsiți demo-ul?",
   "demoExitTakeWork": "Luați-vă munca cu dvs.…",
   "demoOnboardingExplore": "Explorați cu date de exemplu",
+  "demoPreparingContentProgress": "Se pregătesc sarcinile și conexiunile…",
   "demoSettingsDeleteConfirm": "Ștergeți lumea demo și toate datele ei?",
   "demoSettingsDeleteTitle": "Ștergeți datele demo",
   "demoSettingsDeleteToast": "Datele demo au fost șterse",

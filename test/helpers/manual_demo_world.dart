@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/demo/seed/demo_seed_media.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/demo/seed/demo_world_ai.dart';
@@ -44,6 +45,33 @@ final List<AiConfigSkill> manualDemoAiSkills = demoAiSkills(
   manualDemoNow,
 );
 
+/// Fetches immutable R2 seed media outside Flutter's widget-test HttpClient.
+///
+/// `TestWidgetsFlutterBinding` intentionally replaces all in-process HTTP
+/// responses with status 400. The opt-in manual capture suites still need to
+/// prove that their published R2 source objects exist, so they use curl as a
+/// byte transport and leave checksum verification to [DemoSeedMediaInstaller].
+Future<Uint8List> fetchManualDemoSeedMedia(Uri uri) async {
+  final result = await Process.run(
+    'curl',
+    [
+      '--fail',
+      '--silent',
+      '--show-error',
+      '--location',
+      uri.toString(),
+    ],
+    stdoutEncoding: null,
+  );
+  if (result.exitCode != 0) {
+    throw HttpException(
+      'Could not fetch manual demo seed media: ${result.stderr}',
+      uri: uri,
+    );
+  }
+  return Uint8List.fromList(result.stdout as List<int>);
+}
+
 /// Re-encodes installed manual artwork as PNG bytes in place.
 ///
 /// The headless Flutter test engine can leave resized WebP decoding pending,
@@ -76,6 +104,7 @@ Future<void> primeManualDemoCoverArt(
   List<int> extents = const [48, 96, 144, 216, 1280, 2048, 3072],
   Set<String>? imageIds,
   bool includeRawFileImage = false,
+  bool includeExactResizeKeys = false,
 }) async {
   await tester.runAsync(() async {
     final coverImages = imageIds == null
@@ -123,6 +152,11 @@ Future<void> primeManualDemoCoverArt(
             width: extent,
             policy: ResizeImagePolicy.fit,
           ),
+          if (includeExactResizeKeys)
+            ResizeImage(
+              fileImage,
+              width: extent,
+            ),
         ];
         final codec = await ui.instantiateImageCodec(
           bytes,

@@ -5,6 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
+import 'package:lotti/features/demo/seed/demo_seed_media.dart';
+import 'package:lotti/features/demo/seed/demo_seed_progress.dart';
 import 'package:lotti/features/demo/seed/demo_seeder.dart';
 import 'package:lotti/features/demo/seed/demo_tutorial_content.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
@@ -90,11 +92,19 @@ void main() {
     }
   });
 
-  DemoSeeder seeder() => DemoSeeder(
-    world: world,
-    bundle: _FileSystemAssetBundle(),
-    clock: () => seedTime,
-  );
+  DemoSeeder seeder({DemoSeedProgressCallback? onProgress}) {
+    final bundle = _FileSystemAssetBundle();
+    return DemoSeeder(
+      world: world,
+      bundle: bundle,
+      clock: () => seedTime,
+      onProgress: onProgress,
+      mediaInstaller: DemoSeedMediaInstaller(
+        bundle: bundle,
+        fetchUrl: (_) async => throw const SocketException('offline in test'),
+      ),
+    );
+  }
 
   // The tutorial's own entities — the only demo-only content, deliberately
   // spelled out so a change there is visible in the diff. Everything else is
@@ -147,8 +157,24 @@ void main() {
     test('seeds the complete penguin world into the demo databases and '
         'leaves the active world untouched', () async {
       final before = snapshotTree(canaryRealRoot);
+      final progress = <DemoSeedProgress>[];
 
-      final manifest = await seeder().seed(locale: const Locale('en'));
+      final manifest = await seeder(
+        onProgress: progress.add,
+      ).seed(locale: const Locale('en'));
+
+      expect(progress.first.phase, DemoSeedPhase.downloadingMedia);
+      expect(progress.first.completed, 0);
+      expect(progress.first.total, 9);
+      expect(
+        progress.where(
+          (value) =>
+              value.phase == DemoSeedPhase.downloadingMedia &&
+              value.completed == 9,
+        ),
+        hasLength(1),
+      );
+      expect(progress.last.phase, DemoSeedPhase.writingContent);
 
       // Category and labels.
       final category = await world.journalDb.getCategoryById(

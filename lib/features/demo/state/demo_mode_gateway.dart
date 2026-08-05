@@ -11,6 +11,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
+import 'package:lotti/features/demo/seed/demo_seed_media.dart';
+import 'package:lotti/features/demo/seed/demo_seed_progress.dart';
 import 'package:lotti/features/demo/seed/demo_seeder.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
@@ -24,7 +26,11 @@ import 'package:lotti/services/domain_logging.dart';
 /// Seeds a freshly created demo world. Injectable so gateway tests can
 /// exercise the enter/reset decision logic without running the full seeder.
 typedef DemoSeedRunner =
-    Future<void> Function(WorldHandle world, Locale locale);
+    Future<void> Function(
+      WorldHandle world,
+      Locale locale,
+      DemoSeedProgressCallback? onProgress,
+    );
 
 /// The UI-facing entry/exit surface for demo mode.
 ///
@@ -41,11 +47,13 @@ class DemoModeGateway {
     DateTime Function()? clock,
     @visibleForTesting ProfileContext? Function()? profileContext,
     @visibleForTesting DemoSeedRunner? seedRunner,
+    @visibleForTesting DemoSeedMediaInstaller? seedMediaInstaller,
     @visibleForTesting this.prepareCopyOverride,
     @visibleForTesting this.applyCopyOverride,
   }) : _bundle = bundle ?? rootBundle,
        _clock = clock ?? DateTime.now,
        _profileContext = profileContext ?? _activeProfileContext {
+    _seedMediaInstaller = seedMediaInstaller;
     _seedRunner = seedRunner ?? _defaultSeedRunner;
   }
 
@@ -64,6 +72,7 @@ class DemoModeGateway {
   final DateTime Function() _clock;
   final ProfileContext? Function() _profileContext;
   late final DemoSeedRunner _seedRunner;
+  late final DemoSeedMediaInstaller? _seedMediaInstaller;
 
   /// Test seam replacing the read of the demo side in [exitWithCopy].
   @visibleForTesting
@@ -80,12 +89,17 @@ class DemoModeGateway {
   static ProfileContext? _activeProfileContext() =>
       getIt.isRegistered<ProfileContext>() ? getIt<ProfileContext>() : null;
 
-  Future<void> _defaultSeedRunner(WorldHandle world, Locale locale) =>
-      DemoSeeder(
-        world: world,
-        bundle: _bundle,
-        clock: _clock,
-      ).seed(locale: locale);
+  Future<void> _defaultSeedRunner(
+    WorldHandle world,
+    Locale locale,
+    DemoSeedProgressCallback? onProgress,
+  ) => DemoSeeder(
+    world: world,
+    bundle: _bundle,
+    clock: _clock,
+    onProgress: onProgress,
+    mediaInstaller: _seedMediaInstaller,
+  ).seed(locale: locale);
 
   /// Whether the running generation is the demo (guest) world.
   bool get isDemoActive => _profileContext()?.isGuest ?? false;
@@ -111,11 +125,14 @@ class DemoModeGateway {
   /// something the user made. [resetDemo] remains the explicit, confirmed
   /// wipe. While the demo is ALREADY active there is nothing to enter, so it
   /// degrades to the same staleness repair — see [refreshStaleDemoWorld].
-  Future<void> enterDemo({required Locale locale}) async {
+  Future<void> enterDemo({
+    required Locale locale,
+    DemoSeedProgressCallback? onProgress,
+  }) async {
     if (isDemoActive) {
       // Already inside: "Try the demo" has nothing to enter, but the world
       // underfoot may be stale — see [refreshStaleDemoWorld].
-      await refreshStaleDemoWorld(locale: locale);
+      await refreshStaleDemoWorld(locale: locale, onProgress: onProgress);
       return;
     }
     final existing = await findDemoProfile();
@@ -126,7 +143,7 @@ class DemoModeGateway {
       }
       await registry.deleteGuestProfile(existing.id);
     }
-    await _createAndEnter(locale);
+    await _createAndEnter(locale, onProgress: onProgress);
   }
 
   /// Reseeds a stale demo world the app is ALREADY sitting in.
@@ -153,6 +170,7 @@ class DemoModeGateway {
   Future<bool> refreshStaleDemoWorld({
     required Locale locale,
     FutureOr<void> Function()? onReseedStarted,
+    DemoSeedProgressCallback? onProgress,
   }) async {
     if (!isDemoActive) return false;
     final existing = await findDemoProfile();
@@ -160,7 +178,7 @@ class DemoModeGateway {
     if (await _hasCurrentSeed(existing)) return false;
     if (await _activeWorldHasUserWork(existing)) return false;
     await onReseedStarted?.call();
-    await resetDemo(locale: locale);
+    await resetDemo(locale: locale, onProgress: onProgress);
     return true;
   }
 
@@ -171,7 +189,10 @@ class DemoModeGateway {
   /// Wipes and reseeds the demo world, then enters it. When called while the
   /// demo is active it exits to the real world first so the demo databases
   /// are closed before their directory is deleted.
-  Future<void> resetDemo({required Locale locale}) async {
+  Future<void> resetDemo({
+    required Locale locale,
+    DemoSeedProgressCallback? onProgress,
+  }) async {
     if (isDemoActive) {
       await exitDemo();
     }
@@ -179,7 +200,7 @@ class DemoModeGateway {
     if (existing != null) {
       await registry.deleteGuestProfile(existing.id);
     }
-    await _createAndEnter(locale);
+    await _createAndEnter(locale, onProgress: onProgress);
   }
 
   /// Deletes the demo profile and its directory tree. Only legal while the
@@ -368,13 +389,20 @@ class DemoModeGateway {
     return providers.any((config) => !seededAiIds.contains(config.id));
   }
 
-  Future<void> _createAndEnter(Locale locale) async {
+  Future<void> _createAndEnter(
+    Locale locale, {
+    DemoSeedProgressCallback? onProgress,
+  }) async {
+    onProgress?.call(const DemoSeedProgress.preparing());
     await DemoWorldCreator(
       registry: registry,
-      activate: activate,
+      activate: (profileId) {
+        onProgress?.call(const DemoSeedProgress.activating());
+        return activate(profileId);
+      },
     ).createAndActivate(
       name: demoProfileName,
-      seed: (world) => _seedRunner(world, locale),
+      seed: (world) => _seedRunner(world, locale, onProgress),
     );
   }
 }

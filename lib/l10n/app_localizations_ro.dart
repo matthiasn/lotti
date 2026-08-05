@@ -4988,6 +4988,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get deleteDeviceLabel => 'Eliminați din sincronizare';
 
   @override
+  String get demoActivatingProgress => 'Se deschide lumea demo…';
+
+  @override
   String get demoAiNudgeBody =>
       'Lumea demo include furnizori de IA fictivi, așa că acțiunile de IA nu pot rula cu adevărat aici. Conectați contul dvs. de IA pentru a folosi IA reală în demo. Cheia dvs. rămâne în această lume demo, cu excepția cazului în care o copiați la ieșire.';
 
@@ -5062,6 +5065,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Datele demo nu au putut fi șterse — încercați din nou.';
 
   @override
+  String demoDownloadingMediaProgress(int completed, int total) {
+    return 'Se descarcă imaginile demo · $completed din $total';
+  }
+
+  @override
   String get demoEnterFailedToast =>
       'Lumea demo nu a putut fi deschisă — încercați din nou.';
 
@@ -5091,6 +5099,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get demoOnboardingExplore => 'Explorați cu date de exemplu';
+
+  @override
+  String get demoPreparingContentProgress =>
+      'Se pregătesc sarcinile și conexiunile…';
 
   @override
   String get demoSettingsDeleteConfirm =>

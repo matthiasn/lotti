@@ -3,6 +3,8 @@ import 'dart:ui' show Locale;
 import 'package:flutter/services.dart' show AssetBundle;
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
+import 'package:lotti/features/demo/seed/demo_seed_media.dart';
+import 'package:lotti/features/demo/seed/demo_seed_progress.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_tutorial_content.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
@@ -29,21 +31,25 @@ import 'package:lotti/utils/consts.dart';
 class DemoSeeder {
   DemoSeeder({
     required this.world,
-    required this.bundle,
+    required AssetBundle bundle,
     DateTime Function()? clock,
-  }) : clock = clock ?? DateTime.now;
+    this.onProgress,
+    DemoSeedMediaInstaller? mediaInstaller,
+  }) : clock = clock ?? DateTime.now,
+       _mediaInstaller =
+           mediaInstaller ?? DemoSeedMediaInstaller(bundle: bundle);
 
   /// Storage handles of the (not yet active) demo world.
   final WorldHandle world;
-
-  /// Asset bundle carrying the nine cover-art webp files (production passes
-  /// `rootBundle`).
-  final AssetBundle bundle;
 
   /// Source of "now" for the world's semantic dates (due today, overdue by
   /// two days, logged last Tuesday) and for the manifest timestamp. Injected
   /// so tests stay deterministic.
   final DateTime Function() clock;
+
+  final DemoSeedProgressCallback? onProgress;
+
+  final DemoSeedMediaInstaller _mediaInstaller;
 
   /// Seeds the world in dependency order and returns the manifest that was
   /// written to `<root>/demo_seed_manifest.json`.
@@ -82,7 +88,20 @@ class DemoSeeder {
     }
 
     // Media bytes before the image entities that reference them.
-    await penguinWorld.installMediaFromBundle(bundle, world.root);
+    await _mediaInstaller.install(
+      documentsDirectory: world.root,
+      images: penguinWorld.coverImages,
+      sources: manualDemoCoverMedia,
+      onProgress: ({required completed, required total}) {
+        onProgress?.call(
+          DemoSeedProgress.downloadingMedia(
+            completed: completed,
+            total: total,
+          ),
+        );
+      },
+    );
+    onProgress?.call(const DemoSeedProgress.writingContent());
 
     // Journal entities in reference order: images, checklist items, the
     // checklists that list them, the tasks that own those checklists, then

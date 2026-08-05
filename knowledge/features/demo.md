@@ -11,15 +11,27 @@ sources:
   - id: gateway
     resource: ../../lib/features/demo/state/demo_mode_gateway.dart
     title: DemoModeGateway
-    last_modified: 2026-08-05
+    last_modified: 2026-08-06
   - id: seeder
     resource: ../../lib/features/demo/seed/demo_seeder.dart
     title: DemoSeeder
-    last_modified: 2026-08-05
+    last_modified: 2026-08-06
   - id: world
     resource: ../../lib/features/demo/seed/demo_world.dart
     title: ManualDemoWorld penguin-logistics fixture
-    last_modified: 2026-08-05
+    last_modified: 2026-08-06
+  - id: seed-media
+    resource: ../../lib/features/demo/seed/demo_seed_media.dart
+    title: Checksum-pinned demo media installer
+    last_modified: 2026-08-06
+  - id: seed-progress
+    resource: ../../lib/features/demo/seed/demo_seed_progress.dart
+    title: Demo seed progress phases
+    last_modified: 2026-08-06
+  - id: entry-progress
+    resource: ../../lib/features/demo/ui/demo_entry_launcher.dart
+    title: Blocking demo-entry progress page
+    last_modified: 2026-08-06
   - id: dates
     resource: ../../lib/features/demo/seed/demo_dates.dart
     title: DemoDates semantic clock
@@ -119,13 +131,35 @@ stateDiagram-v2
 
 The seeder writes exclusively through the `WorldHandle` — never through
 getIt or `PersistenceLogic` — in dependency order: categories + labels +
-habits, AI configs (providers → models → profiles → skills), media bytes from
-the asset bundle, journal entities in reference order (habit completions among
-them, which is why the habit definitions precede them), then every
+habits, AI configs (providers → models → profiles → skills), verified media
+bytes, journal entities in reference order (habit completions among them, which
+is why the habit definitions precede them), then every
 `linked_entries` row (links last, because both endpoints must already exist),
 config flags (Daily OS, tooltips and the habits page on; sync, notifications,
 geolocation and dashboards off), and FTUE suppression in the demo's own
 `settings.sqlite`.
+
+The nine cover files have immutable, content-addressed R2 URLs plus SHA-256
+digests in `manualDemoCoverMedia`. Production tries R2 first and falls back to
+the identically verified bundled asset when the network is unavailable. A
+checksum mismatch never falls back: it is an integrity failure, not an offline
+case. Bytes are cached by digest and copied into the world before any
+`JournalImage` row that refers to them is written. If any required byte cannot
+be installed, seeding throws; `DemoWorldCreator` deletes the half-built guest
+directory and never activates it. There is therefore no database state that
+claims an image exists while its download is still pending.
+
+```mermaid
+flowchart LR
+    Prepare[Prepare guest world] --> Download[Download and verify media]
+    Download -->|network unavailable| Bundle[Verify bundled fallback]
+    Download -->|verified| Files[Write media files]
+    Bundle --> Files
+    Files --> Rows[Write image and content rows]
+    Rows --> Activate[Activate demo world]
+    Download -->|checksum or required-source failure| Delete[Delete guest world]
+    Bundle -->|missing or checksum failure| Delete
+```
 
 The habits page is on because the world carries three habits — two live daily
 ones under Penguin Operations and one retired — with three weeks of completion
@@ -231,7 +265,9 @@ Three ways in, one strip while inside:
 `DemoModeScaffold` wraps the app shell in `beamer_app.dart` and mounts the
 persistent banner while a demo world is active — structural height (a
 Column, never an overlay), absorbing the top safe-area itself. Entry and
-reset push a blocking full-screen progress route; the generation switch
+reset push a blocking full-screen progress route. It moves through preparing,
+media download with an exact completed/total count, content writes, and final
+activation; the demo remains inactive for the entire route. The generation switch
 replaces the entire tree, which is also why no post-exit toast can report
 the copied-item count (the gateway returns it for logs and tests only).
 Copy-apply *failures* do surface, though: they happen after the switch, so
@@ -262,7 +298,7 @@ through `t()` is missing from any of the nine catalogs.
 The world is 28 tasks in four clusters (launch readiness, habitat
 engineering, logistics & supply, colony life) across three categories, wired
 by ~110 `linked_entries` rows to each other and to 20 notes, 11 logged-time
-records and the nine bundled cover photos. That web is what the
+records and the nine checksum-pinned cover photos. That web is what the
 [knowledge graph](../../lib/features/knowledge_graph/README.md) walks:
 it BFSes two hops from the focus task, so a fixture of isolated tasks would
 render a single node. Four hub tasks carry six or more neighbours; every

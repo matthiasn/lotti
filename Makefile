@@ -228,6 +228,7 @@ manual_screenshots_locale:
 	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/pages/create/create_measurement_dialog_screenshots_test.dart
 	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/settings/ui/settings_preferences_screenshots_test.dart
 	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/tasks/ui/widgets/task_manual_screenshots_test.dart
+	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/knowledge_graph/ui/knowledge_graph_manual_screenshots_test.dart
 	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/projects/ui/pages/projects_manual_screenshots_test.dart
 	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/events/ui/pages/events_manual_screenshots_test.dart
 	LOTTI_MANUAL_LOCALE="$(MANUAL_LOCALE)" LOTTI_SCREENSHOT_DIR="$(MANUAL_CAPTURE_DIR)" fvm flutter test test/features/journal/ui/pages/journal_manual_screenshots_test.dart

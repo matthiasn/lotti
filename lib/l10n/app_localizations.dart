@@ -8315,6 +8315,12 @@ abstract class AppLocalizations {
   /// **'Remove from sync'**
   String get deleteDeviceLabel;
 
+  /// No description provided for @demoActivatingProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Opening the demo world…'**
+  String get demoActivatingProgress;
+
   /// No description provided for @demoAiNudgeBody.
   ///
   /// In en, this message translates to:
@@ -8435,6 +8441,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t delete the demo data — try again.'**
   String get demoDeleteFailedToast;
 
+  /// No description provided for @demoDownloadingMediaProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading demo images · {completed} of {total}'**
+  String demoDownloadingMediaProgress(int completed, int total);
+
   /// No description provided for @demoEnterFailedToast.
   ///
   /// In en, this message translates to:
@@ -8488,6 +8500,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Explore with sample data'**
   String get demoOnboardingExplore;
+
+  /// No description provided for @demoPreparingContentProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Preparing tasks and connections…'**
+  String get demoPreparingContentProgress;
 
   /// No description provided for @demoSettingsDeleteConfirm.
   ///

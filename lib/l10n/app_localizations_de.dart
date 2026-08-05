@@ -4939,6 +4939,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteDeviceLabel => 'Aus Sync entfernen';
 
   @override
+  String get demoActivatingProgress => 'Demo-Welt wird geöffnet…';
+
+  @override
   String get demoAiNudgeBody =>
       'Die Demo-Welt enthält fiktive KI-Anbieter, daher können KI-Aktionen hier nicht wirklich laufen. Verbinde dein eigenes KI-Konto, um echte KI in der Demo zu nutzen. Dein Schlüssel bleibt in dieser Demo-Welt, außer du kopierst ihn beim Verlassen mit.';
 
@@ -5012,6 +5015,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Die Demo-Daten konnten nicht gelöscht werden — versuch es noch mal.';
 
   @override
+  String demoDownloadingMediaProgress(int completed, int total) {
+    return 'Demo-Bilder werden geladen · $completed von $total';
+  }
+
+  @override
   String get demoEnterFailedToast =>
       'Die Demo-Welt konnte nicht geöffnet werden — versuch es noch mal.';
 
@@ -5041,6 +5049,10 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get demoOnboardingExplore => 'Mit Beispieldaten erkunden';
+
+  @override
+  String get demoPreparingContentProgress =>
+      'Aufgaben und Verbindungen werden vorbereitet…';
 
   @override
   String get demoSettingsDeleteConfirm =>
