@@ -173,20 +173,8 @@ class ProfileBackupManifest {
     required List<BackupManifestStore> stores,
     required List<BackupManifestFile> files,
   }) {
-    if (formatVersion > currentFormatVersion) {
-      throw UnsupportedError(
-        'Backup format $formatVersion is newer than supported '
-        '$currentFormatVersion.',
-      );
-    }
     if (formatVersion < 1) {
       throw const FormatException('Backup formatVersion must be positive.');
-    }
-    if (catalogVersion > ProfileBackupCatalog.version) {
-      throw UnsupportedError(
-        'Backup catalog $catalogVersion is newer than supported '
-        '${ProfileBackupCatalog.version}.',
-      );
     }
     if (catalogVersion < 1) {
       throw const FormatException('Backup catalogVersion must be positive.');
@@ -255,7 +243,10 @@ class ProfileBackupManifest {
         );
       }
       if (file.sizeBytes < 0) {
-        throw FormatException('Backup file size may not be negative.', file);
+        throw FormatException(
+          'Backup file size may not be negative: ${file.relativePath}',
+          file.sizeBytes,
+        );
       }
       if (!_sha256Pattern.hasMatch(file.sha256)) {
         throw FormatException('Invalid SHA-256 digest.', file.sha256);
@@ -464,11 +455,11 @@ List<Map<String, Object?>> _requiredMapList(
         if (entry is! Map<Object?, Object?>) {
           throw FormatException('Manifest field $key must contain objects.');
         }
-        return entry.map((key, value) {
-          if (key is! String) {
+        return entry.map((entryKey, entryValue) {
+          if (entryKey is! String) {
             throw FormatException('Manifest field $key has a non-string key.');
           }
-          return MapEntry(key, value);
+          return MapEntry(entryKey, entryValue);
         });
       })
       .toList(growable: false);

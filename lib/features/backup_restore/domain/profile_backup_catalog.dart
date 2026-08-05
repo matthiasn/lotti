@@ -440,7 +440,9 @@ abstract final class ProfileBackupCatalog {
           relativePath.startsWith('${store.relativePath}/')) {
         if (directoryMatch == null ||
             store.relativePath.length > directoryMatch.relativePath.length) {
-          directoryMatch = store;
+          // No current directory policies overlap; this preserves the intended
+          // longest-prefix behavior for future nested policies.
+          directoryMatch = store; // coverage:ignore-line
         }
       }
     }

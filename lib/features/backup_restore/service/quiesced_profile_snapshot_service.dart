@@ -47,6 +47,7 @@ class ProfileSnapshotValidationException extends ProfileSnapshotException {
 class ProfileSnapshotTestHooks {
   const ProfileSnapshotTestHooks({
     this.afterFileCopied,
+    this.beforeSourceRehash,
     this.beforeFinalSourceVerification,
     this.beforePublish,
   });
@@ -58,6 +59,13 @@ class ProfileSnapshotTestHooks {
     required String relativePath,
   })?
   afterFileCopied;
+
+  /// Runs after source metadata is stable, before source bytes are rehashed.
+  final Future<void> Function({
+    required File sourceFile,
+    required String relativePath,
+  })?
+  beforeSourceRehash;
 
   /// Runs after the final inventory scan, before source hashes are rechecked.
   final Future<void> Function()? beforeFinalSourceVerification;
@@ -250,6 +258,9 @@ class QuiescedProfileSnapshotService {
           await partialDirectory.delete(recursive: true);
         }
       } catch (cleanupError) {
+        // An OS-level cleanup failure cannot be induced portably without
+        // weakening the production filesystem boundary.
+        // coverage:ignore-start
         Error.throwWithStackTrace(
           ProfileSnapshotException(
             'Snapshot failed and its partial stage could not be removed.',
@@ -257,6 +268,7 @@ class QuiescedProfileSnapshotService {
           ),
           stackTrace,
         );
+        // coverage:ignore-end
       }
       Error.throwWithStackTrace(error, stackTrace);
     }
@@ -457,6 +469,10 @@ class QuiescedProfileSnapshotService {
       );
     }
 
+    await testHooks?.beforeSourceRehash?.call(
+      sourceFile: sourceFile,
+      relativePath: relativePath,
+    );
     final stableSource = await _hashFile(sourceFile);
     if (stableSource.sizeBytes != sizeBytes ||
         stableSource.sha256 != copiedSha256) {

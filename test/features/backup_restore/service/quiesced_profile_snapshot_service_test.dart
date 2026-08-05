@@ -132,6 +132,30 @@ void main() {
       expect(stagingParent.listSync(), isEmpty);
     });
 
+    test('uses a safe generated id when no generator is injected', () async {
+      createRequiredDatabases();
+      final snapshot =
+          await QuiescedProfileSnapshotService(
+            now: () => DateTime.utc(2026, 8, 6, 12, 30),
+          ).stage(
+            sourceRoot: sourceRoot,
+            stagingParent: stagingParent,
+            appVersion: '1.0.4+4285',
+            profileType: 'real',
+          );
+
+      expect(
+        p.basename(snapshot.directory.path),
+        matches(
+          RegExp(
+            '^profile-snapshot-[0-9a-f]{8}-[0-9a-f]{4}-'
+            r'[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$',
+          ),
+        ),
+      );
+      expect(snapshot.manifest.createdAt, DateTime.utc(2026, 8, 6, 12, 30));
+    });
+
     test('preserves an existing snapshot destination', () async {
       createRequiredDatabases();
       final existing = Directory(
@@ -577,6 +601,49 @@ void main() {
       expect(stagingParent.listSync(), isEmpty);
     });
 
+    test('detects a file replaced before its copy starts', () async {
+      createRequiredDatabases();
+      final image = File(p.join(sourceRoot.path, 'images/photo.jpg'));
+      image.parent.createSync(recursive: true);
+      image.writeAsStringSync('original');
+      final external = File(p.join(testRoot.path, 'outside.jpg'))
+        ..writeAsStringSync('outside');
+      var replaced = false;
+
+      await expectLater(
+        service(
+          hooks: ProfileSnapshotTestHooks(
+            afterFileCopied:
+                ({
+                  required sourceFile,
+                  required targetFile,
+                  required relativePath,
+                }) async {
+                  if (!replaced && relativePath == 'db.sqlite') {
+                    replaced = true;
+                    image.deleteSync();
+                    Link(image.path).createSync(external.path);
+                  }
+                },
+          ),
+        ).stage(
+          sourceRoot: sourceRoot,
+          stagingParent: stagingParent,
+          appVersion: '1.0.4+4285',
+          profileType: 'real',
+        ),
+        throwsA(
+          isA<ProfileSnapshotSourceChangedException>().having(
+            (error) => error.message,
+            'message',
+            contains('no longer a regular file'),
+          ),
+        ),
+      );
+      expect(replaced, isTrue);
+      expect(stagingParent.listSync(), isEmpty);
+    });
+
     test('detects source size drift immediately after copying', () async {
       createRequiredDatabases();
       final image = File(p.join(sourceRoot.path, 'images/photo.jpg'));
@@ -611,6 +678,42 @@ void main() {
           ),
         ),
       );
+      expect(stagingParent.listSync(), isEmpty);
+    });
+
+    test('detects byte drift between metadata and source rehash', () async {
+      createRequiredDatabases();
+      final image = File(p.join(sourceRoot.path, 'images/photo.jpg'));
+      image.parent.createSync(recursive: true);
+      image.writeAsStringSync('AAAA');
+      var mutated = false;
+
+      await expectLater(
+        service(
+          hooks: ProfileSnapshotTestHooks(
+            beforeSourceRehash:
+                ({required sourceFile, required relativePath}) async {
+                  if (!mutated && relativePath == 'images/photo.jpg') {
+                    mutated = true;
+                    sourceFile.writeAsStringSync('BBBB');
+                  }
+                },
+          ),
+        ).stage(
+          sourceRoot: sourceRoot,
+          stagingParent: stagingParent,
+          appVersion: '1.0.4+4285',
+          profileType: 'real',
+        ),
+        throwsA(
+          isA<ProfileSnapshotSourceChangedException>().having(
+            (error) => error.message,
+            'message',
+            contains('Source bytes changed'),
+          ),
+        ),
+      );
+      expect(mutated, isTrue);
       expect(stagingParent.listSync(), isEmpty);
     });
 
