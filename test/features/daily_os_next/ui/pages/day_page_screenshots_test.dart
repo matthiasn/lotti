@@ -156,7 +156,7 @@ DraftPlan _plan() {
         'Best done before Mission Control and the penguins get chatty',
         'Am besten, bevor Missionskontrolle und Pinguine gesprächig werden',
       ),
-      taskId: 'task-orbital-habitat',
+      taskId: manualOrbitalHabitatTaskId,
     ),
     TimeBlock(
       id: 'blk-buffer',
@@ -271,7 +271,7 @@ DraftPlan _plan() {
       ),
       AgendaItem(
         id: 'ag-deep',
-        taskId: 'task-orbital-habitat',
+        taskId: manualOrbitalHabitatTaskId,
         title: _t(
           'Inspect orbital penguin habitat',
           'Pinguin-Habitat im Orbit inspizieren',
