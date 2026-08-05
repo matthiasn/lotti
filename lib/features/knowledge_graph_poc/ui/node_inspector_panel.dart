@@ -583,10 +583,14 @@ class _Kicker extends StatelessWidget {
             color: tokens.colors.text.highEmphasis,
           ),
           SizedBox(width: tokens.spacing.step2),
-          Text(
-            label.toUpperCase(),
-            style: tokens.typography.styles.others.overline.copyWith(
-              color: tokens.colors.text.highEmphasis,
+          Flexible(
+            child: Text(
+              label.toUpperCase(),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.others.overline.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
             ),
           ),
         ],

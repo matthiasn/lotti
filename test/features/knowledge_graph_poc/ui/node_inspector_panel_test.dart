@@ -399,6 +399,7 @@ void main() {
       VoidCallback? onBack,
       VoidCallback? onRecenter,
       VoidCallback? onOpen,
+      double panelWidth = 360,
     }) async {
       tester.view
         ..physicalSize = const Size(420, 900)
@@ -410,7 +411,7 @@ void main() {
         makeTestableWidgetNoScroll(
           Center(
             child: SizedBox(
-              width: 360,
+              width: panelWidth,
               height: 860,
               // The timeline rows use InkWell, which needs a Material ancestor;
               // the panel itself is a frosted DecoratedBox with no Material.
@@ -470,6 +471,23 @@ void main() {
       );
       // No categoryNames entry → the raw id is used as the label.
       expect(find.text('PROJECT · HEALTH'), findsOneWidget);
+    });
+
+    testWidgets('kicker stays within a narrow inspector', (tester) async {
+      const label = 'TASK · AN EXTREMELY LONG CATEGORY NAME';
+      await pumpPanel(
+        tester,
+        node: node(categoryId: 'long-category'),
+        categoryNames: const {
+          'long-category': 'An extremely long category name',
+        },
+        panelWidth: 300,
+      );
+
+      final kicker = tester.widget<Text>(find.text(label));
+      expect(kicker.maxLines, 1);
+      expect(kicker.overflow, TextOverflow.ellipsis);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('keeps the AI summary collapsed until requested', (
