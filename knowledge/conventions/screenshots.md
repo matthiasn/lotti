@@ -1,9 +1,9 @@
 ---
 type: Convention
 title: Screenshots
-description: Where captured images live — never in this repository — and why a UI pull request carries a before/after pair rather than one picture of the new thing.
+description: How generated screenshots leave this repository for R2, and why a UI pull request carries an immutable before/after pair rather than one picture of the new thing.
 resource: ../../test/test_utils/screenshot_harness.dart
-tags: [convention, screenshots, review, pull-request, lotti-docs]
+tags: [convention, screenshots, review, pull-request, r2]
 status: stable
 generated: { by: claude-code/opus-5, at: 2026-08-01T12:10:00Z }
 stale_after: 2027-02-01
@@ -20,24 +20,22 @@ sources:
     resource: ../../.gitignore
     title: The `screenshots` ignore rule
     last_modified: 2026-07-24
-  - id: lotti-docs
-    resource: https://github.com/matthiasn/lotti-docs
-    title: lotti-docs — the media repository
-    last_modified: 2026-07-26
+  - id: pr-publisher
+    resource: ../../tool/pr_screenshot_publish.py
+    title: Immutable PR screenshot publisher
+    last_modified: 2026-08-05
 ---
 
 # Images do not live in this repository
 
 `assets/` holds what the *app* ships — icons, tutorial media, design-system
 exports. **Everything captured for humans to look at leaves this repository.**
-The generated manual catalog is published to the Cloudflare R2 bucket that
-also hosts the tutorial videos; hand-picked release imagery and pull-request
-review evidence go to the sibling
-[`lotti-docs`](https://github.com/matthiasn/lotti-docs) repository and are
-referenced from here by raw URL:
+The generated manual catalog and pull-request review evidence publish to the
+Cloudflare R2 bucket that also hosts the tutorial videos. Pull-request images
+use commit-addressed public URLs:
 
 ```markdown
-![Task details on macOS](https://raw.githubusercontent.com/matthiasn/lotti-docs/main/images/0.9.998/task_details_screenshot_macos.png)
+![Ontology viewer after](https://pub-3df7bcf4b8ca493fa6acea182d69d9c7.r2.dev/pr-screenshots/ontology-viewer-redesign/71a1db255fb0ba913b5aa65578787c72c6302033/after/ontology_viewer_desktop_after.png)
 ```
 
 That split keeps a Flutter checkout from carrying megabytes of PNGs that change
@@ -56,8 +54,8 @@ Which home an image belongs in follows from who regenerates it:
 | Destination | Contents | Lifecycle |
 |-------------|----------|-----------|
 | R2 bucket, `manual/screenshots/<version>/<case-id>/` | The **generated** manual catalog — `mobile-light`, `mobile-dark`, `desktop-light`, `desktop-dark` per case, plus `manifest.json` | Produced by `make manual_screenshots` and published by the `manual.yml` CI lane; never hand-edited or renamed. `development/` is refreshed with deletion (retired cases disappear), numbered release prefixes are immutable — publishing refuses to overwrite an existing manifest. The app `README.md` embeds from this catalog too, so its screenshots age with the app rather than with whoever last remembered to retake them |
-| `lotti-docs`: `images/<app-version>/` | Hand-picked shots for release communication and the README | Written once per release, then left alone |
-| `lotti-docs`: `pr-screenshots/<topic-slug>/` | **Review evidence** for a pull request | Written by hand while the work is in review; kept afterwards as the record of what reviewers saw |
+| R2 bucket, `pr-screenshots/<topic-slug>/<app-commit>/` | **Review evidence** for a pull request | Published from an external capture directory by `make pr_screenshots_publish`. Objects are immutable: an identical retry is a no-op, while changed pixels require a new filename or commit prefix |
+| `lotti-docs`: `images/<app-version>/` | Existing hand-picked release imagery and historical review captures | Legacy archive only; new PR evidence does not require a branch, commit, or pull request in this repository |
 
 `make manual_screenshots` stages captures and the materialized catalog under
 the gitignored `build/manual_capture/` and `build/manual_media/` directories;
@@ -118,24 +116,39 @@ change.
 Reconstructing it afterwards means stashing work and re-running the harness, which
 is the step people skip; that is why the pairs go missing.
 
-Then link the raw URLs from the pull-request body. A maintainer with push access
-to `lotti-docs` commits them there; **an outside contributor cannot**, and should
-attach the images to the pull request through GitHub's own upload instead. Both
-are acceptable evidence — what is not acceptable is committing them to this
-repository, or omitting the before.
+Publish the pair from its external staging directory after the app commit exists:
+
+```bash
+make pr_screenshots_publish \
+  PR_SCREENSHOT_SOURCE=/tmp/lotti-pr-screenshots/<topic-slug> \
+  PR_SCREENSHOT_TOPIC=<topic-slug> \
+  PR_SCREENSHOT_COMMIT=$(git rev-parse HEAD) \
+  PR_SCREENSHOT_ENV=/path/to/lotti/.env
+```
+
+The command requires `boto3` and the same five `R2_*` values as tutorial-video
+publishing. It records a SHA-256 on every object and refuses to overwrite a key
+whose content differs. Published objects have `image/png` and
+`Cache-Control: public,max-age=31536000,immutable`; that one year is the client
+cache lifetime, not object expiration. The R2 object remains until explicitly
+deleted by a bucket lifecycle or maintainer.
+
+Link the printed public URLs from the pull-request body. A contributor without
+R2 credentials should attach images through GitHub's own upload instead. What
+is not acceptable is committing generated screenshots to this repository,
+overwriting a published review object, or omitting the before state.
 
 # Honest state of the existing tree
 
-`pr-screenshots/` holds about 1,100 files across roughly 37 topics, and it is
-**not** uniform: 24 topics have an `after/` while only 14 have a `before/`, some
-put files directly in the topic directory, and one-off subdirectory names
-(`baseline/`, `current/`, `reference/`, `variants/`) appear where a pair was not
-the shape of the question.
+The historical `lotti-docs/pr-screenshots/` tree holds about 1,100 files across
+roughly 37 topics, and it is **not** uniform: 24 topics have an `after/` while
+only 14 have a `before/`, some put files directly in the topic directory, and
+one-off subdirectory names (`baseline/`, `current/`, `reference/`, `variants/`)
+appear where a pair was not the shape of the question.
 
 Read that as the convention arriving after the practice rather than as licence.
 The `before/` + `after/` pair above is what new work should produce; the older
-shapes are history, and `lotti-docs`'s own README documents only the generated
-manual catalog, not this tree.
+shapes are history, not the R2 contract for new work.
 
 # Related
 
