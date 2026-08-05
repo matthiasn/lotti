@@ -12456,7 +12456,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceReSyncEverything.
   ///
   /// In en, this message translates to:
-  /// **'Everything'**
+  /// **'All'**
   String get maintenanceReSyncEverything;
 
   /// No description provided for @maintenanceReSyncFailed.
@@ -12482,6 +12482,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Last 30 days'**
   String get maintenanceReSyncLast30Days;
+
+  /// No description provided for @maintenanceReSyncPartialDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'{failed, plural, =1{1 entry failed. Retry just that entry.} other{{failed} entries failed. Retry just those entries.}}'**
+  String maintenanceReSyncPartialDescription(int failed);
+
+  /// No description provided for @maintenanceReSyncPartialTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'{succeeded} of {total} messages queued'**
+  String maintenanceReSyncPartialTitle(int succeeded, int total);
+
+  /// No description provided for @maintenanceReSyncRetryFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Retry failed entries'**
+  String get maintenanceReSyncRetryFailed;
 
   /// No description provided for @maintenanceReSyncSelectAtLeastOne.
   ///

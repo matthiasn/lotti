@@ -9,9 +9,11 @@ import 'package:lotti/classes/config.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/models/pairing_check_code.dart';
+import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/state/provisioning_controller.dart';
 import 'package:lotti/features/sync/ui/provisioned/bundle_import_page.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_wizard_progress_track.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/utils/platform.dart';
@@ -27,11 +29,12 @@ void main() {
 
   late MockMatrixService mockMatrixService;
   late MockLoggingService mockLoggingService;
+  late MockOnboardingSyncService mockOnboardingSyncService;
   late ValueNotifier<int> pageIndexNotifier;
 
   const testBundle = SyncProvisioningBundle(
     v: 2,
-    kind: SyncBundleKind.provisioned,
+    kind: SyncBundleKind.handover,
     homeServer: 'https://matrix.example.com',
     user: '@alice:example.com',
     password: 'secret123',
@@ -40,6 +43,14 @@ void main() {
 
   final validBase64 = base64UrlEncode(
     utf8.encode(jsonEncode(testBundle.toJson())),
+  );
+
+  final firstDeviceBase64 = base64UrlEncode(
+    utf8.encode(
+      jsonEncode(
+        testBundle.copyWith(kind: SyncBundleKind.provisioned).toJson(),
+      ),
+    ),
   );
 
   setUpAll(() {
@@ -54,8 +65,10 @@ void main() {
   setUp(() {
     mockMatrixService = MockMatrixService();
     mockLoggingService = MockLoggingService();
+    mockOnboardingSyncService = MockOnboardingSyncService();
     pageIndexNotifier = ValueNotifier(0);
     ensureDomainLoggerRegistered();
+    getIt.registerSingleton<OnboardingSyncService>(mockOnboardingSyncService);
 
     when(() => mockMatrixService.setConfig(any())).thenAnswer((_) async {});
     when(
@@ -87,6 +100,11 @@ void main() {
         password: 'secret123',
       ),
     );
+    when(
+      () => mockOnboardingSyncService.beginInboundPreflight(
+        recipientUserId: any(named: 'recipientUserId'),
+      ),
+    ).thenAnswer((_) async => 'preflight-round');
   });
 
   tearDown(() async {
@@ -197,6 +215,41 @@ void main() {
         findsOneWidget,
       );
     });
+
+    testWidgets(
+      'first-device provisioning skips the peer comparison and connects',
+      (tester) async {
+        await tester.pumpWidget(
+          makeTestableWidgetWithScaffold(
+            BundleImportWidget(pageIndexNotifier: pageIndexNotifier),
+            overrides: defaultOverrides(),
+          ),
+        );
+        await tester.pump();
+
+        await tester.enterText(find.byType(TextField), firstDeviceBase64);
+        await tester.pump();
+        final context = tester.element(find.byType(BundleImportWidget));
+        await tester.tap(
+          find.text(context.messages.provisionedSyncImportButton),
+        );
+        await tester.pump();
+
+        expect(pageIndexNotifier.value, 1);
+        expect(
+          find.byKey(const Key('bundle_import_compare_heading')),
+          findsNothing,
+        );
+        expect(
+          find.byKey(const Key('bundle_import_check_code')),
+          findsNothing,
+        );
+        verify(() => mockMatrixService.setConfig(any())).called(1);
+        verify(
+          () => mockMatrixService.login(waitForLifecycle: false),
+        ).called(1);
+      },
+    );
 
     testWidgets('shows error for invalid Base64 paste', (tester) async {
       await tester.pumpWidget(

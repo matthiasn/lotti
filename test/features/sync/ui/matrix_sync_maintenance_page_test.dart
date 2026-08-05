@@ -52,7 +52,7 @@ void main() {
           includeAgentEntities: any(named: 'includeAgentEntities'),
           onProgress: any(named: 'onProgress'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => ReSyncResult.empty);
       when(
         () => mockMaintenance.purgeSentOutboxItems(
           retention: any(named: 'retention'),
@@ -328,7 +328,7 @@ void main() {
           includeAgentEntities: any(named: 'includeAgentEntities'),
           onProgress: any(named: 'onProgress'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => ReSyncResult.empty);
       when(() => mockMaintenance.deleteSyncDb()).thenAnswer((_) async {});
 
       getIt

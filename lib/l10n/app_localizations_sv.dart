@@ -7242,6 +7242,26 @@ class AppLocalizationsSv extends AppLocalizations {
   String get maintenanceReSyncLast30Days => 'Senaste 30 dagarna';
 
   @override
+  String maintenanceReSyncPartialDescription(int failed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      failed,
+      locale: localeName,
+      other: '$failed poster misslyckades. Försök bara med de posterna igen.',
+      one: '1 post misslyckades. Försök bara med den posten igen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String maintenanceReSyncPartialTitle(int succeeded, int total) {
+    return '$succeeded av $total meddelanden köade';
+  }
+
+  @override
+  String get maintenanceReSyncRetryFailed =>
+      'Försök igen med misslyckade poster';
+
+  @override
   String get maintenanceReSyncSelectAtLeastOne => 'Välj minst en entitetstyp';
 
   @override

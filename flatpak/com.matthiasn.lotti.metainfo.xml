@@ -37,6 +37,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.3" date="2026-08-05">
+      <description>
+        <p>Fixed: initial Sync setup no longer gets stuck on impossible checks or one bad row. A first device skips the comparison code that only a second device can verify, while added devices still confirm it. Message history now clearly offers All, custom ranges use the full calendar including the year, and one malformed history row no longer stops the remaining history from being queued. The summary names failed rows and retries only those rows.</p>
+      </description>
+    </release>
     <release version="1.0.2" date="2026-08-04">
       <description>
         <p>Fixed: health imports stop asking for permission you have already answered. Lotti requested authorization on every import, including the background ones a dashboard starts for each of its health cards on open. Once a data type has been answered for — allowed, or switched off in your device's health privacy settings — asking again cannot change anything, and what you got was a sheet with nothing in it to answer, every time you opened the dashboard. Access is now asked for once per session, and again only when you tap a row on Settings → Advanced → Health Import, which is when asking is the point.</p>

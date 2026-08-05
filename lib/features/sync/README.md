@@ -43,21 +43,24 @@ merge of two users' work.
   emoji ceremony, plus the settings and message-history pushes that only the
   other device can send. Both transfers stay beside the pairing code and remain
   disabled until that exact new device's Matrix verification ceremony succeeds
-  (roster order never chooses the target): message history
-  defaults to everything, with 30-day and custom ranges available, and shows
-  progress until the messages are queued. During that full initial transfer,
-  the new device starts holding off automatic history requests before it logs
-  in, so even the first queue drain cannot ask for data that is about to arrive;
-  a failed or disconnected transfer releases that hold automatically, and
-  manual recovery stays available. Choosing a partial range, closing the
+  (roster order never chooses the target): message history defaults to All,
+  with 30-day and custom ranges available. Custom dates use the same full-year
+  calendar as the rest of the app. Progress remains visible until every row has
+  been attempted; an isolated failure names the affected row and can be retried
+  without requeueing everything that succeeded. During that full initial
+  transfer, the new device starts holding off automatic history requests before
+  it logs in, so even the first queue drain cannot ask for data that is about to
+  arrive; a failed or disconnected transfer releases that hold automatically,
+  and manual recovery stays available. Choosing a partial range, closing the
   history sheet without starting, or closing Add Device after verification
   releases the provisional hold without suppressing unrelated repair.
-- **Gives both devices something a person can actually compare.** Before
-  anything is configured, the joining device shows which account it is about to
-  join and a six-character check code that the inviting device derives
-  independently and displays too — so a wrong or stale code is something to back
-  out of rather than discover afterwards. A code from a different Lotti release
-  says so instead of calling itself invalid.
+- **Confirms a handover only when another device can compare it.** A joining
+  second device shows which account it is about to join and a six-character
+  check code that the inviting device derives independently and displays too —
+  so a wrong or stale code is something to back out of rather than discover
+  afterwards. A CLI-provisioned first device has no peer displaying a code, so
+  it skips this comparison and starts configuration immediately. A code from a
+  different Lotti release says so instead of calling itself invalid.
 - **Lets the user manage the device roster.** The sync status page lists every
   session on the account — verified or not, with when the server last saw it —
   and any of this account's sessions except the current one can be removed.

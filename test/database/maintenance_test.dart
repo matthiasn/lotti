@@ -222,6 +222,7 @@ void main() {
           any<Object>(),
           stackTrace: any<StackTrace>(named: 'stackTrace'),
           subDomain: any<String?>(named: 'subDomain'),
+          message: any<String?>(named: 'message'),
         ),
       ).thenAnswer((invocation) {
         // error(LogDomain, Object error, ...): the error object is the
@@ -326,35 +327,74 @@ void main() {
         expect(journalMessages.single.includeAttachments, isTrue);
       });
 
-      test('propagates a journal enqueue failure', () async {
-        final timestamp = DateTime(2024, 1, 15);
-        await _insertEntries(journalDb, [
-          _buildJournalEntry(
-            id: 'enqueue-failure',
-            timestamp: timestamp,
-            text: 'Failure',
-          ),
-        ]);
-        when(
-          () => outboxService.enqueueMessageOrThrow(any()),
-        ).thenThrow(Exception('outbox write failed'));
+      test(
+        'isolates a journal enqueue failure and retries only that row',
+        () async {
+          final timestamp = DateTime(2024, 1, 15);
+          await _insertEntries(journalDb, [
+            _buildJournalEntry(
+              id: 'before-failure',
+              timestamp: timestamp,
+              text: 'Before',
+            ),
+            _buildJournalEntry(
+              id: 'enqueue-failure',
+              timestamp: timestamp.add(const Duration(minutes: 1)),
+              text: 'Failure',
+            ),
+            _buildJournalEntry(
+              id: 'after-failure',
+              timestamp: timestamp.add(const Duration(minutes: 2)),
+              text: 'After',
+            ),
+          ]);
+          var failTarget = true;
+          when(
+            () => outboxService.enqueueMessageOrThrow(any()),
+          ).thenAnswer((invocation) async {
+            final message =
+                invocation.positionalArguments.single as SyncMessage;
+            if (failTarget &&
+                message is SyncJournalEntity &&
+                message.id == 'enqueue-failure') {
+              throw Exception('outbox write failed');
+            }
+            sentMessages.add(message);
+          });
 
-        await expectLater(
-          maintenance.reSyncInterval(
+          final result = await maintenance.reSyncInterval(
             start: timestamp.subtract(const Duration(days: 1)),
             end: timestamp.add(const Duration(days: 1)),
             agentRepository: mockAgentRepo,
             includeAgentEntities: false,
-          ),
-          throwsA(
-            isA<Exception>().having(
-              (error) => error.toString(),
-              'message',
-              contains('outbox write failed'),
-            ),
-          ),
-        );
-      });
+          );
+
+          expect(
+            sentMessages.whereType<SyncJournalEntity>().map((e) => e.id),
+            ['before-failure', 'after-failure'],
+          );
+          expect(result.succeeded, 2);
+          expect(result.total, 3);
+          expect(result.failures, hasLength(1));
+          expect(result.failures.single.itemId, 'enqueue-failure');
+          expect(
+            result.failures.single.itemType,
+            ReSyncItemType.journalEntity,
+          );
+          expect(loggedExceptions, hasLength(1));
+
+          failTarget = false;
+          final retried = await result.retryFailures();
+
+          expect(retried.succeeded, 3);
+          expect(retried.failures, isEmpty);
+          expect(
+            sentMessages.whereType<SyncJournalEntity>().map((e) => e.id),
+            ['before-failure', 'after-failure', 'enqueue-failure'],
+            reason: 'successful rows must not be queued again during retry',
+          );
+        },
+      );
 
       test('handles pagination beyond the default page size', () async {
         final baseDate = DateTime(2024, 2);
@@ -565,6 +605,118 @@ void main() {
           await agentRepo.upsertLink(link);
         }
       }
+
+      test(
+        'isolates failures across every historical payload family',
+        () async {
+          final timestamp = DateTime(2025, 1, 10, 9);
+          final journalFailure = _buildJournalEntry(
+            id: 'journal-failure',
+            timestamp: timestamp,
+            text: 'Fails once',
+          );
+          final journalSuccess = _buildJournalEntry(
+            id: 'journal-success',
+            timestamp: timestamp.add(const Duration(minutes: 1)),
+            text: 'Still queues',
+          );
+          await _insertEntries(journalDb, [journalFailure, journalSuccess]);
+          await journalDb.upsertEntryLink(
+            _buildEntryLink(
+              id: 'entry-link-failure',
+              fromId: journalFailure.meta.id,
+              toId: journalSuccess.meta.id,
+              timestamp: timestamp,
+            ),
+          );
+
+          final agentFailure = AgentDomainEntity.agent(
+            id: 'agent-entity-failure',
+            agentId: 'agent-1',
+            kind: 'task_agent',
+            displayName: 'Agent',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'agent-state-success',
+            config: const AgentConfig(),
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            vectorClock: const VectorClock({'node': 1}),
+          );
+          final agentSuccess = AgentDomainEntity.agentState(
+            id: 'agent-state-success',
+            agentId: 'agent-1',
+            revision: 1,
+            slots: const AgentSlots(),
+            updatedAt: timestamp,
+            vectorClock: const VectorClock({'node': 2}),
+          );
+          final agentLinkFailure = agent_model.AgentLink.agentState(
+            id: 'agent-link-failure',
+            fromId: 'agent-1',
+            toId: agentSuccess.id,
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            vectorClock: const VectorClock({'node': 3}),
+          );
+          await populateAgentDb(
+            entities: [agentFailure, agentSuccess],
+            links: [agentLinkFailure],
+          );
+
+          var failTargets = true;
+          when(
+            () => outboxService.enqueueMessageOrThrow(any()),
+          ).thenAnswer((invocation) async {
+            final message =
+                invocation.positionalArguments.single as SyncMessage;
+            final isTarget = switch (message) {
+              SyncJournalEntity(:final id) => id == journalFailure.id,
+              SyncEntryLink(:final entryLink) =>
+                entryLink.id == 'entry-link-failure',
+              SyncAgentEntity(:final agentEntity) =>
+                agentEntity?.id == agentFailure.id,
+              SyncAgentLink(:final agentLink) =>
+                agentLink?.id == 'agent-link-failure',
+              _ => false,
+            };
+            if (failTargets && isTarget) {
+              throw StateError('simulated ${message.runtimeType} failure');
+            }
+            sentMessages.add(message);
+          });
+
+          final result = await maintenance.reSyncInterval(
+            start: timestamp.subtract(const Duration(hours: 1)),
+            end: timestamp.add(const Duration(hours: 1)),
+            agentRepository: agentRepo,
+          );
+
+          expect(result.total, 6);
+          expect(result.succeeded, 2);
+          expect(
+            result.failures.map((failure) => failure.itemType).toSet(),
+            ReSyncItemType.values.toSet(),
+          );
+          expect(
+            sentMessages.map((message) => message.runtimeType).toSet(),
+            {SyncJournalEntity, SyncAgentEntity},
+            reason: 'each failed row must leave later phases running',
+          );
+          expect(loggedExceptions, hasLength(4));
+
+          failTargets = false;
+          final retried = await result.retryFailures();
+
+          expect(retried.succeeded, 6);
+          expect(retried.failures, isEmpty);
+          expect(sentMessages, hasLength(6));
+          verify(
+            () => outboxService.enqueueMessageOrThrow(any()),
+          ).called(10);
+        },
+      );
 
       test('enqueues agent entities updated within interval', () async {
         final baseDate = DateTime(2024, 10);

@@ -17,7 +17,6 @@ import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -100,6 +99,24 @@ void main() {
     await tester.pump();
   }
 
+  Future<void> pickCustomDate(
+    WidgetTester tester, {
+    required Key fieldKey,
+    required DateTime date,
+  }) async {
+    await tester.tap(find.byKey(fieldKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final calendar = tester.widget<CalendarDatePicker>(
+      find.byType(CalendarDatePicker),
+    );
+    calendar.onDateChanged(date);
+    await tester.pump();
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Done').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
   setUpAll(registerAllFallbackValues);
 
   setUp(() async {
@@ -111,7 +128,7 @@ void main() {
         stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any<String>(named: 'subDomain'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) async => ReSyncResult.empty);
     await setUpTestGetIt(
       additionalSetup: () {
         getIt
@@ -143,20 +160,21 @@ void main() {
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) async => ReSyncResult.empty);
   });
 
   tearDown(tearDownTestGetIt);
 
-  testWidgets('defaults to Everything and hides custom date fields', (
+  testWidgets('defaults to All and hides custom date fields', (
     tester,
   ) async {
     await pumpModal(tester);
 
-    expect(find.text('Everything'), findsWidgets);
+    expect(find.text('All'), findsWidgets);
     expect(find.text('Last 30 days'), findsWidgets);
     expect(find.text('Custom'), findsWidgets);
-    expect(find.byType(DateTimeField), findsNothing);
+    expect(find.byKey(const Key('reSyncStartDate')), findsNothing);
+    expect(find.byKey(const Key('reSyncEndDate')), findsNothing);
   });
 
   testWidgets(
@@ -203,17 +221,18 @@ void main() {
     await pumpModal(tester);
     await selectPreset(tester, ReSyncRangePreset.custom);
 
-    final fields = find
-        .byType(DateTimeField)
-        .evaluate()
-        .map((element) => element.widget as DateTimeField)
-        .toList();
-    final start = DateTime(2024, 1, 1, 8);
-    final end = DateTime(2024, 1, 2, 18, 30);
-
-    fields.first.setDateTime(start);
-    fields.last.setDateTime(end);
-    await tester.pump();
+    final start = DateTime(2024, 1, 1);
+    final end = DateTime(2024, 1, 2);
+    await pickCustomDate(
+      tester,
+      fieldKey: const Key('reSyncStartDate'),
+      date: start,
+    );
+    await pickCustomDate(
+      tester,
+      fieldKey: const Key('reSyncEndDate'),
+      date: end,
+    );
 
     await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
     await tester.pump();
@@ -221,7 +240,7 @@ void main() {
     verify(
       () => mockMaintenance.reSyncInterval(
         start: start,
-        end: end,
+        end: DateTime(2024, 1, 3),
         agentRepository: mockAgentRepository,
         includeJournalEntities: true,
         includeAgentEntities: true,
@@ -230,7 +249,7 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('Everything sends the complete historical interval', (
+  testWidgets('All sends the complete historical interval', (
     tester,
   ) async {
     final now = DateTime.utc(2026, 7, 27, 12);
@@ -296,6 +315,74 @@ void main() {
       ]);
     },
   );
+
+  testWidgets('partial onboarding keeps suppression until retry succeeds', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenAnswer((_) async => round);
+    when(
+      () => onboarding.completeOutbound(round),
+    ).thenAnswer((_) async {});
+    var retryCalls = 0;
+    final partial = ReSyncResult(
+      succeeded: 2,
+      failures: [
+        ReSyncFailure(
+          phase: ReSyncPhase.agentEntities,
+          itemType: ReSyncItemType.agentEntity,
+          itemId: 'agent-bad',
+          error: StateError('invalid agent row'),
+          stackTrace: StackTrace.empty,
+          retryAction: () async {
+            retryCalls++;
+          },
+          logger: mockLogging,
+        ),
+      ],
+    );
+    when(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async => partial);
+
+    await pumpModal(
+      tester,
+      onboardingTarget: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    verify(() => onboarding.beginOutbound(target)).called(1);
+    verifyNever(() => onboarding.completeOutbound(round));
+    expect(find.byKey(const Key('reSyncRetryFailures')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('reSyncRetryFailures')));
+    await tester.pump();
+
+    expect(retryCalls, 1);
+    verify(() => onboarding.completeOutbound(round)).called(1);
+    expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
+  });
 
   testWidgets('partial target sync does not start onboarding suppression', (
     tester,
@@ -389,6 +476,69 @@ void main() {
 
     verify(() => onboarding.beginOutbound(target)).called(1);
     verify(() => onboarding.completeOutbound(round)).called(1);
+    verifyNever(() => onboarding.releaseInboundPreflight(target));
+    expect(find.byType(ReSyncModalContent), findsNothing);
+  });
+
+  testWidgets('dismissing partial onboarding aborts its active barrier', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenAnswer((_) async => round);
+    when(() => onboarding.abortOutbound(round)).thenAnswer((_) async {});
+    when(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer(
+      (_) async => ReSyncResult(
+        succeeded: 2,
+        failures: [
+          ReSyncFailure(
+            phase: ReSyncPhase.agentEntities,
+            itemType: ReSyncItemType.agentEntity,
+            itemId: 'agent-bad',
+            error: StateError('invalid agent row'),
+            stackTrace: StackTrace.empty,
+            retryAction: () async {},
+            logger: mockLogging,
+          ),
+        ],
+      ),
+    );
+
+    await openOnboardingModal(
+      tester,
+      target: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+    expect(find.byKey(const Key('reSyncRetryFailures')), findsOneWidget);
+
+    Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    verify(() => onboarding.abortOutbound(round)).called(1);
+    verifyNever(() => onboarding.completeOutbound(round));
     verifyNever(() => onboarding.releaseInboundPreflight(target));
     expect(find.byType(ReSyncModalContent), findsNothing);
   });
@@ -510,7 +660,7 @@ void main() {
     await withClock(Clock.fixed(now), () async {
       await pumpModal(tester);
       await selectPreset(tester, ReSyncRangePreset.last30Days);
-      expect(find.byType(DateTimeField), findsNothing);
+      expect(find.byType(CalendarDatePicker), findsNothing);
       await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
       await tester.pump();
     });
@@ -530,19 +680,20 @@ void main() {
   testWidgets('Custom rejects a range whose start is not before its end', (
     tester,
   ) async {
-    await pumpModal(tester);
-    await selectPreset(tester, ReSyncRangePreset.custom);
-
-    final fields = find
-        .byType(DateTimeField)
-        .evaluate()
-        .map((element) => element.widget as DateTimeField)
-        .toList();
-    expect(fields, hasLength(2));
-
-    fields.first.setDateTime(DateTime(2026, 7, 28));
-    fields.last.setDateTime(DateTime(2026, 7, 27));
-    await tester.pump();
+    await withClock(Clock.fixed(DateTime(2026, 8, 5)), () async {
+      await pumpModal(tester);
+      await selectPreset(tester, ReSyncRangePreset.custom);
+      await pickCustomDate(
+        tester,
+        fieldKey: const Key('reSyncStartDate'),
+        date: DateTime(2026, 7, 28),
+      );
+      await pickCustomDate(
+        tester,
+        fieldKey: const Key('reSyncEndDate'),
+        date: DateTime(2026, 7, 27),
+      );
+    });
 
     expect(find.byKey(const Key('reSyncInvalidRangeError')), findsOneWidget);
     expect(
@@ -558,7 +709,7 @@ void main() {
   testWidgets('Start waits in the modal and reports per-phase progress', (
     tester,
   ) async {
-    final completer = Completer<void>();
+    final completer = Completer<ReSyncResult>();
     when(
       () => mockMaintenance.reSyncInterval(
         start: any(named: 'start'),
@@ -590,7 +741,7 @@ void main() {
     expect(find.byKey(const Key('reSyncComplete')), findsNothing);
     expect(find.text('12 / 25'), findsOneWidget);
 
-    completer.complete();
+    completer.complete(ReSyncResult.empty);
     await tester.pump();
 
     expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
@@ -599,7 +750,7 @@ void main() {
   testWidgets('completed phase reports its count and completion state', (
     tester,
   ) async {
-    final completer = Completer<void>();
+    final completer = Completer<ReSyncResult>();
     when(
       () => mockMaintenance.reSyncInterval(
         start: any(named: 'start'),
@@ -632,14 +783,14 @@ void main() {
     expect(find.text('12 / 12'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
 
-    completer.complete();
+    completer.complete(ReSyncResult.empty);
     await tester.pump();
   });
 
   testWidgets('caps live progress at 100 percent when totals grow stale', (
     tester,
   ) async {
-    final completer = Completer<void>();
+    final completer = Completer<ReSyncResult>();
     when(
       () => mockMaintenance.reSyncInterval(
         start: any(named: 'start'),
@@ -672,7 +823,7 @@ void main() {
     expect(find.text('100%'), findsOneWidget);
     expect(find.text('200%'), findsNothing);
 
-    completer.complete();
+    completer.complete(ReSyncResult.empty);
     await tester.pump();
   });
 
@@ -690,6 +841,7 @@ void main() {
     ).thenAnswer((_) async {
       attempts++;
       if (attempts == 1) throw Exception('enqueue failed');
+      return ReSyncResult.empty;
     });
 
     await pumpModal(tester);
@@ -713,6 +865,63 @@ void main() {
     expect(attempts, 2);
     expect(find.byKey(const Key('reSyncFailed')), findsNothing);
     expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
+  });
+
+  testWidgets('partial result names failed rows and retries only those rows', (
+    tester,
+  ) async {
+    var retryCalls = 0;
+    final partial = ReSyncResult(
+      succeeded: 2,
+      failures: [
+        ReSyncFailure(
+          phase: ReSyncPhase.agentEntities,
+          itemType: ReSyncItemType.agentEntity,
+          itemId: 'agent-bad',
+          error: StateError('invalid agent row'),
+          stackTrace: StackTrace.empty,
+          retryAction: () async {
+            retryCalls++;
+          },
+          logger: mockLogging,
+        ),
+      ],
+    );
+    when(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async => partial);
+
+    await pumpModal(tester);
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    expect(find.text('2 of 3 messages queued'), findsOneWidget);
+    expect(find.textContaining('Agent entity: agent-bad'), findsOneWidget);
+    expect(find.byKey(const Key('reSyncRetryFailures')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('reSyncRetryFailures')));
+    await tester.pump();
+
+    expect(retryCalls, 1);
+    expect(find.text('Messages queued'), findsOneWidget);
+    expect(find.byKey(const Key('reSyncFailureDetails')), findsNothing);
+    verify(
+      () => mockMaintenance.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        agentRepository: any(named: 'agentRepository'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).called(1);
   });
 
   testWidgets('uses the localized maintenance label as the modal title', (

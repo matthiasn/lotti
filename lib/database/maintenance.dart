@@ -27,6 +27,128 @@ enum ReSyncPhase {
   agentLinks,
 }
 
+/// The individual payload family represented by a [ReSyncFailure].
+enum ReSyncItemType {
+  journalEntity,
+  entryLink,
+  agentEntity,
+  agentLink,
+}
+
+/// One historical-sync item that could not be prepared or queued.
+///
+/// The failed action is retained only for the lifetime of the result so the UI
+/// can retry this item without sweeping the successful history again.
+class ReSyncFailure {
+  ReSyncFailure({
+    required ReSyncPhase phase,
+    required ReSyncItemType itemType,
+    required String itemId,
+    required Object error,
+    required StackTrace stackTrace,
+    required Future<void> Function() retryAction,
+    required DomainLogger logger,
+  }) : this._(
+         retryAction,
+         logger,
+         phase: phase,
+         itemType: itemType,
+         itemId: itemId,
+         error: error,
+         stackTrace: stackTrace,
+       );
+
+  ReSyncFailure._(
+    this._retryAction,
+    this._logger, {
+    required this.phase,
+    required this.itemType,
+    required this.itemId,
+    required this.error,
+    required this.stackTrace,
+  });
+
+  final ReSyncPhase phase;
+  final ReSyncItemType itemType;
+  final String itemId;
+  final Object error;
+  final StackTrace stackTrace;
+  final Future<void> Function() _retryAction;
+  final DomainLogger _logger;
+
+  Future<ReSyncFailure?> _retry() async {
+    try {
+      await _retryAction();
+      return null;
+    } catch (retryError, retryStackTrace) {
+      _logFailure(
+        retryError,
+        retryStackTrace,
+        attempt: 'retry',
+      );
+      return ReSyncFailure(
+        phase: phase,
+        itemType: itemType,
+        itemId: itemId,
+        error: retryError,
+        stackTrace: retryStackTrace,
+        retryAction: _retryAction,
+        logger: _logger,
+      );
+    }
+  }
+
+  void _logFailure(
+    Object failure,
+    StackTrace failureStackTrace, {
+    required String attempt,
+  }) {
+    _logger.error(
+      LogDomain.sync,
+      failure,
+      stackTrace: failureStackTrace,
+      subDomain: 'reSyncInterval.item',
+      message:
+          'Historical sync $attempt failed '
+          'itemType=${itemType.name} itemId=$itemId',
+    );
+  }
+}
+
+/// Outcome of one historical-sync sweep or failed-item retry.
+class ReSyncResult {
+  ReSyncResult({
+    required this.succeeded,
+    required List<ReSyncFailure> failures,
+  }) : failures = List.unmodifiable(failures);
+
+  static final empty = ReSyncResult(succeeded: 0, failures: []);
+
+  final int succeeded;
+  final List<ReSyncFailure> failures;
+
+  int get total => succeeded + failures.length;
+  bool get hasFailures => failures.isNotEmpty;
+
+  /// Retries only the items that failed in this result.
+  Future<ReSyncResult> retryFailures() async {
+    var retriedSuccessfully = 0;
+    final remaining = <ReSyncFailure>[];
+    for (final failure in failures) {
+      final nextFailure = await failure._retry();
+      if (nextFailure == null) {
+        retriedSuccessfully++;
+      } else {
+        remaining.add(nextFailure);
+      }
+    }
+    return ReSyncResult(
+      succeeded: succeeded + retriedSuccessfully,
+      failures: remaining,
+    );
+  }
+}
+
 /// A snapshot emitted while [Maintenance.reSyncInterval] visits one phase.
 class ReSyncProgress {
   const ReSyncProgress({
@@ -34,16 +156,58 @@ class ReSyncProgress {
     required this.processed,
     required this.isComplete,
     this.total,
+    this.failed = 0,
   });
 
   final ReSyncPhase phase;
   final int processed;
   final int? total;
   final bool isComplete;
+  final int failed;
+
+  int get succeeded => processed - failed;
 }
 
 /// Receives progress snapshots from [Maintenance.reSyncInterval].
 typedef ReSyncProgressCallback = void Function(ReSyncProgress progress);
+
+class _ReSyncFailureCollector {
+  _ReSyncFailureCollector(this._logger);
+
+  final DomainLogger _logger;
+  var _succeeded = 0;
+  final List<ReSyncFailure> _failures = [];
+
+  ReSyncResult get result => ReSyncResult(
+    succeeded: _succeeded,
+    failures: _failures,
+  );
+
+  Future<bool> attempt({
+    required ReSyncPhase phase,
+    required ReSyncItemType itemType,
+    required String itemId,
+    required Future<void> Function() action,
+  }) async {
+    try {
+      await action();
+      _succeeded++;
+      return true;
+    } catch (error, stackTrace) {
+      final failure = ReSyncFailure(
+        phase: phase,
+        itemType: itemType,
+        itemId: itemId,
+        error: error,
+        stackTrace: stackTrace,
+        retryAction: action,
+        logger: _logger,
+      ).._logFailure(error, stackTrace, attempt: 'enqueue');
+      _failures.add(failure);
+      return false;
+    }
+  }
+}
 
 class Maintenance {
   final JournalDb _db = getIt<JournalDb>();
@@ -64,7 +228,11 @@ class Maintenance {
   /// [onProgress] reports the active phase after each database page. Journal
   /// totals stay unknown until that phase completes because its existing
   /// empty-page sentinel deliberately avoids an unbounded precount.
-  Future<void> reSyncInterval({
+  ///
+  /// A failure preparing or enqueueing one row is logged and returned in the
+  /// [ReSyncResult]; it never prevents later rows or phases from running. The
+  /// result retains retry actions for only those failed rows.
+  Future<ReSyncResult> reSyncInterval({
     required DateTime start,
     required DateTime end,
     required AgentRepository agentRepository,
@@ -78,16 +246,18 @@ class Maintenance {
         'reSyncInterval skipped — both entity-type filters disabled',
         subDomain: 'reSyncInterval',
       );
-      return;
+      return ReSyncResult.empty;
     }
 
     final outboxService = getIt<OutboxService>();
+    final failures = _ReSyncFailureCollector(getIt<DomainLogger>());
     final vectorClockService = getIt<VectorClockService>();
     final hostId = await vectorClockService.getHost();
     const pageSize = 100;
 
     if (includeJournalEntities) {
       var processed = 0;
+      var failed = 0;
       onProgress?.call(
         const ReSyncProgress(
           phase: ReSyncPhase.journalEntities,
@@ -116,6 +286,7 @@ class Maintenance {
               processed: processed,
               total: processed,
               isComplete: true,
+              failed: failed,
             ),
           );
           break;
@@ -130,34 +301,44 @@ class Maintenance {
         }
 
         for (final entry in entries) {
-          final jsonPath = relativeEntityPath(entry);
-
-          await outboxService.enqueueMessageOrThrow(
-            SyncMessage.journalEntity(
-              id: entry.id,
-              vectorClock: entry.meta.vectorClock,
-              jsonPath: jsonPath,
-              status: SyncEntryStatus.update,
-              originatingHostId: hostId,
-              // A re-sync targets a peer that may hold none of this history —
-              // typically a freshly provisioned device. `update` status is
-              // correct (the entry is not new here), but JSON alone would
-              // leave that peer with image and audio entries it can never
-              // render, so the media rides along.
-              includeAttachments: true,
+          final queued = await failures.attempt(
+            phase: ReSyncPhase.journalEntities,
+            itemType: ReSyncItemType.journalEntity,
+            itemId: entry.id,
+            action: () => outboxService.enqueueMessageOrThrow(
+              SyncMessage.journalEntity(
+                id: entry.id,
+                vectorClock: entry.meta.vectorClock,
+                jsonPath: relativeEntityPath(entry),
+                status: SyncEntryStatus.update,
+                originatingHostId: hostId,
+                // A re-sync targets a peer that may hold none of this history
+                // — typically a freshly provisioned device. `update` status
+                // is correct (the entry is not new here), but JSON alone
+                // would leave that peer with image and audio entries it can
+                // never render, so the media rides along.
+                includeAttachments: true,
+              ),
             ),
           );
           processed++;
+          if (!queued) failed++;
 
           final entryLinks = linksByFromId[entry.meta.id] ?? const [];
           for (final entryLink in entryLinks) {
-            await outboxService.enqueueMessageOrThrow(
-              SyncMessage.entryLink(
-                status: SyncEntryStatus.update,
-                entryLink: entryLink,
+            final linkQueued = await failures.attempt(
+              phase: ReSyncPhase.journalEntities,
+              itemType: ReSyncItemType.entryLink,
+              itemId: entryLink.id,
+              action: () => outboxService.enqueueMessageOrThrow(
+                SyncMessage.entryLink(
+                  status: SyncEntryStatus.update,
+                  entryLink: entryLink,
+                ),
               ),
             );
             processed++;
+            if (!linkQueued) failed++;
           }
         }
 
@@ -166,6 +347,7 @@ class Maintenance {
             phase: ReSyncPhase.journalEntities,
             processed: processed,
             isComplete: false,
+            failed: failed,
           ),
         );
       }
@@ -180,8 +362,10 @@ class Maintenance {
     // Stamping here rather than in a preflight sweep keeps the repair inside
     // the interval the user actually chose: a "Last 30 days" run must not
     // enqueue years of legacy agent history just because those rows happen to
-    // lack a clock. Enqueue before persist, so a throw leaves the row still
-    // null-clocked and therefore retryable on the next run.
+    // lack a clock. The stamped row is persisted before enqueueing so peers
+    // never receive a clockless payload. Its retry closure retains that
+    // stamped value, avoiding a second clock increment after an enqueue-only
+    // failure; a persistence failure simply retries the same preparation.
     Future<T> stampIfClockless<T>(
       T item,
       Object? clock,
@@ -202,24 +386,34 @@ class Maintenance {
           offset: offset,
         ),
         enqueueAction: (entity) async {
-          final toSend = await stampIfClockless(
-            entity,
-            entity.vectorClock,
-            (e) => vectorClockService.withVcScope<AgentDomainEntity>(() async {
-              final stamped = e.copyWith(
-                vectorClock: await vectorClockService.getNextVectorClock(
-                  previous: e.vectorClock,
+          var toSend = entity;
+          return failures.attempt(
+            phase: ReSyncPhase.agentEntities,
+            itemType: ReSyncItemType.agentEntity,
+            itemId: entity.id,
+            action: () async {
+              toSend = await stampIfClockless(
+                toSend,
+                toSend.vectorClock,
+                (e) => vectorClockService.withVcScope<AgentDomainEntity>(
+                  () async {
+                    final stamped = e.copyWith(
+                      vectorClock: await vectorClockService.getNextVectorClock(
+                        previous: e.vectorClock,
+                      ),
+                    );
+                    await agentRepository.upsertEntity(stamped);
+                    return stamped;
+                  },
                 ),
               );
-              await agentRepository.upsertEntity(stamped);
-              return stamped;
-            }),
-          );
-          await outboxService.enqueueMessageOrThrow(
-            SyncMessage.agentEntity(
-              agentEntity: toSend,
-              status: SyncEntryStatus.update,
-            ),
+              await outboxService.enqueueMessageOrThrow(
+                SyncMessage.agentEntity(
+                  agentEntity: toSend,
+                  status: SyncEntryStatus.update,
+                ),
+              );
+            },
           );
         },
         pageSize: pageSize,
@@ -228,6 +422,7 @@ class Maintenance {
               required int processed,
               required int total,
               required bool isComplete,
+              required int failed,
             }) {
               onProgress?.call(
                 ReSyncProgress(
@@ -235,6 +430,7 @@ class Maintenance {
                   processed: processed,
                   total: total,
                   isComplete: isComplete,
+                  failed: failed,
                 ),
               );
             },
@@ -252,26 +448,34 @@ class Maintenance {
           offset: offset,
         ),
         enqueueAction: (link) async {
-          final toSend = await stampIfClockless(
-            link,
-            link.vectorClock,
-            (l) => vectorClockService.withVcScope<agent_model.AgentLink>(
-              () async {
-                final stamped = l.copyWith(
-                  vectorClock: await vectorClockService.getNextVectorClock(
-                    previous: l.vectorClock,
-                  ),
-                );
-                await agentRepository.upsertLink(stamped);
-                return stamped;
-              },
-            ),
-          );
-          await outboxService.enqueueMessageOrThrow(
-            SyncMessage.agentLink(
-              agentLink: toSend,
-              status: SyncEntryStatus.update,
-            ),
+          var toSend = link;
+          return failures.attempt(
+            phase: ReSyncPhase.agentLinks,
+            itemType: ReSyncItemType.agentLink,
+            itemId: link.id,
+            action: () async {
+              toSend = await stampIfClockless(
+                toSend,
+                toSend.vectorClock,
+                (l) => vectorClockService.withVcScope<agent_model.AgentLink>(
+                  () async {
+                    final stamped = l.copyWith(
+                      vectorClock: await vectorClockService.getNextVectorClock(
+                        previous: l.vectorClock,
+                      ),
+                    );
+                    await agentRepository.upsertLink(stamped);
+                    return stamped;
+                  },
+                ),
+              );
+              await outboxService.enqueueMessageOrThrow(
+                SyncMessage.agentLink(
+                  agentLink: toSend,
+                  status: SyncEntryStatus.update,
+                ),
+              );
+            },
           );
         },
         pageSize: pageSize,
@@ -280,6 +484,7 @@ class Maintenance {
               required int processed,
               required int total,
               required bool isComplete,
+              required int failed,
             }) {
               onProgress?.call(
                 ReSyncProgress(
@@ -287,44 +492,60 @@ class Maintenance {
                   processed: processed,
                   total: total,
                   isComplete: isComplete,
+                  failed: failed,
                 ),
               );
             },
       );
     }
+    return failures.result;
   }
 
   Future<void> _reSyncPaginated<T>({
     required Future<int> Function() countFetcher,
     required Future<List<T>> Function(int limit, int offset) itemsFetcher,
-    required Future<void> Function(T item) enqueueAction,
+    required Future<bool> Function(T item) enqueueAction,
     required int pageSize,
     void Function({
       required int processed,
       required int total,
       required bool isComplete,
+      required int failed,
     })?
     onProgress,
   }) async {
     final count = await countFetcher();
     if (count == 0) {
-      onProgress?.call(processed: 0, total: 0, isComplete: true);
+      onProgress?.call(
+        processed: 0,
+        total: 0,
+        isComplete: true,
+        failed: 0,
+      );
       return;
     }
 
     final pages = (count / pageSize).ceil();
     var processed = 0;
-    onProgress?.call(processed: 0, total: count, isComplete: false);
+    var failed = 0;
+    onProgress?.call(
+      processed: 0,
+      total: count,
+      isComplete: false,
+      failed: 0,
+    );
     for (var page = 0; page < pages; page++) {
       final items = await itemsFetcher(pageSize, page * pageSize);
       for (final item in items) {
-        await enqueueAction(item);
+        final queued = await enqueueAction(item);
+        if (!queued) failed++;
       }
       processed += items.length;
       onProgress?.call(
         processed: processed,
         total: count,
         isComplete: page == pages - 1,
+        failed: failed,
       );
     }
   }

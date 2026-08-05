@@ -849,9 +849,15 @@ void main() {
     syncControllerProvider.overrideWith(
       _ManualSyncMaintenanceController.new,
     ),
-    // Scoped to the two onboarding surfaces. Applied globally, these replace
+    // Scoped to the onboarding surfaces. Applied globally, these replace
     // the controllers the older surfaces drive for real, and their captures
     // stop reaching the states they assert on.
+    if (surface == _SyncSurface.provisioned)
+      provisioningControllerProvider.overrideWith(
+        () => _ManualProvisioningController(
+          terminal: ProvisioningState.ready(_manualHandover),
+        ),
+      ),
     if (surface == _SyncSurface.paired)
       provisioningControllerProvider.overrideWith(
         () => _ManualProvisioningController(
@@ -868,12 +874,13 @@ void main() {
       ),
   ];
 
-  /// Opens the setup modal and gets the decoded bundle on screen.
+  /// Opens the setup modal and imports a deterministic demo bundle.
   ///
   /// Since the add-device redesign the import page opens the camera on mobile,
   /// so the paste field sits behind *enter manually* rather than being the
-  /// first thing rendered. Stops on the decoded review unless [confirm], which
-  /// carries on into the flow the way a user committing to the pairing does.
+  /// first thing rendered. A first-device bundle connects immediately because
+  /// there is no peer code to compare. A handover bundle stops on the decoded
+  /// review unless [confirm], which carries on into the pairing flow.
   Future<void> openBundleImport(
     WidgetTester tester, {
     bool confirm = false,
@@ -891,9 +898,10 @@ void main() {
       await settleFrames(tester, 8);
     }
 
+    final importedText = bundleText ?? _provisioningBundleText;
     await tester.enterText(
       find.byType(TextField),
-      bundleText ?? _provisioningBundleText,
+      importedText,
     );
     await tester.pump();
 
@@ -906,10 +914,19 @@ void main() {
     await tester.tap(importButton, warnIfMissed: false);
     await settleFrames(tester, 8);
 
-    // Importing only decodes. What lands is a review — server, account, room
-    // and the pairing check code — and connecting is a separate, deliberate
-    // confirmation on top of it.
-    expect(find.byKey(const ValueKey('bundle_import_decoded')), findsOneWidget);
+    final importedBundle = SyncProvisioningBundle.fromJson(
+      jsonDecode(
+            utf8.decode(base64Url.decode(base64Url.normalize(importedText))),
+          )
+          as Map<String, dynamic>,
+    );
+    final needsPeerConfirmation =
+        importedBundle.kind == SyncBundleKind.handover;
+    expect(
+      find.byKey(const ValueKey('bundle_import_decoded')),
+      needsPeerConfirmation ? findsOneWidget : findsNothing,
+    );
+    if (!needsPeerConfirmation) return;
     if (!confirm) return;
 
     final connect = find.text(context.messages.syncPairConnectButton);
@@ -1019,18 +1036,18 @@ void main() {
         expect(find.text(messages.provisionedSyncTitle), findsWidgets);
         expect(find.text(messages.settingsMaintenanceTitle), findsWidgets);
       case _SyncSurface.provisioned:
-        // The check code leads the review because it is the only value a
-        // person can compare against the inviting device; the server is shown
-        // as a host rather than a full URL.
+        // A fresh CLI bundle establishes this account's first device. With no
+        // peer available for comparison, it skips the check-code review and
+        // lands directly on the honest first-device success state.
         expect(
-          find.byKey(const Key('bundle_import_check_code')),
+          find.byKey(const Key('paired_first_device')),
           findsOneWidget,
         );
-        expect(find.text(_provisioningBundle.user), findsOneWidget);
         expect(
-          find.text(Uri.parse(_provisioningBundle.homeServer).host),
+          find.text(messages.syncPairedFirstDeviceTitle),
           findsOneWidget,
         );
+        expect(find.byKey(const Key('bundle_import_check_code')), findsNothing);
       case _SyncSurface.addDevice:
         // The pairing check code is the point of the sheet: both devices
         // derive it independently and it must be compared before connecting.

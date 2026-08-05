@@ -7382,6 +7382,25 @@ class AppLocalizationsRo extends AppLocalizations {
   String get maintenanceReSyncLast30Days => 'Ultimele 30 de zile';
 
   @override
+  String maintenanceReSyncPartialDescription(int failed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      failed,
+      locale: localeName,
+      other: '$failed elemente au eșuat. Reîncercați doar acele elemente.',
+      one: '1 element a eșuat. Reîncercați doar acel element.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String maintenanceReSyncPartialTitle(int succeeded, int total) {
+    return '$succeeded din $total mesaje adăugate în coadă';
+  }
+
+  @override
+  String get maintenanceReSyncRetryFailed => 'Reîncercați elementele eșuate';
+
+  @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Selectați cel puțin un tip de entitate';
 
