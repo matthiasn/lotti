@@ -24,7 +24,7 @@ decomposition itself.
 | 2 | `task_agent_workflow_test.dart` | 9,132 | wake execution, persistence, prompt/context delegation, workflow shell | Merged (#3806) |
 | 3 | `unified_ai_inference_repository_test.dart` | 8,593 | inference execution, tool-call processing, post-processing, repository shell | Merged (#3807) |
 | 4 | `eval_constraints_test.dart` | 8,228 | split the test-only constraint framework and mirror its focused source files | Merged (#3808) |
-| 5 | `outbox_service_test.dart` | 7,820 | send pipeline, queue/database behavior, retry/maintenance, service shell | Planned |
+| 5 | `outbox_service_test.dart` | 7,820 | send pipeline, queue/database behavior, retry/maintenance, service shell | In progress |
 | 6 | `day_agent_workflow_test.dart` | 7,379 | day wake execution, context/prompt construction, persistence, workflow shell | Planned |
 | 7 | `wake_orchestrator_test.dart` | 6,905 | scheduling, drain/claim lifecycle, recovery, orchestrator shell | Planned |
 
@@ -103,3 +103,15 @@ no `main()`.
 The split preserves all 341 conventional test declarations, 24 groups, and the
 Glados property test. The largest resulting executable suite is 3,908 lines;
 the largest focused source part is 1,849 lines.
+
+### PR 5 — outbox service facade
+
+The outbox facade suite is split into service-shell and subscription wiring,
+enqueue/database behavior, payload preparation and sequence enrichment, and the
+existing send/runner part boundary. Deterministic collaborators, fallback
+registration, temporary-directory lifecycle, and service construction live in
+a helper library with no `main()`.
+
+The split preserves all 149 test declarations and 29 groups. The largest
+resulting executable suite is 2,848 lines. These line counts are descriptive;
+this PR adds no CI size check, threshold, or other guardrail.
