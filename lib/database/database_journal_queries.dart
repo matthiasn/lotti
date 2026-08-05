@@ -277,6 +277,20 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
     }
   }
 
+  /// Ids of every non-deleted journal row, regardless of type or links.
+  ///
+  /// Powers the demo reseed guard: "does this world hold anything beyond
+  /// the seed manifest" must also see linked/attached entries (recordings,
+  /// time entries, images under a seeded task) that the copy-candidate root
+  /// scan deliberately excludes.
+  Future<List<String>> allNonDeletedJournalEntityIds() async {
+    final query = selectOnly(journal)
+      ..addColumns([journal.id])
+      ..where(journal.deleted.equals(false));
+    final rows = await query.get();
+    return [for (final row in rows) row.read(journal.id)!];
+  }
+
   /// Count total entries for progress reporting (includes deleted).
   Future<int> countAllJournalEntries() async {
     final count = journal.id.count();

@@ -5000,6 +5000,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get demoCopyConfirm => 'Copiar y salir';
 
   @override
+  String get demoCopyFailedToast =>
+      'No se pudo copiar tu trabajo de la demo — todo sigue en el mundo demo, así que puedes intentarlo de nuevo.';
+
+  @override
   String get demoCopyProgress => 'Copiando tu trabajo…';
 
   @override

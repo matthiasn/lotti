@@ -69,11 +69,15 @@ Every later decision reads that file:
 - **Resume vs reseed**: `enterDemo` resumes an existing demo profile when
   its manifest's `seedVersion` equals the compiled-in `demoSeedVersion`. A
   missing, malformed, or stale manifest means wipe and recreate — but only
-  when the stale world holds no demo-created work: `enterDemo` runs the
-  exit sheet's candidate scan against the non-active world first (via a
-  `WorldHandle`), and a stale world with user work resumes as-is instead,
-  so an app upgrade can never silently destroy something the user made
-  (`resetDemo` remains the explicit, confirmed wipe). Bump
+  when the stale world holds no demo-created work: `enterDemo` scans the
+  non-active world's RAW rows against the manifest first (via a
+  `WorldHandle`) — any non-deleted journal row not listed in the manifest,
+  or any non-manifest inference provider (the user's API key), counts.
+  Deliberately not the exit sheet's candidate scan, which drops non-seeded
+  entries with inbound links (a recording attached to a seeded task) and
+  would green-light wiping them. A stale world with user work resumes
+  as-is, so an app upgrade can never silently destroy something the user
+  made (`resetDemo` remains the explicit, confirmed wipe). Bump
   `demoSeedVersion` whenever the seeded world changes in a way that should
   retire existing demo profiles.
 - **Copy-over**: only entities whose ids are *not* in the manifest are
@@ -127,13 +131,24 @@ per journal entity, internal references — checklist wiring and a task's
 `/demo_import/` under the real root); `apply` runs after the switch and
 writes through `PersistenceLogic`, so every copy gets a real-world vector
 clock and syncs like any other entity. Entry links keep their relationship
-semantics (`EntryLinkType`) and `collapsed` flag across the crossing, and
-each applied entity is indexed into the real world's FTS5 table —
-`createDbEntity` deliberately never touches FTS, so without this the copies
-would be invisible to search until edited. Category and label definitions
-travel with their **original** ids and are upserted idempotently; so are
-user-created AI configs (per-device configuration, not content that could
-collide).
+semantics (`EntryLinkType`) and their `collapsed` and `hidden` flags across
+the crossing, and each applied entity is indexed into the real world's FTS5
+table — `createDbEntity` deliberately never touches FTS, so without this the
+copies would be invisible to search until edited. Category and label
+definitions travel with their **original** ids and are upserted
+idempotently; so are user-created AI configs (per-device configuration, not
+content that could collide).
+
+`apply` re-resolves the carried AI configs against the TARGET world before
+anything references them: an id that already exists there is skipped —
+including as a tombstone, which additionally takes carried dependents down
+transitively (models without their provider, profiles without their
+thinking model; optional slots and skill assignments are pruned, and a
+carried skill only lands while a surviving profile still references it). A
+`TaskData.profileId` or `CategoryDefinition.defaultProfileId` stamped by
+the demo's real-AI wiring survives only when the referenced profile is
+usable in the target (carried and saved, or already live there); anything
+else is cleared rather than left dangling.
 
 Deliberate v1 exclusions, documented rather than accidental:
 
@@ -173,9 +188,12 @@ points the demo world at the provider's bundled profile
 (`onboardingSeededProfileId`): the seeded category gets it as
 `defaultProfileId` (only if the user hasn't set one), and every non-deleted
 task without a `profileId` — seeded fixtures plus tasks created before
-connecting — is stamped with it. Both writes are idempotent, run
-fire-and-forget inside the demo generation, and a failure only degrades back
-to the pre-connect behavior (logged, never surfaced).
+connecting — is stamped with it. Both writes are idempotent and run inside
+the demo generation, concurrently with the success beat; the
+intercepted-action retry (`DemoAiSetupSheet.show`'s `onConfigured`) awaits
+them (bounded) so the retried skill run never races the stamping. A wiring
+failure only degrades back to the pre-connect behavior (logged, never
+surfaced).
 
 # Entry points and chrome
 
@@ -194,6 +212,11 @@ Column, never an overlay), absorbing the top safe-area itself. Entry and
 reset push a blocking full-screen progress route; the generation switch
 replaces the entire tree, which is also why no post-exit toast can report
 the copied-item count (the gateway returns it for logs and tests only).
+Copy-apply *failures* do surface, though: they happen after the switch, so
+the gateway reports them into the static `DemoCopyFailureNotices` mailbox
+(which survives both the getIt reset and the tree replacement) and the new
+generation's `DemoModeScaffold` — mounted in every generation — drains it
+into an error toast.
 
 # Content ownership — do not grow the fixture
 

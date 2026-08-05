@@ -5015,6 +5015,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get demoCopyConfirm => 'Copier et quitter';
 
   @override
+  String get demoCopyFailedToast =>
+      'La copie de ton travail de démo a échoué — tout est encore dans le monde démo, tu peux réessayer.';
+
+  @override
   String get demoCopyProgress => 'Copie de ton travail…';
 
   @override

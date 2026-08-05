@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -42,7 +44,7 @@ Future<void> pumpFlow(
       Scaffold(
         body: SingleChildScrollView(
           child: DemoAiSetupFlow(
-            onConnected: onConnected,
+            onConnected: (_) => onConnected(),
             onClose: onClose,
             initialStep: initialStep,
             wireWorld: wireWorld,
@@ -418,6 +420,63 @@ void main() {
       await tester.tap(find.text('Continue'));
       await settleStep(tester);
       await tester.pump(const Duration(milliseconds: 400));
+      await route;
+
+      expect(configured, isTrue);
+    });
+
+    testWidgets('onConfigured waits for the demo-world wiring — the retried '
+        'AI action must see the seeded tasks already stamped', (
+      tester,
+    ) async {
+      final wiringGate = Completer<void>();
+      var configured = false;
+      late BuildContext hostContext;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) {
+              hostContext = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+
+      final route = DemoAiSetupSheet.show(
+        hostContext,
+        onConfigured: () => configured = true,
+        wireWorld: (_) => wiringGate.future,
+      );
+      await settleStep(tester);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      await tester.tap(find.text('Set up real AI'));
+      await settleStep(tester);
+      await tester.pump(const Duration(milliseconds: 400));
+      await tester.tap(find.text('Gemini'), warnIfMissed: false);
+      await settleStep(tester);
+      await tester.pump(const Duration(milliseconds: 400));
+      tester
+          .widget<OnboardingApiKeyPanel>(find.byType(OnboardingApiKeyPanel))
+          .onConnected();
+      await settleStep(tester);
+      await tester.pump(const Duration(milliseconds: 400));
+
+      // Route popped, but the wiring is still running: the retry must hold.
+      await tester.tap(find.text('Continue'));
+      await settleStep(tester);
+      await tester.pump(const Duration(milliseconds: 400));
+      expect(
+        configured,
+        isFalse,
+        reason:
+            'the intercepted-action retry must not run before the seeded '
+            'tasks have their profileId stamped',
+      );
+
+      wiringGate.complete();
+      await settleStep(tester);
       await route;
 
       expect(configured, isTrue);

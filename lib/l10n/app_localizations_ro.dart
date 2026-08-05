@@ -5017,6 +5017,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get demoCopyConfirm => 'Copiați și ieșiți';
 
   @override
+  String get demoCopyFailedToast =>
+      'Copierea lucrului din demo nu a reușit — totul este încă în lumea demo, așa că puteți încerca din nou.';
+
+  @override
   String get demoCopyProgress => 'Se copiază munca dvs.…';
 
   @override

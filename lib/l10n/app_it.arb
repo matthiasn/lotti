@@ -2416,6 +2416,7 @@
   "demoBannerLabel": "Mondo demo — il tuo diario resta intatto",
   "demoCopyBody": "Scegli le attività e le voci da copiare nel tuo diario.",
   "demoCopyConfirm": "Copia ed esci",
+  "demoCopyFailedToast": "La copia del tuo lavoro della demo non è riuscita — è ancora tutto nel mondo demo, quindi puoi riprovare.",
   "demoCopyProgress": "Copia del tuo lavoro in corso…",
   "demoCopySectionAiSetup": "Configurazione IA",
   "demoCopySectionEntries": "Voci del diario",

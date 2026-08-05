@@ -4933,6 +4933,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get demoCopyConfirm => 'Kopiér og afslut';
 
   @override
+  String get demoCopyFailedToast =>
+      'Kopiering af dit demoarbejde mislykkedes — alt er stadig i demoverdenen, så du kan prøve igen.';
+
+  @override
   String get demoCopyProgress => 'Kopierer dit arbejde…';
 
   @override

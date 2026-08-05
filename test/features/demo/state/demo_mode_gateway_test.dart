@@ -5,9 +5,12 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_root.dart';
+import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
@@ -20,6 +23,7 @@ import 'package:lotti/features/profiles/repository/profile_registry.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -183,6 +187,94 @@ void main() {
       expect(activated, [first.id]);
       expect((await gateway.findDemoProfile())!.id, first.id);
       expect(root.existsSync(), isTrue);
+    });
+
+    test('a stale manifest whose only user work is ATTACHED to a seeded task '
+        '(inbound link) still resumes — the reseed guard must scan raw rows, '
+        'not copy-offer roots', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final first = (await gateway.findDemoProfile())!;
+      final root = registry.rootFor(first);
+      await DemoSeedManifest(
+        seedVersion: demoSeedVersion - 1,
+        seededAt: DateTime.utc(2026),
+        localeTag: 'en',
+        seededJournalIds: const ['seeded-task'],
+        seededDefinitionIds: const [],
+        seededAiConfigIds: const [],
+      ).write(root);
+      final work = WorldHandle.open(root);
+      await work.writeJournalEntity(
+        TestTaskFactory.create(id: 'seeded-task', title: 'Seeded mission'),
+      );
+      // The user's only creation: a note linked UNDER the seeded task. The
+      // exit sheet's candidate scan drops it (inbound link), so a guard
+      // built on that scan would wipe it.
+      await work.writeJournalEntity(
+        JournalEntry(
+          meta: TestMetadataFactory.create(id: 'attached-note'),
+          entryText: const EntryText(plainText: 'My recording notes'),
+        ),
+      );
+      await work.writeEntryLink(
+        EntryLink.basic(
+          id: 'link-attached',
+          fromId: 'seeded-task',
+          toId: 'attached-note',
+          createdAt: DateTime.utc(2026),
+          updatedAt: DateTime.utc(2026),
+          vectorClock: null,
+        ),
+      );
+      await work.close();
+      activated.clear();
+      seededLocales.clear();
+
+      await gateway.enterDemo(locale: const Locale('en'));
+
+      expect(
+        seededLocales,
+        isEmpty,
+        reason: 'the attached note is user work — never reseed over it',
+      );
+      expect(activated, [first.id]);
+      expect(root.existsSync(), isTrue);
+    });
+
+    test('a stale manifest with only a user-connected AI provider (their '
+        'API key) also resumes instead of wiping', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final first = (await gateway.findDemoProfile())!;
+      final root = registry.rootFor(first);
+      await DemoSeedManifest(
+        seedVersion: demoSeedVersion - 1,
+        seededAt: DateTime.utc(2026),
+        localeTag: 'en',
+        seededJournalIds: const [],
+        seededDefinitionIds: const [],
+        seededAiConfigIds: const ['fixture-provider'],
+      ).write(root);
+      final work = WorldHandle.open(root);
+      await work.writeAiConfig(
+        AiConfig.inferenceProvider(
+          id: 'user-provider',
+          baseUrl: 'https://example.test',
+          apiKey: 'real-key',
+          name: 'My real provider',
+          createdAt: DateTime.utc(2026),
+          inferenceProviderType: InferenceProviderType.gemini,
+        ),
+      );
+      await work.close();
+      activated.clear();
+      seededLocales.clear();
+
+      await gateway.enterDemo(locale: const Locale('en'));
+
+      expect(seededLocales, isEmpty);
+      expect(activated, [first.id]);
     });
 
     test(
@@ -407,6 +499,72 @@ void main() {
         () => gateway.exitWithCopy(selectedIds: {'x'}),
         throwsStateError,
       );
+    });
+
+    test('an apply failure AFTER the switch is logged, reported through the '
+        'cross-generation notice, and still rethrown', () async {
+      DemoCopyFailureNotices.instance.reset();
+      addTearDown(DemoCopyFailureNotices.instance.reset);
+      final logger = MockDomainLogger();
+      getIt.registerSingleton<DomainLogger>(logger);
+      addTearDown(getIt.reset);
+      var notified = 0;
+      void onNotice() => notified++;
+      DemoCopyFailureNotices.instance.addListener(onNotice);
+      addTearDown(
+        () => DemoCopyFailureNotices.instance.removeListener(onNotice),
+      );
+      final gateway = buildGateway(
+        prepareCopy: (_, _) async => plan,
+        applyCopy: (_) async => throw StateError('media move failed'),
+      );
+      final demo = await registry.createGuestProfile(name: 'Demo');
+      activeContext = guestContext(demo);
+
+      await expectLater(
+        () => gateway.exitWithCopy(selectedIds: {'task-1'}),
+        throwsStateError,
+      );
+
+      expect(
+        activated,
+        [Profile.realProfileId],
+        reason: 'the failure happened after the switch back',
+      );
+      expect(notified, 1, reason: 'a mounted survivor must be poked');
+      expect(
+        DemoCopyFailureNotices.instance.consume(),
+        isTrue,
+        reason: 'a survivor mounting later must still find the pending notice',
+      );
+      verify(
+        () => logger.error(
+          LogDomain.general,
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'demoExitCopyApply',
+        ),
+      ).called(1);
+    });
+
+    test('a prepare failure BEFORE the switch never trips the copy-failure '
+        'notice — the exit sheet is still mounted to surface it', () async {
+      DemoCopyFailureNotices.instance.reset();
+      addTearDown(DemoCopyFailureNotices.instance.reset);
+      final gateway = buildGateway(
+        prepareCopy: (_, _) async => throw StateError('demo read failed'),
+        applyCopy: (_) async => 0,
+      );
+      final demo = await registry.createGuestProfile(name: 'Demo');
+      activeContext = guestContext(demo);
+
+      await expectLater(
+        () => gateway.exitWithCopy(selectedIds: {'task-1'}),
+        throwsStateError,
+      );
+
+      expect(activated, isEmpty, reason: 'no switch happened');
+      expect(DemoCopyFailureNotices.instance.consume(), isFalse);
     });
   });
 

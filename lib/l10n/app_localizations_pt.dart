@@ -4978,6 +4978,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get demoCopyConfirm => 'Copiar e sair';
 
   @override
+  String get demoCopyFailedToast =>
+      'Não foi possível copiar o teu trabalho da demonstração — está tudo no mundo de demonstração, por isso podes tentar novamente.';
+
+  @override
   String get demoCopyProgress => 'A copiar o teu trabalho…';
 
   @override

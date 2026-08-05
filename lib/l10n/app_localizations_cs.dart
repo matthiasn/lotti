@@ -4988,6 +4988,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get demoCopyConfirm => 'Zkopírovat a ukončit';
 
   @override
+  String get demoCopyFailedToast =>
+      'Kopírování tvé práce z dema se nepodařilo — v demo světě je vše zachováno, takže to můžeš zkusit znovu.';
+
+  @override
   String get demoCopyProgress => 'Kopíruji tvou práci…';
 
   @override

@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -14,7 +16,13 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// and absorbs the top safe-area inset itself, so the child — which would
 /// otherwise pad for a status bar now covered by the banner — sees a zero
 /// top padding via `MediaQuery.removePadding`.
-class DemoModeScaffold extends ConsumerWidget {
+///
+/// Mounted in EVERY generation's shell, this is also the survivor that
+/// surfaces demo copy-apply failures: `exitWithCopy` applies the copy plan
+/// after the generation switch has torn down the exit sheet, so the gateway
+/// reports failures into [DemoCopyFailureNotices] and the freshly mounted
+/// scaffold of the REAL generation toasts them here.
+class DemoModeScaffold extends ConsumerStatefulWidget {
   const DemoModeScaffold({
     required this.child,
     this.sheetContext,
@@ -28,7 +36,8 @@ class DemoModeScaffold extends ConsumerWidget {
   /// the router's navigator (this widget sits above it, in
   /// `MaterialApp.router`'s builder, where `Navigator.of` has nothing to
   /// find). Defaults to the banner's own context for hosts that mount it
-  /// under a navigator (tests).
+  /// under a navigator (tests). The copy-failure toast targets the same
+  /// context, because that is where the scaffolds live.
   final BuildContext Function()? sheetContext;
 
   /// Test seam; production resolves the gateway from the ambient
@@ -36,18 +45,54 @@ class DemoModeScaffold extends ConsumerWidget {
   final DemoModeGateway? gateway;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<DemoModeScaffold> createState() => _DemoModeScaffoldState();
+}
+
+class _DemoModeScaffoldState extends ConsumerState<DemoModeScaffold> {
+  @override
+  void initState() {
+    super.initState();
+    DemoCopyFailureNotices.instance.addListener(_onCopyFailureReported);
+    // Drain a failure reported while no scaffold was mounted — the apply
+    // can fail in the window between generation teardown and this
+    // generation's first frame.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _onCopyFailureReported(),
+    );
+  }
+
+  @override
+  void dispose() {
+    DemoCopyFailureNotices.instance.removeListener(_onCopyFailureReported);
+    super.dispose();
+  }
+
+  void _onCopyFailureReported() {
+    if (!mounted || !DemoCopyFailureNotices.instance.consume()) return;
+    final target = widget.sheetContext?.call() ?? context;
+    if (!target.mounted) return;
+    target.showToast(
+      tone: DesignSystemToastTone.error,
+      title: target.messages.demoCopyFailedToast,
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final demoActive = ref.watch(demoModeActiveProvider);
-    if (!demoActive) return child;
+    if (!demoActive) return widget.child;
 
     return Column(
       children: [
-        DemoModeBanner(sheetContext: sheetContext, gateway: gateway),
+        DemoModeBanner(
+          sheetContext: widget.sheetContext,
+          gateway: widget.gateway,
+        ),
         Expanded(
           child: MediaQuery.removePadding(
             context: context,
             removeTop: true,
-            child: child,
+            child: widget.child,
           ),
         ),
       ],

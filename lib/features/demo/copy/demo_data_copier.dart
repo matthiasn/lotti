@@ -8,7 +8,9 @@ import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/audio_utils.dart';
 import 'package:lotti/utils/image_utils.dart';
 import 'package:path/path.dart' as p;
@@ -53,11 +55,17 @@ class DemoCopyPlan {
   final List<JournalEntity> entities;
 
   /// Closure-internal links, both ends already remapped. The relationship
-  /// semantics ([EntryLinkType]) and the `collapsed` flag travel with each
-  /// link so a typed relationship (blocks/follows-up/…) created in the demo
-  /// keeps its meaning in the real world.
+  /// semantics ([EntryLinkType]) and the `collapsed`/`hidden` flags travel
+  /// with each link so a typed relationship (blocks/follows-up/…) created in
+  /// the demo keeps its meaning — and its visibility — in the real world.
   final List<
-    ({String fromId, String toId, EntryLinkType linkType, bool collapsed})
+    ({
+      String fromId,
+      String toId,
+      EntryLinkType linkType,
+      bool collapsed,
+      bool hidden,
+    })
   >
   links;
 
@@ -298,6 +306,7 @@ class DemoDataCopier {
             toId: idMap[link.toId]!,
             linkType: entryLinkTypeOf(link),
             collapsed: link.collapsed ?? false,
+            hidden: link.hidden ?? false,
           ),
       ],
       definitions: definitions,
@@ -405,19 +414,31 @@ class DemoDataCopier {
   /// Applies [plan] in the REAL generation.
   ///
   /// Order matters: media files move into place first (so an image/audio
-  /// entity never exists without its bytes), then definitions (so category
-  /// and label references resolve), then entities through
+  /// entity never exists without its bytes), then AI configs (so entity and
+  /// definition profile references can be validated against what actually
+  /// lands — see [_resolveAiConfigsAgainstTarget]), then definitions (so
+  /// category and label references resolve), then entities through
   /// `PersistenceLogic.updateMetadata` + `createDbEntity` (fresh vector
   /// clock, preserved dates, sync enqueued), then the closure-internal links
-  /// through `createLink`. Definitions keep their demo ids and are only
-  /// written when absent, so re-copying never clobbers real-world edits.
+  /// through `createLink` (relationship type, `collapsed` and `hidden` all
+  /// preserved). Definitions keep their demo ids and are only written when
+  /// absent, so re-copying never clobbers real-world edits.
   ///
   /// AI configs go through [targetAiConfigs] (the REAL generation's
   /// repository) with their original ids, skipped when the id already
   /// exists there — including as a tombstone: a config the user deleted in
-  /// the real world must not be resurrected by a demo exit. Saves use the
-  /// default `fromSync: false`, so copied AI setup replicates to peers like
-  /// any locally created config.
+  /// the real world must not be resurrected by a demo exit. A tombstoned
+  /// dependency also takes its carried dependents down with it, so a copied
+  /// model/profile can never point at a config the target has deleted.
+  /// Saves use the default `fromSync: false`, so copied AI setup replicates
+  /// to peers like any locally created config.
+  ///
+  /// A `TaskData.profileId` or `CategoryDefinition.defaultProfileId`
+  /// (stamped inside the demo by the real-AI wiring) survives the crossing
+  /// only when the referenced profile is usable in the target — carried and
+  /// saved, or already present there. Anything else is cleared: a dangling
+  /// profile reference would make AI actions resolve a missing profile
+  /// instead of falling back.
   ///
   /// [targetFts] is the REAL generation's FTS5 index. `createDbEntity`
   /// deliberately never touches FTS5 (only the update path and manual
@@ -446,6 +467,43 @@ class DemoDataCopier {
       }
     }
 
+    var copied = 0;
+    final activeAiIds = <String>{};
+    if (plan.aiConfigs.isNotEmpty) {
+      final aiRepository = targetAiConfigs;
+      if (aiRepository == null) {
+        throw ArgumentError(
+          'plan carries AI configs but no targetAiConfigs was provided',
+        );
+      }
+      final resolved = await _resolveAiConfigsAgainstTarget(
+        plan.aiConfigs,
+        repository: aiRepository,
+      );
+      activeAiIds.addAll(resolved.activeIds);
+      for (final config in resolved.toSave) {
+        await aiRepository.saveConfig(config);
+        copied++;
+      }
+    }
+
+    // Whether an AI config id resolves to a live config in the target after
+    // this apply — either carried (and active) or already present there
+    // (e.g. the bundled onboarding profile of a provider the user has also
+    // connected in the real world). Without a target repository nothing can
+    // be verified, so nothing may be kept.
+    final aiUsableCache = <String, bool>{};
+    Future<bool> aiIdUsable(String id) async {
+      if (activeAiIds.contains(id)) return true;
+      final cached = aiUsableCache[id];
+      if (cached != null) return cached;
+      final usable =
+          targetAiConfigs != null &&
+          await targetAiConfigs.getConfigById(id) != null;
+      aiUsableCache[id] = usable;
+      return usable;
+    }
+
     for (final definition in plan.definitions) {
       final exists = switch (definition) {
         CategoryDefinition() =>
@@ -455,17 +513,40 @@ class DemoDataCopier {
         _ => true,
       };
       if (!exists) {
-        await persistence.upsertEntityDefinition(definition);
+        var toWrite = definition;
+        if (toWrite is CategoryDefinition) {
+          final profileId = toWrite.defaultProfileId;
+          if (profileId != null && !await aiIdUsable(profileId)) {
+            _log(
+              'clearing defaultProfileId $profileId on copied category '
+              '${toWrite.id}: the profile does not exist in the target',
+            );
+            toWrite = toWrite.copyWith(defaultProfileId: null);
+          }
+        }
+        await persistence.upsertEntityDefinition(toWrite);
       }
     }
 
-    var copied = 0;
     for (final entity in plan.entities) {
+      var toWrite = entity;
+      if (entity is Task) {
+        final profileId = entity.data.profileId;
+        if (profileId != null && !await aiIdUsable(profileId)) {
+          _log(
+            'clearing profileId $profileId on copied task '
+            '${entity.meta.id}: the profile does not exist in the target',
+          );
+          toWrite = entity.copyWith(
+            data: entity.data.copyWith(profileId: null),
+          );
+        }
+      }
       // Stamps a fresh real-world vector clock (and updatedAt) while
       // preserving id, createdAt, dateFrom and dateTo — createDbEntity
       // itself never touches the metadata it is handed.
-      final stamped = await persistence.updateMetadata(entity.meta);
-      final withStampedMeta = entity.copyWith(meta: stamped);
+      final stamped = await persistence.updateMetadata(toWrite.meta);
+      final withStampedMeta = toWrite.copyWith(meta: stamped);
       final applied = await persistence.createDbEntity(
         withStampedMeta,
         shouldAddGeolocation: false,
@@ -489,27 +570,143 @@ class DemoDataCopier {
         toId: link.toId,
         linkType: link.linkType,
         collapsed: link.collapsed,
+        hidden: link.hidden,
       );
     }
+    return copied;
+  }
 
-    if (plan.aiConfigs.isNotEmpty) {
-      final aiRepository = targetAiConfigs;
-      if (aiRepository == null) {
-        throw ArgumentError(
-          'plan carries AI configs but no targetAiConfigs was provided',
-        );
-      }
-      for (final config in plan.aiConfigs) {
-        final existing = await aiRepository.getConfigById(
-          config.id,
-          includeDeleted: true,
-        );
-        if (existing != null) continue;
-        await aiRepository.saveConfig(config);
-        copied++;
+  /// Re-resolves the carried AI configs against the TARGET world's actual
+  /// state, in dependency order.
+  ///
+  /// [_prepareAiConfigs] pruned against the demo-side carry set, but the
+  /// target has its own history: an id may already exist there as a live
+  /// config (skip the save, dependents may reference it) or as a tombstone
+  /// (skip the save AND treat the id as unusable — the user deleted it, and
+  /// a demo exit must neither resurrect it nor deliver dependents that
+  /// point at it). Dependents of an unusable id are dropped transitively:
+  /// models without their provider, profiles without their thinking model;
+  /// optional profile slots and skill assignments are pruned instead, and
+  /// carried skills only travel while a surviving profile still references
+  /// them.
+  ///
+  /// Returns the configs to save (in providers → models → profiles → skills
+  /// order) and the full set of ids usable in the target after the apply.
+  Future<({List<AiConfig> toSave, Set<String> activeIds})>
+  _resolveAiConfigsAgainstTarget(
+    List<AiConfig> configs, {
+    required AiConfigRepository repository,
+  }) async {
+    final presentActive = <String>{};
+    final tombstoned = <String>{};
+    for (final config in configs) {
+      final existing = await repository.getConfigById(
+        config.id,
+        includeDeleted: true,
+      );
+      if (existing == null) continue;
+      if (existing.deletedAt != null) {
+        tombstoned.add(config.id);
+      } else {
+        presentActive.add(config.id);
       }
     }
-    return copied;
+
+    // Ids usable in the target once this apply is done. Grown in dependency
+    // order so each tier only sees dependencies that actually made it.
+    final active = <String>{...presentActive};
+    bool needsSave(String id) =>
+        !presentActive.contains(id) && !tombstoned.contains(id);
+
+    final providers = <AiConfig>[
+      for (final config in configs.whereType<AiConfigInferenceProvider>())
+        if (needsSave(config.id)) config,
+    ];
+    active.addAll([for (final provider in providers) provider.id]);
+
+    final models = <AiConfig>[];
+    for (final config in configs.whereType<AiConfigModel>()) {
+      if (!needsSave(config.id)) continue;
+      if (!active.contains(config.inferenceProviderId)) {
+        _log(
+          'dropping copied model ${config.id}: its provider '
+          '${config.inferenceProviderId} is deleted in the target',
+        );
+        continue;
+      }
+      models.add(config);
+      active.add(config.id);
+    }
+
+    // Skills carry no dependencies of their own, so their usability is
+    // known before profiles prune their assignments; whether each one is
+    // actually SAVED depends on a surviving profile still referencing it.
+    final carriedSkillIds = {
+      for (final config in configs.whereType<AiConfigSkill>())
+        if (needsSave(config.id)) config.id,
+    };
+    final skillUsable = {...active, ...carriedSkillIds};
+
+    final profiles = <AiConfig>[];
+    final neededSkillIds = <String>{};
+    for (final config in configs.whereType<AiConfigInferenceProfile>()) {
+      if (presentActive.contains(config.id)) {
+        // Already live in the target: its assignments define what it needs.
+        neededSkillIds.addAll([
+          for (final assignment in config.skillAssignments) assignment.skillId,
+        ]);
+        continue;
+      }
+      if (tombstoned.contains(config.id)) continue;
+      if (!active.contains(config.thinkingModelId)) {
+        _log(
+          'dropping copied profile ${config.id}: its thinking model '
+          '${config.thinkingModelId} is deleted in the target',
+        );
+        continue;
+      }
+      String? keep(String? modelId) =>
+          modelId != null && active.contains(modelId) ? modelId : null;
+      final pruned = config.copyWith(
+        thinkingHighEndModelId: keep(config.thinkingHighEndModelId),
+        imageRecognitionModelId: keep(config.imageRecognitionModelId),
+        transcriptionModelId: keep(config.transcriptionModelId),
+        imageGenerationModelId: keep(config.imageGenerationModelId),
+        skillAssignments: [
+          for (final assignment in config.skillAssignments)
+            if (skillUsable.contains(assignment.skillId)) assignment,
+        ],
+      );
+      profiles.add(pruned);
+      active.add(pruned.id);
+      neededSkillIds.addAll([
+        for (final assignment in pruned.skillAssignments) assignment.skillId,
+      ]);
+    }
+
+    final skills = <AiConfig>[
+      for (final config in configs.whereType<AiConfigSkill>())
+        if (carriedSkillIds.contains(config.id) &&
+            neededSkillIds.contains(config.id))
+          config,
+    ];
+    active.addAll([for (final skill in skills) skill.id]);
+
+    return (
+      toSave: [...providers, ...models, ...profiles, ...skills],
+      activeIds: active,
+    );
+  }
+
+  /// Best-effort breadcrumb for dropped/cleared references — the copy keeps
+  /// going, but the pruning decision must be reconstructable from the logs.
+  void _log(String message) {
+    if (!getIt.isRegistered<DomainLogger>()) return;
+    getIt<DomainLogger>().log(
+      LogDomain.general,
+      message,
+      subDomain: 'demoDataCopier',
+    );
   }
 
   /// Copies one media file into [staging] under a fresh name derived from

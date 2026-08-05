@@ -16,6 +16,7 @@ import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/entities_cache_service.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as p;
@@ -352,6 +353,92 @@ void main() {
         isNull,
         reason: 'a seeded cover id must not dangle into the real world',
       );
+    });
+
+    test('a hidden link crosses hidden: the flag travels in the plan and is '
+        'passed through to createLink on apply', () async {
+      await seedSourceWorld();
+      final hiddenNote = JournalEntry(
+        meta: TestMetadataFactory.create(id: 'note-hidden', createdAt: created),
+        entryText: const EntryText(plainText: 'Tucked away'),
+      );
+      await source.writeJournalEntity(hiddenNote);
+      await source.writeEntryLink(
+        EntryLink.basic(
+          id: 'link-hidden',
+          fromId: 'task-1',
+          toId: 'note-hidden',
+          createdAt: created,
+          updatedAt: created,
+          vectorClock: null,
+          hidden: true,
+        ),
+      );
+      final copier = DemoDataCopier(newId: sequentialIds());
+
+      final plan = await copier.prepare(
+        selectedIds: {'task-1'},
+        sourceDb: source.journalDb,
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+
+      final hiddenTarget = plan.entities
+          .whereType<JournalEntry>()
+          .singleWhere((entry) => entry.entryText?.plainText == 'Tucked away')
+          .meta
+          .id;
+      final hiddenLink = plan.links.singleWhere(
+        (link) => link.toId == hiddenTarget,
+      );
+      expect(hiddenLink.hidden, isTrue);
+      expect(
+        plan.links.where((link) => link.hidden),
+        hasLength(1),
+        reason: 'the ordinary links must not become hidden',
+      );
+
+      final persistence = MockPersistenceLogic();
+      final targetDb = MockJournalDb();
+      when(() => targetDb.getCategoryById(any())).thenAnswer((_) async => null);
+      when(
+        () => persistence.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
+      when(() => persistence.updateMetadata(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      when(
+        () => persistence.createDbEntity(
+          any(),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+        ),
+      ).thenAnswer((_) async => true);
+      when(
+        () => persistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: any(named: 'toId'),
+          linkType: any(named: 'linkType'),
+          collapsed: any(named: 'collapsed'),
+          hidden: any(named: 'hidden'),
+        ),
+      ).thenAnswer((_) async => true);
+
+      await copier.apply(
+        plan,
+        persistence: persistence,
+        targetJournalDb: targetDb,
+        targetRoot: targetRoot,
+      );
+
+      verify(
+        () => persistence.createLink(
+          fromId: any(named: 'fromId'),
+          toId: hiddenTarget,
+          linkType: any(named: 'linkType'),
+          collapsed: any(named: 'collapsed'),
+          hidden: true,
+        ),
+      ).called(1);
     });
 
     test('seeded ids cut the closure off (a note linked from a selected task '
@@ -880,7 +967,8 @@ void main() {
     });
 
     test('apply writes AI configs with their original ids and skips any id '
-        'already present in the real world — including tombstones', () async {
+        'already present in the real world — a tombstoned skill is neither '
+        'resurrected nor left assigned on the copied profile', () async {
       await seedAiConfigs();
       final copier = DemoDataCopier(newId: sequentialIds());
       final plan = await copier.prepare(
@@ -925,11 +1013,227 @@ void main() {
         ['user-provider', 'user-model', 'user-profile'],
         reason: 'the tombstoned skill is never resurrected',
       );
+      expect(
+        saved.whereType<AiConfigInferenceProfile>().single.skillAssignments,
+        isEmpty,
+        reason:
+            'the assignment pointing at the target-tombstoned skill must be '
+            'pruned — the saved profile may only reference configs that are '
+            'live in the target',
+      );
       // Existence checks used includeDeleted so tombstones read as present.
       verify(
         () => targetAi.getConfigById('user-skill', includeDeleted: true),
       ).called(1);
       expect(copied, 3);
+    });
+
+    test('a dependency tombstoned in the TARGET takes its carried dependents '
+        'down with it: dead model → dead profile → orphaned skill', () async {
+      await seedAiConfigs();
+      final logger = MockDomainLogger();
+      getIt.registerSingleton<DomainLogger>(logger);
+      final copier = DemoDataCopier(newId: sequentialIds());
+      final plan = await copier.prepare(
+        selectedIds: {},
+        selectedAiProviderIds: {'user-provider'},
+        sourceDb: source.journalDb,
+        sourceAiConfigs: AiConfigRepository(source.aiConfigDb),
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+
+      final persistence = MockPersistenceLogic();
+      final targetDb = MockJournalDb();
+      final targetAi = MockAiConfigRepository();
+      // The real world once had (and deleted) the model the carried profile
+      // thinks with.
+      when(
+        () => targetAi.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((invocation) async {
+        final id = invocation.positionalArguments.first as String;
+        return id == 'user-model'
+            ? model('user-model', 'user-provider').copyWith(deletedAt: created)
+            : null;
+      });
+      when(() => targetAi.saveConfig(any())).thenAnswer((_) async {});
+
+      final copied = await copier.apply(
+        plan,
+        persistence: persistence,
+        targetJournalDb: targetDb,
+        targetRoot: targetRoot,
+        targetAiConfigs: targetAi,
+      );
+
+      final saved = verify(
+        () => targetAi.saveConfig(captureAny()),
+      ).captured.cast<AiConfig>();
+      expect(
+        saved.map((config) => config.id),
+        ['user-provider'],
+        reason:
+            'the model is tombstoned in the target, so the profile that '
+            'thinks with it and the skill only that profile assigned must '
+            'both stay behind — copied configs may never point at deleted '
+            'dependencies',
+      );
+      expect(copied, 1);
+      verify(
+        () => logger.log(
+          LogDomain.general,
+          any(that: contains('dropping copied profile user-profile')),
+          subDomain: 'demoDataCopier',
+        ),
+      ).called(1);
+    });
+
+    test('task profileId and category defaultProfileId survive only when the '
+        'referenced profile is usable in the target — carried, or already '
+        'present there', () async {
+      await seedAiConfigs();
+      await source.writeEntityDefinition(
+        CategoryDefinition(
+          id: 'cat-wired',
+          createdAt: created,
+          updatedAt: created,
+          name: 'Wired Ops',
+          vectorClock: null,
+          private: false,
+          active: true,
+          defaultProfileId: 'user-profile',
+        ),
+      );
+      await source.writeEntityDefinition(
+        CategoryDefinition(
+          id: 'cat-dangling',
+          createdAt: created,
+          updatedAt: created,
+          name: 'Dangling Ops',
+          vectorClock: null,
+          private: false,
+          active: true,
+          defaultProfileId: 'demo-only-profile',
+        ),
+      );
+      Task taskWithProfile(String id, String? categoryId, String profileId) {
+        final base = TestTaskFactory.create(
+          id: id,
+          title: 'Task $id',
+          createdAt: created,
+          dateFrom: created,
+          dateTo: created,
+          categoryId: categoryId,
+        );
+        return base.copyWith(data: base.data.copyWith(profileId: profileId));
+      }
+
+      await source.writeJournalEntity(
+        taskWithProfile('task-carried', 'cat-wired', 'user-profile'),
+      );
+      await source.writeJournalEntity(
+        taskWithProfile('task-dangling', 'cat-dangling', 'demo-only-profile'),
+      );
+      await source.writeJournalEntity(
+        taskWithProfile('task-bundled', null, 'bundled-profile'),
+      );
+      final copier = DemoDataCopier(newId: sequentialIds());
+
+      final plan = await copier.prepare(
+        selectedIds: {'task-carried', 'task-dangling', 'task-bundled'},
+        selectedAiProviderIds: {'user-provider'},
+        sourceDb: source.journalDb,
+        sourceAiConfigs: AiConfigRepository(source.aiConfigDb),
+        sourceRoot: sourceRoot,
+        stagingDir: stagingDir,
+      );
+
+      final persistence = MockPersistenceLogic();
+      final targetDb = MockJournalDb();
+      final targetAi = MockAiConfigRepository();
+      when(() => targetDb.getCategoryById(any())).thenAnswer((_) async => null);
+      when(
+        () => persistence.upsertEntityDefinition(any()),
+      ).thenAnswer((_) async => 1);
+      when(() => persistence.updateMetadata(any())).thenAnswer(
+        (invocation) async => invocation.positionalArguments.first as Metadata,
+      );
+      when(
+        () => persistence.createDbEntity(
+          any(),
+          shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+        ),
+      ).thenAnswer((_) async => true);
+      // 'bundled-profile' is live in the target (the user connected the same
+      // provider in the real world); everything else is absent.
+      when(
+        () => targetAi.getConfigById(
+          any(),
+          includeDeleted: any(named: 'includeDeleted'),
+        ),
+      ).thenAnswer((invocation) async {
+        final id = invocation.positionalArguments.first as String;
+        return id == 'bundled-profile'
+            ? profile('bundled-profile', 'bundled-model', const [])
+            : null;
+      });
+      when(() => targetAi.saveConfig(any())).thenAnswer((_) async {});
+
+      await copier.apply(
+        plan,
+        persistence: persistence,
+        targetJournalDb: targetDb,
+        targetRoot: targetRoot,
+        targetAiConfigs: targetAi,
+      );
+
+      final writtenByTitle = {
+        for (final task in verify(
+          () => persistence.createDbEntity(
+            captureAny(),
+            shouldAddGeolocation: any(named: 'shouldAddGeolocation'),
+          ),
+        ).captured.cast<JournalEntity>().whereType<Task>())
+          task.data.title: task,
+      };
+      expect(
+        writtenByTitle['Task task-carried']!.data.profileId,
+        'user-profile',
+        reason: 'the profile travels in the same plan, so the wiring holds',
+      );
+      expect(
+        writtenByTitle['Task task-dangling']!.data.profileId,
+        isNull,
+        reason:
+            'the demo-only profile does not land in the target, so the '
+            'reference must be cleared instead of resolving to nothing',
+      );
+      expect(
+        writtenByTitle['Task task-bundled']!.data.profileId,
+        'bundled-profile',
+        reason: 'a profile already live in the target stays referenced',
+      );
+
+      final upsertedByName = {
+        for (final definition in verify(
+          () => persistence.upsertEntityDefinition(captureAny()),
+        ).captured.cast<EntityDefinition>().whereType<CategoryDefinition>())
+          definition.name: definition,
+      };
+      expect(
+        upsertedByName['Wired Ops']!.defaultProfileId,
+        'user-profile',
+      );
+      expect(
+        upsertedByName['Dangling Ops']!.defaultProfileId,
+        isNull,
+        reason:
+            'a copied category must not default to a profile the target '
+            'does not have',
+      );
     });
 
     test('apply throws when a plan carries AI configs but no target '

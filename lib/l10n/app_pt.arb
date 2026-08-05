@@ -2415,6 +2415,7 @@
   "demoBannerLabel": "Mundo de demonstração — o teu diário permanece intacto",
   "demoCopyBody": "Escolhe as tarefas e entradas a copiar para o teu diário.",
   "demoCopyConfirm": "Copiar e sair",
+  "demoCopyFailedToast": "Não foi possível copiar o teu trabalho da demonstração — está tudo no mundo de demonstração, por isso podes tentar novamente.",
   "demoCopyProgress": "A copiar o teu trabalho…",
   "demoCopySectionAiSetup": "Configuração de IA",
   "demoCopySectionEntries": "Entradas do diário",

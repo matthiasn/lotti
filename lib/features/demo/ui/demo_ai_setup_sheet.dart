@@ -34,14 +34,26 @@ class DemoAiSetupSheet {
   // Uninstantiable namespace — only the static [show] is ever used.
   DemoAiSetupSheet._(); // coverage:ignore-line
 
+  /// Bound on waiting for the demo-world wiring before the intercepted
+  /// action retries: long enough for the stamping writes on any healthy
+  /// device, short enough that a wedged demo database cannot hang the retry
+  /// forever (the wiring itself never throws — failures are logged and
+  /// degrade to the pre-connect behavior).
+  static const Duration wiringRetryTimeout = Duration(seconds: 10);
+
   /// Shows the flow. [onConfigured] fires after the route has popped IF a
   /// real provider was connected — callers use it to retry the AI action
-  /// the nudge intercepted.
+  /// the nudge intercepted. The retry WAITS (bounded by
+  /// [wiringRetryTimeout]) for the demo-world wiring kicked off on connect,
+  /// so the retried skill run sees the seeded tasks already stamped with a
+  /// runnable profile instead of racing the stamping writes.
   static Future<void> show(
     BuildContext context, {
     VoidCallback? onConfigured,
+    @visibleForTesting DemoWorldWiring? wireWorld,
   }) async {
     var connected = false;
+    Future<void>? wiring;
     final dismissLabel = MaterialLocalizations.of(
       context,
     ).modalBarrierDismissLabel;
@@ -67,8 +79,12 @@ class DemoAiSetupSheet {
                 end: Offset.zero,
               ).animate(curved),
               child: _DemoAiSetupScaffold(
-                onConnected: () => connected = true,
+                onConnected: (wiringFuture) {
+                  connected = true;
+                  wiring = wiringFuture;
+                },
                 onClose: () => Navigator.of(routeContext).pop(),
+                wireWorld: wireWorld,
               ),
             ),
           );
@@ -76,7 +92,14 @@ class DemoAiSetupSheet {
       ),
     );
 
-    if (connected) onConfigured?.call();
+    if (!connected) return;
+    final pendingWiring = wiring;
+    if (pendingWiring != null) {
+      // The wiring runs concurrently with the success beat; only the RETRY
+      // has to wait for it (see [wiringRetryTimeout]).
+      await pendingWiring.timeout(wiringRetryTimeout, onTimeout: () {});
+    }
+    onConfigured?.call();
   }
 }
 
@@ -87,10 +110,12 @@ class _DemoAiSetupScaffold extends StatelessWidget {
   const _DemoAiSetupScaffold({
     required this.onConnected,
     required this.onClose,
+    this.wireWorld,
   });
 
-  final VoidCallback onConnected;
+  final void Function(Future<void> wiring) onConnected;
   final VoidCallback onClose;
+  final DemoWorldWiring? wireWorld;
 
   @override
   Widget build(BuildContext context) {
@@ -104,6 +129,7 @@ class _DemoAiSetupScaffold extends StatelessWidget {
       child: DemoAiSetupFlow(
         onConnected: onConnected,
         onClose: onClose,
+        wireWorld: wireWorld,
       ),
     );
 
@@ -176,7 +202,9 @@ class DemoAiSetupFlow extends StatefulWidget {
 
   /// Fired the moment the API-key panel reports a created provider —
   /// BEFORE the success beat, so a dismissal on that beat still counts.
-  final VoidCallback onConnected;
+  /// Receives the in-flight wiring future so [DemoAiSetupSheet.show] can
+  /// hold the intercepted-action retry until the stamping writes are done.
+  final void Function(Future<void> wiring) onConnected;
 
   /// Pops the hosting route.
   final VoidCallback onClose;
@@ -194,9 +222,11 @@ class _DemoAiSetupFlowState extends State<DemoAiSetupFlow> {
   late DemoAiSetupStep _step = widget.initialStep;
   late InferenceProviderType _type;
 
-  /// Fire-and-forget on purpose: the success beat must not wait on the
-  /// stamping writes, and a wiring failure only degrades seeded tasks back
-  /// to the pre-connect behavior (logged, never surfaced as a crash).
+  /// Runs concurrently with the success beat (which must not wait on the
+  /// stamping writes) but is handed to [DemoAiSetupFlow.onConnected] so the
+  /// intercepted-action retry can await it. A wiring failure only degrades
+  /// seeded tasks back to the pre-connect behavior (logged, never surfaced
+  /// as a crash) — this future always completes normally.
   Future<void> _runWiring() async {
     try {
       await (widget.wireWorld ?? _defaultWireWorld)(_type);
@@ -250,8 +280,7 @@ class _DemoAiSetupFlowState extends State<DemoAiSetupFlow> {
           type: _type,
           onBack: () => setState(() => _step = DemoAiSetupStep.connect),
           onConnected: () {
-            widget.onConnected();
-            unawaited(_runWiring());
+            widget.onConnected(_runWiring());
             setState(() => _step = DemoAiSetupStep.success);
           },
         );

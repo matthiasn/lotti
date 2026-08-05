@@ -2176,6 +2176,7 @@
   "demoBannerLabel": "Lume demo — jurnalul dvs. rămâne neatins",
   "demoCopyBody": "Alegeți sarcinile și însemnările de copiat în jurnalul dvs.",
   "demoCopyConfirm": "Copiați și ieșiți",
+  "demoCopyFailedToast": "Copierea lucrului din demo nu a reușit — totul este încă în lumea demo, așa că puteți încerca din nou.",
   "demoCopyProgress": "Se copiază munca dvs.…",
   "demoCopySectionAiSetup": "Configurare IA",
   "demoCopySectionEntries": "Însemnări în jurnal",

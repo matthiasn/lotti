@@ -8363,6 +8363,12 @@ abstract class AppLocalizations {
   /// **'Copy and exit'**
   String get demoCopyConfirm;
 
+  /// No description provided for @demoCopyFailedToast.
+  ///
+  /// In en, this message translates to:
+  /// **'Copying your demo work failed — everything is still in the demo world, so you can try again.'**
+  String get demoCopyFailedToast;
+
   /// No description provided for @demoCopyProgress.
   ///
   /// In en, this message translates to:

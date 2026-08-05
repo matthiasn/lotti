@@ -196,6 +196,26 @@ void main() {
     });
 
     test(
+      'hidden: true persists a hidden link; the default stays visible',
+      () async {
+        // The demo copier recreates links carried across the demo→real
+        // crossing and must be able to preserve a hidden flag the user set.
+        await entries.createLink(fromId: 'a', toId: 'b', hidden: true);
+        await entries.createLink(fromId: 'a', toId: 'c');
+
+        final persisted = verify(
+          () => mocks.journalDb.upsertEntryLink(captureAny()),
+        ).captured.cast<EntryLink>();
+        expect(persisted[0].hidden, isTrue);
+        expect(
+          persisted[1].hidden,
+          isFalse,
+          reason: 'omitting the flag must keep the pre-existing default',
+        );
+      },
+    );
+
+    test(
       'a non-blocks linkType skips the cycle guard and persists that variant',
       () async {
         final created = await entries.createLink(

@@ -4935,6 +4935,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get demoCopyConfirm => 'Kopiera och avsluta';
 
   @override
+  String get demoCopyFailedToast =>
+      'Det gick inte att kopiera ditt demoarbete — allt finns kvar i demovärlden, så du kan försöka igen.';
+
+  @override
   String get demoCopyProgress => 'Kopierar ditt arbete…';
 
   @override

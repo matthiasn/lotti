@@ -2751,6 +2751,7 @@
   "demoBannerLabel": "Demo world — your journal is untouched",
   "demoCopyBody": "Choose the tasks and entries to copy into your journal.",
   "demoCopyConfirm": "Copy and exit",
+  "demoCopyFailedToast": "Copying your demo work failed — everything is still in the demo world, so you can try again.",
   "demoCopyProgress": "Copying your work…",
   "demoCopySectionAiSetup": "AI setup",
   "demoCopySectionEntries": "Journal entries",

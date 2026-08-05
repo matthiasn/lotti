@@ -102,6 +102,88 @@ void main() {
     });
   });
 
+  group('copy-failure notice', () {
+    setUp(DemoCopyFailureNotices.instance.reset);
+    tearDown(DemoCopyFailureNotices.instance.reset);
+
+    testWidgets('a failure reported AFTER the scaffold mounted (the copy '
+        'applies post-switch, in this generation) surfaces as an error '
+        'toast in the REAL generation', (tester) async {
+      await tester.pumpWidget(
+        host(
+          child: const Scaffold(body: SizedBox.expand(key: childKey)),
+        ),
+      );
+      expect(
+        find.byType(DemoModeBanner),
+        findsNothing,
+        reason: 'the real generation shows no banner — only the toast',
+      );
+
+      DemoCopyFailureNotices.instance.report();
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.text(
+          'Copying your demo work failed — everything is still in the '
+          'demo world, so you can try again.',
+        ),
+        findsOneWidget,
+      );
+      expect(
+        DemoCopyFailureNotices.instance.consume(),
+        isFalse,
+        reason: 'the notice is consumed by the toast, never re-shown',
+      );
+    });
+
+    testWidgets('a failure reported BEFORE the scaffold mounted (the apply '
+        'failed while the switch splash was still up) is drained on the '
+        'first frame', (tester) async {
+      DemoCopyFailureNotices.instance.report();
+
+      await tester.pumpWidget(
+        host(
+          child: const Scaffold(body: SizedBox.expand(key: childKey)),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.text(
+          'Copying your demo work failed — everything is still in the '
+          'demo world, so you can try again.',
+        ),
+        findsOneWidget,
+      );
+    });
+
+    testWidgets('unmounting the scaffold detaches its listener — a later '
+        'report stays pending instead of reaching a dead context', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        host(
+          child: const Scaffold(body: SizedBox.expand(key: childKey)),
+        ),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      DemoCopyFailureNotices.instance.report();
+      await tester.pump();
+
+      expect(
+        DemoCopyFailureNotices.instance.consume(),
+        isTrue,
+        reason:
+            'no scaffold was mounted, so the notice must survive for the '
+            'next generation to drain',
+      );
+    });
+  });
+
   group('DemoModeBanner exit affordances', () {
     late Directory demoRoot;
     late MockDemoModeGateway gateway;

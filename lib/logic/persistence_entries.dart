@@ -177,6 +177,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
     required String fromId,
     required String toId,
     bool collapsed = false,
+    bool hidden = false,
     EntryLinkType linkType = EntryLinkType.basic,
   }) async {
     // Creation-time cycle guard (ADR 0042 §5): best-effort, local. A cycle
@@ -201,7 +202,7 @@ class PersistenceEntries extends PersistenceCollaboratorBase {
           toId: toId,
           createdAt: now,
           updatedAt: now,
-          hidden: false,
+          hidden: hidden,
           collapsed: collapsed,
           vectorClock: await vectorClockService.getNextVectorClock(),
         );

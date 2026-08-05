@@ -6,8 +6,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/app_root.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
-import 'package:lotti/features/demo/copy/demo_copy_candidates.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seeder.dart';
@@ -18,6 +18,7 @@ import 'package:lotti/features/profiles/service/demo_world_creator.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
+import 'package:lotti/services/domain_logging.dart';
 
 /// Seeds a freshly created demo world. Injectable so gateway tests can
 /// exercise the enter/reset decision logic without running the full seeder.
@@ -169,6 +170,13 @@ class DemoModeGateway {
   /// toasted to the user: the generation switch replaces the whole widget
   /// tree mid-flow, so the exit sheet surfaces progress before the switch
   /// and the count is returned for logging/tests only.
+  ///
+  /// A failure while APPLYING the plan happens after the switch, when the
+  /// exit sheet (and everything else in the old generation) is already
+  /// gone — so it is logged here and reported through
+  /// [DemoCopyFailureNotices], which the new generation's chrome
+  /// (`DemoModeScaffold`) turns into a visible error toast. The error still
+  /// rethrows for callers/tests.
   Future<int> exitWithCopy({
     required Set<String> selectedIds,
     Set<String> selectedAiConfigIds = const {},
@@ -185,7 +193,21 @@ class DemoModeGateway {
       selectedAiConfigIds,
     );
     await exitDemo();
-    return (applyCopyOverride ?? _defaultApplyCopy)(plan);
+    try {
+      return await (applyCopyOverride ?? _defaultApplyCopy)(plan);
+    } catch (exception, stackTrace) {
+      // getIt already holds the REAL generation's services here.
+      if (getIt.isRegistered<DomainLogger>()) {
+        getIt<DomainLogger>().error(
+          LogDomain.general,
+          exception,
+          stackTrace: stackTrace,
+          subDomain: 'demoExitCopyApply',
+        );
+      }
+      DemoCopyFailureNotices.instance.report();
+      rethrow;
+    }
   }
 
   /// Reads the copy plan from the ACTIVE (demo) generation's services.
@@ -223,20 +245,43 @@ class DemoModeGateway {
 
   /// Whether the (non-active) demo world at [profile]'s root contains
   /// demo-created work that a wipe would destroy. Opens the world's storage
-  /// through a [WorldHandle] and runs the same candidate scan the exit
-  /// sheet uses. Errs on the side of preservation: an unreadable world
-  /// reports `true`, so a scan failure can never green-light a deletion.
+  /// through a [WorldHandle] and scans RAW rows against the seed manifest —
+  /// deliberately NOT the exit sheet's candidate scan, which drops
+  /// non-seeded entries with inbound links (a recording or image the user
+  /// attached to a seeded task) and would green-light wiping them:
+  ///
+  /// - journal: any non-deleted row whose id is not in the manifest;
+  /// - AI: any inference provider whose id is not in the manifest (the
+  ///   user's connected key). Other config types are not scanned — the app
+  ///   auto-seeds prompts/backfilled models/bundled profiles inside the
+  ///   demo generation without manifest entries, so a full-type scan would
+  ///   read every demo world as user work and no stale world could ever
+  ///   reseed.
+  ///
+  /// A missing/malformed manifest excludes nothing, and an unreadable world
+  /// reports `true` — a scan failure can never green-light a deletion.
   Future<bool> _hasUserWork(Profile profile) async {
     WorldHandle? handle;
     try {
       final root = registry.rootFor(profile);
+      DemoSeedManifest? manifest;
+      try {
+        manifest = await DemoSeedManifest.read(root);
+      } catch (_) {
+        manifest = null;
+      }
+      final seededJournalIds = {...?manifest?.seededJournalIds};
+      final seededAiIds = {...?manifest?.seededAiConfigIds};
+
       handle = WorldHandle.open(root);
-      final candidates = await loadDemoCopyCandidates(
-        journalDb: handle.journalDb,
-        aiConfigRepository: AiConfigRepository(handle.aiConfigDb),
-        demoRoot: root,
-      );
-      return candidates.isNotEmpty;
+      final journalIds = await handle.journalDb.allNonDeletedJournalEntityIds();
+      if (journalIds.any((id) => !seededJournalIds.contains(id))) {
+        return true;
+      }
+      final providers = await AiConfigRepository(
+        handle.aiConfigDb,
+      ).getConfigsByType(AiConfigType.inferenceProvider);
+      return providers.any((config) => !seededAiIds.contains(config.id));
     } catch (_) {
       return true;
     } finally {
@@ -253,6 +298,41 @@ class DemoModeGateway {
       seed: (world) => _seedRunner(world, locale),
     );
   }
+}
+
+/// Cross-generation mailbox for demo copy-apply failures.
+///
+/// [DemoModeGateway.exitWithCopy] applies the plan AFTER the profile switch
+/// has replaced the whole widget tree, so the exit sheet that started the
+/// copy is gone by the time a failure can happen and no messenger from the
+/// old generation survives. This notifier deliberately lives outside getIt
+/// (which the switch resets) and outside the tree (which the switch
+/// replaces): the gateway reports into it, and the new generation's chrome
+/// (`DemoModeScaffold`) subscribes and toasts the failure — draining a
+/// report that landed before it mounted via [consume].
+class DemoCopyFailureNotices extends ChangeNotifier {
+  DemoCopyFailureNotices._();
+
+  static final DemoCopyFailureNotices instance = DemoCopyFailureNotices._();
+
+  bool _pending = false;
+
+  /// Records a copy-apply failure and notifies any mounted listener.
+  void report() {
+    _pending = true;
+    notifyListeners();
+  }
+
+  /// One-shot read-and-clear: `true` exactly once per reported failure, so
+  /// rebuilds and multiple listeners can never toast the same failure twice.
+  bool consume() {
+    final pending = _pending;
+    _pending = false;
+    return pending;
+  }
+
+  @visibleForTesting
+  void reset() => _pending = false;
 }
 
 /// Builds a gateway from the ambient [ProfileSwitcherScope]. Throws (via the

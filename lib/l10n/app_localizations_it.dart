@@ -4993,6 +4993,10 @@ class AppLocalizationsIt extends AppLocalizations {
   String get demoCopyConfirm => 'Copia ed esci';
 
   @override
+  String get demoCopyFailedToast =>
+      'La copia del tuo lavoro della demo non è riuscita — è ancora tutto nel mondo demo, quindi puoi riprovare.';
+
+  @override
   String get demoCopyProgress => 'Copia del tuo lavoro in corso…';
 
   @override

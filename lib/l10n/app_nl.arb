@@ -2415,6 +2415,7 @@
   "demoBannerLabel": "Demowereld — je dagboek blijft onaangeroerd",
   "demoCopyBody": "Kies de taken en notities die je naar je dagboek wilt kopiëren.",
   "demoCopyConfirm": "Kopiëren en afsluiten",
+  "demoCopyFailedToast": "Het kopiëren van je demowerk is mislukt — alles staat nog in de demowereld, dus je kunt het opnieuw proberen.",
   "demoCopyProgress": "Je werk wordt gekopieerd…",
   "demoCopySectionAiSetup": "AI-configuratie",
   "demoCopySectionEntries": "Dagboeknotities",

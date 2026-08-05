@@ -2176,6 +2176,7 @@
   "demoBannerLabel": "Monde démo — ton journal reste intact",
   "demoCopyBody": "Choisis les tâches et les entrées à copier dans ton journal.",
   "demoCopyConfirm": "Copier et quitter",
+  "demoCopyFailedToast": "La copie de ton travail de démo a échoué — tout est encore dans le monde démo, tu peux réessayer.",
   "demoCopyProgress": "Copie de ton travail…",
   "demoCopySectionAiSetup": "Configuration IA",
   "demoCopySectionEntries": "Entrées de journal",

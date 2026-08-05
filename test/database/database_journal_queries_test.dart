@@ -109,6 +109,44 @@ void main() {
       await getIt.reset();
     });
 
+    test('allNonDeletedJournalEntityIds returns every live row id across '
+        'types and hides deleted rows', () async {
+      // The demo reseed guard depends on this seeing rows the candidate
+      // root scan would drop (linked entries, any type), but never
+      // tombstones.
+      await db!.updateJournalEntity(
+        buildJournalEntry(
+          id: 'live-entry',
+          timestamp: DateTime(2026, 7, 18, 9),
+          text: 'still here',
+        ),
+      );
+      await db!.updateJournalEntity(
+        buildTaskEntry(
+          id: 'live-task',
+          timestamp: DateTime(2026, 7, 18, 10),
+          title: 'a task',
+          status: TaskStatus.open(
+            id: 'live-task-status',
+            createdAt: DateTime(2026, 7, 18, 10),
+            utcOffset: 0,
+          ),
+        ),
+      );
+      await db!.updateJournalEntity(
+        buildTextEntry(
+          id: 'deleted-entry',
+          timestamp: DateTime(2026, 7, 18, 11),
+          text: 'gone',
+          deletedAt: DateTime(2026, 7, 18, 12),
+        ),
+      );
+
+      final ids = await db!.allNonDeletedJournalEntityIds();
+
+      expect(ids.toSet(), {'live-entry', 'live-task'});
+    });
+
     group('Daily OS audio lookups -', () {
       DayAudioContext context({
         required String dayId,

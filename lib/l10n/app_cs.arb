@@ -2183,6 +2183,7 @@
   "demoBannerLabel": "Demo svět — tvůj deník zůstává nedotčený",
   "demoCopyBody": "Vyber úkoly a záznamy, které chceš zkopírovat do svého deníku.",
   "demoCopyConfirm": "Zkopírovat a ukončit",
+  "demoCopyFailedToast": "Kopírování tvé práce z dema se nepodařilo — v demo světě je vše zachováno, takže to můžeš zkusit znovu.",
   "demoCopyProgress": "Kopíruji tvou práci…",
   "demoCopySectionAiSetup": "Nastavení AI",
   "demoCopySectionEntries": "Záznamy v deníku",

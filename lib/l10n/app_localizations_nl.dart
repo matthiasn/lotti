@@ -4945,6 +4945,10 @@ class AppLocalizationsNl extends AppLocalizations {
   String get demoCopyConfirm => 'Kopiëren en afsluiten';
 
   @override
+  String get demoCopyFailedToast =>
+      'Het kopiëren van je demowerk is mislukt — alles staat nog in de demowereld, dus je kunt het opnieuw proberen.';
+
+  @override
   String get demoCopyProgress => 'Je werk wordt gekopieerd…';
 
   @override
