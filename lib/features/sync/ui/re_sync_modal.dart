@@ -669,9 +669,8 @@ class ReSyncModal {
   }) async {
     var preflightHandled = onboardingTarget == null;
     OutboundOnboardingRound? activeRound;
-    final service =
-        onboardingSyncService ??
-        (onboardingTarget == null ? null : getIt<OnboardingSyncService>());
+    OnboardingSyncService resolveService() =>
+        onboardingSyncService ?? getIt<OnboardingSyncService>();
     try {
       await ModalUtils.showSinglePageModal<void>(
         context: context,
@@ -686,7 +685,7 @@ class ReSyncModal {
     } finally {
       if (activeRound case final round?) {
         try {
-          await service!.abortOutbound(round);
+          await resolveService().abortOutbound(round);
         } catch (error, stackTrace) {
           getIt<DomainLogger>().error(
             LogDomain.sync,
@@ -697,7 +696,7 @@ class ReSyncModal {
         }
       } else if (!preflightHandled && onboardingTarget != null) {
         try {
-          await service!.releaseInboundPreflight(onboardingTarget);
+          await resolveService().releaseInboundPreflight(onboardingTarget);
         } catch (error, stackTrace) {
           getIt<DomainLogger>().error(
             LogDomain.sync,
