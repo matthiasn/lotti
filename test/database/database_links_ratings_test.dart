@@ -93,6 +93,36 @@ void main() {
     });
 
     group('Linked entities -', () {
+      test('raw Sync rows retain hidden links', () async {
+        final timestamp = DateTime(2026, 8, 5);
+        await db!.upsertEntryLink(
+          buildEntryLink(
+            id: 'visible-sync-link',
+            fromId: 'sync-source',
+            toId: 'visible-target',
+            timestamp: timestamp,
+          ),
+        );
+        await db!.upsertEntryLink(
+          EntryLink.basic(
+            id: 'hidden-sync-link',
+            fromId: 'sync-source',
+            toId: 'hidden-target',
+            createdAt: timestamp,
+            updatedAt: timestamp,
+            vectorClock: const VectorClock({'db': 2}),
+            hidden: true,
+          ),
+        );
+
+        final rows = await db!.linkRowsFromIdsIncludingHidden(['sync-source']);
+
+        expect(
+          rows.map((row) => (row.id, row.hidden)).toSet(),
+          {('visible-sync-link', false), ('hidden-sync-link', true)},
+        );
+      });
+
       test(
         'getLinkedEntities returns linked children sorted by recency',
         () async {

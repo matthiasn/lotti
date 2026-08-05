@@ -3815,11 +3815,31 @@
   "maintenanceReSyncCustom": "Custom",
   "maintenanceReSyncDescription": "Queue messages for your other devices",
   "maintenanceReSyncEntityTypes": "Entity types",
-  "maintenanceReSyncEverything": "Everything",
+  "maintenanceReSyncEverything": "All",
   "maintenanceReSyncFailed": "Messages could not be queued. Try again.",
   "maintenanceReSyncInvalidRange": "Start must be before end",
   "maintenanceReSyncJournalEntities": "Journal entities",
   "maintenanceReSyncLast30Days": "Last 30 days",
+  "maintenanceReSyncPartialDescription": "{failed, plural, =1{1 entry failed. Retry just that entry.} other{{failed} entries failed. Retry just those entries.}}",
+  "@maintenanceReSyncPartialDescription": {
+    "placeholders": {
+      "failed": {
+        "type": "int"
+      }
+    }
+  },
+  "maintenanceReSyncPartialTitle": "{succeeded} of {total} {total, plural, =1{message} other{messages}} queued",
+  "@maintenanceReSyncPartialTitle": {
+    "placeholders": {
+      "succeeded": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "maintenanceReSyncRetryFailed": "Retry failed entries",
   "maintenanceReSyncSelectAtLeastOne": "Select at least one entity type",
   "maintenanceReSyncSending": "Preparing messages",
   "maintenanceReSyncStart": "Start",

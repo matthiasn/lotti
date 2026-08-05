@@ -11,6 +11,17 @@ typedef LinkedEntityTimeSpan = ({
 /// [upsertEntryLink] write path.
 mixin _JournalDbLinksRatings
     on _$JournalDb, _JournalDbConfigFlags, _JournalDbJournalQueries {
+  /// Returns raw links for Sync staging without applying the UI's hidden-link
+  /// filter. Hidden links are persisted replication state and must reach a new
+  /// device even though ordinary linked-entity views exclude them.
+  Future<List<LinkedDbEntry>> linkRowsFromIdsIncludingHidden(
+    List<String> fromIds,
+  ) {
+    return (select(
+      linkedEntries,
+    )..where((row) => row.fromId.isIn(fromIds))).get();
+  }
+
   Future<List<JournalEntity>> getLinkedEntities(String linkedFrom) async {
     final dbEntities = await _queryWithPrivateFilter(
       allPrivate: () => linkedJournalEntitiesAllPrivate(linkedFrom).get(),

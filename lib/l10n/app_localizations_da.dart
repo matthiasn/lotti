@@ -7242,6 +7242,31 @@ class AppLocalizationsDa extends AppLocalizations {
   String get maintenanceReSyncLast30Days => 'Seneste 30 dage';
 
   @override
+  String maintenanceReSyncPartialDescription(int failed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      failed,
+      locale: localeName,
+      other: '$failed poster mislykkedes. Prøv kun de poster igen.',
+      one: '1 post mislykkedes. Prøv kun den post igen.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String maintenanceReSyncPartialTitle(int succeeded, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'beskeder',
+      one: 'besked',
+    );
+    return '$succeeded af $total $_temp0 sat i kø';
+  }
+
+  @override
+  String get maintenanceReSyncRetryFailed => 'Prøv mislykkede poster igen';
+
+  @override
   String get maintenanceReSyncSelectAtLeastOne => 'Vælg mindst én enhedstype';
 
   @override

@@ -5,7 +5,7 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-03T14:38:02Z }
+generated: { by: codex/gpt-5, at: 2026-08-05T00:00:00Z }
 stale_after: 2026-11-02
 sources:
   - id: sequence
@@ -28,6 +28,14 @@ sources:
     resource: ../../../lib/database/sync_db_onboarding.dart
     title: Durable onboarding suppression storage
     last_modified: 2026-08-03
+  - id: re-sync-ui
+    resource: ../../../lib/features/sync/ui/re_sync_modal.dart
+    title: Historical sync selection and retry UI
+    last_modified: 2026-08-05
+  - id: historical-sync
+    resource: ../../../lib/features/sync/services/historical_sync_service.dart
+    title: Historical sync staging and failed-row retry
+    last_modified: 2026-08-05
 ---
 
 # The accounting layer
@@ -150,7 +158,7 @@ line for every timer or drain nudge.
 
 # Initial-onboarding suppression
 
-The full *Everything* transfer opened from the Add Device sheet coordinates a
+The full *All* transfer opened from the Add Device sheet coordinates a
 target-specific suppression round. Other re-sync ranges and manual backfill do
 not use it. When the joining device consumes a peer handover, it persists an
 inbound `awaitingBegin` preflight **before Matrix login starts background
@@ -169,6 +177,21 @@ history sheet only once that sheet opens, and the history sheet disarms its own
 cleanup only after `beginOutbound` succeeds. The empty Begin atomically adopts
 the provisional gate but claims no covered counters, so automatic backfill is
 no longer blocked while the partial or declined flow continues.
+
+Once a full round is active, the sender fetches undecoded rows and performs
+decode, preparation, persistence and enqueue inside each retained item action.
+One malformed payload therefore cannot abort the rest of its page. Failed rows
+are logged and retained in the result while later work continues. Hidden journal
+links remain part of the replicated history. Journal entries complete first;
+the sender then reads serialized link rows in bounded source-ID pages, so it can
+check later-page endpoint outcomes without retaining every link payload for the
+whole interval. Journal and agent links are
+dependent items: a link is retained without enqueue when either in-range
+endpoint fails, and retry preserves entity-before-link ordering. The End barrier
+is not queued while any failures remain: the sheet summarizes them and retry
+acts only on those retained rows. A successful retry completes the round;
+dismissing the sheet during staging, retry or the partial summary aborts it,
+and a disposed sheet cannot later enqueue End.
 
 ```mermaid
 stateDiagram-v2

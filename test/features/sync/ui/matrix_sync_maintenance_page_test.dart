@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_grou
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/settings/ui/widgets/settings_icon.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
+import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/features/sync/state/sync_maintenance_controller.dart';
 import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
@@ -34,6 +35,7 @@ void main() {
   group('MatrixSyncMaintenancePage', () {
     late MockJournalDb mockJournalDb;
     late MockMaintenance mockMaintenance;
+    late MockHistoricalSyncService mockHistoricalSyncService;
 
     setUp(() {
       mockJournalDb = MockJournalDb();
@@ -42,17 +44,17 @@ void main() {
       ).thenAnswer((_) => Stream<bool>.value(true));
 
       mockMaintenance = MockMaintenance();
+      mockHistoricalSyncService = MockHistoricalSyncService();
       when(() => mockMaintenance.deleteSyncDb()).thenAnswer((_) async {});
       when(
-        () => mockMaintenance.reSyncInterval(
+        () => mockHistoricalSyncService.reSyncInterval(
           start: any(named: 'start'),
           end: any(named: 'end'),
-          agentRepository: any(named: 'agentRepository'),
           includeJournalEntities: any(named: 'includeJournalEntities'),
           includeAgentEntities: any(named: 'includeAgentEntities'),
           onProgress: any(named: 'onProgress'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => ReSyncResult.empty);
       when(
         () => mockMaintenance.purgeSentOutboxItems(
           retention: any(named: 'retention'),
@@ -74,6 +76,9 @@ void main() {
         const MatrixSyncMaintenancePage(),
         overrides: [
           maintenanceProvider.overrideWithValue(mockMaintenance),
+          historicalSyncServiceProvider.overrideWithValue(
+            mockHistoricalSyncService,
+          ),
           journalDbProvider.overrideWithValue(mockJournalDb),
           syncControllerProvider.overrideWith(_StubSyncController.new),
           ...overrides,
@@ -320,15 +325,14 @@ void main() {
         () => mockJournalDb.watchConfigFlag(enableMatrixFlag),
       ).thenAnswer((_) => Stream<bool>.value(false));
       when(
-        () => mockMaintenance.reSyncInterval(
+        () => mockHistoricalSyncService.reSyncInterval(
           start: any(named: 'start'),
           end: any(named: 'end'),
-          agentRepository: any(named: 'agentRepository'),
           includeJournalEntities: any(named: 'includeJournalEntities'),
           includeAgentEntities: any(named: 'includeAgentEntities'),
           onProgress: any(named: 'onProgress'),
         ),
-      ).thenAnswer((_) async {});
+      ).thenAnswer((_) async => ReSyncResult.empty);
       when(() => mockMaintenance.deleteSyncDb()).thenAnswer((_) async {});
 
       getIt

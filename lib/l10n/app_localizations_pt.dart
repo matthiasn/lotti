@@ -7305,6 +7305,32 @@ class AppLocalizationsPt extends AppLocalizations {
   String get maintenanceReSyncLast30Days => 'Últimos 30 dias';
 
   @override
+  String maintenanceReSyncPartialDescription(int failed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      failed,
+      locale: localeName,
+      other: 'Falharam $failed itens. Tenta novamente apenas esses itens.',
+      one: 'Falhou 1 item. Tenta novamente apenas esse item.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String maintenanceReSyncPartialTitle(int succeeded, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'mensagens',
+      one: 'mensagem',
+    );
+    return '$succeeded de $total $_temp0 em fila';
+  }
+
+  @override
+  String get maintenanceReSyncRetryFailed =>
+      'Tentar novamente os itens com falha';
+
+  @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Selecione pelo menos um tipo de entidade';
 

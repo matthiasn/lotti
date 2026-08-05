@@ -7339,6 +7339,34 @@ class AppLocalizationsCs extends AppLocalizations {
   String get maintenanceReSyncLast30Days => 'Posledních 30 dní';
 
   @override
+  String maintenanceReSyncPartialDescription(int failed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      failed,
+      locale: localeName,
+      other:
+          '$failed položek se nepodařilo zařadit. Zkus znovu jen tyto položky.',
+      few:
+          '$failed položky se nepodařilo zařadit. Zkus znovu jen tyto položky.',
+      one: '1 položku se nepodařilo zařadit. Zkus znovu jen tuto položku.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String maintenanceReSyncPartialTitle(int succeeded, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total zpráv',
+      one: '1 zprávy',
+    );
+    return 'Zařazeno $succeeded z $_temp0';
+  }
+
+  @override
+  String get maintenanceReSyncRetryFailed => 'Zkusit znovu neúspěšné položky';
+
+  @override
   String get maintenanceReSyncSelectAtLeastOne =>
       'Vyber alespoň jeden typ entity';
 

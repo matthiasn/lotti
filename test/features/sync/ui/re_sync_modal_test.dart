@@ -4,8 +4,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
@@ -13,11 +11,10 @@ import 'package:lotti/features/design_system/components/selection/design_system_
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
+import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/widgets/date_time/datetime_field.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -29,14 +26,33 @@ import '../../../widget_test_utils.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockMaintenance mockMaintenance;
-  late MockAgentRepository mockAgentRepository;
+  late MockHistoricalSyncService mockHistoricalSyncService;
   late MockSyncMaintenanceRepository mockSyncMaintenanceRepository;
   late MockDomainLogger mockLogging;
 
+  ReSyncResult partialResult({
+    Future<void> Function()? retryAction,
+    ReSyncItemType itemType = ReSyncItemType.agentEntity,
+    String itemId = 'agent-bad',
+  }) => ReSyncResult(
+    succeeded: 2,
+    failures: [
+      ReSyncFailure(
+        phase: ReSyncPhase.agentEntities,
+        itemType: itemType,
+        itemId: itemId,
+        error: StateError('invalid agent row'),
+        stackTrace: StackTrace.empty,
+        retryAction: retryAction ?? () async {},
+        logger: mockLogging,
+      ),
+    ],
+  );
+
   List<Override> modalOverrides() => [
-    maintenanceProvider.overrideWithValue(mockMaintenance),
-    agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+    historicalSyncServiceProvider.overrideWithValue(
+      mockHistoricalSyncService,
+    ),
     syncMaintenanceRepositoryProvider.overrideWithValue(
       mockSyncMaintenanceRepository,
     ),
@@ -100,6 +116,24 @@ void main() {
     await tester.pump();
   }
 
+  Future<void> pickCustomDate(
+    WidgetTester tester, {
+    required Key fieldKey,
+    required DateTime date,
+  }) async {
+    await tester.tap(find.byKey(fieldKey));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+    final calendar = tester.widget<CalendarDatePicker>(
+      find.byType(CalendarDatePicker),
+    );
+    calendar.onDateChanged(date);
+    await tester.pump();
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Done').last);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+  }
+
   setUpAll(registerAllFallbackValues);
 
   setUp(() async {
@@ -111,7 +145,7 @@ void main() {
         stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any<String>(named: 'subDomain'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) {});
     await setUpTestGetIt(
       additionalSetup: () {
         getIt
@@ -119,8 +153,7 @@ void main() {
           ..registerSingleton<DomainLogger>(mockLogging);
       },
     );
-    mockMaintenance = MockMaintenance();
-    mockAgentRepository = MockAgentRepository();
+    mockHistoricalSyncService = MockHistoricalSyncService();
     mockSyncMaintenanceRepository = MockSyncMaintenanceRepository();
     when(
       () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
@@ -135,28 +168,28 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) async => ReSyncResult.empty);
   });
 
   tearDown(tearDownTestGetIt);
 
-  testWidgets('defaults to Everything and hides custom date fields', (
+  testWidgets('defaults to All and hides custom date fields', (
     tester,
   ) async {
     await pumpModal(tester);
 
-    expect(find.text('Everything'), findsWidgets);
+    expect(find.text('All'), findsWidgets);
     expect(find.text('Last 30 days'), findsWidgets);
     expect(find.text('Custom'), findsWidgets);
-    expect(find.byType(DateTimeField), findsNothing);
+    expect(find.byKey(const Key('reSyncStartDate')), findsNothing);
+    expect(find.byKey(const Key('reSyncEndDate')), findsNothing);
   });
 
   testWidgets(
@@ -203,26 +236,26 @@ void main() {
     await pumpModal(tester);
     await selectPreset(tester, ReSyncRangePreset.custom);
 
-    final fields = find
-        .byType(DateTimeField)
-        .evaluate()
-        .map((element) => element.widget as DateTimeField)
-        .toList();
-    final start = DateTime(2024, 1, 1, 8);
-    final end = DateTime(2024, 1, 2, 18, 30);
-
-    fields.first.setDateTime(start);
-    fields.last.setDateTime(end);
-    await tester.pump();
+    final start = DateTime(2024, 1, 1);
+    final end = DateTime(2024, 1, 2);
+    await pickCustomDate(
+      tester,
+      fieldKey: const Key('reSyncStartDate'),
+      date: start,
+    );
+    await pickCustomDate(
+      tester,
+      fieldKey: const Key('reSyncEndDate'),
+      date: end,
+    );
 
     await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
     await tester.pump();
 
     verify(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: start,
-        end: end,
-        agentRepository: mockAgentRepository,
+        end: DateTime(2024, 1, 3),
         includeJournalEntities: true,
         includeAgentEntities: true,
         onProgress: any(named: 'onProgress'),
@@ -230,7 +263,7 @@ void main() {
     ).called(1);
   });
 
-  testWidgets('Everything sends the complete historical interval', (
+  testWidgets('All sends the complete historical interval', (
     tester,
   ) async {
     final now = DateTime.utc(2026, 7, 27, 12);
@@ -242,10 +275,9 @@ void main() {
     });
 
     verify(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: reSyncEverythingStart,
         end: now,
-        agentRepository: mockAgentRepository,
         includeJournalEntities: true,
         includeAgentEntities: true,
         onProgress: any(named: 'onProgress'),
@@ -284,10 +316,9 @@ void main() {
 
       verifyInOrder([
         () => onboarding.beginOutbound(target),
-        () => mockMaintenance.reSyncInterval(
+        () => mockHistoricalSyncService.reSyncInterval(
           start: reSyncEverythingStart,
           end: any(named: 'end'),
-          agentRepository: mockAgentRepository,
           includeJournalEntities: true,
           includeAgentEntities: true,
           onProgress: any(named: 'onProgress'),
@@ -296,6 +327,130 @@ void main() {
       ]);
     },
   );
+
+  testWidgets('partial onboarding keeps suppression until retry succeeds', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenAnswer((_) async => round);
+    when(
+      () => onboarding.completeOutbound(round),
+    ).thenAnswer((_) async {});
+    var retryCalls = 0;
+    final partial = partialResult(
+      retryAction: () async {
+        retryCalls++;
+      },
+    );
+    when(
+      () => mockHistoricalSyncService.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async => partial);
+
+    await pumpModal(
+      tester,
+      onboardingTarget: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    verify(() => onboarding.beginOutbound(target)).called(1);
+    verifyNever(() => onboarding.completeOutbound(round));
+    expect(find.byKey(const Key('reSyncRetryFailures')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('reSyncRetryFailures')));
+    await tester.pump();
+
+    expect(retryCalls, 1);
+    verify(() => onboarding.completeOutbound(round)).called(1);
+    expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
+  });
+
+  testWidgets('retry infrastructure failure aborts onboarding', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenAnswer((_) async => round);
+    when(() => onboarding.abortOutbound(round)).thenAnswer((_) async {});
+    when(
+      () => mockHistoricalSyncService.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer(
+      (_) async => partialResult(
+        retryAction: () async => throw StateError('retry failed'),
+      ),
+    );
+    when(
+      () => mockLogging.error(
+        any<LogDomain>(),
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: any<String>(named: 'subDomain'),
+        message: any<String?>(named: 'message'),
+      ),
+    ).thenAnswer((invocation) {
+      if (invocation.namedArguments[#subDomain] == 'reSyncInterval.item') {
+        throw StateError('retry logging failed');
+      }
+    });
+
+    await pumpModal(
+      tester,
+      onboardingTarget: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('reSyncRetryFailures')));
+    await tester.pump();
+
+    verify(() => onboarding.abortOutbound(round)).called(1);
+    verify(
+      () => mockLogging.error(
+        LogDomain.sync,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: 'reSyncMessagesRetry',
+      ),
+    ).called(1);
+    expect(find.byKey(const Key('reSyncFailed')), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 
   testWidgets('partial target sync does not start onboarding suppression', (
     tester,
@@ -319,10 +474,9 @@ void main() {
 
     verifyInOrder([
       () => onboarding.releaseInboundPreflight(target),
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: true,
         includeAgentEntities: true,
         onProgress: any(named: 'onProgress'),
@@ -390,6 +544,214 @@ void main() {
     verify(() => onboarding.beginOutbound(target)).called(1);
     verify(() => onboarding.completeOutbound(round)).called(1);
     verifyNever(() => onboarding.releaseInboundPreflight(target));
+    expect(find.byType(ReSyncModalContent), findsNothing);
+  });
+
+  testWidgets('dismissing partial onboarding aborts its active barrier', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenAnswer((_) async => round);
+    when(() => onboarding.abortOutbound(round)).thenAnswer((_) async {});
+    when(
+      () => mockHistoricalSyncService.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async => partialResult());
+
+    await openOnboardingModal(
+      tester,
+      target: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+    expect(find.byKey(const Key('reSyncRetryFailures')), findsOneWidget);
+
+    Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    verify(() => onboarding.abortOutbound(round)).called(1);
+    verifyNever(() => onboarding.completeOutbound(round));
+    verifyNever(() => onboarding.releaseInboundPreflight(target));
+    expect(find.byType(ReSyncModalContent), findsNothing);
+  });
+
+  testWidgets('logs a failed active-barrier abort during dismissal', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = MockOnboardingSyncService();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenAnswer((_) async => round);
+    when(
+      () => onboarding.abortOutbound(round),
+    ).thenThrow(StateError('abort failed'));
+    when(
+      () => mockHistoricalSyncService.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async => partialResult());
+
+    await openOnboardingModal(
+      tester,
+      target: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+
+    verify(() => onboarding.abortOutbound(round)).called(1);
+    verify(
+      () => mockLogging.error(
+        LogDomain.sync,
+        any<Object>(),
+        stackTrace: any<StackTrace>(named: 'stackTrace'),
+        subDomain: 'reSyncOnboardingDismissAbort',
+      ),
+    ).called(1);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets(
+    'dismissal while history is staging never completes onboarding',
+    (tester) async {
+      const target = OnboardingSyncTarget(
+        userId: '@alice:example.com',
+        deviceId: 'PHONE',
+      );
+      const round = OutboundOnboardingRound(
+        roundId: 'round-1',
+        senderHostId: 'desktop-host',
+        target: target,
+        coverageUpperBounds: {'desktop-host': 99},
+      );
+      final onboarding = MockOnboardingSyncService();
+      final staging = Completer<ReSyncResult>();
+      when(
+        () => onboarding.beginOutbound(target),
+      ).thenAnswer((_) async => round);
+      when(() => onboarding.abortOutbound(round)).thenAnswer((_) async {});
+      when(
+        () => onboarding.completeOutbound(round),
+      ).thenAnswer((_) async {});
+      when(
+        () => mockHistoricalSyncService.reSyncInterval(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+          includeJournalEntities: any(named: 'includeJournalEntities'),
+          includeAgentEntities: any(named: 'includeAgentEntities'),
+          onProgress: any(named: 'onProgress'),
+        ),
+      ).thenAnswer((_) => staging.future);
+
+      await openOnboardingModal(
+        tester,
+        target: target,
+        onboardingSyncService: onboarding,
+      );
+      await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+      await tester.pump();
+
+      Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+      await tester.pump();
+      await tester.pump(const Duration(seconds: 1));
+      staging.complete(ReSyncResult.empty);
+      await tester.pump();
+
+      verify(() => onboarding.abortOutbound(round)).called(1);
+      verifyNever(() => onboarding.completeOutbound(round));
+      expect(find.byType(ReSyncModalContent), findsNothing);
+    },
+  );
+
+  testWidgets('dismissal while retrying never completes onboarding', (
+    tester,
+  ) async {
+    const target = OnboardingSyncTarget(
+      userId: '@alice:example.com',
+      deviceId: 'PHONE',
+    );
+    const round = OutboundOnboardingRound(
+      roundId: 'round-1',
+      senderHostId: 'desktop-host',
+      target: target,
+      coverageUpperBounds: {'desktop-host': 99},
+    );
+    final onboarding = MockOnboardingSyncService();
+    final retry = Completer<void>();
+    when(
+      () => onboarding.beginOutbound(target),
+    ).thenAnswer((_) async => round);
+    when(() => onboarding.abortOutbound(round)).thenAnswer((_) async {});
+    when(
+      () => onboarding.completeOutbound(round),
+    ).thenAnswer((_) async {});
+    when(
+      () => mockHistoricalSyncService.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer(
+      (_) async => partialResult(retryAction: () => retry.future),
+    );
+
+    await openOnboardingModal(
+      tester,
+      target: target,
+      onboardingSyncService: onboarding,
+    );
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+    await tester.tap(find.byKey(const Key('reSyncRetryFailures')));
+    await tester.pump();
+
+    Navigator.of(tester.element(find.byType(ReSyncModalContent))).pop();
+    await tester.pump();
+    await tester.pump(const Duration(seconds: 1));
+    retry.complete();
+    await tester.pump();
+
+    verify(() => onboarding.abortOutbound(round)).called(1);
+    verifyNever(() => onboarding.completeOutbound(round));
     expect(find.byType(ReSyncModalContent), findsNothing);
   });
 
@@ -479,10 +841,9 @@ void main() {
       () => onboarding.abortOutbound(round),
     ).thenAnswer((_) async => throw Exception('end enqueue failed'));
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -510,16 +871,15 @@ void main() {
     await withClock(Clock.fixed(now), () async {
       await pumpModal(tester);
       await selectPreset(tester, ReSyncRangePreset.last30Days);
-      expect(find.byType(DateTimeField), findsNothing);
+      expect(find.byType(CalendarDatePicker), findsNothing);
       await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
       await tester.pump();
     });
 
     verify(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: now.subtract(const Duration(days: 30)),
         end: now,
-        agentRepository: mockAgentRepository,
         includeJournalEntities: true,
         includeAgentEntities: true,
         onProgress: any(named: 'onProgress'),
@@ -530,19 +890,20 @@ void main() {
   testWidgets('Custom rejects a range whose start is not before its end', (
     tester,
   ) async {
-    await pumpModal(tester);
-    await selectPreset(tester, ReSyncRangePreset.custom);
-
-    final fields = find
-        .byType(DateTimeField)
-        .evaluate()
-        .map((element) => element.widget as DateTimeField)
-        .toList();
-    expect(fields, hasLength(2));
-
-    fields.first.setDateTime(DateTime(2026, 7, 28));
-    fields.last.setDateTime(DateTime(2026, 7, 27));
-    await tester.pump();
+    await withClock(Clock.fixed(DateTime(2026, 8, 5)), () async {
+      await pumpModal(tester);
+      await selectPreset(tester, ReSyncRangePreset.custom);
+      await pickCustomDate(
+        tester,
+        fieldKey: const Key('reSyncStartDate'),
+        date: DateTime(2026, 7, 28),
+      );
+      await pickCustomDate(
+        tester,
+        fieldKey: const Key('reSyncEndDate'),
+        date: DateTime(2026, 7, 27),
+      );
+    });
 
     expect(find.byKey(const Key('reSyncInvalidRangeError')), findsOneWidget);
     expect(
@@ -558,12 +919,11 @@ void main() {
   testWidgets('Start waits in the modal and reports per-phase progress', (
     tester,
   ) async {
-    final completer = Completer<void>();
+    final completer = Completer<ReSyncResult>();
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -590,7 +950,7 @@ void main() {
     expect(find.byKey(const Key('reSyncComplete')), findsNothing);
     expect(find.text('12 / 25'), findsOneWidget);
 
-    completer.complete();
+    completer.complete(ReSyncResult.empty);
     await tester.pump();
 
     expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
@@ -599,12 +959,11 @@ void main() {
   testWidgets('completed phase reports its count and completion state', (
     tester,
   ) async {
-    final completer = Completer<void>();
+    final completer = Completer<ReSyncResult>();
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -632,19 +991,57 @@ void main() {
     expect(find.text('12 / 12'), findsOneWidget);
     expect(find.byIcon(Icons.check_circle_outline_rounded), findsOneWidget);
 
-    completer.complete();
+    completer.complete(ReSyncResult.empty);
+    await tester.pump();
+  });
+
+  testWidgets('completed phase reports failures with a warning state', (
+    tester,
+  ) async {
+    final completer = Completer<ReSyncResult>();
+    when(
+      () => mockHistoricalSyncService.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((invocation) {
+      final onProgress =
+          invocation.namedArguments[#onProgress] as ReSyncProgressCallback;
+      onProgress(
+        const ReSyncProgress(
+          phase: ReSyncPhase.journalEntities,
+          processed: 12,
+          total: 12,
+          isComplete: true,
+          failed: 1,
+        ),
+      );
+      return completer.future;
+    });
+
+    await pumpModal(tester);
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    expect(find.text('11 / 12'), findsOneWidget);
+    expect(find.byIcon(Icons.warning_amber_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.check_circle_outline_rounded), findsNothing);
+
+    completer.complete(ReSyncResult.empty);
     await tester.pump();
   });
 
   testWidgets('caps live progress at 100 percent when totals grow stale', (
     tester,
   ) async {
-    final completer = Completer<void>();
+    final completer = Completer<ReSyncResult>();
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -672,17 +1069,16 @@ void main() {
     expect(find.text('100%'), findsOneWidget);
     expect(find.text('200%'), findsNothing);
 
-    completer.complete();
+    completer.complete(ReSyncResult.empty);
     await tester.pump();
   });
 
   testWidgets('failure stays in the modal and can be retried', (tester) async {
     var attempts = 0;
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -690,6 +1086,7 @@ void main() {
     ).thenAnswer((_) async {
       attempts++;
       if (attempts == 1) throw Exception('enqueue failed');
+      return ReSyncResult.empty;
     });
 
     await pumpModal(tester);
@@ -715,6 +1112,59 @@ void main() {
     expect(find.byKey(const Key('reSyncComplete')), findsOneWidget);
   });
 
+  testWidgets('partial result names failed rows and retries only those rows', (
+    tester,
+  ) async {
+    var retryCalls = 0;
+    final retryCompleter = Completer<void>();
+    final partial = partialResult(
+      retryAction: () {
+        retryCalls++;
+        return retryCompleter.future;
+      },
+      itemType: ReSyncItemType.agentLink,
+      itemId: 'agent-link-bad',
+    );
+    when(
+      () => mockHistoricalSyncService.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).thenAnswer((_) async => partial);
+
+    await pumpModal(tester);
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Start'));
+    await tester.pump();
+
+    expect(find.text('2 of 3 messages queued'), findsOneWidget);
+    expect(find.textContaining('Agent link: agent-link-bad'), findsOneWidget);
+    expect(find.byKey(const Key('reSyncRetryFailures')), findsOneWidget);
+
+    await tester.tap(find.byKey(const Key('reSyncRetryFailures')));
+    await tester.pump();
+
+    expect(retryCalls, 1);
+    expect(find.text('0 / 1'), findsOneWidget);
+
+    retryCompleter.complete();
+    await tester.pump();
+
+    expect(find.text('Messages queued'), findsOneWidget);
+    expect(find.byKey(const Key('reSyncFailureDetails')), findsNothing);
+    verify(
+      () => mockHistoricalSyncService.reSyncInterval(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+        includeJournalEntities: any(named: 'includeJournalEntities'),
+        includeAgentEntities: any(named: 'includeAgentEntities'),
+        onProgress: any(named: 'onProgress'),
+      ),
+    ).called(1);
+  });
+
   testWidgets('uses the localized maintenance label as the modal title', (
     tester,
   ) async {
@@ -727,8 +1177,9 @@ void main() {
           ),
         ),
         overrides: [
-          maintenanceProvider.overrideWithValue(mockMaintenance),
-          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+          historicalSyncServiceProvider.overrideWithValue(
+            mockHistoricalSyncService,
+          ),
           syncMaintenanceRepositoryProvider.overrideWithValue(
             mockSyncMaintenanceRepository,
           ),
@@ -766,10 +1217,9 @@ void main() {
       await tester.pump();
 
       verify(
-        () => mockMaintenance.reSyncInterval(
+        () => mockHistoricalSyncService.reSyncInterval(
           start: any(named: 'start'),
           end: any(named: 'end'),
-          agentRepository: mockAgentRepository,
           includeJournalEntities: true,
           includeAgentEntities: false,
           onProgress: any(named: 'onProgress'),
@@ -789,10 +1239,9 @@ void main() {
       await tester.pump();
 
       verify(
-        () => mockMaintenance.reSyncInterval(
+        () => mockHistoricalSyncService.reSyncInterval(
           start: any(named: 'start'),
           end: any(named: 'end'),
-          agentRepository: mockAgentRepository,
           includeJournalEntities: false,
           includeAgentEntities: true,
           onProgress: any(named: 'onProgress'),

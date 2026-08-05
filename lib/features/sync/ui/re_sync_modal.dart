@@ -3,21 +3,23 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
+import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
+import 'package:lotti/features/design_system/components/callouts/design_system_inline_callout.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
+import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/widgets/date_time/datetime_field.dart';
+import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// Historical interval choices offered by [ReSyncModalContent].
@@ -27,7 +29,7 @@ enum ReSyncRangePreset {
   custom,
 }
 
-/// Inclusive lower sentinel used by the Everything preset.
+/// Inclusive lower sentinel used by the All preset.
 final DateTime reSyncEverythingStart = DateTime.utc(1);
 
 class ReSyncModalContent extends ConsumerStatefulWidget {
@@ -36,11 +38,13 @@ class ReSyncModalContent extends ConsumerStatefulWidget {
     this.onboardingTarget,
     this.onboardingSyncService,
     this.onOnboardingPreflightHandled,
+    this.onOnboardingRoundChanged,
   });
 
   final OnboardingSyncTarget? onboardingTarget;
   final OnboardingSyncService? onboardingSyncService;
   final VoidCallback? onOnboardingPreflightHandled;
+  final ValueChanged<OutboundOnboardingRound?>? onOnboardingRoundChanged;
 
   @override
   ConsumerState<ReSyncModalContent> createState() => _ReSyncModalContentState();
@@ -56,19 +60,21 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
   bool _isComplete = false;
   bool _failed = false;
   Map<ReSyncPhase, ReSyncProgress> _progress = const {};
+  ReSyncResult? _result;
+  OutboundOnboardingRound? _activeOnboardingRound;
 
   @override
   void initState() {
     super.initState();
-    final now = clock.now();
-    _dateFrom = now.subtract(const Duration(days: 30));
-    _dateTo = now;
+    final today = clock.now().dateOnly;
+    _dateFrom = today.subtract(const Duration(days: 30));
+    _dateTo = today;
   }
 
   bool get _hasEntitySelection =>
       _includeJournalEntities || _includeAgentEntities;
 
-  bool get _hasValidCustomRange => _dateFrom.isBefore(_dateTo);
+  bool get _hasValidCustomRange => !_dateFrom.isAfter(_dateTo);
 
   bool get _canStart =>
       !_isRunning &&
@@ -102,13 +108,16 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
         now.subtract(const Duration(days: 30)),
         now,
       ),
-      ReSyncRangePreset.custom => (_dateFrom, _dateTo),
+      // The calendar presents an inclusive date range, while the database
+      // query uses an exclusive upper bound.
+      ReSyncRangePreset.custom => (_dateFrom, _dateTo.addCalendarDays(1)),
     };
 
     setState(() {
       _isRunning = true;
       _failed = false;
       _progress = const {};
+      _result = null;
     });
 
     OutboundOnboardingRound? onboardingRound;
@@ -117,17 +126,17 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
         onboardingRound = await _onboardingService.beginOutbound(
           widget.onboardingTarget!,
         );
+        _setActiveOnboardingRound(onboardingRound);
         widget.onOnboardingPreflightHandled?.call();
       } else if (widget.onboardingTarget case final target?) {
         await _onboardingService.releaseInboundPreflight(target);
         widget.onOnboardingPreflightHandled?.call();
       }
-      await ref
-          .read(maintenanceProvider)
+      final result = await ref
+          .read(historicalSyncServiceProvider)
           .reSyncInterval(
             start: start,
             end: end,
-            agentRepository: ref.read(agentRepositoryProvider),
             includeJournalEntities: _includeJournalEntities,
             includeAgentEntities: _includeAgentEntities,
             onProgress: (progress) {
@@ -137,32 +146,23 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
               });
             },
           );
-      if (onboardingRound != null) {
+      if (!mounted) return;
+      if (onboardingRound != null && !result.hasFailures) {
         await _onboardingService.completeOutbound(onboardingRound);
+        _setActiveOnboardingRound(null);
       }
       if (!mounted) return;
       setState(() {
         _isRunning = false;
         _isComplete = true;
+        _result = result;
       });
     } catch (error, stackTrace) {
-      if (onboardingRound != null) {
-        try {
-          await _onboardingService.abortOutbound(onboardingRound);
-        } catch (abortError, abortStackTrace) {
-          getIt<DomainLogger>().error(
-            LogDomain.sync,
-            abortError,
-            stackTrace: abortStackTrace,
-            subDomain: 'reSyncOnboardingAbort',
-          );
-        }
-      }
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
+      await _abortOnboardingAndLog(
         error,
-        stackTrace: stackTrace,
-        subDomain: 'reSyncMessages',
+        stackTrace,
+        abortSubDomain: 'reSyncOnboardingAbort',
+        errorSubDomain: 'reSyncMessages',
       );
       if (!mounted) return;
       setState(() {
@@ -170,6 +170,110 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
         _failed = true;
       });
     }
+  }
+
+  void _setActiveOnboardingRound(OutboundOnboardingRound? round) {
+    _activeOnboardingRound = round;
+    widget.onOnboardingRoundChanged?.call(round);
+  }
+
+  Future<void> _abortOnboardingAndLog(
+    Object error,
+    StackTrace stackTrace, {
+    required String abortSubDomain,
+    required String errorSubDomain,
+  }) async {
+    final onboardingRound = _activeOnboardingRound;
+    if (onboardingRound != null) {
+      try {
+        await _onboardingService.abortOutbound(onboardingRound);
+        _setActiveOnboardingRound(null);
+      } catch (abortError, abortStackTrace) {
+        getIt<DomainLogger>().error(
+          LogDomain.sync,
+          abortError,
+          stackTrace: abortStackTrace,
+          subDomain: abortSubDomain,
+        );
+      }
+    }
+    getIt<DomainLogger>().error(
+      LogDomain.sync,
+      error,
+      stackTrace: stackTrace,
+      subDomain: errorSubDomain,
+    );
+  }
+
+  Future<void> _retryFailures() async {
+    final previous = _result;
+    if (previous == null || !previous.hasFailures || _isRunning) return;
+
+    setState(() {
+      _isRunning = true;
+      _isComplete = false;
+      _failed = false;
+      _progress = const {};
+    });
+
+    try {
+      final result = await previous.retryFailures(
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() {
+            _progress = {..._progress, progress.phase: progress};
+          });
+        },
+      );
+      if (!mounted) return;
+      final onboardingRound = _activeOnboardingRound;
+      if (!result.hasFailures && onboardingRound != null) {
+        await _onboardingService.completeOutbound(onboardingRound);
+        _setActiveOnboardingRound(null);
+      }
+      if (!mounted) return;
+      setState(() {
+        _isRunning = false;
+        _isComplete = true;
+        _result = result;
+      });
+    } catch (error, stackTrace) {
+      await _abortOnboardingAndLog(
+        error,
+        stackTrace,
+        abortSubDomain: 'reSyncOnboardingRetryAbort',
+        errorSubDomain: 'reSyncMessagesRetry',
+      );
+      if (!mounted) return;
+      setState(() {
+        _isRunning = false;
+        _isComplete = false;
+        _failed = true;
+      });
+    }
+  }
+
+  Future<void> _pickCustomDate({required bool start}) async {
+    final messages = context.messages;
+    final result = await showDesignSystemDatePicker(
+      context: context,
+      title: start
+          ? messages.settingsHealthImportFromDate
+          : messages.settingsHealthImportToDate,
+      initialDate: start ? _dateFrom : _dateTo,
+      firstDate: DateTime(1),
+      lastDate: clock.now().dateOnly,
+    );
+    final selected = result?.date;
+    if (!mounted || selected == null) return;
+    setState(() {
+      if (start) {
+        _dateFrom = selected;
+      } else {
+        _dateTo = selected;
+      }
+      _failed = false;
+    });
   }
 
   @override
@@ -220,26 +324,24 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
         ),
         if (_rangePreset == ReSyncRangePreset.custom) ...[
           SizedBox(height: tokens.spacing.step6),
-          DateTimeField(
-            dateTime: _dateFrom,
-            labelText: messages.settingsHealthImportFromDate,
-            setDateTime: (value) {
-              setState(() {
-                _dateFrom = value;
-                _failed = false;
-              });
-            },
-          ),
-          SizedBox(height: tokens.spacing.step5),
-          DateTimeField(
-            dateTime: _dateTo,
-            labelText: messages.settingsHealthImportToDate,
-            setDateTime: (value) {
-              setState(() {
-                _dateTo = value;
-                _failed = false;
-              });
-            },
+          DesignSystemPickerSection(
+            child: Column(
+              children: [
+                _ReSyncDateRow(
+                  key: const Key('reSyncStartDate'),
+                  label: messages.settingsHealthImportFromDate,
+                  date: _dateFrom,
+                  onTap: () => unawaited(_pickCustomDate(start: true)),
+                  showDivider: true,
+                ),
+                _ReSyncDateRow(
+                  key: const Key('reSyncEndDate'),
+                  label: messages.settingsHealthImportToDate,
+                  date: _dateTo,
+                  onTap: () => unawaited(_pickCustomDate(start: false)),
+                ),
+              ],
+            ),
           ),
           if (!_hasValidCustomRange)
             Padding(
@@ -371,39 +473,123 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
   Widget _buildComplete(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final result = _result ?? ReSyncResult.empty;
+    final hasFailures = result.hasFailures;
 
     return Column(
       key: const Key('reSyncComplete'),
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(
-          Icons.check_circle_outline_rounded,
+          hasFailures
+              ? Icons.warning_amber_rounded
+              : Icons.check_circle_outline_rounded,
           size: IconSizes.xxxl,
-          color: tokens.colors.alert.success.defaultColor,
+          color: hasFailures
+              ? tokens.colors.alert.warning.defaultColor
+              : tokens.colors.alert.success.defaultColor,
         ),
         SizedBox(height: tokens.spacing.step5),
         Text(
-          messages.maintenanceReSyncCompleteTitle,
+          hasFailures
+              ? messages.maintenanceReSyncPartialTitle(
+                  result.succeeded,
+                  result.total,
+                )
+              : messages.maintenanceReSyncCompleteTitle,
           style: tokens.typography.styles.subtitle.subtitle1,
           textAlign: TextAlign.center,
         ),
         SizedBox(height: tokens.spacing.step3),
         Text(
-          messages.maintenanceReSyncCompleteDescription,
+          hasFailures
+              ? messages.maintenanceReSyncPartialDescription(
+                  result.failures.length,
+                )
+              : messages.maintenanceReSyncCompleteDescription,
           style: tokens.typography.styles.body.bodySmall.copyWith(
             color: tokens.colors.text.mediumEmphasis,
           ),
           textAlign: TextAlign.center,
         ),
+        if (hasFailures) ...[
+          SizedBox(height: tokens.spacing.step5),
+          DesignSystemInlineCallout(
+            key: const Key('reSyncFailureDetails'),
+            icon: Icons.error_outline_rounded,
+            text: result.failures
+                .map(
+                  (failure) =>
+                      '${_failureTypeLabel(messages, failure.itemType)}: '
+                      '${failure.itemId}',
+                )
+                .join('\n'),
+          ),
+          SizedBox(height: tokens.spacing.step6),
+          DesignSystemButton(
+            key: const Key('reSyncRetryFailures'),
+            label: messages.maintenanceReSyncRetryFailed,
+            size: DesignSystemButtonSize.large,
+            leadingIcon: Icons.refresh_rounded,
+            fullWidth: true,
+            onPressed: () => unawaited(_retryFailures()),
+          ),
+        ],
         SizedBox(height: tokens.spacing.step6),
         DesignSystemButton(
           label: messages.doneButton,
+          variant: hasFailures
+              ? DesignSystemButtonVariant.secondary
+              : DesignSystemButtonVariant.primary,
           size: DesignSystemButtonSize.large,
           leadingIcon: Icons.check_circle_rounded,
           fullWidth: true,
           onPressed: () => Navigator.of(context).pop(),
         ),
       ],
+    );
+  }
+
+  String _failureTypeLabel(
+    AppLocalizations messages,
+    ReSyncItemType itemType,
+  ) => switch (itemType) {
+    ReSyncItemType.journalEntity => messages.syncPayloadJournalEntity,
+    ReSyncItemType.entryLink => messages.syncPayloadEntryLink,
+    ReSyncItemType.agentEntity => messages.syncPayloadAgentEntity,
+    ReSyncItemType.agentLink => messages.syncPayloadAgentLink,
+  };
+}
+
+class _ReSyncDateRow extends StatelessWidget {
+  const _ReSyncDateRow({
+    required this.label,
+    required this.date,
+    required this.onTap,
+    this.showDivider = false,
+    super.key,
+  });
+
+  final String label;
+  final DateTime date;
+  final VoidCallback onTap;
+  final bool showDivider;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    return DesignSystemListItem(
+      title: label,
+      subtitle: DateFormat.yMMMd(locale).format(date),
+      trailing: Icon(
+        Icons.calendar_month_outlined,
+        size: IconSizes.m,
+        color: tokens.colors.text.mediumEmphasis,
+      ),
+      showDivider: showDivider,
+      onTap: onTap,
+      semanticsLabel: '$label, ${DateFormat.yMMMMd(locale).format(date)}',
     );
   }
 }
@@ -421,6 +607,7 @@ class _ReSyncProgressRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final isComplete = progress?.isComplete ?? false;
+    final hasFailures = (progress?.failed ?? 0) > 0;
     final label = switch (phase) {
       ReSyncPhase.journalEntities =>
         context.messages.maintenanceReSyncJournalEntities,
@@ -428,17 +615,23 @@ class _ReSyncProgressRow extends StatelessWidget {
         context.messages.maintenanceReSyncAgentEntities,
       ReSyncPhase.agentLinks => context.messages.maintenanceReSyncAgentLinks,
     };
-    final processed = progress?.processed ?? 0;
+    final processed = progress?.succeeded ?? 0;
     final total = progress?.total;
     final count = total == null ? '$processed' : '$processed / $total';
 
     return Row(
       children: [
-        if (isComplete)
+        if (isComplete && !hasFailures)
           Icon(
             Icons.check_circle_outline_rounded,
             size: IconSizes.s,
             color: tokens.colors.alert.success.defaultColor,
+          )
+        else if (isComplete)
+          Icon(
+            Icons.warning_amber_rounded,
+            size: IconSizes.s,
+            color: tokens.colors.alert.warning.defaultColor,
           )
         else if (progress != null)
           const DesignSystemSpinner(
@@ -456,7 +649,7 @@ class _ReSyncProgressRow extends StatelessWidget {
           child: Text(
             label,
             style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: isComplete
+              color: isComplete && !hasFailures
                   ? tokens.colors.alert.success.ink
                   : tokens.colors.text.highEmphasis,
             ),
@@ -482,6 +675,9 @@ class ReSyncModal {
     OnboardingSyncService? onboardingSyncService,
   }) async {
     var preflightHandled = onboardingTarget == null;
+    OutboundOnboardingRound? activeRound;
+    OnboardingSyncService resolveService() =>
+        onboardingSyncService ?? getIt<OnboardingSyncService>();
     try {
       await ModalUtils.showSinglePageModal<void>(
         context: context,
@@ -490,13 +686,24 @@ class ReSyncModal {
           onboardingTarget: onboardingTarget,
           onboardingSyncService: onboardingSyncService,
           onOnboardingPreflightHandled: () => preflightHandled = true,
+          onOnboardingRoundChanged: (round) => activeRound = round,
         ),
       );
     } finally {
-      if (!preflightHandled && onboardingTarget != null) {
+      if (activeRound case final round?) {
         try {
-          await (onboardingSyncService ?? getIt<OnboardingSyncService>())
-              .releaseInboundPreflight(onboardingTarget);
+          await resolveService().abortOutbound(round);
+        } catch (error, stackTrace) {
+          getIt<DomainLogger>().error(
+            LogDomain.sync,
+            error,
+            stackTrace: stackTrace,
+            subDomain: 'reSyncOnboardingDismissAbort',
+          );
+        }
+      } else if (!preflightHandled && onboardingTarget != null) {
+        try {
+          await resolveService().releaseInboundPreflight(onboardingTarget);
         } catch (error, stackTrace) {
           getIt<DomainLogger>().error(
             LogDomain.sync,

@@ -5,13 +5,13 @@ description: Single-user multi-device replication over end-to-end encrypted Matr
 resource: ../../../lib/features/sync
 tags: [sync, matrix, replication, outbox, queue]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-03T14:38:02Z }
+generated: { by: codex/gpt-5, at: 2026-08-05T00:00:00Z }
 stale_after: 2026-11-02
 sources:
   - id: sync-src
     resource: ../../../lib/features/sync
     title: Sync feature source
-    last_modified: 2026-08-03
+    last_modified: 2026-08-05
   - id: get-it
     resource: ../../../lib/get_it.dart
     title: Default bootstrap wiring
@@ -20,6 +20,10 @@ sources:
     resource: ../../../lib/features/sync/tuning.dart
     title: SyncTuning constants
     last_modified: 2026-08-02
+  - id: historical-sync
+    resource: ../../../lib/features/sync/services/historical_sync_service.dart
+    title: Historical sync staging and failed-row retry
+    last_modified: 2026-08-05
   - id: current-architecture
     resource: ../../../docs/architecture/sync_current_architecture.md
     title: Failure history, log-backed investigations, tuning context
@@ -144,8 +148,10 @@ stateDiagram-v2
     [*] --> Scanning: mobile opens the camera
     Scanning --> Manual: enter code manually
     Manual --> Scanning: scan with camera
-    Scanning --> Decoded: barcode decodes
-    Manual --> Decoded: Import
+    Scanning --> Decoded: handover barcode decodes
+    Manual --> Decoded: Import handover bundle
+    Scanning --> Configuring: provisioned barcode decodes
+    Manual --> Configuring: Import provisioned bundle
     Scanning --> Scanning: invalid code, error beside the viewfinder
     Decoded --> Manual: Use a different code
     Decoded --> Configuring: Connect this device
@@ -158,7 +164,7 @@ stateDiagram-v2
   ShowingCode --> Scanning: QR is scanned
 ```
 
-Four properties are deliberate:
+Five properties are deliberate:
 
 - **The handover code is a live credential, so it is never ambient.** It is
   minted on demand inside `ui/provisioned/add_device_page.dart` and only while
@@ -182,7 +188,13 @@ Four properties are deliberate:
   attaches itself, and everything written on it, to that stranger's account.
   Its copy names that consequence rather than stopping at "only use your own
   code".
-- **Both devices derive the same check code.** `models/pairing_check_code.dart`
+- **A first device skips the peer-only confirmation.** A CLI-minted
+  `provisioned` bundle normally establishes the account's only device. Once it
+  decodes, `BundleImportWidget` starts configuration immediately because no
+  peer exists to display a comparison code. A peer-minted `handover` bundle
+  still stops on the review and requires the user to connect deliberately.
+- **Both devices in a handover derive the same check code.**
+  `models/pairing_check_code.dart`
   hashes `"$user|$roomId|$homeServer"` and shows six hex characters, rendered on
   both sides through one `PairingCheckCodeView`: the inviting device derives it
   from its persisted config, the joining device from the decoded bundle. Every
@@ -257,12 +269,14 @@ without becoming a gap (see
 the inviting device exposes both follow-up transfers in the sticky action bar:
 *Send settings* opens `SyncModal`, while *Send message history* opens
 `ReSyncModal`
-and re-enqueues that device's local history. The latter defaults to
-*Everything*, with *Last 30 days* and a validated custom interval available,
-and reports the journal, agent-entity and agent-link enqueue phases before
-confirming that the messages are queued. A device consuming the handover
+and re-enqueues that device's local history. The latter defaults to *All*,
+with *Last 30 days* and a validated custom interval available. Custom start
+and end dates use the shared design-system calendar, including year selection,
+and the selected end date is inclusive. The modal reports journal,
+agent-entity and agent-link enqueue phases before summarizing the result. A
+device consuming the handover
 persists an automatic-backfill preflight before its Matrix login can start
-timeline processing. The full *Everything* action then replaces that blanket,
+timeline processing. The full *All* action then replaces that blanket,
 one-hour-bounded gate with an exact suppression range for the new device, so it
 does not request snapshot rows that are merely queued or in flight. Choosing a
 partial range, dismissing the history sheet without starting, or closing Add
@@ -275,22 +289,39 @@ contract is in
 The agent phases stamp before they send. An agent entity or link persisted with
 `vectorClock: null` is applied by the receiving peer but skipped by
 `_recordReceivedAgentEntity`, so it lands invisible to the sequence log, gap
-detection and backfill. `reSyncInterval`'s agent `enqueueAction` therefore
+detection and backfill. `HistoricalSyncService.reSyncInterval`'s agent
+`enqueueAction` therefore
 gives any clockless row a vector clock and persists it *before* enqueueing —
 inside the interval sweep, so a *Last 30 days* run repairs only what it is
-about to send rather than every legacy row in the database. Enqueue precedes
-persist within that step, so a throw leaves the row still clockless and
-therefore retryable. `SyncMaintenanceRepository.backfillAgentEntityClocks` /
+about to send rather than every legacy row in the database. The stamp is
+persisted before enqueue, and the failed-row retry retains that stamped value
+so an enqueue-only failure does not increment the clock again.
+`SyncMaintenanceRepository.backfillAgentEntityClocks` /
 `backfillAgentLinkClocks` remain the whole-database version of the same repair,
-reachable from *Backfill sync* as the **Agent vector clocks** recovery action. This maintenance path uses the outbox's
-throwing enqueue API, so any preparation or persistence failure keeps the modal
-open with a retry action instead of claiming that a partial batch completed.
+reachable from *Backfill sync* as the **Agent vector clocks** recovery action.
+The historical sweep fetches undecoded journal and agent rows, then isolates
+every journal entity, entry link, agent entity and agent link: decode,
+preparation, persistence or enqueue failure is logged with its payload family
+and id, collected in `ReSyncResult`, and never aborts later rows or phases.
+Journal links include hidden relationship state and are staged only after the
+whole interval's entries have been attempted; their serialized rows are then
+read and released in bounded source-ID pages rather than retained for the full
+interval. A journal or agent link whose
+in-range source or target did not queue is retained as a dependent failure;
+retry always attempts entity failures first and queues the link only after its
+dependencies succeed. The modal reports the successful and failed counts, lists the
+failed ids, and retries only those retained actions. During onboarding, the
+exact suppression round remains active until all failed rows succeed;
+dismissing the sheet while staging or retrying aborts the round, and the
+disposed sheet cannot subsequently queue a completion barrier.
 The paired screen names both transfers because the new device cannot send
 history it does not yet have.
 
 The joining wizard's wayfinding is drawn, not narrated: a three-station
-`SyncWizardProgressTrack` (Get code · Check · Connect) heads steps 1–3, with
-the accent on the live station and passed stations faded. The three endings —
+`SyncWizardProgressTrack` (Get code · Check · Connect) heads the handover
+steps, with the accent on the live station and passed stations faded. A first
+device jumps from Get code directly to Connect because Check requires a peer.
+The three endings —
 first device, paired, error — drop the track, because a progress line under a
 terminal screen would promise a next station that does not exist. The
 inviting sheet carries no track at all: it is not a wizard, and its live

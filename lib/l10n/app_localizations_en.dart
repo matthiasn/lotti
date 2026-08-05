@@ -7182,7 +7182,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get maintenanceReSyncEntityTypes => 'Entity types';
 
   @override
-  String get maintenanceReSyncEverything => 'Everything';
+  String get maintenanceReSyncEverything => 'All';
 
   @override
   String get maintenanceReSyncFailed =>
@@ -7196,6 +7196,31 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get maintenanceReSyncLast30Days => 'Last 30 days';
+
+  @override
+  String maintenanceReSyncPartialDescription(int failed) {
+    String _temp0 = intl.Intl.pluralLogic(
+      failed,
+      locale: localeName,
+      other: '$failed entries failed. Retry just those entries.',
+      one: '1 entry failed. Retry just that entry.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String maintenanceReSyncPartialTitle(int succeeded, int total) {
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'messages',
+      one: 'message',
+    );
+    return '$succeeded of $total $_temp0 queued';
+  }
+
+  @override
+  String get maintenanceReSyncRetryFailed => 'Retry failed entries';
 
   @override
   String get maintenanceReSyncSelectAtLeastOne =>

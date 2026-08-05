@@ -85,8 +85,9 @@ whose message asks for media but whose `filePath` is null would be packed into a
 bundle and its blob dropped with no error anywhere.
 
 `includeAttachments` exists for the flows that hand an entire history to a peer
-holding none of it — the sync-maintenance re-send (`Maintenance.reSyncInterval`)
-and backfill responses (`BackfillResponseHandler`). Both are necessarily
+holding none of it — the historical re-send
+(`HistoricalSyncService.reSyncInterval`) and backfill responses
+(`BackfillResponseHandler`). Both are necessarily
 `update` sends: the entry is not new on the sending device. Before the flag
 existed, both shipped JSON without blobs, so a freshly provisioned device
 received every entry's text and none of its media, while entries created after

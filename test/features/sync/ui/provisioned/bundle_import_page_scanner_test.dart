@@ -27,7 +27,7 @@ void main() {
 
   const testBundle = SyncProvisioningBundle(
     v: 2,
-    kind: SyncBundleKind.provisioned,
+    kind: SyncBundleKind.handover,
     homeServer: 'https://matrix.example.com',
     user: '@alice:example.com',
     password: 'secret123',

@@ -331,10 +331,14 @@ Two consequences worth holding on to:
 Timestamps come from `package:clock`'s `clock.now()`, so tests can drive them
 with `withClock`.
 
-`lib/database/maintenance.dart` holds re-sync and whole-database deletion
-(`reSyncInterval`, `deleteAgentDb`, `deleteEditorDb`, `deleteSyncDb`, and the
-`sent`-outbox purge). **The deleted-entry purge is not there** — `purgeDeleted`
-lives in `lib/database/database_entity_ops.dart` alongside the rest of `JournalDb`'s
+`lib/database/maintenance.dart` owns physical database upkeep: whole-database
+deletion (`deleteAgentDb`, `deleteEditorDb`, `deleteSyncDb`), FTS rebuilding,
+and the `sent`-outbox purge. Historical re-send orchestration belongs to Sync
+and lives in `lib/features/sync/services/historical_sync_service.dart`; it uses
+database and repository row APIs without making queueing, retry, or Sync result
+types part of the database maintenance layer. **The deleted-entry purge is not
+in either service** — `purgeDeleted` lives in
+`lib/database/database_entity_ops.dart` alongside the rest of `JournalDb`'s
 entity operations, which is where to look for it.
 
 # Where to look
@@ -348,6 +352,7 @@ entity operations, which is where to look for it.
 | Change notification | [`lib/services/db_notification.dart`](../../lib/services/db_notification.dart) |
 | Slow-query interceptor | [`lib/database/slow_query_logging.dart`](../../lib/database/slow_query_logging.dart) |
 | Maintenance operations | [`lib/database/maintenance.dart`](../../lib/database/maintenance.dart) |
+| Historical Sync staging and retry | [`lib/features/sync/services/historical_sync_service.dart`](../../lib/features/sync/services/historical_sync_service.dart) |
 
 Related: [bootstrap and dependency injection](bootstrap-and-di.md) for when each
 database is registered, [the sync feature](../features/sync/) for what fills

@@ -113,6 +113,18 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
       final bundle = ref
           .read(provisioningControllerProvider.notifier)
           .decodeBundle(input);
+      if (bundle.kind == SyncBundleKind.provisioned) {
+        // A provisioned bundle creates the account's first device. There is
+        // no peer showing the independently derived check code, so a compare
+        // screen would ask the user to confirm something they cannot verify.
+        // Peer-issued handover bundles still stop on the comparison below.
+        setState(() {
+          _lastScannedCode = input;
+          _errorText = null;
+        });
+        _connectBundle(bundle);
+        return;
+      }
       setState(() {
         _decodedBundle = bundle;
         // Whatever the source — camera, clipboard or typing — this is the
@@ -143,6 +155,15 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
         _lastScannedCode = null;
       });
     }
+  }
+
+  void _connectBundle(SyncProvisioningBundle bundle) {
+    unawaited(
+      ref
+          .read(provisioningControllerProvider.notifier)
+          .configureFromBundle(bundle),
+    );
+    widget.pageIndexNotifier.value = 1;
   }
 
   void _handleBarcode(BarcodeCapture barcodes) {
@@ -248,12 +269,7 @@ class _BundleImportWidgetState extends ConsumerState<BundleImportWidget> {
               ? _DecodedView(
                   key: const ValueKey('bundle_import_decoded'),
                   bundle: decoded,
-                  onConnect: () {
-                    ref
-                        .read(provisioningControllerProvider.notifier)
-                        .configureFromBundle(decoded);
-                    widget.pageIndexNotifier.value = 1;
-                  },
+                  onConnect: () => _connectBundle(decoded),
                   onDiscard: _discardDecoded,
                 )
               : Column(
