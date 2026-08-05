@@ -238,6 +238,50 @@ void main() {
       expect(stagingParent.listSync(), isEmpty);
     });
 
+    test('rejects an optional directory store represented by a file', () async {
+      createRequiredDatabases();
+      File(p.join(sourceRoot.path, 'audio')).writeAsStringSync('not a folder');
+
+      await expectLater(
+        service().stage(
+          sourceRoot: sourceRoot,
+          stagingParent: stagingParent,
+          appVersion: '1.0.4+4285',
+          profileType: 'real',
+        ),
+        throwsA(
+          isA<ProfileSnapshotValidationException>().having(
+            (error) => error.message,
+            'message',
+            contains('Profile store audio must be a directory'),
+          ),
+        ),
+      );
+      expect(stagingParent.listSync(), isEmpty);
+    });
+
+    test('rejects an optional database represented by a directory', () async {
+      createRequiredDatabases();
+      Directory(p.join(sourceRoot.path, 'sync.sqlite')).createSync();
+
+      await expectLater(
+        service().stage(
+          sourceRoot: sourceRoot,
+          stagingParent: stagingParent,
+          appVersion: '1.0.4+4285',
+          profileType: 'real',
+        ),
+        throwsA(
+          isA<ProfileSnapshotValidationException>().having(
+            (error) => error.message,
+            'message',
+            contains('Profile store sync.sqlite must be a regular file'),
+          ),
+        ),
+      );
+      expect(stagingParent.listSync(), isEmpty);
+    });
+
     test('rejects symbolic links in included source content', () async {
       createRequiredDatabases();
       final external = File(p.join(testRoot.path, 'outside.jpg'))
@@ -880,6 +924,40 @@ void main() {
       expect(stagingParent.listSync(), isEmpty);
     });
 
+    test('detects a source file added after digest verification', () async {
+      createRequiredDatabases();
+      var added = false;
+
+      await expectLater(
+        service(
+          hooks: ProfileSnapshotTestHooks(
+            beforePublish: (partialDirectory) async {
+              added = true;
+              final lateFile = File(
+                p.join(sourceRoot.path, 'images/after-digest.jpg'),
+              );
+              lateFile.parent.createSync(recursive: true);
+              lateFile.writeAsStringSync('late');
+            },
+          ),
+        ).stage(
+          sourceRoot: sourceRoot,
+          stagingParent: stagingParent,
+          appVersion: '1.0.4+4285',
+          profileType: 'real',
+        ),
+        throwsA(
+          isA<ProfileSnapshotSourceChangedException>().having(
+            (error) => error.message,
+            'message',
+            contains('inventory changed'),
+          ),
+        ),
+      );
+      expect(added, isTrue);
+      expect(stagingParent.listSync(), isEmpty);
+    });
+
     test('cleans a failed publish and succeeds when retried', () async {
       createRequiredDatabases();
       var publishAttempts = 0;
@@ -983,6 +1061,23 @@ void main() {
                   'linked.jpg',
                 ),
               ).createSync(p.join(testRoot.path, 'outside.jpg'));
+            },
+          ),
+          (
+            name: 'a symbolic link replacing the staged payload root',
+            expectedMessage: 'payload must be a real directory',
+            tamper: (partialDirectory) {
+              final payload = Directory(
+                p.join(
+                  partialDirectory.path,
+                  profileBackupPayloadDirectoryName,
+                ),
+              );
+              final externalPayload = Directory(
+                p.join(testRoot.path, 'external-payload'),
+              );
+              payload.renameSync(externalPayload.path);
+              Link(payload.path).createSync(externalPayload.path);
             },
           ),
           (

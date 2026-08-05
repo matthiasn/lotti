@@ -128,7 +128,7 @@ class QuiescedProfileSnapshotService {
     final createdAt = _now().toUtc();
 
     final inventory = await _scanIncludedEntries(sourceRoot);
-    _validateRequiredStores(inventory);
+    _validateIncludedStores(inventory);
 
     final snapshotId = _snapshotIdGenerator();
     if (!_safeSnapshotId.hasMatch(snapshotId)) {
@@ -238,6 +238,8 @@ class QuiescedProfileSnapshotService {
           'Staged manifest changed before publication.',
         );
       }
+      final terminalInventory = await _scanIncludedEntries(sourceRoot);
+      _validateSameInventory(inventory, terminalInventory);
 
       final publishedDirectory = await partialDirectory.rename(
         finalDirectory.path,
@@ -400,19 +402,22 @@ class QuiescedProfileSnapshotService {
     return entries;
   }
 
-  static void _validateRequiredStores(List<_SnapshotSourceEntry> inventory) {
+  static void _validateIncludedStores(List<_SnapshotSourceEntry> inventory) {
     final entriesByPath = {
       for (final entry in inventory) entry.relativePath: entry,
     };
     for (final store in ProfileBackupCatalog.stores) {
-      if (!store.required || store.treatment != BackupPathTreatment.include) {
+      if (store.treatment != BackupPathTreatment.include) {
         continue;
       }
       final entry = entriesByPath[store.relativePath];
       if (entry == null) {
-        throw ProfileSnapshotValidationException(
-          'Required profile store is missing: ${store.relativePath}',
-        );
+        if (store.required) {
+          throw ProfileSnapshotValidationException(
+            'Required profile store is missing: ${store.relativePath}',
+          );
+        }
+        continue;
       }
       final expectedKind = store.kind == BackupStoreKind.directory
           ? _SnapshotEntryKind.directory
@@ -422,7 +427,7 @@ class QuiescedProfileSnapshotService {
             ? 'a regular file'
             : 'a directory';
         throw ProfileSnapshotValidationException(
-          'Required profile store ${store.relativePath} must be '
+          'Profile store ${store.relativePath} must be '
           '$expectedDescription.',
         );
       }
@@ -643,9 +648,18 @@ class QuiescedProfileSnapshotService {
     final payloadDirectory = Directory(
       p.join(partialDirectory.path, profileBackupPayloadDirectoryName),
     );
-    if (!payloadDirectory.existsSync()) {
+    final payloadType = FileSystemEntity.typeSync(
+      payloadDirectory.path,
+      followLinks: false,
+    );
+    if (payloadType == FileSystemEntityType.notFound) {
       throw const ProfileSnapshotValidationException(
         'Staged snapshot payload is missing.',
+      );
+    }
+    if (payloadType != FileSystemEntityType.directory) {
+      throw const ProfileSnapshotValidationException(
+        'Staged snapshot payload must be a real directory.',
       );
     }
 

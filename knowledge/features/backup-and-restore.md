@@ -156,17 +156,19 @@ backup.
 stateDiagram-v2
   [*] --> BoundaryCheck
   BoundaryCheck --> Inventory: source and staging are disjoint
-  Inventory --> Copying: required stores present
+  Inventory --> Copying: required stores present<br/>and known store shapes match
   Copying --> SourceRecheck: every file copied and locally verified
   SourceRecheck --> ManifestWrite: inventory and source hashes unchanged
   ManifestWrite --> StageVerification
-  StageVerification --> Published: manifest, payload, checksums and SQLite schemas agree
+  StageVerification --> TerminalSourceScan: manifest, real payload directory,<br/>checksums and SQLite schemas agree
+  TerminalSourceScan --> Published: source inventory still unchanged
   Published --> [*]
   BoundaryCheck --> Failed: invalid or overlapping roots
   Inventory --> Failed: unsafe path, link, companion or missing required store
   Copying --> Failed: source drift, copy mismatch or invalid SQLite
   SourceRecheck --> Failed: inventory or source digest drift
   StageVerification --> Failed: staged content or manifest drift
+  TerminalSourceScan --> Failed: source inventory drift after digest verification
   Failed --> PartialRemoved
   PartialRemoved --> [*]
 ```
@@ -174,11 +176,14 @@ stateDiagram-v2
 The service creates a uniquely named partial directory with the platform's
 temporary-directory primitive, then publishes with one directory rename. It
 never replaces an existing destination. Every copied file is SHA-256 checked
-against both the source and destination, and the whole source is checked again
-after a second inventory scan. SQLite copies are opened read-only with the
-`immutable=1` URI option, checked with `PRAGMA integrity_check`, and recorded
-with their `user_version`. A final verification repeats payload membership,
-checksums, integrity, and schema-version checks before publication.
+against both the source and destination. Known included stores must have their
+catalog-declared filesystem shape, and the whole source is checked after two
+post-copy inventory scans; the terminal scan runs after digest and staged-byte
+verification, immediately before publication. SQLite copies are opened
+read-only with the `immutable=1` URI option, checked with
+`PRAGMA integrity_check`, and recorded with their `user_version`. A final
+verification requires the payload root itself to be a real directory, then
+repeats payload membership, checksums, integrity, and schema-version checks.
 
 The immutable open is safe here only because strict quiescence is a caller
 precondition and the catalog rejects transaction companions. It must not be
