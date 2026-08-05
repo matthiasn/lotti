@@ -10,6 +10,7 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/rating_data.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -56,6 +57,15 @@ void main() {
     vectorClock: null,
   );
   EntryLink project() => EntryLink.project(
+    id: 'l',
+    fromId: 'a',
+    toId: 'b',
+    createdAt: date,
+    updatedAt: date,
+    vectorClock: null,
+  );
+
+  EntryLink typed(EntryLinkType type) => type.buildLink(
     id: 'l',
     fromId: 'a',
     toId: 'b',
@@ -128,6 +138,76 @@ void main() {
         GraphEdgeKind.provenance,
       );
     });
+
+    test('preserves every typed task relationship', () {
+      expect(
+        edgeKindFor(typed(EntryLinkType.blocks), task, other),
+        GraphEdgeKind.blocks,
+      );
+      expect(
+        edgeKindFor(typed(EntryLinkType.followsUp), task, other),
+        GraphEdgeKind.followsUp,
+      );
+      expect(
+        edgeKindFor(typed(EntryLinkType.duplicates), task, other),
+        GraphEdgeKind.duplicates,
+      );
+      expect(
+        edgeKindFor(typed(EntryLinkType.fixes), task, other),
+        GraphEdgeKind.fixes,
+      );
+      expect(
+        edgeKindFor(typed(EntryLinkType.supersedes), task, other),
+        GraphEdgeKind.supersedes,
+      );
+    });
+  });
+
+  test('graphTaskStatusFor preserves the generated status union', () {
+    TaskStatus status(String kind) => switch (kind) {
+      'open' => TaskStatus.open(id: kind, createdAt: date, utcOffset: 0),
+      'inProgress' => TaskStatus.inProgress(
+        id: kind,
+        createdAt: date,
+        utcOffset: 0,
+      ),
+      'groomed' => TaskStatus.groomed(id: kind, createdAt: date, utcOffset: 0),
+      'blocked' => TaskStatus.blocked(
+        id: kind,
+        createdAt: date,
+        utcOffset: 0,
+        reason: 'Dependency',
+      ),
+      'onHold' => TaskStatus.onHold(
+        id: kind,
+        createdAt: date,
+        utcOffset: 0,
+        reason: 'Later',
+      ),
+      'done' => TaskStatus.done(id: kind, createdAt: date, utcOffset: 0),
+      'rejected' => TaskStatus.rejected(
+        id: kind,
+        createdAt: date,
+        utcOffset: 0,
+      ),
+      _ => throw StateError(kind),
+    };
+
+    expect(
+      {
+        for (final kind in const [
+          'open',
+          'inProgress',
+          'groomed',
+          'blocked',
+          'onHold',
+          'done',
+          'rejected',
+        ])
+          graphTaskStatusFor(status(kind)),
+      },
+      GraphTaskStatus.values.toSet(),
+    );
   });
 
   group('taskGraphProvider (FutureProvider body)', () {
@@ -365,7 +445,7 @@ void main() {
               data: TestTaskDataFactory.create(
                 title: 'Focus task',
                 checklistIds: ['cl'],
-              ).copyWith(coverArtId: 'cover'),
+              ).copyWith(coverArtId: 'cover', coverArtCropX: 0.72),
             );
         final sibling = TestTaskFactory.create(
           id: 'sibling',
@@ -481,6 +561,12 @@ void main() {
         // trimmed.
         final taskNode = scenario.nodes.firstWhere((n) => n.id == 'task');
         expect(taskNode.coverImagePath, '/docs/images/cover.jpg');
+        expect(taskNode.coverImageCropX, 0.72);
+        expect(taskNode.mediaPaths, [
+          '/docs/images/cover.jpg',
+          '/docs/images/img.jpg',
+        ]);
+        expect(taskNode.taskStatus, GraphTaskStatus.open);
         expect(taskNode.oneLiner, 'Ship the release');
         expect(taskNode.tldr, 'All checks green');
 
@@ -645,6 +731,37 @@ void main() {
         await pumpEventQueue();
         await container.read(taskGraphProvider('task').future);
 
+        verify(() => db.journalEntityById('task')).called(greaterThan(0));
+      },
+    );
+
+    test(
+      'recomputes when the visible AI report or its agent changes',
+      () async {
+        final focus = TestTaskFactory.create(id: 'task', title: 'Focus');
+        stubEntities({'task': focus});
+        stubReports({
+          'task': report(id: 'rep', tldr: 'Current brief'),
+        });
+        final container = makeContainer();
+        final sub = container.listen(
+          taskGraphProvider('task'),
+          (_, _) {},
+          fireImmediately: true,
+        );
+        addTearDown(sub.close);
+        await container.read(taskGraphProvider('task').future);
+
+        clearInteractions(db);
+        updates.add({'rep'});
+        await pumpEventQueue();
+        await container.read(taskGraphProvider('task').future);
+        verify(() => db.journalEntityById('task')).called(greaterThan(0));
+
+        clearInteractions(db);
+        updates.add({'agent-rep'});
+        await pumpEventQueue();
+        await container.read(taskGraphProvider('task').future);
         verify(() => db.journalEntityById('task')).called(greaterThan(0));
       },
     );

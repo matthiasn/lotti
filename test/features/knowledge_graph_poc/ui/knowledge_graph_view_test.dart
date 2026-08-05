@@ -2,10 +2,12 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/journal/model/entry_state.dart';
 import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/knowledge_graph_poc/domain/graph_keyboard_navigation.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_scenarios.dart';
@@ -13,6 +15,7 @@ import 'package:lotti/features/knowledge_graph_poc/ui/entry_detail_sidebar.dart'
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_painter.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_view.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/node_inspector_panel.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/topology_minimap.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 
@@ -119,7 +122,7 @@ void main() {
       expect(find.text('Ship v2.3 release'), findsWidgets);
     });
 
-    testWidgets('paints from a provided layout instead of recomputing', (
+    testWidgets('uses a provided full layout for the topology minimap', (
       tester,
     ) async {
       // The provider relaxes the layout off the main thread and hands it in;
@@ -155,7 +158,15 @@ void main() {
         layout: const GraphLayout(positions),
       );
 
-      expect(painterOf(tester).positions, positions);
+      final minimapPaint = tester.widget<CustomPaint>(
+        find.byKey(const ValueKey('knowledge-graph-topology-minimap')),
+      );
+      expect(
+        (minimapPaint.painter! as TopologyMiniMapPainter).positions,
+        positions,
+      );
+      // The main canvas owns a separate focus-centred local layout.
+      expect(painterOf(tester).positions, isNot(positions));
     });
 
     testWidgets('a single-node scenario still renders without throwing', (
@@ -184,6 +195,79 @@ void main() {
       // (region == single point) is laid out without an exception.
       expect(find.text('Lonely task'), findsWidgets);
       expect(tester.takeException(), isNull);
+    });
+  });
+
+  group('representations and keyboard navigation', () {
+    testWidgets('switches between graph and readable Connections list', (
+      tester,
+    ) async {
+      await pumpView(tester, scenario: taskEgoNetworkScenario());
+
+      expect(
+        find.byKey(const ValueKey('knowledge-graph-connections-list')),
+        findsNothing,
+      );
+      await tester.tap(find.text('Connections'));
+      await tester.pump();
+
+      expect(
+        find.byKey(const ValueKey('knowledge-graph-connections-list')),
+        findsOneWidget,
+      );
+      expect(
+        find.byWidgetPredicate(
+          (widget) =>
+              widget is CustomPaint && widget.painter is KnowledgeGraphPainter,
+        ),
+        findsNothing,
+      );
+
+      await tester.tap(find.text('Graph'));
+      await tester.pump();
+      expect(painterFocusId(tester), taskEgoNetworkScenario().seedId);
+    });
+
+    testWidgets('arrow selects a spatial neighbor and Enter walks to it', (
+      tester,
+    ) async {
+      final scenario = taskEgoNetworkScenario();
+      await pumpView(tester, scenario: scenario);
+      final painter = painterOf(tester);
+      final directions = <(LogicalKeyboardKey, Offset)>[
+        (LogicalKeyboardKey.arrowRight, const Offset(1, 0)),
+        (LogicalKeyboardKey.arrowLeft, const Offset(-1, 0)),
+        (LogicalKeyboardKey.arrowDown, const Offset(0, 1)),
+        (LogicalKeyboardKey.arrowUp, const Offset(0, -1)),
+      ];
+      final target = directions
+          .map(
+            (entry) => (
+              entry.$1,
+              nearestGraphNodeInDirection(
+                positions: painter.positions,
+                fromId: scenario.seedId,
+                direction: entry.$2,
+              ),
+            ),
+          )
+          .firstWhere((entry) => entry.$2 != null);
+      final graphFocus = tester.widget<Focus>(
+        find.descendant(
+          of: find.byType(KnowledgeGraphView),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Focus && widget.onKeyEvent != null,
+          ),
+        ),
+      );
+      graphFocus.focusNode!.requestFocus();
+      await tester.pump();
+
+      await tester.sendKeyEvent(target.$1);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      expect(painterFocusId(tester), target.$2);
     });
   });
 
@@ -405,9 +489,18 @@ void main() {
       await pumpView(tester, scenario: scenario);
 
       // The tldr is split into a one-liner lede (first line) + a SUMMARY body
-      // (the remainder), with markdown punctuation flattened.
+      // (the remainder), with markdown punctuation flattened. The body stays
+      // collapsed until requested so the inspector remains compact.
       expect(inspectorText('TL;DR'), findsOneWidget);
       expect(inspectorText('SUMMARY'), findsOneWidget);
+      expect(
+        inspectorText('• Ship the build\n• verify smoke tests'),
+        findsNothing,
+      );
+
+      await tester.tap(inspectorText('SUMMARY'));
+      await tester.pump(kThemeAnimationDuration);
+
       expect(
         inspectorText('• Ship the build\n• verify smoke tests'),
         findsOneWidget,
@@ -667,7 +760,6 @@ void main() {
         // The view uses `computeWorldLayout` for explorable (>40 node) worlds,
         // so the tap target must be computed from the same (deterministic)
         // layout, not the smaller-graph layout.
-        final layout = computeWorldLayout(scenario);
         await pumpView(tester, scenario: scenario, size: phoneSize);
 
         // Seed is P0T0; its project P0 is a direct (containment) neighbor, so it
@@ -677,7 +769,7 @@ void main() {
         const neighborId = 'P0';
         final neighborScreen = screenPosOf(
           tester,
-          layout.positions[neighborId]!,
+          painterOf(tester).positions[neighborId]!,
         );
         await tester.tapAt(neighborScreen);
         for (var i = 0; i < 5; i++) {
@@ -1033,7 +1125,6 @@ void main() {
       'walking to a neighbor then back returns to the seed',
       (tester) async {
         final scenario = taskEgoNetworkScenario();
-        final layout = computeGraphLayout(scenario);
         // Explorable controls only render for `_world` scenarios, so the `back`
         // path is driven by tapping out then tapping the previous node, which
         // exercises `_walkTo` symmetrically (history is internal). Here we
@@ -1043,7 +1134,10 @@ void main() {
 
         // Walk to project 'p0' — tap where it renders under the initial frame
         // (read from the painter's live transform).
-        final p0Screen = screenPosOf(tester, layout.positions['p0']!);
+        final p0Screen = screenPosOf(
+          tester,
+          painterOf(tester).positions['p0']!,
+        );
         await tester.tapAt(p0Screen);
         for (var i = 0; i < 5; i++) {
           await tester.pump(const Duration(milliseconds: 200));
@@ -1056,7 +1150,7 @@ void main() {
         // the seed.
         final seedScreen = screenPosOf(
           tester,
-          layout.positions[scenario.seedId]!,
+          painterOf(tester).positions[scenario.seedId]!,
         );
         await tester.tapAt(seedScreen);
         for (var i = 0; i < 5; i++) {

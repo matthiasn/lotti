@@ -2,6 +2,7 @@ import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
@@ -227,7 +228,7 @@ class _NavButton extends StatelessWidget {
   }
 }
 
-class _InspectorContent extends StatelessWidget {
+class _InspectorContent extends StatefulWidget {
   const _InspectorContent({
     required this.node,
     required this.neighbors,
@@ -252,19 +253,22 @@ class _InspectorContent extends StatelessWidget {
   final void Function(String id)? onNeighborTap;
 
   @override
+  State<_InspectorContent> createState() => _InspectorContentState();
+}
+
+class _InspectorContentState extends State<_InspectorContent> {
+  bool _summaryExpanded = false;
+
+  @override
   Widget build(BuildContext context) {
+    final node = widget.node;
+    final tokens = widget.tokens;
     final summary = resolveInspectorSummary(node);
+    final media = inspectorMediaPaths(node);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _Hero(
-          node: node,
-          categoryLabel: categoryLabel,
-          style: style,
-          tokens: tokens,
-          cat: cat,
-        ),
         Expanded(
           child: Stack(
             children: [
@@ -273,6 +277,19 @@ class _InspectorContent extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
+                    // Reserve only the compact navigation row; entries with no
+                    // media no longer pay for an empty decorative hero.
+                    SizedBox(
+                      height: TapTargets.minimum + tokens.spacing.step2,
+                    ),
+                    _Kicker(
+                      node: node,
+                      label:
+                          '${typeLabel(context.messages, node.type)} · ${widget.categoryLabel}',
+                      cat: widget.cat,
+                      tokens: tokens,
+                    ),
+                    SizedBox(height: tokens.spacing.step4),
                     // Full title — never truncated; this is the node's identity.
                     Text(
                       node.label,
@@ -291,46 +308,123 @@ class _InspectorContent extends StatelessWidget {
                         ),
                       ),
                     ],
+                    if (media.isNotEmpty) ...[
+                      SizedBox(height: tokens.spacing.sectionGap),
+                      _MediaCarousel(
+                        paths: media,
+                        coverPath: node.coverImagePath,
+                        coverCropX: node.coverImageCropX,
+                        tokens: tokens,
+                        cat: widget.cat,
+                      ),
+                    ],
                     if (summary.body != null) ...[
                       SizedBox(height: tokens.spacing.sectionGap),
-                      _SectionLabel(
-                        label: context.messages.knowledgeGraphSummarySection,
-                        cat: cat,
-                        tokens: tokens,
-                      ),
-                      SizedBox(height: tokens.spacing.step3),
-                      Text(
-                        summary.body!,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
-                          height: 1.5,
+                      DesignSystemSectionCard(
+                        padding: EdgeInsets.zero,
+                        child: Semantics(
+                          button: true,
+                          expanded: _summaryExpanded,
+                          label: context.messages.knowledgeGraphSummarySection,
+                          child: InkWell(
+                            onTap: () => setState(
+                              () => _summaryExpanded = !_summaryExpanded,
+                            ),
+                            child: Padding(
+                              padding: EdgeInsets.all(tokens.spacing.step4),
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  Row(
+                                    children: [
+                                      Icon(
+                                        Icons.auto_awesome_rounded,
+                                        size: IconSizes.s,
+                                        color: widget.cat,
+                                      ),
+                                      SizedBox(width: tokens.spacing.step2),
+                                      Expanded(
+                                        child: Text(
+                                          context
+                                              .messages
+                                              .knowledgeGraphSummarySection,
+                                          style: tokens
+                                              .typography
+                                              .styles
+                                              .others
+                                              .overline
+                                              .copyWith(color: widget.cat),
+                                        ),
+                                      ),
+                                      AnimatedRotation(
+                                        turns: _summaryExpanded ? 0.5 : 0,
+                                        duration: kThemeAnimationDuration,
+                                        child: Icon(
+                                          Icons.expand_more_rounded,
+                                          size: IconSizes.s,
+                                          color:
+                                              tokens.colors.text.mediumEmphasis,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                  AnimatedSize(
+                                    duration: kThemeAnimationDuration,
+                                    alignment: Alignment.topCenter,
+                                    child: _summaryExpanded
+                                        ? Padding(
+                                            padding: EdgeInsets.only(
+                                              top: tokens.spacing.step3,
+                                            ),
+                                            child: Text(
+                                              summary.body!,
+                                              style: tokens
+                                                  .typography
+                                                  .styles
+                                                  .body
+                                                  .bodySmall
+                                                  .copyWith(
+                                                    color: tokens
+                                                        .colors
+                                                        .text
+                                                        .mediumEmphasis,
+                                                    height: 1.5,
+                                                  ),
+                                            ),
+                                          )
+                                        : const SizedBox.shrink(),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
-                    if (neighbors.isNotEmpty) ...[
+                    if (widget.neighbors.isNotEmpty) ...[
                       SizedBox(height: tokens.spacing.sectionGap),
                       _SectionLabel(
                         label: context.messages.knowledgeGraphLinkedSection(
-                          neighbors.length,
+                          widget.neighbors.length,
                         ),
-                        cat: cat,
+                        cat: widget.cat,
                         tokens: tokens,
                       ),
                       SizedBox(height: tokens.spacing.step2),
-                      for (final n in neighbors)
+                      for (final n in widget.neighbors)
                         _TimelineItem(
                           node: n,
                           ageLabel: relativeAge(
                             context.messages,
-                            now.difference(n.createdAt),
+                            widget.now.difference(n.createdAt),
                           ),
-                          color: style
+                          color: widget.style
                               .edgeVisual(relStyleForNeighborType(n.type))
                               .color,
                           tokens: tokens,
-                          onTap: onNeighborTap == null
+                          onTap: widget.onNeighborTap == null
                               ? null
-                              : () => onNeighborTap!(n.id),
+                              : () => widget.onNeighborTap!(n.id),
                         ),
                     ],
                   ],
@@ -363,109 +457,94 @@ class _InspectorContent extends StatelessWidget {
             ],
           ),
         ),
-        _Footer(createdLabel: createdLabel, cat: cat, tokens: tokens),
+        _Footer(
+          createdLabel: widget.createdLabel,
+          cat: widget.cat,
+          tokens: tokens,
+        ),
       ],
     );
   }
 }
 
-/// Cover banner: the node's real cover art (or an image entry's photo) under a
-/// scrim with the type·category kicker overlaid; a category-gradient + glyph
-/// watermark when there is no image.
-class _Hero extends StatelessWidget {
-  const _Hero({
-    required this.node,
-    required this.categoryLabel,
-    required this.style,
+/// Ordered inspector media: cover art first, followed by linked task images.
+/// Duplicate paths are removed while preserving the source order.
+List<String> inspectorMediaPaths(GraphNode node) {
+  final seen = <String>{};
+  return [
+    if (node.coverImagePath != null) node.coverImagePath!,
+    ...node.mediaPaths,
+    if (node.imagePath != null) node.imagePath!,
+  ].where(seen.add).toList(growable: false);
+}
+
+class _MediaCarousel extends StatelessWidget {
+  const _MediaCarousel({
+    required this.paths,
+    required this.coverPath,
+    required this.coverCropX,
     required this.tokens,
     required this.cat,
   });
 
-  final GraphNode node;
-  final String categoryLabel;
-  final GraphStyle style;
+  final List<String> paths;
+  final String? coverPath;
+  final double coverCropX;
   final DsTokens tokens;
   final Color cat;
 
   @override
   Widget build(BuildContext context) {
-    final coverPath = node.coverImagePath ?? node.imagePath;
-    final scrimEnd = tokens.colors.background.level01;
-    final hasCover = coverPath != null;
-    return AspectRatio(
-      // A tall 16:9 hero earns its space when there's real cover art; without
-      // one it's a slim category banner so the title + timeline get the room.
-      aspectRatio: hasCover ? 16 / 9 : 16 / 5,
-      child: Stack(
-        fit: StackFit.expand,
-        children: [
-          if (coverPath != null)
-            Image.file(
-              File(coverPath),
-              fit: BoxFit.cover,
-              errorBuilder: (_, _, _) => _gradientHero(),
-            )
-          else
-            _gradientHero(),
-          DecoratedBox(
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topCenter,
-                end: Alignment.bottomCenter,
-                // Lighter over the gradient banner (only the kicker sits on it);
-                // stronger over a photo so the kicker stays legible.
-                stops: const [0.4, 1],
-                colors: [
-                  scrimEnd.withValues(alpha: 0),
-                  scrimEnd.withValues(alpha: hasCover ? 0.92 : 0.55),
-                ],
-              ),
-            ),
-          ),
-          Positioned(
-            left: tokens.spacing.cardPadding,
-            bottom: tokens.spacing.cardPadding,
-            child: _Kicker(
-              node: node,
-              label:
-                  '${typeLabel(context.messages, node.type)} · $categoryLabel',
-              cat: cat,
-              tokens: tokens,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _gradientHero() {
-    final hsl = HSLColor.fromColor(cat);
-    final dark = hsl
-        .withLightness((hsl.lightness * 0.4).clamp(0.0, 1.0))
-        .toColor();
-    return ClipRect(
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [cat, dark],
+    final height = tokens.spacing.step13;
+    final width = height + tokens.spacing.step10;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _SectionLabel(
+          label: context.messages.knowledgeGraphPhotosSection(paths.length),
+          cat: cat,
+          tokens: tokens,
+        ),
+        SizedBox(height: tokens.spacing.step3),
+        SizedBox(
+          height: height,
+          child: ListView.separated(
+            key: const ValueKey('knowledge-graph-media-carousel'),
+            scrollDirection: Axis.horizontal,
+            itemCount: paths.length,
+            separatorBuilder: (_, _) => SizedBox(width: tokens.spacing.step3),
+            itemBuilder: (context, index) {
+              final path = paths[index];
+              final isCover = path == coverPath;
+              final alignment = isCover
+                  ? Alignment((coverCropX.clamp(0, 1) * 2) - 1, 0)
+                  : Alignment.center;
+              return Container(
+                width: width,
+                clipBehavior: Clip.antiAlias,
+                decoration: BoxDecoration(
+                  color: tokens.colors.background.level02,
+                  borderRadius: BorderRadius.circular(tokens.radii.l),
+                  border: Border.all(color: tokens.colors.decorative.level01),
+                ),
+                child: Image.file(
+                  File(path),
+                  key: ValueKey('knowledge-graph-media-$path'),
+                  fit: BoxFit.cover,
+                  alignment: alignment,
+                  errorBuilder: (_, _, _) => ColoredBox(
+                    color: tokens.colors.background.level02,
+                    child: Icon(
+                      Icons.broken_image_outlined,
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
+                  ),
+                ),
+              );
+            },
           ),
         ),
-        child: OverflowBox(
-          maxWidth: double.infinity,
-          maxHeight: double.infinity,
-          alignment: Alignment.topRight,
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.step4),
-            child: Icon(
-              glyphForType(node.type),
-              size: 132,
-              color: style.glyphColor.withValues(alpha: 0.18),
-            ),
-          ),
-        ),
-      ),
+      ],
     );
   }
 }
@@ -748,5 +827,9 @@ RelStyle relStyleForNeighborType(GraphNodeType type) {
     case GraphNodeType.audioEntry:
     case GraphNodeType.imageEntry:
       return RelStyle.note;
+    case GraphNodeType.mediaCollection:
+      return RelStyle.note;
+    case GraphNodeType.aggregate:
+      return RelStyle.linkedTask;
   }
 }

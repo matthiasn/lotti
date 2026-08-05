@@ -6925,6 +6925,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get knowledgeGraphCloseDetails => 'Zavřít podrobnosti';
 
   @override
+  String get knowledgeGraphDensity => 'Hustota';
+
+  @override
+  String get knowledgeGraphDensityBalanced => 'Vyvážené';
+
+  @override
+  String get knowledgeGraphDensityCalm => 'Klidné';
+
+  @override
+  String get knowledgeGraphDensityExplore => 'Průzkum';
+
+  @override
   String get knowledgeGraphEmpty => 'Zatím žádné odkazy k prozkoumání';
 
   @override
@@ -6936,6 +6948,33 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get knowledgeGraphError => 'Znalostní graf se nepodařilo načíst';
+
+  @override
+  String get knowledgeGraphFilterCategories => 'Kategorie';
+
+  @override
+  String get knowledgeGraphFilterRecency => 'Aktuálnost';
+
+  @override
+  String get knowledgeGraphFilterRelations => 'Vztahy';
+
+  @override
+  String get knowledgeGraphFilters => 'Filtry';
+
+  @override
+  String get knowledgeGraphFilterTaskStatus => 'Stav úkolu';
+
+  @override
+  String get knowledgeGraphFilterTypes => 'Typy';
+
+  @override
+  String get knowledgeGraphLast30Days => 'Posledních 30 dní';
+
+  @override
+  String get knowledgeGraphLast7Days => 'Posledních 7 dní';
+
+  @override
+  String get knowledgeGraphLast90Days => 'Posledních 90 dní';
 
   @override
   String knowledgeGraphLinkedSection(int count) {
@@ -6986,7 +7025,21 @@ class AppLocalizationsCs extends AppLocalizations {
   String get knowledgeGraphNodeTypeTask => 'Úkol';
 
   @override
+  String get knowledgeGraphOneHop => '1 krok';
+
+  @override
   String get knowledgeGraphOpenDetails => 'Otevřít podrobnosti';
+
+  @override
+  String knowledgeGraphPhotosSection(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'FOTOGRAFIE · $count',
+      one: 'FOTOGRAFIE · 1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get knowledgeGraphRecenter => 'Znovu vystředit';
@@ -7020,6 +7073,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Prozkoumat odkazy';
+
+  @override
+  String get knowledgeGraphTwoHops => '2 kroky';
+
+  @override
+  String get knowledgeGraphViewConnections => 'Spojení';
+
+  @override
+  String get knowledgeGraphViewGraph => 'Graf';
 
   @override
   String knowledgeGraphWalkHint(int count) {

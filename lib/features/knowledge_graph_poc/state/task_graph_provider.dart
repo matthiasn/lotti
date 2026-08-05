@@ -11,6 +11,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -107,12 +108,28 @@ GraphEdgeKind edgeKindFor(EntryLink link, JournalEntity a, JournalEntity b) {
   return switch (link) {
     ProjectLink() => GraphEdgeKind.containment,
     RatingLink() => GraphEdgeKind.evaluation,
+    BlocksLink() => GraphEdgeKind.blocks,
+    FollowsUpLink() => GraphEdgeKind.followsUp,
+    DuplicatesLink() => GraphEdgeKind.duplicates,
+    FixesLink() => GraphEdgeKind.fixes,
+    SupersedesLink() => GraphEdgeKind.supersedes,
     _ =>
       (a is AiResponseEntry || b is AiResponseEntry)
           ? GraphEdgeKind.provenance
           : GraphEdgeKind.association,
   };
 }
+
+/// Projects the generated task-status union into the graph's stable vocabulary.
+GraphTaskStatus graphTaskStatusFor(TaskStatus status) => switch (status) {
+  TaskOpen() => GraphTaskStatus.open,
+  TaskInProgress() => GraphTaskStatus.inProgress,
+  TaskGroomed() => GraphTaskStatus.groomed,
+  TaskBlocked() => GraphTaskStatus.blocked,
+  TaskOnHold() => GraphTaskStatus.onHold,
+  TaskDone() => GraphTaskStatus.done,
+  TaskRejected() => GraphTaskStatus.rejected,
+};
 
 /// Trims [s] and returns null when it is null or blank (so empty agent fields
 /// fall through to the next source / the inspector's generic treatment).
@@ -155,8 +172,11 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
       // so a change to a connected node doesn't leave the graph stale. The
       // listener closes over `entities`, which grows as the BFS loads nodes.
       final entities = <String, JournalEntity>{};
+      final watchedAgentIds = <String>{};
       final sub = notifications.updateStream.listen((ids) {
-        if (ids.contains(taskId) || ids.any(entities.containsKey)) {
+        if (ids.contains(taskId) ||
+            ids.any(entities.containsKey) ||
+            ids.any(watchedAgentIds.contains)) {
           ref.invalidateSelf();
         }
       });
@@ -307,6 +327,26 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
           : await ref
                 .read(agentRepositoryProvider)
                 .getLatestTaskReportsForTaskIds(taskIds);
+      for (final report in reportsByTask.values) {
+        watchedAgentIds
+          ..add(report.id)
+          ..add(report.agentId);
+      }
+
+      final directImagePathsByTask = <String, List<String>>{};
+      for (final edge in edges) {
+        final from = entities[edge.fromId];
+        final to = entities[edge.toId];
+        if (from is Task && to is JournalImage) {
+          directImagePathsByTask
+              .putIfAbsent(from.id, () => <String>[])
+              .add(getFullImagePath(to));
+        } else if (to is Task && from is JournalImage) {
+          directImagePathsByTask
+              .putIfAbsent(to.id, () => <String>[])
+              .add(getFullImagePath(from));
+        }
+      }
 
       final now = DateTime.now();
       final nodes = <GraphNode>[
@@ -319,6 +359,7 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
             createdAt: e.meta.createdAt,
             imagePath: e is JournalImage ? getFullImagePath(e) : null,
             coverImagePath: e is Task ? coverPathById[e.data.coverArtId] : null,
+            coverImageCropX: e is Task ? e.data.coverArtCropX : 0.5,
             oneLiner: e is Task ? _clean(reportsByTask[e.id]?.oneLiner) : null,
             tldr: switch (e) {
               Task() =>
@@ -327,6 +368,13 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
               AiResponseEntry() => _clean(e.data.response),
               _ => null,
             },
+            taskStatus: e is Task ? graphTaskStatusFor(e.data.status) : null,
+            mediaPaths: e is Task
+                ? <String>{
+                    ?coverPathById[e.data.coverArtId],
+                    ...directImagePathsByTask[e.id] ?? const <String>[],
+                  }.toList(growable: false)
+                : const [],
           ),
       ];
       final nodeIds = nodes.map((n) => n.id).toSet();

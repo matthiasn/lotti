@@ -6906,6 +6906,18 @@ class AppLocalizationsPt extends AppLocalizations {
   String get knowledgeGraphCloseDetails => 'Fechar detalhes';
 
   @override
+  String get knowledgeGraphDensity => 'Densidade';
+
+  @override
+  String get knowledgeGraphDensityBalanced => 'Equilibrada';
+
+  @override
+  String get knowledgeGraphDensityCalm => 'Calma';
+
+  @override
+  String get knowledgeGraphDensityExplore => 'Explorar';
+
+  @override
   String get knowledgeGraphEmpty => 'Ainda não há links para explorar';
 
   @override
@@ -6918,6 +6930,33 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get knowledgeGraphError =>
       'Não foi possível carregar o gráfico de conhecimento';
+
+  @override
+  String get knowledgeGraphFilterCategories => 'Categorias';
+
+  @override
+  String get knowledgeGraphFilterRecency => 'Recência';
+
+  @override
+  String get knowledgeGraphFilterRelations => 'Relações';
+
+  @override
+  String get knowledgeGraphFilters => 'Filtros';
+
+  @override
+  String get knowledgeGraphFilterTaskStatus => 'Estado da tarefa';
+
+  @override
+  String get knowledgeGraphFilterTypes => 'Tipos';
+
+  @override
+  String get knowledgeGraphLast30Days => 'Últimos 30 dias';
+
+  @override
+  String get knowledgeGraphLast7Days => 'Últimos 7 dias';
+
+  @override
+  String get knowledgeGraphLast90Days => 'Últimos 90 dias';
 
   @override
   String knowledgeGraphLinkedSection(int count) {
@@ -6967,7 +7006,21 @@ class AppLocalizationsPt extends AppLocalizations {
   String get knowledgeGraphNodeTypeTask => 'Tarefa';
 
   @override
+  String get knowledgeGraphOneHop => '1 salto';
+
+  @override
   String get knowledgeGraphOpenDetails => 'Abrir detalhes';
+
+  @override
+  String knowledgeGraphPhotosSection(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'FOTOGRAFIAS · $count',
+      one: 'FOTOGRAFIA · 1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get knowledgeGraphRecenter => 'Recentrador';
@@ -7001,6 +7054,15 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Explorar links';
+
+  @override
+  String get knowledgeGraphTwoHops => '2 saltos';
+
+  @override
+  String get knowledgeGraphViewConnections => 'Ligações';
+
+  @override
+  String get knowledgeGraphViewGraph => 'Grafo';
 
   @override
   String knowledgeGraphWalkHint(int count) {

@@ -6851,6 +6851,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get knowledgeGraphCloseDetails => 'Närbild';
 
   @override
+  String get knowledgeGraphDensity => 'Täthet';
+
+  @override
+  String get knowledgeGraphDensityBalanced => 'Balanserad';
+
+  @override
+  String get knowledgeGraphDensityCalm => 'Lugn';
+
+  @override
+  String get knowledgeGraphDensityExplore => 'Utforska';
+
+  @override
   String get knowledgeGraphEmpty => 'Inga länkar att utforska än';
 
   @override
@@ -6861,6 +6873,33 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get knowledgeGraphError => 'Kunde inte ladda kunskapsgrafen';
+
+  @override
+  String get knowledgeGraphFilterCategories => 'Kategorier';
+
+  @override
+  String get knowledgeGraphFilterRecency => 'Aktualitet';
+
+  @override
+  String get knowledgeGraphFilterRelations => 'Relationer';
+
+  @override
+  String get knowledgeGraphFilters => 'Filter';
+
+  @override
+  String get knowledgeGraphFilterTaskStatus => 'Uppgiftsstatus';
+
+  @override
+  String get knowledgeGraphFilterTypes => 'Typer';
+
+  @override
+  String get knowledgeGraphLast30Days => 'Senaste 30 dagarna';
+
+  @override
+  String get knowledgeGraphLast7Days => 'Senaste 7 dagarna';
+
+  @override
+  String get knowledgeGraphLast90Days => 'Senaste 90 dagarna';
 
   @override
   String knowledgeGraphLinkedSection(int count) {
@@ -6909,7 +6948,21 @@ class AppLocalizationsSv extends AppLocalizations {
   String get knowledgeGraphNodeTypeTask => 'Uppgift';
 
   @override
+  String get knowledgeGraphOneHop => '1 steg';
+
+  @override
   String get knowledgeGraphOpenDetails => 'Öppna detaljer';
+
+  @override
+  String knowledgeGraphPhotosSection(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'FOTON · $count',
+      one: 'FOTO · 1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get knowledgeGraphRecenter => 'Nyare';
@@ -6943,6 +6996,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Utforska länkar';
+
+  @override
+  String get knowledgeGraphTwoHops => '2 steg';
+
+  @override
+  String get knowledgeGraphViewConnections => 'Anslutningar';
+
+  @override
+  String get knowledgeGraphViewGraph => 'Graf';
 
   @override
   String knowledgeGraphWalkHint(int count) {

@@ -34,7 +34,9 @@ void main() {
     String? oneLiner,
     String? tldr,
     String? coverImagePath,
+    double coverImageCropX = 0.5,
     String? imagePath,
+    List<String> mediaPaths = const [],
   }) => GraphNode(
     id: id,
     type: type,
@@ -44,7 +46,9 @@ void main() {
     oneLiner: oneLiner,
     tldr: tldr,
     coverImagePath: coverImagePath,
+    coverImageCropX: coverImageCropX,
     imagePath: imagePath,
+    mediaPaths: mediaPaths,
   );
 
   // ---------------------------------------------------------------------------
@@ -352,6 +356,32 @@ void main() {
     });
   });
 
+  group('inspectorMediaPaths', () {
+    test('orders cover art first and removes duplicate image paths', () {
+      expect(
+        inspectorMediaPaths(
+          node(
+            coverImagePath: '/cover.png',
+            mediaPaths: const [
+              '/cover.png',
+              '/photo-one.png',
+              '/photo-two.png',
+            ],
+            imagePath: '/photo-one.png',
+          ),
+        ),
+        ['/cover.png', '/photo-one.png', '/photo-two.png'],
+      );
+    });
+
+    test('falls back to the image entry path when no media list exists', () {
+      expect(
+        inspectorMediaPaths(node(imagePath: '/single.png')),
+        ['/single.png'],
+      );
+    });
+  });
+
   // ---------------------------------------------------------------------------
   // Widget
   // ---------------------------------------------------------------------------
@@ -442,8 +472,9 @@ void main() {
       expect(find.text('PROJECT · HEALTH'), findsOneWidget);
     });
 
-    testWidgets('renders both the deck and the SUMMARY body for a '
-        'multi-line tldr', (tester) async {
+    testWidgets('keeps the AI summary collapsed until requested', (
+      tester,
+    ) async {
       // tldr-only node → resolveInspectorSummary routes through splitTldr, so
       // the first line is the deck and the remainder is the SUMMARY body.
       await pumpPanel(
@@ -452,6 +483,11 @@ void main() {
       );
       expect(find.text('SUMMARY'), findsOneWidget);
       expect(find.text('A crisp lede line'), findsOneWidget);
+      expect(find.text('The longer body explanation.'), findsNothing);
+
+      await tester.tap(find.text('SUMMARY'));
+      await tester.pump(kThemeAnimationDuration);
+
       expect(find.text('The longer body explanation.'), findsOneWidget);
     });
 
@@ -474,8 +510,9 @@ void main() {
       expect(find.text('SUMMARY'), findsNothing);
     });
 
-    testWidgets('renders both the oneLiner deck and the SUMMARY body when a '
-        'oneLiner and a multi-line tldr are present', (tester) async {
+    testWidgets('uses the oneLiner as the deck and expands the full tldr', (
+      tester,
+    ) async {
       const oneLiner = 'Ship the inspector panel';
       const tldr = 'A crisp lede line\nThe longer body explanation.';
       await pumpPanel(
@@ -486,6 +523,11 @@ void main() {
       // deck here); the body is the full markdown preview of the tldr.
       expect(find.text(oneLiner), findsOneWidget);
       expect(find.text('SUMMARY'), findsOneWidget);
+      expect(find.text(previewFromMarkdown(tldr)), findsNothing);
+
+      await tester.tap(find.text('SUMMARY'));
+      await tester.pump(kThemeAnimationDuration);
+
       expect(find.text(previewFromMarkdown(tldr)), findsOneWidget);
     });
 
@@ -503,7 +545,7 @@ void main() {
       expect(find.text('SUMMARY'), findsNothing);
     });
 
-    testWidgets('builds an Image in the hero when a cover image is set', (
+    testWidgets('surfaces cover art in the compact media carousel', (
       tester,
     ) async {
       await pumpPanel(
@@ -513,79 +555,57 @@ void main() {
       // Image.file may not decode under test (the file is absent); asserting
       // the Image widget is present in the tree is sufficient here.
       expect(find.byType(Image), findsOneWidget);
+      expect(
+        find.byKey(const ValueKey('knowledge-graph-media-carousel')),
+        findsOneWidget,
+      );
+      expect(find.text('PHOTO · 1'), findsOneWidget);
     });
 
-    testWidgets('falls back to the gradient hero when the cover fails to load', (
+    testWidgets('does not reserve media space when the task has no photos', (
       tester,
     ) async {
-      // A cover path that does not exist on disk: Image.file builds, the decode
-      // fails, and its errorBuilder swaps in `_gradientHero()` — which paints
-      // the type glyph. Pumping inside runAsync lets the (failing) FileImage
-      // resolve so the errorBuilder actually fires.
-      final coverNode = node(
-        type: GraphNodeType.imageEntry,
-        coverImagePath: '/nonexistent/cover_xyz.png',
-      );
-      // The hero glyph rendered *inside* the Image is the errorBuilder's
-      // `_gradientHero()` output (the kicker glyph lives elsewhere in the tree).
-      final heroGlyph = find.descendant(
-        of: find.byType(Image),
-        matching: find.byIcon(glyphForType(GraphNodeType.imageEntry)),
-      );
-
-      await tester.runAsync(() async {
-        tester.view
-          ..physicalSize = const Size(420, 900)
-          ..devicePixelRatio = 1.0;
-        addTearDown(tester.view.resetPhysicalSize);
-        addTearDown(tester.view.resetDevicePixelRatio);
-        await tester.pumpWidget(
-          makeTestableWidgetNoScroll(
-            Center(
-              child: SizedBox(
-                width: 360,
-                height: 860,
-                child: NodeInspectorPanel(
-                  node: coverNode,
-                  neighbors: const [],
-                  now: created,
-                  createdLabel: 'today',
-                  categoryNames: const {},
-                  style: style,
-                  tokens: tokens,
-                ),
-              ),
-            ),
-          ),
-        );
-        // The FileImage load fails asynchronously against the real event loop;
-        // pump (bounded) until the errorBuilder swaps in the gradient hero. Real
-        // file I/O justifies the real-time yield (test/README.md fake-time
-        // exception).
-        for (var i = 0; i < 50; i++) {
-          await tester.pump();
-          if (heroGlyph.evaluate().isNotEmpty) break;
-          await Future<void>.delayed(const Duration(milliseconds: 10));
-        }
-      });
-      await tester.pump();
-
-      expect(
-        heroGlyph,
-        findsOneWidget,
-        reason: 'errorBuilder should render the gradient hero glyph',
-      );
-    });
-
-    testWidgets('shows the gradient hero glyph and no Image when there is no '
-        'cover', (tester) async {
       // node() defaults to a task node.
       await pumpPanel(tester, node: node());
       expect(find.byType(Image), findsNothing);
-      // The gradient hero watermark uses the type glyph (also reused by the
-      // kicker), so it is present at least once.
-      expect(find.byIcon(glyphForType(GraphNodeType.task)), findsWidgets);
+      expect(
+        find.byKey(const ValueKey('knowledge-graph-media-carousel')),
+        findsNothing,
+      );
     });
+
+    testWidgets(
+      'keeps cover first, applies its crop, and includes task photos',
+      (
+        tester,
+      ) async {
+        await pumpPanel(
+          tester,
+          node: node(
+            coverImagePath: '/cover.png',
+            coverImageCropX: 0.75,
+            mediaPaths: const [
+              '/cover.png',
+              '/photo-one.png',
+              '/photo-two.png',
+            ],
+          ),
+        );
+
+        final list = tester.widget<ListView>(
+          find.byKey(const ValueKey('knowledge-graph-media-carousel')),
+        );
+        expect(list.semanticChildCount, 3);
+        expect(find.text('PHOTOS · 3'), findsOneWidget);
+
+        final cover = tester.widget<Image>(
+          find.byKey(
+            const ValueKey('knowledge-graph-media-/cover.png'),
+          ),
+        );
+        expect(cover.alignment, const Alignment(0.5, 0));
+      },
+    );
 
     testWidgets('renders a LINKED · N section with a timeline row per '
         'neighbor', (tester) async {
@@ -817,6 +837,8 @@ void main() {
         GraphNodeType.textEntry: RelStyle.note,
         GraphNodeType.audioEntry: RelStyle.note,
         GraphNodeType.imageEntry: RelStyle.note,
+        GraphNodeType.mediaCollection: RelStyle.note,
+        GraphNodeType.aggregate: RelStyle.linkedTask,
       };
       for (final type in GraphNodeType.values) {
         expect(relStyleForNeighborType(type), expected[type], reason: '$type');

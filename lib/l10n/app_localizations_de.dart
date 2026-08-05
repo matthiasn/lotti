@@ -6896,6 +6896,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String get knowledgeGraphCloseDetails => 'Details schließen';
 
   @override
+  String get knowledgeGraphDensity => 'Dichte';
+
+  @override
+  String get knowledgeGraphDensityBalanced => 'Ausgewogen';
+
+  @override
+  String get knowledgeGraphDensityCalm => 'Ruhig';
+
+  @override
+  String get knowledgeGraphDensityExplore => 'Erkunden';
+
+  @override
   String get knowledgeGraphEmpty => 'Noch keine Verknüpfungen zum Erkunden';
 
   @override
@@ -6907,6 +6919,33 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get knowledgeGraphError => 'Wissensgraph konnte nicht geladen werden';
+
+  @override
+  String get knowledgeGraphFilterCategories => 'Kategorien';
+
+  @override
+  String get knowledgeGraphFilterRecency => 'Aktualität';
+
+  @override
+  String get knowledgeGraphFilterRelations => 'Beziehungen';
+
+  @override
+  String get knowledgeGraphFilters => 'Filter';
+
+  @override
+  String get knowledgeGraphFilterTaskStatus => 'Aufgabenstatus';
+
+  @override
+  String get knowledgeGraphFilterTypes => 'Typen';
+
+  @override
+  String get knowledgeGraphLast30Days => 'Letzte 30 Tage';
+
+  @override
+  String get knowledgeGraphLast7Days => 'Letzte 7 Tage';
+
+  @override
+  String get knowledgeGraphLast90Days => 'Letzte 90 Tage';
 
   @override
   String knowledgeGraphLinkedSection(int count) {
@@ -6949,7 +6988,21 @@ class AppLocalizationsDe extends AppLocalizations {
   String get knowledgeGraphNodeTypeTask => 'Aufgabe';
 
   @override
+  String get knowledgeGraphOneHop => '1 Schritt';
+
+  @override
   String get knowledgeGraphOpenDetails => 'Details öffnen';
+
+  @override
+  String knowledgeGraphPhotosSection(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'FOTOS · $count',
+      one: 'FOTO · 1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get knowledgeGraphRecenter => 'Neu zentrieren';
@@ -6983,6 +7036,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Verknüpfungen erkunden';
+
+  @override
+  String get knowledgeGraphTwoHops => '2 Schritte';
+
+  @override
+  String get knowledgeGraphViewConnections => 'Verbindungen';
+
+  @override
+  String get knowledgeGraphViewGraph => 'Graph';
 
   @override
   String knowledgeGraphWalkHint(int count) {

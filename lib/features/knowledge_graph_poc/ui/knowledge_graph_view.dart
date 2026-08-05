@@ -13,15 +13,24 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/knowledge_graph_poc/domain/graph_keyboard_navigation.dart';
+import 'package:lotti/features/knowledge_graph_poc/domain/graph_label_layout.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
+import 'package:lotti/features/knowledge_graph_poc/domain/graph_projection.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_scenarios.dart';
+import 'package:lotti/features/knowledge_graph_poc/state/graph_viewport_controller.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/entry_detail_sidebar.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/graph_connections_view.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_motion_controller.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/graph_visual_spec.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/graph_workspace_toolbar.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/knowledge_graph_painter.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/node_inspector_panel.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/topology_minimap.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 class KnowledgeGraphView extends StatefulWidget {
@@ -80,17 +89,22 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   static const int _maxMotionNodes = 52;
 
   late final GraphScenario _scenario;
-  late final GraphLayout _layout;
-  late final Map<String, int> _degrees;
+  late final GraphLayout _topologyLayout;
+  late GraphLayout _layout;
+  late GraphProjection _projection;
+  late GraphScenario _displayScenario;
+  late Map<String, int> _degrees;
   late final Map<String, List<String>> _adjacency;
-  late final bool _world;
+  late final GraphViewportController _viewport;
   late final AnimationController _cam;
   late final AnimationController _wakeCtl;
   late final GraphMotionController _motion;
+  final GraphLabelLayoutMemory _labelMemory = GraphLabelLayoutMemory();
+  final FocusNode _graphFocusNode = FocusNode(
+    debugLabel: 'knowledge-graph-canvas',
+  );
 
-  late String _focusId;
   late Map<String, int> _hops;
-  final List<String> _history = [];
 
   /// Whether the focused entry's full-details side panel is open (overlaying
   /// the navigational inspector).
@@ -113,26 +127,27 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   Offset _toPan = Offset.zero;
 
   double get _wake => 1 - _wakeCtl.value;
+  String get _focusId => _viewport.value.focusId;
 
   @override
   void initState() {
     super.initState();
     _scenario = widget.scenario ?? exploreWorldScenario();
-    _world = _scenario.nodes.length > kWorldScaleThreshold;
-    // Prefer a layout relaxed off the main thread (provider path); otherwise
-    // compute it here — cheap for the small synthetic scenarios and tests.
-    _layout = widget.layout ?? computeLayoutForScenario(_scenario);
-    _degrees = degreeMap(_scenario.edges);
     _adjacency = {for (final n in _scenario.nodes) n.id: <String>[]};
     for (final e in _scenario.edges) {
       _adjacency[e.fromId]?.add(e.toId);
       _adjacency[e.toId]?.add(e.fromId);
     }
-    _focusId =
+    final initialFocusId =
         widget.initialFocusId != null &&
             _scenario.nodes.any((n) => n.id == widget.initialFocusId)
         ? widget.initialFocusId!
         : _scenario.seedId;
+    _viewport = GraphViewportController(initialFocusId: initialFocusId);
+    // The provider's full layout now belongs to the topology minimap. The main
+    // canvas always receives a bounded, focus-centred projection.
+    _topologyLayout = widget.layout ?? computeLayoutForScenario(_scenario);
+    _rebuildLocalGraph();
     _hops = _bfs(_focusId);
     _focusWorld = _layout.positions[_focusId] ?? Offset.zero;
     _motion = GraphMotionController(vsync: this);
@@ -173,7 +188,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   /// Decode image-entry thumbnails off the main work and repaint when ready.
   Future<void> _loadImages() async {
     final loaded = <String, ui.Image>{};
-    for (final node in _scenario.nodes) {
+    for (final node in _displayScenario.nodes) {
       final path = node.imagePath;
       if (path == null || path.isEmpty) continue;
       try {
@@ -213,10 +228,31 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     _cam.dispose();
     _wakeCtl.dispose();
     _motion.dispose();
+    _viewport.dispose();
+    _graphFocusNode.dispose();
     for (final image in _images.values) {
       image.dispose();
     }
     super.dispose();
+  }
+
+  void _rebuildLocalGraph() {
+    _projection = buildLocalGraphProjection(
+      raw: _scenario,
+      focusId: _focusId,
+      maxNodes: switch (_viewport.value.density) {
+        GraphDensity.calm => GraphVisualSpec.defaultCalmNodeLimit,
+        GraphDensity.balanced => GraphVisualSpec.defaultBalancedNodeLimit,
+        GraphDensity.explore => GraphVisualSpec.defaultExploreNodeLimit,
+      },
+      clusterPreviewLimit: GraphVisualSpec.defaultClusterPreviewLimit,
+      clusterCollapseThreshold: GraphVisualSpec.defaultClusterCollapseThreshold,
+      filters: _viewport.value.filters,
+      expandedAggregateIds: _viewport.value.expandedAggregateIds,
+    );
+    _displayScenario = _projection.scenario;
+    _layout = computeGraphLayout(_displayScenario, iterations: 140);
+    _degrees = degreeMap(_displayScenario.edges);
   }
 
   Map<String, int> _bfs(String from) {
@@ -289,7 +325,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   /// Transform that frames [focusId]'s 2-hop neighborhood in [size].
   (double, Offset) _framedTransform(Size size, String focusId) {
     final hops = _bfs(focusId);
-    final region = _scenario.nodes
+    final region = _displayScenario.nodes
         .where((n) => (hops[n.id] ?? 99) <= 2)
         .map((n) => _layout.positions[n.id])
         .whereType<Offset>()
@@ -331,10 +367,14 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   void _walkTo(String id, {bool record = true}) {
     if (id == _focusId) return;
     final fromId = _focusId;
-    if (record) _history.add(fromId);
+    if (record) {
+      _viewport.walkTo(id);
+    } else {
+      _viewport.jumpTo(id);
+    }
     _previousFocusId = fromId;
     _walkPath = _path(fromId, id);
-    _focusId = id;
+    _rebuildLocalGraph();
     _hops = _bfs(id);
     _syncMotionWindow(id);
     _kickWalkMotion(fromId, id);
@@ -364,8 +404,56 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   }
 
   void _back() {
-    if (_history.isEmpty) return;
-    _walkTo(_history.removeLast(), record: false);
+    if (!_viewport.value.canGoBack) return;
+    final fromId = _focusId;
+    _viewport.goBack();
+    _applyFocusChange(fromId);
+  }
+
+  void _forward() {
+    if (!_viewport.value.canGoForward) return;
+    final fromId = _focusId;
+    _viewport.goForward();
+    _applyFocusChange(fromId);
+  }
+
+  void _jumpTo(String id) {
+    if (id == _focusId) return;
+    final fromId = _focusId;
+    _viewport.jumpTo(id);
+    _applyFocusChange(fromId);
+  }
+
+  void _applyFocusChange(String fromId) {
+    _previousFocusId = fromId;
+    _walkPath = _path(fromId, _focusId);
+    _rebuildLocalGraph();
+    _hops = _bfs(_focusId);
+    _syncMotionWindow(_focusId);
+    _kickWalkMotion(fromId, _focusId);
+    if (_scenario.nodeById(_focusId).type == GraphNodeType.task) {
+      widget.onTaskFocusChanged?.call(_focusId, fromId);
+    }
+    _focusWorld = _layout.positions[_focusId] ?? Offset.zero;
+    final (ts, tp) = _framedTransform(_lastSize, _focusId);
+    _fromScale = _scale;
+    _fromPan = _pan;
+    _toScale = ts;
+    _toPan = tp;
+    if (_disableAnimations) {
+      _cam.stop();
+      _wakeCtl
+        ..stop()
+        ..value = 1;
+      setState(() {
+        _scale = ts;
+        _pan = tp;
+      });
+      return;
+    }
+    _cam.forward(from: 0);
+    _wakeCtl.forward(from: 0);
+    setState(() {});
   }
 
   void _recenter() {
@@ -389,6 +477,35 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     _cam.forward(from: 0);
   }
 
+  void _setMode(GraphViewMode mode) {
+    _viewport.setMode(mode);
+    setState(() {});
+  }
+
+  void _setDensity(GraphDensity density) {
+    _viewport.setDensity(density);
+    setState(() {
+      _rebuildLocalGraph();
+      _hops = _bfs(_focusId);
+      _syncMotionWindow(_focusId);
+      final (nextScale, nextPan) = _framedTransform(_lastSize, _focusId);
+      _scale = nextScale;
+      _pan = nextPan;
+    });
+  }
+
+  void _setFilters(GraphProjectionFilters filters) {
+    _viewport.setFilters(filters);
+    setState(() {
+      _rebuildLocalGraph();
+      _hops = _bfs(_focusId);
+      _syncMotionWindow(_focusId);
+      final (nextScale, nextPan) = _framedTransform(_lastSize, _focusId);
+      _scale = nextScale;
+      _pan = nextPan;
+    });
+  }
+
   Offset? _displayWorldPosition(String id) {
     final rest = _layout.positions[id];
     if (rest == null) return null;
@@ -397,7 +514,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
 
   void _syncMotionWindow(String focusId) {
     final hops = _bfs(focusId);
-    final ids = [..._scenario.nodes]
+    final ids = [..._displayScenario.nodes]
       ..sort((a, b) {
         final hop = (hops[a.id] ?? 99).compareTo(hops[b.id] ?? 99);
         if (hop != 0) return hop;
@@ -405,7 +522,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       });
     _motion.configureForceIsland(
       restPositions: _layout.positions,
-      edges: _scenario.edges,
+      edges: _displayScenario.edges,
       activeIds: ids
           .where((node) => (hops[node.id] ?? 99) <= 2)
           .take(_maxMotionNodes)
@@ -536,6 +653,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   }
 
   void _onTapUp(TapUpDetails d) {
+    _graphFocusNode.requestFocus();
     final local = d.localPosition;
     String? hit;
     var best = double.infinity;
@@ -550,10 +668,54 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       }
     }
     if (hit == null) return;
-    if (hit == _focusId) {
-      _kickTouchMotion(hit, localPosition: local);
+    _activateNode(hit, localPosition: local);
+  }
+
+  KeyEventResult _onGraphKeyEvent(FocusNode node, KeyEvent event) {
+    if (event is! KeyDownEvent) return KeyEventResult.ignored;
+    final key = event.logicalKey;
+    if (key == LogicalKeyboardKey.escape && _viewport.value.canGoBack) {
+      _back();
+      return KeyEventResult.handled;
+    }
+    if (key == LogicalKeyboardKey.enter || key == LogicalKeyboardKey.space) {
+      _activateNode(_viewport.value.selectedId);
+      return KeyEventResult.handled;
+    }
+    final direction = switch (key) {
+      LogicalKeyboardKey.arrowLeft => const Offset(-1, 0),
+      LogicalKeyboardKey.arrowRight => const Offset(1, 0),
+      LogicalKeyboardKey.arrowUp => const Offset(0, -1),
+      LogicalKeyboardKey.arrowDown => const Offset(0, 1),
+      _ => null,
+    };
+    if (direction == null) return KeyEventResult.ignored;
+    final next = nearestGraphNodeInDirection(
+      positions: _layout.positions,
+      fromId: _viewport.value.selectedId,
+      direction: direction,
+    );
+    if (next == null) return KeyEventResult.ignored;
+    _viewport.selectNode(next);
+    setState(() {});
+    return KeyEventResult.handled;
+  }
+
+  void _activateNode(String id, {Offset? localPosition}) {
+    if (id == _focusId) {
+      _kickTouchMotion(id, localPosition: localPosition);
+    } else if (_displayScenario.nodeById(id).isAggregate) {
+      _viewport.toggleAggregate(id);
+      setState(() {
+        _rebuildLocalGraph();
+        _hops = _bfs(_focusId);
+        _syncMotionWindow(_focusId);
+        final (nextScale, nextPan) = _framedTransform(_lastSize, _focusId);
+        _scale = nextScale;
+        _pan = nextPan;
+      });
     } else {
-      _walkTo(hit);
+      _walkTo(id);
     }
   }
 
@@ -580,10 +742,12 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final style = GraphStyle.fromTokens(
+    final visualSpec = GraphVisualSpec.fromTokens(
       tokens,
       categoryColors: widget.categoryColors,
+      highContrast: MediaQuery.highContrastOf(context),
     );
+    final style = visualSpec.style;
     // The host page reserves its floating header's height in this view's top
     // padding (status bar + header), so the phone-only title chip clears the
     // header instead of hiding under it. Zero in the standalone POC harness.
@@ -600,6 +764,43 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
           // chip is only shown when the inspector is absent (phone), avoiding a
           // redundant/contradictory second identity.
           final inspectorVisible = _inspectorVisible(size);
+          final displayLabels = <String, String>{
+            for (final node in _displayScenario.nodes)
+              node.id: switch (node.aggregateKind) {
+                GraphAggregateKind.photos =>
+                  '${context.messages.knowledgeGraphNodeTypePhoto} · '
+                      '${node.aggregateCount}',
+                GraphAggregateKind.relation =>
+                  '${context.messages.knowledgeGraphMoreLinks} · '
+                      '${node.aggregateCount}',
+                null => node.label,
+              },
+          };
+          final reservedLabelRects = <Rect>[
+            if (inspectorVisible)
+              Rect.fromLTWH(
+                size.width -
+                    _inspectorWidth(size.width) -
+                    tokens.spacing.step5 * 2,
+                0,
+                _inspectorWidth(size.width) + tokens.spacing.step5 * 2,
+                size.height,
+              ),
+            Rect.fromLTWH(
+              0,
+              size.height -
+                  visualSpec.minimapHeight -
+                  tokens.spacing.step5 * 2 -
+                  (widget.showLegend ? visualSpec.minimapHeight : 0),
+              math.max(
+                    visualSpec.minimapWidth,
+                    visualSpec.legendMaxWidth,
+                  ) +
+                  tokens.spacing.step5 * 2,
+              visualSpec.minimapHeight * (widget.showLegend ? 2 : 1) +
+                  tokens.spacing.step5 * 2,
+            ),
+          ];
           if (!_initialized && size.isFinite && !size.isEmpty) {
             final (s, p) = _framedTransform(size, _focusId);
             _scale = s;
@@ -613,40 +814,86 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
             type: MaterialType.transparency,
             child: Stack(
               children: [
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    trackpadScrollCausesScale: true,
-                    onScaleStart: _onScaleStart,
-                    onScaleUpdate: _onScaleUpdate,
-                    onScaleEnd: _onScaleEnd,
-                    onTapUp: _onTapUp,
-                    child: CustomPaint(
-                      painter: KnowledgeGraphPainter(
-                        scenario: _scenario,
-                        positions: _layout.positions,
-                        degrees: _degrees,
-                        scale: _scale,
-                        pan: _pan,
-                        focusId: _focusId,
-                        hops: _hops,
-                        selectedId: _focusId,
-                        style: style,
-                        images: _images,
-                        previousFocusId: _previousFocusId,
-                        walkPath: _walkPath,
-                        wake: _wake,
-                        labelMaxHop: _world ? 1 : 2,
-                        motion: _motion,
+                if (_viewport.value.mode == GraphViewMode.graph)
+                  Positioned.fill(
+                    child: Focus(
+                      focusNode: _graphFocusNode,
+                      onKeyEvent: _onGraphKeyEvent,
+                      child: GestureDetector(
+                        behavior: HitTestBehavior.opaque,
+                        trackpadScrollCausesScale: true,
+                        onScaleStart: _onScaleStart,
+                        onScaleUpdate: _onScaleUpdate,
+                        onScaleEnd: _onScaleEnd,
+                        onTapUp: _onTapUp,
+                        child: CustomPaint(
+                          painter: KnowledgeGraphPainter(
+                            scenario: _displayScenario,
+                            positions: _layout.positions,
+                            degrees: _degrees,
+                            scale: _scale,
+                            pan: _pan,
+                            focusId: _focusId,
+                            hops: _hops,
+                            selectedId: _viewport.value.selectedId,
+                            style: style,
+                            visualSpec: visualSpec,
+                            nodeLabels: displayLabels,
+                            reservedLabelRects: reservedLabelRects,
+                            labelMemory: _labelMemory,
+                            textScaler: MediaQuery.textScalerOf(context),
+                            textDirection: Directionality.of(context),
+                            onNodeActivate: _activateNode,
+                            images: _images,
+                            previousFocusId: _previousFocusId,
+                            walkPath: _walkPath,
+                            wake: _wake,
+                            motion: _motion,
+                          ),
+                          size: Size.infinite,
+                        ),
                       ),
-                      size: Size.infinite,
+                    ),
+                  )
+                else
+                  Positioned(
+                    left: 0,
+                    top: 0,
+                    bottom: 0,
+                    right: inspectorVisible
+                        ? _inspectorWidth(size.width) + tokens.spacing.step10
+                        : 0,
+                    child: GraphConnectionsView(
+                      scenario: _scenario,
+                      focusId: _focusId,
+                      filters: _viewport.value.filters,
+                      categoryNames: widget.categoryNames,
+                      onNodeTap: _walkTo,
+                    ),
+                  ),
+                Positioned(
+                  left: tokens.spacing.step5,
+                  top: topInset + tokens.spacing.step5,
+                  right: inspectorVisible
+                      ? _inspectorWidth(size.width) + tokens.spacing.step10
+                      : tokens.spacing.step5,
+                  child: Align(
+                    alignment: AlignmentDirectional.topStart,
+                    child: GraphWorkspaceToolbar(
+                      state: _viewport.value,
+                      scenario: _scenario,
+                      categoryNames: widget.categoryNames,
+                      onModeChanged: _setMode,
+                      onDensityChanged: _setDensity,
+                      onFiltersChanged: _setFilters,
                     ),
                   ),
                 ),
                 if (widget.showTitle && !inspectorVisible)
                   Positioned(
                     left: tokens.spacing.step5,
-                    top: topInset + tokens.spacing.step5,
+                    top:
+                        topInset + tokens.spacing.step13 + tokens.spacing.step8,
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
@@ -654,14 +901,17 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                         _TitleCard(
                           focus: _scenario.nodeById(_focusId),
                           total: _scenario.nodes.length,
-                          explorable: _world,
+                          explorable:
+                              _scenario.nodes.length > kWorldScaleThreshold,
                           tokens: tokens,
                         ),
-                        if (_world) ...[
+                        if (_scenario.nodes.length > kWorldScaleThreshold) ...[
                           SizedBox(height: tokens.spacing.step3),
                           _Controls(
-                            canGoBack: _history.isNotEmpty,
+                            canGoBack: _viewport.value.canGoBack,
+                            canGoForward: _viewport.value.canGoForward,
                             onBack: _back,
+                            onForward: _forward,
                             onRecenter: _recenter,
                             tokens: tokens,
                           ),
@@ -690,7 +940,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                         style: style,
                         tokens: tokens,
                         onNeighborTap: _walkTo,
-                        canGoBack: _history.isNotEmpty,
+                        canGoBack: _viewport.value.canGoBack,
                         onBack: _back,
                         onRecenter: _recenter,
                         onOpen: () => setState(() => _detailsOpen = true),
@@ -714,21 +964,41 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                       ),
                     ),
                   ),
-                if (widget.showLegend)
+                if (widget.showLegend &&
+                    _viewport.value.mode == GraphViewMode.graph)
                   Positioned(
                     left: tokens.spacing.step5,
-                    bottom: tokens.spacing.step5,
+                    bottom:
+                        tokens.spacing.step5 +
+                        visualSpec.minimapHeight +
+                        tokens.spacing.step3,
                     // Narrow, left-aligned block that wraps to multiple rows so
                     // it stays clear of the right-hand panel instead of spanning
                     // the full width under it.
                     child: ConstrainedBox(
-                      constraints: const BoxConstraints(maxWidth: 260),
+                      constraints: BoxConstraints(
+                        maxWidth: visualSpec.legendMaxWidth,
+                      ),
                       child: _LegendBar(
-                        scenario: _scenario,
+                        scenario: _displayScenario,
                         style: style,
                         categoryNames: widget.categoryNames,
                         tokens: tokens,
                       ),
+                    ),
+                  ),
+                if (_viewport.value.mode == GraphViewMode.graph)
+                  Positioned(
+                    left: tokens.spacing.step5,
+                    bottom: tokens.spacing.step5,
+                    child: TopologyMiniMap(
+                      scenario: _scenario,
+                      layout: _topologyLayout,
+                      focusId: _focusId,
+                      visibleNodeIds: _projection.visibleRawIds,
+                      spec: visualSpec,
+                      semanticsLabel: context.messages.knowledgeGraphTitle,
+                      onJump: _jumpTo,
                     ),
                   ),
               ],
@@ -930,13 +1200,17 @@ class _DotsSwatch extends StatelessWidget {
 class _Controls extends StatelessWidget {
   const _Controls({
     required this.canGoBack,
+    required this.canGoForward,
     required this.onBack,
+    required this.onForward,
     required this.onRecenter,
     required this.tokens,
   });
 
   final bool canGoBack;
+  final bool canGoForward;
   final VoidCallback onBack;
+  final VoidCallback onForward;
   final VoidCallback onRecenter;
   final DsTokens tokens;
 
@@ -950,6 +1224,14 @@ class _Controls extends StatelessWidget {
           tooltip: context.messages.knowledgeGraphBack,
           enabled: canGoBack,
           onTap: onBack,
+          tokens: tokens,
+        ),
+        SizedBox(width: tokens.spacing.step2),
+        _CircleButton(
+          icon: Icons.arrow_forward,
+          tooltip: MaterialLocalizations.of(context).nextPageTooltip,
+          enabled: canGoForward,
+          onTap: onForward,
           tokens: tokens,
         ),
         SizedBox(width: tokens.spacing.step2),

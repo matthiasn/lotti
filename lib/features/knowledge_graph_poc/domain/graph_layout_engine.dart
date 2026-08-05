@@ -67,6 +67,11 @@ double _baseSector(GraphScenario scenario, GraphNode node) {
     case GraphEdgeKind.checklist:
       return 0.95; // lower-right
     case GraphEdgeKind.association:
+    case GraphEdgeKind.blocks:
+    case GraphEdgeKind.followsUp:
+    case GraphEdgeKind.duplicates:
+    case GraphEdgeKind.fixes:
+    case GraphEdgeKind.supersedes:
     // Defensive: a 1-hop node reached by the BFS always has a known edge kind,
     // so `null` never arrives here — kept only for switch exhaustiveness.
     case null: // coverage:ignore-line
@@ -215,6 +220,11 @@ double _idealLength(GraphEdgeKind kind) {
       return 150;
     case GraphEdgeKind.provenance:
     case GraphEdgeKind.association:
+    case GraphEdgeKind.blocks:
+    case GraphEdgeKind.followsUp:
+    case GraphEdgeKind.duplicates:
+    case GraphEdgeKind.fixes:
+    case GraphEdgeKind.supersedes:
       return 175;
   }
 }

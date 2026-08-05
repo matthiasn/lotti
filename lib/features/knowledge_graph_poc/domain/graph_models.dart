@@ -19,7 +19,29 @@ enum GraphNodeType {
   checklist,
   checklistItem,
   rating,
+
+  /// A task-local collection of photos. Individual image nodes stay hidden
+  /// until the collection is explicitly expanded.
+  mediaCollection,
+
+  /// A collapsed, exact-count group of otherwise visible neighbours.
+  aggregate,
 }
+
+/// Task state projected into the graph without coupling the painter to the
+/// generated journal model.
+enum GraphTaskStatus {
+  open,
+  inProgress,
+  groomed,
+  blocked,
+  onHold,
+  done,
+  rejected,
+}
+
+/// Why a display node represents more than one raw graph node.
+enum GraphAggregateKind { photos, relation }
 
 /// The semantic relation an edge expresses. ADR 0029 Decision 3/7: layout and
 /// styling follow the relation class, and `BasicLink` gains an explicit
@@ -40,6 +62,14 @@ enum GraphEdgeKind {
 
   /// Checklist ↔ ChecklistItem.
   checklist,
+
+  /// Task relationship vocabulary from ADR 0042. Direction is preserved:
+  /// `fromId` performs the relation toward `toId`.
+  blocks,
+  followsUp,
+  duplicates,
+  fixes,
+  supersedes,
 }
 
 /// A node in a scenario graph.
@@ -52,8 +82,15 @@ class GraphNode {
     required this.createdAt,
     this.imagePath,
     this.coverImagePath,
+    this.coverImageCropX = 0.5,
     this.oneLiner,
     this.tldr,
+    this.taskStatus,
+    this.aggregateKind,
+    this.aggregateEdgeKind,
+    this.aggregateCount = 0,
+    this.memberIds = const [],
+    this.mediaPaths = const [],
   });
 
   final String id;
@@ -75,6 +112,9 @@ class GraphNode {
   /// cover art or the node is not a task.
   final String? coverImagePath;
 
+  /// Horizontal focal point for task cover art (`0` = left, `1` = right).
+  final double coverImageCropX;
+
   /// Compact one-line tagline for the inspector — a task's assigned-agent
   /// `oneLiner`. Null when the node has no agent one-liner.
   final String? oneLiner;
@@ -83,6 +123,18 @@ class GraphNode {
   /// TL;DR (or full report), or an AI-response node's own text. Null when there
   /// is no summary to show.
   final String? tldr;
+
+  final GraphTaskStatus? taskStatus;
+
+  final GraphAggregateKind? aggregateKind;
+  final GraphEdgeKind? aggregateEdgeKind;
+  final int aggregateCount;
+  final List<String> memberIds;
+
+  /// Preview paths for a media aggregate's mosaic, in display order.
+  final List<String> mediaPaths;
+
+  bool get isAggregate => aggregateKind != null;
 }
 
 /// A directed, typed edge.

@@ -37,8 +37,15 @@ void main() {
         createdAt: created,
         imagePath: '/abs/sunset.jpg',
         coverImagePath: '/abs/cover.jpg',
+        coverImageCropX: 0.72,
         oneLiner: 'Golden hour over the bay',
         tldr: 'A nice sunset',
+        taskStatus: GraphTaskStatus.inProgress,
+        aggregateKind: GraphAggregateKind.photos,
+        aggregateEdgeKind: GraphEdgeKind.association,
+        aggregateCount: 3,
+        memberIds: const ['photo-1', 'photo-2', 'photo-3'],
+        mediaPaths: const ['/abs/one.jpg', '/abs/two.jpg'],
       );
 
       expect(n.id, 'task-1');
@@ -48,8 +55,16 @@ void main() {
       expect(n.createdAt, created);
       expect(n.imagePath, '/abs/sunset.jpg');
       expect(n.coverImagePath, '/abs/cover.jpg');
+      expect(n.coverImageCropX, 0.72);
       expect(n.oneLiner, 'Golden hour over the bay');
       expect(n.tldr, 'A nice sunset');
+      expect(n.taskStatus, GraphTaskStatus.inProgress);
+      expect(n.aggregateKind, GraphAggregateKind.photos);
+      expect(n.aggregateEdgeKind, GraphEdgeKind.association);
+      expect(n.aggregateCount, 3);
+      expect(n.memberIds, ['photo-1', 'photo-2', 'photo-3']);
+      expect(n.mediaPaths, ['/abs/one.jpg', '/abs/two.jpg']);
+      expect(n.isAggregate, isTrue);
     });
 
     test('optional fields default to null', () {
@@ -58,11 +73,19 @@ void main() {
       expect(n.coverImagePath, isNull);
       expect(n.oneLiner, isNull);
       expect(n.tldr, isNull);
+      expect(n.coverImageCropX, 0.5);
+      expect(n.taskStatus, isNull);
+      expect(n.aggregateKind, isNull);
+      expect(n.aggregateEdgeKind, isNull);
+      expect(n.aggregateCount, 0);
+      expect(n.memberIds, isEmpty);
+      expect(n.mediaPaths, isEmpty);
+      expect(n.isAggregate, isFalse);
     });
   });
 
   group('GraphNodeType', () {
-    test('enumerates exactly the nine journal-entry variants', () {
+    test('enumerates journal-entry and display-only variants', () {
       expect(GraphNodeType.values, [
         GraphNodeType.task,
         GraphNodeType.project,
@@ -73,18 +96,25 @@ void main() {
         GraphNodeType.checklist,
         GraphNodeType.checklistItem,
         GraphNodeType.rating,
+        GraphNodeType.mediaCollection,
+        GraphNodeType.aggregate,
       ]);
     });
   });
 
   group('GraphEdgeKind', () {
-    test('enumerates exactly the five relation classes', () {
+    test('includes structural and typed task relationship classes', () {
       expect(GraphEdgeKind.values, [
         GraphEdgeKind.containment,
         GraphEdgeKind.association,
         GraphEdgeKind.provenance,
         GraphEdgeKind.evaluation,
         GraphEdgeKind.checklist,
+        GraphEdgeKind.blocks,
+        GraphEdgeKind.followsUp,
+        GraphEdgeKind.duplicates,
+        GraphEdgeKind.fixes,
+        GraphEdgeKind.supersedes,
       ]);
     });
   });

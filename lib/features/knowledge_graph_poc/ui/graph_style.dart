@@ -36,6 +36,10 @@ IconData glyphForType(GraphNodeType type) {
       return Icons.check_box_outlined;
     case GraphNodeType.rating:
       return Icons.star_outline;
+    case GraphNodeType.mediaCollection:
+      return Icons.photo_library_outlined;
+    case GraphNodeType.aggregate:
+      return Icons.hub_outlined;
   }
 }
 
@@ -60,6 +64,10 @@ String typeLabel(AppLocalizations messages, GraphNodeType type) {
       return messages.knowledgeGraphNodeTypeChecklistItem;
     case GraphNodeType.rating:
       return messages.knowledgeGraphNodeTypeRating;
+    case GraphNodeType.mediaCollection:
+      return messages.knowledgeGraphNodeTypePhoto;
+    case GraphNodeType.aggregate:
+      return messages.knowledgeGraphMoreLinks;
   }
 }
 
@@ -91,6 +99,12 @@ RelStyle relStyleFor(GraphEdgeKind kind, GraphNodeType targetType) {
       return targetType == GraphNodeType.task
           ? RelStyle.linkedTask
           : RelStyle.note;
+    case GraphEdgeKind.blocks:
+    case GraphEdgeKind.followsUp:
+    case GraphEdgeKind.duplicates:
+    case GraphEdgeKind.fixes:
+    case GraphEdgeKind.supersedes:
+      return RelStyle.linkedTask;
   }
 }
 
@@ -166,6 +180,7 @@ class GraphStyle {
   factory GraphStyle.fromTokens(
     DsTokens t, {
     Map<String, Color>? categoryColors,
+    bool highContrast = false,
   }) {
     return GraphStyle(
       categoryColors: categoryColors,
@@ -195,22 +210,28 @@ class GraphStyle {
         // Containment is the structural backbone: thickest, most opaque.
         RelStyle.containment: EdgeVisual(
           color: t.colors.text.highEmphasis,
-          width: 2.8,
+          width: highContrast ? 3.4 : 2.8,
           directional: true,
         ),
         RelStyle.linkedTask: EdgeVisual(
-          color: t.colors.text.mediumEmphasis,
-          width: 1.8,
+          color: highContrast
+              ? t.colors.text.highEmphasis
+              : t.colors.text.mediumEmphasis,
+          width: highContrast ? 2.4 : 1.8,
           dash: const [7, 5],
           directional: true,
         ),
         RelStyle.note: EdgeVisual(
-          color: t.colors.text.mediumEmphasis,
-          width: 1.4,
+          color: highContrast
+              ? t.colors.text.highEmphasis
+              : t.colors.text.mediumEmphasis,
+          width: highContrast ? 2 : 1.4,
         ),
         RelStyle.checklist: EdgeVisual(
-          color: t.colors.text.lowEmphasis,
-          width: 1.5,
+          color: highContrast
+              ? t.colors.text.mediumEmphasis
+              : t.colors.text.lowEmphasis,
+          width: highContrast ? 2.1 : 1.5,
         ),
         // AI-source uses the info cyan, rating uses the remove pink — both are
         // OUTSIDE the category palette (teal/terracotta/indigo/purple/orange/

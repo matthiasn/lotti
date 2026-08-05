@@ -6847,6 +6847,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get knowledgeGraphCloseDetails => 'Nære detaljer';
 
   @override
+  String get knowledgeGraphDensity => 'Tæthed';
+
+  @override
+  String get knowledgeGraphDensityBalanced => 'Afbalanceret';
+
+  @override
+  String get knowledgeGraphDensityCalm => 'Rolig';
+
+  @override
+  String get knowledgeGraphDensityExplore => 'Udforsk';
+
+  @override
   String get knowledgeGraphEmpty => 'Ingen links at udforske endnu';
 
   @override
@@ -6857,6 +6869,33 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get knowledgeGraphError => 'Kunne ikke indlæse vidensgrafen';
+
+  @override
+  String get knowledgeGraphFilterCategories => 'Kategorier';
+
+  @override
+  String get knowledgeGraphFilterRecency => 'Aktualitet';
+
+  @override
+  String get knowledgeGraphFilterRelations => 'Relationer';
+
+  @override
+  String get knowledgeGraphFilters => 'Filtre';
+
+  @override
+  String get knowledgeGraphFilterTaskStatus => 'Opgavestatus';
+
+  @override
+  String get knowledgeGraphFilterTypes => 'Typer';
+
+  @override
+  String get knowledgeGraphLast30Days => 'Seneste 30 dage';
+
+  @override
+  String get knowledgeGraphLast7Days => 'Seneste 7 dage';
+
+  @override
+  String get knowledgeGraphLast90Days => 'Seneste 90 dage';
 
   @override
   String knowledgeGraphLinkedSection(int count) {
@@ -6905,7 +6944,21 @@ class AppLocalizationsDa extends AppLocalizations {
   String get knowledgeGraphNodeTypeTask => 'Opgave';
 
   @override
+  String get knowledgeGraphOneHop => '1 led';
+
+  @override
   String get knowledgeGraphOpenDetails => 'Åbne detaljer';
+
+  @override
+  String knowledgeGraphPhotosSection(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'FOTOS · $count',
+      one: 'FOTO · 1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get knowledgeGraphRecenter => 'Nyere';
@@ -6939,6 +6992,15 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Udforsk links';
+
+  @override
+  String get knowledgeGraphTwoHops => '2 led';
+
+  @override
+  String get knowledgeGraphViewConnections => 'Forbindelser';
+
+  @override
+  String get knowledgeGraphViewGraph => 'Graf';
 
   @override
   String knowledgeGraphWalkHint(int count) {

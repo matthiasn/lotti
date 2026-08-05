@@ -22,9 +22,13 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show SemanticsProperties;
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/knowledge_graph_poc/domain/graph_label_layout.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_motion_controller.dart';
 import 'package:lotti/features/knowledge_graph_poc/ui/graph_style.dart';
+import 'package:lotti/features/knowledge_graph_poc/ui/graph_visual_spec.dart';
 
 class KnowledgeGraphPainter extends CustomPainter {
   KnowledgeGraphPainter({
@@ -37,7 +41,14 @@ class KnowledgeGraphPainter extends CustomPainter {
     required this.hops,
     required this.selectedId,
     required this.style,
+    this.visualSpec,
     this.images = const {},
+    this.nodeLabels = const {},
+    this.reservedLabelRects = const [],
+    this.labelMemory,
+    this.textScaler = TextScaler.noScaling,
+    this.textDirection = TextDirection.ltr,
+    this.onNodeActivate,
     this.previousFocusId,
     this.walkPath = const [],
     this.wake = 0,
@@ -61,6 +72,13 @@ class KnowledgeGraphPainter extends CustomPainter {
   final Map<String, int> hops;
   final String? selectedId;
   final GraphStyle style;
+  final GraphVisualSpec? visualSpec;
+  final Map<String, String> nodeLabels;
+  final List<Rect> reservedLabelRects;
+  final GraphLabelLayoutMemory? labelMemory;
+  final TextScaler textScaler;
+  final TextDirection textDirection;
+  final ValueChanged<String>? onNodeActivate;
 
   /// The node walked from (rendered as a faint "you were here" ghost).
   final String? previousFocusId;
@@ -74,7 +92,7 @@ class KnowledgeGraphPainter extends CustomPainter {
   final int labelMaxHop;
   final GraphMotionController? motion;
 
-  static const double _maxAgeDays = 32;
+  static const double _maxAgeDays = 180;
 
   Offset _world(String id) {
     final rest = positions[id]!;
@@ -111,6 +129,8 @@ class KnowledgeGraphPainter extends CustomPainter {
       GraphNodeType.audioEntry ||
       GraphNodeType.imageEntry => 14.0,
       GraphNodeType.checklistItem => 11.0,
+      GraphNodeType.mediaCollection => 19.0,
+      GraphNodeType.aggregate => 17.0,
     };
     final degBump = math.min(degrees[node.id] ?? 0, 10) * 0.95;
     final focusBump = node.id == focusId ? 12.0 : 0.0;
@@ -148,7 +168,7 @@ class KnowledgeGraphPainter extends CustomPainter {
     }
 
     // ---- Labels (collision-aware) ----
-    _paintLabels(canvas);
+    _paintLabels(canvas, size);
   }
 
   /// Soft category-tinted haze behind each cluster so distant regions read as
@@ -220,7 +240,7 @@ class KnowledgeGraphPainter extends CustomPainter {
 
     // Faint deterministic star-field so the void has atmosphere.
     final starRng = math.Random(99);
-    for (var i = 0; i < 70; i++) {
+    for (var i = 0; i < 45; i++) {
       final x = starRng.nextDouble() * size.width;
       final y = starRng.nextDouble() * size.height;
       final rr = 0.5 + starRng.nextDouble() * 1.3;
@@ -259,13 +279,15 @@ class KnowledgeGraphPainter extends CustomPainter {
     final control = (start + end) / 2 + perp * (dist * 0.08) * sign;
     final pts = _bezier(start, control, end, 18);
 
-    final depthWidth = 0.55 + 0.45 * edgeEmph;
+    final depthWidth = 0.8 + 0.2 * edgeEmph;
     final startNearer =
         (start - focusCenter).distance <= (end - focusCenter).distance;
     final near = ev.color.withValues(
       alpha: (0.95 * edgeEmph).clamp(0.16, 0.95),
     );
-    final far = ev.color.withValues(alpha: (0.45 * edgeEmph).clamp(0.1, 0.45));
+    final far = ev.color.withValues(
+      alpha: (0.64 * edgeEmph).clamp(0.28, 0.64),
+    );
     final paint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = ev.width * depthWidth
@@ -301,14 +323,14 @@ class KnowledgeGraphPainter extends CustomPainter {
 
     // Recency: dim lightness/saturation but PRESERVE hue.
     final hsl = HSLColor.fromColor(cat);
-    final lightness = (hsl.lightness * (1 - fade * 0.5)).clamp(0.0, 1.0);
-    final saturation = (hsl.saturation * (1 - fade * 0.2)).clamp(0.0, 1.0);
+    final lightness = (hsl.lightness * (1 - fade * 0.24)).clamp(0.0, 1.0);
+    final saturation = (hsl.saturation * (1 - fade * 0.08)).clamp(0.0, 1.0);
     var fill = hsl
         .withLightness(lightness)
         .withSaturation(saturation)
         .toColor();
     // Emphasis fog: distant nodes recede toward the background.
-    fill = Color.lerp(fill, style.background, (1 - emph) * 0.72) ?? fill;
+    fill = Color.lerp(fill, style.background, (1 - emph) * 0.28) ?? fill;
     final rim = Color.lerp(fill, style.background, 0.42) ?? fill;
     final core =
         Color.lerp(fill, style.coreLift, 0.14 + _degBoost(node.id) * 0.14) ??
@@ -344,7 +366,12 @@ class KnowledgeGraphPainter extends CustomPainter {
     // topped with an opaque delineating ring (hides the edge/node seam).
     final rect = Rect.fromCircle(center: center, radius: r);
     final thumb = images[node.id];
-    if (thumb != null) {
+    final mosaic = node.type == GraphNodeType.mediaCollection
+        ? node.memberIds.map((id) => images[id]).nonNulls.take(4).toList()
+        : const <ui.Image>[];
+    if (mosaic.isNotEmpty) {
+      _paintMediaMosaic(canvas, rect, mosaic);
+    } else if (thumb != null) {
       canvas
         ..save()
         ..clipPath(Path()..addOval(rect))
@@ -422,9 +449,53 @@ class KnowledgeGraphPainter extends CustomPainter {
 
     // Far horizon stars are too small to carry a glyph; image nodes show the
     // photo itself instead of a glyph.
-    if (thumb == null && r >= 8) {
+    if (thumb == null && mosaic.isEmpty && r >= 8) {
       _drawGlyph(canvas, center, r, node, fade, emph);
     }
+  }
+
+  void _paintMediaMosaic(Canvas canvas, Rect rect, List<ui.Image> mosaic) {
+    final cells = mosaic.length == 1
+        ? [rect]
+        : [
+            Rect.fromLTWH(rect.left, rect.top, rect.width / 2, rect.height / 2),
+            Rect.fromLTWH(
+              rect.center.dx,
+              rect.top,
+              rect.width / 2,
+              rect.height / 2,
+            ),
+            Rect.fromLTWH(
+              rect.left,
+              rect.center.dy,
+              rect.width / 2,
+              rect.height / 2,
+            ),
+            Rect.fromLTWH(
+              rect.center.dx,
+              rect.center.dy,
+              rect.width / 2,
+              rect.height / 2,
+            ),
+          ];
+    canvas
+      ..save()
+      ..clipPath(Path()..addOval(rect));
+    for (var index = 0; index < mosaic.length; index++) {
+      final image = mosaic[index];
+      final cell = cells[index];
+      canvas.drawImageRect(
+        image,
+        _coverSrc(
+          image.width.toDouble(),
+          image.height.toDouble(),
+          cell,
+        ),
+        cell,
+        Paint()..filterQuality = FilterQuality.medium,
+      );
+    }
+    canvas.restore();
   }
 
   void _drawGlyph(
@@ -440,7 +511,7 @@ class KnowledgeGraphPainter extends CustomPainter {
     final base = HSLColor.fromColor(style.categoryColor(node.categoryId));
     final glyphColor =
         (base.lightness > 0.6 ? style.background : style.glyphColor).withValues(
-          alpha: (1 - fade * 0.35) * emph,
+          alpha: (1 - fade * 0.18) * emph,
         );
     final tp = TextPainter(
       text: TextSpan(
@@ -457,7 +528,7 @@ class KnowledgeGraphPainter extends CustomPainter {
     tp.paint(canvas, center - Offset(tp.width / 2, tp.height / 2));
   }
 
-  void _paintLabels(Canvas canvas) {
+  void _paintLabels(Canvas canvas, Size size) {
     final ordered = [...scenario.nodes]
       ..sort((a, b) {
         // Keep the comparator reflexive (compare(x, x) == 0) so the sort obeys
@@ -471,15 +542,30 @@ class KnowledgeGraphPainter extends CustomPainter {
         return scenario.ageDays(a).compareTo(scenario.ageDays(b));
       });
 
-    final obstacles = <Rect>[
-      for (final n in scenario.nodes)
-        Rect.fromCircle(center: _screen(n.id), radius: radiusFor(n)),
-    ];
-    final placed = <Rect>[];
+    final spec = visualSpec;
+    final horizontalPadding = spec?.labelHorizontalPadding ?? 8;
+    final verticalPadding = spec?.labelVerticalPadding ?? 5;
+    final nodeObstacles = <String, Rect>{
+      for (final node in scenario.nodes)
+        node.id: Rect.fromCircle(
+          center: _screen(node.id),
+          radius: radiusFor(node),
+        ),
+    };
+    final painters = <String, TextPainter>{};
+    final candidates = <GraphLabelCandidate>[];
 
     for (final node in ordered) {
       final isFocus = node.id == focusId;
+      final isSelected = node.id == selectedId;
       if (!isFocus && (hops[node.id] ?? 99) > labelMaxHop) continue;
+      if (scale < 0.55 &&
+          !isFocus &&
+          !isSelected &&
+          !node.isAggregate &&
+          (degrees[node.id] ?? 0) < 2) {
+        continue;
+      }
       final center = _screen(node.id);
       final r = radiusFor(node);
       final fade = _fade(node);
@@ -495,45 +581,95 @@ class KnowledgeGraphPainter extends CustomPainter {
                 ),
               );
 
-      final tp = TextPainter(
-        text: TextSpan(text: node.label, style: textStyle),
-        textDirection: TextDirection.ltr,
-        maxLines: 1,
-        ellipsis: '…',
-      )..layout(maxWidth: 132);
-
-      final w = tp.width + 10;
-      final h = tp.height + 4;
-      const gap = 5.0;
-      final candidates = <Offset>[
-        Offset(center.dx - w / 2, center.dy + r + gap),
-        Offset(center.dx - w / 2, center.dy - r - gap - h),
-        Offset(center.dx + r + gap, center.dy - h / 2),
-        Offset(center.dx - r - gap - w, center.dy - h / 2),
-      ];
-
-      Rect? chosen;
-      for (final c in candidates) {
-        final candidate = Rect.fromLTWH(c.dx, c.dy, w, h);
-        final collides =
-            placed.any(candidate.overlaps) ||
-            obstacles.any((o) => o.overlaps(candidate.deflate(2)));
-        if (!collides) {
-          chosen = candidate;
-          break;
-        }
-      }
-      chosen ??= isFocus
-          ? Rect.fromLTWH(center.dx - w / 2, center.dy + r + gap, w, h)
-          : null;
-      if (chosen == null) continue;
-
-      placed.add(chosen);
-      canvas.drawRRect(
-        RRect.fromRectAndRadius(chosen, const Radius.circular(6)),
-        Paint()..color = style.labelPill.withValues(alpha: 0.82),
+      final tp =
+          TextPainter(
+            text: TextSpan(
+              text: nodeLabels[node.id] ?? node.label,
+              style: textStyle,
+            ),
+            textDirection: textDirection,
+            textScaler: textScaler,
+            maxLines: isFocus || isSelected ? null : 2,
+            ellipsis: isFocus || isSelected ? null : '…',
+          )..layout(
+            maxWidth: isFocus || isSelected
+                ? spec?.focusLabelMaxWidth ?? 280
+                : spec?.nodeLabelMaxWidth ?? 210,
+          );
+      painters[node.id] = tp;
+      candidates.add(
+        GraphLabelCandidate(
+          id: node.id,
+          center: center,
+          nodeRadius: r,
+          labelSize: Size(
+            tp.width + horizontalPadding * 2,
+            tp.height + verticalPadding * 2,
+          ),
+          priority:
+              (isFocus
+                  ? 1000
+                  : isSelected
+                  ? 900
+                  : node.isAggregate
+                  ? 800
+                  : (hops[node.id] ?? 2) == 1
+                  ? 500
+                  : 100) +
+              (degrees[node.id] ?? 0),
+          required: isFocus || isSelected,
+        ),
       );
-      tp.paint(canvas, Offset(chosen.left + 5, chosen.top + 2));
+    }
+
+    final placements = solveGraphLabelLayout(
+      candidates: candidates,
+      viewport: Offset.zero & size,
+      nodeObstacles: nodeObstacles,
+      reservedRects: reservedLabelRects,
+      previous: labelMemory?.placements ?? const {},
+      gap: spec?.labelGap ?? 6,
+    );
+    labelMemory?.remember(placements);
+
+    for (final node in ordered) {
+      final placement = placements[node.id];
+      final tp = painters[node.id];
+      if (placement == null || tp == null) continue;
+      if (placement.needsLeader) {
+        canvas.drawLine(
+          placement.nodeCenter,
+          placement.rect.center,
+          Paint()
+            ..color = style.labelStyle.color!.withValues(alpha: 0.42)
+            ..strokeWidth = BorderWidths.hairline,
+        );
+      }
+      canvas
+        ..drawRRect(
+          RRect.fromRectAndRadius(
+            placement.rect,
+            const Radius.circular(8),
+          ),
+          Paint()..color = style.labelPill.withValues(alpha: 0.94),
+        )
+        ..drawRRect(
+          RRect.fromRectAndRadius(
+            placement.rect,
+            const Radius.circular(8),
+          ),
+          Paint()
+            ..color = style.starColor.withValues(alpha: 0.2)
+            ..style = PaintingStyle.stroke
+            ..strokeWidth = BorderWidths.hairline,
+        );
+      tp.paint(
+        canvas,
+        Offset(
+          placement.rect.left + horizontalPadding,
+          placement.rect.top + verticalPadding,
+        ),
+      );
     }
   }
 
@@ -612,6 +748,28 @@ class KnowledgeGraphPainter extends CustomPainter {
   }
 
   @override
+  SemanticsBuilderCallback get semanticsBuilder =>
+      (size) => [
+        for (final node in scenario.nodes)
+          CustomPainterSemantics(
+            rect: Rect.fromCenter(
+              center: _screen(node.id),
+              width: math.max(radiusFor(node) * 2, TapTargets.minimum),
+              height: math.max(radiusFor(node) * 2, TapTargets.minimum),
+            ),
+            properties: SemanticsProperties(
+              label: nodeLabels[node.id] ?? node.label,
+              button: true,
+              selected: node.id == selectedId,
+              textDirection: textDirection,
+              onTap: onNodeActivate == null
+                  ? null
+                  : () => onNodeActivate!(node.id),
+            ),
+          ),
+      ];
+
+  @override
   bool shouldRepaint(KnowledgeGraphPainter old) {
     return old.scenario != scenario ||
         old.positions != positions ||
@@ -622,6 +780,13 @@ class KnowledgeGraphPainter extends CustomPainter {
         old.hops != hops ||
         old.selectedId != selectedId ||
         old.style != style ||
+        old.visualSpec != visualSpec ||
+        old.nodeLabels != nodeLabels ||
+        old.reservedLabelRects != reservedLabelRects ||
+        old.labelMemory != labelMemory ||
+        old.textScaler != textScaler ||
+        old.textDirection != textDirection ||
+        old.onNodeActivate != onNodeActivate ||
         old.previousFocusId != previousFocusId ||
         old.walkPath != walkPath ||
         old.wake != wake ||

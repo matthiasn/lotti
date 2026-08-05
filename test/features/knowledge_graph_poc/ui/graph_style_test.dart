@@ -24,6 +24,8 @@ void main() {
       GraphNodeType.checklist: Icons.checklist,
       GraphNodeType.checklistItem: Icons.check_box_outlined,
       GraphNodeType.rating: Icons.star_outline,
+      GraphNodeType.mediaCollection: Icons.photo_library_outlined,
+      GraphNodeType.aggregate: Icons.hub_outlined,
     };
 
     test('returns the expected glyph for every node type', () {
@@ -52,6 +54,8 @@ void main() {
         GraphNodeType.checklist: 'Checklist',
         GraphNodeType.checklistItem: 'Checklist item',
         GraphNodeType.rating: 'Rating',
+        GraphNodeType.mediaCollection: 'Photo',
+        GraphNodeType.aggregate: 'more links',
       };
       for (final type in GraphNodeType.values) {
         expect(
@@ -257,6 +261,20 @@ void main() {
       expect(visual.dash, const [3, 4]);
       expect(visual.directional, isTrue);
     });
+  });
+
+  test('high-contrast style strengthens non-accent relationship strokes', () {
+    final normal = GraphStyle.fromTokens(tokens);
+    final highContrast = GraphStyle.fromTokens(tokens, highContrast: true);
+
+    expect(
+      highContrast.edgeVisual(RelStyle.note).width,
+      greaterThan(normal.edgeVisual(RelStyle.note).width),
+    );
+    expect(
+      highContrast.edgeVisual(RelStyle.note).color,
+      tokens.colors.text.highEmphasis,
+    );
   });
 
   group('GraphStyle.fromTokens', () {

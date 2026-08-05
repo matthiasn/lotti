@@ -25,6 +25,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   malformed history row no longer stops the remaining history from being
   queued. The summary names failed rows and retries only those rows.
 
+### Changed
+- **The task knowledge graph is now a readable local workspace.** Instead of
+  presenting the whole topology as a field of mostly anonymous dots, it shows a
+  bounded one- or two-hop neighbourhood with prioritized full labels, stronger
+  edges, exact-count aggregates for dense groups and photos, and a small
+  topology map for long-distance jumps. A Connections list offers the same
+  navigation grouped by relationship and direction, while density and filters
+  control what remains visible. The compact task inspector now surfaces cover
+  art and related photos, keeps long titles intact, and leaves the detailed AI
+  brief collapsed until requested. Keyboard, reduced-motion, high-contrast, and
+  screen-reader navigation are supported.
+
 ## [1.0.2]
 ### Added
 - **Demo mode: explore Lotti in a play world before trusting it with your own.**

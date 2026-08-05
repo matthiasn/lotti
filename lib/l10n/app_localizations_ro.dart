@@ -6969,6 +6969,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get knowledgeGraphCloseDetails => 'Închideți detaliile';
 
   @override
+  String get knowledgeGraphDensity => 'Densitate';
+
+  @override
+  String get knowledgeGraphDensityBalanced => 'Echilibrată';
+
+  @override
+  String get knowledgeGraphDensityCalm => 'Simplă';
+
+  @override
+  String get knowledgeGraphDensityExplore => 'Explorare';
+
+  @override
   String get knowledgeGraphEmpty => 'Încă nu există legături de explorat';
 
   @override
@@ -6981,6 +6993,33 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get knowledgeGraphError =>
       'Graful de cunoștințe nu a putut fi încărcat';
+
+  @override
+  String get knowledgeGraphFilterCategories => 'Categorii';
+
+  @override
+  String get knowledgeGraphFilterRecency => 'Vechime';
+
+  @override
+  String get knowledgeGraphFilterRelations => 'Relații';
+
+  @override
+  String get knowledgeGraphFilters => 'Filtre';
+
+  @override
+  String get knowledgeGraphFilterTaskStatus => 'Starea sarcinii';
+
+  @override
+  String get knowledgeGraphFilterTypes => 'Tipuri';
+
+  @override
+  String get knowledgeGraphLast30Days => 'Ultimele 30 de zile';
+
+  @override
+  String get knowledgeGraphLast7Days => 'Ultimele 7 zile';
+
+  @override
+  String get knowledgeGraphLast90Days => 'Ultimele 90 de zile';
 
   @override
   String knowledgeGraphLinkedSection(int count) {
@@ -7030,7 +7069,22 @@ class AppLocalizationsRo extends AppLocalizations {
   String get knowledgeGraphNodeTypeTask => 'Sarcină';
 
   @override
+  String get knowledgeGraphOneHop => '1 pas';
+
+  @override
   String get knowledgeGraphOpenDetails => 'Deschideți detaliile';
+
+  @override
+  String knowledgeGraphPhotosSection(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'FOTOGRAFII · $count',
+      few: 'FOTOGRAFII · $count',
+      one: 'FOTOGRAFIE · 1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get knowledgeGraphRecenter => 'Recentrați';
@@ -7064,6 +7118,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Explorați legăturile';
+
+  @override
+  String get knowledgeGraphTwoHops => '2 pași';
+
+  @override
+  String get knowledgeGraphViewConnections => 'Conexiuni';
+
+  @override
+  String get knowledgeGraphViewGraph => 'Graf';
 
   @override
   String knowledgeGraphWalkHint(int count) {

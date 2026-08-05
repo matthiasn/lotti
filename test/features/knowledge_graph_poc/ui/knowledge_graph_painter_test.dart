@@ -204,6 +204,8 @@ void main() {
     double wake = 0,
     int labelMaxHop = 2,
     GraphMotionController? motion,
+    Map<String, String> nodeLabels = const {},
+    ValueChanged<String>? onNodeActivate,
   }) {
     final pos =
         positions ?? computeGraphLayout(scenario, iterations: 12).positions;
@@ -223,6 +225,8 @@ void main() {
       wake: wake,
       labelMaxHop: labelMaxHop,
       motion: motion,
+      nodeLabels: nodeLabels,
+      onNodeActivate: onNodeActivate,
     );
   }
 
@@ -381,6 +385,36 @@ void main() {
       // (b) Also drive it against a recording canvas to assert the image branch
       // (clip + drawImageRect + _coverSrc) completes without throwing.
       expectPaintsCleanly(painter);
+    });
+  });
+
+  group('semanticsBuilder', () {
+    test('exposes every node as an actionable, labelled control', () {
+      final activated = <String>[];
+      final scenario = richScenario();
+      final painter = painterFor(
+        scenario,
+        selectedId: 'note',
+        nodeLabels: const {'task': 'Task: Focus task'},
+        onNodeActivate: activated.add,
+      );
+
+      final semantics = painter.semanticsBuilder(size);
+
+      expect(semantics, hasLength(scenario.nodes.length));
+      final task = semantics.firstWhere(
+        (entry) => entry.properties.label == 'Task: Focus task',
+      );
+      final note = semantics.firstWhere(
+        (entry) => entry.properties.label == 'Label note',
+      );
+      expect(task.properties.button, isTrue);
+      expect(task.properties.selected, isFalse);
+      expect(note.properties.selected, isTrue);
+      expect(task.rect.width, greaterThanOrEqualTo(TapTargets.minimum));
+
+      task.properties.onTap?.call();
+      expect(activated, ['task']);
     });
   });
 

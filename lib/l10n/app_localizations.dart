@@ -11837,6 +11837,30 @@ abstract class AppLocalizations {
   /// **'Close details'**
   String get knowledgeGraphCloseDetails;
 
+  /// No description provided for @knowledgeGraphDensity.
+  ///
+  /// In en, this message translates to:
+  /// **'Density'**
+  String get knowledgeGraphDensity;
+
+  /// No description provided for @knowledgeGraphDensityBalanced.
+  ///
+  /// In en, this message translates to:
+  /// **'Balanced'**
+  String get knowledgeGraphDensityBalanced;
+
+  /// No description provided for @knowledgeGraphDensityCalm.
+  ///
+  /// In en, this message translates to:
+  /// **'Calm'**
+  String get knowledgeGraphDensityCalm;
+
+  /// No description provided for @knowledgeGraphDensityExplore.
+  ///
+  /// In en, this message translates to:
+  /// **'Explore'**
+  String get knowledgeGraphDensityExplore;
+
   /// No description provided for @knowledgeGraphEmpty.
   ///
   /// In en, this message translates to:
@@ -11860,6 +11884,60 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Couldn\'t load the knowledge graph'**
   String get knowledgeGraphError;
+
+  /// No description provided for @knowledgeGraphFilterCategories.
+  ///
+  /// In en, this message translates to:
+  /// **'Categories'**
+  String get knowledgeGraphFilterCategories;
+
+  /// No description provided for @knowledgeGraphFilterRecency.
+  ///
+  /// In en, this message translates to:
+  /// **'Recency'**
+  String get knowledgeGraphFilterRecency;
+
+  /// No description provided for @knowledgeGraphFilterRelations.
+  ///
+  /// In en, this message translates to:
+  /// **'Relationships'**
+  String get knowledgeGraphFilterRelations;
+
+  /// No description provided for @knowledgeGraphFilters.
+  ///
+  /// In en, this message translates to:
+  /// **'Filters'**
+  String get knowledgeGraphFilters;
+
+  /// No description provided for @knowledgeGraphFilterTaskStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Task status'**
+  String get knowledgeGraphFilterTaskStatus;
+
+  /// No description provided for @knowledgeGraphFilterTypes.
+  ///
+  /// In en, this message translates to:
+  /// **'Types'**
+  String get knowledgeGraphFilterTypes;
+
+  /// No description provided for @knowledgeGraphLast30Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 30 days'**
+  String get knowledgeGraphLast30Days;
+
+  /// No description provided for @knowledgeGraphLast7Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 7 days'**
+  String get knowledgeGraphLast7Days;
+
+  /// No description provided for @knowledgeGraphLast90Days.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 90 days'**
+  String get knowledgeGraphLast90Days;
 
   /// No description provided for @knowledgeGraphLinkedSection.
   ///
@@ -11933,11 +12011,23 @@ abstract class AppLocalizations {
   /// **'Task'**
   String get knowledgeGraphNodeTypeTask;
 
+  /// No description provided for @knowledgeGraphOneHop.
+  ///
+  /// In en, this message translates to:
+  /// **'1 hop'**
+  String get knowledgeGraphOneHop;
+
   /// No description provided for @knowledgeGraphOpenDetails.
   ///
   /// In en, this message translates to:
   /// **'Open details'**
   String get knowledgeGraphOpenDetails;
+
+  /// No description provided for @knowledgeGraphPhotosSection.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{PHOTO · 1} other{PHOTOS · {count}}}'**
+  String knowledgeGraphPhotosSection(int count);
 
   /// No description provided for @knowledgeGraphRecenter.
   ///
@@ -12004,6 +12094,24 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Explore links'**
   String get knowledgeGraphTooltip;
+
+  /// No description provided for @knowledgeGraphTwoHops.
+  ///
+  /// In en, this message translates to:
+  /// **'2 hops'**
+  String get knowledgeGraphTwoHops;
+
+  /// No description provided for @knowledgeGraphViewConnections.
+  ///
+  /// In en, this message translates to:
+  /// **'Connections'**
+  String get knowledgeGraphViewConnections;
+
+  /// No description provided for @knowledgeGraphViewGraph.
+  ///
+  /// In en, this message translates to:
+  /// **'Graph'**
+  String get knowledgeGraphViewGraph;
 
   /// No description provided for @knowledgeGraphWalkHint.
   ///

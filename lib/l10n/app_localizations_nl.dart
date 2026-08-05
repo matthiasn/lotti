@@ -6867,6 +6867,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get knowledgeGraphCloseDetails => 'Details sluiten';
 
   @override
+  String get knowledgeGraphDensity => 'Dichtheid';
+
+  @override
+  String get knowledgeGraphDensityBalanced => 'Gebalanceerd';
+
+  @override
+  String get knowledgeGraphDensityCalm => 'Rustig';
+
+  @override
+  String get knowledgeGraphDensityExplore => 'Verkennen';
+
+  @override
   String get knowledgeGraphEmpty => 'Nog geen links te verkennen';
 
   @override
@@ -6877,6 +6889,33 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get knowledgeGraphError => 'Kon de kennisgrafiek niet laden';
+
+  @override
+  String get knowledgeGraphFilterCategories => 'Categorieën';
+
+  @override
+  String get knowledgeGraphFilterRecency => 'Recentheid';
+
+  @override
+  String get knowledgeGraphFilterRelations => 'Relaties';
+
+  @override
+  String get knowledgeGraphFilters => 'Filters';
+
+  @override
+  String get knowledgeGraphFilterTaskStatus => 'Taakstatus';
+
+  @override
+  String get knowledgeGraphFilterTypes => 'Typen';
+
+  @override
+  String get knowledgeGraphLast30Days => 'Afgelopen 30 dagen';
+
+  @override
+  String get knowledgeGraphLast7Days => 'Afgelopen 7 dagen';
+
+  @override
+  String get knowledgeGraphLast90Days => 'Afgelopen 90 dagen';
 
   @override
   String knowledgeGraphLinkedSection(int count) {
@@ -6925,7 +6964,21 @@ class AppLocalizationsNl extends AppLocalizations {
   String get knowledgeGraphNodeTypeTask => 'Taak';
 
   @override
+  String get knowledgeGraphOneHop => '1 stap';
+
+  @override
   String get knowledgeGraphOpenDetails => 'Open details';
+
+  @override
+  String knowledgeGraphPhotosSection(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'FOTO\'S · $count',
+      one: 'FOTO · 1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get knowledgeGraphRecenter => 'Recent';
@@ -6959,6 +7012,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get knowledgeGraphTooltip => 'Verkennen van links';
+
+  @override
+  String get knowledgeGraphTwoHops => '2 stappen';
+
+  @override
+  String get knowledgeGraphViewConnections => 'Verbindingen';
+
+  @override
+  String get knowledgeGraphViewGraph => 'Grafiek';
 
   @override
   String knowledgeGraphWalkHint(int count) {
