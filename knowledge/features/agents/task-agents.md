@@ -459,21 +459,47 @@ the agent had decided what to suggest a full inference or three before anything
 appeared. `TaskAgentStrategy.flushChangeSet` closes that gap; the end-of-wake
 build is now a final flush that picks up whatever the last turn staged.
 
+The `incremental` flag separates the two modes. A mid-wake flush is narrow on
+purpose; the end-of-wake build is the only one allowed to reshape existing
+sets:
+
+|  | incremental flush | end-of-wake build |
+| --- | --- | --- |
+| Dedups against | pre-wake sets + own set | same |
+| Writes to | own set only | consolidates everything into one survivor |
+| Split groups | held back | released |
+| Runs relative to `applyStaged` | before | after |
+
 Repeated flushes are safe by construction:
 
 - The builder tracks the **fingerprints** it has already written, and appends
   only what is new. Fingerprints rather than a positional watermark because
   `_items` is not append-only — a fresh `update_running_timer` proposal drops
   the earlier one.
-- The first flush consolidates the caller's pre-wake snapshot and retires its
-  surplus sets; later flushes consolidate against the set this builder wrote,
-  so a multi-turn wake still produces exactly one card and never re-retires.
-- Items dropped by dedup are deliberately **not** marked flushed. Staged
-  retractions still land at the end of the wake, just before the final build,
-  so an item an early flush suppressed against a still-open proposal gets one
-  more chance once that proposal is gone.
+- An incremental flush **never writes to a pre-wake set**. Consolidating early
+  would retire it, which marks its pending items retracted and copies them into
+  the survivor as pending — and `applyStaged` then skips the original row it
+  staged, because it is no longer pending, leaving the copy open forever. Only
+  the final build consolidates, and by then retractions have landed.
+- A set the user resolved mid-wake is **never appended to**. Pending queries
+  return only `pending`/`partiallyResolved`, so a proposal added to a resolved
+  row would persist but be invisible in both the UI and the ledger. The flush
+  opens a fresh set instead.
+- **Split groups are held back** until the end of the wake. A
+  `create_follow_up_task` and the `migrate_checklist_item`s targeting its
+  placeholder share a `groupId`; surfacing the follow-up alone would let the
+  user reject it mid-wake, and `cascadeRejectMigrationItems` only sees the
+  items present at that moment — migrations flushed afterwards would reference
+  a rejected placeholder and could never be confirmed.
+- Items dropped by dedup are deliberately **not** marked flushed, so an item an
+  early flush suppressed against a still-open proposal gets one more chance
+  once that proposal is retracted.
 - A failed flush advances nothing: the items stay staged and the end-of-wake
   build writes them.
+
+A wake with pre-existing proposals therefore shows a second card while it runs,
+which the final build folds into one. That is the deliberate trade for never
+touching a set the retraction step still needs.
 
 Retractions keep their end-of-wake placement for the opposite reason they used
 to: proposals now land *first*, so the suggestion list can never read empty

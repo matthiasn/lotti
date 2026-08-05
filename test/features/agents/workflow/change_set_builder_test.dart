@@ -1126,6 +1126,148 @@ void main() {
       },
     );
 
+    test(
+      'an incremental flush never writes to a pre-wake set',
+      () async {
+        // Consolidating early retires the pre-wake set, which marks its
+        // pending items retracted and copies them into the survivor as
+        // pending. The end-of-wake `applyStaged` then finds the row it staged
+        // no longer pending and skips it — leaving the copy open forever, even
+        // though the agent was told the retraction succeeded.
+        final preWake = makeTestChangeSet(
+          id: 'cs-pre-wake',
+          items: const [
+            ChangeItem(
+              toolName: 'set_task_status',
+              args: {'status': 'IN PROGRESS'},
+              humanSummary: 'Start the task',
+            ),
+          ],
+        );
+
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(
+          mockSyncService,
+          existingPendingSets: [preWake],
+          incremental: true,
+        );
+
+        expect(
+          flushed!.id,
+          isNot('cs-pre-wake'),
+          reason: 'the flush opens its own set rather than merging',
+        );
+        final written = verify(
+          () => mockSyncService.upsertEntity(captureAny()),
+        ).captured.cast<ChangeSetEntity>();
+        expect(
+          written.map((cs) => cs.id),
+          everyElement(isNot('cs-pre-wake')),
+          reason: 'the pre-wake set is neither retired nor rewritten',
+        );
+        expect(
+          written.single.items.map((i) => i.humanSummary),
+          ['Set estimate to 2 hours'],
+          reason: "the pre-wake item is not copied into the wake's set",
+        );
+      },
+    );
+
+    test(
+      'an incremental flush starts a new set when the user resolved the last one',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final first = await builder.build(mockSyncService, incremental: true);
+
+        // The user confirms everything on the card while the wake runs on.
+        when(() => mockRepository.getEntity(first!.id)).thenAnswer(
+          (_) async => first!.copyWith(
+            status: ChangeSetStatus.resolved,
+            resolvedAt: DateTime(2026, 8, 5),
+            items: [
+              first.items.single.copyWith(status: ChangeItemStatus.confirmed),
+            ],
+          ),
+        );
+        clearInteractions(mockSyncService);
+
+        await builder.addItem(
+          toolName: 'update_task_priority',
+          args: {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+        );
+        final second = await builder.build(mockSyncService, incremental: true);
+
+        expect(
+          second!.id,
+          isNot(first!.id),
+          reason:
+              'appending to a resolved set would hide the proposal — '
+              'pending queries only return pending/partiallyResolved',
+        );
+        expect(second.status, ChangeSetStatus.pending);
+        expect(
+          second.items.map((i) => i.humanSummary),
+          ['Set priority to P1'],
+        );
+      },
+    );
+
+    test(
+      'an incremental flush holds back a split group until the wake ends',
+      () async {
+        // The follow-up and the migrations that target its placeholder must
+        // appear together: surfacing the follow-up alone lets the user reject
+        // it mid-wake, and the cascade that rejects its migrations only sees
+        // the items present at that moment.
+        final placeholder = await builder.addFollowUpTask(
+          args: {'title': 'Ship the release'},
+          humanSummary: 'Create follow-up "Ship the release"',
+        );
+        await builder.addBatchItem(
+          toolName: 'migrate_checklist_items',
+          args: {
+            'targetTaskId': placeholder,
+            'items': [
+              {'id': 'item-1', 'title': 'Tag the build'},
+            ],
+          },
+          summaryPrefix: 'Migrate',
+          groupId: placeholder,
+        );
+
+        final incremental = await builder.build(
+          mockSyncService,
+          incremental: true,
+        );
+        expect(
+          incremental,
+          isNull,
+          reason: 'the whole split group is held back, so nothing is written',
+        );
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+
+        final finalSet = await builder.build(mockSyncService);
+
+        expect(
+          finalSet!.items.map((i) => i.toolName),
+          containsAll(<String>[
+            'create_follow_up_task',
+            'migrate_checklist_item',
+          ]),
+          reason: 'the group lands atomically in the end-of-wake build',
+        );
+      },
+    );
+
     test('a failed flush leaves items staged for the next one', () async {
       await builder.addItem(
         toolName: 'update_task_estimate',

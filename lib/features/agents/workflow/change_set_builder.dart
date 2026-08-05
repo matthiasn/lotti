@@ -6,6 +6,7 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/model/proposal_ledger_status.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/change_item_dedup.dart';
@@ -252,11 +253,17 @@ class ChangeSetBuilder {
   ///
   /// Safe to call repeatedly across a wake, and the wake does: the workflow
   /// flushes at every turn boundary so proposals surface while the agent is
-  /// still working rather than only when it finishes. The first call creates
-  /// (or consolidates into) the set; later calls append into that same
-  /// entity, so a multi-turn wake still yields exactly one card. Items are
-  /// never written twice, and a flush that stages nothing new is a no-op that
-  /// returns the set as it stands.
+  /// still working rather than only when it finishes. Items are never written
+  /// twice, and a flush that stages nothing new is a no-op that returns the
+  /// set as it stands.
+  ///
+  /// Set [incremental] for a mid-wake flush. Such a flush writes only to the
+  /// set this builder created — never to a pre-wake set, and never to one the
+  /// user has resolved — and holds back split groups so a follow-up task and
+  /// its checklist migrations stay atomic. The end-of-wake call leaves
+  /// [incremental] false: by then staged retractions have been applied, so it
+  /// is safe to consolidate the pre-wake sets and release the held groups,
+  /// leaving the user with exactly one card.
   ///
   /// Items that already appear in [existingPendingSets] (matched by
   /// `toolName` + `args`) are silently dropped to avoid showing the user
@@ -289,6 +296,7 @@ class ChangeSetBuilder {
     List<ChangeSetEntity> existingPendingSets = const [],
     Set<String> rejectedFingerprints = const {},
     Set<String> rejectedDisplayKeys = const {},
+    bool incremental = false,
   }) async {
     // Only the items staged since the previous flush are persisted here.
     // Everything in [_flushedFingerprints] already lives in [_persistedSet],
@@ -296,25 +304,51 @@ class ChangeSetBuilder {
     final pendingItems = _items
         .where(
           (item) =>
-              !_flushedFingerprints.contains(ChangeItem.fingerprint(item)),
+              !_flushedFingerprints.contains(ChangeItem.fingerprint(item)) &&
+              // Split groups (a `create_follow_up_task` and the
+              // `migrate_checklist_item`s targeting its placeholder, which
+              // share a groupId) must land together. Surfacing the follow-up
+              // alone lets the user reject it mid-wake; the cascade that
+              // rejects its migrations only sees the items present at that
+              // moment, so migrations flushed afterwards would reference a
+              // rejected placeholder and could never be confirmed.
+              !(incremental && item.groupId != null),
         )
         .toList(growable: false);
     if (pendingItems.isEmpty) return _persistedSet;
 
-    // After the first flush, the set this builder already wrote is the only
-    // existing set that matters: the caller's snapshot was consolidated into
-    // it (and its surplus siblings retired) on that first pass, so re-passing
-    // the snapshot would retire them a second time.
-    final effectiveExistingSets = _persistedSet == null
-        ? existingPendingSets
-        : [_persistedSet!];
-
+    // Re-read everything that could carry a duplicate, so dedup sees mid-wake
+    // user decisions. This is a wider set than what we are willing to *write*
+    // to — see [writableSets] below.
+    final dedupSources = <ChangeSetEntity>[
+      ...existingPendingSets,
+      ?_persistedSet,
+    ];
     final freshExistingSets = await Future.wait(
-      effectiveExistingSets.map((cs) async {
+      dedupSources.map((cs) async {
         final freshEntity = await syncService.repository.getEntity(cs.id);
         return freshEntity is ChangeSetEntity ? freshEntity : cs;
       }),
     );
+
+    // What this flush may merge into and retire.
+    //
+    // An incremental flush writes ONLY to the set this wake created. It must
+    // not consolidate the pre-wake sets: doing so retires them, which marks
+    // their pending items retracted and copies them into the survivor as
+    // pending — and the end-of-wake `applyStaged` then skips the original row
+    // it staged (no longer pending), leaving the copy open forever. The final
+    // build runs after retractions have landed, so it consolidates safely.
+    //
+    // A set the user resolved mid-wake is excluded either way: appending
+    // pending items to a `resolved` row would persist a proposal that pending
+    // queries never return, so it would be invisible in both the UI and the
+    // ledger.
+    final ownSetId = _persistedSet?.id;
+    final writableSets = [
+      for (final cs in freshExistingSets)
+        if (isPendingLike(cs.status) && (!incremental || cs.id == ownSetId)) cs,
+    ];
     // Spans every item proposed this wake, flushed or not: a running-timer
     // update this wake already landed must not block its own successor.
     final proposedRunningTimerIds = runningTimerIds(_items);
@@ -350,18 +384,15 @@ class ChangeSetBuilder {
     final dedupedRunningTimerIds = runningTimerIds(deduped);
     final supersededRunningTimerItems = dedupedRunningTimerIds.isNotEmpty
         ? locatePendingRunningTimerUpdates(
-            freshExistingSets,
+            writableSets,
             dedupedRunningTimerIds,
           )
         : const <
             ({ChangeSetEntity changeSet, int itemIndex, ChangeItem item})
           >[];
     final currentExistingSets = supersededRunningTimerItems.isEmpty
-        ? freshExistingSets
-        : markItemsRetracted(
-            freshExistingSets,
-            supersededRunningTimerItems,
-          );
+        ? writableSets
+        : markItemsRetracted(writableSets, supersededRunningTimerItems);
     final currentExistingSetsById = {
       for (final cs in currentExistingSets) cs.id: cs,
     };
@@ -371,14 +402,14 @@ class ChangeSetBuilder {
       supersededRunningTimerItems,
     );
 
-    if (effectiveExistingSets.isNotEmpty) {
+    if (writableSets.isNotEmpty) {
       // Consolidate: pick the newest set as the survivor, collect all
       // items from every set, append the new deduplicated items, and
       // mark all other sets as resolved so the UI shows exactly one card.
       // On a later flush this collapses to the set this builder already
       // wrote, so the wake keeps appending to one card instead of opening
       // a fresh one per turn.
-      final staleWinner = effectiveExistingSets.reduce(
+      final staleWinner = writableSets.reduce(
         (a, b) => a.createdAt.isAfter(b.createdAt) ? a : b,
       );
 
@@ -392,7 +423,7 @@ class ChangeSetBuilder {
       };
 
       final otherItems = <ChangeItem>[];
-      for (final cs in effectiveExistingSets) {
+      for (final cs in writableSets) {
         if (cs.id != survivor.id) {
           final current = currentExistingSetsById[cs.id] ?? cs;
           for (final item in current.items) {
@@ -413,7 +444,7 @@ class ChangeSetBuilder {
       // marked retracted because their actionable copy now lives in the
       // survivor; leaving embedded `pending` items inside a resolved parent
       // makes the proposal ledger report stale open suggestions.
-      for (final cs in effectiveExistingSets) {
+      for (final cs in writableSets) {
         if (cs.id != survivor.id) {
           final current = currentExistingSetsById[cs.id] ?? cs;
           await syncService.upsertEntity(retireConsolidatedSet(current));
