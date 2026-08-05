@@ -415,6 +415,36 @@ void main() {
   });
 
   group('deferred image loading', () {
+    testWidgets('bounds decoded images by their longest side', (tester) async {
+      late final Directory tempDir;
+      late final String pngPath;
+      late final ui.Image bounded;
+      late final ui.Image naturalSize;
+      await tester.runAsync(() async {
+        tempDir = Directory.systemTemp.createTempSync('lotti_kg_decode_test');
+        pngPath = '${tempDir.path}/wide.png';
+        final recorder = ui.PictureRecorder();
+        Canvas(recorder).drawRect(
+          const Rect.fromLTWH(0, 0, 400, 200),
+          Paint()..color = const Color(0xFF3366CC),
+        );
+        final source = await recorder.endRecording().toImage(400, 200);
+        final bytes = await source.toByteData(format: ui.ImageByteFormat.png);
+        source.dispose();
+        await File(pngPath).writeAsBytes(bytes!.buffer.asUint8List());
+        bounded = await decodeGraphImageFile(pngPath, 64);
+        naturalSize = await decodeGraphImageFile(pngPath, 800);
+      });
+      addTearDown(() {
+        bounded.dispose();
+        naturalSize.dispose();
+        tempDir.deleteSync(recursive: true);
+      });
+
+      expect((bounded.width, bounded.height), (64, 32));
+      expect((naturalSize.width, naturalSize.height), (400, 200));
+    });
+
     testWidgets('loads task cover art for the graph node background', (
       tester,
     ) async {
@@ -429,7 +459,7 @@ void main() {
       });
 
       const coverPath = '/task-cover.png';
-      final loadedPaths = <String>[];
+      final requests = <({String path, int targetExtent})>[];
       await pumpView(
         tester,
         scenario: GraphScenario(
@@ -449,14 +479,19 @@ void main() {
           edges: const [],
           now: fixedNow,
         ),
-        imageLoader: (path) async {
-          loadedPaths.add(path);
+        imageLoader: (path, targetExtent) async {
+          requests.add((path: path, targetExtent: targetExtent));
           return cover;
         },
       );
       await tester.pump();
 
-      expect(loadedPaths, [coverPath]);
+      expect(requests, [
+        (
+          path: coverPath,
+          targetExtent: GraphVisualSpec.defaultMediaDecodeLogicalExtent.round(),
+        ),
+      ]);
       expect(painterOf(tester).images[coverPath], same(cover));
     });
 
@@ -519,13 +554,13 @@ void main() {
 
         late final ui.Image decoded;
         await tester.runAsync(() async {
-          decoded = await decodeGraphImageFile(pngPath);
+          decoded = await decodeGraphImageFile(pngPath, 64);
         });
         final loadedPaths = <String>[];
         await pumpView(
           tester,
           scenario: scenario,
-          imageLoader: (path) async {
+          imageLoader: (path, targetExtent) async {
             loadedPaths.add(path);
             return decoded;
           },

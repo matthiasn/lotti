@@ -8,7 +8,6 @@
 library;
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -33,17 +32,38 @@ import 'package:lotti/features/knowledge_graph/ui/node_inspector_panel.dart';
 import 'package:lotti/features/knowledge_graph/ui/topology_minimap.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-typedef GraphImageLoader = Future<ui.Image> Function(String path);
+typedef GraphImageLoader =
+    Future<ui.Image> Function(String path, int targetExtent);
 
-/// Decodes a graph thumbnail from local storage.
-Future<ui.Image> decodeGraphImageFile(String path) async {
-  final bytes = await File(path).readAsBytes();
-  final codec = await ui.instantiateImageCodec(bytes);
+/// Decodes a graph thumbnail from local storage without retaining the full
+/// source resolution.
+Future<ui.Image> decodeGraphImageFile(String path, int targetExtent) async {
+  if (targetExtent <= 0) {
+    throw ArgumentError.value(targetExtent, 'targetExtent', 'must be positive');
+  }
+  final buffer = await ui.ImmutableBuffer.fromFilePath(path);
   try {
-    final frame = await codec.getNextFrame();
-    return frame.image;
+    final descriptor = await ui.ImageDescriptor.encoded(buffer);
+    try {
+      final longestSide = math.max(descriptor.width, descriptor.height);
+      final scale = math.min(1, targetExtent / longestSide);
+      final targetWidth = math.max(1, (descriptor.width * scale).round());
+      final targetHeight = math.max(1, (descriptor.height * scale).round());
+      final codec = await descriptor.instantiateCodec(
+        targetWidth: targetWidth,
+        targetHeight: targetHeight,
+      );
+      try {
+        final frame = await codec.getNextFrame();
+        return frame.image;
+      } finally {
+        codec.dispose();
+      }
+    } finally {
+      descriptor.dispose();
+    }
   } finally {
-    codec.dispose();
+    buffer.dispose();
   }
 }
 
@@ -134,6 +154,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   /// the navigational inspector).
   bool _detailsOpen = false;
   bool _disableAnimations = false;
+  bool _imageLoadStarted = false;
   String? _previousFocusId;
   List<String> _walkPath = const [];
   Offset _focusWorld = Offset.zero;
@@ -189,19 +210,19 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       duration: const Duration(milliseconds: 1200),
       value: 1,
     )..addListener(() => setState(() {}));
-    unawaited(_loadImages());
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _visualSpec =
+    final visualSpec =
         widget.visualSpec ??
         GraphVisualSpec.fromTokens(
           context.designTokens,
           categoryColors: widget.categoryColors,
           highContrast: MediaQuery.highContrastOf(context),
         );
+    _visualSpec = visualSpec;
     _disableAnimations =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     _motion.setReduceMotion(value: _disableAnimations);
@@ -210,6 +231,14 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       _wakeCtl
         ..stop()
         ..value = 1;
+    }
+    if (!_imageLoadStarted) {
+      _imageLoadStarted = true;
+      final targetExtent =
+          (visualSpec.mediaDecodeLogicalExtent *
+                  MediaQuery.devicePixelRatioOf(context))
+              .ceil();
+      unawaited(_loadImages(targetExtent));
     }
   }
 
@@ -233,7 +262,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
 
   /// Decode task covers, entry images, and aggregate thumbnails off the main
   /// work and repaint when ready.
-  Future<void> _loadImages() async {
+  Future<void> _loadImages(int targetExtent) async {
     final loaded = <String, ui.Image>{};
     final loadImage = widget.imageLoader ?? decodeGraphImageFile;
     final paths = <String>{
@@ -245,7 +274,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     };
     for (final path in paths) {
       try {
-        final image = await loadImage(path);
+        final image = await loadImage(path, targetExtent);
         if (!mounted) {
           // Disposed mid-decode — release what we decoded and bail. Only fires
           // when the view is torn down between async frames, which the test

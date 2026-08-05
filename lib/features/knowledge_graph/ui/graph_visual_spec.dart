@@ -31,6 +31,7 @@ class GraphVisualSpec {
     this.minimapFocusRadius = 4.5,
     this.minimapEdgeAlpha = 0.28,
     this.minimapNodeAlpha = 0.72,
+    this.mediaNodeScale = defaultMediaNodeScale,
   });
 
   factory GraphVisualSpec.fromTokens(
@@ -50,6 +51,12 @@ class GraphVisualSpec {
   static const int defaultExploreNodeLimit = 72;
   static const int defaultClusterPreviewLimit = 5;
   static const int defaultClusterCollapseThreshold = 8;
+  static const double defaultMediaNodeScale = 2;
+
+  /// Decode extent that safely covers the largest media node at 1× scale.
+  static const double baseMediaDecodeLogicalExtent = 112;
+  static const double defaultMediaDecodeLogicalExtent =
+      baseMediaDecodeLogicalExtent * defaultMediaNodeScale;
 
   static int defaultNodeLimit(GraphDensity density) => switch (density) {
     GraphDensity.calm => defaultCalmNodeLimit,
@@ -75,6 +82,13 @@ class GraphVisualSpec {
   final double minimapFocusRadius;
   final double minimapEdgeAlpha;
   final double minimapNodeAlpha;
+
+  /// Diameter scale for nodes whose body displays cover art or photo media.
+  final double mediaNodeScale;
+
+  /// Longest thumbnail side needed for media nodes in logical pixels.
+  double get mediaDecodeLogicalExtent =>
+      baseMediaDecodeLogicalExtent * mediaNodeScale;
 
   int nodeLimit(GraphDensity density) => switch (density) {
     GraphDensity.calm => calmNodeLimit,
