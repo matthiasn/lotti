@@ -55,6 +55,34 @@ void main() {
     });
   });
 
+  group('path traversal defense', () {
+    test('rootFor refuses a dirName that escapes the real root', () {
+      final doctored = Profile(
+        id: 'evil',
+        type: ProfileType.guest,
+        name: 'evil',
+        dirName: 'guest_profiles/../../elsewhere',
+        createdAt: DateTime(2026),
+      );
+
+      expect(() => registry.rootFor(doctored), throwsArgumentError);
+    });
+
+    test('a doctored profiles.json entry is dropped at parse time', () async {
+      final guest = await registry.createGuestProfile(name: 'Demo');
+      final raw =
+          jsonDecode(await registry.registryFile.readAsString())
+              as Map<String, dynamic>;
+      ((raw['profiles'] as List).last as Map<String, dynamic>)['dirName'] =
+          '../../outside/${guest.id}';
+      registry.registryFile.writeAsStringSync(jsonEncode(raw));
+
+      final state = await registry.load();
+
+      expect(state.profileById(guest.id), isNull);
+    });
+  });
+
   group('createGuestProfile', () {
     test('persists the entry and creates the directory skeleton', () async {
       final profile = await registry.createGuestProfile(name: 'Demo');
@@ -98,8 +126,8 @@ void main() {
     });
 
     test('rejects unknown profiles', () async {
-      expect(
-        () => registry.setActiveProfile('nope'),
+      await expectLater(
+        registry.setActiveProfile('nope'),
         throwsArgumentError,
       );
     });
@@ -107,8 +135,8 @@ void main() {
 
   group('updateProfile', () {
     test('rejects unknown profiles', () async {
-      expect(
-        () => registry.updateProfile(
+      await expectLater(
+        registry.updateProfile(
           Profile(
             id: 'nope',
             type: ProfileType.guest,
@@ -135,8 +163,8 @@ void main() {
 
   group('deleteGuestProfile', () {
     test('rejects unknown ids', () async {
-      expect(
-        () => registry.deleteGuestProfile('nope'),
+      await expectLater(
+        registry.deleteGuestProfile('nope'),
         throwsArgumentError,
       );
     });
@@ -155,8 +183,8 @@ void main() {
     });
 
     test('refuses to delete the real profile', () async {
-      expect(
-        () => registry.deleteGuestProfile(Profile.realProfileId),
+      await expectLater(
+        registry.deleteGuestProfile(Profile.realProfileId),
         throwsArgumentError,
       );
     });
@@ -165,8 +193,8 @@ void main() {
       final profile = await registry.createGuestProfile(name: 'Demo');
       await registry.setActiveProfile(profile.id);
 
-      expect(
-        () => registry.deleteGuestProfile(profile.id),
+      await expectLater(
+        registry.deleteGuestProfile(profile.id),
         throwsStateError,
       );
       expect(registry.rootFor(profile).existsSync(), isTrue);

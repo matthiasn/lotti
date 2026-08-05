@@ -45,8 +45,6 @@ class Fts5Db extends _$Fts5Db {
       await deleteEntry('"$uuid"');
     }
 
-    final entitiesCacheService = getIt<EntitiesCacheService>();
-
     final plainText = entry.entryText?.plainText ?? '';
     final title = entry.maybeMap(
       task: (task) => task.data.title,
@@ -56,7 +54,10 @@ class Fts5Db extends _$Fts5Db {
 
     final summary = entry.maybeMap(
       measurement: (m) {
-        final dataType = entitiesCacheService.getDataTypeById(
+        // Resolved lazily so non-measurement indexing (incl. seeding a
+        // non-active world through WorldHandle) never touches the active
+        // generation's cache.
+        final dataType = getIt<EntitiesCacheService>().getDataTypeById(
           m.data.dataTypeId,
         );
         final value = m.data.value;

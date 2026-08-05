@@ -180,6 +180,11 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
   void detachForRestart() {
     windowManager.removeListener(this);
     WidgetsBinding.instance.removeObserver(this);
+    if (isDesktop) {
+      // Without this, a switch that fails after teardown would leave
+      // preventClose set with no listener to honor the close request.
+      unawaited(windowManager.setPreventClose(false));
+    }
   }
 
   /// Stops native/background work and closes every database exactly once.

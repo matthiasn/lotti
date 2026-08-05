@@ -99,7 +99,7 @@ Future<void> _registerLateAndOptionalServices({
   // Guest worlds have no MatrixService registered — the sync stack is
   // structurally absent, so there is nothing to init.
   if (profile.capabilities.syncEnabled) {
-    unawaited(getIt<MatrixService>().init());
+    getIt<StartupTasks>().track(getIt<MatrixService>().init());
   }
 
   // Label validator used by the assignment processor
@@ -172,6 +172,6 @@ Future<void> _registerLateAndOptionalServices({
   // Skipped in guest worlds: their sequence log stays empty because nothing
   // ever enqueues.
   if (profile.capabilities.syncEnabled) {
-    unawaited(_checkAndPopulateSequenceLog());
+    getIt<StartupTasks>().track(_checkAndPopulateSequenceLog());
   }
 }

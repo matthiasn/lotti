@@ -71,6 +71,7 @@ void main() {
         var generationBuilds = 0;
         late BuildContext appContext;
         final bootstrapGate = Completer<void>();
+        final bootstrapEntered = Completer<void>();
         await tester.pumpWidget(
           LottiAppRoot(
             registry: registry,
@@ -86,7 +87,10 @@ void main() {
             teardownOverride: () async {},
             // Parks the switch after the splash is up, so the splash state
             // is deterministically observable.
-            bootstrapOverride: () => bootstrapGate.future,
+            bootstrapOverride: () {
+              bootstrapEntered.complete();
+              return bootstrapGate.future;
+            },
           ),
         );
 
@@ -97,9 +101,14 @@ void main() {
         late Future<void> pending;
         await tester.runAsync(() async {
           pending = switcher.switchTo(guest2.id);
-          // Let the registry IO and the splash setState land; the switch
-          // then blocks on the frame settle + the bootstrap gate.
-          await Future<void>.delayed(const Duration(milliseconds: 100));
+          // Registry IO and the splash setState land, the frame settle
+          // passes, and the switch parks on the bootstrap gate — a
+          // deterministic signal, no wall-clock sleep. Frames keep being
+          // produced so the frame settle can pass.
+          while (!bootstrapEntered.isCompleted) {
+            await tester.pump(const Duration(milliseconds: 16));
+            await Future<void>.delayed(Duration.zero);
+          }
         });
         await tester.pump();
 
@@ -108,10 +117,6 @@ void main() {
         expect(find.text('generation-alive'), findsNothing);
 
         bootstrapGate.complete();
-        await tester.runAsync(
-          () => Future<void>.delayed(const Duration(milliseconds: 50)),
-        );
-        await tester.pump();
         await tester.runAsync(() => pending);
         await tester.pump();
 

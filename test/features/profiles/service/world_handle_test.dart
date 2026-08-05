@@ -157,10 +157,9 @@ void main() {
       // Isolation: the canary tree is byte-identical.
       expect(snapshotTree(canaryRealRoot), before);
       // And the world root holds no marker of the real world's host key.
-      expect(
-        await WorldHandle.open(worldRoot).settingsDb.itemByKey(hostKey),
-        isNull,
-      );
+      final third = WorldHandle.open(worldRoot);
+      expect(await third.settingsDb.itemByKey(hostKey), isNull);
+      await third.close();
     });
   });
 }

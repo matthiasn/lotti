@@ -269,6 +269,14 @@ void main() {
       // failure is recovered by an app restart, which boots straight into
       // the intended world from a clean process.
       expect((await registry.load()).activeProfileId, guest.id);
+
+      // The guard is released: a follow-up call is accepted and — because
+      // the marker already points at the target — resolves as the
+      // documented same-profile no-op instead of re-tearing a dead
+      // generation.
+      await expectLater(switcher.switchTo(guest.id), completes);
+      expect(attempts, 1);
+      expect(switcher.isSwitching, isFalse);
     });
   });
 }

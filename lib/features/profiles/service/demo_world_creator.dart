@@ -30,8 +30,11 @@ class DemoWorldCreator {
     try {
       await seed(world);
     } catch (_) {
-      await world.close();
-      await registry.deleteGuestProfile(profile.id);
+      try {
+        await world.close();
+      } finally {
+        await registry.deleteGuestProfile(profile.id);
+      }
       rethrow;
     }
     await world.close();

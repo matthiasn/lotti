@@ -55,6 +55,20 @@ void main() {
         Profile.tryFromJson(guest().toJson()..['hostId'] = 42),
         isNull,
       );
+      for (final dirName in [
+        '../evil',
+        '/absolute',
+        'guest_profiles/../escape',
+        'guest_profiles/.',
+        r'guest_profiles\evil',
+        'C:/evil',
+      ]) {
+        expect(
+          Profile.tryFromJson(guest().toJson()..['dirName'] = dirName),
+          isNull,
+          reason: 'dirName "$dirName" must be rejected',
+        );
+      }
     });
 
     test('realDefault is the fixed real profile at the root itself', () {

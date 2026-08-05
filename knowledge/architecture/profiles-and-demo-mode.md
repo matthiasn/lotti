@@ -38,7 +38,7 @@ the pre-existing documents root — existing installs never move a byte. Each
 **guest** profile (the demo workspace) lives under
 `<realRoot>/guest_profiles/<uuid>/`.
 
-```
+```text
 <realRoot>/                      ← real world (unchanged layout)
   profiles.json                  ← registry: profiles + active marker (global)
   db.sqlite, settings.sqlite, …

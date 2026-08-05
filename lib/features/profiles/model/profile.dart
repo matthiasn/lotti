@@ -76,6 +76,23 @@ class Profile {
     if (hostId != null) 'hostId': hostId,
   };
 
+  /// A registry dirName may only be empty (the real root) or a relative
+  /// path of plain segments — no traversal, no absolute paths, no drive
+  /// letters. A malformed profiles.json must never be able to point a
+  /// world outside the real root.
+  static bool _isSafeDirName(String dirName) {
+    if (dirName.isEmpty) return true;
+    if (dirName.startsWith('/') || dirName.contains(':')) return false;
+    final segments = dirName.split('/');
+    return segments.every(
+      (segment) =>
+          segment.isNotEmpty &&
+          segment != '.' &&
+          segment != '..' &&
+          !segment.contains(r'\'),
+    );
+  }
+
   /// Lenient parse: returns null on any malformed field.
   static Profile? tryFromJson(Object? json) {
     if (json is! Map<String, dynamic>) return null;
@@ -87,7 +104,7 @@ class Profile {
     final hostId = json['hostId'];
     if (id is! String || id.isEmpty) return null;
     if (name is! String) return null;
-    if (dirName is! String) return null;
+    if (dirName is! String || !_isSafeDirName(dirName)) return null;
     final type = ProfileType.values.asNameMap()[typeName];
     if (type == null) return null;
     final createdAt = createdAtRaw is String

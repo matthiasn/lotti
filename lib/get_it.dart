@@ -86,6 +86,7 @@ import 'package:lotti/services/link_service.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/notification_service.dart';
+import 'package:lotti/services/startup_tasks.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/utils/consts.dart';
@@ -135,6 +136,7 @@ Future<void> registerSingletons({
     ..registerSingleton<EditorDb>(EditorDb())
     ..registerSingleton<OnboardingMetricsDb>(OnboardingMetricsDb())
     ..registerSingleton<SyncDatabase>(SyncDatabase())
+    ..registerSingleton<StartupTasks>(StartupTasks())
     ..registerSingleton<VectorClockService>(VectorClockService())
     ..registerSingleton<TimeService>(
       // When a new timer replaces a still-running one, persist the outgoing
@@ -376,15 +378,21 @@ Future<void> registerSingletons({
       ),
     )
     ..registerSingleton<PersistenceLogic>(PersistenceLogic())
-    ..registerSingleton<EditorStateService>(EditorStateService())
-    ..registerSingleton<HealthImport>(
+    ..registerSingleton<EditorStateService>(EditorStateService());
+  // Device health data must not bleed into a play world: like the sync
+  // stack, health import is structurally absent in guest profiles, and its
+  // UI surfaces gate on the capability.
+  if (profile.capabilities.healthImportEnabled) {
+    getIt.registerSingleton<HealthImport>(
       HealthImport(
         persistenceLogic: getIt<PersistenceLogic>(),
         db: getIt<JournalDb>(),
         health: HealthService(Health()),
         deviceInfo: DeviceInfoPlugin(),
       ),
-    )
+    );
+  }
+  getIt
     ..registerSingleton<LinkService>(LinkService())
     ..registerSingleton<Maintenance>(Maintenance())
     ..registerSingleton<NavService>(

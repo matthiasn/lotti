@@ -9,6 +9,7 @@ import 'package:lotti/main.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/service_disposer.dart';
+import 'package:lotti/services/startup_tasks.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/window_service.dart';
 
@@ -96,6 +97,15 @@ class ProfileSwitcher {
   /// Stops runtime activity that persists state, while the old generation's
   /// services are still alive to receive the writes.
   Future<void> _quiesce() async {
+    // Fire-and-forget startup work (MatrixService.init, sequence-log
+    // migration) must not still be running when its services are disposed.
+    if (getIt.isRegistered<StartupTasks>()) {
+      try {
+        await getIt<StartupTasks>().settle();
+      } catch (e, st) {
+        _logError(e, st, 'StartupTasks.settle');
+      }
+    }
     if (getIt.isRegistered<TimeService>()) {
       try {
         await getIt<TimeService>().stop();

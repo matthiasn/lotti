@@ -132,11 +132,23 @@ class ProfileRegistry {
 
   /// Resolves a profile's root directory. The stored [Profile.dirName] uses
   /// `/` separators; joining per segment keeps this platform-independent.
+  /// Defense in depth on top of the parse-time dirName validation: the
+  /// resolved path must stay inside the real root.
   Directory rootFor(Profile profile) {
     if (profile.dirName.isEmpty) return realRoot;
-    return Directory(
+    final resolved = Directory(
       p.joinAll([realRoot.path, ...profile.dirName.split('/')]),
     );
+    final normalizedRoot = p.normalize(realRoot.absolute.path);
+    final normalized = p.normalize(resolved.absolute.path);
+    if (!p.isWithin(normalizedRoot, normalized)) {
+      throw ArgumentError.value(
+        profile.dirName,
+        'profile.dirName',
+        'resolves outside the real root',
+      );
+    }
+    return resolved;
   }
 
   Future<void> _save(ProfileRegistryState state) async {
