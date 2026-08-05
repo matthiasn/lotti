@@ -290,10 +290,10 @@ final List<OutboxItem> _outboxItems = [
       'Inspect orbital penguin habitat',
       'Orbitales Pinguinhabitat inspizieren',
     ),
-    message: const SyncMessage.journalEntity(
+    message: SyncMessage.journalEntity(
       id: manualOrbitalHabitatTaskId,
       jsonPath: '/sync/project-waddle/orbital-habitat.json',
-      vectorClock: VectorClock({'mission-control-mac': 14}),
+      vectorClock: const VectorClock({'mission-control-mac': 14}),
       status: SyncEntryStatus.update,
     ),
     age: const Duration(seconds: 18),
@@ -314,10 +314,10 @@ final List<OutboxItem> _outboxItems = [
       'Habitat pressure-seal photo',
       'Foto der Habitat-Druckdichtung',
     ),
-    message: const SyncMessage.journalEntity(
+    message: SyncMessage.journalEntity(
       id: manualHabitatCoverImageId,
       jsonPath: '/sync/project-waddle/habitat-photo.json',
-      vectorClock: VectorClock({'penguin-phone': 8}),
+      vectorClock: const VectorClock({'penguin-phone': 8}),
       status: SyncEntryStatus.initial,
     ),
     age: const Duration(minutes: 7),

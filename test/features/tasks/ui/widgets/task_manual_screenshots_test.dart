@@ -1098,7 +1098,7 @@ Future<void> _pumpTaskSurface(
         2048,
         3072,
       ],
-      imageIds: const {manualHabitatCoverImageId},
+      imageIds: {manualHabitatCoverImageId},
     );
     await tester.pumpWidget(
       RepaintBoundary(
@@ -1119,15 +1119,15 @@ Future<void> _pumpTaskSurface(
             ),
             taskOneLinerProvider.overrideWith(
               (ref, taskId) async => switch (taskId) {
-                manualOrbitalHabitatTaskId => _t(
+                final id when id == manualOrbitalHabitatTaskId => _t(
                   'Pressure stable · 37 penguins accounted for',
                   'Druck stabil · 37 Pinguine vollzählig',
                 ),
-                manualFishFeederTaskId => _t(
+                final id when id == manualFishFeederTaskId => _t(
                   'Feeder calibration blocks the habitat demo',
                   'Futterautomat-Kalibrierung blockiert die Habitat-Demo',
                 ),
-                manualSardineCargoTaskId => _t(
+                final id when id == manualSardineCargoTaskId => _t(
                   'Europa cold-chain manifest ready to reconcile',
                   'Europa-Kühlkettenmanifest bereit zum Abgleich',
                 ),

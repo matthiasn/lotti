@@ -3,16 +3,23 @@ import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
+import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 
-const demoTutorialTaskId = 'demo-tutorial-first-steps';
-const demoTutorialChecklistId = 'demo-tutorial-checklist';
-const demoTutorialCheckItemId = 'demo-tutorial-item-check';
-const demoTutorialTimerItemId = 'demo-tutorial-item-timer';
-const demoTutorialAddItemItemId = 'demo-tutorial-item-add-item';
-const demoTutorialCreateTaskItemId = 'demo-tutorial-item-create-task';
-const demoTutorialVoiceNoteItemId = 'demo-tutorial-item-voice-note';
+final String demoTutorialTaskId = demoUuid('demo-tutorial-first-steps');
+final String demoTutorialChecklistId = demoUuid('demo-tutorial-checklist');
+final String demoTutorialCheckItemId = demoUuid('demo-tutorial-item-check');
+final String demoTutorialTimerItemId = demoUuid('demo-tutorial-item-timer');
+final String demoTutorialAddItemItemId = demoUuid(
+  'demo-tutorial-item-add-item',
+);
+final String demoTutorialCreateTaskItemId = demoUuid(
+  'demo-tutorial-item-create-task',
+);
+final String demoTutorialVoiceNoteItemId = demoUuid(
+  'demo-tutorial-item-voice-note',
+);
 
 /// The guided "first steps" content seeded into the demo world ON TOP of
 /// [ManualDemoWorld.penguinLogistics].
@@ -52,7 +59,7 @@ class DemoTutorialContent {
           id: id,
           title: title,
           isChecked: false,
-          linkedChecklists: const [demoTutorialChecklistId],
+          linkedChecklists: [demoTutorialChecklistId],
         ),
       );
     }
@@ -97,7 +104,7 @@ class DemoTutorialContent {
         linkedChecklistItems: [
           for (final checklistItem in checklistItems) checklistItem.meta.id,
         ],
-        linkedTasks: const [demoTutorialTaskId],
+        linkedTasks: [demoTutorialTaskId],
       ),
     );
 
@@ -124,7 +131,7 @@ class DemoTutorialContent {
       statusHistory: [status],
       categoryId: manualDemoCategoryId,
       estimate: estimate,
-      checklistIds: const [demoTutorialChecklistId],
+      checklistIds: [demoTutorialChecklistId],
     );
     final task = base.copyWith(
       data: base.data.copyWith(priority: TaskPriority.p2Medium),

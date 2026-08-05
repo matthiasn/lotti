@@ -5,11 +5,12 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:lotti/utils/uuid.dart';
 
 /// The nine tasks the manual quotes by name and the screenshot suites resolve
 /// by id — frozen in content, order and position. Growth is appended after
 /// them; nothing here may be renamed, removed or reordered.
-const originalTaskIds = <String>[
+final originalTaskIds = <String>[
   manualRollCallTaskId,
   manualOrbitalHabitatTaskId,
   manualLaunchReviewTaskId,
@@ -161,7 +162,7 @@ void main() {
 
       expect(
         world.orbitalHabitatTask.data.checklistIds,
-        const [manualHabitatChecklistId],
+        [manualHabitatChecklistId],
       );
       expect(
         world.habitatChecklist.data.linkedChecklistItems,
@@ -169,10 +170,10 @@ void main() {
       );
       expect(
         world.habitatChecklist.data.linkedTasks,
-        const [manualOrbitalHabitatTaskId],
+        [manualOrbitalHabitatTaskId],
       );
       for (final item in world.checklistItems.take(4)) {
-        expect(item.data.linkedChecklists, const [manualHabitatChecklistId]);
+        expect(item.data.linkedChecklists, [manualHabitatChecklistId]);
       }
     });
 
@@ -208,6 +209,38 @@ void main() {
           ...checklist.data.linkedChecklistItems,
       };
       expect(itemsById.keys.toSet(), claimed);
+    });
+
+    test('every seeded journal entity carries a real UUID, so the detail '
+        'routes can open it', () {
+      // Regression guard. The world used to be seeded with readable slug
+      // ids ('task-air-scrubbers'), but `TasksLocation`/`JournalLocation`
+      // gate their detail page on `isUuid`: on desktop the detail pane was
+      // cleared, on mobile no page was pushed, so tapping a demo task or
+      // note did nothing at all — no error, no visual change.
+      final world = ManualDemoWorld.penguinLogistics();
+
+      for (final entity in world.journalEntities) {
+        expect(
+          isUuid(entity.meta.id),
+          isTrue,
+          reason: '${entity.meta.id} is not a UUID, so no route can open it',
+        );
+      }
+      // Ids stay unique once derived — a collision would silently merge two
+      // entities on write.
+      expect(
+        world.journalEntities.map((entity) => entity.meta.id).toSet(),
+        hasLength(world.journalEntities.length),
+      );
+      for (final link in world.links) {
+        expect(isUuid(link.id), isTrue, reason: '${link.id} is not a UUID');
+      }
+      // The nested checklist-item id must agree with the entity id, since
+      // `ChecklistItemData.id` is what the checklist UI resolves.
+      for (final item in world.checklistItems) {
+        expect(item.data.id, item.meta.id);
+      }
     });
 
     test('the link graph is referentially sound: no dangling endpoints, no '
@@ -273,7 +306,7 @@ void main() {
           reason: '$id is a dead end in the graph',
         );
       });
-      for (final hub in const [
+      for (final hub in [
         manualOrbitalHabitatTaskId,
         manualLaunchReviewTaskId,
         manualSardineCargoTaskId,
@@ -476,7 +509,7 @@ void main() {
 
       expect(
         world.taskBrowseTasks.map((task) => task.meta.id),
-        const [
+        [
           manualOrbitalHabitatTaskId,
           manualFishFeederTaskId,
           manualSardineCargoTaskId,

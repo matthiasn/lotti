@@ -24,6 +24,10 @@ sources:
     resource: ../../lib/features/demo/seed/demo_dates.dart
     title: DemoDates semantic clock
     last_modified: 2026-08-05
+  - id: ids
+    resource: ../../lib/features/demo/seed/demo_ids.dart
+    title: demoUuid slug-to-UUID derivation
+    last_modified: 2026-08-05
   - id: manifest
     resource: ../../lib/features/demo/seed/demo_seed_manifest.dart
     title: DemoSeedManifest
@@ -255,6 +259,38 @@ it BFSes two hops from the focus task, so a fixture of isolated tasks would
 render a single node. Four hub tasks carry six or more neighbours; every
 task carries at least two, and the whole task web sits within three hops of
 the hero task.
+
+## Every seeded id is a UUID
+
+The world file names its entities by readable slug — `task-air-scrubbers`,
+`note-scrubber-order`, `manual-rehearsal-item-2` — but what reaches the
+database is
+[`demoUuid(slug)`](../../lib/features/demo/seed/demo_ids.dart): a v5 UUID
+derived under a namespace that is fixed forever, so the same slug always
+yields the same id on every machine, run and app version.
+
+This is not cosmetic. Seeded entities live in a real world and must be
+indistinguishable from anything the user made there, and two mechanisms
+read a journal-entity id as a UUID:
+
+- the route locations gate their detail page on `isUuid`
+  ([`TasksLocation`](../../lib/beamer/locations/tasks_location.dart),
+  [`JournalLocation`](../../lib/beamer/locations/journal_location.dart),
+  and the events/dashboards locations). A non-UUID id opens *nothing*: on
+  desktop `resetDesktopTaskDetail(null)` clears the pane, on mobile no
+  `BeamPage` is pushed. The URL changes, the screen does not, and there is
+  no error — the tap simply appears not to have happened. Settings is
+  unaffected because `SettingsLocation` has no such gate, which is why a
+  slug-id world could still walk the whole settings tree;
+- [`getIdFromSavedRoute`](../../lib/services/nav_service.dart) extracts the
+  linked id from the persisted route with a UUID regex, which is how the
+  global create-entry commands know what to link the new entry to.
+
+Slug ids for entity *definitions* (categories, labels) and AI configs are
+fine — nothing routes them through `isUuid` — but journal entities,
+checklist items and `linked_entries` rows all go through `demoUuid`.
+Changing the derivation namespace orphans every already-seeded world, so
+`demoSeedVersion` must be bumped alongside it.
 
 ## Dates are semantic, not calendar literals
 

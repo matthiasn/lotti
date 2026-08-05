@@ -99,7 +99,7 @@ void main() {
   // The tutorial's own entities — the only demo-only content, deliberately
   // spelled out so a change there is visible in the diff. Everything else is
   // derived from the shared penguin world.
-  const expectedTutorialIds = {
+  final expectedTutorialIds = {
     demoTutorialCheckItemId,
     demoTutorialTimerItemId,
     demoTutorialAddItemItemId,
@@ -210,7 +210,7 @@ void main() {
         (task) => task.meta.id == demoTutorialTaskId,
       );
       expect(tutorialTask.data.title, 'Your first mission');
-      expect(tutorialTask.data.checklistIds, const [demoTutorialChecklistId]);
+      expect(tutorialTask.data.checklistIds, [demoTutorialChecklistId]);
 
       // Cover-art media bytes were installed from the bundle.
       for (final image in entities.whereType<JournalImage>()) {

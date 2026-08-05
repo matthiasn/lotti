@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/demo/seed/demo_dates.dart';
 import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
+import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/utils/image_utils.dart';
 
@@ -42,32 +43,56 @@ const manualHabitatPhotoSkillId = 'skill-habitat-photo';
 const manualWaddleCoverArtSkillId = 'skill-waddle-cover-art';
 const manualLaunchPromptSkillId = 'skill-launch-prompt';
 
-const manualOrbitalHabitatTaskId = 'task-orbital-habitat';
-const manualHabitatChecklistId = 'manual-habitat-checklist';
-const manualHabitatSealsItemId = 'manual-habitat-item-seals';
-const manualHabitatRollCallItemId = 'manual-habitat-item-roll-call';
-const manualHabitatCargoItemId = 'manual-habitat-item-cargo';
-const manualHabitatClearanceItemId = 'manual-habitat-item-clearance';
-const manualHabitatTimeRecordId = 'manual-habitat-time-record';
-const manualRollCallTaskId = 'task-emperor-penguin-roll-call';
-const manualLaunchReviewTaskId = 'task-project-waddle-launch-review';
-const manualLunchTaskId = 'task-coffee-is-not-a-vegetable';
-const manualSardineFuturesTaskId = 'task-negotiate-sardine-futures';
-const manualFishFeederTaskId = 'task-zero-gravity-feeder';
-const manualSardineCargoTaskId = 'task-sardine-cargo';
-const manualPenguinPassengerTaskId = 'task-penguin-passenger';
-const manualHeadsetWalkTaskId = 'task-walk-without-headset';
-const manualHabitatCoverImageId = 'manual-penguin-habitat-cover';
-const manualRollCallCoverImageId = 'manual-penguin-roll-call-cover';
-const manualLaunchReviewCoverImageId = 'manual-penguin-launch-review-cover';
-const manualLunchCoverImageId = 'manual-penguin-lunch-cover';
-const manualSardineFuturesCoverImageId = 'manual-penguin-sardine-futures-cover';
-const manualFishFeederCoverImageId = 'manual-penguin-feeder-cover';
-const manualSardineCargoCoverImageId = 'manual-penguin-cargo-cover';
-const manualPenguinPassengerCoverImageId = 'manual-penguin-legal-cover';
-const manualHeadsetWalkCoverImageId = 'manual-penguin-headset-walk-cover';
+final String manualOrbitalHabitatTaskId = demoUuid('task-orbital-habitat');
+final String manualHabitatChecklistId = demoUuid('manual-habitat-checklist');
+final String manualHabitatSealsItemId = demoUuid('manual-habitat-item-seals');
+final String manualHabitatRollCallItemId = demoUuid(
+  'manual-habitat-item-roll-call',
+);
+final String manualHabitatCargoItemId = demoUuid('manual-habitat-item-cargo');
+final String manualHabitatClearanceItemId = demoUuid(
+  'manual-habitat-item-clearance',
+);
+final String manualHabitatTimeRecordId = demoUuid('manual-habitat-time-record');
+final String manualRollCallTaskId = demoUuid('task-emperor-penguin-roll-call');
+final String manualLaunchReviewTaskId = demoUuid(
+  'task-project-waddle-launch-review',
+);
+final String manualLunchTaskId = demoUuid('task-coffee-is-not-a-vegetable');
+final String manualSardineFuturesTaskId = demoUuid(
+  'task-negotiate-sardine-futures',
+);
+final String manualFishFeederTaskId = demoUuid('task-zero-gravity-feeder');
+final String manualSardineCargoTaskId = demoUuid('task-sardine-cargo');
+final String manualPenguinPassengerTaskId = demoUuid('task-penguin-passenger');
+final String manualHeadsetWalkTaskId = demoUuid('task-walk-without-headset');
+final String manualHabitatCoverImageId = demoUuid(
+  'manual-penguin-habitat-cover',
+);
+final String manualRollCallCoverImageId = demoUuid(
+  'manual-penguin-roll-call-cover',
+);
+final String manualLaunchReviewCoverImageId = demoUuid(
+  'manual-penguin-launch-review-cover',
+);
+final String manualLunchCoverImageId = demoUuid('manual-penguin-lunch-cover');
+final String manualSardineFuturesCoverImageId = demoUuid(
+  'manual-penguin-sardine-futures-cover',
+);
+final String manualFishFeederCoverImageId = demoUuid(
+  'manual-penguin-feeder-cover',
+);
+final String manualSardineCargoCoverImageId = demoUuid(
+  'manual-penguin-cargo-cover',
+);
+final String manualPenguinPassengerCoverImageId = demoUuid(
+  'manual-penguin-legal-cover',
+);
+final String manualHeadsetWalkCoverImageId = demoUuid(
+  'manual-penguin-headset-walk-cover',
+);
 
-const manualDemoCoverAssets = <String, String>{
+final Map<String, String> manualDemoCoverAssets = <String, String>{
   manualHabitatCoverImageId:
       'assets/design_system/manual_task_cover_habitat.webp',
   manualRollCallCoverImageId:
@@ -106,41 +131,43 @@ const demoWaitingLabelId = 'manual-label-waiting-on';
 const demoResearchLabelId = 'manual-label-research';
 
 // Cluster 1 — launch readiness, orbiting the launch review.
-const demoLaunchCommsTaskId = 'task-launch-comms-plan';
-const demoIcePadWeatherTaskId = 'task-ice-pad-weather';
-const demoColdChainAuditTaskId = 'task-cold-chain-audit';
-const demoLaunchRehearsalTaskId = 'task-launch-rehearsal';
-const demoFlightSuitTaskId = 'task-flight-suit-fitting';
+final String demoLaunchCommsTaskId = demoUuid('task-launch-comms-plan');
+final String demoIcePadWeatherTaskId = demoUuid('task-ice-pad-weather');
+final String demoColdChainAuditTaskId = demoUuid('task-cold-chain-audit');
+final String demoLaunchRehearsalTaskId = demoUuid('task-launch-rehearsal');
+final String demoFlightSuitTaskId = demoUuid('task-flight-suit-fitting');
 
 // Cluster 2 — habitat engineering, orbiting the habitat inspection.
-const demoAirScrubbersTaskId = 'task-air-scrubbers';
-const demoHumiditySpikeTaskId = 'task-humidity-spike';
-const demoIceRinkTaskId = 'task-ice-rink-resurface';
-const demoSolarArrayTaskId = 'task-solar-array-tilt';
-const demoWaterRecyclerTaskId = 'task-water-recycler';
+final String demoAirScrubbersTaskId = demoUuid('task-air-scrubbers');
+final String demoHumiditySpikeTaskId = demoUuid('task-humidity-spike');
+final String demoIceRinkTaskId = demoUuid('task-ice-rink-resurface');
+final String demoSolarArrayTaskId = demoUuid('task-solar-array-tilt');
+final String demoWaterRecyclerTaskId = demoUuid('task-water-recycler');
 
 // Cluster 3 — logistics & supply, orbiting the sardine cargo pods.
-const demoSquidPalletTaskId = 'task-squid-pallet';
-const demoKrillSupplierTaskId = 'task-krill-supplier';
-const demoShuttleManifestTaskId = 'task-shuttle-manifest';
-const demoPodSealOrderTaskId = 'task-pod-seal-order';
-const demoCustomsEuropaTaskId = 'task-customs-europa';
+final String demoSquidPalletTaskId = demoUuid('task-squid-pallet');
+final String demoKrillSupplierTaskId = demoUuid('task-krill-supplier');
+final String demoShuttleManifestTaskId = demoUuid('task-shuttle-manifest');
+final String demoPodSealOrderTaskId = demoUuid('task-pod-seal-order');
+final String demoCustomsEuropaTaskId = demoUuid('task-customs-europa');
 
 // Cluster 4 — colony life, orbiting the roll call.
-const demoColonyNewsletterTaskId = 'task-colony-newsletter';
-const demoChickDaycareTaskId = 'task-chick-daycare';
-const demoMovieNightTaskId = 'task-movie-night';
-const demoTobogganingTaskId = 'task-tobogganing-league';
+final String demoColonyNewsletterTaskId = demoUuid('task-colony-newsletter');
+final String demoChickDaycareTaskId = demoUuid('task-chick-daycare');
+final String demoMovieNightTaskId = demoUuid('task-movie-night');
+final String demoTobogganingTaskId = demoUuid('task-tobogganing-league');
 
-const demoRehearsalChecklistId = 'manual-rehearsal-checklist';
-const demoScrubberChecklistId = 'manual-scrubber-checklist';
-const demoPalletChecklistId = 'manual-pallet-checklist';
-const demoNewsletterChecklistId = 'manual-newsletter-checklist';
-const demoFreezerChecklistId = 'manual-freezer-checklist';
-const demoManifestChecklistId = 'manual-manifest-checklist';
+final String demoRehearsalChecklistId = demoUuid('manual-rehearsal-checklist');
+final String demoScrubberChecklistId = demoUuid('manual-scrubber-checklist');
+final String demoPalletChecklistId = demoUuid('manual-pallet-checklist');
+final String demoNewsletterChecklistId = demoUuid(
+  'manual-newsletter-checklist',
+);
+final String demoFreezerChecklistId = demoUuid('manual-freezer-checklist');
+final String demoManifestChecklistId = demoUuid('manual-manifest-checklist');
 
 /// Id of the link that attaches the habitat time record to the hero task.
-const demoHabitatTimeLinkId = 'manual-habitat-time-link';
+final String demoHabitatTimeLinkId = demoUuid('manual-habitat-time-link');
 
 /// Task-to-task links: four clusters around their hubs, plus the deliberate
 /// cross-cluster bridges that turn four stars into one web.
@@ -149,7 +176,7 @@ const demoHabitatTimeLinkId = 'manual-habitat-time-link';
 /// this table is what decides whether the explorer has anywhere to go. Every
 /// task appears at least twice; the four hubs (habitat inspection, launch
 /// review, sardine cargo, roll call) carry six or more.
-const _demoTaskPairs = <(String, String)>[
+final List<(String, String)> _demoTaskPairs = <(String, String)>[
   // Cluster 1 — launch readiness.
   (manualLaunchReviewTaskId, demoLaunchCommsTaskId),
   (manualLaunchReviewTaskId, demoIcePadWeatherTaskId),
@@ -211,49 +238,49 @@ const _demoTaskPairs = <(String, String)>[
 /// Task-to-entry links: notes, logged time and cover photos hanging off the
 /// tasks they belong to. Several notes deliberately bridge two tasks — that is
 /// what makes an observation findable from either side in the graph.
-const _demoEntryPairs = <(String, String)>[
+final List<(String, String)> _demoEntryPairs = <(String, String)>[
   // Observations.
-  (manualOrbitalHabitatTaskId, 'note-seal-pressure'),
-  (demoAirScrubbersTaskId, 'note-scrubber-order'),
-  (demoPodSealOrderTaskId, 'note-scrubber-order'),
-  (demoHumiditySpikeTaskId, 'note-humidity-reading'),
-  (manualFishFeederTaskId, 'note-feeder-trajectory'),
-  (demoSquidPalletTaskId, 'note-pallet-search'),
-  (manualSardineCargoTaskId, 'note-pallet-search'),
-  (demoKrillSupplierTaskId, 'note-krill-quote'),
-  (manualSardineFuturesTaskId, 'note-krill-quote'),
-  (demoCustomsEuropaTaskId, 'note-customs-form'),
-  (demoPodSealOrderTaskId, 'note-customs-form'),
-  (demoIcePadWeatherTaskId, 'note-weather-window'),
-  (demoLaunchRehearsalTaskId, 'note-weather-window'),
-  (demoLaunchRehearsalTaskId, 'note-rehearsal-gap'),
-  (demoFlightSuitTaskId, 'note-suit-sizes'),
-  (demoColonyNewsletterTaskId, 'note-newsletter-draft'),
-  (demoChickDaycareTaskId, 'note-daycare-rota'),
-  (demoMovieNightTaskId, 'note-movie-vote'),
-  (demoTobogganingTaskId, 'note-toboggan-injury'),
-  (manualHeadsetWalkTaskId, 'note-toboggan-injury'),
-  (demoSolarArrayTaskId, 'note-solar-tilt'),
-  (demoWaterRecyclerTaskId, 'note-recycler-filter'),
-  (demoColdChainAuditTaskId, 'note-freezer-log'),
-  (manualSardineCargoTaskId, 'note-freezer-log'),
-  (demoShuttleManifestTaskId, 'note-manifest-mismatch'),
-  (manualSardineCargoTaskId, 'note-manifest-mismatch'),
-  (demoLaunchCommsTaskId, 'note-comms-tone'),
-  (manualLaunchReviewTaskId, 'note-comms-tone'),
-  (manualRollCallTaskId, 'note-roll-call-late'),
-  (manualOrbitalHabitatTaskId, 'note-roll-call-late'),
+  (manualOrbitalHabitatTaskId, demoUuid('note-seal-pressure')),
+  (demoAirScrubbersTaskId, demoUuid('note-scrubber-order')),
+  (demoPodSealOrderTaskId, demoUuid('note-scrubber-order')),
+  (demoHumiditySpikeTaskId, demoUuid('note-humidity-reading')),
+  (manualFishFeederTaskId, demoUuid('note-feeder-trajectory')),
+  (demoSquidPalletTaskId, demoUuid('note-pallet-search')),
+  (manualSardineCargoTaskId, demoUuid('note-pallet-search')),
+  (demoKrillSupplierTaskId, demoUuid('note-krill-quote')),
+  (manualSardineFuturesTaskId, demoUuid('note-krill-quote')),
+  (demoCustomsEuropaTaskId, demoUuid('note-customs-form')),
+  (demoPodSealOrderTaskId, demoUuid('note-customs-form')),
+  (demoIcePadWeatherTaskId, demoUuid('note-weather-window')),
+  (demoLaunchRehearsalTaskId, demoUuid('note-weather-window')),
+  (demoLaunchRehearsalTaskId, demoUuid('note-rehearsal-gap')),
+  (demoFlightSuitTaskId, demoUuid('note-suit-sizes')),
+  (demoColonyNewsletterTaskId, demoUuid('note-newsletter-draft')),
+  (demoChickDaycareTaskId, demoUuid('note-daycare-rota')),
+  (demoMovieNightTaskId, demoUuid('note-movie-vote')),
+  (demoTobogganingTaskId, demoUuid('note-toboggan-injury')),
+  (manualHeadsetWalkTaskId, demoUuid('note-toboggan-injury')),
+  (demoSolarArrayTaskId, demoUuid('note-solar-tilt')),
+  (demoWaterRecyclerTaskId, demoUuid('note-recycler-filter')),
+  (demoColdChainAuditTaskId, demoUuid('note-freezer-log')),
+  (manualSardineCargoTaskId, demoUuid('note-freezer-log')),
+  (demoShuttleManifestTaskId, demoUuid('note-manifest-mismatch')),
+  (manualSardineCargoTaskId, demoUuid('note-manifest-mismatch')),
+  (demoLaunchCommsTaskId, demoUuid('note-comms-tone')),
+  (manualLaunchReviewTaskId, demoUuid('note-comms-tone')),
+  (manualRollCallTaskId, demoUuid('note-roll-call-late')),
+  (manualOrbitalHabitatTaskId, demoUuid('note-roll-call-late')),
   // Logged work.
-  (demoAirScrubbersTaskId, 'time-scrubber-swap'),
-  (demoHumiditySpikeTaskId, 'time-humidity-hunt'),
-  (demoSquidPalletTaskId, 'time-pallet-walk'),
-  (demoLaunchRehearsalTaskId, 'time-rehearsal-run'),
-  (demoColdChainAuditTaskId, 'time-freezer-audit'),
-  (demoColonyNewsletterTaskId, 'time-newsletter-draft'),
-  (demoSolarArrayTaskId, 'time-solar-measure'),
-  (demoWaterRecyclerTaskId, 'time-recycler-clean'),
-  (demoShuttleManifestTaskId, 'time-manifest-count'),
-  (demoLaunchCommsTaskId, 'time-comms-rewrite'),
+  (demoAirScrubbersTaskId, demoUuid('time-scrubber-swap')),
+  (demoHumiditySpikeTaskId, demoUuid('time-humidity-hunt')),
+  (demoSquidPalletTaskId, demoUuid('time-pallet-walk')),
+  (demoLaunchRehearsalTaskId, demoUuid('time-rehearsal-run')),
+  (demoColdChainAuditTaskId, demoUuid('time-freezer-audit')),
+  (demoColonyNewsletterTaskId, demoUuid('time-newsletter-draft')),
+  (demoSolarArrayTaskId, demoUuid('time-solar-measure')),
+  (demoWaterRecyclerTaskId, demoUuid('time-recycler-clean')),
+  (demoShuttleManifestTaskId, demoUuid('time-manifest-count')),
+  (demoLaunchCommsTaskId, demoUuid('time-comms-rewrite')),
   // Photos: the nine bundled covers, attached to the task they picture and
   // to the expansion task that inherited the same artwork.
   (manualOrbitalHabitatTaskId, manualHabitatCoverImageId),
@@ -468,10 +495,11 @@ class ManualDemoWorld {
       required String title,
       required bool isChecked,
       required Duration checkedAgo,
-      String checklistId = manualHabitatChecklistId,
+      String? checklistId,
       String categoryId = manualDemoCategoryId,
       DateTime? createdAt,
     }) {
+      final owningChecklistId = checklistId ?? manualHabitatChecklistId;
       return ChecklistItem(
         meta: TestMetadataFactory.create(
           id: id,
@@ -482,7 +510,7 @@ class ManualDemoWorld {
           id: id,
           title: title,
           isChecked: isChecked,
-          linkedChecklists: [checklistId],
+          linkedChecklists: [owningChecklistId],
           checkedAt: isChecked ? anchor.subtract(checkedAgo) : null,
         ),
       );
@@ -542,7 +570,7 @@ class ManualDemoWorld {
         linkedChecklistItems: [
           for (final item in habitatChecklistItems) item.meta.id,
         ],
-        linkedTasks: const [manualOrbitalHabitatTaskId],
+        linkedTasks: [manualOrbitalHabitatTaskId],
       ),
     );
 
@@ -643,7 +671,7 @@ class ManualDemoWorld {
         ('Rehearse the abort call', 'Den Abbruchruf proben', false),
       ].indexed)
         checklistItem(
-          id: 'manual-rehearsal-item-$index',
+          id: demoUuid('manual-rehearsal-item-$index'),
           title: t(spec.$1, spec.$2),
           isChecked: spec.$3,
           checkedAgo: Duration(hours: 26 + index),
@@ -663,7 +691,7 @@ class ManualDemoWorld {
         ),
       ].indexed)
         checklistItem(
-          id: 'manual-scrubber-item-$index',
+          id: demoUuid('manual-scrubber-item-$index'),
           title: t(spec.$1, spec.$2),
           isChecked: spec.$3,
           checkedAgo: Duration(hours: 4 + index),
@@ -680,7 +708,7 @@ class ManualDemoWorld {
         ('File a loss report', 'Verlustmeldung einreichen', false),
       ].indexed)
         checklistItem(
-          id: 'manual-pallet-item-$index',
+          id: demoUuid('manual-pallet-item-$index'),
           title: t(spec.$1, spec.$2),
           isChecked: spec.$3,
           checkedAgo: Duration(hours: 6 + index),
@@ -697,7 +725,7 @@ class ManualDemoWorld {
         ('Sardine recipe', 'Sardinenrezept', false),
       ].indexed)
         checklistItem(
-          id: 'manual-newsletter-item-$index',
+          id: demoUuid('manual-newsletter-item-$index'),
           title: t(spec.$1, spec.$2),
           isChecked: spec.$3,
           checkedAgo: Duration(hours: 30 + index),
@@ -714,7 +742,7 @@ class ManualDemoWorld {
         ('Sign off the audit', 'Die Prüfung abzeichnen', true),
       ].indexed)
         checklistItem(
-          id: 'manual-freezer-item-$index',
+          id: demoUuid('manual-freezer-item-$index'),
           title: t(spec.$1, spec.$2),
           isChecked: spec.$3,
           checkedAgo: Duration(hours: 50 + index),
@@ -734,7 +762,7 @@ class ManualDemoWorld {
         ('Send the corrected list', 'Die korrigierte Liste senden', false),
       ].indexed)
         checklistItem(
-          id: 'manual-manifest-item-$index',
+          id: demoUuid('manual-manifest-item-$index'),
           title: t(spec.$1, spec.$2),
           isChecked: spec.$3,
           checkedAgo: Duration(hours: 12 + index),
@@ -790,7 +818,7 @@ class ManualDemoWorld {
     // timeline reads as lived-in rather than seeded in one burst.
     final notes = <JournalEntry>[
       note(
-        id: 'note-seal-pressure',
+        id: demoUuid('note-seal-pressure'),
         from: dates.daysAgo(1, 8),
         text: t(
           'Bay A seals held 101.3 kPa all night.',
@@ -798,7 +826,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-scrubber-order',
+        id: demoUuid('note-scrubber-order'),
         from: dates.daysAgo(2, 11),
         categoryId: demoHabitatCategoryId,
         text: t(
@@ -807,7 +835,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-humidity-reading',
+        id: demoUuid('note-humidity-reading'),
         from: dates.daysAgo(3, 15),
         categoryId: demoHabitatCategoryId,
         text: t(
@@ -816,7 +844,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-feeder-trajectory',
+        id: demoUuid('note-feeder-trajectory'),
         from: dates.daysAgo(4, 10),
         text: t(
           'The feeder still aims lunch at Mission Control.',
@@ -825,7 +853,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-pallet-search',
+        id: demoUuid('note-pallet-search'),
         from: dates.daysAgo(5, 14),
         categoryId: demoLogisticsCategoryId,
         text: t(
@@ -835,7 +863,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-krill-quote',
+        id: demoUuid('note-krill-quote'),
         from: dates.daysAgo(7),
         categoryId: demoLogisticsCategoryId,
         text: t(
@@ -844,7 +872,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-customs-form',
+        id: demoUuid('note-customs-form'),
         from: dates.daysAgo(8, 16),
         categoryId: demoLogisticsCategoryId,
         text: t(
@@ -853,7 +881,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-weather-window',
+        id: demoUuid('note-weather-window'),
         from: dates.daysAgo(9, 7),
         text: t(
           'The ice pad clears at 06:40 with a light crosswind.',
@@ -861,7 +889,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-rehearsal-gap',
+        id: demoUuid('note-rehearsal-gap'),
         from: dates.daysAgo(10, 17),
         text: t(
           'Rehearsal ran nine minutes long on the boarding step.',
@@ -869,7 +897,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-suit-sizes',
+        id: demoUuid('note-suit-sizes'),
         from: dates.daysAgo(12, 13),
         text: t(
           'Three flight suits need a wider flipper cut.',
@@ -877,7 +905,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-newsletter-draft',
+        id: demoUuid('note-newsletter-draft'),
         from: dates.daysAgo(14, 20),
         text: t(
           'The draft is done except for the launch section.',
@@ -885,7 +913,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-daycare-rota',
+        id: demoUuid('note-daycare-rota'),
         from: dates.daysAgo(16, 8),
         text: t(
           'Two volunteers dropped out of the Thursday slot.',
@@ -893,7 +921,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-movie-vote',
+        id: demoUuid('note-movie-vote'),
         from: dates.daysAgo(18, 21),
         text: t(
           'The colony voted for the documentary about ice.',
@@ -901,7 +929,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-toboggan-injury',
+        id: demoUuid('note-toboggan-injury'),
         from: dates.daysAgo(21, 15),
         text: t(
           'One sprained flipper, so we need softer landings.',
@@ -909,7 +937,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-solar-tilt',
+        id: demoUuid('note-solar-tilt'),
         from: dates.daysAgo(24, 11),
         categoryId: demoHabitatCategoryId,
         text: t(
@@ -918,7 +946,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-recycler-filter',
+        id: demoUuid('note-recycler-filter'),
         from: dates.daysAgo(27),
         categoryId: demoHabitatCategoryId,
         text: t(
@@ -927,7 +955,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-freezer-log',
+        id: demoUuid('note-freezer-log'),
         from: dates.daysAgo(30, 12),
         text: t(
           'Freezer 3 logged a two-hour gap on Sunday.',
@@ -935,7 +963,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-manifest-mismatch',
+        id: demoUuid('note-manifest-mismatch'),
         from: dates.daysAgo(33, 10),
         categoryId: demoLogisticsCategoryId,
         text: t(
@@ -944,7 +972,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-comms-tone',
+        id: demoUuid('note-comms-tone'),
         from: dates.daysAgo(37, 18),
         text: t(
           'Mission Control wants fewer fish puns in the launch script.',
@@ -952,7 +980,7 @@ class ManualDemoWorld {
         ),
       ),
       note(
-        id: 'note-roll-call-late',
+        id: demoUuid('note-roll-call-late'),
         from: dates.daysAgo(40, 19),
         text: t(
           'Sir Flaps-a-Lot answered roll call from the cargo netting.',
@@ -982,7 +1010,7 @@ class ManualDemoWorld {
 
     final expansionTimeRecords = <JournalEntry>[
       timeRecord(
-        id: 'time-scrubber-swap',
+        id: demoUuid('time-scrubber-swap'),
         weekdaysBack: 1,
         hour: 9,
         duration: const Duration(hours: 1, minutes: 25),
@@ -993,7 +1021,7 @@ class ManualDemoWorld {
         ),
       ),
       timeRecord(
-        id: 'time-humidity-hunt',
+        id: demoUuid('time-humidity-hunt'),
         weekdaysBack: 1,
         hour: 14,
         duration: const Duration(hours: 2),
@@ -1004,7 +1032,7 @@ class ManualDemoWorld {
         ),
       ),
       timeRecord(
-        id: 'time-pallet-walk',
+        id: demoUuid('time-pallet-walk'),
         weekdaysBack: 2,
         hour: 10,
         duration: const Duration(minutes: 50),
@@ -1015,7 +1043,7 @@ class ManualDemoWorld {
         ),
       ),
       timeRecord(
-        id: 'time-rehearsal-run',
+        id: demoUuid('time-rehearsal-run'),
         weekdaysBack: 2,
         hour: 15,
         duration: const Duration(hours: 1, minutes: 40),
@@ -1025,7 +1053,7 @@ class ManualDemoWorld {
         ),
       ),
       timeRecord(
-        id: 'time-freezer-audit',
+        id: demoUuid('time-freezer-audit'),
         weekdaysBack: 3,
         hour: 11,
         duration: const Duration(hours: 2, minutes: 15),
@@ -1035,7 +1063,7 @@ class ManualDemoWorld {
         ),
       ),
       timeRecord(
-        id: 'time-newsletter-draft',
+        id: demoUuid('time-newsletter-draft'),
         weekdaysBack: 4,
         hour: 16,
         duration: const Duration(minutes: 45),
@@ -1045,7 +1073,7 @@ class ManualDemoWorld {
         ),
       ),
       timeRecord(
-        id: 'time-solar-measure',
+        id: demoUuid('time-solar-measure'),
         weekdaysBack: 5,
         hour: 9,
         duration: const Duration(hours: 1),
@@ -1056,7 +1084,7 @@ class ManualDemoWorld {
         ),
       ),
       timeRecord(
-        id: 'time-recycler-clean',
+        id: demoUuid('time-recycler-clean'),
         weekdaysBack: 6,
         hour: 13,
         duration: const Duration(hours: 1, minutes: 10),
@@ -1067,7 +1095,7 @@ class ManualDemoWorld {
         ),
       ),
       timeRecord(
-        id: 'time-manifest-count',
+        id: demoUuid('time-manifest-count'),
         weekdaysBack: 7,
         hour: 10,
         duration: const Duration(minutes: 55),
@@ -1078,7 +1106,7 @@ class ManualDemoWorld {
         ),
       ),
       timeRecord(
-        id: 'time-comms-rewrite',
+        id: demoUuid('time-comms-rewrite'),
         weekdaysBack: 8,
         hour: 14,
         duration: const Duration(minutes: 35),
@@ -1146,7 +1174,7 @@ class ManualDemoWorld {
         estimate: const Duration(hours: 2),
         createdAt: dates.daysAgo(30),
         dateFrom: dates.daysAgo(6),
-        checklistIds: const [demoFreezerChecklistId],
+        checklistIds: [demoFreezerChecklistId],
       ),
       task(
         id: demoLaunchRehearsalTaskId,
@@ -1163,7 +1191,7 @@ class ManualDemoWorld {
         estimate: const Duration(hours: 3),
         createdAt: dates.daysAgo(13),
         dateFrom: dates.daysAgo(4),
-        checklistIds: const [demoRehearsalChecklistId],
+        checklistIds: [demoRehearsalChecklistId],
       ),
       task(
         id: demoFlightSuitTaskId,
@@ -1203,7 +1231,7 @@ class ManualDemoWorld {
         categoryId: demoHabitatCategoryId,
         createdAt: dates.daysAgo(5),
         dateFrom: dates.daysAgo(2),
-        checklistIds: const [demoScrubberChecklistId],
+        checklistIds: [demoScrubberChecklistId],
       ),
       task(
         id: demoHumiditySpikeTaskId,
@@ -1311,7 +1339,7 @@ class ManualDemoWorld {
         categoryId: demoLogisticsCategoryId,
         createdAt: dates.daysAgo(6),
         dateFrom: dates.daysAgo(5),
-        checklistIds: const [demoPalletChecklistId],
+        checklistIds: [demoPalletChecklistId],
       ),
       task(
         id: demoKrillSupplierTaskId,
@@ -1354,7 +1382,7 @@ class ManualDemoWorld {
         categoryId: demoLogisticsCategoryId,
         createdAt: dates.daysAgo(33),
         dateFrom: dates.daysAgo(1),
-        checklistIds: const [demoManifestChecklistId],
+        checklistIds: [demoManifestChecklistId],
       ),
       task(
         id: demoPodSealOrderTaskId,
@@ -1419,7 +1447,7 @@ class ManualDemoWorld {
         estimate: const Duration(hours: 1),
         createdAt: dates.daysAgo(14),
         dateFrom: dates.daysAgo(4),
-        checklistIds: const [demoNewsletterChecklistId],
+        checklistIds: [demoNewsletterChecklistId],
       ),
       task(
         id: demoChickDaycareTaskId,
@@ -1479,7 +1507,7 @@ class ManualDemoWorld {
     ];
 
     EntryLink link(String fromId, String toId) => EntryLink.basic(
-      id: 'link-$fromId-$toId',
+      id: demoUuid('link-$fromId-$toId'),
       fromId: fromId,
       toId: toId,
       createdAt: anchor,
@@ -1583,7 +1611,7 @@ class ManualDemoWorld {
             manualDemoCriticalLabelId,
           ],
           estimate: const Duration(hours: 2),
-          checklistIds: const [manualHabitatChecklistId],
+          checklistIds: [manualHabitatChecklistId],
         ),
         task(
           id: manualLaunchReviewTaskId,

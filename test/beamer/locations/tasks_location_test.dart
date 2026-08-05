@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
+import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_root_page.dart';
 import 'package:lotti/get_it.dart';
@@ -81,6 +82,41 @@ void main() {
       final taskDetailsPage = pages[1].child as TaskDetailsPage;
       expect(taskDetailsPage.taskId, taskId);
     });
+
+    testWidgets(
+      'a demo-seeded task id opens the detail — on desktop it selects into '
+      'the pane, on mobile it pushes the page',
+      (tester) async {
+        // Regression: the demo world used to seed readable slug ids
+        // ('task-air-scrubbers'), which this location rejects via isUuid.
+        // The route changed but nothing on screen did — reported as
+        // "tapping a task does nothing at all".
+        await tester.pumpWidget(const SizedBox.shrink());
+        final taskId = demoAirScrubbersTaskId;
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/tasks/$taskId'),
+        );
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final state = beamState.copyWith(
+          pathParameters: {...beamState.pathParameters, 'taskId': taskId},
+        );
+
+        when(() => mockNavService.isDesktopMode).thenReturn(false);
+        final mobilePages = TasksLocation(
+          routeInformation,
+        ).buildPages(mockBuildContext, state);
+        expect(mobilePages, hasLength(2));
+        expect((mobilePages[1].child as TaskDetailsPage).taskId, taskId);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        when(
+          () => mockNavService.resetDesktopTaskDetail(any()),
+        ).thenAnswer((_) {});
+        TasksLocation(routeInformation).buildPages(mockBuildContext, state);
+        await tester.pump();
+        verify(() => mockNavService.resetDesktopTaskDetail(taskId)).called(1);
+      },
+    );
 
     test(
       'in desktop mode, buildPages returns only root page '

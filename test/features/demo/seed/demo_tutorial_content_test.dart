@@ -42,18 +42,18 @@ void main() {
 
       expect(
         content.task.data.checklistIds,
-        const [demoTutorialChecklistId],
+        [demoTutorialChecklistId],
       );
       expect(
         content.checklist.data.linkedTasks,
-        const [demoTutorialTaskId],
+        [demoTutorialTaskId],
       );
       expect(
         content.checklist.data.linkedChecklistItems,
         [for (final item in content.checklistItems) item.meta.id],
       );
       for (final item in content.checklistItems) {
-        expect(item.data.linkedChecklists, const [demoTutorialChecklistId]);
+        expect(item.data.linkedChecklists, [demoTutorialChecklistId]);
       }
       // Seed-write order: items first, then the checklist, then the task.
       expect(

@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/beamer/locations/journal_location.dart';
+import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/journal/ui/pages/journal_root_page.dart';
 import 'package:lotti/get_it.dart';
@@ -60,6 +61,31 @@ void main() {
       expect(pages.length, 1);
       expect(pages[0].child, isA<JournalRootPage>());
     });
+
+    test(
+      'a demo-seeded note id opens the entry — pushed on mobile, selected '
+      'into the pane on desktop',
+      () async {
+        // Regression: the demo world used to seed readable slug ids
+        // ('note-scrubber-order'), which this location rejects via isUuid.
+        // Tapping a seeded note in the demo logbook changed nothing on
+        // screen — no page, no pane, no error.
+        final entryId =
+            ManualDemoWorld.penguinLogistics().entries.first.meta.id;
+
+        final mobilePages = buildPagesFor(
+          Uri.parse('/journal/$entryId'),
+          {'entryId': entryId},
+        );
+        expect(mobilePages, hasLength(2));
+        expect((mobilePages[1].child as EntryDetailsPage).itemId, entryId);
+
+        when(() => mockNavService.isDesktopMode).thenReturn(true);
+        buildPagesFor(Uri.parse('/journal/$entryId'), {'entryId': entryId});
+        await Future<void>.microtask(() {});
+        expect(desktopSelectedEntryId.value, entryId);
+      },
+    );
 
     group('mobile (isDesktopMode false)', () {
       test('entry uuid pushes EntryDetailsPage on top of the root page', () {

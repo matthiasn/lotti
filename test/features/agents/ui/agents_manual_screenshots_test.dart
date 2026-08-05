@@ -367,7 +367,7 @@ final Map<String, AgentStateEntity> _agentStates = {
     id: 'state-habitat',
     agentId: _habitatAgentId,
     revision: 17,
-    slots: const AgentSlots(activeTaskId: manualOrbitalHabitatTaskId),
+    slots: AgentSlots(activeTaskId: manualOrbitalHabitatTaskId),
     wakeCounter: 42,
     lastWakeAt: manualDemoNow.subtract(const Duration(minutes: 7)),
     nextWakeAt: manualDemoNow.add(const Duration(minutes: 12, seconds: 8)),
@@ -900,14 +900,13 @@ void main() {
         ],
       ),
       pendingWakeTargetTitleProvider.overrideWith((ref, entryId) async {
-        return switch (entryId) {
-          manualOrbitalHabitatTaskId => _t(
+        if (entryId == manualOrbitalHabitatTaskId) {
+          return _t(
             'Inspect orbital penguin habitat',
             'Pinguin-Habitat im Orbit inspizieren',
-          ),
-          'project-waddle' => 'Project Waddle',
-          _ => null,
-        };
+          );
+        }
+        return entryId == 'project-waddle' ? 'Project Waddle' : null;
       }),
       wakeCountdownTickerProvider.overrideWith(
         (ref) => Stream.value(manualDemoNow),
