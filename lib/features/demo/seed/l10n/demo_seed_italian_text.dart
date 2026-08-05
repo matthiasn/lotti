@@ -8,8 +8,8 @@ String? manualScreenshotItalianText(String english) => _copy[english];
 const _copy = <String, String>{
   "Theming": "Tema",
   "Recording Style": "Stile di registrazione",
-  "Modern — energy orb": "Moderno — energia orb",
-  "Analogue — VU meter": "Analoga — Misuratore di VU",
+  "Modern — energy orb": "Moderno — sfera di energia",
+  "Analogue — VU meter": "Analogico — misuratore VU",
   "Speech": "Voce",
   "Voice": "Voce",
   "Male 3": "Uomo 3",
@@ -19,15 +19,15 @@ const _copy = <String, String>{
   "Keyboard shortcuts": "Tasti di scelta rapida",
   "Open command palette": "Aprire la tavolozza dei comandi",
   "General": "Generale",
-  "Command palette": "tavolozza dei comandi",
+  "Command palette": "Tavolozza dei comandi",
   "Task": "Attività",
   "more tokens today": "più gettoni oggi",
   "AI summary": "Riepilogo dell'AI",
   "Automatic updates": "Aggiornamenti automatici",
   "Bundle task changes and update after two minutes.":
-      "L'attività Bundle cambia e si aggiorna dopo due minuti.",
+      "Raggruppa le modifiche dell'attività e aggiorna dopo due minuti.",
   "Read more": "Leggi tutto",
-  "Open agent internals": "Interni di agente aperto",
+  "Open agent internals": "Apri gli interni dell'agente",
   "Show less": "Mostra di meno",
   "\"Run zero-gravity sardine feeder test\"":
       "\"Esegui il test dell'alimentatore di sardine a gravità zero\"",
@@ -36,13 +36,13 @@ const _copy = <String, String>{
   "Estimate: 45m → 1h 15m": "Stima: 45m → 1h 15m",
   "45m → 1h 15m": "45m → 1h 15m",
   "Automatic updates are off. Wake the agent when you want a fresh report.":
-      "Aggiornamenti automatici sono spenti. Sveglia l'agente quando si desidera un nuovo rapporto.",
+      "Aggiornamenti automatici sono spenti. Sveglia l'agente quando vuoi un nuovo rapporto.",
   "This summary is out of date": "Questo riassunto è fuori data",
   "The task changed after this summary was generated.":
       "Il compito è cambiato dopo che questo sommario è stato generato.",
-  "Wake agent": "Agente sveglia",
+  "Wake agent": "Sveglia l'agente",
   "Filter tasks": "Filtra le attività",
-  "Filter projects": "Progetti di filtrazione",
+  "Filter projects": "Filtra i progetti",
   "Mission Control Mac": "Controllo missione Mac",
   "Orbital Habitat Console": "Console Habitat Orbital",
   "Admiral Pebble’s Phone": "Ammiraglio Pebble’s Phone",
@@ -60,9 +60,9 @@ const _copy = <String, String>{
       "Europa sardine cargo manifesto revisionato dall'ammiraglio Pebble.",
   "Project Waddle node profile": "Progetto profilo nodo Waddle",
   "Project Waddle private-mode flag":
-      "Progetto Waddle bandiera a movimento privato",
+      "Flag della modalità privata del progetto Waddle",
   "Show private entries": "Mostra le voci private",
-  "Habitat pressure-seal photo": "Foto del canale di pressione dell'habitat",
+  "Habitat pressure-seal photo": "Foto del sigillo di pressione dell'habitat",
   "Project Details": "Dettagli del progetto",
   "Status": "Stato",
   "Category": "Categoria",
@@ -72,16 +72,16 @@ const _copy = <String, String>{
   "Time Analysis": "Analisi del tempo",
   "TOTAL": "TOTALE",
   "FOCUS": "FOCUS",
-  "Running total": "Totale in esecuzione",
-  "Running total over the range": "Esecuzione totale sulla gamma",
+  "Running total": "Totale progressivo",
+  "Running total over the range": "Totale progressivo sull'intervallo",
   "Compare": "Confronta",
   "Change": "Cambiamento",
-  "PREVIOUS": "PREVIO",
+  "PREVIOUS": "PRECEDENTE",
   "Summary": "Sintesi",
   "Photos": "Fotografie",
   "Timeline": "Timeline",
-  "Filter journal": "Diario di filtro",
-  "Entry types": "Tipologie di ammissione",
+  "Filter journal": "Filtra il diario",
+  "Entry types": "Tipi di voce",
   "Event": "Evento",
   "Text Entry": "Inserimento del testo",
   "Date & Time": "Data e ora",
@@ -91,16 +91,16 @@ const _copy = <String, String>{
   "July 2026": "luglio 2026",
   "Images": "Immagini",
   "Code": "Codice",
-  "Filter & Sort": "Filtro e Ordinazione",
-  "Newest first": "Il primo nuovo",
-  "Oldest first": "Il primo vecchio",
+  "Filter & Sort": "Filtro e ordinamento",
+  "Newest first": "Prima i più recenti",
+  "Oldest first": "Prima i più vecchi",
   "Show hidden entries": "Mostra le voci nascoste",
   "Rate this session": "Valutare questa sessione",
   "How productive was this session?":
       "Quanto è stato produttivo questa sessione?",
   "How energized did you feel?": "Quanto ti sei sentita eccitata?",
   "How focused were you?": "Quanto eri concentrato?",
-  "Just right": "Giusto.",
+  "Just right": "Giusto",
   "Save": "Salva",
   "Europa sardine futures summit": "Vertice Europa sardine futures",
   "Project Waddle launch gala": "Progetto Waddle lancio gala",
@@ -111,9 +111,9 @@ const _copy = <String, String>{
   "Europa cold-chain check: sardines stable, emperor penguin roll call complete, feeder calibration still pending.":
       "Europa freddo-chain check: sardine stabili, imperatore pinguino roll chiamata completa, feeder calibrazione ancora in sospeso.",
   "All 37 emperor penguins": "Tutti i 37 pinguini imperatori",
-  "Generate…": "Genera...",
+  "Generate…": "Genera…",
   "Skills": "Competenze",
-  "pressure-gauge anomalies": "anomalie di carico della pressione",
+  "pressure-gauge anomalies": "anomalie del manometro",
   "Add": "Aggiungi",
   "Checklist": "Lista di controllo",
   "Audio Recording": "Registrazione audio",
@@ -134,17 +134,17 @@ const _copy = <String, String>{
   "Cost by category": "Costo per categoria",
   "Connect": "Collegamento",
   "Get started": "Iniziare",
-  "How should recording feel?": "Come dovrebbe la registrazione sentire?",
+  "How should recording feel?": "Che sensazione deve dare la registrazione?",
   "Where should your AI work?":
       "Dove dovrebbe funzionare l'intelligenza artificiale?",
   "Add your own": "Aggiungi il tuo",
   "Create your first task": "Crea il tuo primo compito",
   "Record your thought": "Registra il tuo pensiero",
-  "Listening… tap when you're done": "Ascolta... tocca quando hai finito",
-  "Rather type?": "Piuttosto tipo?",
+  "Listening… tap when you're done": "In ascolto… tocca quando hai finito",
+  "Rather type?": "Preferisci scrivere?",
   "Your first task is ready": "Il tuo primo compito è pronto",
   "You've created your first AI task": "Hai creato il tuo primo compito AI",
-  "Talk. Lotti turns it into a plan.": "Lotti lo trasforma in un piano.",
+  "Talk. Lotti turns it into a plan.": "Parla. Lotti lo trasforma in un piano.",
   "Inspect the Europa sardine relay before the emperor penguin roll call":
       "Ispezionare il relè di sardina Europa prima della chiamata del pinguino dell'imperatore",
   "Inspect the Europa sardine relay": "Ispezione del relè Europa sardine",
@@ -156,28 +156,28 @@ const _copy = <String, String>{
   "Go to Tasks": "Vai alle attività",
   "rename": "rinomina",
   "Rename focused item": "Rinominare l'oggetto concentrato",
-  "Animations": "Animazione",
+  "Animations": "Animazioni",
   "Celebration animations": "Animazioni di celebrazione",
-  "Completion haptics": "Setttica di completamento",
+  "Completion haptics": "Feedback aptico al completamento",
   "Style": "Stile",
   "Sparks": "Scintille",
   "Combine two": "Combina due",
-  "Try it": "Provalo.",
+  "Try it": "Provalo",
   "Count emperor penguins": "Conta i pinguini dell'imperatore",
-  "Route sardine cargo": "Strada sardine cargo",
-  "Brief Mission Control": "Brief Mission Control",
+  "Route sardine cargo": "Instrada il carico di sardine",
+  "Brief Mission Control": "Informa il Controllo Missione",
   "Changes save and apply everywhere instantly":
       "Cambiamenti salvare e applicare ovunque istantaneamente",
   "Shape": "Forma",
   "Advanced Settings": "Impostazioni avanzate",
-  "Config Flags": "Bandiere di conflitto",
+  "Config Flags": "Flag di configurazione",
   "Show private entries?": "Mostrare voci private?",
   "Import Activity Data": "Importazione dei dati di attività",
-  "Purge deleted items": "Purezza oggetti cancellati",
+  "Purge deleted items": "Elimina definitivamente gli oggetti cancellati",
   "Definitions": "Definizioni",
   "Categories": "Categorie",
   "Labels": "Etichette",
-  "Habits": "Abitazioni",
+  "Habits": "Abitudini",
   "Inspect habitat seals": "Ispezione di foche di habitat",
   "Check the pressure seals before the colony wakes.":
       "Controllare i sigilli di pressione prima che la colonia si svegli.",
@@ -191,9 +191,9 @@ const _copy = <String, String>{
   "Reconcile consumed crates with the orbital manifest.":
       "Riconcile consumato casse con il manifesto orbitale.",
   "Success": "Successo",
-  "Skip": "Salta!",
+  "Skip": "Salta",
   "Missed": "Mancato",
-  "Dashboards": "Dashboards",
+  "Dashboards": "Dashboard",
   "Measurables": "Misurabili",
   "Mission Control Router": "Router di controllo missione",
   "Cloud routing for launch planning and high-stakes reasoning.":
@@ -207,7 +207,7 @@ const _copy = <String, String>{
   "Penguin Audio Bay": "Penguin Audio Bay",
   "Local transcription for mission briefings.":
       "Trascrizione locale per i briefing di missione.",
-  "Waddle Command 70B": "Comando di corsa 70B",
+  "Waddle Command 70B": "Comando Waddle 70B",
   "Fast tool-calling model for routine Project Waddle operations.":
       "Modello di fissaggio rapido per le operazioni di routine del progetto Waddle.",
   "Emperor Reasoning XL": "Imperatore Ragione XL",
@@ -243,7 +243,7 @@ const _copy = <String, String>{
       "Preservare i nomi e la terminologia del progetto Waddle.",
   "Inspect habitat photo": "Ispezione foto dell'habitat",
   "Find pressure-gauge anomalies and task-relevant seal damage.":
-      "Trova anomalie di carico della pressione e danni di tenuta rilevanti per le attività.",
+      "Trova anomalie del manometro e danni di tenuta rilevanti per le attività.",
   "Inspect the habitat image for operational risks.":
       "Ispezionare l'immagine dell'habitat per i rischi operativi.",
   "Report only visible and actionable findings.":
@@ -256,7 +256,7 @@ const _copy = <String, String>{
       "Creare memorabile copertina di missione arte.",
   "Keep the penguin subject inside the square-safe area.":
       "Tenere il soggetto pinguino all'interno della zona di sicurezza quadrata.",
-  "Draft launch-review prompt": "Progetto di avvio-review prompt",
+  "Draft launch-review prompt": "Redigi il prompt per la revisione di lancio",
   "Prepare a complete AI prompt for the next Mission Control review.":
       "Preparare un prompt AI completo per la prossima recensione di Mission Control.",
   "Write a precise operational prompt.":
@@ -268,7 +268,7 @@ const _copy = <String, String>{
   "Mission Control": "Controllo delle missioni",
   "Human Maintenance": "Manutenzione umana",
   "Tasks": "Compiti",
-  "Logbook": "Regime di registro",
+  "Logbook": "Diario di bordo",
   "Settings": "Impostazioni",
   "Manual": "Manuale",
   "Opens in your browser": "Si apre nel tuo browser",
@@ -278,12 +278,12 @@ const _copy = <String, String>{
   "14 tasks": "14 compiti",
   "Edit category": "Modifica della categoria",
   "Project Waddle; Sir Flaps-a-Lot; sardine; Europa":
-      "Progetto Waddle; Sir Flaps-a-Lot; sardine; Europa",
+      "Progetto Waddle; Sir Flaps-a-Lot; sardina; Europa",
   "Launch-critical work for the first interplanetary penguin habitat.":
       "Lavoro di lancio-critico per il primo habitat del pinguino interplanetario.",
   "Must be resolved before emperor penguins enter the orbital habitat.":
       "Deve essere risolto prima che i pinguini dell'imperatore entrino nell'habitat orbitale.",
-  "Awaiting Mission Control": "Risveglio del controllo della missione",
+  "Awaiting Mission Control": "In attesa del Controllo Missione",
   "Blocked until the lunar shift sends clearance.":
       "Bloccato fino a quando il turno lunare non manda l'autorizzazione.",
   "Sardine market sensitive": "Sardine mercato sensibile",
@@ -318,13 +318,13 @@ const _copy = <String, String>{
   "Daily fish consumption across the orbital habitat.":
       "Consumo giornaliero di pesce attraverso l'habitat orbitale.",
   "sardines": "sardine",
-  "sardine": "sardine",
+  "sardine": "sardina",
   "project waddle habitat": "progetto waddle habitat",
   "Project Waddle habitat": "Progetto Habitat Waddle",
   "Dinner shift after the Europa cargo docked":
       "Cambio di cena dopo il carico Europa attraccato",
   "Observed at": "Osservato a",
-  "Penguins accounted for": "Pinguini rappresentato per",
+  "Penguins accounted for": "Pinguini contabilizzati",
   "Edit measurable": "Modificare misurabile",
   "Daily average": "Media giornaliera",
   "Colony operations": "Operazioni di colonizzazione",
@@ -335,9 +335,9 @@ const _copy = <String, String>{
       "Recensione di lancio privata per Project Waddle.",
   "Habitat pressure — Daily average":
       "Pressione dell'habitat — Media giornaliera",
-  "Sardines consumed — Daily sum": "Sardine consumate — somma giornaliera",
+  "Sardines consumed — Daily sum": "Sardine consumate — Somma giornaliera",
   "Penguins accounted for — Daily sum":
-      "I pinguini hanno rappresentato — somma giornaliera",
+      "Pinguini contabilizzati — Somma giornaliera",
   "Add charts by type": "Aggiungi grafici per tipo",
   "Measurements": "Misure",
   "Health": "Salute",
@@ -357,7 +357,7 @@ const _copy = <String, String>{
   "Mission Control declares the ice-pad trajectory officially waddly.":
       "Il Controllo Missione dichiara che la traiettoria del ice-pad è ufficialmente ondulata.",
   "Pressure seals green. Tiny oxygen packs counted twice.":
-      "Sigilli di pressione verde, piccole confezioni di ossigeno contati due volte.",
+      "Sigilli di pressione verdi. Piccole confezioni di ossigeno contate due volte.",
   "The orbital habitat, five minutes before the ceremonial sardines.":
       "L'habitat orbitale, cinque minuti prima delle sardine cerimoniali.",
   "Europa cargo pods arrive at a crisp and diplomatic temperature.":
@@ -406,7 +406,7 @@ const _copy = <String, String>{
   "Legal: Is a penguin a passenger?": "Legale: un pinguino è un passeggero?",
   "HIGH ENERGY": "ENERGIA ALTA",
   "POST-LUNCH DIP": "POST-LUNCH DIP",
-  "SECOND WIND": "SECONDO",
+  "SECOND WIND": "SECONDO FIATO",
   "Habitat seals green; tiny helmets still pending":
       "Habitat sigilli verdi; piccoli caschi ancora in sospeso",
   "Locked Q3 sardines below the emergency fish ceiling":
@@ -436,7 +436,7 @@ const _copy = <String, String>{
   "Keep the zero-gravity demo clear of the sardine negotiation.":
       "Tenere la demo zero-gravity libera dalla negoziazione sardina.",
   "Seals green; all 37 emperor penguins accounted for.":
-      "Guarnizioni verdi; tutti i 37 pinguini dell'imperatore hanno rappresentato.",
+      "Guarnizioni verdi; tutti i 37 pinguini dell'imperatore sono contabilizzati.",
   "Mission Control approved the revised habitat checklist.":
       "Il Controllo Missione ha approvato la lista di controllo dell'habitat riveduta.",
   "Q3 supply secured below the emergency fish ceiling.":
@@ -454,7 +454,7 @@ const _copy = <String, String>{
   "Send Project Waddle briefing": "Inviare il progetto Waddle briefing",
   "the Project Waddle launch review":
       "la recensione del lancio di Project Waddle",
-  "Project Waddle launch briefing": "Progetto Brevettura di lancio Waddle",
+  "Project Waddle launch briefing": "Briefing di lancio del progetto Waddle",
   "In progress · 2 sessions": "In corso · 2 sessioni",
   "before Mission Control wakes up":
       "prima che il Controllo Missione si svegli",
@@ -467,7 +467,7 @@ const _copy = <String, String>{
       "Sostituire il secchio di pesce diplomatico",
   "Started Friday, dignity not included":
       "Iniziato venerdì, dignità non inclusa",
-  "Renew orbital wildlife permit": "Il nuovo permesso di fauna orbitale",
+  "Renew orbital wildlife permit": "Rinnova il permesso per la fauna orbitale",
   "The penguins are currently technically cargo":
       "Tecnicamente, i pinguini sono attualmente un carico",
   "Practice calm during surprise flapping":
@@ -485,14 +485,13 @@ const _copy = <String, String>{
   "Run zero-gravity sardine feeder test":
       "Esegui il test dell'alimentatore della sardina a gravità zero",
   "Orbital Habitat Sentinel": "Sentinella dell'habitat orbitale",
-  "Project Waddle Day Planner":
-      "Pianificatore per il giorno delle vacanze di progetto",
+  "Project Waddle Day Planner": "Pianificatore giornaliero del progetto Waddle",
   "Sardine Supply Watch": "Sardine orologio di alimentazione",
   "Fish Diplomacy Coach": "Fish Diplomacy Coach",
   "Habitat Seal Inspector": "Ispettore del sigillo di Habitat",
   "Project Waddle Planner": "Progetto Waddle Planner",
   "Sardine Cargo Coordinator": "Sardine Cargo Coordinatore",
-  "Project Waddle Operations": "Operazioni di lavoro del progetto",
+  "Project Waddle Operations": "Operazioni del progetto Waddle",
   "Cargo Bay": "Baia di carico",
   "Interplanetary Relations": "Relazioni interplanetarie",
   "Habitat Science": "Scienza dell'habitat",
@@ -521,15 +520,15 @@ const _copy = <String, String>{
   "Challenge optimistic launch assumptions and cite the observation that changed your conclusion.":
       "Sfida ipotesi di lancio ottimistiche e cita l'osservazione che ha cambiato la tua conclusione.",
   "Be curious, precise, and delighted by useful anomalies.":
-      "Siate curiosi, precisi e soddisfatti da anomalie utili.",
+      "Sii curioso, preciso e soddisfatto delle anomalie utili.",
   "No alarmism; distinguish measurements from hypotheses.":
       "Nessun allarmatismo; distinguere le misurazioni dalle ipotesi.",
   "Turn vague concerns into an observable test.":
-      "Trasformate le preoccupazioni vaghe in un test osservabile.",
+      "Trasforma le preoccupazioni vaghe in un test osservabile.",
   "Prefer an awkward fact over an elegant story.":
       "Preferisci un fatto imbarazzante su una storia elegante.",
   "Be brisk, practical, and exact about quantities.":
-      "Siate corrotti, pratici e precisi circa le quantità.",
+      "Sii rapido, pratico e preciso sulle quantità.",
   "Never shame a penguin for an empty feeder.":
       "Mai vergognare un pinguino per un alimentatore vuoto.",
   "Name the blocked handoff and the next owner.":
@@ -552,8 +551,8 @@ const _copy = <String, String>{
   "Admiral Pebble is appropriately skeptical, but should ask fewer questions when a launch hold is already obvious.":
       "L'ammiraglio Pebble è opportunamente scettico, ma dovrebbe fare meno domande quando una presa di lancio è già evidente.",
   "pressure anomaly": "anomalia pressione",
-  "calm flight director": "volo calmo direttore",
-  "launch hold": "lancio",
+  "calm flight director": "direttore di volo calmo",
+  "launch hold": "sospensione del lancio",
   // Demo-world tutorial task ("Your first mission").
   "Your first mission": "La tua prima missione",
   "Work through the checklist below to learn the basics — everything in this demo world is safe to try.":

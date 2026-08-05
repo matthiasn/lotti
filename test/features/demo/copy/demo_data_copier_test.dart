@@ -240,6 +240,41 @@ void main() {
       );
     });
 
+    test(
+      'a media entity whose source file is gone keeps its ORIGINAL path '
+      'instead of pointing at a demo_import file nothing will create',
+      () async {
+        await seedSourceWorld();
+        // The file was cleaned up externally after the row was written.
+        File(
+          p.join(sourceRoot.path, 'images', '2026-07-20', 'img-1.jpg'),
+        ).deleteSync();
+        final copier = DemoDataCopier(newId: sequentialIds());
+
+        final plan = await copier.prepare(
+          selectedIds: {'task-1'},
+          sourceDb: source.journalDb,
+          sourceRoot: sourceRoot,
+          stagingDir: stagingDir,
+        );
+
+        final image = plan.entities.whereType<JournalImage>().single;
+        expect(plan.media, isEmpty, reason: 'nothing was staged');
+        expect(
+          image.data.imageDirectory,
+          '/images/2026-07-20/',
+          reason:
+              'rewriting to demo_import would claim an imported file that '
+              'was never imported',
+        );
+        expect(image.data.imageFile, 'img-1.jpg');
+        expect(
+          image.data.imageDirectory,
+          isNot(demoImportMediaDirectory),
+        );
+      },
+    );
+
     test('typed links keep their relationship semantics and collapsed flag '
         'through the plan', () async {
       await seedSourceWorld();

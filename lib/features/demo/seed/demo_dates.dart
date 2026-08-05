@@ -32,9 +32,14 @@ class DemoDates {
 
   /// [days] before today at [hour]: a due date that is already past.
   ///
-  /// Authored at 17:00 by default and never less than a day back, so the
-  /// chip cannot read as "due today" no matter when the world is seeded.
-  DateTime overdue(int days, [int hour = 17]) => inDays(-days, hour);
+  /// Authored at 17:00 by default, and [days] starts at 1 — the guarantee
+  /// that the chip cannot read as "due today" (or, worse, as upcoming) no
+  /// matter when the world is seeded rests on that, so it is asserted here
+  /// rather than left to the call sites.
+  DateTime overdue(int days, [int hour = 17]) {
+    assert(days >= 1, 'overdue counts whole days back, so days starts at 1');
+    return inDays(-days, hour);
+  }
 
   /// [days] before today at [hour] — for `createdAt` and logged work.
   DateTime daysAgo(int days, [int hour = 9]) => inDays(-days, hour);

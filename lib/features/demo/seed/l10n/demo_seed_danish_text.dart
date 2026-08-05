@@ -15,23 +15,23 @@ const _copy = <String, String>{
   "Male 3": "Mand 3",
   "Female": "Kvinde",
   "Female 1": "Kvinde 1",
-  "Female 5": "Kvinder 5",
+  "Female 5": "Kvinde 5",
   "Keyboard shortcuts": "Tastaturgenveje",
-  "Open command palette": "Open command-palette",
-  "General": "Generel",
+  "Open command palette": "Åbn kommando-paletten",
+  "General": "Generelt",
   "Command palette": "Kommando-palette",
   "Task": "Opgave",
-  "more tokens today": "Flere tokens i dag",
+  "more tokens today": "flere tokens i dag",
   "AI summary": "AI-oversigt",
   "Automatic updates": "Automatiske opdateringer",
   "Bundle task changes and update after two minutes.":
-      "Samle ændringer i opgaver og opdater efter to minutter.",
+      "Saml ændringer i opgaver og opdater efter to minutter.",
   "Read more": "Læs mere",
-  "Open agent internals": "Åbne agent-internals",
+  "Open agent internals": "Åbn agentens interne detaljer",
   "Show less": "Vis mindre",
   "\"Run zero-gravity sardine feeder test\"": "\"Kør vægtløs sardinfodertest\"",
   "Add: \"Run zero-gravity sardine feeder test\"":
-      "Tilføje: \"Kør vægtløs sardinfodertest\"",
+      "Tilføj: \"Kør vægtløs sardinfodertest\"",
   "Estimate: 45m → 1h 15m": "Estimat: 45 m → 1 time 15 min",
   "45m → 1h 15m": "45 m → 1 time 15 min",
   "Automatic updates are off. Wake the agent when you want a fresh report.":
@@ -39,27 +39,27 @@ const _copy = <String, String>{
   "This summary is out of date": "Dette resumé er forældet",
   "The task changed after this summary was generated.":
       "Opgaven ændrede sig efter denne opsummering blev genereret.",
-  "Wake agent": "Wake-agent",
-  "Filter tasks": "Filteropgaver",
-  "Filter projects": "Filterprojekter",
+  "Wake agent": "Væk agenten",
+  "Filter tasks": "Filtrér opgaver",
+  "Filter projects": "Filtrér projekter",
   "Mission Control Mac": "Mission Control Mac",
   "Orbital Habitat Console": "Orbital Habitat-konsol",
   "Admiral Pebble’s Phone": "Admiral Pebbles telefon",
   "Inspect orbital penguin habitat before launch":
       "Inspicer orbital pingvinhabitat før opsendelse",
   "Launch orbital penguin habitat after seal inspection":
-      "Opsendelse af orbital pingvinhabitat efter tætningsinspektion",
+      "Opsend orbital pingvinhabitat efter tætningsinspektion",
   "Mission Control cleared 36 penguins. Recheck pressure seal C and hold the sardine cargo pod until the final emperor arrives.":
-      "Mission Control ryddede 36 pingviner. Tjek tryktætningen C igen og hold sardin-lastkapslen, indtil den sidste kejser ankommer.",
+      "Mission Control godkendte 36 pingviner. Tjek tryktætningen C igen og hold sardin-lastkapslen, indtil den sidste kejser ankommer.",
   "Inspect orbital penguin habitat — before launch":
       "Inspicer orbital pingvinhabitat — før opsendelse",
   "Habitat Console cleared all 37 penguins and pressure seal C. Release the zero-gravity sardine cargo pod at 11:20.":
-      "Habitat Console har ryddet alle 37 pingviner og tryktætning C. Frigiv den vægtløse sardin-lastkapsel kl. 11:20.",
+      "Habitat Console har godkendt alle 37 pingviner og tryktætning C. Frigiv den vægtløse sardin-lastkapsel kl. 11:20.",
   "Europa sardine cargo manifest revised by Admiral Pebble.":
       "Europa sardin-fragtmanifest revideret af admiral Pebble.",
   "Project Waddle node profile": "Project Waddle-nodeprofil",
   "Project Waddle private-mode flag": "Project Waddle private-mode flag",
-  "Show private entries": "Vis private bidrag",
+  "Show private entries": "Vis private poster",
   "Habitat pressure-seal photo": "Habitatets trykforseglingsfoto",
   "Project Details": "Projektdetaljer",
   "Status": "Status",
@@ -71,20 +71,20 @@ const _copy = <String, String>{
   "TOTAL": "SAMLET",
   "FOCUS": "FOKUS",
   "Running total": "Løbende total",
-  "Running total over the range": "Løbende total over rækkevidden",
+  "Running total over the range": "Løbende total over perioden",
   "Compare": "Sammenlign",
   "Change": "Forandring",
   "PREVIOUS": "TIDLIGERE",
   "Summary": "Resumé",
   "Photos": "Fotos",
   "Timeline": "Tidslinje",
-  "Filter journal": "Filterjournal",
-  "Entry types": "Deltagertyper",
+  "Filter journal": "Filtrér journal",
+  "Entry types": "Posttyper",
   "Event": "Begivenhed",
   "Text Entry": "Tekstindtastning",
   "Date & Time": "Dato og Tid",
   "Start time": "Starttid",
-  "End time": "Endetid",
+  "End time": "Sluttid",
   "Friday, July 17, 2026": "fredag den 17. juli 2026",
   "July 2026": "juli 2026",
   "Images": "Billeder",
@@ -110,7 +110,7 @@ const _copy = <String, String>{
   "All 37 emperor penguins": "Alle 37 kejserpingviner",
   "Generate…": "Generer...",
   "Skills": "Færdigheder",
-  "pressure-gauge anomalies": "Trykmåleranomalier",
+  "pressure-gauge anomalies": "trykmåleranomalier",
   "Add": "Tilføj",
   "Checklist": "Tjekliste",
   "Audio Recording": "Lydoptagelse",
@@ -121,7 +121,7 @@ const _copy = <String, String>{
   "More options": "Flere muligheder",
   "Connection verified": "Forbindelse bekræftet",
   "Connection": "Forbindelse",
-  "Edit": "Redigering",
+  "Edit": "Rediger",
   "Provider Type": "Udbydertype",
   "API Key": "API-nøgle",
   "Edit Model": "Rediger model",
@@ -136,7 +136,7 @@ const _copy = <String, String>{
   "Add your own": "Tilføj din egen",
   "Create your first task": "Lav din første opgave",
   "Record your thought": "Optag dine tanker",
-  "Listening… tap when you're done": "Lytter... Tryk på, når du er færdig",
+  "Listening… tap when you're done": "Lytter... tryk, når du er færdig",
   "Rather type?": "Vil du hellere skrive?",
   "Your first task is ready": "Din første opgave er klar",
   "You've created your first AI task": "Du har skabt din første AI-opgave",
@@ -150,42 +150,42 @@ const _copy = <String, String>{
   "Generating image...": "Genererer billede...",
   "Link existing task...": "Link eksisterende opgave...",
   "Go to Tasks": "Gå til opgaver",
-  "rename": "Omdøbning",
+  "rename": "omdøb",
   "Rename focused item": "Omdøb fokuseret element",
-  "Animations": "Underholdning",
+  "Animations": "Animationer",
   "Celebration animations": "Fejringsanimationer",
-  "Completion haptics": "Fuldstændig haptik",
+  "Completion haptics": "Haptik ved fuldførelse",
   "Style": "Stil",
-  "Sparks": "Sparks",
+  "Sparks": "Gnister",
   "Combine two": "Kombiner to",
   "Try it": "Prøv det",
   "Count emperor penguins": "Tæl kejserpingviner",
-  "Route sardine cargo": "Rute sardin-last",
-  "Brief Mission Control": "Kort Mission Control",
+  "Route sardine cargo": "Dirigér sardin-last",
+  "Brief Mission Control": "Brief Mission Control",
   "Changes save and apply everywhere instantly":
-      "Ændringer gemmer og gælder overalt med det samme",
+      "Ændringer gemmes og gælder overalt med det samme",
   "Shape": "Form",
   "Advanced Settings": "Avancerede indstillinger",
   "Config Flags": "Konfigurationsflag",
-  "Show private entries?": "Vise private indsendelser?",
+  "Show private entries?": "Vis private poster?",
   "Import Activity Data": "Importer aktivitetsdata",
   "Purge deleted items": "Rens slettede elementer",
   "Definitions": "Definitioner",
   "Categories": "Kategorier",
   "Labels": "Etiketter",
   "Habits": "Vaner",
-  "Inspect habitat seals": "Inspicer habitatsæler",
+  "Inspect habitat seals": "Inspicer habitatets tætninger",
   "Check the pressure seals before the colony wakes.":
       "Tjek trykpakningerne, før kolonien vågner.",
-  "Log penguin roll call": "Log-pingvin-opråb",
+  "Log penguin roll call": "Log pingvin-navneopråbet",
   "Confirm all 37 emperor penguins are aboard.":
       "Bekræft at alle 37 kejserpingviner er ombord.",
   "Recalibrate fish feeder": "Rekalibrer fiskefoderautomaten",
   "Tune the zero-gravity feeder after the midday delivery.":
-      "Afstem vægtløs foderautomaten efter middagsleveringen.",
+      "Afstem den vægtløse foderautomat efter middagsleveringen.",
   "Review sardine inventory": "Gennemgå sardinlager",
   "Reconcile consumed crates with the orbital manifest.":
-      "Forlig forbrugte kasser med det orbitale manifest.",
+      "Afstem forbrugte kasser med det orbitale manifest.",
   "Success": "Succes",
   "Skip": "Spring over",
   "Missed": "Missede",
@@ -208,7 +208,7 @@ const _copy = <String, String>{
       "Hurtig værktøjskaldsmodel til rutinemæssige Project Waddle-operationer.",
   "Emperor Reasoning XL": "Kejserens Ræsonnement XL",
   "Deliberate model for launch reviews and unusually formal penguins.":
-      "Bevidst model for lanceringsanmeldelser og usædvanligt formelle pingviner.",
+      "Betænksom model til lanceringsgennemgange og usædvanligt formelle pingviner.",
   "Sardine Logistics 14B": "Sardine Logistics 14B",
   "Local planning model for cargo manifests and feeder calibration.":
       "Lokal planlægningsmodel for fragtmanifest og kalibrering af feeder.",
@@ -232,7 +232,7 @@ const _copy = <String, String>{
       "Ekstra overvejelse for Europa sardinmarkeder og passagerlovgivning.",
   "Transcribe habitat briefing": "Transskribér habitatbriefing",
   "Turn a Project Waddle voice memo into punctuated mission notes.":
-      "Lav en Project Waddle-stemmenote om til markerede missionsnoter.",
+      "Lav en Project Waddle-stemmenote om til missionsnoter med tegnsætning.",
   "Transcribe the mission briefing accurately.":
       "Transskribér missionsbriefingen nøjagtigt.",
   "Preserve Project Waddle names and terminology.":
@@ -250,7 +250,7 @@ const _copy = <String, String>{
   "Create memorable mission cover art.": "Skab mindeværdigt missionscover.",
   "Keep the penguin subject inside the square-safe area.":
       "Hold pingvin-motivet inden for det firkantede sikre område.",
-  "Draft launch-review prompt": "Udkast til lancerings- og gennemgangsprompt",
+  "Draft launch-review prompt": "Udkast til prompt til lanceringsgennemgang",
   "Prepare a complete AI prompt for the next Mission Control review.":
       "Forbered en komplet AI-prompt til næste Mission Control-gennemgang.",
   "Write a precise operational prompt.": "Skriv en præcis operationel prompt.",
@@ -283,52 +283,51 @@ const _copy = <String, String>{
   "Private negotiations with the Europa fish exchange.":
       "Private forhandlinger med Europa fiskebørsen.",
   "Checklist correction examples": "Eksempler på tjeklistekorrektion",
-  "Speech recognition": "Tagenkendelse",
+  "Speech recognition": "Talegenkendelse",
   "Choose an inference profile": "Vælg en inferensprofil",
   "Create category": "Opret kategori",
   "No categories yet": "Ingen kategorier endnu",
-  "Edit label": "Rediger etikett",
+  "Edit label": "Rediger etiket",
   "Project Waddle — launch": "Projekt Waddle — lancering",
   "Emperor penguin roll call": "Kejserpingvinens navneopråb",
   "Account for all 37 expedition penguins before launch.":
-      "Tag højde for alle 37 ekspeditionspingviner før lancering.",
-  "Walk the habitat seals": "Gå tur med habitat-sælerne",
+      "Gør rede for alle 37 ekspeditionspingviner før lancering.",
+  "Walk the habitat seals": "Gennemgå habitatets tætninger",
   "Inspect every pressure seal after the artificial sunrise.":
       "Inspicer hver trykpakning efter den kunstige solopgang.",
   "Review sardine forecast": "Gennemgå sardinprognosen",
   "Paused while the Europa exchange recalibrates its fish index.":
-      "Pauser, mens Europa-børsen kalibrerer sit fiskeindeks.",
-  "Edit habit": "Redigeringsvane",
+      "På pause, mens Europa-børsen rekalibrerer sit fiskeindeks.",
+  "Edit habit": "Rediger vane",
   "Schedule": "Tidsplan",
   "Start date": "Startdato",
-  "Show from": "Udsendelse fra",
+  "Show from": "Vis fra",
   "Show alert at": "Vis alarm på",
   "Habitat pressure": "Habitattryk",
   "Average pressure across the orbital habitat.":
       "Gennemsnitligt tryk over det orbitale habitat.",
   "Sardines consumed": "Spiste sardiner",
   "Daily fish consumption across the orbital habitat.":
-      "Daglig fiskeforbrug i hele det orbitale habitat.",
+      "Dagligt fiskeforbrug i hele det orbitale habitat.",
   "sardines": "sardiner",
-  "sardine": "Sardiner",
-  "project waddle habitat": "Projekt Waddle Habitat",
+  "sardine": "sardin",
+  "project waddle habitat": "projekt waddle habitat",
   "Project Waddle habitat": "Project Waddle-habitat",
   "Dinner shift after the Europa cargo docked":
       "Middagsvagt efter Europa-lasten lagde til kaj",
   "Observed at": "Observeret ved",
   "Penguins accounted for": "Pingviner gjort rede for",
-  "Edit measurable": "Redigeret målbar",
+  "Edit measurable": "Rediger målbar",
   "Daily average": "Dagligt gennemsnit",
   "Colony operations": "Kolonioperationer",
   "Habitat pressure, sardine demand, and crew headcount.":
-      "Habitatpres, efterspørgsel efter sardiner og antal besætninger.",
+      "Habitattryk, efterspørgsel efter sardiner og antal besætningsmedlemmer.",
   "Mission readiness": "Missionsberedskab",
   "Private launch review for Project Waddle.":
       "Privat opsendelsesgennemgang for Projekt Waddle.",
   "Habitat pressure — Daily average": "Habitattryk — Dagligt gennemsnit",
-  "Sardines consumed — Daily sum": "Sardiner indtaget — Dagligt sum.",
-  "Penguins accounted for — Daily sum":
-      "Pingviner gjort rede for — Dagligt beløb",
+  "Sardines consumed — Daily sum": "Sardiner indtaget — Daglig sum",
+  "Penguins accounted for — Daily sum": "Pingviner gjort rede for — Daglig sum",
   "Add charts by type": "Tilføj diagrammer efter type",
   "Measurements": "Målinger",
   "Health": "Helbred",
@@ -339,15 +338,15 @@ const _copy = <String, String>{
   "Emperor penguin roll-call gala": "Kejserpingvin-navneopråbsgalla",
   "Every penguin was present; two attended twice.":
       "Hver pingvin var til stede; to deltog to gange.",
-  "Europa cold-chain grand opening": "Europa kølekæde åbning",
+  "Europa cold-chain grand opening": "Europa kølekædens store åbning",
   "The ribbon froze before anyone could cut it.":
       "Båndet frøs, før nogen kunne klippe det.",
   "Orbital ice-garden opening": "Åbning af orbital ishave",
-  "One quiet lap, zero status meetings.": "Et stille lap, nul statusmøder.",
+  "One quiet lap, zero status meetings.": "En stille runde, nul statusmøder.",
   "Mission Control declares the ice-pad trajectory officially waddly.":
-      "Mission Control erklærer officielt ispaddens bane vadset.",
+      "Mission Control erklærer officielt ispaddens bane vraltende.",
   "Pressure seals green. Tiny oxygen packs counted twice.":
-      "Trykpakninger er grønne. Små iltpakker talte to gange.",
+      "Trykpakninger er grønne. Små iltpakker talt to gange.",
   "The orbital habitat, five minutes before the ceremonial sardines.":
       "Det orbitale habitat, fem minutter før de ceremonielle sardiner.",
   "Europa cargo pods arrive at a crisp and diplomatic temperature.":
@@ -367,7 +366,7 @@ const _copy = <String, String>{
   "Lock the colony's Q3 sardine price before the Europa exchange discovers why the emergency fish ceiling is shaped like a penguin.":
       "Lås koloniens Q3-sardinpris, før Europa-børsen opdager, hvorfor nødfiskeloftet er formet som en pingvin.",
   "Recalibrate the zero-gravity fish feeder":
-      "Genkalibrer fiskefoderen uden tyngdekraft",
+      "Genkalibrer den vægtløse fiskefoderautomat",
   "Run the low-orbit sardine test and stop the feeder from launching lunch toward Mission Control.":
       "Kør lavbane-sardintesten og stop feederen fra at sende frokost mod Mission Control.",
   "Confirm the interplanetary sardine cargo pods":
@@ -377,7 +376,7 @@ const _copy = <String, String>{
   "Ask Legal whether a penguin is a passenger":
       "Spørg Legal, om en pingvin er passager",
   "Resolve whether Sir Flaps-a-Lot needs a boarding pass or a cargo declaration before launch.":
-      "Afgør om Sir Flaps-a-Lot skal have boardingkort eller lastdeklaration før søsætning.",
+      "Afgør om Sir Flaps-a-Lot skal have boardingkort eller lastdeklaration før opsendelse.",
   "Walk without a headset": "Gå uden headset",
   "Take one quiet lap around the orbital ice garden without turning it into a briefing, podcast, or emergency call.":
       "Tag en stille runde rundt i den orbitale ishave uden at gøre det til en briefing, podcast eller nødopkald.",
@@ -386,7 +385,7 @@ const _copy = <String, String>{
   "Tomorrow I need to inspect the orbital penguin habitat before Mission Control wakes up, run the emperor penguin roll call, and negotiate the sardine futures contract with Reykjavik. At eleven we have the Project Waddle launch review. Please protect lunch because apparently coffee is not a vegetable. In the afternoon I need ninety minutes for the zero-gravity fish feeder, a legal review called Is a penguin a passenger, and the board briefing. Add a buffer before the live habitat demo, then leave thirty minutes for a walk and a debrief with Sir Flaps-a-Lot. Nothing important should begin after five.":
       "I morgen skal jeg inspicere det orbitale pingvinhabitat, før Mission Control vågner, køre kejserpingvin-navneopråbet og forhandle sardinfutures-kontrakten med Reykjavik. Klokken elleve har vi Project Waddle-lanceringsgennemgang. Beskyt venligst frokosten, for åbenbart er kaffe ikke en grøntsag. Om eftermiddagen skal jeg bruge halvfems minutter til nul-tyngdekrafts fiskefoderautomaten, en juridisk gennemgang kaldet Er en pingvin en passager, og bestyrelsens briefing. Tilføj en buffer før levende habitat-demoen, og lad derefter en halv time være til en gåtur og en debriefing med Sir Flaps-a-Lot. Intet vigtigt bør begynde efter klokken fem.",
   "Orbital habitat inspection": "Inspektion af kredsløbshabitat",
-  "Zero-gravity fish feeder": "Fiskeføder med vægtløshed",
+  "Zero-gravity fish feeder": "Vægtløs fiskefoderautomat",
   "Best done before Mission Control and the penguins get chatty":
       "Det er bedst at gøre det, før Mission Control og pingvinerne bliver snakkesalige",
   "Buffer": "Buffer",
@@ -397,7 +396,7 @@ const _copy = <String, String>{
   "POST-LUNCH DIP": "DIP EFTER FROKOST",
   "SECOND WIND": "ANDEN VIND",
   "Habitat seals green; tiny helmets still pending":
-      "Habitatsæler er grønne; små hjelme venter stadig",
+      "Habitattætninger er grønne; små hjelme venter stadig",
   "Locked Q3 sardines below the emergency fish ceiling":
       "Låste Q3-sardiner under nødfiskeloftet",
   "Prototype ready for the live habitat demo":
@@ -425,13 +424,13 @@ const _copy = <String, String>{
   "Keep the zero-gravity demo clear of the sardine negotiation.":
       "Hold nul-tyngdekraft-demoen fri for sardinforhandlingerne.",
   "Seals green; all 37 emperor penguins accounted for.":
-      "Tætningsmærker grønne; Alle 37 kejserpingviner blev gjort rede for.",
+      "Tætninger grønne; alle 37 kejserpingviner blev gjort rede for.",
   "Mission Control approved the revised habitat checklist.":
       "Mission Control godkendte den reviderede habitat-tjekliste.",
   "Q3 supply secured below the emergency fish ceiling.":
       "Q3-forsyning sikret under nød-fiskeloftet.",
   "Prototype calibrated; live habitat demo still pending.":
-      "Prototype kalibreret; Levende habitat-demo afventer stadig.",
+      "Prototype kalibreret; live habitat-demoen afventer stadig.",
   "→ tomorrow morning": "→ i morgen tidlig",
   "Mission Control review ran long.": "Mission Control-gennemgangen trak ud.",
   "→ tomorrow afternoon": "→ i morgen eftermiddag",
@@ -442,11 +441,12 @@ const _copy = <String, String>{
   "Send Project Waddle briefing": "Send Project Waddle-briefing",
   "the Project Waddle launch review": "Project Waddle lanceringsgennemgang",
   "Project Waddle launch briefing": "Project Waddle lanceringsbriefing",
-  "In progress · 2 sessions": "Under udvikling · 2 sessioner",
+  "In progress · 2 sessions": "I gang · 2 sessioner",
   "before Mission Control wakes up": "før Mission Control vågner",
-  "run the emperor penguin roll call": "Kør kejserpingvin-navneopråbet",
+  "run the emperor penguin roll call": "kør kejserpingvin-navneopråbet",
   "Recurring · weekdays": "Tilbagevendende · Hverdage",
-  "Mark complete after all 37 answer": "Markering færdig efter alle 37 svar",
+  "Mark complete after all 37 answer":
+      "Markér som færdig, når alle 37 har svaret",
   "Replace the diplomatic fish bucket": "Udskift den diplomatiske fiskespand",
   "Started Friday, dignity not included":
       "Startede fredag, værdighed ikke inkluderet",
@@ -457,11 +457,11 @@ const _copy = <String, String>{
   "Last skipped Thursday": "Sidst sprunget torsdag over",
   "Habitat Watcher": "Habitat Watcher",
   "All 37 emperor penguins are accounted for. Habitat pressure held at 101.3 kPa overnight; the remaining launch risk is the zero-gravity sardine feeder calibration.":
-      "Alle 37 kejserpingviner er til stede. Habitattrykket holdt sig på 101,3 kPa natten over; Den resterende opsendelsesrisiko er kalibreringen af sardinfoder-fodermaskinen uden tyngdekraft.",
+      "Alle 37 kejserpingviner er til stede. Habitattrykket holdt sig på 101,3 kPa natten over; den resterende opsendelsesrisiko er kalibreringen af den vægtløse sardinfoderautomat.",
   "Habitat stable; zero-gravity sardine feeder blocks sign-off.":
-      "Levested stabilt; Vægtløs sardinfoderblokke logger af.",
+      "Habitat stabilt; den vægtløse sardinfoderautomat blokerer for godkendelsen.",
   "## Latest assessment\n\n- Pressure seals A–F stayed stable across the night shift.\n- 840 sardines are loaded; feeder calibration still blocks sign-off.\n- Mission Control clearance is due before the 06:30 roll call.\n\n## Recommended next step\n\nRun the feeder test, attach the telemetry image, then request launch approval.\n":
-      "## Seneste vurdering\n\n- Trykpakninger A–F forblev stabile gennem natteholdet.\n- 840 sardiner er læsset; Feeder-kalibrering blokerer stadig for afslutning.\n- Mission Control-godkendelse skal leveres før opråbet kl. 06:30.\n\n## Anbefalet næste skridt\n\nKør feeder-testen, vedhæft telemetribilledet, og anmod derefter om godkendelse af lanceringen.\n",
+      "## Seneste vurdering\n\n- Trykpakninger A–F forblev stabile gennem natteholdet.\n- 840 sardiner er læsset; feeder-kalibreringen blokerer stadig for godkendelsen.\n- Mission Control-godkendelse skal leveres før opråbet kl. 06:30.\n\n## Anbefalet næste skridt\n\nKør feeder-testen, vedhæft telemetribilledet, og anmod derefter om godkendelse af lanceringen.\n",
   "Latest assessment": "Seneste vurdering",
   "Recommended next step": "Anbefalet næste skridt",
   "Run zero-gravity sardine feeder test": "Kør vægtløs sardin-feedertest",
@@ -469,7 +469,7 @@ const _copy = <String, String>{
   "Project Waddle Day Planner": "Projekt Waddle Day Planner",
   "Sardine Supply Watch": "Sardinforsyningsvagt",
   "Fish Diplomacy Coach": "Fiskediplomatitræner",
-  "Habitat Seal Inspector": "Habitat-seglinspektør",
+  "Habitat Seal Inspector": "Habitat-tætningsinspektør",
   "Project Waddle Planner": "Projekt Waddle Planlægger",
   "Sardine Cargo Coordinator": "Sardin-lastkoordinator",
   "Project Waddle Operations": "Projekt Waddle-operationer",
@@ -485,9 +485,9 @@ const _copy = <String, String>{
   "Call out over-capacity plans before asking for commitment.":
       "Nævn overkapacitetsplaner, før du beder om forpligtelse.",
   "Track sardine cargo pods, cold-chain handoffs, and zero-gravity feeder stock without sending private manifests to a cloud model.":
-      "Følg sardin-lastkapsler, koldkæde-overleveringer og vægtløs feeder-lager uden at sende private manifest til en skymodel.",
+      "Følg sardin-lastkapsler, koldkæde-overleveringer og lageret i den vægtløse foderautomat uden at sende private manifester til en skymodel.",
   "Report shortages by habitat, pod, and expected penguin impact.":
-      "Rapportér mangel efter levested, flokk og forventet pingvinpåvirkning.",
+      "Rapportér mangel efter habitat, kapsel og forventet pingvinpåvirkning.",
   "Coach agent templates to be clear, skeptical, and gracious during high-stakes fish negotiations.":
       "Coach agent-skabeloner til at være klare, skeptiske og imødekommende under højrisiko-fiskeforhandlinger.",
   "Explain each proposed wording change without flattery.":
@@ -524,16 +524,16 @@ const _copy = <String, String>{
   "Make seal evidence easier to scan.":
       "Gør det lettere at scanne forseglingsbeviser.",
   "Put seal anomalies first and make the final launch call explicit.":
-      "Sæt forseglingsanomalier først og gør det endelige affyringskald eksplicit.",
+      "Sæt forseglingsanomalier først og gør den endelige opsendelsesbeslutning eksplicit.",
   "## Result\n\n- Evidence now leads each finding.\n- Reports end with a plain-language launch recommendation.":
-      "## Resultat\n\n- Beviser leder nu hver fund.\n- Rapporter slutter med en anbefaling om lancering i et klart sprog.",
+      "## Resultat\n\n- Beviser leder nu hvert fund.\n- Rapporter slutter med en anbefaling om lancering i et klart sprog.",
   "Promoted pressure evidence and added an explicit go/no-go ending.":
       "Fremmet trykbeviser og tilføjet en eksplicit go/no-go slutning.",
   "Admiral Pebble is appropriately skeptical, but should ask fewer questions when a launch hold is already obvious.":
       "Admiral Pebble er passende skeptisk, men burde stille færre spørgsmål, når en affyringspause allerede er åbenlys.",
-  "pressure anomaly": "Trykanomali",
-  "calm flight director": "Rolig flyveleder",
-  "launch hold": "Affyringsstop",
+  "pressure anomaly": "trykanomali",
+  "calm flight director": "rolig flyveleder",
+  "launch hold": "affyringspause",
   // Demo-world tutorial task ("Your first mission").
   "Your first mission": "Din første mission",
   "Work through the checklist below to learn the basics — everything in this demo world is safe to try.":

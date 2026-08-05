@@ -160,6 +160,55 @@ void main() {
       );
     });
 
+    testWidgets('a report that arrives with no mountable toast target stays '
+        'PENDING — draining it before the target is checked would swallow '
+        'the failure and leave the user with no feedback at all', (
+      tester,
+    ) async {
+      // A sheetContext resolving to a dead element is exactly the state
+      // between a generation switch and the new navigator's first frame.
+      late BuildContext dead;
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: resolveTestTheme(),
+          home: Builder(
+            builder: (context) {
+              dead = context;
+              return const SizedBox.shrink();
+            },
+          ),
+        ),
+      );
+      await tester.pumpWidget(const SizedBox.shrink());
+      expect(dead.mounted, isFalse);
+
+      DemoCopyFailureNotices.instance.report();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          child: MaterialApp(
+            theme: resolveTestTheme(),
+            localizationsDelegates: AppLocalizations.localizationsDelegates,
+            supportedLocales: AppLocalizations.supportedLocales,
+            home: DemoModeScaffold(
+              sheetContext: () => dead,
+              child: const Scaffold(body: SizedBox.expand(key: childKey)),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        DemoCopyFailureNotices.instance.consume(),
+        isTrue,
+        reason:
+            'the failure must survive an unusable target, so a later '
+            'listener or post-frame drain can still surface it',
+      );
+    });
+
     testWidgets('unmounting the scaffold detaches its listener — a later '
         'report stays pending instead of reaching a dead context', (
       tester,

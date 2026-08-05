@@ -34,6 +34,18 @@ void main() {
       expect(dates.overdue(1).isBefore(lateFriday), isTrue);
     });
 
+    test('overdue asserts its stated minimum rather than silently returning '
+        'today or a future date', () {
+      final dates = DemoDates(lateFriday);
+
+      // overdue(0) would be today at 17:00 and overdue(-1) tomorrow — both
+      // read as "not overdue" in the UI, which is the one thing the helper
+      // promises can never happen.
+      expect(() => dates.overdue(0), throwsA(isA<AssertionError>()));
+      expect(() => dates.overdue(-1), throwsA(isA<AssertionError>()));
+      expect(dates.overdue(1), isNot(throwsA(anything)));
+    });
+
     test('nextMonday is the Monday strictly after today, on every weekday', () {
       // Monday 2026-07-13 through Sunday 2026-07-19.
       const expected = {

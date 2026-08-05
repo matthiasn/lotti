@@ -68,9 +68,14 @@ class _DemoModeScaffoldState extends ConsumerState<DemoModeScaffold> {
   }
 
   void _onCopyFailureReported() {
-    if (!mounted || !DemoCopyFailureNotices.instance.consume()) return;
+    if (!mounted) return;
     final target = widget.sheetContext?.call() ?? context;
     if (!target.mounted) return;
+    // Consumed LAST: `consume` clears the pending flag, so draining it
+    // before the target is known to be mountable would swallow the failure
+    // and leave the user with no feedback at all. Bailing out first keeps
+    // the report pending for the next listener or post-frame drain.
+    if (!DemoCopyFailureNotices.instance.consume()) return;
     target.showToast(
       tone: DesignSystemToastTone.error,
       title: target.messages.demoCopyFailedToast,

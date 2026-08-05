@@ -221,11 +221,12 @@ class DemoDataCopier {
           ),
         ),
         journalImage: (image) async {
-          final fileName = await _stageMedia(
+          final staged = await _stageMedia(
             sourcePath: getFullImagePath(
               image,
               documentsDirectory: sourceRoot.path,
             ),
+            originalDirectory: image.data.imageDirectory,
             originalFileName: image.data.imageFile,
             newId: newMeta.id,
             staging: staging,
@@ -234,14 +235,15 @@ class DemoDataCopier {
           return image.copyWith(
             meta: newMeta,
             data: image.data.copyWith(
-              imageDirectory: demoImportMediaDirectory,
-              imageFile: fileName,
+              imageDirectory: staged.directory,
+              imageFile: staged.fileName,
             ),
           );
         },
         journalAudio: (audio) async {
-          final fileName = await _stageMedia(
+          final staged = await _stageMedia(
             sourcePath: AudioUtils.getAudioPath(audio, sourceRoot),
+            originalDirectory: audio.data.audioDirectory,
             originalFileName: audio.data.audioFile,
             newId: newMeta.id,
             staging: staging,
@@ -250,8 +252,8 @@ class DemoDataCopier {
           return audio.copyWith(
             meta: newMeta,
             data: audio.data.copyWith(
-              audioDirectory: demoImportMediaDirectory,
-              audioFile: fileName,
+              audioDirectory: staged.directory,
+              audioFile: staged.fileName,
             ),
           );
         },
@@ -711,17 +713,28 @@ class DemoDataCopier {
 
   /// Copies one media file into [staging] under a fresh name derived from
   /// the new entity id (original extension kept), recording the move for
-  /// [apply]. Returns the new file name; a missing source file (already
-  /// cleaned up externally) keeps the original name and stages nothing.
-  Future<String> _stageMedia({
+  /// [apply].
+  ///
+  /// Returns the `(directory, fileName)` pair to write onto the copied
+  /// entity. A staged file gets [demoImportMediaDirectory] and the fresh
+  /// name; a MISSING source file (already cleaned up externally) stages
+  /// nothing and keeps the entity's original pair. Rewriting the directory
+  /// in that case would point the copy at `demo_import/<originalName>`, a
+  /// path nothing ever creates — a broken attachment dressed up as an
+  /// imported one.
+  Future<({String directory, String fileName})> _stageMedia({
     required String sourcePath,
+    required String originalDirectory,
     required String originalFileName,
     required String newId,
     required Directory staging,
     required List<DemoStagedMedia> media,
   }) async {
     final source = File(sourcePath);
-    if (!source.existsSync()) return originalFileName;
+    if (!source.existsSync()) {
+      _log('media source missing, keeping original path: $sourcePath');
+      return (directory: originalDirectory, fileName: originalFileName);
+    }
     final fileName = '$newId${p.extension(originalFileName)}';
     final staged = await source.copy(p.join(staging.path, fileName));
     media.add(
@@ -730,7 +743,7 @@ class DemoDataCopier {
         relativeTarget: '$demoImportMediaDirectory$fileName',
       ),
     );
-    return fileName;
+    return (directory: demoImportMediaDirectory, fileName: fileName);
   }
 
   Iterable<String> _childIds(JournalEntity entity) => entity.maybeMap(

@@ -188,6 +188,27 @@ void main() {
     expect(find.text('Real AI is live'), findsOneWidget);
   });
 
+  testWidgets('opening straight on the API-key step builds instead of '
+      'throwing — the provider type has a default, so the initialStep seam '
+      'cannot skip its only writer and crash', (tester) async {
+    await pumpFlow(
+      tester,
+      onConnected: () {},
+      onClose: () {},
+      initialStep: DemoAiSetupStep.apiKey,
+    );
+
+    expect(tester.takeException(), isNull);
+    expect(find.byType(OnboardingApiKeyPanel), findsOneWidget);
+    expect(
+      tester
+          .widget<OnboardingApiKeyPanel>(find.byType(OnboardingApiKeyPanel))
+          .type,
+      onboardingPrimaryProviders.first,
+      reason: 'defaults to the first tile the connect panel lists',
+    );
+  });
+
   testWidgets('the success beat closes via its continue CTA', (tester) async {
     var closed = false;
     await pumpFlow(

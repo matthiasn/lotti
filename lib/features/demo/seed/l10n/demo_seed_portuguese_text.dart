@@ -7,9 +7,9 @@ String? manualScreenshotPortugueseText(String english) => _copy[english];
 const _copy = <String, String>{
   'Theming': 'Tema',
   'Recording Style': 'Estilo de gravação',
-  'Modern — energy orb': 'Moderno - orbe de energia',
-  'Analogue — VU meter': 'Analógico - medidor VU',
-  'Speech': 'Discurso',
+  'Modern — energy orb': 'Moderno — orbe de energia',
+  'Analogue — VU meter': 'Analógico — medidor VU',
+  'Speech': 'Fala',
   'Voice': 'Voz',
   'Male 3': 'Masculino 3',
   'Female': 'Feminino',
@@ -39,7 +39,7 @@ const _copy = <String, String>{
   'This summary is out of date': 'Este resumo está desatualizado',
   'The task changed after this summary was generated.':
       'A tarefa mudou depois que esse resumo foi gerado.',
-  'Wake agent': 'Agente de despertar',
+  'Wake agent': 'Acorde o agente',
   'Filter tasks': 'Filtrar tarefas',
   'Filter projects': 'Filtrar projetos',
   'Mission Control Mac': 'Mac de controle de missão',
@@ -52,7 +52,7 @@ const _copy = <String, String>{
   'Mission Control cleared 36 penguins. Recheck pressure seal C and hold the sardine cargo pod until the final emperor arrives.':
       'O Controle da Missão eliminou 36 pinguins. Verifique novamente o selo de pressão C e segure a cápsula de carga de sardinha até que o último imperador chegue.',
   'Inspect orbital penguin habitat — before launch':
-      'Inspecione o habitat orbital dos pinguins – antes do lançamento',
+      'Inspecione o habitat orbital dos pinguins — antes do lançamento',
   'Habitat Console cleared all 37 penguins and pressure seal C. Release the zero-gravity sardine cargo pod at 11:20.':
       'O Habitat Console eliminou todos os 37 pinguins e o selo de pressão C. Solte o pod de carga de sardinha com gravidade zero às 11h20.',
   'Europa sardine cargo manifest revised by Admiral Pebble.':
@@ -71,8 +71,8 @@ const _copy = <String, String>{
   'Time Analysis': 'Análise de Tempo',
   'TOTAL': 'TOTAL',
   'FOCUS': 'FOCO',
-  'Running total': 'Total em execução',
-  'Running total over the range': 'Executando total ao longo do intervalo',
+  'Running total': 'Total acumulado',
+  'Running total over the range': 'Total acumulado ao longo do intervalo',
   'Compare': 'Comparar',
   'Change': 'Mudança',
   'PREVIOUS': 'ANTERIOR',
@@ -138,7 +138,7 @@ const _copy = <String, String>{
   'Create your first task': 'Crie sua primeira tarefa',
   'Record your thought': 'Registre seu pensamento',
   "Listening… tap when you're done": 'Ouvindo… toque quando terminar',
-  'Rather type?': 'Em vez disso, digite?',
+  'Rather type?': 'Prefere digitar?',
   'Your first task is ready': 'Sua primeira tarefa está pronta',
   "You've created your first AI task": 'Você criou sua primeira tarefa de IA',
   'Talk. Lotti turns it into a plan.':
@@ -163,8 +163,8 @@ const _copy = <String, String>{
   'Combine two': 'Combine dois',
   'Try it': 'Experimente',
   'Count emperor penguins': 'Conte pinguins imperadores',
-  'Route sardine cargo': 'Rota de carga de sardinha',
-  'Brief Mission Control': 'Breve Controle da Missão',
+  'Route sardine cargo': 'Encaminhe a carga de sardinha',
+  'Brief Mission Control': 'Informe o Controle da Missão',
   'Changes save and apply everywhere instantly':
       'As alterações são salvas e aplicadas em qualquer lugar instantaneamente',
   'Shape': 'Forma',
@@ -224,7 +224,7 @@ const _copy = <String, String>{
   'Project Waddle Cover Artist': 'Artista da capa do projeto Waddle',
   'Creates centered 16:9 mission art that survives square thumbnail crops.':
       'Cria arte de missão centralizada em 16:9 que sobrevive a cortes de miniaturas quadradas.',
-  'Project Waddle Command': 'Comando Waddle do Projeto',
+  'Project Waddle Command': 'Comando do Projeto Waddle',
   'Launch-critical planning, habitat vision, briefings, and cover art.':
       'Planejamento crítico de lançamento, visão de habitat, briefings e arte de capa.',
   'Habitat Local-First': 'Habitat local primeiro',
@@ -253,7 +253,7 @@ const _copy = <String, String>{
   'Create memorable mission cover art.': 'Crie uma capa de missão memorável.',
   'Keep the penguin subject inside the square-safe area.':
       'Mantenha o pinguim dentro da área quadrada segura.',
-  'Draft launch-review prompt': 'Prompt de revisão de lançamento de rascunho',
+  'Draft launch-review prompt': 'Redija o prompt de revisão de lançamento',
   'Prepare a complete AI prompt for the next Mission Control review.':
       'Prepare um prompt completo de IA para a próxima revisão do Controle da Missão.',
   'Write a precise operational prompt.':
@@ -267,7 +267,7 @@ const _copy = <String, String>{
   'Tasks': 'Tarefas',
   'Logbook': 'Diário de bordo',
   'Settings': 'Configurações',
-  'Manual': 'Manuais',
+  'Manual': 'Manual',
   'Opens in your browser': 'Abre no seu navegador',
   'Calendar': 'Calendário',
   'Habitat critical': 'Habitat crítico',
@@ -275,7 +275,7 @@ const _copy = <String, String>{
   '14 tasks': '14 tarefas',
   'Edit category': 'Editar categoria',
   'Project Waddle; Sir Flaps-a-Lot; sardine; Europa':
-      'Projeto Waddle; Senhor Flaps-a-Lot; sardinha; Europa',
+      'Projeto Waddle; Sir Flaps-a-Lot; sardinha; Europa',
   'Launch-critical work for the first interplanetary penguin habitat.':
       'Trabalho crítico para o lançamento do primeiro habitat interplanetário de pinguins.',
   'Must be resolved before emperor penguins enter the orbital habitat.':
@@ -293,7 +293,7 @@ const _copy = <String, String>{
   'Create category': 'Criar categoria',
   'No categories yet': 'Nenhuma categoria ainda',
   'Edit label': 'Editar rótulo',
-  'Project Waddle — launch': 'Projeto Waddle – lançamento',
+  'Project Waddle — launch': 'Projeto Waddle — lançamento',
   'Emperor penguin roll call': 'Chamada do pinguim-imperador',
   'Account for all 37 expedition penguins before launch.':
       'Considere todos os 37 pinguins da expedição antes do lançamento.',
@@ -314,14 +314,14 @@ const _copy = <String, String>{
   'Sardines consumed': 'Sardinhas consumidas',
   'Daily fish consumption across the orbital habitat.':
       'Consumo diário de peixes em todo o habitat orbital.',
-  'sardines': 'sardinha',
+  'sardines': 'sardinhas',
   'sardine': 'sardinha',
   'project waddle habitat': 'projeto habitat waddle',
   'Project Waddle habitat': 'Habitat do Projeto Waddle',
   'Dinner shift after the Europa cargo docked':
       'Turno do jantar após a carga Europa atracar',
   'Observed at': 'Observado em',
-  'Penguins accounted for': 'Os pinguins foram contabilizados',
+  'Penguins accounted for': 'Pinguins contabilizados',
   'Edit measurable': 'Editar mensurável',
   'Daily average': 'Média diária',
   'Colony operations': 'Operações de colônia',
@@ -332,7 +332,7 @@ const _copy = <String, String>{
       'Revisão de lançamento privado do Projeto Waddle.',
   'Habitat pressure — Daily average': 'Pressão do habitat — Média diária',
   'Sardines consumed — Daily sum': 'Sardinhas consumidas — Soma diária',
-  'Penguins accounted for — Daily sum': 'Pinguins contabilizados – Soma diária',
+  'Penguins accounted for — Daily sum': 'Pinguins contabilizados — Soma diária',
   'Add charts by type': 'Adicione gráficos por tipo',
   'Measurements': 'Medições',
   'Health': 'Saúde',
@@ -372,7 +372,7 @@ const _copy = <String, String>{
       'Coma algo reconhecível como comida antes que o nutricionista robô registre outro incidente de bem-estar orbital.',
   'Negotiate sardine futures': 'Negociar o futuro da sardinha',
   "Lock the colony's Q3 sardine price before the Europa exchange discovers why the emergency fish ceiling is shaped like a penguin.":
-      'Fixe o preço da sardinha no terceiro trimestre da colónia antes que a Bolsa Europa descubra porque é que o teto de emergência para peixes tem a forma de um pinguim.',
+      'Fixe o preço da sardinha no terceiro trimestre da colônia antes que a Bolsa Europa descubra porque é que o teto de emergência para peixes tem a forma de um pinguim.',
   'Recalibrate the zero-gravity fish feeder':
       'Recalibre o alimentador de peixes de gravidade zero',
   'Run the low-orbit sardine test and stop the feeder from launching lunch toward Mission Control.':
@@ -396,13 +396,13 @@ const _copy = <String, String>{
   'Zero-gravity fish feeder': 'Alimentador de peixes com gravidade zero',
   'Best done before Mission Control and the penguins get chatty':
       'Melhor feito antes que o Controle da Missão e os pinguins fiquem conversando',
-  'Buffer': 'Tampão',
+  'Buffer': 'Margem',
   'The fish are least suspicious immediately after lunch':
       'Os peixes ficam menos desconfiados imediatamente após o almoço',
   'Legal: Is a penguin a passenger?': 'Legal: um pinguim é passageiro?',
   'HIGH ENERGY': 'ALTA ENERGIA',
   'POST-LUNCH DIP': 'MERGULHO PÓS-ALMOÇO',
-  'SECOND WIND': 'SEGUNDO VENTO',
+  'SECOND WIND': 'SEGUNDO FÔLEGO',
   'Habitat seals green; tiny helmets still pending':
       'As vedações do habitat estão boas; capacetes minúsculos ainda pendentes',
   'Locked Q3 sardines below the emergency fish ceiling':
@@ -419,16 +419,16 @@ const _copy = <String, String>{
   'Walks get skipped after penguin escapes':
       'Caminhadas são ignoradas após a fuga do pinguim',
   'When a penguin enters the ventilation system, the planned walk is usually dropped — protect it explicitly.':
-      'Quando um pinguim entra no sistema de ventilação, a caminhada planejada geralmente é abandonada – proteja-o explicitamente.',
+      'Quando um pinguim entra no sistema de ventilação, a caminhada planejada geralmente é abandonada — proteja-a explicitamente.',
   'No briefings before 10:00': 'Não há briefings antes das 10:00',
   'Keep mornings briefing-free until 10:00 — stated preference.':
-      'Mantenha as manhãs livres de briefings até às 10:00 – preferência declarada.',
+      'Mantenha as manhãs livres de briefings até às 10:00 — preferência declarada.',
   'Move sardine negotiations 30 minutes later':
       'Mova as negociações da sardinha 30 minutos depois',
   'Protect the launch review and give Mission Control a buffer.':
-      'Proteja a revisão de lançamento e dê uma proteção ao Controle da Missão.',
+      'Proteja a revisão de lançamento e dê uma margem ao Controle da Missão.',
   'Start the fish-feeder demo after the new buffer':
-      'Inicie a demonstração do alimentador de peixes após o novo buffer',
+      'Inicie a demonstração do alimentador de peixes após a nova margem',
   'Keep the zero-gravity demo clear of the sardine negotiation.':
       'Mantenha a demonstração de gravidade zero longe da negociação da sardinha.',
   'Seals green; all 37 emperor penguins accounted for.':
@@ -473,7 +473,7 @@ const _copy = <String, String>{
   'Habitat stable; zero-gravity sardine feeder blocks sign-off.':
       'Habitat estável; Alimentador de sardinha com gravidade zero bloqueia a sinalização.',
   '\n## Latest assessment\n\n- Pressure seals A–F stayed stable across the night shift.\n- 840 sardines are loaded; feeder calibration still blocks sign-off.\n- Mission Control clearance is due before the 06:30 roll call.\n\n## Recommended next step\n\nRun the feeder test, attach the telemetry image, then request launch approval.\n':
-      '## Última avaliação\n\n- As vedações de pressão A–F permaneceram estáveis durante o turno da noite.\n- São carregadas 840 sardinhas; a calibração do alimentador ainda bloqueia a aprovação.\n- A autorização do Controle da Missão deve ser feita antes da chamada das 06:30.\n\n## Próxima etapa recomendada\n\nExecute o teste do alimentador, anexe a imagem de telemetria e solicite a aprovação do lançamento.',
+      '\n## Última avaliação\n\n- As vedações de pressão A–F permaneceram estáveis durante o turno da noite.\n- São carregadas 840 sardinhas; a calibração do alimentador ainda bloqueia a aprovação.\n- A autorização do Controle da Missão deve ser feita antes da chamada das 06:30.\n\n## Próxima etapa recomendada\n\nExecute o teste do alimentador, anexe a imagem de telemetria e solicite a aprovação do lançamento.\n',
   'Latest assessment': 'Última avaliação',
   'Recommended next step': 'Próxima etapa recomendada',
   'Run zero-gravity sardine feeder test':

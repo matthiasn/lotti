@@ -220,7 +220,12 @@ class DemoAiSetupFlow extends StatefulWidget {
 
 class _DemoAiSetupFlowState extends State<DemoAiSetupFlow> {
   late DemoAiSetupStep _step = widget.initialStep;
-  late InferenceProviderType _type;
+
+  /// Set by the connect step, which is the only writer. Seeded with the
+  /// first tile the connect panel lists rather than left `late`, because
+  /// [DemoAiSetupFlow.initialStep] lets a caller open straight on `apiKey`
+  /// or `success` — steps that read this before the connect step could run.
+  InferenceProviderType _type = onboardingPrimaryProviders.first;
 
   /// Runs concurrently with the success beat (which must not wait on the
   /// stamping writes) but is handed to [DemoAiSetupFlow.onConnected] so the
