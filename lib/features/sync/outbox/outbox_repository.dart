@@ -1,7 +1,6 @@
 import 'package:drift/drift.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
-import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 
 /// Persistence boundary for the outbound sync queue.
@@ -112,19 +111,12 @@ abstract class OutboxRepository {
 /// Delegates claiming and pruning to the database's own atomic statements
 /// (`claimNextOutboxItem`, `claimNextOutboxBatch`, the chunked prune) and maps
 /// the `retries`/`maxRetries` threshold to the `pending` vs `error` status on
-/// every retry. Pulses the optional [SyncActivitySignaler] on each successful
-/// `markSent`/`markSentBatch` so the UI's TX activity indicator reflects real
-/// outbound traffic.
+/// every retry.
 class DatabaseOutboxRepository implements OutboxRepository {
-  DatabaseOutboxRepository(
-    this._database, {
-    this.maxRetries = 10,
-    this._activitySignaler,
-  });
+  DatabaseOutboxRepository(this._database, {this.maxRetries = 10});
 
   final SyncDatabase _database;
   final int maxRetries;
-  final SyncActivitySignaler? _activitySignaler;
 
   @override
   Future<List<OutboxItem>> fetchPending({int limit = 10}) {
@@ -164,7 +156,6 @@ class DatabaseOutboxRepository implements OutboxRepository {
         updatedAt: Value(DateTime.now()),
       ),
     );
-    _activitySignaler?.pulseTx();
   }
 
   @override
@@ -176,7 +167,6 @@ class DatabaseOutboxRepository implements OutboxRepository {
     await _database.markOutboxItemsSent(
       ids: items.map((item) => item.id).toList(growable: false),
     );
-    _activitySignaler?.pulseTx();
   }
 
   @override

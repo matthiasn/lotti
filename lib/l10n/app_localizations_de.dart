@@ -3258,14 +3258,6 @@ class AppLocalizationsDe extends AppLocalizations {
       'Aktiviere diese Option, um fehlgeschlagene Anlagen-Uploads automatisch erneut zu senden, wenn die Verbindung wiederhergestellt ist.';
 
   @override
-  String get configFlagShowSyncActivityIndicator =>
-      'Sync-Aktivitätsanzeige einblenden';
-
-  @override
-  String get configFlagShowSyncActivityIndicatorDescription =>
-      'Zeigt einen dezenten Synchronisierungsstatus in der Seitenleiste; Warteschlangenzahlen erscheinen nur, wenn Arbeit ansteht.';
-
-  @override
   String get conflictApplyButton => 'Übernehmen';
 
   @override
@@ -10347,24 +10339,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get surveyYesButton => 'Ja';
 
   @override
-  String get syncActivityIdle => 'inaktiv';
-
-  @override
   String get syncActivityInboxLabel => 'Posteingang';
 
   @override
-  String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Sync-Aktivität. Postausgang: $outbox. Posteingang: $inbox. Sync-Postausgang öffnen.';
-  }
-
-  @override
   String get syncActivityOutboxLabel => 'Postausgang';
-
-  @override
-  String get syncActivitySyncingTitle => 'Sync läuft';
-
-  @override
-  String get syncActivityTitle => 'Sync';
 
   @override
   String get syncAddDeviceAction => 'Gerät hinzufügen';

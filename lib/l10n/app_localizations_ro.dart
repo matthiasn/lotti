@@ -3286,14 +3286,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.';
 
   @override
-  String get configFlagShowSyncActivityIndicator =>
-      'Afișează indicatorul de activitate de sincronizare';
-
-  @override
-  String get configFlagShowSyncActivityIndicatorDescription =>
-      'Afișează discret starea sincronizării în bara laterală; numerele din coadă apar doar când există operații în așteptare.';
-
-  @override
   String get conflictApplyButton => 'Aplicați';
 
   @override
@@ -10479,24 +10471,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get surveyYesButton => 'Da';
 
   @override
-  String get syncActivityIdle => 'inactivă';
-
-  @override
   String get syncActivityInboxLabel => 'Intrare';
 
   @override
-  String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Activitate sincronizare. Coadă de ieșire: $outbox. Coadă de intrare: $inbox. Deschide coada de ieșire pentru sincronizare.';
-  }
-
-  @override
   String get syncActivityOutboxLabel => 'Ieșire';
-
-  @override
-  String get syncActivitySyncingTitle => 'Se sincronizează';
-
-  @override
-  String get syncActivityTitle => 'Sincronizare';
 
   @override
   String get syncAddDeviceAction => 'Adăugați dispozitiv';

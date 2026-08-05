@@ -13,7 +13,6 @@ import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
 import 'package:lotti/classes/journal_entities.dart';
-import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/impact_sidebar_entry.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_onboarding_session_controller.dart';
@@ -39,7 +38,6 @@ import 'package:lotti/features/keyboard/ui/keyboard_shortcuts_page.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_welcome_modal.dart';
 import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
-import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
@@ -50,7 +48,6 @@ import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indic
 import 'package:lotti/features/sync/state/matrix_login_controller.dart';
 import 'package:lotti/features/sync/state/synced_audio_inference_providers.dart';
 import 'package:lotti/features/sync/ui/widgets/matrix/incoming_verification_modal.dart';
-import 'package:lotti/features/sync/ui/widgets/sync_activity_indicator.dart';
 import 'package:lotti/features/tasks/ui/saved_filters/desktop/sidebar_saved_task_filters.dart';
 import 'package:lotti/features/theming/state/theming_controller.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
@@ -64,7 +61,6 @@ import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
-import 'package:lotti/utils/consts.dart';
 import 'package:lotti/utils/uuid.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
@@ -675,13 +671,6 @@ class _AppScreenState extends ConsumerState<AppScreen> {
     );
     final sidebarWidth = resolvedSidebar.width;
     final isCollapsed = paneWidths.sidebarCollapsed;
-    // Capability-gated on top of the config flag: the indicator's inbound
-    // queue provider resolves `matrixServiceProvider`, which guest/demo
-    // worlds deliberately leave unoverridden (UnimplementedError).
-    final showSyncIndicator =
-        ref.watch(syncFeatureAvailableProvider) &&
-        (ref.watch(configFlagProvider(showSyncActivityIndicatorFlag)).value ??
-            false);
     return Scaffold(
       // Scaffold fills behind the outer ResizableDivider's 3 px reserved
       // SizedBox; without an explicit colour Flutter would paint the theme
@@ -729,13 +718,7 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                   .read(paneWidthControllerProvider.notifier)
                   .toggleSidebarCollapsed(),
               aboveSettings: const _DesktopSidebarAboveSettings(),
-              // The sync strip stays gutter-aligned directly above the
-              // full-width Contact Us band. The band itself remains the
-              // stable bottom edge whether the strip is present or absent.
               footerBand: const ContactSupportRow(),
-              belowSettings: showSyncIndicator
-                  ? const SyncActivityIndicator()
-                  : null,
             ),
           ),
           ResizableDivider(

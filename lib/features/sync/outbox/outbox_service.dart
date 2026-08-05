@@ -17,7 +17,6 @@ import 'package:lotti/features/sync/outbox/outbox_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_scheduling.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
-import 'package:lotti/features/sync/state/sync_activity_signaler.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/features/user_activity/state/user_activity_gate.dart';
@@ -125,7 +124,6 @@ class MatrixOutboxService extends _OutboxServiceBase
     this._sequenceLogService,
     this._postDrainSettle = SyncTuning.outboxPostDrainSettle,
     this._domainLogger,
-    this._activitySignaler,
   }) : _syncDatabase = syncDatabase,
        _saveJson = saveJsonHandler ?? saveJson,
        _activityGate =
@@ -145,11 +143,7 @@ class MatrixOutboxService extends _OutboxServiceBase
 
     _repository =
         repository ??
-        DatabaseOutboxRepository(
-          syncDatabase,
-          maxRetries: maxRetries,
-          activitySignaler: _activitySignaler,
-        );
+        DatabaseOutboxRepository(syncDatabase, maxRetries: maxRetries);
     _messageSender = messageSender ?? MatrixOutboxMessageSender(matrixService!);
     _processor =
         processor ??
@@ -251,7 +245,6 @@ class MatrixOutboxService extends _OutboxServiceBase
   @override
   final DomainLogger _loggingService;
   final DomainLogger? _domainLogger;
-  final SyncActivitySignaler? _activitySignaler;
   final SyncDatabase _syncDatabase;
   final VectorClockService _vectorClockService;
   @override

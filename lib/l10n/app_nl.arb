@@ -1618,8 +1618,6 @@
   "configFlagRecordLocationDescription": "Automatisch uw locatie registreren met nieuwe items. Dit helpt bij locatie-gebaseerde organisatie en zoeken.",
   "configFlagResendAttachments": "Bijlages opnieuw versturen",
   "configFlagResendAttachmentsDescription": "Schakel dit in om mislukte bijlageuploads automatisch opnieuw te verzenden wanneer de verbinding hersteld is.",
-  "configFlagShowSyncActivityIndicator": "Sync-activiteitsindicator tonen",
-  "configFlagShowSyncActivityIndicatorDescription": "Een status van rustige synchronisatie tonen in de zijbalk; wachtrijtellingen verschijnen alleen terwijl het werk nog in behandeling is.",
   "conflictApplyButton": "Toepassen",
   "conflictApplyFailedTitle": "Kon resolutie niet toepassen",
   "conflictBannerAgoDays": "{count, plural, =1{1 dag geleden} other{{count} dagen geleden}}",
@@ -4655,22 +4653,8 @@
   "surveyValueAnd": "en",
   "surveyValueBetween": "Moet tussen",
   "surveyYesButton": "Ja.",
-  "syncActivityIdle": "stationair",
   "syncActivityInboxLabel": "Postvak IN",
-  "syncActivityIndicatorSemantics": "Synchronisatie activiteit. Postvak UIT: {outbox}Inbox: {inbox}Open synchronisatie-outbox.",
-  "@syncActivityIndicatorSemantics": {
-    "placeholders": {
-      "outbox": {
-        "type": "int"
-      },
-      "inbox": {
-        "type": "int"
-      }
-    }
-  },
   "syncActivityOutboxLabel": "Postvak UIT",
-  "syncActivitySyncingTitle": "Synchroniseren",
-  "syncActivityTitle": "Synchroniseren",
   "syncAddDeviceAction": "Apparaat toevoegen",
   "syncAddDeviceConnected": "Het nieuwe apparaat is toegevoegd — rond de emoji-verificatie af voordat je verstuurt.",
   "syncAddDeviceCopyCode": "Koppelcode kopiëren",

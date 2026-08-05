@@ -1448,8 +1448,6 @@
   "configFlagRecordLocationDescription": "Înregistrează automat locația dvs. cu intrări noi. Acest lucru ajută la organizarea și căutarea pe baza locației.",
   "configFlagResendAttachments": "Retrimiteți atașamentele",
   "configFlagResendAttachmentsDescription": "Activați această opțiune pentru a retrimite automat încărcările de atașamente eșuate atunci când conexiunea este restabilită.",
-  "configFlagShowSyncActivityIndicator": "Afișează indicatorul de activitate de sincronizare",
-  "configFlagShowSyncActivityIndicatorDescription": "Afișează discret starea sincronizării în bara laterală; numerele din coadă apar doar când există operații în așteptare.",
   "conflictApplyButton": "Aplicați",
   "conflictApplyFailedTitle": "Rezoluția nu a putut fi aplicată",
   "conflictBannerAgoDays": "{count, plural, =1{acum 1 zi} other{acum {count} zile}}",
@@ -4104,22 +4102,8 @@
   "surveyValueAnd": "și",
   "surveyValueBetween": "Trebuie să fie între",
   "surveyYesButton": "Da",
-  "syncActivityIdle": "inactivă",
   "syncActivityInboxLabel": "Intrare",
-  "syncActivityIndicatorSemantics": "Activitate sincronizare. Coadă de ieșire: {outbox}. Coadă de intrare: {inbox}. Deschide coada de ieșire pentru sincronizare.",
-  "@syncActivityIndicatorSemantics": {
-    "placeholders": {
-      "outbox": {
-        "type": "int"
-      },
-      "inbox": {
-        "type": "int"
-      }
-    }
-  },
   "syncActivityOutboxLabel": "Ieșire",
-  "syncActivitySyncingTitle": "Se sincronizează",
-  "syncActivityTitle": "Sincronizare",
   "syncAddDeviceAction": "Adăugați dispozitiv",
   "syncAddDeviceConnected": "Noul dispozitiv s-a alăturat — finalizați verificarea cu emoji înainte de a trimite.",
   "syncAddDeviceCopyCode": "Copiați codul de asociere",

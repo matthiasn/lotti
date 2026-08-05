@@ -323,19 +323,12 @@ chart hide behind a "show technical details" toggle.
 
 Manual actions write straight to `SyncDatabase`.
 
-# Activity signalling
+# Directional queue badges
 
-`SyncActivitySignaler` is a payload-free broadcast pulse wired into the two
-committal chokepoints:
-
-- **TX** — `DatabaseOutboxRepository.markSent` pulses once per single-row send;
-  `markSentBatch` pulses once for the whole batch, both unconditionally rather
-  than gated on transitioned-row count.
-- **RX** — `InboundQueue.commitApplied` pulses once per applied row.
-
-The sidebar `SyncActivityIndicator` (behind the
-`show_sync_activity_indicator` config flag) listens to both. Healthy sync shows
-a quiet icon; a pulse promotes it to the active accent; real backlog adds
-directional counts capped at `999+` so a large queue does not dominate the rail,
-with exact numbers kept in the semantics label. Producers accept a nullable
-signaler so tests can omit it.
+The Settings destination carries compact queue depth rather than a separate
+sidebar status row. `OutboxTrailingBadge` reads
+`outboxPendingCountProvider` for the outgoing `↑ count` pill and reuses
+`inboundQueueDepthProvider` for the incoming `↓ count` pill. Both use the
+neutral outlined badge tone because queued work is normal operation, and each
+direction disappears independently at zero. The former per-packet pulse
+signaler and its opt-in config flag no longer exist.

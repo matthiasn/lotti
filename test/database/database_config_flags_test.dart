@@ -121,11 +121,6 @@ final expectedFlags = <ConfigFlag>{
     status: false,
   ),
   const ConfigFlag(
-    name: showSyncActivityIndicatorFlag,
-    description: 'Show sync status in the sidebar.',
-    status: false,
-  ),
-  const ConfigFlag(
     name: enableForkHealingFlag,
     description: 'Enable agent fork healing?',
     status: false,

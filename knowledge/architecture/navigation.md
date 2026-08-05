@@ -216,17 +216,15 @@ form factors:
 
 | Form factor | Where | Suppressed when |
 |-------------|-------|-----------------|
-| Desktop | sidebar `footerBand`, under Settings and below the optional ambient sync strip | the sidebar is collapsed |
+| Desktop | sidebar `footerBand`, under Settings | the sidebar is collapsed |
 | Mobile | last child of the *More* sheet | never — the sheet is its only home |
 
 `footerBand` is the sidebar's one **full-bleed** slot: it spans the rail edge to
 edge rather than sitting inside the 16 px gutters every other row shares, and
 owns its own smaller inset. A rule that runs the full width reads as the foot of
 the panel rather than as a row that failed to line up. The band is always the
-expanded sidebar's final child. When enabled, the sync activity strip stays
-gutter-aligned in `belowSettings` immediately above it; when disabled, that slot
-and its spacer both disappear, so the footer remains pinned without a gap or
-jump. Collapsing the sidebar removes the band entirely — the icon-only rail is
+expanded sidebar's final child, with no optional status row beneath Settings to
+displace it. Collapsing the sidebar removes the band entirely — the icon-only rail is
 72 px, narrower than the four glyphs — and the Manual stays reachable from
 Settings meanwhile.
 

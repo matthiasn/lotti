@@ -19,7 +19,6 @@ const enableVectorSearchFlag = 'enable_vector_search';
 
 const enableWhatsNewFlag = 'enable_whats_new';
 const dailyOsOnboardingEnabledFlag = 'daily_os_onboarding_enabled';
-const showSyncActivityIndicatorFlag = 'show_sync_activity_indicator';
 const enableForkHealingFlag = 'enable_fork_healing';
 
 const logSlowQueriesFlag = 'log_slow_queries';

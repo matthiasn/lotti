@@ -3240,14 +3240,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Aktivera detta för att automatiskt skicka om misslyckade bilagor när anslutningen återställs.';
 
   @override
-  String get configFlagShowSyncActivityIndicator =>
-      'Visa synkroniseringsaktivitetsindikator';
-
-  @override
-  String get configFlagShowSyncActivityIndicatorDescription =>
-      'Visa en tyst synkroniseringsstatus i sidofältet; Köräkningar visas endast medan arbete pågår.';
-
-  @override
   String get conflictApplyButton => 'Ansök';
 
   @override
@@ -10290,24 +10282,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get surveyYesButton => 'Ja';
 
   @override
-  String get syncActivityIdle => 'vila';
-
-  @override
   String get syncActivityInboxLabel => 'Inkorg';
 
   @override
-  String syncActivityIndicatorSemantics(int outbox, int inbox) {
-    return 'Synkronisera aktiviteten. Utbox: $outbox. Inkorg: $inbox. Öppna synkutkorgen.';
-  }
-
-  @override
   String get syncActivityOutboxLabel => 'Utbox';
-
-  @override
-  String get syncActivitySyncingTitle => 'Synkronisering';
-
-  @override
-  String get syncActivityTitle => 'Synk';
 
   @override
   String get syncAddDeviceAction => 'Lägg till enhet';

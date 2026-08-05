@@ -114,7 +114,6 @@ class FlagsBody extends ConsumerStatefulWidget {
     enableVectorSearchFlag,
     enableWhatsNewFlag,
     dailyOsOnboardingEnabledFlag,
-    showSyncActivityIndicatorFlag,
     enableForkHealingFlag,
   ];
 
@@ -130,7 +129,6 @@ class FlagsBody extends ConsumerStatefulWidget {
   static const Set<String> syncOnlyFlags = {
     enableMatrixFlag,
     resendAttachments,
-    showSyncActivityIndicatorFlag,
   };
 
   @override
@@ -186,8 +184,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return Icons.new_releases_outlined;
       case dailyOsOnboardingEnabledFlag:
         return Icons.tips_and_updates_outlined;
-      case showSyncActivityIndicatorFlag:
-        return Icons.network_check_rounded;
       case enableForkHealingFlag:
         return Icons.call_merge_rounded;
       default:
@@ -235,8 +231,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableWhatsNewDescription;
       case dailyOsOnboardingEnabledFlag:
         return context.messages.configFlagDailyOsOnboardingEnabledDescription;
-      case showSyncActivityIndicatorFlag:
-        return context.messages.configFlagShowSyncActivityIndicatorDescription;
       case enableForkHealingFlag:
         return context.messages.configFlagEnableForkHealingDescription;
       default:
@@ -284,8 +278,6 @@ class _FlagsBodyState extends ConsumerState<FlagsBody> {
         return context.messages.configFlagEnableWhatsNew;
       case dailyOsOnboardingEnabledFlag:
         return context.messages.configFlagDailyOsOnboardingEnabled;
-      case showSyncActivityIndicatorFlag:
-        return context.messages.configFlagShowSyncActivityIndicator;
       case enableForkHealingFlag:
         return context.messages.configFlagEnableForkHealing;
       default:

@@ -1618,8 +1618,6 @@
   "configFlagRecordLocationDescription": "Registre automaticamente sua localização com novas entradas. Isso ajuda na organização e pesquisa baseada em localização.",
   "configFlagResendAttachments": "Reenviar anexos",
   "configFlagResendAttachmentsDescription": "Ative esta opção para reenviar automaticamente uploads de anexos com falha quando a conexão for restaurada.",
-  "configFlagShowSyncActivityIndicator": "Mostrar indicador de atividade de sincronização",
-  "configFlagShowSyncActivityIndicatorDescription": "Mostrar um status de sincronização silenciosa na barra lateral; as contagens de fila aparecem apenas enquanto o trabalho está pendente.",
   "conflictApplyButton": "Aplicar",
   "conflictApplyFailedTitle": "Não foi possível aplicar a resolução",
   "conflictBannerAgoDays": "{count, plural, =1{1 dia atrás} other{{count} dias atrás}}",
@@ -4655,22 +4653,8 @@
   "surveyValueAnd": "e",
   "surveyValueBetween": "Deve estar entre",
   "surveyYesButton": "Sim",
-  "syncActivityIdle": "ocioso",
   "syncActivityInboxLabel": "Caixa de entrada",
-  "syncActivityIndicatorSemantics": "Atividade de sincronização. Caixa de saída: {outbox}. Caixa de entrada: {inbox}. Abra a caixa de saída de sincronização.",
-  "@syncActivityIndicatorSemantics": {
-    "placeholders": {
-      "outbox": {
-        "type": "int"
-      },
-      "inbox": {
-        "type": "int"
-      }
-    }
-  },
   "syncActivityOutboxLabel": "Caixa de saída",
-  "syncActivitySyncingTitle": "Sincronizando",
-  "syncActivityTitle": "Sincronizar",
   "syncAddDeviceAction": "Adicionar dispositivo",
   "syncAddDeviceConnected": "O novo dispositivo entrou — conclui a verificação por emojis antes de enviar.",
   "syncAddDeviceCopyCode": "Copiar código de emparelhamento",

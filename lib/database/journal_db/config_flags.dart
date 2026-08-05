@@ -173,14 +173,6 @@ Future<void> initConfigFlags(
 
   await db.insertFlagIfNotExists(
     const ConfigFlag(
-      name: showSyncActivityIndicatorFlag,
-      description: 'Show sync status in the sidebar.',
-      status: false,
-    ),
-  );
-
-  await db.insertFlagIfNotExists(
-    const ConfigFlag(
       name: enableForkHealingFlag,
       description: 'Enable agent fork healing?',
       status: false,
@@ -205,6 +197,9 @@ Future<void> initConfigFlags(
 /// this list once every install that could still carry the row has upgraded
 /// past it.
 const retiredConfigFlags = <String>[
+  // The standalone sidebar activity row was replaced by compact directional
+  // badges on Settings, so this opt-in toggle no longer controls anything.
+  'show_sync_activity_indicator',
   // Removed with the sync actor isolate (ADR 0046). Never read by any code
   // path: the actor it would have gated was never wired into the app.
   'enable_sync_actor',
