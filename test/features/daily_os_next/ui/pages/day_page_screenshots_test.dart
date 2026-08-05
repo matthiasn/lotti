@@ -1149,7 +1149,7 @@ void main() {
       'lotti-manual-daily-os-',
     );
     _manualDocumentsDirectory = documentsDirectory;
-    await _manualWorld.installMedia(documentsDirectory);
+    await installManualDemoMedia(_manualWorld, documentsDirectory);
     final mocks = await setUpTestGetIt(
       additionalSetup: () {
         getIt

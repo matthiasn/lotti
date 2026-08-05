@@ -1,7 +1,7 @@
 /// Production screenshot harness for the What's New manual.
 ///
 /// Captures the real release modal over the real Settings surface, with a
-/// Project Waddle release feed and bundled task cover art primed into Flutter's
+/// Project Waddle release feed and R2-hosted task cover art primed into Flutter's
 /// network-image cache. Every case is rendered at mobile and desktop size in
 /// light and dark mode.
 ///
@@ -11,7 +11,6 @@
 library;
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -22,6 +21,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/settings/ui/pages/settings_root_page.dart';
 import 'package:lotti/features/whats_new/model/whats_new_content.dart';
@@ -34,14 +34,19 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 
+import '../../../helpers/manual_demo_world.dart';
 import '../../../helpers/target_platform.dart';
 import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
 
-const _launchBannerUrl =
-    'https://manual.invalid/project-waddle-launch-review.webp';
-const _sardineBannerUrl =
-    'https://manual.invalid/project-waddle-sardine-futures.webp';
+final DemoMediaAsset _launchBannerAsset = demoMediaAssets.singleWhere(
+  (asset) => asset.fileName == 'manual_task_cover_launch_review.webp',
+);
+final DemoMediaAsset _sardineBannerAsset = demoMediaAssets.singleWhere(
+  (asset) => asset.fileName == 'manual_task_cover_sardine_futures.webp',
+);
+final _launchBannerUrl = _launchBannerAsset.uri.toString();
+final _sardineBannerUrl = _sardineBannerAsset.uri.toString();
 String _t(String en, String de) => manualScreenshotText(en: en, de: de);
 
 AppLocalizations _messages(WidgetTester tester) =>
@@ -219,13 +224,13 @@ Widget _app({
   );
 }
 
-Future<void> _primeNetworkImage(String url, String assetPath) async {
-  final bytes = await File(assetPath).readAsBytes();
+Future<void> _primeNetworkImage(DemoMediaAsset asset) async {
+  final bytes = await downloadManualDemoMedia(asset.uri);
   final codec = await ui.instantiateImageCodec(bytes);
   final frame = await codec.getNextFrame();
   codec.dispose();
 
-  final provider = NetworkImage(url);
+  final provider = NetworkImage(asset.uri.toString());
   final key = await provider.obtainKey(ImageConfiguration.empty);
   PaintingBinding.instance.imageCache.putIfAbsent(
     key,
@@ -257,14 +262,8 @@ void main() {
     getIt.registerSingleton<NavService>(navService);
     beamToNamedOverride = (_) {};
 
-    await _primeNetworkImage(
-      _launchBannerUrl,
-      'assets/design_system/manual_task_cover_launch_review.webp',
-    );
-    await _primeNetworkImage(
-      _sardineBannerUrl,
-      'assets/design_system/manual_task_cover_sardine_futures.webp',
-    );
+    await _primeNetworkImage(_launchBannerAsset);
+    await _primeNetworkImage(_sardineBannerAsset);
   });
 
   tearDown(() async {

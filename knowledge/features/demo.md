@@ -32,6 +32,14 @@ sources:
     resource: ../../lib/features/demo/seed/demo_seed_manifest.dart
     title: DemoSeedManifest
     last_modified: 2026-08-05
+  - id: media-catalog
+    resource: ../../lib/features/demo/media/demo_media_asset.dart
+    title: Immutable R2 demo-media catalog
+    last_modified: 2026-08-05
+  - id: media-hydrator
+    resource: ../../lib/features/demo/media/demo_media_hydrator.dart
+    title: Best-effort tenant-local media hydration
+    last_modified: 2026-08-05
   - id: copier
     resource: ../../lib/features/demo/copy/demo_data_copier.dart
     title: DemoDataCopier
@@ -57,7 +65,7 @@ be hot-switched into.
 
 | Owned here | Delegated to profiles |
 |------------|-----------------------|
-| Seed fixture (`seed/demo_world.dart`, `seed/demo_world_ai.dart`, `seed/l10n/`) | Registry + `profiles.json` |
+| Seed fixture (`seed/demo_world.dart`, `seed/demo_world_ai.dart`, `seed/l10n/`) and R2 media catalog | Registry + `profiles.json` |
 | `DemoSeeder` + `DemoSeedManifest` | `WorldHandle` (non-active world writes) |
 | `DemoModeGateway` (enter/exit/reset/delete/copy decisions) | `ProfileSwitcher` (the actual switch) |
 | Banner, entry points, exit sheet, AI setup sheet | `DemoWorldCreator` (create dir → seed → activate ordering) |
@@ -119,22 +127,55 @@ stateDiagram-v2
 
 The seeder writes exclusively through the `WorldHandle` — never through
 getIt or `PersistenceLogic` — in dependency order: categories + labels +
-habits, AI configs (providers → models → profiles → skills), media bytes from
-the asset bundle, journal entities in reference order (habit completions among
-them, which is why the habit definitions precede them), then every
+habits, AI configs (providers → models → profiles → skills), journal entities
+in reference order (including R2-backed image metadata and habit completions,
+which is why the habit definitions precede them), then every
 `linked_entries` row (links last, because both endpoints must already exist),
 config flags (Daily OS, tooltips and the habits page on; sync, notifications,
 geolocation and dashboards off), and FTUE suppression in the demo's own
 `settings.sqlite`.
 
-The habits page is on because the world carries three habits — two live daily
-ones under Penguin Operations and one retired — with three weeks of completion
-history ending *yesterday*, so the demo opens with a real streak and something
-still to tick off. The history is deliberately imperfect: it contains a skipped
-day and a failure, because a page of unbroken green teaches nothing about what
-the states look like.
+The habits page is on because the world carries seven habits — six active
+logistics/operations routines and one retired — with four weeks of completion
+history ending *yesterday*, so the demo opens with real streaks and something
+still to tick off. The history is deliberately imperfect: it contains skips
+and failures, because a page of unbroken green teaches nothing about the states.
 Everything arrives with `vectorClock: null` — a guest world has no sync
 stack to stamp one.
+
+# R2 media is best-effort, never part of seeding
+
+The catalog in
+[`demo_media_asset.dart`](../../lib/features/demo/media/demo_media_asset.dart)
+contains immutable versioned object keys, SHA-256 digests, owning task/category
+ids, relative capture times, cover roles, and localized captions. The source
+files live only in Cloudflare R2; the app bundle contains no demo artwork.
+
+After each profile bootstrap, `registerDemoMediaHydration` first proves the
+active guest is this product demo by reading its seed manifest. It filters the
+current catalog to image ids that manifest actually owns — essential when an
+older demo is resumed to protect user work — and launches a bounded-concurrency
+`DemoMediaHydrator` without awaiting or registering it as switch-blocking
+startup work. Its getIt disposal callback cancels in-flight requests when the
+user leaves the demo. Existing files are accepted only when their digest
+matches. Missing or corrupt objects download to `.part`, pass the catalog
+checksum, and rename atomically inside that guest root. Individual failures are
+logged and contained; placeholders remain usable and the next startup retries
+the incomplete catalog.
+
+```mermaid
+flowchart LR
+    B[Profile bootstrap] --> M{Guest with demo manifest?}
+    M -->|No| S[Skip]
+    M -->|Yes| C[Filter catalog to seeded image ids]
+    C --> H[Launch background hydrator]
+    H --> V{Local SHA-256 matches?}
+    V -->|Yes| K[Keep file]
+    V -->|No| D[Download R2 object to .part]
+    D --> Q{Digest matches catalog?}
+    Q -->|Yes| A[Atomic rename into guest root]
+    Q -->|No / network error| R[Log and retry next startup]
+```
 
 # Copy-over: closure semantics and the v1 line
 
@@ -259,10 +300,13 @@ content strings live in the `DemoSeedText` locale tables under `seed/l10n/`
 files — and `demo_seed_text_test` fails if any string the builders pass
 through `t()` is missing from any of the nine catalogs.
 
-The world is 28 tasks in four clusters (launch readiness, habitat
+The shared world is 28 tasks in four clusters (launch readiness, habitat
 engineering, logistics & supply, colony life) across three categories, wired
-by ~110 `linked_entries` rows to each other and to 20 notes, 11 logged-time
-records and the nine bundled cover photos. That web is what the
+by more than 160 `linked_entries` rows to each other and to 21 notes, 11
+logged-time records, 28 unique covers, and 60 supporting photos/artifacts. The
+tutorial adds the twenty-ninth cover and two more artifacts, for 91 R2 images
+overall. Every task has at least one non-image activity record, two attachments,
+and its cover; the four operational hubs have a third attachment. That web is what the
 [knowledge graph](../../lib/features/knowledge_graph/README.md) walks:
 it BFSes two hops from the focus task, so a fixture of isolated tasks would
 render a single node. Four hub tasks carry six or more neighbours; every

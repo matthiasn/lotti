@@ -11,6 +11,8 @@ import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     hide aiConfigRepositoryProvider;
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
+import 'package:lotti/features/demo/media/demo_media_startup.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
@@ -198,6 +200,11 @@ Future<ProfileContext> bootstrapProfileServices(
   await registerSingletons(
     profile: context,
     registerLateAndOptional: registerLateAndOptional,
+  );
+  await registerDemoMediaHydration(
+    serviceLocator: getIt,
+    profile: context,
+    catalog: demoMediaAssets,
   );
   return context;
 }

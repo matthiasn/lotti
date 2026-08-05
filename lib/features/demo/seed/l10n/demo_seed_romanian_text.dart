@@ -751,4 +751,22 @@ Rulați testul distribuitorului, atașați imaginea de telemetrie, apoi solicita
       'Întâi aterizări mai blânde, apoi revanșa cu cala C.',
   'Habitat Engineering': 'Ingineria habitatului',
   'Logistics & Supply': 'Logistică și aprovizionare',
+  'Check cold-chain telemetry': 'Verificați telemetria lanțului frigorific',
+  'Scan overnight freezer readings before the first cargo handoff.':
+      'Verificați valorile nocturne ale congelatoarelor înainte de prima '
+      'predare a încărcăturii.',
+  'Reconcile outbound cargo manifest':
+      'Reconciliați manifestul mărfii expediate',
+  'Match every pod, pallet, and penguin signature before departure.':
+      'Verificați fiecare capsulă, palet și semnătură de pinguin înainte de '
+      'plecare.',
+  'Send the end-of-shift handoff': 'Trimiteți predarea de la sfârșitul turei',
+  'Leave the next specialist a crisp update, including any drifting fish.':
+      'Lăsați următorului specialist o actualizare clară, inclusiv despre '
+      'orice pește aflat în derivă.',
+  'Zero-gravity flipper mobility':
+      'Mobilitatea înotătoarelor în gravitație zero',
+  'Complete three gentle mobility sessions before the weekly cargo sprint.':
+      'Finalizați trei sesiuni ușoare de mobilitate înaintea sprintului '
+      'logistic săptămânal.',
 };

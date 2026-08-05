@@ -8,10 +8,13 @@ copy over in the exit sheet.
 
 ## What it does for the user
 
-- **A populated app from the first second.** Twenty-eight linked tasks across
-  three areas — cover art, checklists, logged time, labels, notes, and a
-  fictional AI setup — plus a guided "first mission" checklist with five
-  concrete things to try.
+- **A populated app from the first second.** Twenty-nine linked tasks across
+  three areas — each with unique cover art and at least two attached photos
+  or operational artifacts — plus checklists, logged time, labels, notes, a
+  fictional AI setup, and a guided "first mission" with five things to try.
+- **Lived-in routines.** Six active logistics habits and one retired habit
+  carry four imperfect weeks of completions, skips, and failures ending
+  yesterday, so there is useful work waiting today.
 - **A world worth walking.** Tasks link to each other and to their notes,
   photos and logged sessions, so the per-task knowledge graph opens onto a
   real neighbourhood; due dates are relative to now, so today is today.
@@ -33,6 +36,7 @@ copy over in the exit sheet.
 lib/features/demo/
 ├── seed/    penguin-logistics fixture + locale tables, DemoSeeder,
 │            seed manifest, tutorial "first mission" content
+├── media/   immutable R2 catalog + checksummed background hydration
 ├── state/   DemoModeGateway — enter/resume/reseed/exit/delete decisions
 ├── ui/      banner + scaffold, entry launcher & Try button, exit sheet,
 │            real-AI setup sheet
@@ -46,6 +50,12 @@ so it grows **additively**: never rename, remove or reorder an existing id,
 name or list position. Everything the manual quotes stays exactly where it is;
 new work is appended. Demo-only content (the guided "first mission") still
 lives in `DemoTutorialContent`, outside the shared world.
+
+The 91-image media catalog is hosted exclusively on Cloudflare R2. Seeding
+writes image metadata only and never waits for the network. Every demo-world
+startup compares the manifest-owned catalog with tenant-local checksums and
+downloads missing or corrupt files in the background; a slow or failed request
+leaves a normal placeholder and is retried on a later startup.
 
 ## What it delegates
 

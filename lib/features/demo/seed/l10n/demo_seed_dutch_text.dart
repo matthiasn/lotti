@@ -724,4 +724,19 @@ Voer de voedertest uit, voeg de telemetrieafbeelding toe en vraag daarna toestem
       "Eerst zachtere landingen, dan een revanche tegen ruim C.",
   "Habitat Engineering": "Habitattechniek",
   "Logistics & Supply": "Logistiek & bevoorrading",
+  "Check cold-chain telemetry": "Controleer de telemetrie van de koelketen",
+  "Scan overnight freezer readings before the first cargo handoff.":
+      "Controleer de nachtelijke vriezermetingen vóór de eerste "
+      "vrachtoverdracht.",
+  "Reconcile outbound cargo manifest": "Stem het uitgaande vrachtmanifest af",
+  "Match every pod, pallet, and penguin signature before departure.":
+      "Controleer vóór vertrek elke capsule, pallet en pinguïnhandtekening.",
+  "Send the end-of-shift handoff":
+      "Stuur de overdracht aan het einde van je dienst",
+  "Leave the next specialist a crisp update, including any drifting fish.":
+      "Laat de volgende specialist een heldere update achter, inclusief "
+      "eventuele afdrijvende vissen.",
+  "Zero-gravity flipper mobility": "Flippermobiliteit in gewichtloosheid",
+  "Complete three gentle mobility sessions before the weekly cargo sprint.":
+      "Doe drie rustige mobiliteitssessies vóór de wekelijkse vrachtsprint.",
 };

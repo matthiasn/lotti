@@ -4,6 +4,7 @@ import 'dart:ui' show Locale;
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seeder.dart';
 import 'package:lotti/features/demo/seed/demo_tutorial_content.dart';
@@ -19,16 +20,6 @@ import 'package:path/path.dart' as p;
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-
-/// Serves the repo's real asset files from disk, standing in for
-/// `rootBundle` (tests run with the repository root as working directory).
-class _FileSystemAssetBundle extends CachingAssetBundle {
-  @override
-  Future<ByteData> load(String key) async {
-    final bytes = await File(key).readAsBytes();
-    return ByteData.sublistView(bytes);
-  }
-}
 
 /// Recursive snapshot of a directory: relative path -> file length.
 Map<String, int> snapshotTree(Directory dir) {
@@ -92,7 +83,6 @@ void main() {
 
   DemoSeeder seeder() => DemoSeeder(
     world: world,
-    bundle: _FileSystemAssetBundle(),
     clock: () => seedTime,
   );
 
@@ -107,6 +97,7 @@ void main() {
     demoTutorialVoiceNoteItemId,
     demoTutorialChecklistId,
     demoTutorialTaskId,
+    for (final asset in demoMediaForTask(demoTutorialTaskId)) asset.id,
   };
 
   const expectedDefinitionIds = {
@@ -121,6 +112,10 @@ void main() {
     manualRollCallHabitId,
     manualHabitatSealsHabitId,
     manualSardineForecastHabitId,
+    demoColdChainTelemetryHabitId,
+    demoOutboundManifestHabitId,
+    demoShiftHandoffHabitId,
+    demoFlipperMobilityHabitId,
   };
 
   const expectedAiConfigIds = {
@@ -184,13 +179,13 @@ void main() {
         expect(entity, isNotNull, reason: 'journal entity $id missing');
         entities.add(entity!);
       }
-      expect(entities.whereType<JournalImage>(), hasLength(9));
+      expect(entities.whereType<JournalImage>(), hasLength(91));
       // 28 penguin-world tasks + the tutorial's "Your first mission".
       expect(entities.whereType<Task>(), hasLength(29));
       expect(entities.whereType<Checklist>(), hasLength(8));
       expect(entities.whereType<ChecklistItem>(), hasLength(33));
-      // 11 logged-time records + 20 observations.
-      expect(entities.whereType<JournalEntry>(), hasLength(31));
+      // 11 logged-time records + 21 observations.
+      expect(entities.whereType<JournalEntry>(), hasLength(32));
 
       // The three categories all landed, so tasks in the new areas resolve
       // a category (and a colour) rather than rendering uncategorized.
@@ -215,15 +210,16 @@ void main() {
       expect(tutorialTask.data.title, 'Your first mission');
       expect(tutorialTask.data.checklistIds, [demoTutorialChecklistId]);
 
-      // Cover-art media bytes were installed from the bundle.
+      // Seeding writes only local image metadata. Missing R2 bytes are
+      // reconciled after bootstrap and can never delay or fail this seed.
       for (final image in entities.whereType<JournalImage>()) {
         final mediaFile = File(
           getFullImagePath(image, documentsDirectory: worldRoot.path),
         );
         expect(
-          mediaFile.existsSync() && mediaFile.lengthSync() > 0,
-          isTrue,
-          reason: 'media for ${image.meta.id} missing under the world root',
+          mediaFile.existsSync(),
+          isFalse,
+          reason: 'seeding unexpectedly installed media for ${image.meta.id}',
         );
       }
 
@@ -256,6 +252,14 @@ void main() {
         manualOrbitalHabitatTaskId,
       });
       expect(heroLinks.length, greaterThanOrEqualTo(8));
+      final tutorialLinks = await world.journalDb.linksForEntryIdsBidirectional(
+        {demoTutorialTaskId},
+      );
+      expect(tutorialLinks, hasLength(3));
+      expect(
+        tutorialLinks.map((link) => link.toId).toSet(),
+        demoMediaForTask(demoTutorialTaskId).map((asset) => asset.id).toSet(),
+      );
 
       // Config flags: demo experience on top of the seeded defaults.
       expect(
@@ -405,7 +409,6 @@ void main() {
       await expectLater(
         DemoSeeder(
           world: brokenWorld,
-          bundle: _FileSystemAssetBundle(),
           clock: () => seedTime,
         ).seed(locale: const Locale('en')),
         throwsA(

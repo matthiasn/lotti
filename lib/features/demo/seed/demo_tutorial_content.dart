@@ -1,7 +1,10 @@
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
+import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
 import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
@@ -33,6 +36,8 @@ class DemoTutorialContent {
     required this.task,
     required this.checklist,
     required this.checklistItems,
+    required this.images,
+    required this.links,
   });
 
   /// Builds the tutorial task with its "Learn the ropes" checklist.
@@ -47,6 +52,38 @@ class DemoTutorialContent {
   }) {
     final t = translate ?? demoSeedTextFromEnvironment();
     final anchor = now ?? manualDemoNow;
+    final imageAssets = demoMediaForTask(demoTutorialTaskId).toList();
+    final images = <JournalImage>[
+      for (var index = 0; index < imageAssets.length; index++)
+        () {
+          final asset = imageAssets[index];
+          final capturedAt = asset.isCover
+              ? anchor
+              : anchor.subtract(Duration(minutes: (index + 1) * 5));
+          final caption = asset.caption(t);
+          return JournalImage(
+            meta: Metadata(
+              id: asset.id,
+              createdAt: capturedAt,
+              updatedAt: capturedAt,
+              dateFrom: capturedAt,
+              dateTo: capturedAt,
+              categoryId: asset.categoryId,
+            ),
+            data: ImageData(
+              capturedAt: capturedAt,
+              imageId: '${asset.id}-file',
+              imageFile: asset.fileName,
+              imageDirectory: asset.imageDirectory,
+            ),
+            entryText: caption == null ? null : EntryText(plainText: caption),
+          );
+        }(),
+    ];
+    final image = images.singleWhere(
+      (candidate) =>
+          candidate.meta.id == demoMediaCoverForTask(demoTutorialTaskId).id,
+    );
 
     ChecklistItem item(String id, String title) {
       return ChecklistItem(
@@ -134,13 +171,30 @@ class DemoTutorialContent {
       checklistIds: [demoTutorialChecklistId],
     );
     final task = base.copyWith(
-      data: base.data.copyWith(priority: TaskPriority.p2Medium),
+      data: base.data.copyWith(
+        priority: TaskPriority.p2Medium,
+        coverArtId: image.meta.id,
+        coverArtCropX: 0.5,
+      ),
     );
+    final links = <EntryLink>[
+      for (final tutorialImage in images)
+        EntryLink.basic(
+          id: demoUuid('demo-tutorial-image-link-${tutorialImage.meta.id}'),
+          fromId: demoTutorialTaskId,
+          toId: tutorialImage.meta.id,
+          createdAt: anchor,
+          updatedAt: anchor,
+          vectorClock: null,
+        ),
+    ];
 
     return DemoTutorialContent._(
       task: task,
       checklist: checklist,
       checklistItems: checklistItems,
+      images: images,
+      links: links,
     );
   }
 
@@ -154,9 +208,20 @@ class DemoTutorialContent {
   /// Five unchecked starter steps, wired into [checklist].
   final List<ChecklistItem> checklistItems;
 
-  /// Every journal entity in seed-write order (items before the checklist
-  /// that references them, the checklist before the task).
+  /// R2-backed cover and supporting mission artifacts attached to [task].
+  final List<JournalImage> images;
+
+  JournalImage get image => images.singleWhere(
+    (candidate) => candidate.meta.id == task.data.coverArtId,
+  );
+
+  /// Links owned by the tutorial fixture, written after all endpoints exist.
+  final List<EntryLink> links;
+
+  /// Every journal entity in seed-write order: image and items before the
+  /// checklist/task records that reference them.
   List<JournalEntity> get journalEntities => [
+    ...images,
     ...checklistItems,
     checklist,
     task,

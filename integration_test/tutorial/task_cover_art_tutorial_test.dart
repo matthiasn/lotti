@@ -10,7 +10,7 @@
 ///  3. watch the generation progress, then the artwork land as the task's
 ///     cover in the header and on the list card.
 ///
-/// The image GENERATION is mocked deterministically (the bundled penguin
+/// The image GENERATION is mocked deterministically (the R2-hosted penguin
 /// artwork every run, short realistic latency) by overriding
 /// `cloudInferenceRepositoryProvider` — everything else (skill modal,
 /// progress view, image import, automatic cover assignment) is the real
@@ -22,9 +22,9 @@ import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:integration_test/integration_test.dart';
 import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -37,6 +37,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/gemini_inference_payloads.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/tasks/ui/pages/task_details_page.dart';
 import 'package:lotti/features/tasks/ui/pages/tasks_tab_page.dart';
 import 'package:lotti/features/tasks/ui/task_expandable_app_bar.dart';
@@ -52,7 +53,7 @@ const _thinkingModelId = 'tutorial-image-thinking-model';
 const _imageModelId = 'tutorial-image-gen-model';
 const _profileId = 'tutorial-image-profile';
 
-/// Deterministic image "generation": returns the bundled penguin artwork
+/// Deterministic image "generation": returns the R2-hosted penguin artwork
 /// after a short, realistic delay. Same cover art every run.
 class _FakeCloudInferenceRepository extends CloudInferenceRepository {
   _FakeCloudInferenceRepository(super.ref);
@@ -67,15 +68,22 @@ class _FakeCloudInferenceRepository extends CloudInferenceRepository {
     InferenceImpactCollector? impactCollector,
   }) async {
     await Future<void>.delayed(const Duration(seconds: 5));
-    final data = await rootBundle.load(
-      'assets/design_system/manual_task_cover_habitat.webp',
+    final asset = demoMediaAssets.singleWhere(
+      (asset) => asset.fileName == 'manual_task_cover_habitat.webp',
     );
+    final response = await http.get(asset.uri);
+    if (response.statusCode != HttpStatus.ok) {
+      throw HttpException(
+        'Tutorial cover request returned HTTP ${response.statusCode}',
+        uri: asset.uri,
+      );
+    }
     // The headless engine can hang indefinitely decoding a resized WebP
     // (same caveat as ManualDemoWorld's transcodeManualDemoMediaToPng) — a
     // real desktop run under Xvfb does not hang, but the image silently
     // never renders either, so no cover appears. Transcode to PNG for a
     // format the cover-art pipeline reliably decodes and displays.
-    final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+    final codec = await ui.instantiateImageCodec(response.bodyBytes);
     final frame = await codec.getNextFrame();
     final png = await frame.image.toByteData(format: ui.ImageByteFormat.png);
     frame.image.dispose();
