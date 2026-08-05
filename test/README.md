@@ -256,6 +256,34 @@ for `DayAgentContextBuilder`, `DayAgentPersistence`, `DayAgentPromptBuilder`,
 `DayAgentStrategy`, and the service collaborators remains in their own mirrored
 test files.
 
+### Documented exception: `WakeOrchestrator` facade suites
+
+`WakeOrchestrator` coordinates notification routing, queued drain execution,
+manual wakes, persisted throttle state, stale-drain recovery, and content gates
+across the focused wake collaborators. Its facade coverage is split into
+mutually exclusive suites:
+
+- `wake_orchestrator_test.dart` — subscription registration and routing,
+  notification matching, self-notification suppression, and stream lifecycle;
+- `wake_orchestrator_drain_test.dart` — drain execution, concurrency, run
+  completion events, and pre-wake hooks;
+- `wake_orchestrator_manual_wake_test.dart` — manual enqueue behavior, run-key
+  counters, and queued-wake cleanup;
+- `wake_orchestrator_throttle_test.dart` — persisted throttles, deferred and
+  safety-net drains, awaiting-content cache state, and propagated deferral;
+- `wake_orchestrator_recovery_test.dart` — stale-drain force resets and
+  generation-based bail-out; and
+- `wake_orchestrator_content_test.dart` — domain logging, content gates,
+  execution-zone state, aborts, and timeouts.
+
+Shared lifecycle wiring and generated property-test models live in
+`wake_orchestrator_test_harness.dart`, which has no `main()`. Concise subscription
+and job builders plus capture helpers remain in
+`wake_orchestrator_test_helpers.dart`, which also has no `main()`. A facade
+behavior belongs in exactly one of these six suites; direct coverage for
+`WakeQueue`, `WakeRunner`, `WakeThrottleCoordinator`, `WakeSuppressionTracker`,
+and `ScheduledWakeManager` remains in each collaborator's mirrored test file.
+
 ## Mocktail global-state hygiene
 
 Mocktail stores argument matchers (`any`, `captureAny`) in **process-global**

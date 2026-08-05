@@ -25,8 +25,8 @@ decomposition itself.
 | 3 | `unified_ai_inference_repository_test.dart` | 8,593 | inference execution, tool-call processing, post-processing, repository shell | Merged (#3807) |
 | 4 | `eval_constraints_test.dart` | 8,228 | split the test-only constraint framework and mirror its focused source files | Merged (#3808) |
 | 5 | `outbox_service_test.dart` | 7,820 | send pipeline, queue/database behavior, retry/maintenance, service shell | Merged (#3811) |
-| 6 | `day_agent_workflow_test.dart` | 7,379 | day wake execution, context/prompt construction, persistence, workflow shell | In progress |
-| 7 | `wake_orchestrator_test.dart` | 6,905 | scheduling, drain/claim lifecycle, recovery, orchestrator shell | Planned |
+| 6 | `day_agent_workflow_test.dart` | 7,379 | day wake execution, context/prompt construction, persistence, workflow shell | Merged (#3812) |
+| 7 | `wake_orchestrator_test.dart` | 6,905 | scheduling, drain/claim lifecycle, recovery, orchestrator shell | In progress |
 
 Line counts are the review baseline, not enforced thresholds. They exist so a
 PR cannot present a cosmetic rename as decomposition.
@@ -127,4 +127,16 @@ capture live in a helper library with no `main()`.
 The split preserves all 141 test declarations and the 11 original semantic
 groups; seven additional groups are only the executable suite containers. The
 largest resulting executable suite is 1,608 lines. These counts describe the
+refactor; this PR adds no CI size check, threshold, or other guardrail.
+
+### PR 7 — wake orchestrator facade
+
+The wake-orchestrator suite is split by subscription routing, drain execution,
+manual wakes, throttle and deferred scheduling, stale-drain recovery, and
+content/timeout behavior. Shared lifecycle wiring and generated property-test
+models live in a helper library with no `main()`.
+
+The split preserves all 142 test declarations and the 28 original semantic
+groups; five additional groups are only the executable suite containers. The
+largest resulting executable suite is 1,936 lines. These counts describe the
 refactor; this PR adds no CI size check, threshold, or other guardrail.
