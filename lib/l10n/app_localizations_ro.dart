@@ -7394,7 +7394,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String maintenanceReSyncPartialTitle(int succeeded, int total) {
-    return '$succeeded din $total mesaje adăugate în coadă';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'mesaje adăugate',
+      one: 'mesaj adăugat',
+    );
+    return '$succeeded din $total $_temp0 în coadă';
   }
 
   @override

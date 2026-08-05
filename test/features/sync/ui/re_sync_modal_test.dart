@@ -33,6 +33,22 @@ void main() {
   late MockSyncMaintenanceRepository mockSyncMaintenanceRepository;
   late MockDomainLogger mockLogging;
 
+  ReSyncResult partialResult({Future<void> Function()? retryAction}) =>
+      ReSyncResult(
+        succeeded: 2,
+        failures: [
+          ReSyncFailure(
+            phase: ReSyncPhase.agentEntities,
+            itemType: ReSyncItemType.agentEntity,
+            itemId: 'agent-bad',
+            error: StateError('invalid agent row'),
+            stackTrace: StackTrace.empty,
+            retryAction: retryAction ?? () async {},
+            logger: mockLogging,
+          ),
+        ],
+      );
+
   List<Override> modalOverrides() => [
     maintenanceProvider.overrideWithValue(mockMaintenance),
     agentRepositoryProvider.overrideWithValue(mockAgentRepository),
@@ -128,7 +144,7 @@ void main() {
         stackTrace: any<StackTrace>(named: 'stackTrace'),
         subDomain: any<String>(named: 'subDomain'),
       ),
-    ).thenAnswer((_) async => ReSyncResult.empty);
+    ).thenAnswer((_) {});
     await setUpTestGetIt(
       additionalSetup: () {
         getIt
@@ -337,21 +353,10 @@ void main() {
       () => onboarding.completeOutbound(round),
     ).thenAnswer((_) async {});
     var retryCalls = 0;
-    final partial = ReSyncResult(
-      succeeded: 2,
-      failures: [
-        ReSyncFailure(
-          phase: ReSyncPhase.agentEntities,
-          itemType: ReSyncItemType.agentEntity,
-          itemId: 'agent-bad',
-          error: StateError('invalid agent row'),
-          stackTrace: StackTrace.empty,
-          retryAction: () async {
-            retryCalls++;
-          },
-          logger: mockLogging,
-        ),
-      ],
+    final partial = partialResult(
+      retryAction: () async {
+        retryCalls++;
+      },
     );
     when(
       () => mockMaintenance.reSyncInterval(
@@ -507,22 +512,7 @@ void main() {
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
       ),
-    ).thenAnswer(
-      (_) async => ReSyncResult(
-        succeeded: 2,
-        failures: [
-          ReSyncFailure(
-            phase: ReSyncPhase.agentEntities,
-            itemType: ReSyncItemType.agentEntity,
-            itemId: 'agent-bad',
-            error: StateError('invalid agent row'),
-            stackTrace: StackTrace.empty,
-            retryAction: () async {},
-            logger: mockLogging,
-          ),
-        ],
-      ),
-    );
+    ).thenAnswer((_) async => partialResult());
 
     await openOnboardingModal(
       tester,
@@ -871,21 +861,12 @@ void main() {
     tester,
   ) async {
     var retryCalls = 0;
-    final partial = ReSyncResult(
-      succeeded: 2,
-      failures: [
-        ReSyncFailure(
-          phase: ReSyncPhase.agentEntities,
-          itemType: ReSyncItemType.agentEntity,
-          itemId: 'agent-bad',
-          error: StateError('invalid agent row'),
-          stackTrace: StackTrace.empty,
-          retryAction: () async {
-            retryCalls++;
-          },
-          logger: mockLogging,
-        ),
-      ],
+    final retryCompleter = Completer<void>();
+    final partial = partialResult(
+      retryAction: () {
+        retryCalls++;
+        return retryCompleter.future;
+      },
     );
     when(
       () => mockMaintenance.reSyncInterval(
@@ -910,6 +891,11 @@ void main() {
     await tester.pump();
 
     expect(retryCalls, 1);
+    expect(find.text('0 / 1'), findsOneWidget);
+
+    retryCompleter.complete();
+    await tester.pump();
+
     expect(find.text('Messages queued'), findsOneWidget);
     expect(find.byKey(const Key('reSyncFailureDetails')), findsNothing);
     verify(

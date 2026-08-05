@@ -7332,15 +7332,28 @@ class AppLocalizationsIt extends AppLocalizations {
       failed,
       locale: localeName,
       other:
-          '$failed elementi non sono riusciti. Riprova solo quegli elementi.',
-      one: '1 elemento non è riuscito. Riprova solo quell’elemento.',
+          'Non è stato possibile accodare $failed elementi. Riprova solo quegli elementi.',
+      one:
+          'Non è stato possibile accodare 1 elemento. Riprova solo quell’elemento.',
     );
     return '$_temp0';
   }
 
   @override
   String maintenanceReSyncPartialTitle(int succeeded, int total) {
-    return '$succeeded messaggi su $total accodati';
+    String _temp0 = intl.Intl.pluralLogic(
+      succeeded,
+      locale: localeName,
+      other: '$succeeded messaggi',
+      one: '1 messaggio',
+    );
+    String _temp1 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total accodati',
+      one: '1 accodato',
+    );
+    return '$_temp0 su $_temp1';
   }
 
   @override

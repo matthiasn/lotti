@@ -7210,7 +7210,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String maintenanceReSyncPartialTitle(int succeeded, int total) {
-    return '$succeeded of $total messages queued';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'messages',
+      one: 'message',
+    );
+    return '$succeeded of $total $_temp0 queued';
   }
 
   @override

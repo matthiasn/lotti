@@ -7254,7 +7254,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String maintenanceReSyncPartialTitle(int succeeded, int total) {
-    return '$succeeded af $total beskeder sat i kø';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'beskeder',
+      one: 'besked',
+    );
+    return '$succeeded af $total $_temp0 sat i kø';
   }
 
   @override

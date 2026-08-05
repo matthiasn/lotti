@@ -7272,7 +7272,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String maintenanceReSyncPartialTitle(int succeeded, int total) {
-    return '$succeeded van $total berichten in de wachtrij';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'berichten',
+      one: 'bericht',
+    );
+    return '$succeeded van $total $_temp0 in de wachtrij';
   }
 
   @override

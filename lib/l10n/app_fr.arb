@@ -2987,7 +2987,7 @@
   "maintenanceReSyncJournalEntities": "Entrées du journal",
   "maintenanceReSyncLast30Days": "30 derniers jours",
   "maintenanceReSyncPartialDescription": "{failed, plural, =1{1 entrée a échoué. Réessaie uniquement cette entrée.} other{{failed} entrées ont échoué. Réessaie uniquement ces entrées.}}",
-  "maintenanceReSyncPartialTitle": "{succeeded} messages sur {total} mis en attente",
+  "maintenanceReSyncPartialTitle": "{succeeded, plural, =1{1 message} other{{succeeded} messages}} sur {total} mis en attente",
   "maintenanceReSyncRetryFailed": "Réessayer les entrées échouées",
   "maintenanceReSyncSelectAtLeastOne": "Sélectionne au moins un type d'entité",
   "maintenanceReSyncSending": "Préparation des messages",

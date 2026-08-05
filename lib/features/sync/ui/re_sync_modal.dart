@@ -160,24 +160,11 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
         _result = result;
       });
     } catch (error, stackTrace) {
-      if (onboardingRound != null) {
-        try {
-          await _onboardingService.abortOutbound(onboardingRound);
-          _setActiveOnboardingRound(null);
-        } catch (abortError, abortStackTrace) {
-          getIt<DomainLogger>().error(
-            LogDomain.sync,
-            abortError,
-            stackTrace: abortStackTrace,
-            subDomain: 'reSyncOnboardingAbort',
-          );
-        }
-      }
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
+      await _abortOnboardingAndLog(
         error,
-        stackTrace: stackTrace,
-        subDomain: 'reSyncMessages',
+        stackTrace,
+        abortSubDomain: 'reSyncOnboardingAbort',
+        errorSubDomain: 'reSyncMessages',
       );
       if (!mounted) return;
       setState(() {
@@ -192,6 +179,34 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     widget.onOnboardingRoundChanged?.call(round);
   }
 
+  Future<void> _abortOnboardingAndLog(
+    Object error,
+    StackTrace stackTrace, {
+    required String abortSubDomain,
+    required String errorSubDomain,
+  }) async {
+    final onboardingRound = _activeOnboardingRound;
+    if (onboardingRound != null) {
+      try {
+        await _onboardingService.abortOutbound(onboardingRound);
+        _setActiveOnboardingRound(null);
+      } catch (abortError, abortStackTrace) {
+        getIt<DomainLogger>().error(
+          LogDomain.sync,
+          abortError,
+          stackTrace: abortStackTrace,
+          subDomain: abortSubDomain,
+        );
+      }
+    }
+    getIt<DomainLogger>().error(
+      LogDomain.sync,
+      error,
+      stackTrace: stackTrace,
+      subDomain: errorSubDomain,
+    );
+  }
+
   Future<void> _retryFailures() async {
     final previous = _result;
     if (previous == null || !previous.hasFailures || _isRunning) return;
@@ -204,7 +219,14 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
     });
 
     try {
-      final result = await previous.retryFailures();
+      final result = await previous.retryFailures(
+        onProgress: (progress) {
+          if (!mounted) return;
+          setState(() {
+            _progress = {..._progress, progress.phase: progress};
+          });
+        },
+      );
       final onboardingRound = _activeOnboardingRound;
       if (!result.hasFailures && onboardingRound != null) {
         await _onboardingService.completeOutbound(onboardingRound);
@@ -217,25 +239,11 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
         _result = result;
       });
     } catch (error, stackTrace) {
-      final onboardingRound = _activeOnboardingRound;
-      if (onboardingRound != null) {
-        try {
-          await _onboardingService.abortOutbound(onboardingRound);
-          _setActiveOnboardingRound(null);
-        } catch (abortError, abortStackTrace) {
-          getIt<DomainLogger>().error(
-            LogDomain.sync,
-            abortError,
-            stackTrace: abortStackTrace,
-            subDomain: 'reSyncOnboardingRetryAbort',
-          );
-        }
-      }
-      getIt<DomainLogger>().error(
-        LogDomain.sync,
+      await _abortOnboardingAndLog(
         error,
-        stackTrace: stackTrace,
-        subDomain: 'reSyncMessagesRetry',
+        stackTrace,
+        abortSubDomain: 'reSyncOnboardingRetryAbort',
+        errorSubDomain: 'reSyncMessagesRetry',
       );
       if (!mounted) return;
       setState(() {

@@ -131,15 +131,49 @@ class ReSyncResult {
   bool get hasFailures => failures.isNotEmpty;
 
   /// Retries only the items that failed in this result.
-  Future<ReSyncResult> retryFailures() async {
+  ///
+  /// [onProgress] reports each affected phase independently so callers can
+  /// keep a long targeted retry visibly moving.
+  Future<ReSyncResult> retryFailures({
+    ReSyncProgressCallback? onProgress,
+  }) async {
     var retriedSuccessfully = 0;
     final remaining = <ReSyncFailure>[];
+    final failuresByPhase = <ReSyncPhase, List<ReSyncFailure>>{};
     for (final failure in failures) {
-      final nextFailure = await failure._retry();
-      if (nextFailure == null) {
-        retriedSuccessfully++;
-      } else {
-        remaining.add(nextFailure);
+      failuresByPhase.putIfAbsent(failure.phase, () => []).add(failure);
+    }
+
+    for (final phaseFailures in failuresByPhase.entries) {
+      var processed = 0;
+      var failed = 0;
+      final total = phaseFailures.value.length;
+      onProgress?.call(
+        ReSyncProgress(
+          phase: phaseFailures.key,
+          processed: 0,
+          total: total,
+          isComplete: false,
+        ),
+      );
+      for (final failure in phaseFailures.value) {
+        final nextFailure = await failure._retry();
+        processed++;
+        if (nextFailure == null) {
+          retriedSuccessfully++;
+        } else {
+          failed++;
+          remaining.add(nextFailure);
+        }
+        onProgress?.call(
+          ReSyncProgress(
+            phase: phaseFailures.key,
+            processed: processed,
+            total: total,
+            isComplete: processed == total,
+            failed: failed,
+          ),
+        );
       }
     }
     return ReSyncResult(

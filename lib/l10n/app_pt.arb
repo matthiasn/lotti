@@ -3367,7 +3367,7 @@
   "maintenanceReSyncJournalEntities": "Entidades de diário",
   "maintenanceReSyncLast30Days": "Últimos 30 dias",
   "maintenanceReSyncPartialDescription": "{failed, plural, =1{Falhou 1 item. Tenta novamente apenas esse item.} other{Falharam {failed} itens. Tenta novamente apenas esses itens.}}",
-  "maintenanceReSyncPartialTitle": "{succeeded} de {total} mensagens em fila",
+  "maintenanceReSyncPartialTitle": "{succeeded} de {total} {total, plural, =1{mensagem} other{mensagens}} em fila",
   "maintenanceReSyncRetryFailed": "Tentar novamente os itens com falha",
   "maintenanceReSyncSelectAtLeastOne": "Selecione pelo menos um tipo de entidade",
   "maintenanceReSyncSending": "Preparando mensagens",

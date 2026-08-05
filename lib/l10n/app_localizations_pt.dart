@@ -7317,7 +7317,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String maintenanceReSyncPartialTitle(int succeeded, int total) {
-    return '$succeeded de $total mensagens em fila';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: 'mensagens',
+      one: 'mensagem',
+    );
+    return '$succeeded de $total $_temp0 em fila';
   }
 
   @override

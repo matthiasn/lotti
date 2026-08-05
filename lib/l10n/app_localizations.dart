@@ -12492,7 +12492,7 @@ abstract class AppLocalizations {
   /// No description provided for @maintenanceReSyncPartialTitle.
   ///
   /// In en, this message translates to:
-  /// **'{succeeded} of {total} messages queued'**
+  /// **'{succeeded} of {total} {total, plural, =1{message} other{messages}} queued'**
   String maintenanceReSyncPartialTitle(int succeeded, int total);
 
   /// No description provided for @maintenanceReSyncRetryFailed.

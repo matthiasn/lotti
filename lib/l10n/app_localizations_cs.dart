@@ -7345,6 +7345,8 @@ class AppLocalizationsCs extends AppLocalizations {
       locale: localeName,
       other:
           '$failed položek se nepodařilo zařadit. Zkus znovu jen tyto položky.',
+      few:
+          '$failed položky se nepodařilo zařadit. Zkus znovu jen tyto položky.',
       one: '1 položku se nepodařilo zařadit. Zkus znovu jen tuto položku.',
     );
     return '$_temp0';
@@ -7352,7 +7354,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String maintenanceReSyncPartialTitle(int succeeded, int total) {
-    return 'Zařazeno $succeeded z $total zpráv';
+    String _temp0 = intl.Intl.pluralLogic(
+      total,
+      locale: localeName,
+      other: '$total zpráv',
+      one: '1 zprávy',
+    );
+    return 'Zařazeno $succeeded z $_temp0';
   }
 
   @override

@@ -7386,7 +7386,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String maintenanceReSyncPartialTitle(int succeeded, int total) {
-    return '$succeeded messages sur $total mis en attente';
+    String _temp0 = intl.Intl.pluralLogic(
+      succeeded,
+      locale: localeName,
+      other: '$succeeded messages',
+      one: '1 message',
+    );
+    return '$_temp0 sur $total mis en attente';
   }
 
   @override

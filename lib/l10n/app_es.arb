@@ -2987,7 +2987,7 @@
   "maintenanceReSyncJournalEntities": "Entradas del diario",
   "maintenanceReSyncLast30Days": "Últimos 30 días",
   "maintenanceReSyncPartialDescription": "{failed, plural, =1{Ha fallado 1 entrada. Reintenta solo esa entrada.} other{Han fallado {failed} entradas. Reintenta solo esas entradas.}}",
-  "maintenanceReSyncPartialTitle": "{succeeded} de {total} mensajes en cola",
+  "maintenanceReSyncPartialTitle": "{succeeded} de {total} {total, plural, =1{mensaje} other{mensajes}} en cola",
   "maintenanceReSyncRetryFailed": "Reintentar entradas fallidas",
   "maintenanceReSyncSelectAtLeastOne": "Selecciona al menos un tipo de entidad",
   "maintenanceReSyncSending": "Preparando mensajes",

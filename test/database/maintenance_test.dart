@@ -362,11 +362,13 @@ void main() {
             sentMessages.add(message);
           });
 
+          final progress = <ReSyncProgress>[];
           final result = await maintenance.reSyncInterval(
             start: timestamp.subtract(const Duration(days: 1)),
             end: timestamp.add(const Duration(days: 1)),
             agentRepository: mockAgentRepo,
             includeAgentEntities: false,
+            onProgress: progress.add,
           );
 
           expect(
@@ -382,12 +384,30 @@ void main() {
             ReSyncItemType.journalEntity,
           );
           expect(loggedExceptions, hasLength(1));
+          final journalDone = progress
+              .where(
+                (snapshot) =>
+                    snapshot.phase == ReSyncPhase.journalEntities &&
+                    snapshot.isComplete,
+              )
+              .single;
+          expect(journalDone.failed, 1);
+          expect(journalDone.succeeded, 2);
 
           failTarget = false;
-          final retried = await result.retryFailures();
+          final retryProgress = <ReSyncProgress>[];
+          final retried = await result.retryFailures(
+            onProgress: retryProgress.add,
+          );
 
           expect(retried.succeeded, 3);
           expect(retried.failures, isEmpty);
+          final retryDone = retryProgress.singleWhere(
+            (snapshot) => snapshot.isComplete,
+          );
+          expect(retryDone.processed, 1);
+          expect(retryDone.succeeded, 1);
+          expect(retryDone.failed, 0);
           expect(
             sentMessages.whereType<SyncJournalEntity>().map((e) => e.id),
             ['before-failure', 'after-failure', 'enqueue-failure'],
