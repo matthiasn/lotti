@@ -7017,6 +7017,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get knowledgeGraphRelationAiSource => 'KI-Quelle';
 
   @override
+  String get knowledgeGraphRelationAssociation => 'Verknüpfter Eintrag';
+
+  @override
   String get knowledgeGraphRelationChecklist => 'Checkliste';
 
   @override

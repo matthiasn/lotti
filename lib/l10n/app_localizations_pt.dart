@@ -7035,6 +7035,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get knowledgeGraphRelationAiSource => 'Fonte de IA';
 
   @override
+  String get knowledgeGraphRelationAssociation => 'Entrada vinculada';
+
+  @override
   String get knowledgeGraphRelationChecklist => 'lista de verificação';
 
   @override

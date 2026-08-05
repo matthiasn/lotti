@@ -156,6 +156,27 @@ void main() {
     expect(tapped, ['blocked']);
   });
 
+  testWidgets('uses a localized category fallback for an unmapped category', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GraphConnectionsView(
+          scenario: scenario,
+          focusId: 'focus',
+          filters: const GraphProjectionFilters(),
+          categoryNames: const {},
+          onNodeTap: _ignore,
+        ),
+      ),
+    );
+
+    expect(find.text('Task · Uncategorized · today'), findsWidgets);
+    expect(find.text('Note · Uncategorized · today'), findsOneWidget);
+    expect(find.textContaining(' · work · '), findsNothing);
+    expect(find.textContaining(' · notes · '), findsNothing);
+  });
+
   testWidgets(
     'shows the localized empty state when filters remove every link',
     (

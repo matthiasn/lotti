@@ -2885,6 +2885,7 @@
   "knowledgeGraphRecenter": "Volver a centrar",
   "knowledgeGraphRecentToOlder": "Reciente → antiguo",
   "knowledgeGraphRelationAiSource": "Fuente de IA",
+  "knowledgeGraphRelationAssociation": "Entrada enlazada",
   "knowledgeGraphRelationChecklist": "Lista de comprobación",
   "knowledgeGraphRelationInProject": "En el proyecto",
   "knowledgeGraphRelationLinkedTask": "Tarea enlazada",

@@ -3295,6 +3295,7 @@
   "knowledgeGraphRecenter": "Nyere",
   "knowledgeGraphRecentToOlder": "nylige → ældre",
   "knowledgeGraphRelationAiSource": "AI-kilde",
+  "knowledgeGraphRelationAssociation": "Tilknyttet post",
   "knowledgeGraphRelationChecklist": "Tjekliste",
   "knowledgeGraphRelationInProject": "i projektet",
   "knowledgeGraphRelationLinkedTask": "Sammenkoblet opgave",

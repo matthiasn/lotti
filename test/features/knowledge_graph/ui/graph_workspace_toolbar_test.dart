@@ -139,7 +139,7 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Relationships'), findsOneWidget);
 
-    await tester.tap(find.text('linked task'));
+    await tester.tap(find.text('linked entry'));
     await tester.pump();
 
     expect(filters.last.edgeKinds, {GraphEdgeKind.association});
@@ -275,7 +275,7 @@ void main() {
       },
       {
         GraphEdgeKind.containment: 'in project',
-        GraphEdgeKind.association: 'linked task',
+        GraphEdgeKind.association: 'linked entry',
         GraphEdgeKind.provenance: 'AI source',
         GraphEdgeKind.evaluation: 'rating',
         GraphEdgeKind.checklist: 'checklist',

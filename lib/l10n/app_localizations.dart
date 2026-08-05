@@ -12053,6 +12053,12 @@ abstract class AppLocalizations {
   /// **'AI source'**
   String get knowledgeGraphRelationAiSource;
 
+  /// No description provided for @knowledgeGraphRelationAssociation.
+  ///
+  /// In en, this message translates to:
+  /// **'linked entry'**
+  String get knowledgeGraphRelationAssociation;
+
   /// No description provided for @knowledgeGraphRelationChecklist.
   ///
   /// In en, this message translates to:

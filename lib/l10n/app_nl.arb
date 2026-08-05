@@ -3294,6 +3294,7 @@
   "knowledgeGraphRecenter": "Recent",
   "knowledgeGraphRecentToOlder": "recent → ouder",
   "knowledgeGraphRelationAiSource": "AI bron",
+  "knowledgeGraphRelationAssociation": "Gekoppeld item",
   "knowledgeGraphRelationChecklist": "checklist",
   "knowledgeGraphRelationInProject": "in project",
   "knowledgeGraphRelationLinkedTask": "verbonden taak",

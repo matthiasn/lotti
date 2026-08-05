@@ -7057,6 +7057,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get knowledgeGraphRelationAiSource => 'Fonte dell\'IA';
 
   @override
+  String get knowledgeGraphRelationAssociation => 'Voce collegata';
+
+  @override
   String get knowledgeGraphRelationChecklist => 'lista di controllo';
 
   @override

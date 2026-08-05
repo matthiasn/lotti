@@ -6940,6 +6940,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get knowledgeGraphRelationAiSource => 'AI source';
 
   @override
+  String get knowledgeGraphRelationAssociation => 'linked entry';
+
+  @override
   String get knowledgeGraphRelationChecklist => 'checklist';
 
   @override

@@ -462,15 +462,14 @@ void main() {
       expect(find.text('TASK · DEEP WORK'), findsOneWidget);
     });
 
-    testWidgets('kicker falls back to the raw category id when unmapped', (
+    testWidgets('kicker uses a localized category fallback when unmapped', (
       tester,
     ) async {
       await pumpPanel(
         tester,
         node: node(type: GraphNodeType.project, categoryId: 'health'),
       );
-      // No categoryNames entry → the raw id is used as the label.
-      expect(find.text('PROJECT · HEALTH'), findsOneWidget);
+      expect(find.text('PROJECT · UNCATEGORIZED'), findsOneWidget);
     });
 
     testWidgets('kicker stays within a narrow inspector', (tester) async {

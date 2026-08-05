@@ -19,6 +19,27 @@ void main() {
   const tokens = dsTokensDark;
   final style = GraphStyle.fromTokens(tokens);
 
+  GraphStyle graphStyleWithCanvasColors({
+    required Color background,
+    required Color vignette,
+  }) => GraphStyle(
+    background: background,
+    backgroundDeep: vignette,
+    vignetteLift: vignette,
+    starColor: Colors.transparent,
+    focusRing: style.focusRing,
+    selectionRing: style.selectionRing,
+    fadeTarget: style.fadeTarget,
+    coreLift: style.coreLift,
+    glyphColor: style.glyphColor,
+    labelStyle: style.labelStyle,
+    labelPill: style.labelPill,
+    categoryPalette: style.categoryPalette,
+    relVisuals: style.relVisuals,
+    categoryColors: style.categoryColors,
+    neutralCategory: style.neutralCategory,
+  );
+
   // Deterministic "now" so recency-as-luminance (and the age comparator in the
   // label sort) is reproducible across runs.
   final now = DateTime(2026, 6, 15, 12);
@@ -225,6 +246,7 @@ void main() {
     GraphMotionController? motion,
     Map<String, String> nodeLabels = const {},
     ValueChanged<String>? onNodeActivate,
+    GraphStyle? graphStyle,
   }) {
     final pos =
         positions ?? computeGraphLayout(scenario, iterations: 12).positions;
@@ -237,7 +259,7 @@ void main() {
       focusId: focusId,
       hops: hops ?? hopsFor(scenario, focusId),
       selectedId: selectedId,
-      style: style,
+      style: graphStyle ?? style,
       images: images,
       previousFocusId: previousFocusId,
       walkPath: walkPath,
@@ -560,6 +582,71 @@ void main() {
       );
 
       expectPaintsCleanly(painter);
+    });
+
+    testWidgets('fills unused mosaic cells inside the circular node body', (
+      tester,
+    ) async {
+      late final List<ui.Image> thumbnails;
+      await tester.runAsync(() async {
+        thumbnails = [
+          await makeDummyImage(color: const Color(0xFF00FF00)),
+          await makeDummyImage(color: const Color(0xFF0000FF)),
+        ];
+      });
+      addTearDown(() {
+        for (final image in thumbnails) {
+          image.dispose();
+        }
+      });
+
+      final scenario = GraphScenario(
+        name: 'two image media mosaic',
+        seedId: 'media',
+        nodes: [
+          GraphNode(
+            id: 'media',
+            type: GraphNodeType.mediaCollection,
+            label: 'Photos',
+            categoryId: 'cat-work',
+            createdAt: now,
+            aggregateKind: GraphAggregateKind.photos,
+            aggregateCount: 2,
+            mediaPaths: const ['/a', '/b'],
+          ),
+        ],
+        edges: const [],
+        now: now,
+      );
+      final painter = painterFor(
+        scenario,
+        positions: const {'media': Offset.zero},
+        pan: const Offset(200, 200),
+        focusId: 'media',
+        images: {'/a': thumbnails[0], '/b': thumbnails[1]},
+        graphStyle: graphStyleWithCanvasColors(
+          background: const Color(0xFFFF0000),
+          vignette: const Color(0xFF0000FF),
+        ),
+      );
+      final recorder = ui.PictureRecorder();
+      painter.paint(Canvas(recorder), const Size.square(400));
+      final picture = recorder.endRecording();
+
+      late final ui.Image rendered;
+      late final ByteData pixels;
+      await tester.runAsync(() async {
+        rendered = await picture.toImage(400, 400);
+        pixels = (await rendered.toByteData())!;
+      });
+      addTearDown(rendered.dispose);
+
+      const unusedBottomCellPixel = (216 * 400 + 200) * 4;
+      final red = pixels.getUint8(unusedBottomCellPixel);
+      final green = pixels.getUint8(unusedBottomCellPixel + 1);
+      final blue = pixels.getUint8(unusedBottomCellPixel + 2);
+      expect(red, greaterThan(green + 100));
+      expect(red, greaterThan(blue + 100));
     });
   });
 

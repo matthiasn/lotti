@@ -592,6 +592,84 @@ void main() {
   );
 
   testWidgets(
+    'records the current focus before reusing an existing expansion',
+    (tester) async {
+      final result = makeTestableWidgetWithContainer(
+        TaskKnowledgeGraphPage(
+          taskId: taskId,
+          mergeGraphData: (current, expansion) => mergeTaskGraphData(
+            current,
+            expansion,
+            layoutBuilder: (scenario) async =>
+                computeLayoutForScenario(scenario),
+          ),
+        ),
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        overrides: [
+          taskGraphProvider(taskId).overrideWith(
+            (ref) async => projectHubData(includeThirdTask: true),
+          ),
+          taskGraphProvider('task-2').overrideWith(
+            (ref) async => taskTwoExpansionData(),
+          ),
+          taskGraphProvider('task-3').overrideWith(
+            (ref) async => taskThreeExpansionData(),
+          ),
+        ],
+      );
+      addTearDown(result.container.dispose);
+
+      await tester.pumpWidget(result.widget);
+      await tester.pump();
+
+      tester
+          .widget<KnowledgeGraphView>(find.byType(KnowledgeGraphView))
+          .onTaskFocusChanged
+          ?.call('task-2', 'project');
+      await pumpUntil(
+        tester,
+        () => graphNodeIds(tester).contains('note-2'),
+        reason: 'task-2 expansion',
+      );
+
+      tester
+          .widget<KnowledgeGraphView>(find.byType(KnowledgeGraphView))
+          .onTaskFocusChanged
+          ?.call('task-3', 'task-2');
+      await pumpUntil(
+        tester,
+        () => graphNodeIds(tester).contains('note-4'),
+        reason: 'task-3 expansion',
+      );
+
+      tester
+          .widget<KnowledgeGraphView>(find.byType(KnowledgeGraphView))
+          .onTaskFocusChanged
+          ?.call('task-2', 'task-3');
+      await tester.runAsync(() async {
+        result.container.invalidate(taskGraphProvider(taskId));
+        await result.container.read(taskGraphProvider(taskId).future);
+      });
+      await pumpUntil(
+        tester,
+        () =>
+            tester
+                .widget<KnowledgeGraphView>(find.byType(KnowledgeGraphView))
+                .initialFocusId ==
+            'task-2',
+        reason: 'refreshed graph to retain the current focus',
+      );
+
+      final refreshed = tester.widget<KnowledgeGraphView>(
+        find.byType(KnowledgeGraphView),
+      );
+      expect(refreshed.initialFocusId, 'task-2');
+      expect(refreshed.initialPreviousFocusId, 'task-3');
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'expanded graph remerges seed and expanded task provider updates',
     (tester) async {
       var seedHasNote = false;
@@ -677,21 +755,32 @@ void main() {
   );
 
   testWidgets(
-    'ignores expanded task provider results with no graph data',
+    'drops stale expansion data on null and keeps listening for recovery',
     (tester) async {
+      final expansionMissingProvider = NotifierProvider<_BoolNotifier, bool>(
+        _BoolNotifier.new,
+      );
       var expansionReads = 0;
 
       final result = makeTestableWidgetWithContainer(
-        const TaskKnowledgeGraphPage(taskId: taskId),
+        TaskKnowledgeGraphPage(
+          taskId: taskId,
+          mergeGraphData: (current, expansion) => mergeTaskGraphData(
+            current,
+            expansion,
+            layoutBuilder: (scenario) async =>
+                computeLayoutForScenario(scenario),
+          ),
+        ),
         mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
         overrides: [
-          taskGraphProvider(taskId).overrideWith(
-            (ref) async => projectHubData(),
-          ),
-          taskGraphProvider(
-            'task-2',
-          ).overrideWith((ref) {
-            expansionReads++;
+          taskGraphProvider.overrideWith((ref, visibleTaskId) {
+            if (visibleTaskId == taskId) return projectHubData();
+            if (visibleTaskId == 'task-2') {
+              expansionReads++;
+              if (ref.watch(expansionMissingProvider)) return null;
+              return taskTwoExpansionData();
+            }
             return null;
           }),
         ],
@@ -704,11 +793,28 @@ void main() {
       await tester.tap(find.text('Node project').last);
       await tester.pump();
       await tester.tap(find.text('Node task-2').last);
-      await tester.pump();
-      await tester.pump();
+      await pumpUntil(
+        tester,
+        () => graphContainsNode(tester, 'note-2'),
+        reason: 'initial task-2 expansion',
+      );
 
-      expect(expansionReads, greaterThan(0));
-      expect(paintedNodeIds(tester), isNot(contains('note-2')));
+      result.container.read(expansionMissingProvider.notifier).value = true;
+      await pumpUntil(
+        tester,
+        () => !graphContainsNode(tester, 'note-2'),
+        reason: 'null expansion to remove stale nodes',
+      );
+
+      result.container.read(expansionMissingProvider.notifier).value = false;
+      await pumpUntil(
+        tester,
+        () => graphContainsNode(tester, 'note-2'),
+        reason: 'recovered expansion to render again',
+      );
+
+      expect(expansionReads, greaterThanOrEqualTo(3));
+      expect(paintedNodeIds(tester), contains('note-2'));
       expect(tester.takeException(), isNull);
     },
   );
@@ -1011,7 +1117,36 @@ void main() {
   );
 
   testWidgets(
-    'renders error state and logs the failure with KNOWLEDGE_GRAPH domain',
+    'renders the error state when the initial graph load fails',
+    (tester) async {
+      final result = makeTestableWidgetWithContainer(
+        const TaskKnowledgeGraphPage(taskId: taskId),
+        mediaQueryData: const MediaQueryData(size: Size(390, 844)),
+        overrides: [
+          taskGraphProvider(taskId).overrideWith(
+            (ref) async => throw StateError('initial failure'),
+          ),
+        ],
+      );
+      addTearDown(result.container.dispose);
+
+      await tester.pumpWidget(result.widget);
+      await tester.runAsync(() async {
+        await result.container
+            .read(taskGraphProvider(taskId).future)
+            .then<void>((_) {}, onError: (_) {});
+      });
+      await tester.pump();
+
+      expect(find.text(l10n.knowledgeGraphError), findsOneWidget);
+      expect(find.textContaining('initial failure'), findsNothing);
+      expect(find.byType(KnowledgeGraphView), findsNothing);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    },
+  );
+
+  testWidgets(
+    'keeps the cached graph visible and logs a background reload failure',
     (tester) async {
       final failure = Exception('boom');
       // The page registers `ref.listen` inside build, so it only fires for a
@@ -1063,10 +1198,11 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      // The UI shows the generic localized error (never raw exception text).
-      expect(find.text(l10n.knowledgeGraphError), findsOneWidget);
+      // Established content remains visible while the error is logged.
+      expect(find.text(l10n.knowledgeGraphError), findsNothing);
       expect(find.textContaining('boom'), findsNothing);
-      expect(find.byType(KnowledgeGraphView), findsNothing);
+      expect(find.byType(KnowledgeGraphView), findsOneWidget);
+      expect(paintedNodeIds(tester), containsAll([taskId, 'linked-1']));
       expect(find.byType(CircularProgressIndicator), findsNothing);
       expect(find.text(l10n.knowledgeGraphTitle), findsOneWidget);
 

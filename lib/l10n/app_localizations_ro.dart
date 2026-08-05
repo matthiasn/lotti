@@ -7099,6 +7099,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get knowledgeGraphRelationAiSource => 'Sursă AI';
 
   @override
+  String get knowledgeGraphRelationAssociation => 'Înregistrare asociată';
+
+  @override
   String get knowledgeGraphRelationChecklist => 'Listă de verificare';
 
   @override

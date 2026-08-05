@@ -7054,6 +7054,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get knowledgeGraphRelationAiSource => 'Zdroj AI';
 
   @override
+  String get knowledgeGraphRelationAssociation => 'Propojený záznam';
+
+  @override
   String get knowledgeGraphRelationChecklist => 'Kontrolní seznam';
 
   @override

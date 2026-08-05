@@ -6977,6 +6977,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get knowledgeGraphRelationAiSource => 'AI-källa';
 
   @override
+  String get knowledgeGraphRelationAssociation => 'Länkad post';
+
+  @override
   String get knowledgeGraphRelationChecklist => 'Checklista';
 
   @override

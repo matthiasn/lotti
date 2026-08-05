@@ -3647,6 +3647,7 @@
   "knowledgeGraphRecenter": "Recenter",
   "knowledgeGraphRecentToOlder": "recent → older",
   "knowledgeGraphRelationAiSource": "AI source",
+  "knowledgeGraphRelationAssociation": "linked entry",
   "knowledgeGraphRelationChecklist": "checklist",
   "knowledgeGraphRelationInProject": "in project",
   "knowledgeGraphRelationLinkedTask": "linked task",

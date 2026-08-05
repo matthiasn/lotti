@@ -500,7 +500,8 @@ class KnowledgeGraphPainter extends CustomPainter {
           ];
     canvas
       ..save()
-      ..clipPath(Path()..addOval(rect));
+      ..clipPath(Path()..addOval(rect))
+      ..drawRect(rect, Paint()..color = style.background);
     for (var index = 0; index < mosaic.length; index++) {
       final image = mosaic[index];
       final cell = cells[index];

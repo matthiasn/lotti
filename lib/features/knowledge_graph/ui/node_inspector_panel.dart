@@ -102,8 +102,11 @@ class NodeInspectorPanel extends StatelessWidget {
                       neighbors: neighbors,
                       now: now,
                       createdLabel: createdLabel,
-                      categoryLabel:
-                          categoryNames[node.categoryId] ?? node.categoryId,
+                      categoryLabel: graphCategoryLabel(
+                        context.messages,
+                        categoryNames,
+                        node.categoryId,
+                      ),
                       style: style,
                       tokens: tokens,
                       cat: cat,

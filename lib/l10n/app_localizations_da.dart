@@ -6973,6 +6973,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get knowledgeGraphRelationAiSource => 'AI-kilde';
 
   @override
+  String get knowledgeGraphRelationAssociation => 'Tilknyttet post';
+
+  @override
   String get knowledgeGraphRelationChecklist => 'Tjekliste';
 
   @override

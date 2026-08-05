@@ -6993,6 +6993,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get knowledgeGraphRelationAiSource => 'AI bron';
 
   @override
+  String get knowledgeGraphRelationAssociation => 'Gekoppeld item';
+
+  @override
   String get knowledgeGraphRelationChecklist => 'checklist';
 
   @override

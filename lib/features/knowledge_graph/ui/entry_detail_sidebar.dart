@@ -62,6 +62,8 @@ class EntryDetailSidebar extends ConsumerWidget {
               children: [
                 Positioned.fill(
                   child: state.when(
+                    skipLoadingOnReload: true,
+                    skipError: true,
                     loading: () =>
                         const Center(child: CircularProgressIndicator()),
                     error: (_, _) => _Message(

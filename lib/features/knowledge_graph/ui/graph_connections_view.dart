@@ -87,7 +87,11 @@ class GraphConnectionsView extends StatelessWidget {
               for (final node in group.nodes)
                 _ConnectionRow(
                   node: node,
-                  categoryLabel: categoryNames[node.categoryId],
+                  categoryLabel: graphCategoryLabel(
+                    context.messages,
+                    categoryNames,
+                    node.categoryId,
+                  ),
                   ageLabel: relativeAge(
                     context.messages,
                     scenario.now.difference(node.createdAt),

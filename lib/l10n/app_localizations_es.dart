@@ -7068,6 +7068,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get knowledgeGraphRelationAiSource => 'Fuente de IA';
 
   @override
+  String get knowledgeGraphRelationAssociation => 'Entrada enlazada';
+
+  @override
   String get knowledgeGraphRelationChecklist => 'Lista de comprobación';
 
   @override

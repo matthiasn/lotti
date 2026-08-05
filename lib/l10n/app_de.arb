@@ -2885,6 +2885,7 @@
   "knowledgeGraphRecenter": "Neu zentrieren",
   "knowledgeGraphRecentToOlder": "Neu → älter",
   "knowledgeGraphRelationAiSource": "KI-Quelle",
+  "knowledgeGraphRelationAssociation": "Verknüpfter Eintrag",
   "knowledgeGraphRelationChecklist": "Checkliste",
   "knowledgeGraphRelationInProject": "Im Projekt",
   "knowledgeGraphRelationLinkedTask": "Verknüpfte Aufgabe",

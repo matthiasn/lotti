@@ -152,9 +152,14 @@ class _GraphFiltersPanelState extends State<GraphFiltersPanel> {
             .toSet()
             .toList()
           ..sort(
-            (a, b) => (widget.categoryNames[a] ?? a).compareTo(
-              widget.categoryNames[b] ?? b,
-            ),
+            (a, b) =>
+                graphCategoryLabel(
+                  context.messages,
+                  widget.categoryNames,
+                  a,
+                ).compareTo(
+                  graphCategoryLabel(context.messages, widget.categoryNames, b),
+                ),
           );
     final nodeTypes = widget.scenario.nodes.map((node) => node.type).toSet();
     final taskStatuses = widget.scenario.nodes
@@ -219,7 +224,11 @@ class _GraphFiltersPanelState extends State<GraphFiltersPanel> {
               children: [
                 for (final category in categories)
                   DesignSystemChip(
-                    label: widget.categoryNames[category] ?? category,
+                    label: graphCategoryLabel(
+                      context.messages,
+                      widget.categoryNames,
+                      category,
+                    ),
                     selected: _filters.categoryIds.contains(category),
                     onPressed: () => _set(
                       _filters.copyWith(
@@ -338,7 +347,7 @@ String graphTaskStatusLabel(
 String graphEdgeKindLabel(AppLocalizations messages, GraphEdgeKind kind) =>
     switch (kind) {
       GraphEdgeKind.containment => messages.knowledgeGraphRelationInProject,
-      GraphEdgeKind.association => messages.knowledgeGraphRelationLinkedTask,
+      GraphEdgeKind.association => messages.knowledgeGraphRelationAssociation,
       GraphEdgeKind.provenance => messages.knowledgeGraphRelationAiSource,
       GraphEdgeKind.evaluation => messages.knowledgeGraphRelationRating,
       GraphEdgeKind.checklist => messages.knowledgeGraphRelationChecklist,

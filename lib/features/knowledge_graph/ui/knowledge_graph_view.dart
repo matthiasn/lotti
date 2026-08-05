@@ -1172,7 +1172,7 @@ class _LegendBar extends StatelessWidget {
             ),
           for (final cat in categories)
             _LegendItem(
-              label: categoryNames[cat] ?? cat,
+              label: graphCategoryLabel(context.messages, categoryNames, cat),
               tokens: tokens,
               swatch: Container(
                 width: 11,

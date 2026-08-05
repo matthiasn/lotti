@@ -141,12 +141,12 @@ class _TaskKnowledgeGraphPageState
   }
 
   void _handleTaskFocusChanged(String taskId, String previousFocusId) {
+    _initialFocusId = taskId;
+    _initialPreviousFocusId = previousFocusId;
     if (taskId == widget.taskId ||
         _expansionSubscriptions.containsKey(taskId)) {
       return;
     }
-    _initialFocusId = taskId;
-    _initialPreviousFocusId = previousFocusId;
     _listenToExpansion(taskId);
   }
 
@@ -172,7 +172,10 @@ class _TaskKnowledgeGraphPageState
     }
 
     final expansion = next.asData?.value;
-    if (expansion == null) return;
+    if (expansion == null) {
+      _dropExpansionData(taskId);
+      return;
+    }
 
     _expansions[taskId] = expansion;
     _expansionVersion++;
@@ -195,6 +198,10 @@ class _TaskKnowledgeGraphPageState
 
   void _removeExpansion(String taskId) {
     _expansionSubscriptions.remove(taskId)?.close();
+    _dropExpansionData(taskId);
+  }
+
+  void _dropExpansionData(String taskId) {
     if (_expansions.remove(taskId) != null) {
       _expansionVersion++;
       final seedData = _seedData;
@@ -301,6 +308,7 @@ class _TaskKnowledgeGraphPageState
       // Keep the last rendered graph while a background refresh (sync / db
       // notification) reloads, instead of flashing the spinner.
       skipLoadingOnReload: true,
+      skipError: true,
       data: _graphContent,
       loading: () => _visibleData == null
           ? const Center(child: CircularProgressIndicator())

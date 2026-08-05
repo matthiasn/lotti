@@ -68,6 +68,22 @@ void main() {
     });
   });
 
+  group('graphCategoryLabel', () {
+    test('uses a resolved category name when available', () {
+      expect(
+        graphCategoryLabel(messages, const {'work': 'Deep Work'}, 'work'),
+        'Deep Work',
+      );
+    });
+
+    test('uses a localized fallback instead of exposing an internal id', () {
+      expect(
+        graphCategoryLabel(messages, const {}, 'uncategorized'),
+        'Uncategorized',
+      );
+    });
+  });
+
   group('relStyleLabel', () {
     test('returns the expected label for every relation style', () {
       const expected = <RelStyle, String>{

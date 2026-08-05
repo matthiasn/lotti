@@ -71,6 +71,13 @@ String typeLabel(AppLocalizations messages, GraphNodeType type) {
   }
 }
 
+/// Localized category name for graph chrome without exposing internal ids.
+String graphCategoryLabel(
+  AppLocalizations messages,
+  Map<String, String> categoryNames,
+  String categoryId,
+) => categoryNames[categoryId] ?? messages.insightsUncategorized;
+
 /// A visually distinct relation style. Coarser than [GraphEdgeKind] in one
 /// place (kinds map straight through) but finer in another: the generic
 /// association splits into [linkedTask] vs [note].

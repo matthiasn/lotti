@@ -2892,6 +2892,7 @@
   "knowledgeGraphRecenter": "Znovu vystředit",
   "knowledgeGraphRecentToOlder": "Novější → starší",
   "knowledgeGraphRelationAiSource": "Zdroj AI",
+  "knowledgeGraphRelationAssociation": "Propojený záznam",
   "knowledgeGraphRelationChecklist": "Kontrolní seznam",
   "knowledgeGraphRelationInProject": "V projektu",
   "knowledgeGraphRelationLinkedTask": "Propojený úkol",

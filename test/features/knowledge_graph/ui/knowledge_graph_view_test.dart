@@ -614,14 +614,12 @@ void main() {
       expect(inspectorText('Tag build'), findsNothing);
     });
 
-    testWidgets('falls back to the raw category id when no name is provided', (
+    testWidgets('uses a localized category fallback when no name is provided', (
       tester,
     ) async {
       await pumpView(tester, scenario: taskEgoNetworkScenario());
 
-      // categoryNames is empty -> the kicker resolves to the raw id `work`,
-      // uppercased.
-      expect(inspectorText('TASK · WORK'), findsOneWidget);
+      expect(inspectorText('TASK · UNCATEGORIZED'), findsOneWidget);
     });
 
     testWidgets('omits the SUMMARY section when the node has no tldr', (
@@ -1458,10 +1456,10 @@ void main() {
 
       // Focus walked to the tapped node.
       expect(painterFocusId(tester), targetId);
-      // The inspector now describes the project node: its label as the heading
-      // and the uppercased "PROJECT · WORK" kicker.
+      // The inspector now describes the project node without exposing the raw
+      // category id when no category-name map was supplied.
       expect(inspectorText('Lotti 2.x'), findsOneWidget);
-      expect(inspectorText('PROJECT · WORK'), findsOneWidget);
+      expect(inspectorText('PROJECT · UNCATEGORIZED'), findsOneWidget);
       expect(tester.takeException(), isNull);
     });
 
