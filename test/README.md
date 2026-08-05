@@ -160,6 +160,27 @@ Shared generators, deterministic entities, and mock wiring live in
 belongs in exactly one of the five listed facade suites; collaborator-level
 unit coverage continues to live in the collaborator's own mirrored test file.
 
+### Documented exception: `TaskAgentWorkflow` facade suites
+
+`TaskAgentWorkflow` coordinates wake execution across model routing,
+persistence, prompt/context assembly, tool dispatch, and task-memory capture.
+Its facade coverage is split into responsibility-owned suites:
+
+- `task_agent_workflow_test.dart` — wake execution and the workflow shell;
+- `task_agent_workflow_persistence_test.dart` — persisted state,
+  conversations, model routing, and turn-finalization behavior;
+- `task_agent_workflow_context_test.dart` — prompt and task-context assembly;
+- `task_agent_workflow_tools_test.dart` — tool exposure, validation, dispatch,
+  and deferred proposals;
+- `task_agent_workflow_memory_test.dart` — captured task input and memory
+  frontier behavior.
+
+Shared deterministic fixtures and mock wiring live in
+`task_agent_workflow_test_helpers.dart`, which has no `main()`. `WakeResult`
+keeps its own mirrored coverage in `wake_result_test.dart`. A workflow behavior
+belongs in exactly one facade suite; collaborator-level unit coverage remains
+in the collaborator's mirrored test file.
+
 ## Mocktail global-state hygiene
 
 Mocktail stores argument matchers (`any`, `captureAny`) in **process-global**

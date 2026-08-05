@@ -20,8 +20,8 @@ decomposition itself.
 
 | PR | Original suite | Baseline lines | Intended ownership boundary | Status |
 |---:|---|---:|---|---|
-| 1 | `sync_sequence_log_service_test.dart` | 6,871 | receive, backfill, population, covered clocks, facade/cache | In progress |
-| 2 | `task_agent_workflow_test.dart` | 9,132 | wake execution, persistence, prompt/context delegation, workflow shell | Planned |
+| 1 | `sync_sequence_log_service_test.dart` | 6,871 | receive, backfill, population, covered clocks, facade/cache | Merged (#3804) |
+| 2 | `task_agent_workflow_test.dart` | 9,132 | wake execution, persistence, prompt/context delegation, workflow shell | In progress |
 | 3 | `unified_ai_inference_repository_test.dart` | 8,593 | inference execution, tool-call processing, post-processing, repository shell | Planned |
 | 4 | `eval_constraints_test.dart` | 8,228 | split the test-only constraint framework and mirror its focused source files | Planned |
 | 5 | `outbox_service_test.dart` | 7,820 | send pipeline, queue/database behavior, retry/maintenance, service shell | Planned |
@@ -70,3 +70,13 @@ library with no `main()`.
 
 The split preserves all 157 test declarations and 39 groups. The largest
 resulting executable suite is 2,004 lines.
+
+### PR 2 — task-agent workflow facade
+
+The task-agent workflow suite is split by wake execution, persistence and
+model routing, prompt/context assembly, tool handling, and memory capture.
+Shared deterministic fixtures and mock wiring live in a helper library with no
+`main()`, while `WakeResult` now has its own mirrored suite.
+
+The split preserves all 173 test declarations. The largest resulting
+executable suite is 2,333 lines.
