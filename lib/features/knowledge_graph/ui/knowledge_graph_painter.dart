@@ -106,19 +106,36 @@ class KnowledgeGraphPainter extends CustomPainter {
 
   double _degBoost(String id) => math.min(degrees[id] ?? 0, 10) / 10.0;
 
-  /// Emphasis from graph distance: bright/near for the focus neighborhood,
-  /// fading into faint horizon stars farther out.
-  double emphasis(String id) {
-    final h = hops[id];
-    if (h == null) return 0.12;
-    if (h <= 1) return 1;
-    if (h == 2) return 0.82;
-    if (h == 3) return 0.52;
-    if (h == 4) return 0.3;
+  static bool _hasVisualMedia(GraphNode node) =>
+      node.type == GraphNodeType.imageEntry ||
+      node.type == GraphNodeType.mediaCollection ||
+      (node.coverImagePath?.isNotEmpty ?? false) ||
+      (node.imagePath?.isNotEmpty ?? false);
+
+  static double _emphasisForHop(int? hop) {
+    if (hop == null) return 0.12;
+    if (hop <= 1) return 1;
+    if (hop == 2) return 0.82;
+    if (hop == 3) return 0.52;
+    if (hop == 4) return 0.3;
     return 0.16;
   }
 
-  double radiusFor(GraphNode node) {
+  /// Emphasis from graph distance: bright/near for the focus neighborhood,
+  /// fading into faint horizon stars farther out.
+  double emphasis(String id) => _emphasisForHop(hops[id]);
+
+  /// Resolves the exact screen-space radius used by paint, semantics, edge
+  /// clipping, and pointer hit testing.
+  static double nodeRadiusFor({
+    required GraphNode node,
+    required GraphScenario scenario,
+    required Map<String, int> degrees,
+    required String focusId,
+    required Map<String, int> hops,
+    required double scale,
+    required GraphVisualSpec? visualSpec,
+  }) {
     final base = switch (node.type) {
       GraphNodeType.project => 22.0,
       GraphNodeType.task => 18.0,
@@ -134,11 +151,25 @@ class KnowledgeGraphPainter extends CustomPainter {
     };
     final degBump = math.min(degrees[node.id] ?? 0, 10) * 0.95;
     final focusBump = node.id == focusId ? 12.0 : 0.0;
-    final shrink = 1 - _fade(node) * 0.12;
+    final fade = (scenario.ageDays(node) / _maxAgeDays).clamp(0.0, 1.0);
+    final shrink = 1 - fade * 0.12;
     final zoom = scale.clamp(0.55, 1.15);
-    final emph = 0.5 + 0.5 * emphasis(node.id);
-    return (base + degBump + focusBump) * shrink * zoom * emph;
+    final emph = 0.5 + 0.5 * _emphasisForHop(hops[node.id]);
+    final mediaScale = _hasVisualMedia(node)
+        ? visualSpec?.mediaNodeScale ?? GraphVisualSpec.defaultMediaNodeScale
+        : 1;
+    return (base + degBump + focusBump) * shrink * zoom * emph * mediaScale;
   }
+
+  double radiusFor(GraphNode node) => nodeRadiusFor(
+    node: node,
+    scenario: scenario,
+    degrees: degrees,
+    focusId: focusId,
+    hops: hops,
+    scale: scale,
+    visualSpec: visualSpec,
+  );
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -363,8 +394,9 @@ class KnowledgeGraphPainter extends CustomPainter {
     );
 
     // Body: a real thumbnail for image entries and cover-backed task nodes,
-    // otherwise a lit sphere. The focused task already receives the standard
-    // focus size bump, so cover art adds context without another size scale.
+    // otherwise a lit sphere. Media-bearing nodes use the visual spec's larger
+    // diameter so the image carries useful context instead of reading as an
+    // icon-sized texture.
     // Always topped with an opaque delineating ring (hides the edge/node seam).
     final rect = Rect.fromCircle(center: center, radius: r);
     ui.Image? coverThumb;

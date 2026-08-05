@@ -71,12 +71,21 @@ without sacrificing local legibility.
 
 `knowledge_graph_painter.dart` paints nodes, typed edges, labels, focus trails,
 and media mosaics in screen space. A task with cover art uses that image as its
-circular node body, with the stored horizontal focal crop; the existing focus
-radius remains the only additional size emphasis. `graph_label_layout.dart`
-measures labels and places them at one of eight anchors using deterministic
-priority and collision avoidance. Focus, selection, aggregates, direct
-neighbours, and second-hop context descend in priority; non-essential labels
-cull at low semantic zoom.
+circular node body, with the stored horizontal focal crop. Cover-backed tasks,
+image entries, and media collections render at twice the ordinary node diameter
+so their imagery acts as a useful landmark. The same radius calculation drives
+edge clipping, label clearance, hit testing, and semantics.
+
+`knowledge_graph_view.dart` reads each image's encoded dimensions before
+decoding it. It preserves the source aspect ratio and bounds the longest decoded
+side to the visual spec's maximum media-node extent multiplied by the device
+pixel ratio; source-sized phone photos are never retained for node-sized canvas
+thumbnails.
+
+`graph_label_layout.dart` measures labels and places them at one of eight anchors
+using deterministic priority and collision avoidance. Focus, selection,
+aggregates, direct neighbours, and second-hop context descend in priority;
+non-essential labels cull at low semantic zoom.
 
 The toolbar changes local density and hop depth, and filters by relationship,
 node type, category, recency, and task status. Arrow keys move the selection in

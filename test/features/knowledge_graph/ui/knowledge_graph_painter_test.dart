@@ -349,6 +349,55 @@ void main() {
       expect(painterFor(scenario).radiusFor(aggregate), greaterThan(0));
     });
 
+    test('doubles the diameter of nodes that carry visual media', () {
+      final plainTask = node(id: 'plain', type: GraphNodeType.task);
+      final coverTask = GraphNode(
+        id: 'cover',
+        type: GraphNodeType.task,
+        label: 'Task with cover',
+        categoryId: 'cat-work',
+        createdAt: now,
+        coverImagePath: '/cover.png',
+      );
+      final textEntry = node(id: 'text', type: GraphNodeType.textEntry);
+      final imageEntry = GraphNode(
+        id: 'image',
+        type: GraphNodeType.imageEntry,
+        label: 'Photo',
+        categoryId: 'cat-work',
+        createdAt: now,
+        imagePath: '/photo.png',
+      );
+      final scenario = GraphScenario(
+        name: 'media radius',
+        seedId: plainTask.id,
+        nodes: [plainTask, coverTask, textEntry, imageEntry],
+        edges: const [],
+        now: now,
+      );
+      final painter = painterFor(
+        scenario,
+        positions: const {
+          'plain': Offset.zero,
+          'cover': Offset.zero,
+          'text': Offset.zero,
+          'image': Offset.zero,
+        },
+        degrees: const {},
+        hops: const {'plain': 1, 'cover': 1, 'text': 1, 'image': 1},
+        focusId: 'not-a-node',
+      );
+
+      expect(
+        painter.radiusFor(coverTask),
+        closeTo(painter.radiusFor(plainTask) * 2, 0.001),
+      );
+      expect(
+        painter.radiusFor(imageEntry),
+        closeTo(painter.radiusFor(textEntry) * 2, 0.001),
+      );
+    });
+
     test('handles a focus with hops covering every emphasis band', () {
       // hopsFor produces depth 0..3 for the rich scenario; add an explicit far
       // node (hop 5) and an unreachable node (absent → 0.12 default) so the

@@ -12,11 +12,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   edges, exact-count aggregates for dense groups and photos, and a small
   topology map for long-distance jumps. A Connections list offers the same
   navigation grouped by relationship and direction, while density and filters
-  control what remains visible. Task cover art now also appears directly in its
-  circular graph node for faster visual recognition. The compact task inspector
-  surfaces cover art and related photos, keeps long titles intact, and leaves
-  the detailed AI brief collapsed until requested. Keyboard, reduced-motion,
-  high-contrast, and screen-reader navigation are supported.
+  control what remains visible. Task cover art and photo nodes now appear at
+  twice the standard node diameter, turning them into useful visual landmarks
+  instead of icon-sized textures. The compact task inspector surfaces cover art
+  and related photos, keeps long titles intact, and leaves the detailed AI brief
+  collapsed until requested. Keyboard, reduced-motion, high-contrast, and
+  screen-reader navigation are supported.
 - **Task cover art now opens full screen.** Tap the artwork at the top of a task
   to use the same zoom, rotation and download viewer as linked photos.
 

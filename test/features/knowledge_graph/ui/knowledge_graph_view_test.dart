@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui' as ui;
 
@@ -415,6 +416,49 @@ void main() {
   });
 
   group('deferred image loading', () {
+    test('rejects a non-positive decode extent before reading the file', () {
+      expect(
+        decodeGraphImageFile('/missing.png', 0),
+        throwsA(
+          isA<ArgumentError>().having(
+            (error) => error.invalidValue,
+            'invalidValue',
+            0,
+          ),
+        ),
+      );
+    });
+
+    testWidgets('bounds decoded images by their longest side', (tester) async {
+      late final Directory tempDir;
+      late final String pngPath;
+      late final ui.Image bounded;
+      late final ui.Image naturalSize;
+      await tester.runAsync(() async {
+        tempDir = Directory.systemTemp.createTempSync('lotti_kg_decode_test');
+        pngPath = '${tempDir.path}/wide.png';
+        final recorder = ui.PictureRecorder();
+        Canvas(recorder).drawRect(
+          const Rect.fromLTWH(0, 0, 400, 200),
+          Paint()..color = const Color(0xFF3366CC),
+        );
+        final source = await recorder.endRecording().toImage(400, 200);
+        final bytes = await source.toByteData(format: ui.ImageByteFormat.png);
+        source.dispose();
+        await File(pngPath).writeAsBytes(bytes!.buffer.asUint8List());
+        bounded = await decodeGraphImageFile(pngPath, 64);
+        naturalSize = await decodeGraphImageFile(pngPath, 800);
+      });
+      addTearDown(() {
+        bounded.dispose();
+        naturalSize.dispose();
+        tempDir.deleteSync(recursive: true);
+      });
+
+      expect((bounded.width, bounded.height), (64, 32));
+      expect((naturalSize.width, naturalSize.height), (400, 200));
+    });
+
     testWidgets('loads task cover art for the graph node background', (
       tester,
     ) async {
@@ -429,7 +473,7 @@ void main() {
       });
 
       const coverPath = '/task-cover.png';
-      final loadedPaths = <String>[];
+      final requests = <({String path, int targetExtent})>[];
       await pumpView(
         tester,
         scenario: GraphScenario(
@@ -449,15 +493,205 @@ void main() {
           edges: const [],
           now: fixedNow,
         ),
-        imageLoader: (path) async {
-          loadedPaths.add(path);
+        imageLoader: (path, targetExtent) async {
+          requests.add((path: path, targetExtent: targetExtent));
           return cover;
         },
       );
       await tester.pump();
 
-      expect(loadedPaths, [coverPath]);
+      expect(requests, [
+        (
+          path: coverPath,
+          targetExtent: GraphVisualSpec.defaultMediaDecodeLogicalExtent.round(),
+        ),
+      ]);
       expect(painterOf(tester).images[coverPath], same(cover));
+    });
+
+    testWidgets(
+      'reloads thumbnails when the required decode extent increases',
+      (tester) async {
+        late final ui.Image initialCover;
+        late final ui.Image replacementCover;
+        await tester.runAsync(() async {
+          final initialRecorder = ui.PictureRecorder();
+          Canvas(initialRecorder).drawColor(
+            const Color(0xFF3366CC),
+            BlendMode.src,
+          );
+          initialCover = await initialRecorder.endRecording().toImage(4, 4);
+          final replacementRecorder = ui.PictureRecorder();
+          Canvas(replacementRecorder).drawColor(
+            const Color(0xFF33CC66),
+            BlendMode.src,
+          );
+          replacementCover = await replacementRecorder.endRecording().toImage(
+            8,
+            8,
+          );
+        });
+        addTearDown(() {
+          if (!initialCover.debugDisposed) initialCover.dispose();
+          if (!replacementCover.debugDisposed) replacementCover.dispose();
+        });
+
+        const coverPath = '/task-cover.png';
+        final scenario = GraphScenario(
+          name: 'Cover art reload',
+          seedId: 'task',
+          nodes: [
+            GraphNode(
+              id: 'task',
+              type: GraphNodeType.task,
+              label: 'Task with cover art',
+              categoryId: catWork,
+              createdAt: fixedNow,
+              coverImagePath: coverPath,
+            ),
+          ],
+          edges: const [],
+          now: fixedNow,
+        );
+        final style = GraphStyle.fromTokens(dsTokensDark);
+        var visualSpec = GraphVisualSpec(
+          style: style,
+          mediaNodeScale: 1,
+        );
+        final initialReady = Completer<ui.Image>();
+        final replacementReady = Completer<ui.Image>();
+        final requests = <int>[];
+        late StateSetter updateHost;
+
+        tester.view.physicalSize = desktopSize;
+        tester.view.devicePixelRatio = 1;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            StatefulBuilder(
+              builder: (context, setState) {
+                updateHost = setState;
+                return KnowledgeGraphView(
+                  scenario: scenario,
+                  visualSpec: visualSpec,
+                  imageLoader: (path, targetExtent) async {
+                    requests.add(targetExtent);
+                    return targetExtent ==
+                            GraphVisualSpec.baseMediaDecodeLogicalExtent.round()
+                        ? initialReady.future
+                        : replacementReady.future;
+                  },
+                  showInspector: false,
+                );
+              },
+            ),
+            mediaQueryData: const MediaQueryData(size: desktopSize),
+          ),
+        );
+        await tester.pump();
+
+        expect(requests, [112]);
+
+        updateHost(() {
+          visualSpec = GraphVisualSpec(
+            style: style,
+            mediaNodeScale: 1.5,
+          );
+        });
+        await tester.pump();
+
+        updateHost(() {
+          visualSpec = GraphVisualSpec(
+            style: style,
+          );
+        });
+        await tester.pump();
+
+        // While the initial decode is active, larger requests are coalesced.
+        expect(requests, [112]);
+
+        initialReady.complete(initialCover);
+        await tester.pump();
+        await tester.pump();
+
+        expect(requests, [112, 224]);
+        expect(painterOf(tester).images[coverPath], same(initialCover));
+        expect(initialCover.debugDisposed, isFalse);
+
+        replacementReady.complete(replacementCover);
+        await tester.pump();
+        await tester.pump();
+
+        expect(painterOf(tester).images[coverPath], same(replacementCover));
+        expect(initialCover.debugDisposed, isTrue);
+        expect(replacementCover.debugDisposed, isFalse);
+
+        updateHost(() {
+          visualSpec = GraphVisualSpec(
+            style: style,
+            mediaNodeScale: 1,
+          );
+        });
+        await tester.pump();
+        expect(requests, [112, 224]);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        expect(replacementCover.debugDisposed, isTrue);
+      },
+    );
+
+    testWidgets('disposes a thumbnail decode that finishes after unmount', (
+      tester,
+    ) async {
+      late final ui.Image decodedAfterUnmount;
+      await tester.runAsync(() async {
+        final recorder = ui.PictureRecorder();
+        Canvas(recorder).drawColor(
+          const Color(0xFF3366CC),
+          BlendMode.src,
+        );
+        decodedAfterUnmount = await recorder.endRecording().toImage(4, 4);
+      });
+      addTearDown(() {
+        if (!decodedAfterUnmount.debugDisposed) {
+          decodedAfterUnmount.dispose();
+        }
+      });
+
+      final decodeReady = Completer<ui.Image>();
+      var requested = false;
+      await pumpView(
+        tester,
+        scenario: GraphScenario(
+          name: 'Cover art unmount',
+          seedId: 'task',
+          nodes: [
+            GraphNode(
+              id: 'task',
+              type: GraphNodeType.task,
+              label: 'Task with cover art',
+              categoryId: catWork,
+              createdAt: fixedNow,
+              coverImagePath: '/task-cover.png',
+            ),
+          ],
+          edges: const [],
+          now: fixedNow,
+        ),
+        imageLoader: (path, targetExtent) {
+          requested = true;
+          return decodeReady.future;
+        },
+      );
+      expect(requested, isTrue);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      decodeReady.complete(decodedAfterUnmount);
+      await tester.pump();
+
+      expect(decodedAfterUnmount.debugDisposed, isTrue);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets(
@@ -519,13 +753,13 @@ void main() {
 
         late final ui.Image decoded;
         await tester.runAsync(() async {
-          decoded = await decodeGraphImageFile(pngPath);
+          decoded = await decodeGraphImageFile(pngPath, 64);
         });
         final loadedPaths = <String>[];
         await pumpView(
           tester,
           scenario: scenario,
-          imageLoader: (path) async {
+          imageLoader: (path, targetExtent) async {
             loadedPaths.add(path);
             return decoded;
           },
@@ -1275,7 +1509,19 @@ void main() {
         (node) => node.type == GraphNodeType.mediaCollection,
       );
       expect(before.hops[aggregate.id], 1);
-      await tester.tapAt(screenPosOf(tester, before.positions[aggregate.id]!));
+      final aggregateRadius = before.radiusFor(aggregate);
+      expect(aggregateRadius, greaterThan(30));
+      final aggregateCenter = screenPosOf(
+        tester,
+        before.positions[aggregate.id]!,
+      );
+      final focusCenter = screenPosOf(tester, before.positions['task']!);
+      final outward =
+          (aggregateCenter - focusCenter) /
+          (aggregateCenter - focusCenter).distance;
+      await tester.tapAt(
+        aggregateCenter + outward * (aggregateRadius - 1),
+      );
       await tester.pump();
 
       final after = painterOf(tester);

@@ -8,7 +8,6 @@
 library;
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -33,17 +32,38 @@ import 'package:lotti/features/knowledge_graph/ui/node_inspector_panel.dart';
 import 'package:lotti/features/knowledge_graph/ui/topology_minimap.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
-typedef GraphImageLoader = Future<ui.Image> Function(String path);
+typedef GraphImageLoader =
+    Future<ui.Image> Function(String path, int targetExtent);
 
-/// Decodes a graph thumbnail from local storage.
-Future<ui.Image> decodeGraphImageFile(String path) async {
-  final bytes = await File(path).readAsBytes();
-  final codec = await ui.instantiateImageCodec(bytes);
+/// Decodes a graph thumbnail from local storage without retaining the full
+/// source resolution.
+Future<ui.Image> decodeGraphImageFile(String path, int targetExtent) async {
+  if (targetExtent <= 0) {
+    throw ArgumentError.value(targetExtent, 'targetExtent', 'must be positive');
+  }
+  final buffer = await ui.ImmutableBuffer.fromFilePath(path);
   try {
-    final frame = await codec.getNextFrame();
-    return frame.image;
+    final descriptor = await ui.ImageDescriptor.encoded(buffer);
+    try {
+      final longestSide = math.max(descriptor.width, descriptor.height);
+      final scale = math.min(1, targetExtent / longestSide);
+      final targetWidth = math.max(1, (descriptor.width * scale).round());
+      final targetHeight = math.max(1, (descriptor.height * scale).round());
+      final codec = await descriptor.instantiateCodec(
+        targetWidth: targetWidth,
+        targetHeight: targetHeight,
+      );
+      try {
+        final frame = await codec.getNextFrame();
+        return frame.image;
+      } finally {
+        codec.dispose();
+      }
+    } finally {
+      descriptor.dispose();
+    }
   } finally {
-    codec.dispose();
+    buffer.dispose();
   }
 }
 
@@ -134,6 +154,9 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   /// the navigational inspector).
   bool _detailsOpen = false;
   bool _disableAnimations = false;
+  int _requestedImageTargetExtent = 0;
+  int _loadedImageTargetExtent = 0;
+  bool _imageLoadActive = false;
   String? _previousFocusId;
   List<String> _walkPath = const [];
   Offset _focusWorld = Offset.zero;
@@ -189,19 +212,19 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       duration: const Duration(milliseconds: 1200),
       value: 1,
     )..addListener(() => setState(() {}));
-    unawaited(_loadImages());
   }
 
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    _visualSpec =
+    final visualSpec =
         widget.visualSpec ??
         GraphVisualSpec.fromTokens(
           context.designTokens,
           categoryColors: widget.categoryColors,
           highContrast: MediaQuery.highContrastOf(context),
         );
+    _visualSpec = visualSpec;
     _disableAnimations =
         MediaQuery.maybeOf(context)?.disableAnimations ?? false;
     _motion.setReduceMotion(value: _disableAnimations);
@@ -211,6 +234,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
         ..stop()
         ..value = 1;
     }
+    _requestImageLoad(visualSpec);
   }
 
   @override
@@ -227,13 +251,46 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
           categoryColors: widget.categoryColors,
           highContrast: MediaQuery.highContrastOf(context),
         );
+    _requestImageLoad(_visualSpec!);
     _rebuildLocalGraph();
     _hops = _bfs(_focusId);
   }
 
+  void _requestImageLoad(GraphVisualSpec visualSpec) {
+    final targetExtent =
+        (visualSpec.mediaDecodeLogicalExtent *
+                MediaQuery.devicePixelRatioOf(context))
+            .ceil();
+    if (targetExtent <= _requestedImageTargetExtent) return;
+    _requestedImageTargetExtent = targetExtent;
+    if (!_imageLoadActive) {
+      unawaited(_drainImageLoads());
+    }
+  }
+
   /// Decode task covers, entry images, and aggregate thumbnails off the main
-  /// work and repaint when ready.
-  Future<void> _loadImages() async {
+  /// work. Larger requests are serialized and replace existing thumbnails only
+  /// after the new batch is ready.
+  Future<void> _drainImageLoads() async {
+    _imageLoadActive = true;
+    try {
+      while (mounted &&
+          _loadedImageTargetExtent < _requestedImageTargetExtent) {
+        final targetExtent = _requestedImageTargetExtent;
+        final loaded = await _loadImages(targetExtent);
+        if (!mounted) {
+          _disposeImages(loaded.values, retained: _images.values);
+          return;
+        }
+        _installImages(loaded);
+        _loadedImageTargetExtent = targetExtent;
+      }
+    } finally {
+      _imageLoadActive = false;
+    }
+  }
+
+  Future<Map<String, ui.Image>> _loadImages(int targetExtent) async {
     final loaded = <String, ui.Image>{};
     final loadImage = widget.imageLoader ?? decodeGraphImageFile;
     final paths = <String>{
@@ -245,17 +302,15 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     };
     for (final path in paths) {
       try {
-        final image = await loadImage(path);
+        final image = await loadImage(path, targetExtent);
         if (!mounted) {
-          // Disposed mid-decode — release what we decoded and bail. Only fires
-          // when the view is torn down between async frames, which the test
-          // harness can't trigger deterministically.
+          // Disposed mid-decode — release what we decoded and bail.
           // coverage:ignore-start
-          image.dispose();
-          for (final image in loaded.values) {
-            image.dispose();
-          }
-          return;
+          _disposeImages(
+            [...loaded.values, image],
+            retained: _images.values,
+          );
+          return const {};
           // coverage:ignore-end
         }
         loaded[path] = image;
@@ -263,13 +318,41 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
         // Missing/unreadable file — fall back to the type glyph.
       }
     }
-    if (mounted && loaded.isNotEmpty) {
-      // Reassign a fresh (unmodifiable) map instead of mutating in place, so
-      // the painter's identity-based `shouldRepaint` (old.images != images)
-      // detects the newly loaded thumbnails and actually repaints.
-      setState(() {
-        _images = Map<String, ui.Image>.unmodifiable({..._images, ...loaded});
-      });
+    return loaded;
+  }
+
+  void _installImages(Map<String, ui.Image> loaded) {
+    if (loaded.isEmpty) return;
+    final replaced = <ui.Image>[];
+    final next = {..._images};
+    for (final MapEntry(:key, :value) in loaded.entries) {
+      final previous = next[key];
+      next[key] = value;
+      if (previous != null && !identical(previous, value)) {
+        replaced.add(previous);
+      }
+    }
+    setState(() {
+      // Reassign a fresh (unmodifiable) map so the painter's identity-based
+      // `shouldRepaint` detects the completed thumbnail batch.
+      _images = Map<String, ui.Image>.unmodifiable(next);
+    });
+    _disposeImages(replaced, retained: _images.values);
+  }
+
+  void _disposeImages(
+    Iterable<ui.Image> images, {
+    Iterable<ui.Image> retained = const [],
+  }) {
+    final disposed = <ui.Image>[];
+    for (final image in images) {
+      final shouldDispose =
+          !retained.any((candidate) => identical(candidate, image)) &&
+          !disposed.any((candidate) => identical(candidate, image));
+      if (shouldDispose) {
+        image.dispose();
+        disposed.add(image);
+      }
     }
   }
 
@@ -280,9 +363,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     _motion.dispose();
     _viewport.dispose();
     _graphFocusNode.dispose();
-    for (final image in _images.values) {
-      image.dispose();
-    }
+    _disposeImages(_images.values);
     super.dispose();
   }
 
@@ -723,7 +804,19 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       if (world == null) continue;
       final screen = world * _scale + _pan;
       final dist = (local - screen).distance;
-      if (dist <= 30 && dist < best) {
+      final hitRadius = math.max(
+        30,
+        KnowledgeGraphPainter.nodeRadiusFor(
+          node: node,
+          scenario: _displayScenario,
+          degrees: _degrees,
+          focusId: _focusId,
+          hops: _hops,
+          scale: _scale,
+          visualSpec: _visualSpec,
+        ),
+      );
+      if (dist <= hitRadius && dist < best) {
         best = dist;
         hit = node.id;
       }
