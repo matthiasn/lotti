@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/daily_os_next/state/daily_os_planner_readiness.dart';
@@ -160,7 +161,7 @@ Future<bool> shouldAutoShowOnboarding(Ref ref) async {
     firstShownAt: firstShownAtRaw == null
         ? null
         : DateTime.tryParse(firstShownAtRaw),
-    now: DateTime.now(),
+    now: clock.now(),
   );
 }
 
@@ -223,7 +224,7 @@ class OnboardingWelcomeCadence extends AsyncNotifier<void> {
       if (stored[onboardingWelcomeFirstShownAtKey] == null) {
         await settingsDb.saveSettingsItem(
           onboardingWelcomeFirstShownAtKey,
-          DateTime.now().toUtc().toIso8601String(),
+          clock.now().toUtc().toIso8601String(),
         );
       }
     } catch (error, stackTrace) {

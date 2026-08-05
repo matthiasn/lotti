@@ -5,14 +5,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:integration_test/integration_test.dart';
 import 'package:lotti/main.dart' as app;
 
-const debug = false;
-
-Future<void> waitSeconds(int s) async {
-  if (debug) {
-    await Future.delayed(Duration(seconds: s), () {});
-  }
-}
-
 void main() {
   app.main();
   IntegrationTestWidgetsFlutterBinding.ensureInitialized();
@@ -24,8 +16,6 @@ void main() {
         'tap add, create entry',
         (WidgetTester tester) async {
           await tester.pumpAndSettle();
-
-          await waitSeconds(1);
 
           expect(find.text('Search...'), findsWidgets);
 
@@ -46,15 +36,11 @@ void main() {
           // the unit tests for the editor widget itself.
           expect(editor, findsOneWidget);
 
-          await waitSeconds(1);
-
           final saveIcon = find.byIcon(Icons.save);
           await tester.tap(saveIcon);
           await tester.pumpAndSettle();
 
           //expect(find.text(testText), findsOneWidget);
-
-          await waitSeconds(1);
 
           final settings = find.byIcon(Icons.settings_outlined);
           await tester.tap(settings);
@@ -73,31 +59,24 @@ void main() {
           await tester.tap(find.byIcon(MdiIcons.tag));
           await tester.pumpAndSettle();
 
-          await waitSeconds(1);
-
           await tester.tap(find.byKey(const Key('add_tag_action')));
           await tester.pumpAndSettle();
-
-          await waitSeconds(1);
 
           await tester.tap(find.byIcon(MdiIcons.tagPlusOutline));
           await tester.pumpAndSettle();
 
-          await waitSeconds(1);
-
-          final testTag = DateTime.now().toString();
+          const testTag = 'integration-test-tag';
 
           await tester.enterText(
             find.byKey(const Key('tag_name_field')),
             testTag,
           );
-          await Future.delayed(const Duration(seconds: 1), () {});
+          await tester.pump();
 
           await tester.tap(find.byKey(const Key('tag_save')));
           await tester.pumpAndSettle();
 
           expect(find.text(testTag), findsOneWidget);
-          await waitSeconds(1);
 
           await tester.tap(find.text(testTag));
           await tester.pumpAndSettle();
@@ -106,8 +85,6 @@ void main() {
           await tester.pumpAndSettle();
 
           expect(find.text(testTag), findsNothing);
-
-          await waitSeconds(2);
         },
       );
     },

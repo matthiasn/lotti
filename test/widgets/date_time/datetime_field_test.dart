@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -303,34 +304,24 @@ void main() {
     testWidgets('complete flow: open modal, tap now button', (
       WidgetTester tester,
     ) async {
-      final setDates = <DateTime>[];
+      final fixedNow = DateTime(2024, 3, 15, 10, 30);
+      await withClock(Clock.fixed(fixedNow), () async {
+        final setDates = <DateTime>[];
 
-      await _pumpField(tester, dateTime: null, setDateTime: setDates.add);
+        await _pumpField(tester, dateTime: null, setDateTime: setDates.add);
 
-      // Tap field to open modal
-      await tester.tap(find.byType(TextField));
-      await tester.pumpAndSettle();
+        // Tap field to open modal
+        await tester.tap(find.byType(TextField));
+        await tester.pumpAndSettle();
 
-      // Tap Now button, bracketing the tap with wall-clock readings so the
-      // captured value can be pinned to the live-clock window.
-      final before = DateTime.now();
-      await tester.tap(find.text('Now'));
-      await tester.pumpAndSettle();
-      final after = DateTime.now();
+        await tester.tap(find.text('Now'));
+        await tester.pumpAndSettle();
 
-      // Verify callback was called exactly once with the current time
-      expect(setDates, hasLength(1));
-      final captured = setDates.single;
-      expect(
-        !captured.isBefore(before) && !captured.isAfter(after),
-        isTrue,
-        reason:
-            'onNow must pass the wall-clock time of the tap, '
-            'got $captured outside [$before, $after]',
-      );
+        expect(setDates, [fixedNow]);
 
-      // Verify modal is closed
-      expect(find.byType(DateTimeBottomSheet), findsNothing);
+        // Verify modal is closed
+        expect(find.byType(DateTimeBottomSheet), findsNothing);
+      });
     });
 
     testWidgets('complete flow: open modal, tap cancel', (

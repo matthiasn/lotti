@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -462,18 +463,17 @@ void main() {
           ),
         ).thenAnswer((_) async {});
 
-        final result = await repository.startRecording();
+        final fixedNow = DateTime(2024, 3, 15, 10, 30);
+        final result = await withClock(
+          Clock.fixed(fixedNow),
+          repository.startRecording,
+        );
 
         expect(result, isNotNull);
         expect(result!.audioFile, endsWith('.m4a'));
         expect(result.audioDirectory, startsWith('/audio/'));
         expect(result.duration, Duration.zero);
-        expect(
-          result.createdAt.isBefore(
-            DateTime.now().add(const Duration(seconds: 1)),
-          ),
-          isTrue,
-        );
+        expect(result.createdAt, fixedNow);
         verify(
           () => mockAudioRecorder.start(
             any<RecordConfig>(),

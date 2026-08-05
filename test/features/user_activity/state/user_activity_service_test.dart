@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 
@@ -18,19 +19,14 @@ void main() {
       final sub = service.activityStream.listen(emitted.add);
       addTearDown(sub.cancel);
 
-      final before = DateTime.now();
-      service.updateActivity();
-      final after = DateTime.now();
+      final fixedNow = DateTime(2024, 3, 15, 10, 30);
+      await withClock(Clock.fixed(fixedNow), () async {
+        service.updateActivity();
+        expect(service.lastActivity, fixedNow);
 
-      expect(
-        service.lastActivity.isBefore(before) ||
-            service.lastActivity.isAfter(after),
-        isFalse,
-        reason: 'lastActivity must land between the surrounding now() reads',
-      );
-
-      await pumpEventQueue();
-      expect(emitted, [service.lastActivity]);
+        await pumpEventQueue();
+        expect(emitted, [fixedNow]);
+      });
     });
 
     test('activityStream broadcasts to multiple subscribers', () async {
@@ -54,13 +50,14 @@ void main() {
     test('updateActivity after dispose is silently ignored', () async {
       final service = UserActivityService();
       await service.dispose();
+      final fixedNow = DateTime(2024, 3, 15, 10, 30);
 
-      expect(service.updateActivity, returnsNormally);
-      // The timestamp still advances even though nothing is emitted.
       expect(
-        service.lastActivity,
-        isNot(DateTime.fromMillisecondsSinceEpoch(0)),
+        () => withClock(Clock.fixed(fixedNow), service.updateActivity),
+        returnsNormally,
       );
+      // The timestamp still advances even though nothing is emitted.
+      expect(service.lastActivity, fixedNow);
     });
   });
 }

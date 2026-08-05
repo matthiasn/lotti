@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -515,7 +516,11 @@ void main() {
             () => mockPersistenceLogic.upsertEntityDefinition(any()),
           ).thenAnswer((_) async => 1);
 
-          await repository.deleteCategory(categoryId);
+          final fixedNow = DateTime(2024, 3, 15, 10, 30);
+          await withClock(
+            Clock.fixed(fixedNow),
+            () => repository.deleteCategory(categoryId),
+          );
 
           // Verify upsertEntityDefinition was called with the deleted category
           final captured =
@@ -529,16 +534,8 @@ void main() {
           // Verify the category has deletedAt set
           expect(captured.id, equals(categoryId));
           expect(captured.name, equals('Category to Delete'));
-          expect(captured.deletedAt, isNotNull);
-          expect(
-            captured.deletedAt?.difference(DateTime.now()).inSeconds.abs(),
-            lessThan(5),
-          ); // Within 5 seconds
-          expect(captured.updatedAt, isNotNull);
-          expect(
-            captured.updatedAt.difference(DateTime.now()).inSeconds.abs(),
-            lessThan(5),
-          ); // Within 5 seconds
+          expect(captured.deletedAt, fixedNow);
+          expect(captured.updatedAt, fixedNow);
         },
       );
 

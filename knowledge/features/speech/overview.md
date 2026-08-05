@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../../lib/features/speech
     title: Speech feature source
-    last_modified: 2026-08-01
+    last_modified: 2026-08-05
   - id: vu
     resource: ../../../lib/features/speech/state/vu_meter.dart
     title: VuMeter — sliding-window RMS→VU

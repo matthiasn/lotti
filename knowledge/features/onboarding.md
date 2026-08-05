@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/onboarding
     title: Onboarding feature source
-    last_modified: 2026-07-26
+    last_modified: 2026-08-05
   - id: metrics-db
     resource: ../../lib/database/onboarding_metrics_db.dart
     title: OnboardingMetricsDb

@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -1092,19 +1093,17 @@ void main() {
   });
 
   group('projectDetailNowProvider', () {
-    test('returns a wall-clock function (bounded by the test run)', () {
+    test('returns the clock-backed current instant', () {
       final container = ProviderContainer();
       addTearDown(container.dispose);
+      final fixedNow = DateTime(2024, 3, 15, 10, 30);
 
-      final nowFn = container.read(projectDetailNowProvider);
-      final before = DateTime.now();
-      final result = nowFn();
-      final after = DateTime.now();
+      final result = withClock(Clock.fixed(fixedNow), () {
+        final nowFn = container.read(projectDetailNowProvider);
+        return nowFn();
+      });
 
-      // The default wiring is DateTime.now — the result must fall inside
-      // the sampling window, not just be any DateTime.
-      expect(result.isBefore(before), isFalse);
-      expect(result.isAfter(after), isFalse);
+      expect(result, fixedNow);
     });
   });
 }

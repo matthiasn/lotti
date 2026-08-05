@@ -30,6 +30,7 @@ void main() {
   late ProviderContainer container;
 
   const habitsTabIndex = 3;
+  final controllerNow = DateTime(2025, 12, 30, 10);
 
   // Use fixed dates for deterministic tests
   final lastWeek = DateTime(2025, 12, 23);
@@ -124,6 +125,7 @@ void main() {
     container = ProviderContainer(
       overrides: [
         habitsRepositoryProvider.overrideWithValue(mockRepository),
+        habitsNowProvider.overrideWithValue(() => controllerNow),
       ],
     );
   });
@@ -243,16 +245,8 @@ void main() {
   });
 
   group('_determineHabitSuccessByDays', () {
-    // The controller internally uses DateTime.now() to determine "today",
-    // so completion dates must match the real wall-clock date. We compute
-    // it once here to keep individual tests free of DateTime.now() calls.
-    late DateTime controllerToday;
-    late String controllerTodayYmd;
-
-    setUp(() {
-      controllerToday = DateTime.now(); // ignore: avoid_DateTime_now
-      controllerTodayYmd = controllerToday.ymd;
-    });
+    final controllerToday = controllerNow;
+    final controllerTodayYmd = controllerNow.ymd;
 
     test('processes completions and updates state fields', () async {
       // Setup completions

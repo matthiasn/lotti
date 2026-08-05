@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -58,9 +59,8 @@ class _PreloadedSessionEndedController extends SessionEndedController {
 void main() {
   late _FakeTimeService fakeTimeService;
 
-  // A recent entry — dateFrom must be close to "now" so isRecent is true.
-  // We use a fixed date but the widget checks DateTime.now() internally,
-  // so we make the entry very recent relative to test execution.
+  // Shared deterministic fixture; clock-sensitive tests below pin their own
+  // current instant with withClock.
   final entryDateFrom = DateTime(2024, 3, 15, 10);
   const entryId = 'test-entry-1';
   final testEntry = JournalEntity.journalEntry(
@@ -159,54 +159,57 @@ void main() {
     testWidgets(
       'does not mark session ended for short sessions (< 1 minute)',
       (tester) async {
-        // Entry with dateFrom < 1 minute ago so the duration check fails.
-        // Must be relative to real DateTime.now() because the widget checks
-        // DateTime.now().difference(dateFrom).inHours < 12 internally.
-        final recentDate = DateTime.now().subtract(const Duration(seconds: 30));
-        const shortEntryId = 'short-entry';
-        final shortEntry = JournalEntity.journalEntry(
-          meta: Metadata(
-            id: shortEntryId,
-            createdAt: recentDate,
-            updatedAt: recentDate,
-            dateFrom: recentDate,
-            dateTo: recentDate,
-          ),
-        );
-
-        final container = buildSubjectWithContainer(
-          tester,
-          item: shortEntry,
-        );
-        await tester.pumpWidget(
-          UncontrolledProviderScope(
-            container: container,
-            child: makeTestableWidgetWithScaffold(
-              DurationWidget(item: shortEntry, linkedFrom: null),
+        final fixedNow = DateTime(2024, 3, 15, 10, 30);
+        await withClock(Clock.fixed(fixedNow), () async {
+          // Entry with dateFrom < 1 minute ago so the duration check fails.
+          final recentDate = fixedNow.subtract(const Duration(seconds: 30));
+          const shortEntryId = 'short-entry';
+          final shortEntry = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: shortEntryId,
+              createdAt: recentDate,
+              updatedAt: recentDate,
+              dateFrom: recentDate,
+              dateTo: recentDate,
             ),
-          ),
-        );
-        await tester.pump();
+          );
 
-        // Simulate recording then stop
-        fakeTimeService.emit(
-          shortEntry.copyWith(
-            meta: shortEntry.meta.copyWith(
-              dateTo: recentDate.add(const Duration(seconds: 30)),
+          final container = buildSubjectWithContainer(
+            tester,
+            item: shortEntry,
+          );
+          await tester.pumpWidget(
+            UncontrolledProviderScope(
+              container: container,
+              child: makeTestableWidgetWithScaffold(
+                DurationWidget(item: shortEntry, linkedFrom: null),
+              ),
             ),
-          ),
-        );
-        await tester.pump();
+          );
+          await tester.pump();
 
-        fakeTimeService.emit(null);
-        await tester.pump();
-        await tester.pump();
+          // Simulate recording then stop
+          fakeTimeService.emit(
+            shortEntry.copyWith(
+              meta: shortEntry.meta.copyWith(
+                dateTo: recentDate.add(const Duration(seconds: 30)),
+              ),
+            ),
+          );
+          await tester.pump();
 
-        // Assert session was NOT marked ended for short session
-        expect(
-          container.read(sessionEndedControllerProvider).contains(shortEntryId),
-          isFalse,
-        );
+          fakeTimeService.emit(null);
+          await tester.pump();
+          await tester.pump();
+
+          // Assert session was NOT marked ended for short session
+          expect(
+            container
+                .read(sessionEndedControllerProvider)
+                .contains(shortEntryId),
+            isFalse,
+          );
+        });
       },
     );
 
@@ -263,48 +266,49 @@ void main() {
     testWidgets(
       'record button clears session state and starts recording',
       (tester) async {
-        // Use a recent entry so the record button is visible (isRecent check).
-        // Must be relative to real DateTime.now() because the widget checks
-        // DateTime.now().difference(dateFrom).inHours < 12 internally.
-        final recentDate = DateTime.now().subtract(const Duration(hours: 1));
-        final recentEntry = JournalEntity.journalEntry(
-          meta: Metadata(
-            id: entryId,
-            createdAt: recentDate,
-            updatedAt: recentDate,
-            dateFrom: recentDate,
-            dateTo: recentDate.add(const Duration(hours: 1)),
-          ),
-        );
-
-        await tester.pumpWidget(
-          makeTestableWidgetWithScaffold(
-            DurationWidget(
-              item: recentEntry,
-              linkedFrom: null,
+        final fixedNow = DateTime(2024, 3, 15, 10, 30);
+        await withClock(Clock.fixed(fixedNow), () async {
+          // Use a recent entry so the record button is visible.
+          final recentDate = fixedNow.subtract(const Duration(hours: 1));
+          final recentEntry = JournalEntity.journalEntry(
+            meta: Metadata(
+              id: entryId,
+              createdAt: recentDate,
+              updatedAt: recentDate,
+              dateFrom: recentDate,
+              dateTo: recentDate.add(const Duration(hours: 1)),
             ),
-            overrides: [
-              createEntryControllerOverride(recentEntry),
-              newestLinkedIdControllerProvider(null).overrideWith(
-                () => _StubNewestLinkedIdController(recentEntry.meta.id),
+          );
+
+          await tester.pumpWidget(
+            makeTestableWidgetWithScaffold(
+              DurationWidget(
+                item: recentEntry,
+                linkedFrom: null,
               ),
-              sessionEndedControllerProvider.overrideWith(
-                () => _PreloadedSessionEndedController({entryId}),
-              ),
-            ],
-          ),
-        );
-        await tester.pump();
+              overrides: [
+                createEntryControllerOverride(recentEntry),
+                newestLinkedIdControllerProvider(null).overrideWith(
+                  () => _StubNewestLinkedIdController(recentEntry.meta.id),
+                ),
+                sessionEndedControllerProvider.overrideWith(
+                  () => _PreloadedSessionEndedController({entryId}),
+                ),
+              ],
+            ),
+          );
+          await tester.pump();
 
-        // The record button should be visible
-        final recordButton = find.byIcon(Icons.fiber_manual_record_sharp);
-        expect(recordButton, findsOneWidget);
+          // The record button should be visible
+          final recordButton = find.byIcon(Icons.fiber_manual_record_sharp);
+          expect(recordButton, findsOneWidget);
 
-        await tester.tap(recordButton);
-        await tester.pump();
+          await tester.tap(recordButton);
+          await tester.pump();
 
-        // Verify start was called on the time service
-        expect(fakeTimeService.startCalled, isTrue);
+          // Verify start was called on the time service
+          expect(fakeTimeService.startCalled, isTrue);
+        });
       },
     );
 
