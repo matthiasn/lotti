@@ -952,6 +952,159 @@ void main() {
       },
     );
 
+    test(
+      'no alert when the user cleared the flushed card mid-wake',
+      () async {
+        // The card has been on screen since the first flush, so the user can
+        // resolve it before the wake ends. Alerting from the stale snapshot
+        // would raise a fresh active row for a card they already cleared.
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(mockSyncService, incremental: true);
+
+        when(() => mockRepository.getEntity(flushed!.id)).thenAnswer(
+          (_) async => flushed!.copyWith(
+            status: ChangeSetStatus.resolved,
+            resolvedAt: DateTime(2026, 8, 5),
+            items: [
+              flushed.items.single.copyWith(status: ChangeItemStatus.confirmed),
+            ],
+          ),
+        );
+
+        await builder.build(mockSyncService);
+
+        verifyNever(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: any(named: 'linkedTaskId'),
+            suggestionCount: any(named: 'suggestionCount'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'alerts on the re-read count, not the count it wrote',
+      () async {
+        // Partially resolved: two proposed, one confirmed mid-wake, so the
+        // bell must say one — not the two the snapshot still carries.
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        await builder.addItem(
+          toolName: 'update_task_priority',
+          args: {'priority': 'P1'},
+          humanSummary: 'Set priority to P1',
+        );
+        final flushed = await builder.build(mockSyncService, incremental: true);
+
+        when(() => mockRepository.getEntity(flushed!.id)).thenAnswer(
+          (_) async => flushed!.copyWith(
+            status: ChangeSetStatus.partiallyResolved,
+            items: [
+              flushed.items.first.copyWith(status: ChangeItemStatus.confirmed),
+              flushed.items.last,
+            ],
+          ),
+        );
+
+        await builder.build(mockSyncService);
+
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: 'task-001',
+            suggestionCount: 1,
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'a failed re-read skips the alert instead of failing the wake',
+      () async {
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        final flushed = await builder.build(mockSyncService, incremental: true);
+
+        when(
+          () => mockRepository.getEntity(flushed!.id),
+        ).thenThrow(Exception('read failed'));
+
+        await expectLater(builder.build(mockSyncService), completes);
+        verifyNever(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: any(named: 'linkedTaskId'),
+            suggestionCount: any(named: 'suggestionCount'),
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        );
+      },
+    );
+
+    test(
+      'raiseInboxAlert is idempotent, so the failure path cannot double-alert',
+      () async {
+        // The workflow calls this directly when a wake dies after a flush:
+        // WakeOutputWriter never runs, so nothing else would ring the bell for
+        // suggestions that are already committed and on screen.
+        await builder.addItem(
+          toolName: 'update_task_estimate',
+          args: {'minutes': 120},
+          humanSummary: 'Set estimate to 2 hours',
+        );
+        await builder.build(mockSyncService, incremental: true);
+
+        await builder.raiseInboxAlert(mockSyncService);
+        await builder.raiseInboxAlert(mockSyncService);
+        await builder.build(mockSyncService);
+
+        verify(
+          () => notificationRepository.createTaskSuggestion(
+            linkedTaskId: 'task-001',
+            suggestionCount: 1,
+            title: any(named: 'title'),
+            body: any(named: 'body'),
+            category: any(named: 'category'),
+            idSeed: any(named: 'idSeed'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('raiseInboxAlert is a no-op when no flush ever landed', () async {
+      await builder.raiseInboxAlert(mockSyncService);
+
+      verifyNever(
+        () => notificationRepository.createTaskSuggestion(
+          linkedTaskId: any(named: 'linkedTaskId'),
+          suggestionCount: any(named: 'suggestionCount'),
+          title: any(named: 'title'),
+          body: any(named: 'body'),
+          category: any(named: 'category'),
+          idSeed: any(named: 'idSeed'),
+        ),
+      );
+    });
+
     test('only the final build raises the inbox alert', () async {
       await builder.addItem(
         toolName: 'update_task_estimate',

@@ -507,6 +507,18 @@ Repeated flushes are safe by construction:
   already dismissed could never be revived for the later suggestions. The
   final build alerts even when it has nothing left to persist — otherwise a
   wake whose proposals all landed mid-conversation would never ring the bell.
+  `raiseInboxAlert` **re-reads the set** before alerting: the card has been on
+  screen since the first flush, so the user may have resolved items on it, and
+  the snapshot this builder wrote would report an inflated count or raise a
+  fresh active row for a card they already cleared. Alerting stays
+  fire-and-forget — a failed re-read skips the alert rather than failing the
+  wake.
+- **A wake that dies after a flush still alerts.** `WakeOutputWriter` never
+  runs, so the workflow's failure path calls `raiseInboxAlert` itself;
+  otherwise committed, on-screen suggestions would never ring the bell.
+  Consolidation is deliberately *not* attempted there — it retires the pre-wake
+  sets, and the staged retractions that must land first die with the wake. The
+  surplus card is folded by the next wake's end-of-wake build.
 
 A wake with pre-existing proposals therefore shows a second card while it runs,
 which the final build folds into one. That is the deliberate trade for never

@@ -149,6 +149,9 @@ void main() {
   setUp(() async {
     mockAgentRepository = MockAgentRepository();
     mockSyncService = MockAgentSyncService();
+    // A real sync service always exposes its repository; individual tests
+    // re-stub specific ids on `mockAgentRepository`.
+    when(() => mockSyncService.repository).thenReturn(mockAgentRepository);
     mockConversationManager = MockConversationManager();
     mockConversationRepository = MockConversationRepository(
       mockConversationManager,

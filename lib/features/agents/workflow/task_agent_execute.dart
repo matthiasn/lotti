@@ -352,6 +352,11 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // Non-fatal: continue with execution even if audit fails.
     }
 
+    // Visible to the failure path below: incremental flushes commit as they
+    // go, so a wake that dies later still has suggestions on disk that need
+    // finalizing.
+    ChangeSetBuilder? flushedChangeSets;
+
     try {
       final executor = AgentToolExecutor(
         syncService: syncService,
@@ -411,6 +416,8 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           return entity?.meta.labelIds?.toSet() ?? {};
         },
       );
+
+      flushedChangeSets = changeSetBuilder;
 
       final retractionService = SuggestionRetractionService(
         syncService: syncService,
@@ -841,6 +848,25 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       );
     } catch (e, s) {
       _logError('wake failed', error: e, stackTrace: s);
+
+      // Suggestions flushed mid-wake are already committed and stay visible;
+      // `WakeOutputWriter` never ran, so nothing else will raise their inbox
+      // alert. Consolidation is deliberately NOT attempted here: it retires
+      // the pre-wake sets, and the staged retractions that would have to land
+      // first die with this wake. The surplus card is folded by the next
+      // wake's end-of-wake build instead.
+      final flushed = flushedChangeSets;
+      if (flushed != null) {
+        try {
+          await flushed.raiseInboxAlert(syncService);
+        } catch (alertError, alertStack) {
+          _logError(
+            'failed to alert for suggestions flushed before the failure',
+            error: alertError,
+            stackTrace: alertStack,
+          );
+        }
+      }
 
       // Update failure count in state.
       try {

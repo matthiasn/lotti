@@ -333,7 +333,7 @@ class ChangeSetBuilder {
     final mayNeedConsolidation =
         !incremental && _persistedSet != null && existingPendingSets.isNotEmpty;
     if (pendingItems.isEmpty && !mayNeedConsolidation) {
-      return _notifyOnFinalBuild(incremental);
+      return incremental ? _persistedSet : raiseInboxAlert(syncService);
     }
 
     // Re-read everything that could carry a duplicate, so dedup sees mid-wake
@@ -405,7 +405,7 @@ class ChangeSetBuilder {
     // otherwise this is the pre-existing "nothing survived dedup" no-op.
     final consolidationOnly = mayNeedConsolidation && writableSets.length >= 2;
     if (deduped.isEmpty && !consolidationOnly) {
-      return _notifyOnFinalBuild(incremental);
+      return incremental ? _persistedSet : raiseInboxAlert(syncService);
     }
 
     final dedupedRunningTimerIds = runningTimerIds(deduped);
@@ -512,15 +512,49 @@ class ChangeSetBuilder {
     return entity;
   }
 
-  /// Raises the wake's single inbox alert when an end-of-wake build has
-  /// nothing left to write — the normal outcome once incremental flushes have
-  /// persisted every item. Without this the bell would never ring for a wake
-  /// whose proposals all landed mid-conversation.
-  Future<ChangeSetEntity?> _notifyOnFinalBuild(bool incremental) async {
+  /// Raises the wake's single inbox alert for whatever has been flushed.
+  ///
+  /// Called by the end-of-wake build — including when it has nothing left to
+  /// write, the normal outcome once incremental flushes have persisted every
+  /// item, because otherwise the bell would never ring for a wake whose
+  /// proposals all landed mid-conversation. Also called from the workflow's
+  /// failure path, where `WakeOutputWriter` never runs but the flushed
+  /// suggestions survive on disk and still deserve an alert.
+  ///
+  /// Re-reads the set before alerting: [_persistedSet] is the snapshot this
+  /// builder wrote, and the card has been on screen since the first flush, so
+  /// the user may have resolved items on it. Alerting from the stale snapshot
+  /// would report an inflated pending count, or raise a fresh active row for a
+  /// card the user already cleared.
+  ///
+  /// Idempotent — at most one alert per wake, whichever caller gets there
+  /// first.
+  Future<ChangeSetEntity?> raiseInboxAlert(AgentSyncService syncService) async {
     final persisted = _persistedSet;
-    if (incremental || _notified || persisted == null) return persisted;
+    if (_notified || persisted == null) return persisted;
     _notified = true;
-    await notifyTaskNeedsAttention(persisted);
+
+    ChangeSetEntity current;
+    try {
+      final latest = await syncService.repository.getEntity(persisted.id);
+      current = latest is ChangeSetEntity ? latest : persisted;
+    } catch (e) {
+      // Alerting is fire-and-forget (see [notifyTaskNeedsAttention]) and must
+      // never fail a wake. Skip rather than fall back to the snapshot: alerting
+      // from stale items is the very thing this re-read exists to prevent.
+      domainLogger?.log(
+        LogDomain.agentWorkflow,
+        'Skipping inbox alert — could not re-read the flushed change set',
+        subDomain: 'changeSetBuilder',
+      );
+      return persisted;
+    }
+
+    // A set the user fully resolved needs no alert; `notifyTaskNeedsAttention`
+    // makes the same call per item via its pending count.
+    if (!isPendingLike(current.status)) return persisted;
+
+    await notifyTaskNeedsAttention(current);
     return persisted;
   }
 
