@@ -14,6 +14,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   queued. The summary names failed rows and retries only those rows.
 
 ## [1.0.2]
+### Added
+- **Demo mode: explore Lotti in a play world before trusting it with your own.**
+  From the onboarding welcome, the tasks empty state, or Settings › Onboarding,
+  you can open the Intergalactic Penguin Logistics demo — a fully populated
+  workspace with tasks, checklists, cover art, logged time and a guided "first
+  mission" — living in its own sandbox with separate databases and no sync, so
+  nothing in it ever mixes with your real journal. A persistent banner marks
+  the demo while it is active, and you can leave at any time: exiting keeps the
+  demo resumable, and the exit sheet offers to copy the tasks and entries you
+  created there (and any AI setup you connected) into your real journal. The
+  demo's AI is fictional until you choose otherwise — a guided step can connect
+  your real AI provider inside the demo, and the key stays in the sandbox
+  unless you copy it over on exit.
 ### Fixed
 - **Health imports stop asking for permission you have already answered.** Lotti
   requested authorization on *every* import, including the background ones a

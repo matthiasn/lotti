@@ -44,6 +44,7 @@ what it does for a user; these describe how it runs.
 * [Theming](theming.md) - theme selection and construction.
 * [Keyboard](keyboard.md) - the desktop command layer.
 * [Onboarding](onboarding.md) - the first-run path and its measurement substrate.
+* [Demo mode](demo.md) - the seeded penguin-logistics play world: manifest lifecycle, exit copy-over, the real-AI nudge.
 * [What's New](whats_new.md) - remote release notes with local gating.
 
 # Supporting
