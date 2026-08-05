@@ -548,6 +548,7 @@ void main() {
         var failTarget = true;
         final attempts = <String>[];
         final entityAttemptsAtLinkQuery = <int>[];
+        final progress = <ReSyncProgress>[];
         journalDb.onLinkRowsQuery = () {
           entityAttemptsAtLinkQuery.add(attempts.length);
         };
@@ -573,6 +574,7 @@ void main() {
           end: timestamp.add(const Duration(hours: 3)),
           agentRepository: mockAgentRepo,
           includeAgentEntities: false,
+          onProgress: progress.add,
         );
 
         expect(attempts, hasLength(101));
@@ -584,6 +586,13 @@ void main() {
           entityAttemptsAtLinkQuery,
           [101, 101],
           reason: 'link payload pages are read only after every entity attempt',
+        );
+        expect(
+          progress
+              .where((event) => !event.isComplete)
+              .map((event) => (event.processed, event.failed)),
+          [(0, 0), (100, 0), (101, 1), (102, 2), (102, 2)],
+          reason: 'every entity and link page reports its latest outcome',
         );
         expect(
           result.failures.map((failure) => failure.itemId),
@@ -788,13 +797,15 @@ void main() {
         expect(progress.first.total, isNull);
         expect(progress.first.isComplete, isFalse);
         expect(
-          progress.any(
-            (event) =>
-                event.phase == ReSyncPhase.journalEntities &&
-                event.processed == 2 &&
-                !event.isComplete,
-          ),
-          isTrue,
+          progress
+              .where(
+                (event) =>
+                    event.phase == ReSyncPhase.journalEntities &&
+                    !event.isComplete,
+              )
+              .map((event) => event.processed),
+          [0, 2, 3],
+          reason: 'link batches report their updated processed count',
         );
         expect(progress.last.phase, ReSyncPhase.journalEntities);
         expect(progress.last.processed, 3);

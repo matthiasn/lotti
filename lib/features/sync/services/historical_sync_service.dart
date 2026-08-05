@@ -478,10 +478,26 @@ class HistoricalSyncService {
         if (linkSourceIdPage.length == pageSize) {
           await stageLinksForSources(linkSourceIdPage);
           linkSourceIdPage.clear();
+          onProgress?.call(
+            ReSyncProgress(
+              phase: ReSyncPhase.journalEntities,
+              processed: processed,
+              isComplete: false,
+              failed: failed,
+            ),
+          );
         }
       }
       if (linkSourceIdPage.isNotEmpty) {
         await stageLinksForSources(linkSourceIdPage);
+        onProgress?.call(
+          ReSyncProgress(
+            phase: ReSyncPhase.journalEntities,
+            processed: processed,
+            isComplete: false,
+            failed: failed,
+          ),
+        );
       }
 
       onProgress?.call(
