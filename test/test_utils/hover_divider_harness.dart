@@ -1,6 +1,7 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_grouped_list.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 
@@ -30,6 +31,25 @@ List<Color?> listRowDividerColors(WidgetTester tester, {Finder? of}) => tester
         matching: find.byType(Divider),
       ),
     )
+    .map((divider) => divider.color)
+    .toList();
+
+/// Colours of the standalone [DesignSystemDivider]s on screen, in render
+/// order.
+///
+/// The counterpart to [listRowDividerColors] for the lists whose hairlines
+/// are siblings of the rows rather than drawn by them — the "Add" sheet
+/// stands its rules up between the row widgets, so there is no
+/// `DesignSystemListItem.dividerColor` to read. `null` means the divider
+/// was handed no override and fell back to the decorative token, which is
+/// what an un-faded rule looks like.
+///
+/// Unscoped, unlike [listRowDividerColors]: the sheet's rules are its only
+/// `DesignSystemDivider`s, which its own "exactly one divider between
+/// adjacent rows" test pins. A surface that grows chrome dividers of its
+/// own needs a scoped read instead.
+List<Color?> designSystemDividerColors(WidgetTester tester) => tester
+    .widgetList<DesignSystemDivider>(find.byType(DesignSystemDivider))
     .map((divider) => divider.color)
     .toList();
 

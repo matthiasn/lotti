@@ -29,6 +29,7 @@ class CreateMenuListItem extends StatelessWidget {
     required this.subtitle,
     required this.onTap,
     this.opensSheet = false,
+    this.onHoverChanged,
     super.key,
   });
 
@@ -42,11 +43,18 @@ class CreateMenuListItem extends StatelessWidget {
   /// glyph: `›` for a detour, `+` for a direct create.
   final bool opensSheet;
 
+  /// Reports pointer enter/leave to the sheet, which owns the rows' dividers
+  /// and fades the pair bracketing the hovered row (`HoverDividerIndex`).
+  /// The row cannot do this itself: the hairlines are its siblings, not its
+  /// children.
+  final ValueChanged<bool>? onHoverChanged;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     return DesignSystemListItem(
       onTap: onTap,
+      onHoverChanged: onHoverChanged,
       title: title,
       titleMaxLines: 2,
       subtitle: subtitle,

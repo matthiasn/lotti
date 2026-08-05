@@ -11,13 +11,15 @@ enum DesignSystemDividerOrientation {
 ///
 /// [orientation] selects a horizontal or vertical rule; horizontal dividers may
 /// carry an inline centered [label] (vertical ones may not, asserted). [length]
-/// overrides the default extent along the rule's axis.
+/// overrides the default extent along the rule's axis. [color] overrides the
+/// rule's ink.
 class DesignSystemDivider extends StatelessWidget {
   const DesignSystemDivider({
     this.orientation = DesignSystemDividerOrientation.horizontal,
     this.label,
     this.length,
     this.indent,
+    this.color,
     super.key,
   }) : assert(
          orientation == DesignSystemDividerOrientation.horizontal ||
@@ -39,10 +41,19 @@ class DesignSystemDivider extends StatelessWidget {
   /// align to instead of running full-bleed under it.
   final double? indent;
 
+  /// Overrides the rule's ink. Null keeps the decorative token default.
+  ///
+  /// Same escape hatch as `DesignSystemListItem.dividerColor`, for the lists
+  /// that stand their dividers up as siblings of the rows rather than letting
+  /// each row draw its own: pass [Colors.transparent] to suppress the line
+  /// without collapsing its 1&nbsp;px of vertical space, so hover treatments
+  /// (`HoverDividerIndex`) never shift the layout beneath the pointer.
+  final Color? color;
+
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final color = tokens.colors.decorative.level01;
+    final color = this.color ?? tokens.colors.decorative.level01;
 
     final divider = switch (orientation) {
       DesignSystemDividerOrientation.horizontal => _HorizontalDivider(
