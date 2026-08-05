@@ -78,3 +78,7 @@ is explicitly out of scope here and recorded as an open question.
   — deliberately unimplemented.
 - Multiple concurrent guest worlds are supported by the registry; the UI
   exposes a single demo world for now.
+- Peer tenants (separate *work* and *private* worlds, both synced) generalise
+  this decision beyond demo mode. What already carries over, what blocks it,
+  and the recommended shape are in
+  [ADR 0050](./0050-multi-tenant-worlds.md) — proposed, not scheduled.

@@ -157,3 +157,12 @@ Related: [bootstrap and DI](bootstrap-and-di.md) for the generation loop,
 [sync overview](../features/sync/overview.md) for what the real stack does,
 and [ADR 0049](../../docs/adr/0049-profile-scoped-storage-and-demo-mode.md)
 for the storage-scoping decision.
+
+The switch machinery above is type-blind: it would carry any profile, not
+just the demo. What it would take to run *peer* tenants — separate work and
+private worlds, both synced — is recorded in
+[ADR 0050](../../docs/adr/0050-multi-tenant-worlds.md). It is proposed, not
+built; the practical rule it imposes on code touching this area is to never
+treat "guest" and "not the real world" as the same predicate, and to read
+capabilities from `ProfileContext.capabilities` rather than re-deriving them
+from `ProfileType`.

@@ -1,6 +1,7 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_mode_banner.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -23,16 +25,19 @@ void main() {
     List<Override> overrides = const [],
     Widget? child,
     DemoModeGateway? gateway,
+    Size size = const Size(390, 844),
+    Locale? locale,
   }) {
     return ProviderScope(
       overrides: overrides,
       child: MediaQuery(
-        data: const MediaQueryData(
-          size: Size(390, 844),
-          padding: EdgeInsets.only(top: 47),
+        data: MediaQueryData(
+          size: size,
+          padding: const EdgeInsets.only(top: 47),
         ),
         child: MaterialApp(
           theme: resolveTestTheme(),
+          locale: locale,
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
           home: DemoModeScaffold(
@@ -75,17 +80,49 @@ void main() {
       );
 
       expect(find.byType(DemoModeBanner), findsOneWidget);
+
+      // Two lines, stacked: the identity line names the world and the
+      // quieter line carries the reassurance that used to be crammed into
+      // one bodySmall row nobody read.
+      final identity = find.text('Demo world');
+      final reassurance = find.text('Your journal is untouched');
+      expect(identity, findsOneWidget);
+      expect(reassurance, findsOneWidget);
       expect(
-        find.text('Demo world — your journal is untouched'),
+        tester.getTopLeft(reassurance).dy,
+        greaterThanOrEqualTo(tester.getBottomLeft(identity).dy),
+        reason: 'stacked, not side by side',
+      );
+      expect(
+        tester.getTopLeft(reassurance).dx,
+        tester.getTopLeft(identity).dx,
+        reason: 'both lines share the left edge, past the penguin glyph',
+      );
+      // The penguin is decorative: present, but never announced.
+      expect(find.text('\u{1F427}'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: find.byType(ExcludeSemantics),
+          matching: find.text('\u{1F427}'),
+        ),
         findsOneWidget,
       );
+      // The explicit exit affordance survives the taller layout.
       expect(find.text('Exit'), findsOneWidget);
+      expect(find.byType(DesignSystemButton), findsOneWidget);
 
       final bannerHeight = tester.getSize(find.byType(DemoModeBanner)).height;
       expect(
         bannerHeight,
         greaterThan(47),
         reason: 'banner swallows the 47px status-bar inset plus its content',
+      );
+      expect(
+        bannerHeight - 47,
+        greaterThan(48),
+        reason:
+            'two-line strip: roughly double the ~28px the single bodySmall '
+            'row occupied, which is why it was read as ignorable chrome',
       );
       expect(
         tester.getTopLeft(find.byKey(childKey)).dy,
@@ -100,6 +137,57 @@ void main() {
             'banner already covers',
       );
     });
+
+    // Every string in the strip ellipsises at its own line budget — one
+    // line for the identity line and the exit label, two for the subtitle —
+    // so an overflow shows up as silently truncated copy rather than a
+    // yellow-stripe assertion. German is the longest register of the eleven
+    // catalogs, and 390 the narrowest supported width: the combination that
+    // fails first.
+    for (final surface in const [
+      (label: 'mobile', size: Size(390, 844)),
+      (label: 'desktop', size: Size(1280, 800)),
+    ]) {
+      for (final locale in const [Locale('en'), Locale('de')]) {
+        testWidgets(
+          'nothing truncates at ${surface.label} width in '
+          '${locale.languageCode}',
+          (tester) async {
+            tester.view.physicalSize = surface.size;
+            tester.view.devicePixelRatio = 1;
+            addTearDown(tester.view.reset);
+
+            await tester.pumpWidget(
+              host(
+                overrides: [demoModeActiveProvider.overrideWithValue(true)],
+                size: surface.size,
+                locale: locale,
+              ),
+            );
+
+            final messages = await AppLocalizations.delegate.load(locale);
+            // The exit label belongs in this sweep, not in a presence
+            // check: DesignSystemButton renders it with maxLines: 1 and
+            // ellipsis, so a label too wide for the dense button clips
+            // silently and `find.text` still matches it.
+            for (final line in [
+              messages.demoBannerLabel,
+              messages.demoBannerSubtitle,
+              messages.demoBannerExit,
+            ]) {
+              final paragraph = tester.renderObject<RenderParagraph>(
+                find.text(line),
+              );
+              expect(
+                paragraph.didExceedMaxLines,
+                isFalse,
+                reason: '"$line" ellipsised at ${surface.size.width}px',
+              );
+            }
+          },
+        );
+      }
+    }
   });
 
   group('copy-failure notice', () {
@@ -300,9 +388,7 @@ void main() {
         ),
       );
 
-      await tester.tap(
-        find.text('Demo world — your journal is untouched'),
-      );
+      await tester.tap(find.text('Demo world'));
       await tester.pumpAndSettle();
 
       expect(find.text('Leave the demo?'), findsOneWidget);

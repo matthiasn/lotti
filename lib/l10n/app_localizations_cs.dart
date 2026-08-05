@@ -4990,7 +4990,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get demoBannerExit => 'Ukončit';
 
   @override
-  String get demoBannerLabel => 'Demo svět — tvůj deník zůstává nedotčený';
+  String get demoBannerLabel => 'Demo svět';
+
+  @override
+  String get demoBannerSubtitle => 'Tvůj deník zůstává nedotčený';
 
   @override
   String get demoCopyBody =>

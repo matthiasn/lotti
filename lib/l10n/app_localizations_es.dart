@@ -5001,8 +5001,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get demoBannerExit => 'Salir';
 
   @override
-  String get demoBannerLabel =>
-      'Mundo de demostración — tu diario permanece intacto';
+  String get demoBannerLabel => 'Mundo demo';
+
+  @override
+  String get demoBannerSubtitle => 'Tu diario permanece intacto';
 
   @override
   String get demoCopyBody =>

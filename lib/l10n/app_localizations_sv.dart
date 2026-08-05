@@ -4937,7 +4937,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get demoBannerExit => 'Avsluta';
 
   @override
-  String get demoBannerLabel => 'Demovärld — din dagbok förblir orörd';
+  String get demoBannerLabel => 'Demovärld';
+
+  @override
+  String get demoBannerSubtitle => 'Din dagbok förblir orörd';
 
   @override
   String get demoCopyBody =>

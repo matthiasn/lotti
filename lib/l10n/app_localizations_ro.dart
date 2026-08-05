@@ -5019,7 +5019,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get demoBannerExit => 'Ieșire';
 
   @override
-  String get demoBannerLabel => 'Lume demo — jurnalul dvs. rămâne neatins';
+  String get demoBannerLabel => 'Lume demo';
+
+  @override
+  String get demoBannerSubtitle => 'Jurnalul dvs. rămâne neatins';
 
   @override
   String get demoCopyBody =>

@@ -4970,7 +4970,10 @@ class AppLocalizationsDe extends AppLocalizations {
   String get demoBannerExit => 'Beenden';
 
   @override
-  String get demoBannerLabel => 'Demo-Welt — dein Journal bleibt unberührt';
+  String get demoBannerLabel => 'Demo-Welt';
+
+  @override
+  String get demoBannerSubtitle => 'Dein Journal bleibt unberührt';
 
   @override
   String get demoCopyBody =>

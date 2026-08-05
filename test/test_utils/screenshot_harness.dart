@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -75,6 +76,43 @@ Future<void> loadAppFonts() async {
       loader.addFont(rootBundle.load(font['asset'] as String));
     }
     await loader.load();
+  }
+  await _loadSystemEmojiFont();
+}
+
+/// The platform emoji font a capture needs, loaded from disk.
+///
+/// Emoji are deliberately not bundled: production resolves them through the
+/// fallback chain the design tokens declare (`Apple Color Emoji`,
+/// `Segoe UI Emoji`, `Noto Color Emoji`), which the OS provides — on Linux
+/// with the help of [`flatpak/75-noto-color-emoji.conf`](../../flatpak/75-noto-color-emoji.conf),
+/// installed by `linux/install_emoji_fonts.sh`. The test runner consults
+/// none of that: it sees only what `FontManifest.json` lists, so every
+/// emoji in a capture renders as a tofu box even though the running app
+/// draws it correctly. Loading the file directly closes that gap, and the
+/// family names below are exactly the ones the fallback chain asks for.
+///
+/// Best-effort on purpose. A machine or CI image without an emoji font
+/// still captures — without emoji — rather than failing the suite, because
+/// a missing decorative glyph must never be the reason a screenshot run
+/// goes red.
+Future<void> _loadSystemEmojiFont() async {
+  const candidates = <String, String>{
+    // Linux: Debian/Ubuntu, then Arch, then Fedora.
+    '/usr/share/fonts/truetype/noto/NotoColorEmoji.ttf': 'Noto Color Emoji',
+    '/usr/share/fonts/noto/NotoColorEmoji.ttf': 'Noto Color Emoji',
+    '/usr/share/fonts/google-noto-emoji/NotoColorEmoji.ttf': 'Noto Color Emoji',
+    '/System/Library/Fonts/Apple Color Emoji.ttc': 'Apple Color Emoji',
+    r'C:\Windows\Fonts\seguiemj.ttf': 'Segoe UI Emoji',
+  };
+  for (final entry in candidates.entries) {
+    final file = File(entry.key);
+    if (!file.existsSync()) continue;
+    final bytes = await file.readAsBytes();
+    await (FontLoader(
+      entry.value,
+    )..addFont(Future.value(ByteData.sublistView(bytes)))).load();
+    return;
   }
 }
 
