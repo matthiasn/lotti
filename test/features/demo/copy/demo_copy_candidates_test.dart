@@ -170,6 +170,28 @@ void main() {
     expect(candidates.length, 3);
   });
 
+  test('flagged work is offered too — the scan must cover every EntryFlag '
+      'value, not just none/import', () async {
+    final flagged = TestTaskFactory.create(
+      id: 'flagged-task',
+      title: 'Needs a follow-up',
+    );
+    await world.writeJournalEntity(
+      flagged.copyWith(
+        meta: flagged.meta.copyWith(flag: EntryFlag.followUpNeeded),
+      ),
+    );
+
+    final candidates = await load();
+    expect(
+      candidates.tasks.map((task) => task.meta.id),
+      ['flagged-task'],
+      reason:
+          'a followUpNeeded flag (index 2) must not drop user work from '
+          'the exit sheet',
+    );
+  });
+
   test('deleted entities are never offered', () async {
     final deleted = TestTaskFactory.create(id: 'deleted-task', title: 'Gone');
     await world.writeJournalEntity(

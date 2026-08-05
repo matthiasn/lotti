@@ -66,11 +66,16 @@ entity definitions, and AI configs
 ([`demo_seed_manifest.dart`](../../lib/features/demo/seed/demo_seed_manifest.dart)).
 Every later decision reads that file:
 
-- **Resume vs reseed**: `enterDemo` resumes an existing demo profile only
-  when its manifest's `seedVersion` equals the compiled-in
-  `demoSeedVersion`; a missing, malformed, or stale manifest means wipe and
-  recreate. Bump `demoSeedVersion` whenever the seeded world changes in a
-  way that should retire existing demo profiles.
+- **Resume vs reseed**: `enterDemo` resumes an existing demo profile when
+  its manifest's `seedVersion` equals the compiled-in `demoSeedVersion`. A
+  missing, malformed, or stale manifest means wipe and recreate — but only
+  when the stale world holds no demo-created work: `enterDemo` runs the
+  exit sheet's candidate scan against the non-active world first (via a
+  `WorldHandle`), and a stale world with user work resumes as-is instead,
+  so an app upgrade can never silently destroy something the user made
+  (`resetDemo` remains the explicit, confirmed wipe). Bump
+  `demoSeedVersion` whenever the seeded world changes in a way that should
+  retire existing demo profiles.
 - **Copy-over**: only entities whose ids are *not* in the manifest are
   demo-created and therefore candidates.
 - **Real-AI detection**: an inference provider whose id is *not* in
@@ -88,7 +93,8 @@ stateDiagram-v2
     Seeding --> Absent: seed failed, guest dir removed
     DemoActive --> Resumable: exitDemo (profile KEPT)
     Resumable --> DemoActive: enterDemo, manifest seedVersion current
-    Resumable --> Seeding: enterDemo, manifest missing or stale (wipe first)
+    Resumable --> DemoActive: enterDemo, stale manifest but demo-created work (resume, never destroy)
+    Resumable --> Seeding: enterDemo, manifest missing or stale AND no user work (wipe first)
     Resumable --> Seeding: resetDemo (explicit wipe + reseed)
     DemoActive --> Seeding: resetDemo (exits to real first, then wipes)
     Resumable --> Absent: deleteDemo (only legal from the real world)

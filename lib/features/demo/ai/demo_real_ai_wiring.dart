@@ -48,7 +48,9 @@ Future<void> wireDemoWorldToRealProfile({
       types: const ['Task'],
       starredStatuses: const [true, false],
       privateStatuses: const [true, false],
-      flaggedStatuses: const [0, 1],
+      // All flag values — the query filters `flag IN (...)`, and a flagged
+      // task still needs its profile stamped.
+      flaggedStatuses: [for (final flag in EntryFlag.values) flag.index],
       ids: null,
       limit: _taskPageSize,
       offset: offset,

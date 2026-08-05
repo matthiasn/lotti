@@ -10,9 +10,11 @@ import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
+import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/get_it.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/entity_factories.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
@@ -126,6 +128,38 @@ void main() {
       expect(seededLocales, ['fr']);
       expect(activated, [second.id]);
       expect(registry.rootFor(first).existsSync(), isFalse);
+    });
+
+    test('a stale manifest with demo-created work resumes instead of wiping '
+        '— an app upgrade must never silently destroy user work', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final first = (await gateway.findDemoProfile())!;
+      final root = registry.rootFor(first);
+      // Seeded by an older app version...
+      await DemoSeedManifest(
+        seedVersion: demoSeedVersion - 1,
+        seededAt: DateTime.utc(2026),
+        localeTag: 'en',
+        seededJournalIds: const ['seeded-task'],
+        seededDefinitionIds: const [],
+        seededAiConfigIds: const [],
+      ).write(root);
+      // ...and holding work the user created there since.
+      final work = WorldHandle.open(root);
+      await work.writeJournalEntity(
+        TestTaskFactory.create(id: 'user-task', title: 'My own mission'),
+      );
+      await work.close();
+      activated.clear();
+      seededLocales.clear();
+
+      await gateway.enterDemo(locale: const Locale('fr'));
+
+      expect(seededLocales, isEmpty, reason: 'must resume, never reseed');
+      expect(activated, [first.id]);
+      expect((await gateway.findDemoProfile())!.id, first.id);
+      expect(root.existsSync(), isTrue);
     });
 
     test(

@@ -308,13 +308,21 @@ class DemoDataCopier {
 
   /// Collects the AI configs traveling with the selected providers, in
   /// insertion order: the providers themselves, then user-created models
-  /// bound to them, then user-created profiles whose model slots reference
-  /// a carried model, then user-created skills those profiles assign.
+  /// bound to them, then user-created profiles whose REQUIRED thinking slot
+  /// references a carried model, then user-created skills those profiles
+  /// assign.
   ///
   /// Anchoring the closure on the selected PROVIDERS keeps junk out: rows
   /// the app auto-seeded against a fictional fixture provider (backfilled
   /// models, gated bundled profiles) reference fixture ids and therefore
   /// never join. Anything listed in the manifest is excluded outright.
+  ///
+  /// Carried profiles are PRUNED to the traveling dependency set: an
+  /// optional model slot referencing a model that does not travel (a seeded
+  /// fixture, or a model of an unselected provider) is cleared, and skill
+  /// assignments pointing at seeded fixtures are dropped — a copied profile
+  /// must never reference a config id that will not exist in the real
+  /// world, where it would look configured but silently fail.
   Future<List<AiConfig>> _prepareAiConfigs({
     required Set<String> selectedProviderIds,
     required AiConfigRepository repository,
@@ -345,9 +353,16 @@ class DemoDataCopier {
       for (final config in (await repository.getConfigsByType(
         AiConfigType.inferenceProfile,
       )).whereType<AiConfigInferenceProfile>())
+        // The thinking slot is the profile's required core: a profile whose
+        // thinking model does not travel would arrive fundamentally broken,
+        // so it stays behind entirely.
         if (!seededAiIds.contains(config.id) &&
-            _profileModelSlotIds(config).any(modelIds.contains))
-          config,
+            modelIds.contains(config.thinkingModelId))
+          _pruneProfile(
+            config,
+            carriedModelIds: modelIds,
+            seededAiIds: seededAiIds,
+          ),
     ];
     final skillIds = {
       for (final profile in profiles)
@@ -365,16 +380,27 @@ class DemoDataCopier {
     return [...providers, ...models, ...profiles, ...skills];
   }
 
-  /// Every model-config id a profile's slots reference.
-  static Iterable<String> _profileModelSlotIds(
-    AiConfigInferenceProfile profile,
-  ) => [
-    profile.thinkingModelId,
-    ?profile.thinkingHighEndModelId,
-    ?profile.imageRecognitionModelId,
-    ?profile.transcriptionModelId,
-    ?profile.imageGenerationModelId,
-  ];
+  /// Clears every optional model slot not in [carriedModelIds] and drops
+  /// skill assignments that reference seeded fixture skills, so the copied
+  /// profile only references configs that exist after the crossing.
+  static AiConfigInferenceProfile _pruneProfile(
+    AiConfigInferenceProfile profile, {
+    required Set<String> carriedModelIds,
+    required Set<String> seededAiIds,
+  }) {
+    String? keep(String? modelId) =>
+        modelId != null && carriedModelIds.contains(modelId) ? modelId : null;
+    return profile.copyWith(
+      thinkingHighEndModelId: keep(profile.thinkingHighEndModelId),
+      imageRecognitionModelId: keep(profile.imageRecognitionModelId),
+      transcriptionModelId: keep(profile.transcriptionModelId),
+      imageGenerationModelId: keep(profile.imageGenerationModelId),
+      skillAssignments: [
+        for (final assignment in profile.skillAssignments)
+          if (!seededAiIds.contains(assignment.skillId)) assignment,
+      ],
+    );
+  }
 
   /// Applies [plan] in the REAL generation.
   ///

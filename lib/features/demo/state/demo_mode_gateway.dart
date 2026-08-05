@@ -7,6 +7,7 @@ import 'package:lotti/app_root.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/demo/copy/demo_copy_candidates.dart';
 import 'package:lotti/features/demo/copy/demo_data_copier.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seeder.dart';
@@ -101,13 +102,17 @@ class DemoModeGateway {
   Future<bool> demoProfileExists() async => await findDemoProfile() != null;
 
   /// Enters the demo world: resumes the existing profile when its seed
-  /// manifest matches the current [demoSeedVersion], otherwise wipes and
-  /// recreates it, seeding in [locale]. No-op while the demo is active.
+  /// manifest matches the current [demoSeedVersion]; a stale profile is
+  /// wiped and recreated (seeding in [locale]) ONLY when it holds no
+  /// demo-created work — a stale world with user work resumes as-is, so an
+  /// app upgrade that bumps the seed version can never silently destroy
+  /// something the user made. [resetDemo] remains the explicit, confirmed
+  /// wipe. No-op while the demo is active.
   Future<void> enterDemo({required Locale locale}) async {
     if (isDemoActive) return;
     final existing = await findDemoProfile();
     if (existing != null) {
-      if (await _hasCurrentSeed(existing)) {
+      if (await _hasCurrentSeed(existing) || await _hasUserWork(existing)) {
         await activate(existing.id);
         return;
       }
@@ -213,6 +218,29 @@ class DemoModeGateway {
       return manifest?.isCurrentVersion ?? false;
     } catch (_) {
       return false;
+    }
+  }
+
+  /// Whether the (non-active) demo world at [profile]'s root contains
+  /// demo-created work that a wipe would destroy. Opens the world's storage
+  /// through a [WorldHandle] and runs the same candidate scan the exit
+  /// sheet uses. Errs on the side of preservation: an unreadable world
+  /// reports `true`, so a scan failure can never green-light a deletion.
+  Future<bool> _hasUserWork(Profile profile) async {
+    WorldHandle? handle;
+    try {
+      final root = registry.rootFor(profile);
+      handle = WorldHandle.open(root);
+      final candidates = await loadDemoCopyCandidates(
+        journalDb: handle.journalDb,
+        aiConfigRepository: AiConfigRepository(handle.aiConfigDb),
+        demoRoot: root,
+      );
+      return candidates.isNotEmpty;
+    } catch (_) {
+      return true;
+    } finally {
+      await handle?.close();
     }
   }
 

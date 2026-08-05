@@ -87,7 +87,10 @@ Future<DemoCopyCandidates> loadDemoCopyCandidates({
       types: _candidateRootTypes,
       starredStatuses: const [true, false],
       privateStatuses: const [true, false],
-      flaggedStatuses: const [0, 1],
+      // Every flag value: the query filters `flag IN (...)`, so omitting an
+      // EntryFlag index (e.g. followUpNeeded) would silently drop otherwise
+      // eligible user work from the exit sheet.
+      flaggedStatuses: [for (final flag in EntryFlag.values) flag.index],
       ids: null,
       limit: _candidatePageSize,
       offset: offset,

@@ -627,12 +627,14 @@ void main() {
     AiConfig profile(
       String id,
       String thinkingModelId,
-      List<String> skillIds,
-    ) => AiConfig.inferenceProfile(
+      List<String> skillIds, {
+      String? imageRecognitionModelId,
+    }) => AiConfig.inferenceProfile(
       id: id,
       name: 'Profile $id',
       createdAt: created,
       thinkingModelId: thinkingModelId,
+      imageRecognitionModelId: imageRecognitionModelId,
       skillAssignments: [
         for (final skillId in skillIds)
           SkillAssignment(skillId: skillId, automate: true),
@@ -660,10 +662,24 @@ void main() {
         model('backfill-model', 'fixture-provider'),
         model('user-model', 'user-provider'),
         profile('fixture-profile', 'fixture-model', const []),
-        profile('user-profile', 'user-model', const [
-          'user-skill',
-          'seeded-skill',
-        ]),
+        // User profile whose optional image slot references a FICTIONAL
+        // model and whose assignments include a seeded skill — both must be
+        // pruned on the crossing.
+        profile(
+          'user-profile',
+          'user-model',
+          const ['user-skill', 'seeded-skill'],
+          imageRecognitionModelId: 'fixture-model',
+        ),
+        // User profile whose REQUIRED thinking slot is a fictional model:
+        // it would arrive fundamentally broken, so it must stay behind
+        // even though an optional slot references a carried model.
+        profile(
+          'broken-thinking-profile',
+          'fixture-model',
+          const [],
+          imageRecognitionModelId: 'user-model',
+        ),
         skill('seeded-skill'),
         skill('user-skill'),
       ]) {
@@ -706,8 +722,24 @@ void main() {
         ['user-provider', 'user-model', 'user-profile', 'user-skill'],
         reason:
             'original ids preserved, insertion order providers → models → '
-            'profiles → skills; the seeded skill assignment and the model '
-            'backfilled onto a fixture provider stay behind',
+            'profiles → skills; the seeded skill assignment, the model '
+            'backfilled onto a fixture provider, and the profile whose '
+            'required thinking slot is a fixture model all stay behind',
+      );
+      final carriedProfile = plan.aiConfigs
+          .whereType<AiConfigInferenceProfile>()
+          .single;
+      expect(
+        carriedProfile.imageRecognitionModelId,
+        isNull,
+        reason:
+            'an optional slot referencing a non-traveling model is cleared, '
+            'never left dangling into the demo world',
+      );
+      expect(
+        carriedProfile.skillAssignments.map((a) => a.skillId),
+        ['user-skill'],
+        reason: 'assignments pointing at seeded fixture skills are pruned',
       );
       expect(plan.isEmpty, isFalse);
     });
