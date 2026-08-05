@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -7,10 +8,17 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
+import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
+import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
+import 'package:lotti/features/onboarding/ui/widgets/onboarding_api_key_panel.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/widgets/app_bar/glass_action_button.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -386,6 +394,169 @@ void main() {
         expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
       },
     );
+
+    group('demo real-AI nudge gate', () {
+      /// Overrides putting the widget inside a DEMO world whose manifest
+      /// lists 'fixture-provider' as seeded, with [providers] configured.
+      List<Override> demoOverrides(List<AiConfig> providers) {
+        final repository = MockAiConfigRepository();
+        when(
+          () => repository.watchConfigsByType(AiConfigType.inferenceProvider),
+        ).thenAnswer((_) => Stream.value(providers));
+        return [
+          profileContextProvider.overrideWithValue(
+            ProfileContext.forProfile(
+              profile: Profile(
+                id: 'demo-guest',
+                type: ProfileType.guest,
+                name: 'Demo',
+                dirName: 'demo-guest',
+                createdAt: DateTime(2026, 8, 5),
+              ),
+              root: Directory.systemTemp,
+            ),
+          ),
+          demoSeedManifestProvider.overrideWith(
+            (ref) async => DemoSeedManifest(
+              seedVersion: demoSeedVersion,
+              seededAt: DateTime.utc(2026, 8, 5),
+              localeTag: 'en',
+              seededJournalIds: const [],
+              seededDefinitionIds: const [],
+              seededAiConfigIds: const ['fixture-provider'],
+            ),
+          ),
+          aiConfigRepositoryProvider.overrideWithValue(repository),
+          hasAvailableSkillsProvider((
+            entityId: testTaskEntity.id,
+            linkedFromId: null,
+          )).overrideWith((ref) => Future.value(true)),
+          availableSkillsForEntityProvider((
+            entityId: testTaskEntity.id,
+            linkedFromId: null,
+          )).overrideWith((ref) => Future.value(testSkills)),
+        ];
+      }
+
+      AiConfig provider(String id) => AiConfig.inferenceProvider(
+        id: id,
+        baseUrl: 'https://example.test',
+        apiKey: 'key-$id',
+        name: 'Provider $id',
+        createdAt: DateTime(2026, 8, 5),
+        inferenceProviderType: InferenceProviderType.gemini,
+      );
+
+      testWidgets(
+        'in demo with only seeded fixtures the tap is intercepted: the '
+        'real-AI setup sheet opens INSTEAD of the skills modal',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              UnifiedAiPopUpMenu(
+                journalEntity: testTaskEntity,
+                linkedFromId: null,
+              ),
+              overrides: demoOverrides([provider('fixture-provider')]),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+
+          expect(find.text('AI in the demo is pretend'), findsOneWidget);
+          expect(
+            find.byType(UnifiedAiSkillsList),
+            findsNothing,
+            reason: 'the doomed fixture request must never be offered',
+          );
+        },
+      );
+
+      testWidgets(
+        'completing the guided setup retries the intercepted tap: the '
+        'skills modal opens after the sheet closes',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              UnifiedAiPopUpMenu(
+                journalEntity: testTaskEntity,
+                linkedFromId: null,
+              ),
+              overrides: demoOverrides([provider('fixture-provider')]),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          expect(find.text('AI in the demo is pretend'), findsOneWidget);
+
+          // Walk the guided flow to a connected provider.
+          await tester.tap(find.text('Set up real AI'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.tap(find.text('Gemini'), warnIfMissed: false);
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 400));
+          tester
+              .widget<OnboardingApiKeyPanel>(
+                find.byType(OnboardingApiKeyPanel),
+              )
+              .onConnected();
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 400));
+
+          // Closing the success beat pops the sheet and retries the tap.
+          await tester.tap(find.text('Continue'));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 400));
+          await tester.pump(const Duration(milliseconds: 400));
+
+          expect(
+            find.byType(UnifiedAiSkillsList),
+            findsOneWidget,
+            reason: 'the originally intercepted action must now proceed',
+          );
+        },
+      );
+
+      testWidgets(
+        'in demo with a real provider configured the tap proceeds straight '
+        'to the skills modal',
+        (tester) async {
+          await tester.pumpWidget(
+            buildTestWidget(
+              UnifiedAiPopUpMenu(
+                journalEntity: testTaskEntity,
+                linkedFromId: null,
+              ),
+              overrides: demoOverrides([
+                provider('fixture-provider'),
+                provider('user-real'),
+              ]),
+            ),
+          );
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          await tester.tap(find.byIcon(Icons.assistant_outlined));
+          await tester.pump();
+          await tester.pump(const Duration(milliseconds: 300));
+
+          expect(find.byType(UnifiedAiSkillsList), findsOneWidget);
+          expect(find.text('AI in the demo is pretend'), findsNothing);
+        },
+      );
+    });
 
     testWidgets(
       'renders GlassActionButton when useGlassButton is true (over an image)',

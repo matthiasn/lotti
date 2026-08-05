@@ -4960,6 +4960,158 @@ class AppLocalizationsIt extends AppLocalizations {
   String get deleteDeviceLabel => 'Rimuovi dalla sincronizzazione';
 
   @override
+  String get demoAiNudgeBody =>
+      'Il mondo demo include provider di IA fittizi, quindi le azioni di IA non possono davvero funzionare qui. Collega il tuo account IA per usare l\'IA reale nella demo. La tua chiave resta in questo mondo demo, a meno che tu non la copi quando esci.';
+
+  @override
+  String get demoAiNudgeCancel => 'Non ora';
+
+  @override
+  String get demoAiNudgeConfirm => 'Configura l\'IA reale';
+
+  @override
+  String get demoAiNudgeTitle => 'L\'IA della demo è finta';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'Questo mondo demo ora usa il tuo vero account IA. La tua chiave resta qui, a meno che tu non la copi quando esci.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'L\'IA reale è attiva';
+
+  @override
+  String get demoBannerExit => 'Esci';
+
+  @override
+  String get demoBannerLabel => 'Mondo demo — il tuo diario resta intatto';
+
+  @override
+  String get demoCopyBody =>
+      'Scegli le attività e le voci da copiare nel tuo diario.';
+
+  @override
+  String get demoCopyConfirm => 'Copia ed esci';
+
+  @override
+  String get demoCopyFailedToast =>
+      'La copia del tuo lavoro della demo non è riuscita — è ancora tutto nel mondo demo, quindi puoi riprovare.';
+
+  @override
+  String get demoCopyProgress => 'Copia del tuo lavoro in corso…';
+
+  @override
+  String get demoCopySectionAiSetup => 'Configurazione IA';
+
+  @override
+  String get demoCopySectionEntries => 'Voci del diario';
+
+  @override
+  String get demoCopySectionTasks => 'Attività';
+
+  @override
+  String get demoCopySelectAll => 'Seleziona tutto';
+
+  @override
+  String get demoCopyTitle => 'Porta il tuo lavoro con te';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elementi copiati nel tuo diario',
+      one: '1 elemento copiato nel tuo diario',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoDeleteFailedToast =>
+      'Impossibile eliminare i dati demo — riprova.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Impossibile aprire il mondo demo — riprova.';
+
+  @override
+  String get demoEnteringProgress => 'Preparazione del mondo demo…';
+
+  @override
+  String get demoExitCandidatesError =>
+      'Impossibile controllare il lavoro da copiare. Puoi comunque uscire dalla demo.';
+
+  @override
+  String get demoExitConfirm => 'Esci dalla demo';
+
+  @override
+  String get demoExitFailedToast => 'Impossibile uscire dalla demo — riprova.';
+
+  @override
+  String get demoExitSheetBody =>
+      'Il tuo mondo demo resta salvato — puoi tornare quando vuoi.';
+
+  @override
+  String get demoExitSheetTitle => 'Uscire dalla demo?';
+
+  @override
+  String get demoExitTakeWork => 'Porta il mio lavoro con me…';
+
+  @override
+  String get demoOnboardingExplore => 'Esplora con dati di esempio';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Eliminare il mondo demo e tutti i suoi dati?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Elimina i dati demo';
+
+  @override
+  String get demoSettingsDeleteToast => 'Dati demo eliminati';
+
+  @override
+  String get demoSettingsExitTitle => 'Esci dalla demo';
+
+  @override
+  String get demoSettingsHealthImportUnavailable =>
+      'L\'importazione dei dati sulla salute non è disponibile nel mondo demo';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'L\'IA reale è configurata in questo mondo demo';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Usa il tuo account IA nel mondo demo';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Attiva l\'IA reale nella demo';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Ripristinare il mondo demo? Tutte le tue modifiche lì andranno perse.';
+
+  @override
+  String get demoSettingsResetTitle => 'Ripristina i dati demo';
+
+  @override
+  String get demoSettingsResumeTitle => 'Torna al mondo demo';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'La sincronizzazione non è disponibile nel mondo demo';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Esplora Lotti con dati di esempio — il tuo diario resta intatto';
+
+  @override
+  String get demoSettingsTryTitle => 'Prova il mondo demo';
+
+  @override
+  String get demoTryButton => 'Prova la demo';
+
+  @override
   String get designSystemActionVariantTitle => 'Con l\'azione';
 
   @override

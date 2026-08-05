@@ -169,11 +169,13 @@ class PersistenceLogic implements PersistenceLogicContract {
     required String fromId,
     required String toId,
     bool collapsed = false,
+    bool hidden = false,
     EntryLinkType linkType = EntryLinkType.basic,
   }) => _entries.createLink(
     fromId: fromId,
     toId: toId,
     collapsed: collapsed,
+    hidden: hidden,
     linkType: linkType,
   );
 

@@ -90,6 +90,11 @@ SettingsTreeLabelResolver settingsTreeLabelsFor(BuildContext context) {
         );
       case 'sync':
         return (title: m.settingsMatrixTitle, desc: m.settingsSyncSubtitle);
+      case 'sync-unavailable':
+        return (
+          title: m.settingsMatrixTitle,
+          desc: m.demoSettingsSyncUnavailable,
+        );
       case 'sync/provisioned':
         return (
           title: m.provisionedSyncTitle,

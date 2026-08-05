@@ -514,6 +514,16 @@
       "status": "verified"
     },
     {
+      "id": "settings-sync-unavailable",
+      "title": "Sync unavailable (demo world)",
+      "kind": "settings-page",
+      "source": "lib/features/settings_v2/domain/settings_tree_data.dart",
+      "sourcePattern": "'sync-unavailable'",
+      "locator": "settings:sync-unavailable",
+      "page": "sync-and-data/sync",
+      "status": "documented"
+    },
+    {
       "id": "settings-sync-hub",
       "title": "Sync settings hub",
       "kind": "settings-page",

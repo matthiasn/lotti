@@ -27,6 +27,21 @@ final syncFeatureAvailableProvider = Provider<bool>((ref) {
   }
 });
 
+/// Whether the active world may import device health data. Guest/demo
+/// worlds do not: `HealthImport` is never registered there, so health
+/// surfaces (settings tree leaf, import page, dashboard chart imports)
+/// must gate on this instead of resolving the absent singleton.
+///
+/// Falls back to `true` when no profile context is overridden, mirroring
+/// [syncFeatureAvailableProvider] for the same test-harness reason.
+final healthImportFeatureAvailableProvider = Provider<bool>((ref) {
+  try {
+    return ref.watch(profileContextProvider).capabilities.healthImportEnabled;
+  } catch (_) {
+    return true;
+  }
+});
+
 /// Whether the active world is a guest/demo world. Drives the persistent
 /// demo banner and demo-only affordances. Falls back to `false` (real
 /// world) when no profile context is overridden, mirroring

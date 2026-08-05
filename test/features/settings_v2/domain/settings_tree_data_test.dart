@@ -14,6 +14,7 @@ List<SettingsNode> _tree({
   bool enableWhatsNew = true,
   bool enableSpeechTts = false,
   bool enableHealthImport = false,
+  bool syncFeatureAvailable = true,
 }) => buildSettingsTree(
   labels: _labels,
   enableHabits: enableHabits,
@@ -22,6 +23,7 @@ List<SettingsNode> _tree({
   enableWhatsNew: enableWhatsNew,
   enableSpeechTts: enableSpeechTts,
   enableHealthImport: enableHealthImport,
+  syncFeatureAvailable: syncFeatureAvailable,
 );
 
 SettingsNode? _find(List<SettingsNode> nodes, String id) {
@@ -211,6 +213,48 @@ void main() {
         );
       },
     );
+
+    test(
+      'guest worlds swap the sync branch for an inert explainer tile — '
+      'even with enableMatrix on',
+      () {
+        // Guest/demo worlds have no Matrix stack, so no sync id may
+        // survive: any surviving leaf would route to a panel that
+        // resolves the absent MatrixService.
+        final tree = _tree(syncFeatureAvailable: false);
+        final ids = _ids(tree);
+        expect(ids, isNot(contains('sync')));
+        expect(ids, isNot(contains('sync/provisioned')));
+        expect(ids, isNot(contains('sync/outbox')));
+        expect(ids, isNot(contains('sync/backfill')));
+        expect(ids, isNot(contains('sync/conflicts')));
+        expect(ids, isNot(contains('sync/matrix-maintenance')));
+
+        // The replacement tile is a leaf with neither panel nor action —
+        // the shape both tap handlers treat as inert.
+        final tile = _find(tree, 'sync-unavailable');
+        expect(tile, isNotNull);
+        expect(tile!.hasChildren, isFalse);
+        expect(tile.panel, isNull);
+        expect(tile.action, isNull);
+
+        // It occupies the sync slot in the root order (below agents /
+        // daily-os, above definitions).
+        final rootIds = tree.map((n) => n.id).toList();
+        expect(
+          rootIds.indexOf('sync-unavailable'),
+          rootIds.indexOf('daily-os') + 1,
+        );
+      },
+    );
+
+    test('real worlds never grow the sync-unavailable tile', () {
+      expect(_ids(_tree()), isNot(contains('sync-unavailable')));
+      expect(
+        _ids(_tree(enableMatrix: false)),
+        isNot(contains('sync-unavailable')),
+      );
+    });
   });
 
   group('buildSettingsTree — enableHealthImport', () {

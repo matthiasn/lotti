@@ -6,6 +6,8 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -68,6 +70,7 @@ class OnboardingWelcomeModal {
     VoidCallback? onCompleted,
     OnboardingMetricsRepository? metrics,
     OnboardingHeroStyle heroStyle = OnboardingHeroStyle.constellation,
+    DemoModeGateway? demoGateway,
   }) async {
     final repo =
         metrics ??
@@ -80,6 +83,9 @@ class OnboardingWelcomeModal {
     // The task the in-panel first-task step landed — carried out of the modal
     // route so the real task page can be opened once the modal has popped.
     String? createdTaskId;
+    // Set when the user chose "Explore with sample data" on the welcome
+    // step: the modal pops and the demo world opens instead.
+    var demoRequested = false;
     final dismissLabel = MaterialLocalizations.of(
       context,
     ).modalBarrierDismissLabel;
@@ -128,12 +134,30 @@ class OnboardingWelcomeModal {
                 // all (a total structuring failure) — finish onboarding.
                 onComplete: () => Navigator.of(routeContext).pop(),
                 onSkip: () => Navigator.of(routeContext).pop(),
+                // Demo entry: pop the modal; the demo world opens below,
+                // once the route is gone.
+                onExploreDemo: () {
+                  demoRequested = true;
+                  Navigator.of(routeContext).pop();
+                },
               ),
             ),
           );
         },
       ),
     );
+
+    if (demoRequested) {
+      // Deliberately records NEITHER completed nor skipped: exploring the
+      // demo must not retire the welcome, so it keeps offering itself when
+      // the user returns to their real world. The shown-count bump the
+      // caller recorded before opening stands — `recordShown` counts actual
+      // displays by design, and this display genuinely happened.
+      if (context.mounted) {
+        await launchDemoEnter(context, gateway: demoGateway);
+      }
+      return;
+    }
 
     if (connectedType != null) {
       // The user completed the essential setup (a provider + models were
@@ -180,6 +204,7 @@ class _OnboardingScaffold extends StatelessWidget {
     required this.onTaskCreated,
     required this.onComplete,
     required this.onSkip,
+    required this.onExploreDemo,
   });
 
   final OnboardingHeroStyle heroStyle;
@@ -188,6 +213,7 @@ class _OnboardingScaffold extends StatelessWidget {
   final void Function(String taskId) onTaskCreated;
   final VoidCallback onComplete;
   final VoidCallback onSkip;
+  final VoidCallback onExploreDemo;
 
   @override
   Widget build(BuildContext context) {
@@ -211,6 +237,7 @@ class _OnboardingScaffold extends StatelessWidget {
         onTaskCreated: onTaskCreated,
         onComplete: onComplete,
         onSkip: onSkip,
+        onExploreDemo: onExploreDemo,
       ),
     );
 
@@ -277,6 +304,7 @@ class _OnboardingFlow extends StatefulWidget {
     required this.onTaskCreated,
     required this.onComplete,
     required this.onSkip,
+    required this.onExploreDemo,
   });
 
   final OnboardingHeroStyle heroStyle;
@@ -285,6 +313,7 @@ class _OnboardingFlow extends StatefulWidget {
   final void Function(String taskId) onTaskCreated;
   final VoidCallback onComplete;
   final VoidCallback onSkip;
+  final VoidCallback onExploreDemo;
 
   @override
   State<_OnboardingFlow> createState() => _OnboardingFlowState();
@@ -357,6 +386,7 @@ class _OnboardingFlowState extends State<_OnboardingFlow> {
             widget.onProviderModalShown();
           },
           onSkip: widget.onSkip,
+          onExploreDemo: widget.onExploreDemo,
         );
       case _FlowStep.connect:
         return OnboardingConnectPanel(

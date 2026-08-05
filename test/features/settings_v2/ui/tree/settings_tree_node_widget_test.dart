@@ -47,6 +47,15 @@ SettingsNode _manualAction() => const SettingsNode(
   action: SettingsNodeAction.openManual,
 );
 
+/// The shape `buildSettingsTree` emits for demo worlds: a leaf with
+/// neither panel nor action, which both tap handlers treat as inert.
+SettingsNode _syncUnavailableTile() => const SettingsNode(
+  id: 'sync-unavailable',
+  icon: Icons.sync_disabled_rounded,
+  title: 'Sync',
+  desc: 'Sync is not available in the demo workspace',
+);
+
 SettingsNode _branchWithHiddenChildren() => const SettingsNode(
   id: 'sync',
   icon: Icons.sync_rounded,
@@ -161,6 +170,19 @@ void main() {
       final path = _containerOf(tester).read(settingsTreePathProvider);
       expect(path, ['flags']);
     });
+
+    testWidgets(
+      'tapping an explainer leaf (no panel, no action) is inert — '
+      'the demo-world sync-unavailable tile never selects',
+      (tester) async {
+        await _pumpNode(tester, node: _syncUnavailableTile());
+        await tester.tap(find.byType(SettingsTreeRow));
+        await tester.pump();
+        // Selecting it would flash an empty detail pane; the row must
+        // leave the tree path untouched instead.
+        expect(_containerOf(tester).read(settingsTreePathProvider), isEmpty);
+      },
+    );
 
     testWidgets('tapping the Manual action opens it without selecting a row', (
       tester,

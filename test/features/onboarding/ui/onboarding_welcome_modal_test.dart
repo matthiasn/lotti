@@ -11,6 +11,7 @@ import 'package:lotti/features/ai/ui/settings/services/connection_verifier_servi
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -78,7 +79,11 @@ void main() {
     }
   });
 
-  Widget host({VoidCallback? onDismiss, VoidCallback? onCompleted}) {
+  Widget host({
+    VoidCallback? onDismiss,
+    VoidCallback? onCompleted,
+    DemoModeGateway? demoGateway,
+  }) {
     return Builder(
       builder: (context) => ElevatedButton(
         onPressed: () => OnboardingWelcomeModal.show(
@@ -86,6 +91,7 @@ void main() {
           metrics: repo,
           onDismiss: onDismiss ?? () {},
           onCompleted: onCompleted,
+          demoGateway: demoGateway,
         ),
         child: const Text('open'),
       ),
@@ -378,6 +384,42 @@ void main() {
     expect(dismissed, isTrue);
     final state = await repo.funnelState();
     expect(state.reached(OnboardingEventName.welcomeSkipped), isTrue);
+  });
+
+  testWidgets('Explore with sample data pops the modal, enters the demo, '
+      'and records NEITHER completed nor skipped', (tester) async {
+    var dismissed = false;
+    var completed = false;
+    final gateway = MockDemoModeGateway();
+    when(
+      () => gateway.enterDemo(locale: any(named: 'locale')),
+    ).thenAnswer((_) async {});
+
+    await openWelcome(
+      tester,
+      child: host(
+        onDismiss: () => dismissed = true,
+        onCompleted: () => completed = true,
+        demoGateway: gateway,
+      ),
+    );
+    await tester.ensureVisible(find.text('Explore with sample data'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Explore with sample data'));
+    // Bounded pumps: the demo-entry progress route's spinner never settles.
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+    await tester.pump(const Duration(milliseconds: 400));
+
+    verify(() => gateway.enterDemo(locale: any(named: 'locale'))).called(1);
+    expect(dismissed, isFalse, reason: 'demo entry is not a skip');
+    expect(completed, isFalse, reason: 'demo entry is not a completion');
+    final state = await repo.funnelState();
+    expect(
+      state.reached(OnboardingEventName.welcomeSkipped),
+      isFalse,
+      reason: 'the FTUE auto-show budget must survive a demo detour',
+    );
   });
 
   testWidgets(

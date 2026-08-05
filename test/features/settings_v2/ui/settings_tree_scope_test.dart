@@ -1,5 +1,10 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_index.dart';
 import 'package:lotti/features/settings_v2/ui/settings_tree_scope.dart';
@@ -208,5 +213,52 @@ void main() {
         expect(scope.index.findById('definitions/categories'), isNotNull);
       },
     );
+
+    testWidgets(
+      'guest world publishes the sync-unavailable tile instead of the '
+      'sync branch',
+      (tester) async {
+        final mockJournalDb = MockJournalDb();
+        registerFallbackValue('');
+
+        late SettingsTreeScope scope;
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            SettingsTreeScopeHost(
+              child: Builder(
+                builder: (context) {
+                  scope = SettingsTreeScope.maybeOf(context)!;
+                  return const SizedBox.shrink();
+                },
+              ),
+            ),
+            overrides: [
+              journalDbProvider.overrideWithValue(mockJournalDb),
+              profileContextProvider.overrideWithValue(_guestContext()),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump();
+
+        expect(scope.index.findById('sync'), isNull);
+        expect(scope.index.findById('sync/outbox'), isNull);
+        final tile = scope.index.findById('sync-unavailable');
+        expect(tile, isNotNull);
+        expect(tile!.panel, isNull);
+        expect(tile.action, isNull);
+      },
+    );
   });
 }
+
+ProfileContext _guestContext() => ProfileContext.forProfile(
+  profile: Profile(
+    id: 'demo-guest',
+    type: ProfileType.guest,
+    name: 'Demo',
+    dirName: 'guest_profiles/demo-guest',
+    createdAt: DateTime(2026),
+  ),
+  root: Directory.systemTemp,
+);

@@ -74,6 +74,14 @@ class _SettingsTreeNodeWidgetState
 
     void handleTap() {
       if (handleSettingsNodeAction(ref, node)) return;
+      // A leaf with neither a panel nor an action (the action case was
+      // handled above) is a pure explainer tile — e.g. `sync-unavailable`
+      // in demo worlds. Selecting it would only flash an empty detail
+      // pane, so the row is inert: the same contract the mobile
+      // drill-down applies to nodes without a registered URL.
+      if (!node.hasChildren && node.panel == null) {
+        return;
+      }
       ref
           .read(settingsTreePathProvider.notifier)
           .onNodeTap(

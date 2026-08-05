@@ -32,6 +32,7 @@ void main() {
       final container = containerWith(contextOfType(ProfileType.real));
 
       expect(container.read(syncFeatureAvailableProvider), isTrue);
+      expect(container.read(healthImportFeatureAvailableProvider), isTrue);
       expect(container.read(demoModeActiveProvider), isFalse);
     });
 
@@ -39,6 +40,7 @@ void main() {
       final container = containerWith(contextOfType(ProfileType.guest));
 
       expect(container.read(syncFeatureAvailableProvider), isFalse);
+      expect(container.read(healthImportFeatureAvailableProvider), isFalse);
       expect(container.read(demoModeActiveProvider), isTrue);
     });
 
@@ -63,6 +65,7 @@ void main() {
       addTearDown(container.dispose);
 
       expect(container.read(syncFeatureAvailableProvider), isTrue);
+      expect(container.read(healthImportFeatureAvailableProvider), isTrue);
       expect(container.read(demoModeActiveProvider), isFalse);
     });
   });

@@ -38,7 +38,12 @@ workoutChartDataControllerProvider = AsyncNotifierProvider.autoDispose
 
 class WorkoutChartDataController extends AsyncNotifier<List<JournalEntity>> {
   WorkoutChartDataController(this._providerArgs) {
-    getIt<HealthImport>().getWorkoutsHealthDataDelta();
+    // Guest/demo worlds never register `HealthImport` (device health data
+    // must not bleed into a play world) — skip the device delta fetch and
+    // chart whatever the world's database holds.
+    if (getIt.isRegistered<HealthImport>()) {
+      getIt<HealthImport>().getWorkoutsHealthDataDelta();
+    }
   }
 
   final ({DateTime rangeStart, DateTime rangeEnd}) _providerArgs;

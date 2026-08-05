@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
+import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/components/chips/active_filter_chip.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
@@ -566,6 +567,10 @@ class _TasksTabPageBodyState extends ConsumerState<_TasksTabPageBody> {
                                             title: context
                                                 .messages
                                                 .taskShowcaseNoResults,
+                                            // Self-gating: only outside demo
+                                            // mode AND with a truly empty
+                                            // journal (never a filter miss).
+                                            action: const DemoTryButton(),
                                           ),
                                         ),
                                     itemBuilder: (context, item, index) {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 import 'package:lotti/features/settings_v2/domain/settings_tree_data.dart';
 import 'package:lotti/features/settings_v2/ui/labels/settings_tree_labels.dart';
@@ -64,6 +65,7 @@ class SettingsTreeView extends ConsumerWidget {
           ref.watch(configFlagProvider(enableMatrixFlag)).value ?? false,
       enableWhatsNew:
           ref.watch(configFlagProvider(enableWhatsNewFlag)).value ?? false,
+      syncFeatureAvailable: ref.watch(syncFeatureAvailableProvider),
     );
   }
 }

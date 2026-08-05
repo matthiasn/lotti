@@ -4912,6 +4912,159 @@ class AppLocalizationsNl extends AppLocalizations {
   String get deleteDeviceLabel => 'Uit synchronisatie verwijderen';
 
   @override
+  String get demoAiNudgeBody =>
+      'De demowereld bevat fictieve AI-providers, dus AI-acties kunnen hier niet echt draaien. Koppel je eigen AI-account om echte AI in de demo te gebruiken. Je sleutel blijft in deze demowereld, tenzij je hem meekopieert bij het verlaten.';
+
+  @override
+  String get demoAiNudgeCancel => 'Niet nu';
+
+  @override
+  String get demoAiNudgeConfirm => 'Echte AI instellen';
+
+  @override
+  String get demoAiNudgeTitle => 'De AI in de demo doet alsof';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'Deze demowereld gebruikt nu je echte AI-account. Je sleutel blijft hier, tenzij je hem meekopieert bij het verlaten.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'Echte AI is actief';
+
+  @override
+  String get demoBannerExit => 'Afsluiten';
+
+  @override
+  String get demoBannerLabel => 'Demowereld — je dagboek blijft onaangeroerd';
+
+  @override
+  String get demoCopyBody =>
+      'Kies de taken en notities die je naar je dagboek wilt kopiëren.';
+
+  @override
+  String get demoCopyConfirm => 'Kopiëren en afsluiten';
+
+  @override
+  String get demoCopyFailedToast =>
+      'Het kopiëren van je demowerk is mislukt — alles staat nog in de demowereld, dus je kunt het opnieuw proberen.';
+
+  @override
+  String get demoCopyProgress => 'Je werk wordt gekopieerd…';
+
+  @override
+  String get demoCopySectionAiSetup => 'AI-configuratie';
+
+  @override
+  String get demoCopySectionEntries => 'Dagboeknotities';
+
+  @override
+  String get demoCopySectionTasks => 'Taken';
+
+  @override
+  String get demoCopySelectAll => 'Alles selecteren';
+
+  @override
+  String get demoCopyTitle => 'Mijn werk meenemen';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items naar je dagboek gekopieerd',
+      one: '1 item naar je dagboek gekopieerd',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoDeleteFailedToast =>
+      'Kon de demogegevens niet verwijderen — probeer het opnieuw.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Kon de demowereld niet openen — probeer het opnieuw.';
+
+  @override
+  String get demoEnteringProgress => 'Demowereld wordt klaargezet…';
+
+  @override
+  String get demoExitCandidatesError =>
+      'Kon je werk om te kopiëren niet controleren. Je kunt de demo toch verlaten.';
+
+  @override
+  String get demoExitConfirm => 'Demo afsluiten';
+
+  @override
+  String get demoExitFailedToast =>
+      'Kon de demo niet verlaten — probeer het opnieuw.';
+
+  @override
+  String get demoExitSheetBody =>
+      'Je demowereld blijft bewaard — je kunt altijd terugkomen.';
+
+  @override
+  String get demoExitSheetTitle => 'Demo verlaten?';
+
+  @override
+  String get demoExitTakeWork => 'Mijn werk meenemen…';
+
+  @override
+  String get demoOnboardingExplore => 'Verkennen met voorbeeldgegevens';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Demowereld en alle bijbehorende gegevens verwijderen?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Demogegevens verwijderen';
+
+  @override
+  String get demoSettingsDeleteToast => 'Demogegevens verwijderd';
+
+  @override
+  String get demoSettingsExitTitle => 'Demo afsluiten';
+
+  @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Import van gezondheidsgegevens is niet beschikbaar in de demowereld';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'Echte AI is ingesteld in deze demowereld';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Gebruik je eigen AI-account in de demowereld';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Echte AI in de demo inschakelen';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Demowereld opnieuw instellen? Al je wijzigingen daar gaan verloren.';
+
+  @override
+  String get demoSettingsResetTitle => 'Demogegevens opnieuw instellen';
+
+  @override
+  String get demoSettingsResumeTitle => 'Terug naar de demowereld';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Synchronisatie is niet beschikbaar in de demowereld';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Verken Lotti met voorbeeldgegevens — je dagboek blijft onaangeroerd';
+
+  @override
+  String get demoSettingsTryTitle => 'Demowereld uitproberen';
+
+  @override
+  String get demoTryButton => 'Demo uitproberen';
+
+  @override
   String get designSystemActionVariantTitle => 'Met actie';
 
   @override

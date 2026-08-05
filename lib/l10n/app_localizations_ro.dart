@@ -4984,6 +4984,160 @@ class AppLocalizationsRo extends AppLocalizations {
   String get deleteDeviceLabel => 'Eliminați din sincronizare';
 
   @override
+  String get demoAiNudgeBody =>
+      'Lumea demo include furnizori de IA fictivi, așa că acțiunile de IA nu pot rula cu adevărat aici. Conectați contul dvs. de IA pentru a folosi IA reală în demo. Cheia dvs. rămâne în această lume demo, cu excepția cazului în care o copiați la ieșire.';
+
+  @override
+  String get demoAiNudgeCancel => 'Nu acum';
+
+  @override
+  String get demoAiNudgeConfirm => 'Configurați IA reală';
+
+  @override
+  String get demoAiNudgeTitle => 'IA din demo este fictivă';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'Această lume demo folosește acum contul dvs. real de IA. Cheia dvs. rămâne aici, cu excepția cazului în care o copiați la ieșire.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'IA reală este activă';
+
+  @override
+  String get demoBannerExit => 'Ieșire';
+
+  @override
+  String get demoBannerLabel => 'Lume demo — jurnalul dvs. rămâne neatins';
+
+  @override
+  String get demoCopyBody =>
+      'Alegeți sarcinile și însemnările de copiat în jurnalul dvs.';
+
+  @override
+  String get demoCopyConfirm => 'Copiați și ieșiți';
+
+  @override
+  String get demoCopyFailedToast =>
+      'Copierea lucrului din demo nu a reușit — totul este încă în lumea demo, așa că puteți încerca din nou.';
+
+  @override
+  String get demoCopyProgress => 'Se copiază munca dvs.…';
+
+  @override
+  String get demoCopySectionAiSetup => 'Configurare IA';
+
+  @override
+  String get demoCopySectionEntries => 'Însemnări în jurnal';
+
+  @override
+  String get demoCopySectionTasks => 'Sarcini';
+
+  @override
+  String get demoCopySelectAll => 'Selectați tot';
+
+  @override
+  String get demoCopyTitle => 'Luați-vă munca cu dvs.';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de elemente copiate în jurnalul dvs.',
+      few: '$count elemente copiate în jurnalul dvs.',
+      one: '1 element copiat în jurnalul dvs.',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoDeleteFailedToast =>
+      'Datele demo nu au putut fi șterse — încercați din nou.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Lumea demo nu a putut fi deschisă — încercați din nou.';
+
+  @override
+  String get demoEnteringProgress => 'Se pregătește lumea demo…';
+
+  @override
+  String get demoExitCandidatesError =>
+      'Nu s-a putut verifica lucrul de copiat. Puteți totuși ieși din demo.';
+
+  @override
+  String get demoExitConfirm => 'Ieșiți din demo';
+
+  @override
+  String get demoExitFailedToast =>
+      'Ieșirea din demo nu a putut fi finalizată — încercați din nou.';
+
+  @override
+  String get demoExitSheetBody =>
+      'Lumea dvs. demo rămâne salvată — puteți reveni oricând.';
+
+  @override
+  String get demoExitSheetTitle => 'Părăsiți demo-ul?';
+
+  @override
+  String get demoExitTakeWork => 'Luați-vă munca cu dvs.…';
+
+  @override
+  String get demoOnboardingExplore => 'Explorați cu date de exemplu';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Ștergeți lumea demo și toate datele ei?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Ștergeți datele demo';
+
+  @override
+  String get demoSettingsDeleteToast => 'Datele demo au fost șterse';
+
+  @override
+  String get demoSettingsExitTitle => 'Ieșiți din demo';
+
+  @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Importul datelor de sănătate nu este disponibil în lumea demo';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'IA reală este configurată în această lume demo';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Folosiți contul dvs. de IA în lumea demo';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Activați IA reală în demo';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Resetați lumea demo? Toate modificările dvs. de acolo se vor pierde.';
+
+  @override
+  String get demoSettingsResetTitle => 'Resetați datele demo';
+
+  @override
+  String get demoSettingsResumeTitle => 'Reveniți la lumea demo';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Sincronizarea nu este disponibilă în lumea demo';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Explorați Lotti cu date de exemplu — jurnalul dvs. rămâne neatins';
+
+  @override
+  String get demoSettingsTryTitle => 'Încercați lumea demo';
+
+  @override
+  String get demoTryButton => 'Încercați demo-ul';
+
+  @override
   String get designSystemActionVariantTitle => 'Cu acțiune';
 
   @override

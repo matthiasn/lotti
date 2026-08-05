@@ -23,7 +23,7 @@ class DemoWorldCreator {
   /// and the real world stays active.
   Future<Profile> createAndActivate({
     required Future<void> Function(WorldHandle world) seed,
-    String name = 'Demo',
+    required String name,
   }) async {
     final profile = await registry.createGuestProfile(name: name);
     final world = WorldHandle.open(registry.rootFor(profile));

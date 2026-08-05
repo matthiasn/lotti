@@ -1,16 +1,19 @@
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/task_filters/design_system_task_filter_sheet.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/model/task_list_detail_models.dart';
@@ -40,9 +43,10 @@ void main() {
 
   tearDown(tearDownTestGetIt);
 
-  Widget wrap(Widget child) {
+  Widget wrap(Widget child, {List<Override> extraOverrides = const []}) {
     return ProviderScope(
       overrides: [
+        ...extraOverrides,
         taskLiveDataProvider.overrideWith(
           // ignore: avoid_redundant_argument_values
           (ref, taskId) => Future.value(null),
@@ -514,7 +518,10 @@ void main() {
   group('TaskListPane chrome', () {
     // A pane over zero tasks: every chrome test also implicitly renders the
     // empty branch, and the empty-state test asserts on it directly.
-    Future<void> pumpEmptyPane(WidgetTester tester) async {
+    Future<void> pumpEmptyPane(
+      WidgetTester tester, {
+      List<Override> extraOverrides = const [],
+    }) async {
       final state = TaskListDetailState(
         data: const TaskListData(
           tasks: [],
@@ -537,6 +544,7 @@ void main() {
             onSearchCleared: () {},
             onFilterPressed: () {},
           ),
+          extraOverrides: extraOverrides,
         ),
       );
       await tester.pump();
@@ -584,6 +592,48 @@ void main() {
           ),
           findsOneWidget,
         );
+        // Without demo plumbing the try-the-demo CTA stays hidden — an
+        // empty RESULT (filter miss) must never advertise the demo.
+        expect(find.text('Try the demo'), findsNothing);
+      },
+    );
+
+    testWidgets(
+      'the empty state carries the demo CTA when the journal is truly '
+      'empty and the demo is not active',
+      (tester) async {
+        await pumpEmptyPane(
+          tester,
+          extraOverrides: [
+            demoModeActiveProvider.overrideWithValue(false),
+            demoJournalEmptyProvider.overrideWith((ref) async => true),
+          ],
+        );
+        await tester.pump();
+
+        expect(
+          find.descendant(
+            of: find.byType(DesignSystemEmptyState),
+            matching: find.text('Try the demo'),
+          ),
+          findsOneWidget,
+        );
+      },
+    );
+
+    testWidgets(
+      'no demo CTA inside the demo world even with an empty list',
+      (tester) async {
+        await pumpEmptyPane(
+          tester,
+          extraOverrides: [
+            demoModeActiveProvider.overrideWithValue(true),
+            demoJournalEmptyProvider.overrideWith((ref) async => true),
+          ],
+        );
+        await tester.pump();
+
+        expect(find.text('Try the demo'), findsNothing);
       },
     );
   });

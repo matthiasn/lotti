@@ -1,19 +1,26 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:http/testing.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/database/onboarding_metrics_db.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/ui/settings/services/connection_verifier_service.dart';
 import 'package:lotti/features/categories/repository/categories_repository.dart';
+import 'package:lotti/features/demo/ai/demo_ai_gate.dart';
+import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/onboarding/model/onboarding_event.dart';
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/onboarding/ui/onboarding_settings_panel.dart';
 import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -327,6 +334,351 @@ void main() {
         verify(mockRepo.funnelState).called(1);
       },
     );
+  });
+
+  group('OnboardingSettingsBody — demo rows', () {
+    late MockDemoModeGateway gateway;
+
+    setUp(() async {
+      await getIt.reset();
+      gateway = MockDemoModeGateway();
+    });
+
+    tearDown(() async {
+      await getIt.reset();
+    });
+
+    Future<void> pumpWithGateway(
+      WidgetTester tester, {
+      List<Override> overrides = const [],
+    }) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          OnboardingSettingsBody(demoGateway: gateway),
+          mediaQueryData: mq,
+          overrides: overrides,
+        ),
+      );
+      // Let the async demoProfileExists + funnel reads resolve.
+      await tester.pump(const Duration(milliseconds: 20));
+      await tester.pump(const Duration(milliseconds: 20));
+    }
+
+    /// Overrides resolving the real-AI availability gate to [providers].
+    List<Override> realAiOverrides(List<AiConfig> providers) {
+      final repository = MockAiConfigRepository();
+      when(
+        () => repository.watchConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) => Stream.value(providers));
+      return [
+        aiConfigRepositoryProvider.overrideWithValue(repository),
+        demoSeedManifestProvider.overrideWith(
+          (ref) async => DemoSeedManifest(
+            seedVersion: demoSeedVersion,
+            seededAt: DateTime.utc(2026, 8, 5),
+            localeTag: 'en',
+            seededJournalIds: const [],
+            seededDefinitionIds: const [],
+            seededAiConfigIds: const ['fixture-provider'],
+          ),
+        ),
+      ];
+    }
+
+    testWidgets('without a gateway (no ProfileSwitcherScope) no demo rows '
+        'render', (tester) async {
+      await pumpUntilLoaded(tester, find.text('Not started yet'));
+      expect(find.text('Try the demo workspace'), findsNothing);
+      expect(find.text('Exit demo'), findsNothing);
+      expect(find.text('Reset demo data'), findsNothing);
+      expect(find.text('Delete demo data'), findsNothing);
+    });
+
+    testWidgets('real world, no demo yet: only the Try row shows, and '
+        'tapping it enters the demo', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(false);
+      when(gateway.demoProfileExists).thenAnswer((_) async => false);
+      when(
+        () => gateway.enterDemo(locale: any(named: 'locale')),
+      ).thenAnswer((_) async {});
+
+      await pumpWithGateway(tester);
+
+      expect(find.text('Try the demo workspace'), findsOneWidget);
+      expect(find.text('Return to the demo workspace'), findsNothing);
+      expect(find.text('Exit demo'), findsNothing);
+      expect(find.text('Reset demo data'), findsNothing);
+      expect(find.text('Delete demo data'), findsNothing);
+
+      await tester.ensureVisible(find.text('Try the demo workspace'));
+      await tester.tap(find.text('Try the demo workspace'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      verify(() => gateway.enterDemo(locale: any(named: 'locale'))).called(1);
+    });
+
+    testWidgets('real world with an existing demo: Return + Reset + Delete', (
+      tester,
+    ) async {
+      when(() => gateway.isDemoActive).thenReturn(false);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(tester);
+
+      expect(find.text('Return to the demo workspace'), findsOneWidget);
+      expect(find.text('Reset demo data'), findsOneWidget);
+      expect(find.text('Delete demo data'), findsOneWidget);
+      expect(find.text('Exit demo'), findsNothing);
+    });
+
+    testWidgets('inside the demo: Exit + Reset only', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(true);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(tester);
+
+      expect(find.text('Exit demo'), findsOneWidget);
+      expect(find.text('Reset demo data'), findsOneWidget);
+      expect(find.text('Try the demo workspace'), findsNothing);
+      expect(find.text('Return to the demo workspace'), findsNothing);
+      expect(find.text('Delete demo data'), findsNothing);
+    });
+
+    AiConfig aiProvider(String id) => AiConfig.inferenceProvider(
+      id: id,
+      baseUrl: 'https://example.test',
+      apiKey: 'key-$id',
+      name: 'Provider $id',
+      createdAt: DateTime(2026, 8, 5),
+      inferenceProviderType: InferenceProviderType.gemini,
+    );
+
+    testWidgets('inside the demo with only fixture providers: the real-AI '
+        'row invites setup and opens the guided sheet', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(true);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(
+        tester,
+        overrides: realAiOverrides([aiProvider('fixture-provider')]),
+      );
+
+      expect(find.text('Enable real AI in the demo'), findsOneWidget);
+      expect(
+        find.text('Use your own AI account inside the demo world'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Real AI is set up in this demo world'),
+        findsNothing,
+      );
+
+      await tester.ensureVisible(find.text('Enable real AI in the demo'));
+      await tester.tap(find.text('Enable real AI in the demo'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      expect(find.text('AI in the demo is pretend'), findsOneWidget);
+    });
+
+    testWidgets('inside the demo with a real provider: the row becomes a '
+        'status row', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(true);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(
+        tester,
+        overrides: realAiOverrides([
+          aiProvider('fixture-provider'),
+          aiProvider('user-real'),
+        ]),
+      );
+
+      expect(find.text('Enable real AI in the demo'), findsOneWidget);
+      expect(
+        find.text('Real AI is set up in this demo world'),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Use your own AI account inside the demo world'),
+        findsNothing,
+      );
+    });
+
+    testWidgets('outside the demo the real-AI row never renders', (
+      tester,
+    ) async {
+      when(() => gateway.isDemoActive).thenReturn(false);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(
+        tester,
+        overrides: realAiOverrides([aiProvider('fixture-provider')]),
+      );
+
+      expect(find.text('Enable real AI in the demo'), findsNothing);
+    });
+
+    testWidgets('delete asks for confirmation, deletes, toasts, and the row '
+        'set collapses back to Try', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(false);
+      var exists = true;
+      when(gateway.demoProfileExists).thenAnswer((_) async => exists);
+      when(gateway.deleteDemo).thenAnswer((_) async => exists = false);
+
+      await pumpWithGateway(tester);
+
+      await tester.ensureVisible(find.text('Delete demo data'));
+      await tester.tap(find.text('Delete demo data'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text('Delete the demo world and everything in it?'),
+        findsOneWidget,
+      );
+
+      // The confirm button carries the row title as its label.
+      await tester.tap(find.text('Delete demo data').last);
+      await tester.pumpAndSettle();
+
+      verify(gateway.deleteDemo).called(1);
+      expect(find.text('Demo data deleted'), findsOneWidget);
+      expect(find.text('Try the demo workspace'), findsOneWidget);
+      expect(find.text('Delete demo data'), findsNothing);
+    });
+
+    testWidgets('a failed delete surfaces an error toast and keeps the demo '
+        'rows instead of failing silently', (tester) async {
+      final logger = MockDomainLogger();
+      getIt.registerSingleton<DomainLogger>(logger);
+      when(() => gateway.isDemoActive).thenReturn(false);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+      when(gateway.deleteDemo).thenAnswer(
+        (_) async => throw StateError('directory locked'),
+      );
+
+      await pumpWithGateway(tester);
+
+      await tester.ensureVisible(find.text('Delete demo data'));
+      await tester.tap(find.text('Delete demo data'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete demo data').last);
+      await tester.pumpAndSettle();
+
+      verify(gateway.deleteDemo).called(1);
+      expect(
+        find.text("Couldn't delete the demo data — try again."),
+        findsOneWidget,
+      );
+      expect(
+        find.text('Demo data deleted'),
+        findsNothing,
+        reason: 'the success toast must not show on failure',
+      );
+      expect(
+        find.text('Return to the demo workspace'),
+        findsOneWidget,
+        reason: 'the demo still exists, so its rows stay',
+      );
+      verify(
+        () => logger.error(
+          LogDomain.general,
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'onboardingSettingsDeleteDemo',
+        ),
+      ).called(1);
+    });
+
+    testWidgets('the exit row opens the demo exit sheet', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(true);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+      // The sheet's candidate load runs against the production getIt path.
+      final db = MockJournalDb();
+      when(
+        () => db.getJournalEntities(
+          types: any(named: 'types'),
+          starredStatuses: any(named: 'starredStatuses'),
+          privateStatuses: any(named: 'privateStatuses'),
+          flaggedStatuses: any(named: 'flaggedStatuses'),
+          ids: any(named: 'ids'),
+          limit: any(named: 'limit'),
+          offset: any(named: 'offset'),
+        ),
+      ).thenAnswer((_) async => const []);
+      when(() => db.linksForEntryIds(any())).thenAnswer((_) async => const []);
+      final aiRepo = MockAiConfigRepository();
+      when(
+        () => aiRepo.getConfigsByType(AiConfigType.inferenceProvider),
+      ).thenAnswer((_) async => const []);
+      final demoRoot = Directory.systemTemp.createTempSync('lotti_onb_demo_');
+      addTearDown(() => demoRoot.delete(recursive: true));
+      getIt
+        ..registerSingleton<JournalDb>(db)
+        ..registerSingleton<AiConfigRepository>(aiRepo)
+        ..registerSingleton<Directory>(demoRoot);
+
+      await pumpWithGateway(tester);
+      await tester.ensureVisible(find.text('Exit demo'));
+      await tester.tap(find.text('Exit demo'));
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text('Leave the demo?'),
+        findsOneWidget,
+        reason: 'the row must hand over to the exit sheet, not exit directly',
+      );
+      verifyNever(gateway.exitDemo);
+    });
+
+    testWidgets('reset from OUTSIDE the demo also asks for confirmation, '
+        'and cancelling leaves the world untouched', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(false);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+
+      await pumpWithGateway(tester);
+
+      await tester.ensureVisible(find.text('Reset demo data'));
+      await tester.tap(find.text('Reset demo data'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Reset the demo world? Everything you changed there will be lost.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => gateway.resetDemo(locale: any(named: 'locale')));
+    });
+
+    testWidgets('reset asks for confirmation and hands over to the reseed '
+        'launcher', (tester) async {
+      when(() => gateway.isDemoActive).thenReturn(true);
+      when(gateway.demoProfileExists).thenAnswer((_) async => true);
+      when(
+        () => gateway.resetDemo(locale: any(named: 'locale')),
+      ).thenAnswer((_) async {});
+
+      await pumpWithGateway(tester);
+
+      await tester.ensureVisible(find.text('Reset demo data'));
+      await tester.tap(find.text('Reset demo data'));
+      await tester.pumpAndSettle();
+      expect(
+        find.text(
+          'Reset the demo world? Everything you changed there will be lost.',
+        ),
+        findsOneWidget,
+      );
+
+      await tester.tap(find.text('Reset demo data').last);
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      verify(() => gateway.resetDemo(locale: any(named: 'locale'))).called(1);
+    });
   });
 
   group('OnboardingSettingsPage', () {

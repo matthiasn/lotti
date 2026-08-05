@@ -1,7 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/profiles/model/profile.dart';
+import 'package:lotti/features/profiles/model/profile_context.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/settings_v2/state/settings_tree_controller.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_node_widget.dart';
 import 'package:lotti/features/settings_v2/ui/tree/settings_tree_row.dart';
@@ -17,6 +22,7 @@ import '../../../../widget_test_utils.dart';
 Future<void> _pumpView(
   WidgetTester tester, {
   Map<String, bool> flags = const {},
+  bool guestProfile = false,
 }) async {
   tester.view.physicalSize = const Size(400, 900);
   tester.view.devicePixelRatio = 1;
@@ -41,7 +47,22 @@ Future<void> _pumpView(
           child: SettingsTreeView(),
         ),
       ),
-      overrides: [journalDbProvider.overrideWithValue(mocks.journalDb)],
+      overrides: [
+        journalDbProvider.overrideWithValue(mocks.journalDb),
+        if (guestProfile)
+          profileContextProvider.overrideWithValue(
+            ProfileContext.forProfile(
+              profile: Profile(
+                id: 'demo-guest',
+                type: ProfileType.guest,
+                name: 'Demo',
+                dirName: 'guest_profiles/demo-guest',
+                createdAt: DateTime(2026),
+              ),
+              root: Directory.systemTemp,
+            ),
+          ),
+      ],
     ),
   );
   await tester.pump();
@@ -91,6 +112,29 @@ void main() {
         await _pumpView(tester, flags: {enableMatrixFlag: true});
         // Sync is all-or-nothing on the matrix flag.
         expect(find.text('Sync Settings'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'guest world renders the sync-unavailable explainer instead of the '
+      'Sync branch — even with enableMatrix on — and throws nowhere',
+      (tester) async {
+        await _pumpView(
+          tester,
+          flags: {enableMatrixFlag: true},
+          guestProfile: true,
+        );
+        // The tile keeps the Sync title but carries the demo explainer
+        // and none of the branch children.
+        expect(find.text('Sync Settings'), findsOneWidget);
+        expect(
+          find.text('Sync is not available in the demo workspace'),
+          findsOneWidget,
+        );
+        expect(find.text('Backfill sync'), findsNothing);
+        expect(find.text('Sync Outbox'), findsNothing);
+        // Nothing in the tree resolved the absent MatrixService.
+        expect(tester.takeException(), isNull);
       },
     );
 

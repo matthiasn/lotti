@@ -4873,6 +4873,159 @@ class AppLocalizationsEn extends AppLocalizations {
   String get deleteDeviceLabel => 'Remove from sync';
 
   @override
+  String get demoAiNudgeBody =>
+      'The demo world ships with fictional AI providers, so AI actions can\'t really run here. Connect your own AI account to use real AI inside the demo. Your key stays in this demo world unless you copy it over when you leave.';
+
+  @override
+  String get demoAiNudgeCancel => 'Not now';
+
+  @override
+  String get demoAiNudgeConfirm => 'Set up real AI';
+
+  @override
+  String get demoAiNudgeTitle => 'AI in the demo is pretend';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'This demo world now uses your real AI account. Your key stays here unless you copy it over when you leave.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'Real AI is live';
+
+  @override
+  String get demoBannerExit => 'Exit';
+
+  @override
+  String get demoBannerLabel => 'Demo world — your journal is untouched';
+
+  @override
+  String get demoCopyBody =>
+      'Choose the tasks and entries to copy into your journal.';
+
+  @override
+  String get demoCopyConfirm => 'Copy and exit';
+
+  @override
+  String get demoCopyFailedToast =>
+      'Copying your demo work failed — everything is still in the demo world, so you can try again.';
+
+  @override
+  String get demoCopyProgress => 'Copying your work…';
+
+  @override
+  String get demoCopySectionAiSetup => 'AI setup';
+
+  @override
+  String get demoCopySectionEntries => 'Journal entries';
+
+  @override
+  String get demoCopySectionTasks => 'Tasks';
+
+  @override
+  String get demoCopySelectAll => 'Select all';
+
+  @override
+  String get demoCopyTitle => 'Take my work with me';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count items copied to your journal',
+      one: '1 item copied to your journal',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoDeleteFailedToast =>
+      'Couldn\'t delete the demo data — try again.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Couldn\'t open the demo world — try again.';
+
+  @override
+  String get demoEnteringProgress => 'Setting up the demo world…';
+
+  @override
+  String get demoExitCandidatesError =>
+      'Couldn\'t check for work to copy. You can still exit the demo.';
+
+  @override
+  String get demoExitConfirm => 'Exit demo';
+
+  @override
+  String get demoExitFailedToast =>
+      'Couldn\'t finish leaving the demo — try again.';
+
+  @override
+  String get demoExitSheetBody =>
+      'Your demo world stays saved — you can come back anytime.';
+
+  @override
+  String get demoExitSheetTitle => 'Leave the demo?';
+
+  @override
+  String get demoExitTakeWork => 'Take my work with me…';
+
+  @override
+  String get demoOnboardingExplore => 'Explore with sample data';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Delete the demo world and everything in it?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Delete demo data';
+
+  @override
+  String get demoSettingsDeleteToast => 'Demo data deleted';
+
+  @override
+  String get demoSettingsExitTitle => 'Exit demo';
+
+  @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Health import is not available in the demo workspace';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'Real AI is set up in this demo world';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Use your own AI account inside the demo world';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Enable real AI in the demo';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Reset the demo world? Everything you changed there will be lost.';
+
+  @override
+  String get demoSettingsResetTitle => 'Reset demo data';
+
+  @override
+  String get demoSettingsResumeTitle => 'Return to the demo workspace';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Sync is not available in the demo workspace';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Explore Lotti with sample data — your journal stays untouched';
+
+  @override
+  String get demoSettingsTryTitle => 'Try the demo workspace';
+
+  @override
+  String get demoTryButton => 'Try the demo';
+
+  @override
   String get designSystemActionVariantTitle => 'With Action';
 
   @override

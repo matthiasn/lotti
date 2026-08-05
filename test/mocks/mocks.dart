@@ -107,6 +107,7 @@ import 'package:lotti/features/daily_os_next/services/day_audio_transcript_write
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repository.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
+import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -119,6 +120,8 @@ import 'package:lotti/features/notifications/scheduler/notification_scheduler.da
 import 'package:lotti/features/onboarding/repository/onboarding_metrics_repository.dart';
 import 'package:lotti/features/onboarding/services/onboarding_capture_to_task_service.dart';
 import 'package:lotti/features/onboarding/services/onboarding_task_structuring_service.dart';
+import 'package:lotti/features/profiles/service/profile_switcher.dart';
+import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/ratings/repository/rating_repository.dart';
 import 'package:lotti/features/speech/repository/audio_recorder_repository.dart';
@@ -1333,6 +1336,12 @@ class FakeRequest extends Fake implements http.Request {}
 class MockObjectBoxOps extends Mock implements ObjectBoxOps {}
 
 class MockEmbeddingService extends Mock implements EmbeddingService {}
+
+class MockDemoModeGateway extends Mock implements DemoModeGateway {}
+
+class MockProfileSwitcher extends Mock implements ProfileSwitcher {}
+
+class MockWorldHandle extends Mock implements WorldHandle {}
 
 class MockProfileResolver extends Mock implements ProfileResolver {}
 

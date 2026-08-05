@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/categories/domain/category_icon.dart';
+import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/design_system/components/chips/design_system_chip.dart';
 import 'package:lotti/features/design_system/components/empty_states/design_system_empty_state.dart';
 import 'package:lotti/features/design_system/components/scrollbars/design_system_scrollbar.dart';
@@ -62,6 +63,9 @@ class TaskListPane extends StatelessWidget {
                   ? DesignSystemEmptyState(
                       icon: Icons.list_outlined,
                       title: context.messages.taskShowcaseNoResults,
+                      // Self-gating: renders only outside demo mode AND when
+                      // the journal is truly empty (never on a filter miss).
+                      action: const DemoTryButton(),
                     )
                   : TaskListSectionsList(
                       sections: state.visibleSections,

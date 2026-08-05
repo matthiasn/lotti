@@ -4900,6 +4900,158 @@ class AppLocalizationsDa extends AppLocalizations {
   String get deleteDeviceLabel => 'Fjern fra synkronisering';
 
   @override
+  String get demoAiNudgeBody =>
+      'Demoverdenen indeholder fiktive AI-udbydere, så AI-handlinger kan ikke rigtig køre her. Forbind din egen AI-konto for at bruge rigtig AI i demoen. Din nøgle bliver i denne demoverden, medmindre du kopierer den med, når du forlader den.';
+
+  @override
+  String get demoAiNudgeCancel => 'Ikke nu';
+
+  @override
+  String get demoAiNudgeConfirm => 'Opsæt rigtig AI';
+
+  @override
+  String get demoAiNudgeTitle => 'AI\'en i demoen er på skrømt';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'Denne demoverden bruger nu din rigtige AI-konto. Din nøgle bliver her, medmindre du kopierer den med, når du går ud.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'Rigtig AI er aktiv';
+
+  @override
+  String get demoBannerExit => 'Afslut';
+
+  @override
+  String get demoBannerLabel => 'Demoverden — din dagbog forbliver urørt';
+
+  @override
+  String get demoCopyBody =>
+      'Vælg de opgaver og indlæg, du vil kopiere til din dagbog.';
+
+  @override
+  String get demoCopyConfirm => 'Kopiér og afslut';
+
+  @override
+  String get demoCopyFailedToast =>
+      'Kopiering af dit demoarbejde mislykkedes — alt er stadig i demoverdenen, så du kan prøve igen.';
+
+  @override
+  String get demoCopyProgress => 'Kopierer dit arbejde…';
+
+  @override
+  String get demoCopySectionAiSetup => 'AI-opsætning';
+
+  @override
+  String get demoCopySectionEntries => 'Dagbogsindlæg';
+
+  @override
+  String get demoCopySectionTasks => 'Opgaver';
+
+  @override
+  String get demoCopySelectAll => 'Vælg alle';
+
+  @override
+  String get demoCopyTitle => 'Tag mit arbejde med';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count elementer kopieret til din dagbog',
+      one: '1 element kopieret til din dagbog',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoDeleteFailedToast =>
+      'Demodataene kunne ikke slettes — prøv igen.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Demoverdenen kunne ikke åbnes — prøv igen.';
+
+  @override
+  String get demoEnteringProgress => 'Gør demoverdenen klar…';
+
+  @override
+  String get demoExitCandidatesError =>
+      'Kunne ikke tjekke dit arbejde til kopiering. Du kan stadig forlade demoen.';
+
+  @override
+  String get demoExitConfirm => 'Afslut demo';
+
+  @override
+  String get demoExitFailedToast => 'Kunne ikke forlade demoen — prøv igen.';
+
+  @override
+  String get demoExitSheetBody =>
+      'Din demoverden bliver gemt — du kan altid vende tilbage.';
+
+  @override
+  String get demoExitSheetTitle => 'Forlad demoen?';
+
+  @override
+  String get demoExitTakeWork => 'Tag mit arbejde med…';
+
+  @override
+  String get demoOnboardingExplore => 'Udforsk med eksempeldata';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Slet demoverdenen og alle dens data?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Slet demodata';
+
+  @override
+  String get demoSettingsDeleteToast => 'Demodata slettet';
+
+  @override
+  String get demoSettingsExitTitle => 'Afslut demo';
+
+  @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Import af sundhedsdata er ikke tilgængelig i demoverdenen';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'Rigtig AI er sat op i denne demoverden';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Brug din egen AI-konto i demoverdenen';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Slå rigtig AI til i demoen';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Nulstil demoverdenen? Alle dine ændringer dér går tabt.';
+
+  @override
+  String get demoSettingsResetTitle => 'Nulstil demodata';
+
+  @override
+  String get demoSettingsResumeTitle => 'Tilbage til demoverdenen';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Synkronisering er ikke tilgængelig i demoverdenen';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Udforsk Lotti med eksempeldata — din dagbog forbliver urørt';
+
+  @override
+  String get demoSettingsTryTitle => 'Prøv demoverdenen';
+
+  @override
+  String get demoTryButton => 'Prøv demoen';
+
+  @override
   String get designSystemActionVariantTitle => 'Med handling';
 
   @override

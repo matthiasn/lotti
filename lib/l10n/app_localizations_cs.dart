@@ -4955,6 +4955,160 @@ class AppLocalizationsCs extends AppLocalizations {
   String get deleteDeviceLabel => 'Odebrat ze synchronizace';
 
   @override
+  String get demoAiNudgeBody =>
+      'Demo svět obsahuje fiktivní poskytovatele AI, takže AI akce tady doopravdy neproběhnou. Připoj svůj vlastní AI účet a používej v demu skutečnou AI. Tvůj klíč zůstane v tomto demo světě, pokud si ho při odchodu nezkopíruješ.';
+
+  @override
+  String get demoAiNudgeCancel => 'Teď ne';
+
+  @override
+  String get demoAiNudgeConfirm => 'Nastavit skutečnou AI';
+
+  @override
+  String get demoAiNudgeTitle => 'AI v demu je jen jako';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'Tento demo svět teď používá tvůj skutečný AI účet. Tvůj klíč zůstane tady, pokud si ho při odchodu nezkopíruješ.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'Skutečná AI je zapnutá';
+
+  @override
+  String get demoBannerExit => 'Ukončit';
+
+  @override
+  String get demoBannerLabel => 'Demo svět — tvůj deník zůstává nedotčený';
+
+  @override
+  String get demoCopyBody =>
+      'Vyber úkoly a záznamy, které chceš zkopírovat do svého deníku.';
+
+  @override
+  String get demoCopyConfirm => 'Zkopírovat a ukončit';
+
+  @override
+  String get demoCopyFailedToast =>
+      'Kopírování tvé práce z dema se nepodařilo — v demo světě je vše zachováno, takže to můžeš zkusit znovu.';
+
+  @override
+  String get demoCopyProgress => 'Kopíruji tvou práci…';
+
+  @override
+  String get demoCopySectionAiSetup => 'Nastavení AI';
+
+  @override
+  String get demoCopySectionEntries => 'Záznamy v deníku';
+
+  @override
+  String get demoCopySectionTasks => 'Úkoly';
+
+  @override
+  String get demoCopySelectAll => 'Vybrat vše';
+
+  @override
+  String get demoCopyTitle => 'Vzít si práci s sebou';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count položek zkopírováno do tvého deníku',
+      few: '$count položky zkopírovány do tvého deníku',
+      one: '1 položka zkopírována do tvého deníku',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoDeleteFailedToast =>
+      'Demo data se nepodařilo smazat — zkus to znovu.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Demo svět se nepodařilo otevřít — zkus to znovu.';
+
+  @override
+  String get demoEnteringProgress => 'Připravuji demo svět…';
+
+  @override
+  String get demoExitCandidatesError =>
+      'Nepodařilo se zkontrolovat práci ke zkopírování. Demo můžeš přesto opustit.';
+
+  @override
+  String get demoExitConfirm => 'Ukončit demo';
+
+  @override
+  String get demoExitFailedToast =>
+      'Odchod z dema se nepodařilo dokončit — zkus to znovu.';
+
+  @override
+  String get demoExitSheetBody =>
+      'Tvůj demo svět zůstane uložený — můžeš se kdykoli vrátit.';
+
+  @override
+  String get demoExitSheetTitle => 'Opustit demo?';
+
+  @override
+  String get demoExitTakeWork => 'Vzít si práci s sebou…';
+
+  @override
+  String get demoOnboardingExplore => 'Prozkoumat s ukázkovými daty';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Smazat demo svět a všechna jeho data?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Smazat demo data';
+
+  @override
+  String get demoSettingsDeleteToast => 'Demo data smazána';
+
+  @override
+  String get demoSettingsExitTitle => 'Ukončit demo';
+
+  @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Import zdravotních dat není v demo světě dostupný';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'Skutečná AI je v tomto demo světě nastavená';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Používej v demo světě svůj vlastní AI účet';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Zapnout skutečnou AI v demu';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Obnovit demo svět do výchozího stavu? Všechny tvé změny tam budou ztraceny.';
+
+  @override
+  String get demoSettingsResetTitle => 'Obnovit demo data';
+
+  @override
+  String get demoSettingsResumeTitle => 'Vrátit se do demo světa';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Synchronizace není v demo světě dostupná';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Prozkoumej Lotti s ukázkovými daty — tvůj deník zůstane nedotčený';
+
+  @override
+  String get demoSettingsTryTitle => 'Vyzkoušet demo svět';
+
+  @override
+  String get demoTryButton => 'Vyzkoušet demo';
+
+  @override
   String get designSystemActionVariantTitle => 'S akcí';
 
   @override

@@ -53,6 +53,17 @@ void main() {
         expect(label.desc, isNotEmpty);
       },
     );
+
+    testWidgets(
+      'resolves the demo-world sync-unavailable tile '
+      '(inert, so not in settingsNodeUrls)',
+      (tester) async {
+        final resolve = await _buildResolver(tester);
+        final label = resolve('sync-unavailable');
+        expect(label.title, 'Sync Settings');
+        expect(label.desc, 'Sync is not available in the demo workspace');
+      },
+    );
   });
 
   group('settingsTreeLabelsFor — arb-backed titles', () {

@@ -1,5 +1,22 @@
 # Knowledge Bundle Update Log
 
+## 2026-08-05
+* **Correction**: [Demo mode](features/demo.md) — the fixture-ownership rule
+  is now "additive only" rather than "never grow the fixture". The penguin
+  world is one shared world for the manual and the production demo; it grew
+  to 28 linked tasks so the knowledge graph has somewhere to walk, with
+  semantic (`DemoDates`) due dates. Existing ids, names and list order stay
+  byte-stable, which is what keeps the screenshot suites reproducible.
+* **Addition**: New architecture concept
+  [Profiles and demo mode](architecture/profiles-and-demo-mode.md) — the
+  registry, the guest-world isolation contract, capability-gated sync, and the
+  in-app switch — alongside [ADR 0049](../docs/adr/0049-profile-scoped-storage-and-demo-mode.md)
+  for the storage-scoping decision.
+* **Addition**: New feature concept [Demo mode](features/demo.md) — the seed
+  manifest lifecycle, exit copy-over closure semantics and v1 exclusions, the
+  real-AI nudge, and the fixture-ownership rule that keeps the manual's
+  screenshot suites pixel-identical.
+
 ## 2026-07-29
 * **Removal**: Removed the Character animation concept after its unused
   implementation was deleted, so the bundle no longer describes or links to a

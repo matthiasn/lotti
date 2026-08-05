@@ -49,6 +49,7 @@ import 'package:lotti/features/sync/ui/matrix_sync_maintenance_page.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflict_detail_route.dart';
 import 'package:lotti/features/sync/ui/pages/conflicts/conflicts_page.dart';
 import 'package:lotti/features/sync/ui/pages/outbox/outbox_monitor_page.dart';
+import 'package:lotti/features/sync/ui/pages/sync_node_profile_page.dart';
 import 'package:lotti/features/sync/ui/provisioned_sync_page.dart';
 import 'package:lotti/features/sync/ui/sync_stats_page.dart';
 import 'package:lotti/features/sync/ui/widgets/sync_feature_gate.dart';
@@ -1399,8 +1400,35 @@ void main() {
       final hub = (gate as SyncFeatureGate).child;
       expect(hub, isA<SettingsMobileBranchPage>());
       expect((hub as SettingsMobileBranchPage).branchId, 'sync');
-      expect(pages[2].child, isA<OutboxMonitorPage>());
+      // The leaf page carries no gate of its own, so the route wraps it —
+      // a stale deep link in a guest/demo world must not build a sync
+      // surface whose stack is structurally absent.
+      final leafGate = pages[2].child;
+      expect(leafGate, isA<SyncFeatureGate>());
+      expect((leafGate as SyncFeatureGate).child, isA<OutboxMonitorPage>());
     });
+
+    test(
+      'buildPages gates SyncNodeProfilePage under /settings/sync/node-profile',
+      () {
+        final routeInformation = RouteInformation(
+          uri: Uri.parse('/settings/sync/node-profile'),
+        );
+        final location = SettingsLocation(routeInformation);
+        final beamState = BeamState.fromRouteInformation(routeInformation);
+        final pages = location.buildPages(
+          mockBuildContext,
+          beamState,
+        );
+        expect(pages.length, 3);
+        final leafGate = pages[2].child;
+        expect(leafGate, isA<SyncFeatureGate>());
+        expect(
+          (leafGate as SyncFeatureGate).child,
+          isA<SyncNodeProfilePage>(),
+        );
+      },
+    );
 
     test('buildPages builds SyncStatsPage under /settings/sync/stats', () {
       final routeInformation = RouteInformation(

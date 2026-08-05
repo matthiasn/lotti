@@ -4935,6 +4935,159 @@ class AppLocalizationsDe extends AppLocalizations {
   String get deleteDeviceLabel => 'Aus Sync entfernen';
 
   @override
+  String get demoAiNudgeBody =>
+      'Die Demo-Welt enthält fiktive KI-Anbieter, daher können KI-Aktionen hier nicht wirklich laufen. Verbinde dein eigenes KI-Konto, um echte KI in der Demo zu nutzen. Dein Schlüssel bleibt in dieser Demo-Welt, außer du kopierst ihn beim Verlassen mit.';
+
+  @override
+  String get demoAiNudgeCancel => 'Jetzt nicht';
+
+  @override
+  String get demoAiNudgeConfirm => 'Echte KI einrichten';
+
+  @override
+  String get demoAiNudgeTitle => 'Die KI in der Demo ist nur gespielt';
+
+  @override
+  String get demoAiSetupSuccessBody =>
+      'Diese Demo-Welt nutzt jetzt dein echtes KI-Konto. Dein Schlüssel bleibt hier, außer du kopierst ihn beim Verlassen mit.';
+
+  @override
+  String get demoAiSetupSuccessTitle => 'Echte KI ist aktiv';
+
+  @override
+  String get demoBannerExit => 'Beenden';
+
+  @override
+  String get demoBannerLabel => 'Demo-Welt — dein Journal bleibt unberührt';
+
+  @override
+  String get demoCopyBody =>
+      'Wähle aus, welche Aufgaben und Einträge in dein Journal kopiert werden sollen.';
+
+  @override
+  String get demoCopyConfirm => 'Kopieren und beenden';
+
+  @override
+  String get demoCopyFailedToast =>
+      'Das Kopieren deiner Demo-Daten hat nicht geklappt — in der Demo-Welt ist noch alles da, versuch es noch mal.';
+
+  @override
+  String get demoCopyProgress => 'Deine Arbeit wird kopiert…';
+
+  @override
+  String get demoCopySectionAiSetup => 'KI-Einrichtung';
+
+  @override
+  String get demoCopySectionEntries => 'Journaleinträge';
+
+  @override
+  String get demoCopySectionTasks => 'Aufgaben';
+
+  @override
+  String get demoCopySelectAll => 'Alle auswählen';
+
+  @override
+  String get demoCopyTitle => 'Meine Arbeit mitnehmen';
+
+  @override
+  String demoCopyToast(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Einträge in dein Journal kopiert',
+      one: '1 Eintrag in dein Journal kopiert',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get demoDeleteFailedToast =>
+      'Die Demo-Daten konnten nicht gelöscht werden — versuch es noch mal.';
+
+  @override
+  String get demoEnterFailedToast =>
+      'Die Demo-Welt konnte nicht geöffnet werden — versuch es noch mal.';
+
+  @override
+  String get demoEnteringProgress => 'Demo-Welt wird eingerichtet…';
+
+  @override
+  String get demoExitCandidatesError =>
+      'Deine Arbeit zum Kopieren konnte nicht geprüft werden. Du kannst die Demo trotzdem verlassen.';
+
+  @override
+  String get demoExitConfirm => 'Demo beenden';
+
+  @override
+  String get demoExitFailedToast =>
+      'Das Verlassen der Demo hat nicht geklappt — versuch es noch mal.';
+
+  @override
+  String get demoExitSheetBody =>
+      'Deine Demo-Welt bleibt gespeichert — du kannst jederzeit zurückkommen.';
+
+  @override
+  String get demoExitSheetTitle => 'Demo verlassen?';
+
+  @override
+  String get demoExitTakeWork => 'Meine Arbeit mitnehmen…';
+
+  @override
+  String get demoOnboardingExplore => 'Mit Beispieldaten erkunden';
+
+  @override
+  String get demoSettingsDeleteConfirm =>
+      'Demo-Welt und alle zugehörigen Daten löschen?';
+
+  @override
+  String get demoSettingsDeleteTitle => 'Demo-Daten löschen';
+
+  @override
+  String get demoSettingsDeleteToast => 'Demo-Daten gelöscht';
+
+  @override
+  String get demoSettingsExitTitle => 'Demo beenden';
+
+  @override
+  String get demoSettingsHealthImportUnavailable =>
+      'Der Import von Gesundheitsdaten ist in der Demo-Welt nicht verfügbar';
+
+  @override
+  String get demoSettingsRealAiActiveSubtitle =>
+      'Echte KI ist in dieser Demo-Welt eingerichtet';
+
+  @override
+  String get demoSettingsRealAiSubtitle =>
+      'Nutze dein eigenes KI-Konto in der Demo-Welt';
+
+  @override
+  String get demoSettingsRealAiTitle => 'Echte KI in der Demo aktivieren';
+
+  @override
+  String get demoSettingsResetConfirm =>
+      'Demo-Welt zurücksetzen? Alle deine Änderungen dort gehen verloren.';
+
+  @override
+  String get demoSettingsResetTitle => 'Demo-Daten zurücksetzen';
+
+  @override
+  String get demoSettingsResumeTitle => 'Zurück zur Demo-Welt';
+
+  @override
+  String get demoSettingsSyncUnavailable =>
+      'Sync ist in der Demo-Welt nicht verfügbar';
+
+  @override
+  String get demoSettingsTrySubtitle =>
+      'Erkunde Lotti mit Beispieldaten — dein Journal bleibt unberührt';
+
+  @override
+  String get demoSettingsTryTitle => 'Demo-Welt ausprobieren';
+
+  @override
+  String get demoTryButton => 'Demo ausprobieren';
+
+  @override
   String get designSystemActionVariantTitle => 'Mit Aktion';
 
   @override

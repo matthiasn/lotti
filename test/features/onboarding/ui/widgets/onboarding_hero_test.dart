@@ -76,6 +76,13 @@ void main() {
     ),
   );
 
+  /// The design-system button carrying [label] — lets emphasis be asserted by
+  /// variant/size rather than by the action's position in the stack.
+  DesignSystemButton buttonWithLabel(WidgetTester tester, String label) =>
+      tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, label),
+      );
+
   group('OnboardingHeroStyle.label', () {
     test('covers every enum value and matches the expected label', () {
       // Guards against the map drifting from the enum if a value is added.
@@ -430,9 +437,78 @@ void main() {
           findsOneWidget,
         );
 
+        // Without a demo entry the panel must still have a primary action:
+        // connect keeps the slot rather than the panel leading with nothing.
+        expect(
+          buttonWithLabel(
+            tester,
+            messages.onboardingWelcomeConnectButton,
+          ).variant,
+          DesignSystemButtonVariant.primary,
+        );
+
         expect(tester.takeException(), isNull);
       });
     }
+
+    testWidgets('leads with the demo and demotes the connect path when '
+        'onExploreDemo is wired', (tester) async {
+      await pumpToleratingOverflow(
+        tester,
+        makeTestableWidget(
+          boundedPanel(
+            OnboardingHeroPanel(
+              onConnect: () {},
+              onSkip: () {},
+              onExploreDemo: () {},
+            ),
+          ),
+          mediaQueryData: reducedMotionMq,
+        ),
+      );
+
+      final demo = buttonWithLabel(tester, messages.demoOnboardingExplore);
+      final connect = buttonWithLabel(
+        tester,
+        messages.onboardingWelcomeConnectButton,
+      );
+      final skip = buttonWithLabel(
+        tester,
+        messages.onboardingWelcomeSkipButton,
+      );
+
+      // Emphasis, asserted by variant/size rather than by position: the demo
+      // is the filled primary, the AI setup path is the secondary, and skip
+      // is unchanged.
+      expect(demo.variant, DesignSystemButtonVariant.primary);
+      expect(demo.size, DesignSystemButtonSize.large);
+      expect(demo.fullWidth, isTrue);
+      expect(connect.variant, DesignSystemButtonVariant.secondary);
+      expect(connect.size, DesignSystemButtonSize.large);
+      expect(skip.variant, DesignSystemButtonVariant.tertiary);
+      expect(skip.size, DesignSystemButtonSize.large);
+
+      // …and reading order matches that emphasis.
+      final demoTop = tester
+          .getTopLeft(
+            find.text(messages.demoOnboardingExplore),
+          )
+          .dy;
+      final connectTop = tester
+          .getTopLeft(
+            find.text(messages.onboardingWelcomeConnectButton),
+          )
+          .dy;
+      final skipTop = tester
+          .getTopLeft(
+            find.text(messages.onboardingWelcomeSkipButton),
+          )
+          .dy;
+      expect(demoTop, lessThan(connectTop));
+      expect(connectTop, lessThan(skipTop));
+
+      expect(tester.takeException(), isNull);
+    });
 
     testWidgets('invokes onConnect when the connect button is tapped', (
       tester,
@@ -458,6 +534,49 @@ void main() {
 
       expect(connectCount, 1);
       expect(skipCount, 0);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('the demo entry renders only when onExploreDemo is wired, '
+        'and tapping it fires the callback', (tester) async {
+      var exploreCount = 0;
+
+      await tester.pumpWidget(
+        makeTestableWidget(
+          boundedPanel(
+            OnboardingHeroPanel(
+              onConnect: () {},
+              onSkip: () {},
+              onExploreDemo: () => exploreCount++,
+            ),
+          ),
+          mediaQueryData: reducedMotionMq,
+        ),
+      );
+      await tester.pump();
+
+      await tester.ensureVisible(find.text(messages.demoOnboardingExplore));
+      await tester.pump();
+      await tester.tap(find.text(messages.demoOnboardingExplore));
+      await tester.pump();
+
+      expect(exploreCount, 1);
+      expect(tester.takeException(), isNull);
+    });
+
+    testWidgets('without onExploreDemo the demo entry is absent (gallery '
+        'and preview hosts)', (tester) async {
+      await pumpToleratingOverflow(
+        tester,
+        makeTestableWidget(
+          boundedPanel(
+            OnboardingHeroPanel(onConnect: () {}, onSkip: () {}),
+          ),
+          mediaQueryData: reducedMotionMq,
+        ),
+      );
+
+      expect(find.text(messages.demoOnboardingExplore), findsNothing);
       expect(tester.takeException(), isNull);
     });
 

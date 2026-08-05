@@ -332,10 +332,15 @@ class SettingsLocation extends BeamLocation<BeamState> {
           child: MatrixSyncMaintenancePage(),
         ),
 
+      // Node-profile and outbox pages carry no gate of their own (unlike
+      // Provisioned / Stats / Backfill / Matrix-maintenance, which embed
+      // `SyncFeatureGate` in the page widget), so the route wraps them:
+      // without it a stale deep link in a guest/demo world would render a
+      // sync surface whose stack is structurally absent.
       if (path == '/settings/sync/node-profile')
         const BeamPage(
           key: ValueKey('settings-sync-node-profile'),
-          child: SyncNodeProfilePage(),
+          child: SyncFeatureGate(child: SyncNodeProfilePage()),
         ),
 
       if (path == '/settings/sync/backfill')
@@ -355,7 +360,7 @@ class SettingsLocation extends BeamLocation<BeamState> {
       if (path == '/settings/sync/outbox')
         const BeamPage(
           key: ValueKey('settings-sync-outbox'),
-          child: OutboxMonitorPage(),
+          child: SyncFeatureGate(child: OutboxMonitorPage()),
         ),
 
       if (pathContains('labels'))
