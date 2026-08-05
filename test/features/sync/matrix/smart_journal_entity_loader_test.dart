@@ -356,6 +356,100 @@ void main() {
       },
     );
 
+    test(
+      'exact attachment rejects a descriptor for a different path',
+      () async {
+        const relJson = '/text_entries/2024-01-01/mismatch.text.json';
+        final descriptor = MockEvent();
+        when(() => descriptor.eventId).thenReturn('mismatched-event');
+        when(
+          () => descriptor.attachmentMimetype,
+        ).thenReturn('application/json');
+        when(() => descriptor.content).thenReturn({
+          'relativePath': '/text_entries/2024-01-01/other.text.json',
+        });
+        final index = AttachmentIndex()..record(descriptor);
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: index,
+          loggingService: loggingService,
+        );
+
+        await expectLater(
+          loader.load(
+            jsonPath: relJson,
+            attachmentEventId: 'mismatched-event',
+          ),
+          throwsA(isA<FormatException>()),
+        );
+        verifyNever(descriptor.downloadAndDecryptAttachment);
+      },
+    );
+
+    test(
+      'exact attachment decodes a payload when the envelope has no VC',
+      () async {
+        const relJson = '/text_entries/2024-01-01/exact-no-vc.text.json';
+        final entity = JournalEntry(
+          meta: Metadata(
+            id: 'exact-no-vc',
+            createdAt: DateTime(2024),
+            updatedAt: DateTime(2024),
+            dateFrom: DateTime(2024),
+            dateTo: DateTime(2024),
+          ),
+          entryText: const EntryText(plainText: 'exact without clock'),
+        );
+        final descriptor = MockEvent();
+        when(() => descriptor.eventId).thenReturn('exact-no-vc-event');
+        when(
+          () => descriptor.attachmentMimetype,
+        ).thenReturn('application/json');
+        when(() => descriptor.content).thenReturn({'relativePath': relJson});
+        when(descriptor.downloadAndDecryptAttachment).thenAnswer(
+          (_) async => MatrixFile(
+            bytes: Uint8List.fromList(utf8.encode(jsonEncode(entity.toJson()))),
+            name: 'exact-no-vc.json',
+          ),
+        );
+        final loader = SmartJournalEntityLoader(
+          attachmentIndex: AttachmentIndex()..record(descriptor),
+          loggingService: loggingService,
+        );
+
+        final loaded = await loader.load(
+          jsonPath: relJson,
+          attachmentEventId: 'exact-no-vc-event',
+        );
+
+        expect(loaded.entryText?.plainText, 'exact without clock');
+        verify(descriptor.downloadAndDecryptAttachment).called(1);
+      },
+    );
+
+    test('exact attachment rejects empty downloaded bytes', () async {
+      const relJson = '/text_entries/2024-01-01/exact-empty.text.json';
+      final descriptor = MockEvent();
+      when(() => descriptor.eventId).thenReturn('exact-empty-event');
+      when(() => descriptor.attachmentMimetype).thenReturn('application/json');
+      when(() => descriptor.content).thenReturn({'relativePath': relJson});
+      when(descriptor.downloadAndDecryptAttachment).thenAnswer(
+        (_) async => MatrixFile(bytes: Uint8List(0), name: 'empty.json'),
+      );
+      final loader = SmartJournalEntityLoader(
+        attachmentIndex: AttachmentIndex()..record(descriptor),
+        loggingService: loggingService,
+      );
+
+      await expectLater(
+        loader.load(
+          jsonPath: relJson,
+          attachmentEventId: 'exact-empty-event',
+        ),
+        throwsA(isA<FileSystemException>()),
+      );
+      verify(descriptor.downloadAndDecryptAttachment).called(1);
+    });
+
     test('ensures missing image media via AttachmentIndex', () async {
       final image = JournalImage(
         meta: Metadata(

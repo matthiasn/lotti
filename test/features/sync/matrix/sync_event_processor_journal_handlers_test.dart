@@ -132,6 +132,84 @@ void main() {
     );
 
     test(
+      'exact journal with a payload missing its VC skips sequence mapping '
+      'after reading the canonical row',
+      () async {
+        final payload = JournalEntry(
+          meta: Metadata(
+            id: 'exact-missing-vc',
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            dateFrom: DateTime(2024, 3, 15),
+            dateTo: DateTime(2024, 3, 15),
+            vectorClock: null,
+          ),
+          entryText: const EntryText(plainText: 'missing payload clock'),
+        );
+        const message = SyncMessage.journalEntity(
+          id: 'exact-missing-vc',
+          jsonPath: '/exact-missing-vc.json',
+          vectorClock: VectorClock({'remote-host': 3}),
+          status: SyncEntryStatus.update,
+          attachmentEventId: 'exact-missing-vc-event',
+          originatingHostId: 'remote-host',
+        );
+        final sequenceLog = MockSyncSequenceLogService();
+        when(
+          () => journalEntityLoader.load(
+            jsonPath: '/exact-missing-vc.json',
+            incomingVectorClock: const VectorClock({'remote-host': 3}),
+            attachmentEventId: 'exact-missing-vc-event',
+          ),
+        ).thenAnswer((_) async => payload);
+        when(
+          () => journalDb.updateJournalEntity(any<JournalEntity>()),
+        ).thenAnswer(
+          (_) async => JournalUpdateResult.skipped(
+            reason: JournalUpdateSkipReason.olderOrEqual,
+          ),
+        );
+        when(
+          () => journalDb.journalEntityById('exact-missing-vc'),
+        ).thenAnswer((_) async => payload);
+        final exactProcessor = SyncEventProcessor(
+          loggingService: loggingService,
+          updateNotifications: updateNotifications,
+          aiConfigRepository: aiConfigRepository,
+          savedTaskFiltersRepository: savedTaskFiltersRepository,
+          settingsDb: settingsDb,
+          journalEntityLoader: journalEntityLoader,
+          sequenceLogService: sequenceLog,
+        );
+        when(() => event.text).thenReturn(encodeMessage(message));
+
+        await exactProcessor.process(event: event, journalDb: journalDb);
+
+        verifyNever(
+          () => sequenceLog.recordReceivedEntry(
+            entryId: any(named: 'entryId'),
+            vectorClock: any(named: 'vectorClock'),
+            originatingHostId: any(named: 'originatingHostId'),
+            coveredVectorClocks: any(named: 'coveredVectorClocks'),
+            payloadType: any(named: 'payloadType'),
+            jsonPath: any(named: 'jsonPath'),
+            payloadVectorClock: any(named: 'payloadVectorClock'),
+            canonicalPayloadVectorClock: any(
+              named: 'canonicalPayloadVectorClock',
+            ),
+          ),
+        );
+        verify(
+          () => loggingService.log(
+            LogDomain.sync,
+            any<String>(that: contains('reason=payloadMissingVectorClock')),
+            subDomain: 'processor.sequenceMapping',
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
       'processes embedded links after successful journal entity update',
       () async {
         final link1 = EntryLink.basic(

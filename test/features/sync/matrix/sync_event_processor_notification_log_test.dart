@@ -452,6 +452,7 @@ void main() {
           final index = AttachmentIndex()
             ..record(olderDescriptor)
             ..record(newerDescriptor);
+          await notificationsDb.upsertNotification(older);
           when(
             () => sequenceLog.recordReceivedEntry(
               entryId: any(named: 'entryId'),

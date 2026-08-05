@@ -256,6 +256,63 @@ void main() {
       );
 
       test(
+        'processes an exact outbox manifest through the bundle prepare callback',
+        () async {
+          const bundleRelativePath = '/outbox_bundles/exact-process.json';
+          final manifest = <String, dynamic>{
+            'version': 1,
+            'entries': [
+              <String, dynamic>{
+                'envelope': const SyncMessage.aiConfigDelete(
+                  id: 'exact-bundle-config',
+                ).toJson(),
+              },
+            ],
+          };
+          final descriptor = MockEvent();
+          when(() => descriptor.eventId).thenReturn('exact-process-event');
+          when(
+            () => descriptor.attachmentMimetype,
+          ).thenReturn('application/json');
+          when(() => descriptor.content).thenReturn({
+            'relativePath': bundleRelativePath,
+          });
+          when(descriptor.downloadAndDecryptAttachment).thenAnswer(
+            (_) async => MatrixFile(
+              bytes: Uint8List.fromList(utf8.encode(jsonEncode(manifest))),
+              name: 'exact-process.json',
+            ),
+          );
+          final exactProcessor = SyncEventProcessor(
+            loggingService: loggingService,
+            updateNotifications: updateNotifications,
+            aiConfigRepository: aiConfigRepository,
+            savedTaskFiltersRepository: savedTaskFiltersRepository,
+            settingsDb: settingsDb,
+            journalEntityLoader: journalEntityLoader,
+            documentsDirectory: tempDir,
+            attachmentIndex: AttachmentIndex()..record(descriptor),
+          );
+          const message = SyncMessage.outboxBundle(
+            children: [],
+            jsonPath: bundleRelativePath,
+            attachmentEventId: 'exact-process-event',
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await exactProcessor.process(event: event, journalDb: journalDb);
+
+          verify(
+            () => aiConfigRepository.deleteConfig(
+              'exact-bundle-config',
+              fromSync: true,
+            ),
+          ).called(1);
+          verify(descriptor.downloadAndDecryptAttachment).called(1);
+        },
+      );
+
+      test(
         'exact manifest miss stays retryable and never falls back to a newer '
         'descriptor or an existing disk cache',
         () async {
