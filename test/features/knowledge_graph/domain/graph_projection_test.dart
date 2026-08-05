@@ -117,6 +117,82 @@ void main() {
     );
   });
 
+  test('creates a media collection from focus-owned media only', () {
+    final focus = node(
+      'task',
+      GraphNodeType.task,
+      mediaPaths: const ['/cover.jpg'],
+    );
+    final projection = buildLocalGraphProjection(
+      raw: GraphScenario(
+        name: 'cover only',
+        seedId: focus.id,
+        nodes: [focus],
+        edges: const [],
+        now: now,
+      ),
+      focusId: focus.id,
+      maxNodes: 24,
+      clusterPreviewLimit: 5,
+      clusterCollapseThreshold: 8,
+    );
+
+    final media = projection.scenario.nodes.singleWhere(
+      (node) => node.type == GraphNodeType.mediaCollection,
+    );
+    expect(media.createdAt, focus.createdAt);
+    expect(media.aggregateCount, 1);
+    expect(media.memberIds, isEmpty);
+    expect(media.mediaPaths, ['/cover.jpg']);
+    expect(projection.aggregateMembers[media.id], isEmpty);
+    expect(projection.scenario.edges, hasLength(1));
+    final mediaEdge = projection.scenario.edges.single;
+    expect(mediaEdge.fromId, focus.id);
+    expect(mediaEdge.toId, media.id);
+    expect(mediaEdge.kind, GraphEdgeKind.association);
+  });
+
+  test('orders defensive synthetic node types after ordinary entries', () {
+    final focus = node('focus', GraphNodeType.task);
+    final note = node('note', GraphNodeType.textEntry);
+    final media = node('media', GraphNodeType.mediaCollection);
+    final aggregate = node('aggregate', GraphNodeType.aggregate);
+    final projection = buildLocalGraphProjection(
+      raw: GraphScenario(
+        name: 'synthetic ordering',
+        seedId: focus.id,
+        nodes: [focus, aggregate, media, note],
+        edges: const [
+          GraphEdge(
+            fromId: 'focus',
+            toId: 'aggregate',
+            kind: GraphEdgeKind.association,
+          ),
+          GraphEdge(
+            fromId: 'focus',
+            toId: 'media',
+            kind: GraphEdgeKind.association,
+          ),
+          GraphEdge(
+            fromId: 'focus',
+            toId: 'note',
+            kind: GraphEdgeKind.association,
+          ),
+        ],
+        now: now,
+      ),
+      focusId: focus.id,
+      maxNodes: 24,
+      clusterPreviewLimit: 5,
+      clusterCollapseThreshold: 8,
+    );
+
+    expect(
+      projection.scenario.nodes.map((node) => node.id),
+      ['focus', 'note', 'media', 'aggregate'],
+    );
+  });
+
   test('applies relation, category, status, recency and hop filters', () {
     final focus = node('focus', GraphNodeType.task);
     final blocked = node(
@@ -176,6 +252,47 @@ void main() {
       projection.scenario.nodes.map((node) => node.id),
       ['focus', 'blocked'],
     );
+    expect(projection.scenario.edges.single.kind, GraphEdgeKind.blocks);
+  });
+
+  test('does not retain excluded parallel edges between visible nodes', () {
+    final focus = node('focus', GraphNodeType.task);
+    final blocked = node('blocked', GraphNodeType.task);
+    final raw = GraphScenario(
+      name: 'parallel relations',
+      seedId: focus.id,
+      nodes: [focus, blocked],
+      edges: const [
+        GraphEdge(
+          fromId: 'blocked',
+          toId: 'focus',
+          kind: GraphEdgeKind.blocks,
+        ),
+        GraphEdge(
+          fromId: 'blocked',
+          toId: 'focus',
+          kind: GraphEdgeKind.association,
+        ),
+      ],
+      now: now,
+    );
+
+    final projection = buildLocalGraphProjection(
+      raw: raw,
+      focusId: focus.id,
+      maxNodes: 24,
+      clusterPreviewLimit: 5,
+      clusterCollapseThreshold: 8,
+      filters: const GraphProjectionFilters(
+        edgeKinds: {GraphEdgeKind.blocks},
+      ),
+    );
+
+    expect(projection.scenario.nodes.map((node) => node.id), [
+      'focus',
+      'blocked',
+    ]);
+    expect(projection.scenario.edges, hasLength(1));
     expect(projection.scenario.edges.single.kind, GraphEdgeKind.blocks);
   });
 }

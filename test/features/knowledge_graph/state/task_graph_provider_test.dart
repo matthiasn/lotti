@@ -210,6 +210,13 @@ void main() {
     );
   });
 
+  test('knowledge graph entry points are enabled by default', () {
+    final container = ProviderContainer();
+    addTearDown(container.dispose);
+
+    expect(container.read(knowledgeGraphEntryPointEnabledProvider), isTrue);
+  });
+
   group('taskGraphProvider (FutureProvider body)', () {
     late MockJournalDb db;
     late MockEntitiesCacheService cache;
@@ -460,6 +467,7 @@ void main() {
         final note = textEntry(id: 'note', text: 'Logged work');
         final audio = audioEntry(id: 'aud');
         final img = image(id: 'img', categoryId: 'cat');
+        final reverseImg = image(id: 'img-reverse', categoryId: 'cat');
         final ai = aiEntry(id: 'ai', response: '## TL;DR\nShip it');
         final rating = ratingEntry(id: 'rate');
         final cover = image(id: 'cover');
@@ -473,6 +481,7 @@ void main() {
           'note': note,
           'aud': audio,
           'img': img,
+          'img-reverse': reverseImg,
           'ai': ai,
           'rate': rating,
           'cover': cover,
@@ -484,6 +493,11 @@ void main() {
             basicLink(id: 'l-note', fromId: 'task', toId: 'note'),
             basicLink(id: 'l-aud', fromId: 'task', toId: 'aud'),
             basicLink(id: 'l-img', fromId: 'task', toId: 'img'),
+            basicLink(
+              id: 'l-img-reverse',
+              fromId: 'img-reverse',
+              toId: 'task',
+            ),
             basicLink(id: 'l-ai', fromId: 'task', toId: 'ai'),
             EntryLink.rating(
               id: 'l-rate',
@@ -530,6 +544,7 @@ void main() {
         expect(nodeTypes['note'], GraphNodeType.textEntry);
         expect(nodeTypes['aud'], GraphNodeType.audioEntry);
         expect(nodeTypes['img'], GraphNodeType.imageEntry);
+        expect(nodeTypes['img-reverse'], GraphNodeType.imageEntry);
         expect(nodeTypes['ai'], GraphNodeType.aiResponse);
         expect(nodeTypes['rate'], GraphNodeType.rating);
         expect(nodeTypes['cl'], GraphNodeType.checklist);
@@ -565,6 +580,7 @@ void main() {
         expect(taskNode.mediaPaths, [
           '/docs/images/cover.jpg',
           '/docs/images/img.jpg',
+          '/docs/images/img-reverse.jpg',
         ]);
         expect(taskNode.taskStatus, GraphTaskStatus.open);
         expect(taskNode.oneLiner, 'Ship the release');

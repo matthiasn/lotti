@@ -570,14 +570,20 @@ void main() {
         tester,
         node: node(coverImagePath: '/tmp/does-not-exist-cover.png'),
       );
-      // Image.file may not decode under test (the file is absent); asserting
-      // the Image widget is present in the tree is sufficient here.
-      expect(find.byType(Image), findsOneWidget);
       expect(
         find.byKey(const ValueKey('knowledge-graph-media-carousel')),
         findsOneWidget,
       );
       expect(find.text('PHOTO · 1'), findsOneWidget);
+      final imageFinder = find.byType(Image);
+      final image = tester.widget<Image>(imageFinder);
+      final fallback = image.errorBuilder!(
+        tester.element(imageFinder),
+        StateError('decode failed'),
+        StackTrace.empty,
+      );
+      await tester.pumpWidget(makeTestableWidgetNoScroll(fallback));
+      expect(find.byIcon(Icons.broken_image_outlined), findsOneWidget);
     });
 
     testWidgets('does not reserve media space when the task has no photos', (

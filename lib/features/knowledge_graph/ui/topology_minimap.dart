@@ -31,7 +31,6 @@ class TopologyMiniMap extends StatelessWidget {
     final tokens = context.designTokens;
     return Semantics(
       label: semanticsLabel,
-      button: true,
       child: ExcludeSemantics(
         child: Container(
           width: spec.minimapWidth,

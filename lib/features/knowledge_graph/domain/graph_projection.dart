@@ -290,7 +290,9 @@ GraphProjection buildLocalGraphProjection({
   final visibleIds = visibleNodes.map((node) => node.id).toSet();
   final visibleEdges = <GraphEdge>[
     for (final edge in raw.edges)
-      if (visibleIds.contains(edge.fromId) && visibleIds.contains(edge.toId))
+      if (edgeMatches(edge) &&
+          visibleIds.contains(edge.fromId) &&
+          visibleIds.contains(edge.toId))
         edge,
     ...aggregateEdges,
   ];

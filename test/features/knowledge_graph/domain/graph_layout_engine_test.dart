@@ -390,6 +390,44 @@ void main() {
       },
     );
 
+    test(
+      'lays out every typed task relationship in the linked-task sector',
+      () {
+        const kinds = [
+          GraphEdgeKind.blocks,
+          GraphEdgeKind.followsUp,
+          GraphEdgeKind.duplicates,
+          GraphEdgeKind.fixes,
+          GraphEdgeKind.supersedes,
+        ];
+        final nodes = [
+          node(id: 'focus', type: GraphNodeType.task),
+          for (var index = 0; index < kinds.length; index++)
+            node(id: 'typed-$index', type: GraphNodeType.task),
+        ];
+        final s = scenario(
+          nodes: nodes,
+          edges: [
+            for (var index = 0; index < kinds.length; index++)
+              GraphEdge(
+                fromId: 'focus',
+                toId: 'typed-$index',
+                kind: kinds[index],
+              ),
+          ],
+        );
+
+        final layout = computeGraphLayout(s, iterations: 1);
+
+        for (var index = 0; index < kinds.length; index++) {
+          final position = layout.positions['typed-$index']!;
+          expect(position.dx.isFinite, isTrue, reason: '${kinds[index]} dx');
+          expect(position.dy.isFinite, isTrue, reason: '${kinds[index]} dy');
+          expect(position, isNot(Offset.zero), reason: '${kinds[index]} seat');
+        }
+      },
+    );
+
     test('fans out multiple neighbors sharing the same sector', () {
       // Two log entries share the bottom sector; the fan spreads them apart so
       // they do not coincide (n == 2 → t in {-1, 1}).

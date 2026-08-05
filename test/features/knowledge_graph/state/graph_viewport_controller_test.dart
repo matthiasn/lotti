@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_projection.dart';
 import 'package:lotti/features/knowledge_graph/state/graph_viewport_controller.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_visual_spec.dart';
@@ -21,6 +22,20 @@ void main() {
     controller.goForward();
     expect(controller.value.focusId, 'c');
     expect(controller.value.backHistory, ['a', 'b']);
+  });
+
+  test('walking to the current focus only restores its selection', () {
+    final controller = GraphViewportController(initialFocusId: 'a');
+    addTearDown(controller.dispose);
+
+    controller
+      ..selectNode('b')
+      ..walkTo('a');
+
+    expect(controller.value.focusId, 'a');
+    expect(controller.value.selectedId, 'a');
+    expect(controller.value.backHistory, isEmpty);
+    expect(controller.value.forwardHistory, isEmpty);
   });
 
   test('jump re-seeds history while retaining workspace preferences', () {
@@ -54,6 +69,22 @@ void main() {
     expect(controller.value.expandedAggregateIds, {'group'});
 
     controller.toggleAggregate('group');
+    expect(controller.value.expandedAggregateIds, isEmpty);
+  });
+
+  test('filter changes reset keyboard selection to the focus', () {
+    final controller = GraphViewportController(initialFocusId: 'focus');
+    addTearDown(controller.dispose);
+
+    controller
+      ..selectNode('note')
+      ..toggleAggregate('group')
+      ..setFilters(
+        const GraphProjectionFilters(nodeTypes: {GraphNodeType.task}),
+      );
+
+    expect(controller.value.focusId, 'focus');
+    expect(controller.value.selectedId, 'focus');
     expect(controller.value.expandedAggregateIds, isEmpty);
   });
 }

@@ -10,8 +10,11 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_keyboard_navigation.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
+import 'package:lotti/features/knowledge_graph/domain/graph_projection.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_scenarios.dart';
 import 'package:lotti/features/knowledge_graph/ui/entry_detail_sidebar.dart';
+import 'package:lotti/features/knowledge_graph/ui/graph_visual_spec.dart';
+import 'package:lotti/features/knowledge_graph/ui/graph_workspace_toolbar.dart';
 import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_painter.dart';
 import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_view.dart';
 import 'package:lotti/features/knowledge_graph/ui/node_inspector_panel.dart';
@@ -49,6 +52,7 @@ void main() {
     bool showLegend = true,
     bool disableAnimations = false,
     void Function(String taskId, String previousFocusId)? onTaskFocusChanged,
+    GraphImageLoader? imageLoader,
     Size size = desktopSize,
     List<Override> extraOverrides = const [],
   }) async {
@@ -70,6 +74,7 @@ void main() {
           showInspector: showInspector,
           showTitle: showTitle,
           showLegend: showLegend,
+          imageLoader: imageLoader,
         ),
         mediaQueryData: MediaQueryData(
           size: size,
@@ -196,6 +201,21 @@ void main() {
       expect(find.text('Lonely task'), findsWidgets);
       expect(tester.takeException(), isNull);
     });
+
+    testWidgets('labels collapsed relationship aggregates with their count', (
+      tester,
+    ) async {
+      await pumpView(tester, scenario: busyTaskScenario());
+
+      final painter = painterOf(tester);
+      final aggregate = painter.scenario.nodes.firstWhere(
+        (node) => node.aggregateKind == GraphAggregateKind.relation,
+      );
+      expect(
+        painter.nodeLabels[aggregate.id],
+        'more links · ${aggregate.aggregateCount}',
+      );
+    });
   });
 
   group('representations and keyboard navigation', () {
@@ -268,17 +288,110 @@ void main() {
       await tester.pump();
 
       expect(painterFocusId(tester), target.$2);
+
+      await tester.sendKeyEvent(LogicalKeyboardKey.escape);
+      await tester.pump();
+      expect(painterFocusId(tester), scenario.seedId);
+    });
+
+    testWidgets('explore density rebuilds a wider local projection', (
+      tester,
+    ) async {
+      await pumpView(tester, scenario: busyTaskScenario());
+      final before = painterOf(tester).scenario.nodes.length;
+
+      tester
+          .widget<GraphWorkspaceToolbar>(find.byType(GraphWorkspaceToolbar))
+          .onDensityChanged(GraphDensity.explore);
+      await tester.pump();
+
+      final after = painterOf(tester).scenario.nodes.length;
+      expect(after, greaterThanOrEqualTo(before));
+      expect(after, lessThanOrEqualTo(GraphVisualSpec.defaultExploreNodeLimit));
+    });
+
+    testWidgets('minimap jump re-seeds focus without motion', (tester) async {
+      final scenario = taskEgoNetworkScenario();
+      final target = scenario.nodes.firstWhere(
+        (node) => node.type == GraphNodeType.task && node.id != scenario.seedId,
+      );
+      final calls = <({String taskId, String previousFocusId})>[];
+      await pumpView(
+        tester,
+        scenario: scenario,
+        disableAnimations: true,
+        onTaskFocusChanged: (taskId, previousFocusId) {
+          calls.add((taskId: taskId, previousFocusId: previousFocusId));
+        },
+      );
+
+      tester
+          .widget<TopologyMiniMap>(find.byType(TopologyMiniMap))
+          .onJump(
+            target.id,
+          );
+      await tester.pump();
+
+      expect(painterFocusId(tester), target.id);
+      expect(painterOf(tester).wake, 0);
+      expect(calls, [
+        (taskId: target.id, previousFocusId: scenario.seedId),
+      ]);
     });
   });
 
   group('deferred image loading', () {
+    testWidgets('loads task cover art for the graph node background', (
+      tester,
+    ) async {
+      late final ui.Image cover;
+      await tester.runAsync(() async {
+        final recorder = ui.PictureRecorder();
+        Canvas(recorder).drawRect(
+          const Rect.fromLTWH(0, 0, 8, 8),
+          Paint()..color = const Color(0xFF3366CC),
+        );
+        cover = await recorder.endRecording().toImage(8, 8);
+      });
+
+      const coverPath = '/task-cover.png';
+      final loadedPaths = <String>[];
+      await pumpView(
+        tester,
+        scenario: GraphScenario(
+          name: 'Cover art',
+          seedId: 'task',
+          nodes: [
+            GraphNode(
+              id: 'task',
+              type: GraphNodeType.task,
+              label: 'Task with cover art',
+              categoryId: catWork,
+              createdAt: fixedNow,
+              coverImagePath: coverPath,
+              coverImageCropX: 0.8,
+            ),
+          ],
+          edges: const [],
+          now: fixedNow,
+        ),
+        imageLoader: (path) async {
+          loadedPaths.add(path);
+          return cover;
+        },
+      );
+      await tester.pump();
+
+      expect(loadedPaths, [coverPath]);
+      expect(painterOf(tester).images[coverPath], same(cover));
+    });
+
     testWidgets(
-      'decodes a node image from disk and hands it to the painter',
+      'decodes collapsed media paths and hands them to the painter',
       (tester) async {
-        // _loadImages only runs for nodes whose `imagePath` is a readable image
-        // file, so write a real (tiny) PNG to a temp dir and point the seed at
-        // it. Encoding + decoding both touch the platform's image pipeline, so
-        // they must run inside `tester.runAsync` to actually complete.
+        // Write a real (tiny) PNG and collapse the linked image into a media
+        // collection. The raw image node is absent from the displayed scenario,
+        // so this specifically guards aggregate thumbnail decoding.
         late final Directory tempDir;
         late final String pngPath;
         await tester.runAsync(() async {
@@ -305,62 +418,64 @@ void main() {
           nodes: [
             GraphNode(
               id: 's',
+              type: GraphNodeType.task,
+              label: 'Task with photos',
+              categoryId: catWork,
+              createdAt: fixedNow,
+              mediaPaths: [pngPath],
+            ),
+            GraphNode(
+              id: 'photo',
               type: GraphNodeType.imageEntry,
               label: 'Photo entry',
               categoryId: catWork,
               createdAt: fixedNow,
               imagePath: pngPath,
             ),
-            GraphNode(
-              id: 'n',
-              type: GraphNodeType.textEntry,
-              label: 'Note',
-              categoryId: catWork,
-              createdAt: fixedNow,
-            ),
           ],
           edges: const [
-            GraphEdge(fromId: 's', toId: 'n', kind: GraphEdgeKind.association),
+            GraphEdge(
+              fromId: 's',
+              toId: 'photo',
+              kind: GraphEdgeKind.association,
+            ),
           ],
           now: fixedNow,
         );
 
-        // Pump inside runAsync so the async decode chain
-        // (File.readAsBytes → instantiateImageCodec → getNextFrame), which
-        // `initState` kicks off fire-and-forget, can actually complete against
-        // the real event loop. The load isn't awaitable from here, so poll the
-        // painter (bounded) until the decoded image is published. Real I/O
-        // justifies the real-time yield (see test/README.md fake-time exception).
+        late final ui.Image decoded;
         await tester.runAsync(() async {
-          tester.view
-            ..physicalSize = desktopSize
-            ..devicePixelRatio = 1.0;
-          addTearDown(tester.view.resetPhysicalSize);
-          addTearDown(tester.view.resetDevicePixelRatio);
-          await tester.pumpWidget(
-            makeTestableWidgetNoScroll(
-              KnowledgeGraphView(scenario: scenario),
-              mediaQueryData: const MediaQueryData(size: desktopSize),
-            ),
-          );
-          for (var i = 0; i < 50; i++) {
-            await tester.pump();
-            if (painterOf(tester).images.containsKey('s')) break;
-            await Future<void>.delayed(const Duration(milliseconds: 10));
-          }
+          decoded = await decodeGraphImageFile(pngPath);
         });
-        // Apply the setState that publishes the freshly decoded image.
+        final loadedPaths = <String>[];
+        await pumpView(
+          tester,
+          scenario: scenario,
+          imageLoader: (path) async {
+            loadedPaths.add(path);
+            return decoded;
+          },
+        );
         await tester.pump();
 
-        // The painter now carries the decoded thumbnail under the node id —
-        // proving the load completed and was published (not just attempted).
+        final painter = painterOf(tester);
+        expect(loadedPaths, [pngPath]);
+        expect(
+          painter.scenario.nodes
+              .singleWhere(
+                (node) => node.type == GraphNodeType.mediaCollection,
+              )
+              .mediaPaths,
+          [pngPath],
+        );
+        // The painter carries the decoded thumbnail under its media path even
+        // though the raw image node was collapsed out of the local projection.
         final images = painterOf(tester).images;
-        expect(images.keys, contains('s'));
-        expect(images['s'], isA<ui.Image>());
-        expect(images['s']!.width, 4);
-        expect(images['s']!.height, 4);
-        // The node without an imagePath is not loaded.
-        expect(images.keys, isNot(contains('n')));
+        expect(images.keys, contains(pngPath));
+        expect(images[pngPath], isA<ui.Image>());
+        expect(images[pngPath]!.width, 4);
+        expect(images[pngPath]!.height, 4);
+        expect(images.keys, isNot(contains('photo')));
         // Disposal of the loaded image happens when the widget tears down at the
         // end of the test (covers the dispose loop with a real entry).
       },
@@ -802,6 +917,26 @@ void main() {
           ),
         );
         expect(backInkAfter.onTap, isNull);
+
+        final forwardInk = tester.widget<InkWell>(
+          find.ancestor(
+            of: find.byIcon(Icons.arrow_forward),
+            matching: find.byType(InkWell),
+          ),
+        );
+        expect(forwardInk.onTap, isNotNull);
+        await tester.tap(find.byIcon(Icons.arrow_forward));
+        for (var i = 0; i < 5; i++) {
+          await tester.pump(const Duration(milliseconds: 200));
+        }
+        expect(painterFocusId(tester), neighborId);
+        final forwardInkAfter = tester.widget<InkWell>(
+          find.ancestor(
+            of: find.byIcon(Icons.arrow_forward),
+            matching: find.byType(InkWell),
+          ),
+        );
+        expect(forwardInkAfter.onTap, isNull);
         expect(tester.takeException(), isNull);
       },
     );
@@ -1022,6 +1157,202 @@ void main() {
   });
 
   group('tap-to-walk', () {
+    testWidgets('tapping a projected media aggregate expands its photos', (
+      tester,
+    ) async {
+      final scenario = GraphScenario(
+        name: 'Media aggregate',
+        seedId: 'task',
+        nodes: [
+          GraphNode(
+            id: 'task',
+            type: GraphNodeType.task,
+            label: 'Task',
+            categoryId: catWork,
+            createdAt: fixedNow,
+            mediaPaths: const ['/cover.jpg'],
+          ),
+          GraphNode(
+            id: 'photo',
+            type: GraphNodeType.imageEntry,
+            label: 'Photo',
+            categoryId: catWork,
+            createdAt: fixedNow,
+            imagePath: '/photo.jpg',
+          ),
+        ],
+        edges: const [
+          GraphEdge(
+            fromId: 'task',
+            toId: 'photo',
+            kind: GraphEdgeKind.association,
+          ),
+        ],
+        now: fixedNow,
+      );
+      await pumpView(tester, scenario: scenario);
+
+      final before = painterOf(tester);
+      final aggregate = before.scenario.nodes.singleWhere(
+        (node) => node.type == GraphNodeType.mediaCollection,
+      );
+      await tester.tapAt(screenPosOf(tester, before.positions[aggregate.id]!));
+      await tester.pump();
+
+      final after = painterOf(tester);
+      expect(
+        after.scenario.nodes.map((node) => node.id),
+        contains('photo'),
+      );
+      expect(
+        after.scenario.nodes.where(
+          (node) => node.type == GraphNodeType.mediaCollection,
+        ),
+        isEmpty,
+      );
+      expect(after.focusId, 'task');
+    });
+
+    testWidgets('keyboard expansion restores selection to the focus', (
+      tester,
+    ) async {
+      final scenario = GraphScenario(
+        name: 'Keyboard media aggregate',
+        seedId: 'task',
+        nodes: [
+          GraphNode(
+            id: 'task',
+            type: GraphNodeType.task,
+            label: 'Task',
+            categoryId: catWork,
+            createdAt: fixedNow,
+            mediaPaths: const ['/cover.jpg'],
+          ),
+          GraphNode(
+            id: 'photo',
+            type: GraphNodeType.imageEntry,
+            label: 'Photo',
+            categoryId: catWork,
+            createdAt: fixedNow,
+            imagePath: '/photo.jpg',
+          ),
+        ],
+        edges: const [
+          GraphEdge(
+            fromId: 'task',
+            toId: 'photo',
+            kind: GraphEdgeKind.association,
+          ),
+        ],
+        now: fixedNow,
+      );
+      await pumpView(tester, scenario: scenario);
+      final before = painterOf(tester);
+      final aggregate = before.scenario.nodes.singleWhere(
+        (node) => node.type == GraphNodeType.mediaCollection,
+      );
+      final direction =
+          before.positions[aggregate.id]! - before.positions['task']!;
+      final key = direction.dx.abs() >= direction.dy.abs()
+          ? (direction.dx < 0
+                ? LogicalKeyboardKey.arrowLeft
+                : LogicalKeyboardKey.arrowRight)
+          : (direction.dy < 0
+                ? LogicalKeyboardKey.arrowUp
+                : LogicalKeyboardKey.arrowDown);
+      final graphFocus = tester.widget<Focus>(
+        find.descendant(
+          of: find.byType(KnowledgeGraphView),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Focus && widget.onKeyEvent != null,
+          ),
+        ),
+      );
+      graphFocus.focusNode!.requestFocus();
+      await tester.pump();
+
+      await tester.sendKeyEvent(key);
+      await tester.pump();
+      expect(painterOf(tester).selectedId, aggregate.id);
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+
+      final after = painterOf(tester);
+      expect(after.scenario.nodes.map((node) => node.id), contains('photo'));
+      expect(after.selectedId, 'task');
+    });
+
+    testWidgets('filtering resets a hidden keyboard selection to the focus', (
+      tester,
+    ) async {
+      final scenario = GraphScenario(
+        name: 'Filtered selection',
+        seedId: 'task',
+        nodes: [
+          GraphNode(
+            id: 'task',
+            type: GraphNodeType.task,
+            label: 'Task',
+            categoryId: catWork,
+            createdAt: fixedNow,
+          ),
+          GraphNode(
+            id: 'note',
+            type: GraphNodeType.textEntry,
+            label: 'Note',
+            categoryId: catWork,
+            createdAt: fixedNow,
+          ),
+        ],
+        edges: const [
+          GraphEdge(
+            fromId: 'task',
+            toId: 'note',
+            kind: GraphEdgeKind.association,
+          ),
+        ],
+        now: fixedNow,
+      );
+      await pumpView(tester, scenario: scenario);
+      final painter = painterOf(tester);
+      final direction = painter.positions['note']! - painter.positions['task']!;
+      final key = direction.dx.abs() >= direction.dy.abs()
+          ? (direction.dx < 0
+                ? LogicalKeyboardKey.arrowLeft
+                : LogicalKeyboardKey.arrowRight)
+          : (direction.dy < 0
+                ? LogicalKeyboardKey.arrowUp
+                : LogicalKeyboardKey.arrowDown);
+      final graphFocus = tester.widget<Focus>(
+        find.descendant(
+          of: find.byType(KnowledgeGraphView),
+          matching: find.byWidgetPredicate(
+            (widget) => widget is Focus && widget.onKeyEvent != null,
+          ),
+        ),
+      );
+      graphFocus.focusNode!.requestFocus();
+      await tester.pump();
+      await tester.sendKeyEvent(key);
+      await tester.pump();
+      expect(painterOf(tester).selectedId, 'note');
+
+      tester
+          .widget<GraphWorkspaceToolbar>(find.byType(GraphWorkspaceToolbar))
+          .onFiltersChanged(
+            const GraphProjectionFilters(
+              nodeTypes: {GraphNodeType.task},
+            ),
+          );
+      await tester.pump();
+
+      expect(painterOf(tester).selectedId, 'task');
+      await tester.sendKeyEvent(LogicalKeyboardKey.enter);
+      await tester.pump();
+      expect(tester.takeException(), isNull);
+      expect(painterFocusId(tester), 'task');
+    });
+
     testWidgets('tapping a neighbor node changes the focus', (tester) async {
       // Use the ego scenario (deterministic layout). Compute where a 1-hop
       // neighbor renders under the view's initial framing, then tap there.

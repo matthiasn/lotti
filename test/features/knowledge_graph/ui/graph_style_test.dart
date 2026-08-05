@@ -109,6 +109,19 @@ void main() {
         relStyleFor(GraphEdgeKind.checklist, GraphNodeType.checklistItem),
         RelStyle.checklist,
       );
+      for (final kind in const [
+        GraphEdgeKind.blocks,
+        GraphEdgeKind.followsUp,
+        GraphEdgeKind.duplicates,
+        GraphEdgeKind.fixes,
+        GraphEdgeKind.supersedes,
+      ]) {
+        expect(
+          relStyleFor(kind, GraphNodeType.task),
+          RelStyle.linkedTask,
+          reason: '$kind keeps the linked-task visual language',
+        );
+      }
     });
 
     test('association to a task is a linked-task tie', () {

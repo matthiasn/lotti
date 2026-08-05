@@ -123,7 +123,11 @@ class GraphViewportController extends ValueNotifier<GraphViewportState> {
   }
 
   void setFilters(GraphProjectionFilters filters) {
-    value = value.copyWith(filters: filters, expandedAggregateIds: const {});
+    value = value.copyWith(
+      selectedId: value.focusId,
+      filters: filters,
+      expandedAggregateIds: const {},
+    );
   }
 
   void setMode(GraphViewMode mode) {

@@ -108,8 +108,8 @@ class GraphNode {
   final String? imagePath;
 
   /// Absolute file path of a task's cover art (its `coverArtId` image), shown
-  /// as the inspector cover banner for task nodes. Null when the task has no
-  /// cover art or the node is not a task.
+  /// in the task's graph node and inspector media rail. Null when the task has
+  /// no cover art or the node is not a task.
   final String? coverImagePath;
 
   /// Horizontal focal point for task cover art (`0` = left, `1` = right).

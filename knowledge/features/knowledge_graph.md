@@ -56,17 +56,22 @@ without sacrificing local legibility.
 # Rendering and interaction
 
 `knowledge_graph_painter.dart` paints nodes, typed edges, labels, focus trails,
-and media mosaics in screen space. `graph_label_layout.dart` measures labels and
-places them at one of eight anchors using deterministic priority and collision
-avoidance. Focus, selection, aggregates, direct neighbours, and second-hop
-context descend in priority; non-essential labels cull at low semantic zoom.
+and media mosaics in screen space. A task with cover art uses that image as its
+circular node body, with the stored horizontal focal crop; the existing focus
+radius remains the only additional size emphasis. `graph_label_layout.dart`
+measures labels and places them at one of eight anchors using deterministic
+priority and collision avoidance. Focus, selection, aggregates, direct
+neighbours, and second-hop context descend in priority; non-essential labels
+cull at low semantic zoom.
 
 The toolbar changes local density and hop depth, and filters by relationship,
 node type, category, recency, and task status. Arrow keys move the selection in
 screen-space direction, Enter or Space walks to it, and Escape walks back.
 Painter semantics expose every visible node as a labelled button with a
 minimum-size accessibility target. Reduced-motion and high-contrast media
-preferences change motion and relationship stroke strength respectively.
+preferences change motion and relationship stroke strength respectively. The
+topology minimap exposes one labelled orientation region rather than claiming a
+screen-reader button action that has no meaningful single destination.
 
 # Inspector data
 

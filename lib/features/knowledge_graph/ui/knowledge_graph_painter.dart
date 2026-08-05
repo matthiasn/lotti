@@ -362,12 +362,27 @@ class KnowledgeGraphPainter extends CustomPainter {
         ..maskFilter = MaskFilter.blur(BlurStyle.normal, r * 0.5),
     );
 
-    // Body: a real thumbnail for image nodes, otherwise a lit sphere. Always
-    // topped with an opaque delineating ring (hides the edge/node seam).
+    // Body: a real thumbnail for image entries and cover-backed task nodes,
+    // otherwise a lit sphere. The focused task already receives the standard
+    // focus size bump, so cover art adds context without another size scale.
+    // Always topped with an opaque delineating ring (hides the edge/node seam).
     final rect = Rect.fromCircle(center: center, radius: r);
-    final thumb = images[node.id];
+    ui.Image? coverThumb;
+    if (node.type == GraphNodeType.task) {
+      final coverImagePath = node.coverImagePath;
+      if (coverImagePath != null) coverThumb = images[coverImagePath];
+    }
+    var thumb = coverThumb ?? images[node.id];
+    if (thumb == null) {
+      final imagePath = node.imagePath;
+      if (imagePath != null) thumb = images[imagePath];
+    }
+    final thumbFocalX = coverThumb == null ? 0.5 : node.coverImageCropX;
     final mosaic = node.type == GraphNodeType.mediaCollection
-        ? node.memberIds.map((id) => images[id]).nonNulls.take(4).toList()
+        ? <ui.Image>{
+            ...node.mediaPaths.map((path) => images[path]).nonNulls,
+            ...node.memberIds.map((id) => images[id]).nonNulls,
+          }.take(4).toList()
         : const <ui.Image>[];
     if (mosaic.isNotEmpty) {
       _paintMediaMosaic(canvas, rect, mosaic);
@@ -377,7 +392,12 @@ class KnowledgeGraphPainter extends CustomPainter {
         ..clipPath(Path()..addOval(rect))
         ..drawImageRect(
           thumb,
-          _coverSrc(thumb.width.toDouble(), thumb.height.toDouble(), rect),
+          _coverSrc(
+            thumb.width.toDouble(),
+            thumb.height.toDouble(),
+            rect,
+            focalX: thumbFocalX,
+          ),
           rect,
           Paint()
             ..filterQuality = FilterQuality.medium
@@ -673,13 +693,19 @@ class KnowledgeGraphPainter extends CustomPainter {
     }
   }
 
-  /// Center-crop source rect so the image covers the circular [dst]
-  /// (BoxFit.cover).
-  Rect _coverSrc(double iw, double ih, Rect dst) {
+  /// Crop the source so it covers the circular [dst] (`BoxFit.cover`), using
+  /// [focalX] as the horizontal focal point for task cover art.
+  Rect _coverSrc(
+    double iw,
+    double ih,
+    Rect dst, {
+    double focalX = 0.5,
+  }) {
     final scale = math.max(dst.width / iw, dst.height / ih);
     final w = dst.width / scale;
     final h = dst.height / scale;
-    return Rect.fromLTWH((iw - w) / 2, (ih - h) / 2, w, h);
+    final left = (iw - w) * focalX.clamp(0.0, 1.0);
+    return Rect.fromLTWH(left, (ih - h) / 2, w, h);
   }
 
   List<Offset> _bezier(Offset p0, Offset c, Offset p2, int steps) {

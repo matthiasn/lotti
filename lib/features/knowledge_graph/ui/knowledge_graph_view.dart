@@ -33,6 +33,20 @@ import 'package:lotti/features/knowledge_graph/ui/node_inspector_panel.dart';
 import 'package:lotti/features/knowledge_graph/ui/topology_minimap.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+typedef GraphImageLoader = Future<ui.Image> Function(String path);
+
+/// Decodes a graph thumbnail from local storage.
+Future<ui.Image> decodeGraphImageFile(String path) async {
+  final bytes = await File(path).readAsBytes();
+  final codec = await ui.instantiateImageCodec(bytes);
+  try {
+    final frame = await codec.getNextFrame();
+    return frame.image;
+  } finally {
+    codec.dispose();
+  }
+}
+
 class KnowledgeGraphView extends StatefulWidget {
   const KnowledgeGraphView({
     this.scenario,
@@ -45,6 +59,7 @@ class KnowledgeGraphView extends StatefulWidget {
     this.showTitle = true,
     this.showLegend = true,
     this.showInspector = true,
+    this.imageLoader,
     super.key,
   });
 
@@ -79,6 +94,9 @@ class KnowledgeGraphView extends StatefulWidget {
   final bool showTitle;
   final bool showLegend;
   final bool showInspector;
+
+  /// Overrides local image decoding for deterministic tests.
+  final GraphImageLoader? imageLoader;
 
   @override
   State<KnowledgeGraphView> createState() => _KnowledgeGraphViewState();
@@ -185,30 +203,34 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     }
   }
 
-  /// Decode image-entry thumbnails off the main work and repaint when ready.
+  /// Decode task covers, entry images, and aggregate thumbnails off the main
+  /// work and repaint when ready.
   Future<void> _loadImages() async {
     final loaded = <String, ui.Image>{};
-    for (final node in _displayScenario.nodes) {
-      final path = node.imagePath;
-      if (path == null || path.isEmpty) continue;
+    final loadImage = widget.imageLoader ?? decodeGraphImageFile;
+    final paths = <String>{
+      for (final node in _scenario.nodes) ...[
+        if (node.imagePath case final path? when path.isNotEmpty) path,
+        if (node.coverImagePath case final path? when path.isNotEmpty) path,
+        ...node.mediaPaths.where((path) => path.isNotEmpty),
+      ],
+    };
+    for (final path in paths) {
       try {
-        final bytes = await File(path).readAsBytes();
-        final codec = await ui.instantiateImageCodec(bytes);
-        final frame = await codec.getNextFrame();
-        codec.dispose();
+        final image = await loadImage(path);
         if (!mounted) {
           // Disposed mid-decode — release what we decoded and bail. Only fires
           // when the view is torn down between async frames, which the test
           // harness can't trigger deterministically.
           // coverage:ignore-start
-          frame.image.dispose();
+          image.dispose();
           for (final image in loaded.values) {
             image.dispose();
           }
           return;
           // coverage:ignore-end
         }
-        loaded[node.id] = frame.image;
+        loaded[path] = image;
       } on Object {
         // Missing/unreadable file — fall back to the type glyph.
       }
@@ -251,6 +273,11 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
       expandedAggregateIds: _viewport.value.expandedAggregateIds,
     );
     _displayScenario = _projection.scenario;
+    if (!_displayScenario.nodes.any(
+      (node) => node.id == _viewport.value.selectedId,
+    )) {
+      _viewport.selectNode(_focusId);
+    }
     _layout = computeGraphLayout(_displayScenario, iterations: 140);
     _degrees = degreeMap(_displayScenario.edges);
   }
@@ -364,14 +391,10 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     return (scale, pan);
   }
 
-  void _walkTo(String id, {bool record = true}) {
+  void _walkTo(String id) {
     if (id == _focusId) return;
     final fromId = _focusId;
-    if (record) {
-      _viewport.walkTo(id);
-    } else {
-      _viewport.jumpTo(id);
-    }
+    _viewport.walkTo(id);
     _previousFocusId = fromId;
     _walkPath = _path(fromId, id);
     _rebuildLocalGraph();
@@ -657,7 +680,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     final local = d.localPosition;
     String? hit;
     var best = double.infinity;
-    for (final node in _scenario.nodes) {
+    for (final node in _displayScenario.nodes) {
       final world = _displayWorldPosition(node.id);
       if (world == null) continue;
       final screen = world * _scale + _pan;

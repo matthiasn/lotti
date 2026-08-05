@@ -1,3 +1,4 @@
+import 'dart:typed_data';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -179,14 +180,32 @@ void main() {
   // platform codec: paint one filled rect into a PictureRecorder, end the
   // recording, and rasterize the resulting Picture. `toImage` is async, so
   // callers must run this inside `tester.runAsync`.
-  Future<ui.Image> makeDummyImage({int w = 8, int h = 8}) async {
+  Future<ui.Image> makeDummyImage({
+    int w = 8,
+    int h = 8,
+    Color color = const Color(0xFF3366CC),
+  }) async {
     final recorder = ui.PictureRecorder();
     Canvas(recorder).drawRect(
       Rect.fromLTWH(0, 0, w.toDouble(), h.toDouble()),
-      Paint()..color = const Color(0xFF3366CC),
+      Paint()..color = color,
     );
     final picture = recorder.endRecording();
     return picture.toImage(w, h);
+  }
+
+  Future<ui.Image> makeSplitCover() async {
+    final recorder = ui.PictureRecorder();
+    Canvas(recorder)
+      ..drawRect(
+        const Rect.fromLTWH(0, 0, 8, 8),
+        Paint()..color = const Color(0xFFCC3333),
+      )
+      ..drawRect(
+        const Rect.fromLTWH(8, 0, 8, 8),
+        Paint()..color = const Color(0xFF3366CC),
+      );
+    return recorder.endRecording().toImage(16, 8);
   }
 
   KnowledgeGraphPainter painterFor(
@@ -276,6 +295,36 @@ void main() {
         now: now,
       );
       expectPaintsCleanly(painterFor(single, focusId: 'solo'));
+    });
+
+    test('assigns a visible radius to a collapsed relation aggregate', () {
+      final aggregate = GraphNode(
+        id: 'aggregate',
+        type: GraphNodeType.aggregate,
+        label: 'More links',
+        categoryId: 'cat-work',
+        createdAt: now,
+        aggregateKind: GraphAggregateKind.relation,
+        aggregateCount: 3,
+      );
+      final scenario = GraphScenario(
+        name: 'aggregate radius',
+        seedId: 'task',
+        nodes: [
+          node(id: 'task', type: GraphNodeType.task),
+          aggregate,
+        ],
+        edges: const [
+          GraphEdge(
+            fromId: 'task',
+            toId: 'aggregate',
+            kind: GraphEdgeKind.association,
+          ),
+        ],
+        now: now,
+      );
+
+      expect(painterFor(scenario).radiusFor(aggregate), greaterThan(0));
     });
 
     test('handles a focus with hops covering every emphasis band', () {
@@ -384,6 +433,132 @@ void main() {
 
       // (b) Also drive it against a recording canvas to assert the image branch
       // (clip + drawImageRect + _coverSrc) completes without throwing.
+      expectPaintsCleanly(painter);
+    });
+
+    testWidgets('uses task cover art as the circular node body', (
+      tester,
+    ) async {
+      late final ui.Image cover;
+      late final ui.Image fallback;
+      await tester.runAsync(() async {
+        cover = await makeSplitCover();
+        fallback = await makeDummyImage(
+          color: const Color(0xFF33CC66),
+        );
+      });
+      addTearDown(() {
+        cover.dispose();
+        fallback.dispose();
+      });
+
+      final scenario = GraphScenario(
+        name: 'cover art',
+        seedId: 'task',
+        nodes: [
+          GraphNode(
+            id: 'task',
+            type: GraphNodeType.task,
+            label: 'Task with cover art',
+            categoryId: 'cat-work',
+            createdAt: now,
+            imagePath: '/fallback.png',
+            coverImagePath: '/cover.png',
+            coverImageCropX: 1,
+          ),
+        ],
+        edges: const [],
+        now: now,
+      );
+      final painter = painterFor(
+        scenario,
+        positions: const {'task': Offset.zero},
+        pan: const Offset(200, 200),
+        images: {
+          '/cover.png': cover,
+          '/fallback.png': fallback,
+        },
+      );
+      final recorder = ui.PictureRecorder();
+      painter.paint(Canvas(recorder), const Size.square(400));
+      final picture = recorder.endRecording();
+
+      late final ui.Image rendered;
+      late final ByteData pixels;
+      await tester.runAsync(() async {
+        rendered = await picture.toImage(400, 400);
+        pixels = (await rendered.toByteData())!;
+      });
+      addTearDown(rendered.dispose);
+      const center = (200 * 400 + 200) * 4;
+
+      final red = pixels.getUint8(center);
+      final green = pixels.getUint8(center + 1);
+      final blue = pixels.getUint8(center + 2);
+      expect(blue, greaterThan(red));
+      expect(blue, greaterThan(green));
+    });
+
+    testWidgets('renders a media collection mosaic from path-keyed images', (
+      tester,
+    ) async {
+      late final List<ui.Image> thumbnails;
+      await tester.runAsync(() async {
+        thumbnails = [
+          await makeDummyImage(h: 4),
+          await makeDummyImage(w: 4),
+          await makeDummyImage(w: 6, h: 6),
+          await makeDummyImage(w: 10, h: 5),
+        ];
+      });
+      addTearDown(() {
+        for (final image in thumbnails) {
+          image.dispose();
+        }
+      });
+      final scenario = GraphScenario(
+        name: 'media mosaic',
+        seedId: 'task',
+        nodes: [
+          GraphNode(
+            id: 'task',
+            type: GraphNodeType.task,
+            label: 'Task',
+            categoryId: 'cat-work',
+            createdAt: now,
+          ),
+          GraphNode(
+            id: 'media',
+            type: GraphNodeType.mediaCollection,
+            label: 'Photos',
+            categoryId: 'cat-work',
+            createdAt: now,
+            aggregateKind: GraphAggregateKind.photos,
+            aggregateCount: 4,
+            mediaPaths: const ['/a', '/b', '/c', '/d'],
+          ),
+        ],
+        edges: const [
+          GraphEdge(
+            fromId: 'task',
+            toId: 'media',
+            kind: GraphEdgeKind.association,
+          ),
+        ],
+        now: now,
+      );
+      final painter = painterFor(
+        scenario,
+        positions: const {
+          'task': Offset(-60, 0),
+          'media': Offset(60, 0),
+        },
+        images: {
+          for (var index = 0; index < thumbnails.length; index++)
+            '/${String.fromCharCode(97 + index)}': thumbnails[index],
+        },
+      );
+
       expectPaintsCleanly(painter);
     });
   });

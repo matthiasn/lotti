@@ -19,7 +19,8 @@ The explorer is available from the graph action in task details.
 - **You can choose how to navigate.** The same focus and filters drive either
   the spatial graph or a grouped Connections list. Density, hop, relation,
   type, category, recency, and task-status controls narrow the view.
-- **You can see what you are looking at.** A compact side inspector shows the
+- **You can see what you are looking at.** Task cover art appears in its circular
+  graph node for quick visual recognition. A compact side inspector shows the
   full title, cover art and linked photos, a collapsed AI brief, age, and linked
   entries without reserving an empty banner.
 

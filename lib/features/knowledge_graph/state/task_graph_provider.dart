@@ -295,8 +295,8 @@ final FutureProviderFamily<TaskGraphData?, String> taskGraphProvider =
         level++;
       }
 
-      // Resolve task cover art (its `coverArtId` image) so the inspector shows
-      // a real cover banner for task previews. Some cover images are already
+      // Resolve task cover art (its `coverArtId` image) for the image-backed
+      // graph node and inspector media rail. Some cover images are already
       // loaded by the BFS; fetch only the missing ones.
       final coverArtIds = <String>{
         for (final e in entities.values)

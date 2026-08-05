@@ -87,6 +87,43 @@ void main() {
     expect(groups.single.nodes.single.id, 'blocked');
   });
 
+  test('combines category and recency filters', () {
+    final oldTask = GraphNode(
+      id: 'old',
+      type: GraphNodeType.task,
+      label: 'old full readable title',
+      categoryId: 'work',
+      createdAt: now.subtract(const Duration(days: 40)),
+    );
+    final filteredScenario = GraphScenario(
+      name: scenario.name,
+      seedId: scenario.seedId,
+      nodes: [...scenario.nodes, oldTask],
+      edges: [
+        ...scenario.edges,
+        const GraphEdge(
+          fromId: 'focus',
+          toId: 'old',
+          kind: GraphEdgeKind.association,
+        ),
+      ],
+      now: now,
+    );
+
+    final ids = graphConnectionGroups(
+      scenario: filteredScenario,
+      focusId: 'focus',
+      filters: const GraphProjectionFilters(
+        categoryIds: {'work'},
+        maxAgeDays: 7,
+      ),
+    ).expand((group) => group.nodes).map((node) => node.id).toSet();
+
+    expect(ids, containsAll({'blocked', 'source'}));
+    expect(ids, isNot(contains('note')));
+    expect(ids, isNot(contains('old')));
+  });
+
   testWidgets('shows readable grouped rows and walks the selected connection', (
     tester,
   ) async {
@@ -110,6 +147,7 @@ void main() {
     );
 
     expect(find.text('Blocks · 1'), findsOneWidget);
+    expect(find.text('Has follow-up · 1'), findsOneWidget);
     expect(find.text('note / log · 1'), findsOneWidget);
     expect(find.text('blocked full readable title'), findsOneWidget);
 

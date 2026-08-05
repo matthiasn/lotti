@@ -73,7 +73,7 @@ class GraphWorkspaceToolbar extends StatelessWidget {
                 child: DesignSystemChip(
                   label: graphDensityLabel(context.messages, state.density),
                   leadingIcon: Icons.blur_on_outlined,
-                  onPressed: () {},
+                  onPressed: () {}, // coverage:ignore-line
                 ),
               ),
             ),
