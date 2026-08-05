@@ -7,8 +7,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/journal/model/entry_state.dart';
-import 'package:lotti/features/journal/state/entry_controller.dart';
+import 'package:lotti/features/journal/ui/pages/entry_details_page.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_keyboard_navigation.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
@@ -22,10 +21,16 @@ import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_painter.dart';
 import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_view.dart';
 import 'package:lotti/features/knowledge_graph/ui/node_inspector_panel.dart';
 import 'package:lotti/features/knowledge_graph/ui/topology_minimap.dart';
+import 'package:lotti/features/user_activity/state/user_activity_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
+import 'package:lotti/services/entities_cache_service.dart';
+import 'package:lotti/services/time_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
@@ -1892,21 +1897,22 @@ void main() {
   });
 
   group('full-details overlay (desktop)', () {
-    // The overlay's [EntryDetailSidebar] is a ConsumerWidget that watches
-    // `entryControllerProvider(focusId)`. Building it for real would pull in
-    // the app's full provider/getIt graph and the heavy TaskForm/details
-    // widgets. Instead, the focus entry's controller is overridden with one
-    // whose `build` resolves to `null` (no entry) — so the sidebar renders its
-    // cheap "Entry not found" shell and never builds `_DetailBody`. The base
-    // [EntryController]'s field initializers still touch getIt, so a minimal
-    // get_it (setUpTestGetIt + a mock EditorStateService) is registered just for
-    // these cases.
     setUp(() async {
       await setUpTestGetIt(
         additionalSetup: () {
-          getIt.registerSingleton<EditorStateService>(
-            MockEditorStateService(),
-          );
+          final entitiesCache = MockEntitiesCacheService();
+          final timeService = MockTimeService();
+          final userActivityService = MockUserActivityService();
+          when(
+            () => entitiesCache.getCategoryById(any()),
+          ).thenReturn(null);
+          when(timeService.getStream).thenAnswer((_) => const Stream.empty());
+          when(userActivityService.updateActivity).thenReturn(null);
+          getIt
+            ..registerSingleton<EditorStateService>(MockEditorStateService())
+            ..registerSingleton<EntitiesCacheService>(entitiesCache)
+            ..registerSingleton<TimeService>(timeService)
+            ..registerSingleton<UserActivityService>(userActivityService);
         },
       );
     });
@@ -1916,15 +1922,13 @@ void main() {
       'tapping Open shows the EntryDetailSidebar; closing it hides it again',
       (tester) async {
         final scenario = taskEgoNetworkScenario();
+        final entry = testTextEntry.copyWith(
+          meta: testTextEntry.meta.copyWith(id: scenario.seedId),
+        );
         await pumpView(
           tester,
           scenario: scenario,
-          extraOverrides: [
-            // The focus at open time is the scenario seed (`t0`).
-            entryControllerProvider(scenario.seedId).overrideWith(
-              _NullEntryController.new,
-            ),
-          ],
+          extraOverrides: [createEntryControllerOverride(entry)],
         );
 
         // The inspector is docked (desktop), the overlay is not open yet.
@@ -1939,17 +1943,23 @@ void main() {
         await tester.pump();
         expect(find.byType(EntryDetailSidebar), findsNothing);
 
-        // The next build activates the sidebar outside the layout callback; a
-        // final frame lets the async controller resolve to its null data shell.
+        // The next build activates the sidebar outside the layout callback;
+        // another frame lets the synchronous entry controller build the real
+        // nested Navigator and EntryDetailsPage route.
         await tester.pump();
         expect(find.byType(EntryDetailSidebar), findsOneWidget);
-        await tester.pump();
+        // Flutter Animate schedules a zero-duration restart timer when the real
+        // detail route mounts. Advance fake time so that timer cannot leak out
+        // of this regression test.
+        await tester.pump(const Duration(milliseconds: 1));
 
-        // The full-details overlay is now rendered above the inspector. With the
-        // controller resolved to a null entry it shows the "Entry not found"
-        // shell (proving the cheap path, not the heavy `_DetailBody`).
+        // The full-details overlay is now rendered above the inspector. This
+        // must exercise the route that caused the production layout mutation,
+        // not the sidebar's empty/loading shell.
         expect(find.byType(EntryDetailSidebar), findsOneWidget);
-        expect(find.text('Entry not found'), findsOneWidget);
+        expect(find.byType(EntryDetailsPage), findsOneWidget);
+        expect(find.byType(Navigator), findsNWidgets(2));
+        expect(tester.takeException(), isNull);
 
         final wideWidth = tester.getSize(find.byType(EntryDetailSidebar)).width;
         tester.view.physicalSize = const Size(1000, 800);
@@ -1971,12 +1981,4 @@ void main() {
       },
     );
   });
-}
-
-/// Minimal [EntryController] whose `build` resolves to `null` (no entry), so the
-/// [EntryDetailSidebar] renders its "Entry not found" shell without building the
-/// heavy real detail widgets — and without the app's provider/getIt graph.
-class _NullEntryController extends EntryController {
-  @override
-  Future<EntryState?> build() async => null;
 }
