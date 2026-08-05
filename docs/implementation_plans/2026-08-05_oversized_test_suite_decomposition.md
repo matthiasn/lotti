@@ -24,8 +24,8 @@ decomposition itself.
 | 2 | `task_agent_workflow_test.dart` | 9,132 | wake execution, persistence, prompt/context delegation, workflow shell | Merged (#3806) |
 | 3 | `unified_ai_inference_repository_test.dart` | 8,593 | inference execution, tool-call processing, post-processing, repository shell | Merged (#3807) |
 | 4 | `eval_constraints_test.dart` | 8,228 | split the test-only constraint framework and mirror its focused source files | Merged (#3808) |
-| 5 | `outbox_service_test.dart` | 7,820 | send pipeline, queue/database behavior, retry/maintenance, service shell | In progress |
-| 6 | `day_agent_workflow_test.dart` | 7,379 | day wake execution, context/prompt construction, persistence, workflow shell | Planned |
+| 5 | `outbox_service_test.dart` | 7,820 | send pipeline, queue/database behavior, retry/maintenance, service shell | Merged (#3811) |
+| 6 | `day_agent_workflow_test.dart` | 7,379 | day wake execution, context/prompt construction, persistence, workflow shell | In progress |
 | 7 | `wake_orchestrator_test.dart` | 6,905 | scheduling, drain/claim lifecycle, recovery, orchestrator shell | Planned |
 
 Line counts are the review baseline, not enforced thresholds. They exist so a
@@ -115,3 +115,16 @@ a helper library with no `main()`.
 The split preserves all 149 test declarations and 29 groups. The largest
 resulting executable suite is 2,848 lines. These line counts are descriptive;
 this PR adds no CI size check, threshold, or other guardrail.
+
+### PR 6 — day-agent workflow facade
+
+The day-agent workflow suite is split by workflow-shell preconditions, memory
+recall, coordinator/directive behavior, capture and planning context, terminal
+draft enforcement, tool dispatch, persistence, and week/dependency context.
+Shared deterministic identities, mock wiring, prompt parsing, and conversation
+capture live in a helper library with no `main()`.
+
+The split preserves all 141 test declarations and the 11 original semantic
+groups; seven additional groups are only the executable suite containers. The
+largest resulting executable suite is 1,608 lines. These counts describe the
+refactor; this PR adds no CI size check, threshold, or other guardrail.

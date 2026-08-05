@@ -226,6 +226,36 @@ Shared deterministic collaborators and lifecycle cleanup live in
 belongs in exactly one of these four suites; direct `OutboxEnqueueWriter` and
 `OutboxProcessor` unit coverage stays in their own mirrored test files.
 
+### Documented exception: `DayAgentWorkflow` facade suites
+
+`DayAgentWorkflow` coordinates wake resolution, prompt and context assembly,
+coordinator behavior, tool dispatch, and durable wake-state persistence across
+the focused collaborators in `agents/workflow/`. Its facade coverage is split
+into mutually exclusive suites:
+
+- `day_agent_workflow_test.dart` — preconditions, inference setup, and the
+  workflow shell;
+- `day_agent_workflow_memory_test.dart` — lazy memory recall and durable
+  knowledge proposals;
+- `day_agent_workflow_coordination_test.dart` — day entries, attention context,
+  directives, and coordinator digest behavior;
+- `day_agent_workflow_context_test.dart` — capture/drafting context, prompt
+  ordering, and planning-window behavior;
+- `day_agent_workflow_drafting_test.dart` — terminal draft enforcement;
+- `day_agent_workflow_tools_test.dart` — tool exposure, validation, and
+  collaborator delegation;
+- `day_agent_workflow_persistence_test.dart` — persisted observations,
+  scheduled-wake cleanup, and failure accounting; and
+- `day_agent_workflow_week_context_test.dart` — week context, summaries, and
+  dependency-aware planning context.
+
+Shared deterministic identities, mock wiring, prompt parsing, and conversation
+capture live in `day_agent_workflow_test_harness.dart`, which has no `main()`.
+A facade behavior belongs in exactly one of these eight suites; direct coverage
+for `DayAgentContextBuilder`, `DayAgentPersistence`, `DayAgentPromptBuilder`,
+`DayAgentStrategy`, and the service collaborators remains in their own mirrored
+test files.
+
 ## Mocktail global-state hygiene
 
 Mocktail stores argument matchers (`any`, `captureAny`) in **process-global**
