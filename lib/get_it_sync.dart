@@ -172,7 +172,8 @@ Future<String? Function()> _registerMatrixSyncStack({
     enqueueMessage: outboxService.enqueueMessageOrThrow,
     getHostId: vectorClockService.getHost,
     getSnapshotCoverage: syncDatabase.resolvedSequenceUpperBounds,
-    // coverage:ignore-start — trivial accessor thunks, consumed only during
+    // trivial accessor thunks, consumed only during
+    // coverage:ignore-start
     // live onboarding-sync rounds against a logged-in client.
     getLocalUserId: () => client.userID,
     getLocalDeviceId: () => client.deviceID,
@@ -207,7 +208,8 @@ Future<String? Function()> _registerMatrixSyncStack({
     try {
       await syncNodeProfileBroadcaster.broadcast();
     } catch (error, stackTrace) {
-      // coverage:ignore-start — defensive: only reachable when the probe or
+      // defensive: only reachable when the probe or
+      // coverage:ignore-start
       // the outbox write infrastructure itself fails.
       domainLogger.error(
         LogDomain.sync,
@@ -231,7 +233,8 @@ Future<String? Function()> _registerMatrixSyncStack({
     if (existingStatus == SyncSequenceStatus.received.index ||
         existingStatus == SyncSequenceStatus.backfilled.index ||
         existingStatus == SyncSequenceStatus.deleted.index) {
-      // coverage:ignore-start — guards a live-sync race: a peer's response
+      // guards a live-sync race: a peer's response
+      // coverage:ignore-start
       // about this very counter landing between reserve and release. The
       // receive path ignores own-host entries, so the state cannot be
       // constructed in-process.
@@ -289,7 +292,8 @@ Future<String? Function()> _registerMatrixSyncStack({
         subDomain: 'vc.burn.broadcast',
       );
     } catch (error, stackTrace) {
-      // coverage:ignore-start — defensive: reachable only when the outbox or
+      // defensive: reachable only when the outbox or
+      // coverage:ignore-start
       // sequence-log write infrastructure itself fails mid-broadcast.
       domainLogger.error(
         LogDomain.sync,
@@ -327,7 +331,8 @@ Future<String? Function()> _registerMatrixSyncStack({
             );
             reconciled++;
           } catch (error, stackTrace) {
-            // coverage:ignore-start — defensive per-counter containment for
+            // defensive per-counter containment for
+            // coverage:ignore-start
             // infrastructure write failures.
             domainLogger.error(
               LogDomain.sync,
@@ -362,7 +367,8 @@ Future<String? Function()> _registerMatrixSyncStack({
           );
         }
       } catch (error, stackTrace) {
-        // coverage:ignore-start — defensive: whole-pass containment when the
+        // defensive: whole-pass containment when the
+        // coverage:ignore-start
         // sequence log itself cannot be read.
         domainLogger.error(
           LogDomain.sync,
