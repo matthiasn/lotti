@@ -57,14 +57,56 @@ abstract class _OutboxServiceBase {
 
 /// App-facing write boundary for outbound sync.
 ///
+/// Every feature write path resolves this abstract type. Real profiles get
+/// the Matrix-backed [MatrixOutboxService]; guest/demo profiles get the
+/// `InertOutboxService`, so a world without a sync stack produces zero
+/// outbox rows by construction rather than by configuration.
+abstract class OutboxService {
+  /// Persists [entity]'s JSON payload under the documents directory and
+  /// enqueues a `SyncMessage.notification` referencing it.
+  Future<void> enqueueNotification(
+    NotificationEntity entity, {
+    String? originatingHostId,
+  });
+
+  /// Enqueues a `SyncMessage.notificationStateUpdate` carrying the changed
+  /// seen/acted/deleted timestamps for notification [id].
+  Future<void> enqueueNotificationStateUpdate({
+    required String id,
+    required VectorClock vectorClock,
+    required String originatingHostId,
+    DateTime? seenAt,
+    DateTime? actedOnAt,
+    DateTime? deletedAt,
+  });
+
+  /// Enqueues [syncMessage], logging and swallowing routine preparation or
+  /// persistence failures so background sync callers remain best-effort.
+  Future<void> enqueueMessage(SyncMessage syncMessage);
+
+  /// Enqueues [syncMessage] and propagates preparation or persistence
+  /// failures after logging them.
+  Future<void> enqueueMessageOrThrow(SyncMessage syncMessage);
+
+  /// Emits whenever a send is attempted while sync is enabled but the client
+  /// is not logged in; the UI shows a one-time toast.
+  Stream<void> get notLoggedInGateStream;
+
+  Future<void> dispose();
+}
+
+/// Matrix-backed [OutboxService] for real profiles.
+///
 /// Features enqueue `SyncMessage`s here; the service persists them to the outbox
 /// table in `sync_db` (merging/superseding redundant work and enriching them
 /// with sequence metadata), then nudges the send runner. It waits for the
 /// user-activity idle gate before draining so outbound sending yields to live
 /// input. The actual claim → send → mark-sent/retry loop lives in
 /// `OutboxProcessor`; this class owns enqueue + scheduling.
-class OutboxService extends _OutboxServiceBase with _OutboxSend {
-  OutboxService({
+class MatrixOutboxService extends _OutboxServiceBase
+    with _OutboxSend
+    implements OutboxService {
+  MatrixOutboxService({
     required SyncDatabase syncDatabase,
     required this._loggingService,
     required this._vectorClockService,
@@ -249,6 +291,7 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
   /// Emits an event whenever `sendNext` is invoked while sync is enabled but
   /// the Matrix service is not logged in. Consumers (UI) can use this to show
   /// a one-time toast informing the user.
+  @override
   Stream<void> get notLoggedInGateStream => _loginGateEventsController.stream;
 
   @override
@@ -280,6 +323,7 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
   /// Persists [entity]'s JSON payload under the documents directory and
   /// enqueues a `SyncMessage.notification` referencing it. Skips enqueue (and
   /// logs) if the derived payload path escapes the documents root.
+  @override
   Future<void> enqueueNotification(
     NotificationEntity entity, {
     String? originatingHostId,
@@ -309,6 +353,7 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
   /// Enqueues a `SyncMessage.notificationStateUpdate` carrying the changed
   /// seen/acted/deleted timestamps for notification [id]. No payload file is
   /// written — the state fields ride inline in the envelope.
+  @override
   Future<void> enqueueNotificationStateUpdate({
     required String id,
     required VectorClock vectorClock,
@@ -344,6 +389,7 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
   /// Enqueues [syncMessage], logging and swallowing routine preparation or
   /// persistence failures so ordinary background sync callers remain
   /// best-effort.
+  @override
   Future<void> enqueueMessage(SyncMessage syncMessage) =>
       _enqueueMessage(syncMessage);
 
@@ -352,6 +398,7 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
   ///
   /// Use this for user-initiated operations whose UI must distinguish a fully
   /// queued batch from a partial or failed batch.
+  @override
   Future<void> enqueueMessageOrThrow(SyncMessage syncMessage) =>
       _enqueueMessage(syncMessage, rethrowFailure: true);
 
@@ -565,6 +612,7 @@ class OutboxService extends _OutboxServiceBase with _OutboxSend {
   /// Tears the service down: marks it disposed (so in-flight callbacks
   /// short-circuit), closes the runner, cancels every subscription/timer, and
   /// disposes the activity gate if this service owns it. Idempotent in effect.
+  @override
   Future<void> dispose() async {
     _isDisposed = true;
     _clientRunner.close();

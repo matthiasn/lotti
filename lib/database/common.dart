@@ -6,6 +6,7 @@ import 'package:drift/drift.dart';
 import 'package:drift/native.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/database/slow_query_logging.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/dev_logger.dart';
 import 'package:lotti/utils/file_utils.dart';
 import 'package:path/path.dart' as p;
@@ -78,6 +79,21 @@ void _setupDatabase(Database database) {
     ..execute('PRAGMA wal_autocheckpoint = 200;');
 }
 
+/// Resolves the directory database files live in when no explicit
+/// [openDbConnection] provider is passed.
+///
+/// The registered [Directory] singleton is the active profile root (real or
+/// guest world) and is the single source of truth for all persisted paths —
+/// database opens must never re-derive the OS documents directory, or a DB
+/// could land outside the active profile. The OS fallback exists only for
+/// bare unit tests that construct a database before any root is registered.
+Future<Directory> _defaultDocumentsDirectory() async {
+  if (getIt.isRegistered<Directory>()) {
+    return getIt<Directory>();
+  }
+  return findDocumentsDirectory();
+}
+
 /// Opens a database connection with lazy initialization.
 ///
 /// Creates a [LazyDatabase] that initializes the actual database connection
@@ -100,7 +116,10 @@ void _setupDatabase(Database database) {
 ///   are caught by the coalescers in `JournalDb` and by counting round-trips
 ///   in tests. Pass [Duration.zero] in tests and deep-dive captures to
 ///   surface every query.
-/// - [documentsDirectoryProvider]: Optional provider for documents directory (for testing)
+/// - [documentsDirectoryProvider]: Optional provider for the documents
+///   directory. Defaults to the registered active-profile root; pass an
+///   explicit provider to open a database in a different world (tests,
+///   profile seeding).
 /// - [tempDirectoryProvider]: Optional provider for temp directory (for testing)
 ///
 /// Returns a [LazyDatabase] instance that will initialize on first use.
@@ -136,7 +155,8 @@ LazyDatabase openDbConnection(
     }
 
     final dbFolder =
-        await (documentsDirectoryProvider?.call() ?? findDocumentsDirectory());
+        await (documentsDirectoryProvider?.call() ??
+            _defaultDocumentsDirectory());
     final file = File(p.join(dbFolder.path, fileName));
     // Ensure parent directory exists before opening to avoid SQLITE_CANTOPEN (14)
     try {

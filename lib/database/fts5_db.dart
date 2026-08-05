@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/common.dart';
@@ -11,13 +13,18 @@ const fts5DbFileName = 'fts5_db.sqlite';
 
 @DriftDatabase(include: {'fts5_db.drift'})
 class Fts5Db extends _$Fts5Db {
-  Fts5Db({this.inMemoryDatabase = false})
-    : super(
-        openDbConnection(
-          fts5DbFileName,
-          inMemoryDatabase: inMemoryDatabase,
-        ),
-      );
+  Fts5Db({
+    this.inMemoryDatabase = false,
+    Future<Directory> Function()? documentsDirectoryProvider,
+    Future<Directory> Function()? tempDirectoryProvider,
+  }) : super(
+         openDbConnection(
+           fts5DbFileName,
+           inMemoryDatabase: inMemoryDatabase,
+           documentsDirectoryProvider: documentsDirectoryProvider,
+           tempDirectoryProvider: tempDirectoryProvider,
+         ),
+       );
 
   final bool inMemoryDatabase;
 
@@ -38,8 +45,6 @@ class Fts5Db extends _$Fts5Db {
       await deleteEntry('"$uuid"');
     }
 
-    final entitiesCacheService = getIt<EntitiesCacheService>();
-
     final plainText = entry.entryText?.plainText ?? '';
     final title = entry.maybeMap(
       task: (task) => task.data.title,
@@ -49,7 +54,10 @@ class Fts5Db extends _$Fts5Db {
 
     final summary = entry.maybeMap(
       measurement: (m) {
-        final dataType = entitiesCacheService.getDataTypeById(
+        // Resolved lazily so non-measurement indexing (incl. seeding a
+        // non-active world through WorldHandle) never touches the active
+        // generation's cache.
+        final dataType = getIt<EntitiesCacheService>().getDataTypeById(
           m.data.dataTypeId,
         );
         final value = m.data.value;

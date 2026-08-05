@@ -41,47 +41,50 @@ services; GetIt services must not resolve Riverpod providers.** A GetIt
 singleton that needed a provider would have to reach for a container that does
 not exist yet at registration time.
 
-`main()` bridges the two exactly once, overriding a handful of providers with
-the already-constructed singletons so the widget tree and the service layer
-share one instance rather than building a second:
+`LottiAppRoot` bridges the two once **per service generation**:
+`buildProviderOverrides()` (in `lib/app_bootstrap.dart`) overrides a handful
+of providers with the already-constructed singletons, and the `ProviderScope`
+carries a generation-keyed `ValueKey` so that an in-app profile switch (see
+[profiles and demo mode](profiles-and-demo-mode.md)) discards the whole scope
+and rebinds every provider against the freshly registered generation. In
+guest worlds `matrixServiceProvider` is deliberately left unoverridden — the
+Matrix stack does not exist there, and accidental resolution fails loudly.
 
 ```dart
-runApp(
-  ProviderScope(
-    overrides: [
-      matrixServiceProvider.overrideWithValue(getIt<MatrixService>()),
-      maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
-      journalDbProvider.overrideWithValue(getIt<JournalDb>()),
-      syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
-      loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
-      outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),
-      aiConfigRepositoryProvider.overrideWithValue(getIt<AiConfigRepository>()),
-    ],
-    child: const MyBeamerApp(),
-  ),
+ProviderScope(
+  key: ValueKey('profile-gen-$_generation'),
+  overrides: buildProviderOverrides(getIt<ProfileContext>()),
+  child: const MyBeamerApp(),
 );
 ```
 
 # Startup sequence
 
+The bootstrap is split along the profile-switch boundary
+(`lib/app_bootstrap.dart`): `registerProcessLogging()` and
+`initPlatformOnce()` run exactly once per process, while
+`resolveActiveProfile()` + `bootstrapProfileServices()` run once per service
+generation — on cold boot and again after every in-app profile switch.
+
 ```mermaid
 flowchart TD
   FD["ensureFileDescriptorSoftLimit()"] --> Zone["runZonedGuarded"]
-  Zone --> Log["Register LoggingService + DomainLogger first"]
-  Log --> Binding["WidgetsFlutterBinding.ensureInitialized()"]
-  Binding --> Media["MediaKit.ensureInitialized() (failure is non-fatal)"]
-  Media --> Window{"isDesktop?"}
-  Window -->|yes| WM["windowManager: 1280x720, min 360x640, then show + focus"]
-  Window -->|no| Docs
-  WM --> Docs["findDocumentsDirectory()"]
-  Docs --> Early["Register SecureStorage, Directory, SettingsDb, WindowService"]
-  Early --> Restore["WindowService.restore()"]
-  Restore --> TZ["tz.initializeTimeZones()"]
-  TZ --> Singletons["registerSingletons()"]
+  Zone --> Log["registerProcessLogging(): LoggingService + DomainLogger first"]
+  Log --> Platform["initPlatformOnce(): binding, orientation lock,<br/>MediaKit (non-fatal), windowManager show+focus,<br/>timezones, vodozemac init"]
+  Platform --> Resolve["resolveActiveProfile(): findDocumentsDirectory()<br/>+ profiles.json → active Profile + root"]
+  Resolve --> Early["bootstrapProfileServices(): register SecureStorage,<br/>ProfileContext, Directory(profile root), SettingsDb, WindowService"]
+  Early --> Restore["WindowService.restore() (cold boot only)"]
+  Restore --> Singletons["registerSingletons(profile: ctx)"]
   Singletons --> Lifecycle["AppLifecycleListener(onExitRequested)"]
   Lifecycle --> ErrorHook["FlutterError.onError = handleFlutterFrameworkError"]
-  ErrorHook --> Run["runApp(ProviderScope(...MyBeamerApp))"]
+  ErrorHook --> Run["runApp(LottiAppRoot) → generation-keyed ProviderScope"]
 ```
+
+The registered `Directory` is the **active profile root**, not the raw OS
+documents directory — every database open and file write resolves through it
+(`openDbConnection` falls back to it; see
+[profiles and demo mode](profiles-and-demo-mode.md) for the isolation
+contract).
 
 Four details in that sequence are deliberate and easy to break:
 
@@ -103,8 +106,14 @@ Four details in that sequence are deliberate and easy to break:
 
 # Registration order inside `registerSingletons()`
 
-`registerSingletons()` is a single long function, and its order encodes a real
-dependency graph rather than a filing preference.
+`registerSingletons({required ProfileContext profile})` is a single long
+function, and its order encodes a real dependency graph rather than a filing
+preference. The Matrix phase is conditional on the profile's capabilities:
+real profiles build the full sync stack (`_registerMatrixSyncStack` in
+`lib/get_it_sync.dart`), guest/demo worlds register only an
+`InertOutboxService` — no Matrix client, no inbound queue, no backfill
+timers, no startup broadcast (see
+[profiles and demo mode](profiles-and-demo-mode.md)).
 
 ```mermaid
 flowchart TD
@@ -115,19 +124,19 @@ flowchart TD
     P2["initConfigFlags(JournalDb)<br/>LoggingService.listenToConfigFlag()"]
   end
   subgraph Phase3["3. Caches and config"]
-    P3["EntitiesCacheService.init()<br/>AiConfigRepository(AiConfigDb())<br/>vodozemac init, DayProcessingDb + outbox cutover"]
+    P3["EntitiesCacheService.init()<br/>AiConfigRepository(AiConfigDb())<br/>DayProcessingDb + outbox cutover,<br/>SyncSequenceLogService, NotificationScheduler,<br/>ConsumptionRepository"]
   end
-  subgraph Phase4["4. Matrix sync chain"]
-    P4["createMatrixClient → MatrixSdkGateway → MatrixMessageSender<br/>→ SyncEventProcessor → QueuePipelineCoordinator<br/>→ MatrixService → OutboxService"]
+  subgraph Phase4["4. Sync boundary (capability-gated)"]
+    P4["syncEnabled: createMatrixClient → MatrixSdkGateway<br/>→ MatrixMessageSender → SyncEventProcessor<br/>→ QueuePipelineCoordinator → MatrixService<br/>→ MatrixOutboxService + backfill/media/broadcast<br/>guest: InertOutboxService only"]
   end
-  subgraph Phase5["5. Outbox-dependent services"]
-    P5["ConsumptionSyncService, AiAttributionService,<br/>NotificationRepository, SyncNodeProfileBroadcaster,<br/>BackfillResponseHandler, BackfillRequestService"]
+  subgraph Phase5["5. Outbox-dependent services (both modes)"]
+    P5["ConsumptionSyncService, AiAttributionService,<br/>NotificationRepository"]
   end
   subgraph Phase6["6. Logic layer"]
     P6["MetadataService, GeolocationService, PersistenceLogic,<br/>EditorStateService, HealthImport, LinkService,<br/>Maintenance, NavService"]
   end
   Phase1 --> Phase2 --> Phase3 --> Phase4 --> Phase5 --> Phase6
-  Phase6 --> Late["_registerLateAndOptionalServices()"]
+  Phase6 --> Late["_registerLateAndOptionalServices(profile)"]
 ```
 
 **Config flags gate construction.** `initConfigFlags(getIt<JournalDb>())` runs
@@ -181,7 +190,10 @@ immediately before `LoggingService.flush()`, as described in
 | Concern | File |
 |---------|------|
 | Entry point, zone guard, error handlers | [`lib/main.dart`](../../lib/main.dart) |
+| Process-once vs per-generation bootstrap | [`lib/app_bootstrap.dart`](../../lib/app_bootstrap.dart) |
+| Generation-keyed ProviderScope + switch splash | [`lib/app_root.dart`](../../lib/app_root.dart) |
 | Singleton graph | [`lib/get_it.dart`](../../lib/get_it.dart) |
+| Capability-gated sync registration | [`lib/get_it_sync.dart`](../../lib/get_it_sync.dart) |
 | Late/optional and platform-conditional services | [`lib/get_it_helpers.dart`](../../lib/get_it_helpers.dart) |
 | Maintenance-only registrations | [`lib/get_it_maintenance.dart`](../../lib/get_it_maintenance.dart) |
 | Provider overrides bridging GetIt into Riverpod | [`lib/providers/service_providers.dart`](../../lib/providers/service_providers.dart) |

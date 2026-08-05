@@ -8,6 +8,7 @@ import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/window_service.dart';
@@ -16,6 +17,10 @@ import 'package:mocktail/mocktail.dart';
 import '../mocks/mocks.dart';
 
 void main() {
+  setUpAll(() {
+    registerFallbackValue(<String>{});
+  });
+
   group('WindowService shutdown sequence', () {
     setUp(() async {
       await getIt.reset();
@@ -248,6 +253,87 @@ void main() {
 
       verify(() => getIt<SettingsDb>().close()).called(1);
       verify(() => getIt<OutboxService>().dispose()).called(1);
+    });
+
+    group('window geometry persistence', () {
+      AppPrefs recordingPrefs(
+        Map<String, String> store,
+        List<({String key, String value})> writes,
+      ) => AppPrefs(
+        getBool: (_) async => null,
+        setBool: ({required key, required value}) async => true,
+        getString: (key) async => store[key],
+        setString: ({required key, required value}) async {
+          writes.add((key: key, value: value));
+          store[key] = value;
+          return true;
+        },
+      );
+
+      WindowService buildService(AppPrefs prefs) => WindowService(
+        skipWindowManagerSetup: true,
+        isMacOSOverride: () => false,
+        exitOverride: (_) {},
+        playerDisposerOverride: () async {},
+        prefsOverride: prefs,
+      );
+
+      test(
+        'resolveGeometry prefers prefs and never touches SettingsDb',
+        () async {
+          final writes = <({String key, String value})>[];
+          final prefs = recordingPrefs({
+            'WINDOW_SIZE': '800.0,600.0',
+            'WINDOW_OFFSET': '10.0,20.0',
+          }, writes);
+
+          final (size, offset) = await buildService(prefs).resolveGeometry();
+
+          expect(size, '800.0,600.0');
+          expect(offset, '10.0,20.0');
+          expect(writes, isEmpty);
+          verifyNever(
+            () => getIt<SettingsDb>().itemsByKeys(any()),
+          );
+        },
+      );
+
+      test(
+        'resolveGeometry migrates legacy SettingsDb rows into prefs',
+        () async {
+          when(
+            () => getIt<SettingsDb>().itemsByKeys(any()),
+          ).thenAnswer(
+            (_) async => {
+              'WINDOW_SIZE': '1024.0,768.0',
+              'WINDOW_OFFSET': '5.0,6.0',
+            },
+          );
+          final writes = <({String key, String value})>[];
+          final prefs = recordingPrefs({}, writes);
+
+          final (size, offset) = await buildService(prefs).resolveGeometry();
+
+          expect(size, '1024.0,768.0');
+          expect(offset, '5.0,6.0');
+          expect(writes, [
+            (key: 'WINDOW_SIZE', value: '1024.0,768.0'),
+            (key: 'WINDOW_OFFSET', value: '5.0,6.0'),
+          ]);
+        },
+      );
+
+      test('resolveGeometry returns nulls when nothing is persisted', () async {
+        when(
+          () => getIt<SettingsDb>().itemsByKeys(any()),
+        ).thenAnswer((_) async => {});
+        final prefs = recordingPrefs({}, []);
+
+        final (size, offset) = await buildService(prefs).resolveGeometry();
+
+        expect(size, isNull);
+        expect(offset, isNull);
+      });
     });
 
     test('non-macOS shutdown calls disposeAll', () async {

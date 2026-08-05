@@ -1,37 +1,17 @@
 import 'dart:async';
 import 'dart:collection';
 import 'dart:convert';
-import 'dart:io';
 import 'dart:ui' show AppExitResponse;
 
 import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_animate/flutter_animate.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/beamer/beamer_app.dart';
-import 'package:lotti/database/database.dart';
-import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/database/sync_db.dart';
-import 'package:lotti/features/ai/repository/ai_config_repository.dart'
-    hide aiConfigRepositoryProvider;
-import 'package:lotti/features/sync/matrix/matrix_service.dart';
-import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/sync/secure_storage.dart';
+import 'package:lotti/app_bootstrap.dart';
+import 'package:lotti/app_root.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
-import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:lotti/utils/fd_limits.dart';
-import 'package:lotti/utils/file_utils.dart';
-import 'package:lotti/utils/platform.dart';
-import 'package:lotti/utils/timezone.dart';
-import 'package:lotti/widgets/media/image_viewer_orientation_scope.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:timezone/data/latest.dart' as tz;
-import 'package:window_manager/window_manager.dart';
 
 class AppConstants {
   const AppConstants._();
@@ -55,7 +35,6 @@ void flushPendingFrameworkErrorSummaries() {
 }
 
 /// Records a startup timezone-resolution failure without aborting startup.
-@visibleForTesting
 void handleTimezoneConfigurationError(Object error, StackTrace stackTrace) {
   getIt<DomainLogger>().error(
     LogDomain.general,
@@ -65,6 +44,10 @@ void handleTimezoneConfigurationError(Object error, StackTrace stackTrace) {
   );
 }
 
+// The process entry point cannot execute under flutter test; its pieces are
+// covered individually (app_bootstrap_test, get_it tests, main_test for the
+// error machinery below).
+// coverage:ignore-start
 Future<void> main() async {
   // Raise the file descriptor soft limit before anything opens an FD. On
   // macOS, GUI apps inherit launchd's legacy soft limit of 256, which is
@@ -74,19 +57,10 @@ Future<void> main() async {
 
   await runZonedGuarded(
     () async {
-      // Register DomainLogger immediately after its LoggingService sink so the
-      // startup diagnostics below — and the runZonedGuarded error handler — can
-      // resolve it before registerSingletons() runs. registerSingletons() then
-      // reuses this instance instead of re-registering.
-      final loggingService = LoggingService();
-      getIt
-        ..registerSingleton<LoggingService>(
-          loggingService,
-          dispose: (service) => service.dispose(),
-        )
-        ..registerSingleton<DomainLogger>(
-          DomainLogger(loggingService: loggingService),
-        );
+      // Register DomainLogger immediately so the startup diagnostics below —
+      // and the runZonedGuarded error handler — can resolve it before
+      // registerSingletons() runs.
+      registerProcessLogging();
 
       getIt<DomainLogger>().log(
         LogDomain.general,
@@ -94,71 +68,16 @@ Future<void> main() async {
         subDomain: 'fdLimits',
       );
 
-      WidgetsFlutterBinding.ensureInitialized();
-      // Platform startup call; controller behavior is covered by focused tests.
-      // coverage:ignore-start
-      await appOrientationController.lockToPortrait();
-      // coverage:ignore-end
-      try {
-        MediaKit.ensureInitialized();
-      } catch (e) {
-        getIt<DomainLogger>().error(
-          LogDomain.general,
-          e,
-          subDomain:
-              'MediaKit initialization failed - continuing without media support',
-        );
-      }
-      Animate.restartOnHotReload = true;
+      await initPlatformOnce();
 
-      if (isDesktop) {
-        await windowManager.ensureInitialized();
-
-        // Configure window options for flatpak compatibility
-        const windowOptions = WindowOptions(
-          size: AppConstants.defaultWindowSize,
-          minimumSize: AppConstants.minimumWindowSize,
-          center: true,
-          backgroundColor: Colors.transparent,
-          skipTaskbar: false,
-          titleBarStyle: TitleBarStyle.normal,
-        );
-        await windowManager.waitUntilReadyToShow(windowOptions, () async {
-          await windowManager.show();
-          await windowManager.focus();
-        });
-      }
-
-      final docDir = await findDocumentsDirectory();
-      AppLifecycleListener? appLifecycleListener;
-
-      getIt
-        ..registerSingleton<SecureStorage>(SecureStorage())
-        ..registerSingleton<Directory>(docDir)
-        ..registerSingleton<SettingsDb>(SettingsDb())
-        ..registerSingleton<WindowService>(
-          WindowService(
-            beforeLogFlush: () async {
-              appLifecycleListener?.dispose();
-              appLifecycleListener = null;
-              flushPendingFrameworkErrorSummaries();
-            },
-          ),
-        );
-
-      await getIt<WindowService>().restore();
-      tz.initializeTimeZones();
-      // Loading the database does not pick a zone — without this the
-      // package's `local` stays UTC and scheduled reminders land hours off.
-      // coverage:ignore-start
-      await configureLocalTimezone(
-        onError: handleTimezoneConfigurationError,
+      final bootInfo = await resolveActiveProfile();
+      final lifecycleHolder = AppLifecycleHolder();
+      await bootstrapProfileServices(
+        bootInfo,
+        lifecycleHolder: lifecycleHolder,
       );
-      // coverage:ignore-end
 
-      await registerSingletons();
-
-      appLifecycleListener = AppLifecycleListener(
+      lifecycleHolder.listener = AppLifecycleListener(
         onExitRequested: handleAppExitRequested,
       );
 
@@ -166,25 +85,16 @@ Future<void> main() async {
       FlutterError.onError = handleFlutterFrameworkError;
 
       runApp(
-        ProviderScope(
-          overrides: [
-            matrixServiceProvider.overrideWithValue(getIt<MatrixService>()),
-            maintenanceProvider.overrideWithValue(getIt<Maintenance>()),
-            journalDbProvider.overrideWithValue(getIt<JournalDb>()),
-            syncDatabaseProvider.overrideWithValue(getIt<SyncDatabase>()),
-            loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
-            outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),
-            aiConfigRepositoryProvider.overrideWithValue(
-              getIt<AiConfigRepository>(),
-            ),
-          ],
-          child: const MyBeamerApp(),
+        LottiAppRoot(
+          registry: bootInfo.registry,
+          lifecycleHolder: lifecycleHolder,
         ),
       );
     },
     handleUncaughtZoneError,
   );
 }
+// coverage:ignore-end
 
 /// Global framework error handler: presents the error on the console exactly
 /// like Flutter's default handler and persists its full stack once per stable

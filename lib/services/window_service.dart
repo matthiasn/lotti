@@ -4,6 +4,7 @@ import 'package:flutter/widgets.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/features/speech/state/audio_player_controller.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/app_prefs_service.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/logging_service.dart';
 import 'package:lotti/services/service_disposer.dart';
@@ -27,11 +28,13 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
     @visibleForTesting PlatformCheck? isMacOSOverride,
     AsyncDisposer? beforeLogFlush,
     @visibleForTesting bool skipWindowManagerSetup = false,
+    @visibleForTesting AppPrefs? prefsOverride,
   }) : _exitFn = exitOverride ?? immediateExit,
        _playerDisposer =
            playerDisposerOverride ?? AudioPlayerController.disposeActivePlayer,
        _beforeLogFlush = beforeLogFlush ?? (() async {}),
-       _isMacOS = isMacOSOverride ?? (() => isMacOS) {
+       _isMacOS = isMacOSOverride ?? (() => isMacOS),
+       _prefs = prefsOverride ?? makeSharedPrefsService() {
     if (!skipWindowManagerSetup) {
       windowManager.addListener(this);
       if (isDesktop) {
@@ -51,19 +54,45 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
   final AsyncDisposer _playerDisposer;
   final AsyncDisposer _beforeLogFlush;
   final PlatformCheck _isMacOS;
+  final AppPrefs _prefs;
 
   final sizeKey = 'WINDOW_SIZE';
   final offsetKey = 'WINDOW_OFFSET';
 
+  /// Window geometry is device state, not world state: it lives in
+  /// SharedPreferences so it survives profile switches, with a one-time
+  /// read-through migration from the legacy per-profile SettingsDb rows.
   Future<void> restore() async {
     if (isDesktop) {
-      final restoredValues = await getIt<SettingsDb>().itemsByKeys({
+      final (size, offset) = await resolveGeometry();
+      await _applyRestoredSize(size);
+      await _applyRestoredOffset(offset);
+    }
+  }
+
+  /// Reads persisted window geometry, migrating legacy SettingsDb rows into
+  /// SharedPreferences when the prefs entries are absent.
+  @visibleForTesting
+  Future<(String?, String?)> resolveGeometry() async {
+    var size = await _prefs.getString(sizeKey);
+    var offset = await _prefs.getString(offsetKey);
+    if (size == null || offset == null) {
+      final legacy = await getIt<SettingsDb>().itemsByKeys({
         sizeKey,
         offsetKey,
       });
-      await _applyRestoredSize(restoredValues[sizeKey]);
-      await _applyRestoredOffset(restoredValues[offsetKey]);
+      final legacySize = legacy[sizeKey];
+      final legacyOffset = legacy[offsetKey];
+      if (size == null && legacySize != null) {
+        size = legacySize;
+        await _prefs.setString(key: sizeKey, value: legacySize);
+      }
+      if (offset == null && legacyOffset != null) {
+        offset = legacyOffset;
+        await _prefs.setString(key: offsetKey, value: legacyOffset);
+      }
     }
+    return (size, offset);
   }
 
   Future<void> _applyRestoredSize(String? sizeString) async {
@@ -105,17 +134,17 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
 
   Future<void> _onMoved() async {
     final offset = await windowManager.getPosition();
-    await getIt<SettingsDb>().saveSettingsItem(
-      offsetKey,
-      '${offset.dx},${offset.dy}',
+    await _prefs.setString(
+      key: offsetKey,
+      value: '${offset.dx},${offset.dy}',
     );
   }
 
   Future<void> _onResized() async {
     final size = await windowManager.getSize();
-    await getIt<SettingsDb>().saveSettingsItem(
-      sizeKey,
-      '${size.width},${size.height}',
+    await _prefs.setString(
+      key: sizeKey,
+      value: '${size.width},${size.height}',
     );
   }
 
@@ -140,6 +169,23 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (state == AppLifecycleState.detached) {
       unawaited(closeWindow());
+    }
+  }
+
+  /// Detaches this instance from the window manager and the widgets binding
+  /// without tearing the window down. Called during an in-app profile
+  /// switch: the outgoing generation's WindowService must stop observing
+  /// window events, or it would keep writing geometry after its service
+  /// generation is disposed.
+  Future<void> detachForRestart() async {
+    windowManager.removeListener(this);
+    WidgetsBinding.instance.removeObserver(this);
+    if (isDesktop) {
+      // Awaited so the release cannot race the next generation's
+      // WindowService re-arming preventClose; without it, a switch that
+      // fails after teardown would leave preventClose set with no listener
+      // to honor the close request.
+      await windowManager.setPreventClose(false);
     }
   }
 

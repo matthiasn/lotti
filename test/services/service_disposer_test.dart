@@ -15,6 +15,7 @@ import 'package:lotti/features/ai/database/embedding_store.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/service/embedding_service.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
+import 'package:lotti/features/daily_os_next/database/day_processing_db.dart';
 import 'package:lotti/features/sync/backfill/backfill_request_service.dart';
 import 'package:lotti/features/sync/matrix/matrix_service.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -107,6 +108,10 @@ void main() {
       when(onboardingMetricsDb.close).thenAnswer((_) async {
         order.add('OnboardingMetricsDb');
       });
+      final dayProcessingDb = MockDayProcessingDb();
+      when(dayProcessingDb.close).thenAnswer((_) async {
+        order.add('DayProcessingDb');
+      });
       final settingsDb = MockSettingsDb();
       when(settingsDb.close).thenAnswer((_) async {
         order.add('SettingsDb');
@@ -127,6 +132,7 @@ void main() {
         ..registerSingleton<ConsumptionDatabase>(consumptionDb)
         ..registerSingleton<NotificationsDb>(notificationsDb)
         ..registerSingleton<OnboardingMetricsDb>(onboardingMetricsDb)
+        ..registerSingleton<DayProcessingDb>(dayProcessingDb)
         ..registerSingleton<SettingsDb>(settingsDb);
 
       await disposer.disposeAll();
@@ -146,6 +152,7 @@ void main() {
         'ConsumptionDatabase',
         'NotificationsDb',
         'OnboardingMetricsDb',
+        'DayProcessingDb',
         'SettingsDb',
       ]);
       expect(loggedErrors, isEmpty);

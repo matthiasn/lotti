@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/features/sync/matrix.dart';
 import 'package:lotti/features/sync/state/matrix_unverified_provider.dart';
 import 'package:lotti/features/sync/state/matrix_verification_modal_lock_provider.dart';
@@ -200,6 +201,13 @@ class _IncomingVerificationWrapperState
   @override
   void initState() {
     super.initState();
+
+    // Guest/demo worlds have no Matrix stack; resolving matrixServiceProvider
+    // there would throw. No sync means no incoming verifications to listen
+    // for.
+    if (!ref.read(syncFeatureAvailableProvider)) {
+      return;
+    }
 
     _subscription = ref
         .read(matrixServiceProvider)
