@@ -1395,14 +1395,12 @@ void main() {
       );
 
       clearInteractions(mockDb);
+      restoreSyncSequenceLogDefaults(mockDb);
       clearInteractions(mockLogging);
       // Re-stub after clearInteractions.
       when(
         () => mockDb.getLastCounterForHost(aliceHostId),
       ).thenAnswer((_) async => lastSeen);
-      when(
-        () => mockDb.updateHostActivity(any(), any()),
-      ).thenAnswer((_) async => 1);
       when(
         () => mockDb.getHostLastSeen(aliceHostId),
       ).thenAnswer((_) async => DateTime(2025, 1, 1));
@@ -1410,12 +1408,6 @@ void main() {
         () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
       ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
-      when(
-        () => mockDb.getPendingEntriesByPayloadId(
-          payloadType: any(named: 'payloadType'),
-          payloadId: any(named: 'payloadId'),
-        ),
-      ).thenAnswer((_) async => []);
       when(
         () => mockLogging.log(
           any<LogDomain>(),
@@ -1483,13 +1475,11 @@ void main() {
         );
 
         clearInteractions(mockDb);
+        restoreSyncSequenceLogDefaults(mockDb);
         clearInteractions(mockLogging);
         when(
           () => mockDb.getLastCounterForHost(aliceHostId),
         ).thenAnswer((_) async => lastSeen);
-        when(
-          () => mockDb.updateHostActivity(any(), any()),
-        ).thenAnswer((_) async => 1);
         when(
           () => mockDb.getHostLastSeen(aliceHostId),
         ).thenAnswer((_) async => DateTime(2025, 1, 1));
@@ -1499,12 +1489,6 @@ void main() {
         when(
           () => mockDb.recordSequenceEntry(any()),
         ).thenAnswer((_) async => 1);
-        when(
-          () => mockDb.getPendingEntriesByPayloadId(
-            payloadType: any(named: 'payloadType'),
-            payloadId: any(named: 'payloadId'),
-          ),
-        ).thenAnswer((_) async => []);
         when(
           () => mockLogging.log(
             any<LogDomain>(),
@@ -1588,13 +1572,11 @@ void main() {
       );
 
       clearInteractions(mockDb);
+      restoreSyncSequenceLogDefaults(mockDb);
       clearInteractions(mockLogging);
       when(
         () => mockDb.getLastCounterForHost(aliceHostId),
       ).thenAnswer((_) async => lastSeen);
-      when(
-        () => mockDb.updateHostActivity(any(), any()),
-      ).thenAnswer((_) async => 1);
       when(
         () => mockDb.getHostLastSeen(aliceHostId),
       ).thenAnswer((_) async => DateTime(2025, 1, 1));
@@ -1602,12 +1584,6 @@ void main() {
         () => mockDb.getEntryByHostAndCounter(aliceHostId, any()),
       ).thenAnswer((_) async => null);
       when(() => mockDb.recordSequenceEntry(any())).thenAnswer((_) async => 1);
-      when(
-        () => mockDb.getPendingEntriesByPayloadId(
-          payloadType: any(named: 'payloadType'),
-          payloadId: any(named: 'payloadId'),
-        ),
-      ).thenAnswer((_) async => []);
       when(
         () => mockLogging.log(
           any<LogDomain>(),

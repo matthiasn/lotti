@@ -157,8 +157,8 @@ responsibility-owned satellites:
 
 Shared generators, deterministic entities, and mock wiring live in
 `sync_sequence_log_service_test_helpers.dart`, which has no `main()`. A behavior
-belongs in exactly one satellite; collaborator-level unit coverage continues to
-live in the collaborator's own mirrored test file.
+belongs in exactly one of the five listed facade suites; collaborator-level
+unit coverage continues to live in the collaborator's own mirrored test file.
 
 ## Mocktail global-state hygiene
 

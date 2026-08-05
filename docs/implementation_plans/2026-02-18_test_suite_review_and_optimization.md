@@ -592,7 +592,9 @@ documentation, not code.
     - No new CI check, lint rule, or pre-commit hook will be added for this
       review.
     - Remaining debt is handled in focused implementation PRs, using the
-      existing testing conventions and normal review/CI verification.
+      existing testing conventions—including the
+      [documented `SyncSequenceLogService` suite exception](../../test/README.md#documented-exception-syncsequencelogservice-facade-suites)—and
+      normal review/CI verification.
 
 ---
 
