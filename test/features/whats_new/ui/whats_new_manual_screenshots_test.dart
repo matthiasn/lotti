@@ -11,7 +11,6 @@
 library;
 
 import 'dart:async';
-import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/foundation.dart';
@@ -21,7 +20,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:form_builder_validators/localization/l10n.dart';
-import 'package:http/http.dart' as http;
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
@@ -36,6 +34,7 @@ import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/utils/consts.dart';
 
+import '../../../helpers/manual_demo_world.dart';
 import '../../../helpers/target_platform.dart';
 import '../../../widget_test_utils.dart';
 import '../../daily_os_next/screenshot_harness.dart';
@@ -226,14 +225,8 @@ Widget _app({
 }
 
 Future<void> _primeNetworkImage(DemoMediaAsset asset) async {
-  final response = await http.get(asset.uri);
-  if (response.statusCode != HttpStatus.ok) {
-    throw HttpException(
-      "What's New banner request returned HTTP ${response.statusCode}",
-      uri: asset.uri,
-    );
-  }
-  final codec = await ui.instantiateImageCodec(response.bodyBytes);
+  final bytes = await downloadManualDemoMedia(asset.uri);
+  final codec = await ui.instantiateImageCodec(bytes);
   final frame = await codec.getNextFrame();
   codec.dispose();
 

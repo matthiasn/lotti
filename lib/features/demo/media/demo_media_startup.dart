@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:get_it/get_it.dart';
+import 'package:http/http.dart' as http;
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_hydrator.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
@@ -22,6 +23,7 @@ Future<void> registerDemoMediaHydration({
   required ProfileContext profile,
   required List<DemoMediaAsset> catalog,
   @visibleForTesting DemoMediaDownload? download,
+  @visibleForTesting http.Client? client,
   @visibleForTesting void Function()? closeDownloader,
   @visibleForTesting DemoMediaHydrationLaunch? launch,
 }) async {
@@ -69,6 +71,7 @@ Future<void> registerDemoMediaHydration({
           root: profile.root,
           assets: requiredAssets,
           onError: onError,
+          client: client,
         )
       : DemoMediaHydrator(
           root: profile.root,

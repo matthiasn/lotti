@@ -10,6 +10,7 @@ import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/utils/uuid.dart';
+import 'package:path/path.dart' as p;
 
 /// The nine tasks the manual quotes by name and the screenshot suites resolve
 /// by id — frozen in content, order and position. Growth is appended after
@@ -711,5 +712,45 @@ void main() {
         );
       },
     );
+
+    test('installMedia fails when a manual cover cannot be verified', () async {
+      final documents = Directory.systemTemp.createTempSync('lotti_world_');
+      addTearDown(() => documents.delete(recursive: true));
+      final world = ManualDemoWorld.penguinLogistics();
+      final asset = DemoMediaAsset(
+        id: 'bad-image-id',
+        fileName: 'bad-manual-test.webp',
+        sha256: sha256.convert([1, 2, 3]).toString(),
+        taskId: 'test-task-id',
+        categoryId: 'test-category-id',
+        capturedDaysAgo: 0,
+        capturedHour: 10,
+        isCover: true,
+      );
+
+      await expectLater(
+        world.installMedia(
+          documents,
+          catalog: [asset],
+          download: (uri) async => Uint8List.fromList([9, 9, 9]),
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            'Unable to hydrate every manual demo cover',
+          ),
+        ),
+      );
+      expect(
+        File(
+          p.joinAll([
+            documents.path,
+            ...asset.relativePath.split('/'),
+          ]),
+        ).existsSync(),
+        isFalse,
+      );
+    });
   });
 }

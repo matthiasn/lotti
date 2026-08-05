@@ -8,6 +8,12 @@ import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:path/path.dart' as p;
 
 typedef DemoMediaDownload = Future<Uint8List> Function(Uri uri);
+typedef DemoMediaFileDigest = Future<String> Function(File file);
+typedef DemoMediaFileRename =
+    Future<File> Function(
+      File source,
+      String targetPath,
+    );
 typedef DemoMediaHydrationError =
     void Function(
       DemoMediaAsset asset,
@@ -45,7 +51,11 @@ class DemoMediaHydrator {
     this.onError,
     this.concurrency = 3,
     this.closeDownloader,
-  }) : assert(concurrency > 0, 'concurrency must be positive');
+    DemoMediaFileDigest? digestFile,
+    DemoMediaFileRename? renameFile,
+  }) : _digestFile = digestFile ?? _defaultDigestFile,
+       _renameFile = renameFile ?? _defaultRenameFile,
+       assert(concurrency > 0, 'concurrency must be positive');
 
   factory DemoMediaHydrator.network({
     required Directory root,
@@ -81,6 +91,8 @@ class DemoMediaHydrator {
   final DemoMediaHydrationError? onError;
   final DemoMediaDownload download;
   final void Function()? closeDownloader;
+  final DemoMediaFileDigest _digestFile;
+  final DemoMediaFileRename _renameFile;
 
   bool _disposed = false;
 
@@ -154,12 +166,12 @@ class DemoMediaHydrator {
       await partial.writeAsBytes(bytes, flush: true);
       if (_disposed) return false;
       try {
-        await partial.rename(target.path);
+        await _renameFile(partial, target.path);
       } on FileSystemException {
         // Windows does not replace an existing destination on rename. The
         // fallback only touches this catalog-owned file inside the demo root.
         if (target.existsSync()) target.deleteSync();
-        await partial.rename(target.path);
+        await _renameFile(partial, target.path);
       }
       return true;
     } finally {
@@ -171,12 +183,17 @@ class DemoMediaHydrator {
     final file = _target(asset);
     if (!file.existsSync()) return false;
     try {
-      final digest = await sha256.bind(file.openRead()).first;
-      return digest.toString() == asset.sha256;
+      return await _digestFile(file) == asset.sha256;
     } on FileSystemException {
       return false;
     }
   }
+
+  static Future<String> _defaultDigestFile(File file) async =>
+      (await sha256.bind(file.openRead()).first).toString();
+
+  static Future<File> _defaultRenameFile(File source, String targetPath) =>
+      source.rename(targetPath);
 
   File _target(DemoMediaAsset asset) =>
       File(p.joinAll([root.path, ...asset.relativePath.split('/')]));

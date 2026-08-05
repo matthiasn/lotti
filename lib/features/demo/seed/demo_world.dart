@@ -2134,23 +2134,14 @@ class ManualDemoWorld {
   /// injectable so focused fixture tests never need the network.
   Future<List<File>> installMedia(
     Directory documentsDirectory, {
-    Future<Uint8List> Function(Uri uri)? download,
-    List<DemoMediaAsset>? catalog,
+    required Future<Uint8List> Function(Uri uri) download,
+    required List<DemoMediaAsset> catalog,
   }) async {
-    final coverIds = coverImages.map((image) => image.meta.id).toSet();
-    final assets =
-        catalog ??
-        demoMediaAssets.where((asset) => coverIds.contains(asset.id)).toList();
-    final hydrator = download == null
-        ? DemoMediaHydrator.network(
-            root: documentsDirectory,
-            assets: assets,
-          )
-        : DemoMediaHydrator(
-            root: documentsDirectory,
-            assets: assets,
-            download: download,
-          );
+    final hydrator = DemoMediaHydrator(
+      root: documentsDirectory,
+      assets: catalog,
+      download: download,
+    );
     try {
       final result = await hydrator.hydrate();
       if (!result.isComplete) {
@@ -2160,7 +2151,7 @@ class ManualDemoWorld {
       hydrator.dispose();
     }
     return [
-      for (final asset in assets)
+      for (final asset in catalog)
         File(
           p.joinAll([
             documentsDirectory.path,

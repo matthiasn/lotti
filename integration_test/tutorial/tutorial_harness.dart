@@ -627,7 +627,7 @@ class TutorialAppHarness {
     for (final label in world.labels) {
       await persistenceLogic.upsertEntityDefinition(label);
     }
-    await world.installMedia(documentsDirectory);
+    await installManualDemoMedia(world, documentsDirectory);
     for (final image in world.coverImages) {
       await persistenceLogic.createDbEntity(
         image,

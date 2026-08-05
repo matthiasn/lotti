@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/demo/seed/demo_world_ai.dart';
@@ -43,6 +44,75 @@ final List<AiConfigSkill> manualDemoAiSkills = demoAiSkills(
   demoSeedTextFromEnvironment(),
   manualDemoNow,
 );
+
+typedef ManualDemoMediaProcessRunner =
+    Future<ProcessResult> Function(
+      String executable,
+      List<String> arguments,
+    );
+
+/// Testable process-backed downloader for manual screenshot R2 assets.
+class ManualDemoMediaDownloader {
+  ManualDemoMediaDownloader({ManualDemoMediaProcessRunner? run})
+    : _run = run ?? _runCurl;
+
+  final ManualDemoMediaProcessRunner _run;
+  final Map<Uri, Future<Uint8List>> _cache = {};
+
+  static Future<ProcessResult> _runCurl(
+    String executable,
+    List<String> arguments,
+  ) => Process.run(executable, arguments, stdoutEncoding: null);
+
+  Future<Uint8List> call(Uri uri) => _cache.putIfAbsent(uri, () async {
+    final arguments = [
+      '--fail',
+      '--silent',
+      '--show-error',
+      '--location',
+      '--max-time',
+      '30',
+      uri.toString(),
+    ];
+    final result = await _run('curl', arguments);
+    if (result.exitCode != 0) {
+      throw ProcessException(
+        'curl',
+        arguments,
+        result.stderr.toString(),
+        result.exitCode,
+      );
+    }
+    return Uint8List.fromList(result.stdout as List<int>);
+  });
+}
+
+final _manualDemoMediaDownloader = ManualDemoMediaDownloader();
+
+/// Downloads one R2 demo asset outside Flutter's widget-test HTTP override.
+///
+/// `TestWidgetsFlutterBinding` replaces Dart `HttpClient` responses with HTTP
+/// 400, while manual screenshots need the real catalog pixels. The external
+/// `curl` process is scoped to this test helper, and successful downloads are
+/// cached for the lifetime of the test process so each object is fetched once.
+Future<Uint8List> downloadManualDemoMedia(Uri uri) =>
+    _manualDemoMediaDownloader(uri);
+
+/// Materializes the manual fixture from R2 for a widget screenshot suite.
+Future<List<File>> installManualDemoMedia(
+  ManualDemoWorld world,
+  Directory documentsDirectory,
+) {
+  final coverIds = world.coverImages.map((image) => image.meta.id).toSet();
+  final catalog = demoMediaAssets
+      .where((asset) => coverIds.contains(asset.id))
+      .toList();
+  return world.installMedia(
+    documentsDirectory,
+    download: downloadManualDemoMedia,
+    catalog: catalog,
+  );
+}
 
 /// Re-encodes installed manual artwork as PNG bytes in place.
 ///
