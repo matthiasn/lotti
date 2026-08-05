@@ -24,9 +24,6 @@ import '../../../mocks/mocks.dart';
 import '../test_utils.dart';
 
 // We need to register fallback values for complex types that will be used with 'any()' matcher
-class FakeCreateChatCompletionRequest extends Fake
-    implements CreateChatCompletionRequest {}
-
 class FakeGeminiThinkingConfig extends Fake implements GeminiThinkingConfig {}
 
 /// Shared scaffolding for CloudInferenceRepository tests: a container with
