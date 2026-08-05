@@ -2,7 +2,7 @@
 
 **Date:** 2026-08-05
 
-**Status:** In progress
+**Status:** Complete
 
 **Scope:** The seven largest non-exempt test suites found in the August 2026
 engineering due-diligence review
@@ -26,7 +26,7 @@ decomposition itself.
 | 4 | `eval_constraints_test.dart` | 8,228 | split the test-only constraint framework and mirror its focused source files | Merged (#3808) |
 | 5 | `outbox_service_test.dart` | 7,820 | send pipeline, queue/database behavior, retry/maintenance, service shell | Merged (#3811) |
 | 6 | `day_agent_workflow_test.dart` | 7,379 | day wake execution, context/prompt construction, persistence, workflow shell | Merged (#3812) |
-| 7 | `wake_orchestrator_test.dart` | 6,905 | scheduling, drain/claim lifecycle, recovery, orchestrator shell | In progress |
+| 7 | `wake_orchestrator_test.dart` | 6,905 | scheduling, drain/claim lifecycle, recovery, orchestrator shell | Merged (#3813) |
 
 Line counts are the review baseline, not enforced thresholds. They exist so a
 PR cannot present a cosmetic rename as decomposition.
