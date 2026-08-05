@@ -107,6 +107,14 @@ class Profile {
     if (dirName is! String || !_isSafeDirName(dirName)) return null;
     final type = ProfileType.values.asNameMap()[typeName];
     if (type == null) return null;
+    // Cross-validate type and dirName: the real profile lives at the root
+    // itself; every guest lives under the guest container. A parseable
+    // entry must not be able to alias a guest onto the real root (or vice
+    // versa).
+    if (type == ProfileType.real && dirName.isNotEmpty) return null;
+    if (type == ProfileType.guest && !dirName.startsWith('guest_profiles/')) {
+      return null;
+    }
     final createdAt = createdAtRaw is String
         ? DateTime.tryParse(createdAtRaw)
         : null;

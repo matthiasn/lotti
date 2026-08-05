@@ -11,12 +11,19 @@ import 'package:lotti/features/profiles/service/profile_switcher.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/services/service_disposer.dart';
+import 'package:lotti/services/startup_tasks.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/db_settle.dart';
 import '../../../mocks/mocks.dart';
+
+class _ThrowingStartupTasks extends StartupTasks {
+  @override
+  Future<void> settle({Duration timeout = const Duration(seconds: 5)}) =>
+      throw StateError('settle boom');
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -212,9 +219,12 @@ void main() {
         final timeService = MockTimeService();
         when(timeService.stop).thenThrow(StateError('timer boom'));
         final windowService = MockWindowService();
-        when(windowService.detachForRestart).thenAnswer((_) {});
+        when(
+          windowService.detachForRestart,
+        ).thenAnswer((_) async => throw StateError('detach boom'));
         getIt
           ..registerSingleton<DomainLogger>(domainLogger)
+          ..registerSingleton<StartupTasks>(_ThrowingStartupTasks())
           ..registerSingleton<TimeService>(timeService)
           ..registerSingleton<WindowService>(windowService);
 
@@ -235,14 +245,20 @@ void main() {
         expect(bootstrapped, isTrue);
         verify(timeService.stop).called(1);
         verify(windowService.detachForRestart).called(1);
-        verify(
-          () => domainLogger.error(
-            LogDomain.general,
-            any<Object>(),
-            stackTrace: any<StackTrace?>(named: 'stackTrace'),
-            subDomain: 'profileSwitch_TimeService.stop',
-          ),
-        ).called(1);
+        for (final failedStep in [
+          'profileSwitch_StartupTasks.settle',
+          'profileSwitch_TimeService.stop',
+          'profileSwitch_WindowService.detachForRestart',
+        ]) {
+          verify(
+            () => domainLogger.error(
+              LogDomain.general,
+              any<Object>(),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+              subDomain: failedStep,
+            ),
+          ).called(1);
+        }
       },
     );
 

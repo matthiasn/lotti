@@ -177,13 +177,15 @@ class WindowService with WidgetsBindingObserver implements WindowListener {
   /// switch: the outgoing generation's WindowService must stop observing
   /// window events, or it would keep writing geometry after its service
   /// generation is disposed.
-  void detachForRestart() {
+  Future<void> detachForRestart() async {
     windowManager.removeListener(this);
     WidgetsBinding.instance.removeObserver(this);
     if (isDesktop) {
-      // Without this, a switch that fails after teardown would leave
-      // preventClose set with no listener to honor the close request.
-      unawaited(windowManager.setPreventClose(false));
+      // Awaited so the release cannot race the next generation's
+      // WindowService re-arming preventClose; without it, a switch that
+      // fails after teardown would leave preventClose set with no listener
+      // to honor the close request.
+      await windowManager.setPreventClose(false);
     }
   }
 

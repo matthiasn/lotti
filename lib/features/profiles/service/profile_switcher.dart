@@ -120,7 +120,11 @@ class ProfileSwitcher {
     }
     lifecycleHolder.dispose();
     if (getIt.isRegistered<WindowService>()) {
-      getIt<WindowService>().detachForRestart();
+      try {
+        await getIt<WindowService>().detachForRestart();
+      } catch (e, st) {
+        _logError(e, st, 'WindowService.detachForRestart');
+      }
     }
   }
 

@@ -20,6 +20,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
 import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/service_disposer.dart';
+import 'package:lotti/services/startup_tasks.dart';
 import 'package:lotti/services/vector_clock_service.dart';
 import 'package:lotti/services/window_service.dart';
 import 'package:path/path.dart' as p;
@@ -324,8 +325,11 @@ void main() {
           info,
           lifecycleHolder: lifecycleHolder,
           restoreWindow: false,
-          registerLateAndOptional: false,
         );
+        // Late services ran too: settle the tracked startup work
+        // (MatrixService.init against the mocked keychain — no config, no
+        // session — and the sequence-log migration).
+        await getIt<StartupTasks>().settle();
 
         // Reconciliation is fire-and-forget; settle it, then: the burn is
         // terminal and its unresolvable marker is queued for peers.

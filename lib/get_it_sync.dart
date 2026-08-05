@@ -172,8 +172,11 @@ Future<String? Function()> _registerMatrixSyncStack({
     enqueueMessage: outboxService.enqueueMessageOrThrow,
     getHostId: vectorClockService.getHost,
     getSnapshotCoverage: syncDatabase.resolvedSequenceUpperBounds,
+    // coverage:ignore-start — trivial accessor thunks, consumed only during
+    // live onboarding-sync rounds against a logged-in client.
     getLocalUserId: () => client.userID,
     getLocalDeviceId: () => client.deviceID,
+    // coverage:ignore-end
     logging: domainLogger,
   );
   syncEventProcessor.onboardingSyncService = onboardingSyncService;
@@ -200,16 +203,19 @@ Future<String? Function()> _registerMatrixSyncStack({
   // that wiped settings always converge on the current snapshot within a
   // session — the receiver's directory upsert is last-write-wins by
   // updatedAt, so redundant re-broadcasts of unchanged content are cheap.
-  unawaited(() async {
+  getIt<StartupTasks>().track(() async {
     try {
       await syncNodeProfileBroadcaster.broadcast();
     } catch (error, stackTrace) {
+      // coverage:ignore-start — defensive: only reachable when the probe or
+      // the outbox write infrastructure itself fails.
       domainLogger.error(
         LogDomain.sync,
         error,
         stackTrace: stackTrace,
         subDomain: 'startupBroadcast',
       );
+      // coverage:ignore-end
     }
   }());
 
@@ -225,6 +231,10 @@ Future<String? Function()> _registerMatrixSyncStack({
     if (existingStatus == SyncSequenceStatus.received.index ||
         existingStatus == SyncSequenceStatus.backfilled.index ||
         existingStatus == SyncSequenceStatus.deleted.index) {
+      // coverage:ignore-start — guards a live-sync race: a peer's response
+      // about this very counter landing between reserve and release. The
+      // receive path ignores own-host entries, so the state cannot be
+      // constructed in-process.
       domainLogger.log(
         LogDomain.sync,
         'vc.burn.broadcast.skipBound host=$hostId counter=$counter '
@@ -232,6 +242,7 @@ Future<String? Function()> _registerMatrixSyncStack({
         subDomain: 'vc.burn.broadcast',
       );
       return;
+      // coverage:ignore-end
     }
 
     await outboxService.enqueueMessage(
@@ -278,6 +289,8 @@ Future<String? Function()> _registerMatrixSyncStack({
         subDomain: 'vc.burn.broadcast',
       );
     } catch (error, stackTrace) {
+      // coverage:ignore-start — defensive: reachable only when the outbox or
+      // sequence-log write infrastructure itself fails mid-broadcast.
       domainLogger.error(
         LogDomain.sync,
         error,
@@ -287,6 +300,7 @@ Future<String? Function()> _registerMatrixSyncStack({
         stackTrace: stackTrace,
         subDomain: 'vc.burn.broadcast',
       );
+      // coverage:ignore-end
     }
   });
 
@@ -295,7 +309,7 @@ Future<String? Function()> _registerMatrixSyncStack({
   // here: a crash after the payload DB write but before outbox/sequence
   // logging can leave a real payload behind, so only `burnPending` rows are
   // authoritative burns.
-  unawaited(
+  getIt<StartupTasks>().track(
     Future<void>(() async {
       try {
         final hostId = await vectorClockService.getHost();
@@ -313,6 +327,8 @@ Future<String? Function()> _registerMatrixSyncStack({
             );
             reconciled++;
           } catch (error, stackTrace) {
+            // coverage:ignore-start — defensive per-counter containment for
+            // infrastructure write failures.
             domainLogger.error(
               LogDomain.sync,
               error,
@@ -322,6 +338,7 @@ Future<String? Function()> _registerMatrixSyncStack({
               stackTrace: stackTrace,
               subDomain: 'vc.burn.reconcile',
             );
+            // coverage:ignore-end
           }
         }
         if (counters.isNotEmpty) {
@@ -345,6 +362,8 @@ Future<String? Function()> _registerMatrixSyncStack({
           );
         }
       } catch (error, stackTrace) {
+        // coverage:ignore-start — defensive: whole-pass containment when the
+        // sequence log itself cannot be read.
         domainLogger.error(
           LogDomain.sync,
           error,
@@ -354,6 +373,7 @@ Future<String? Function()> _registerMatrixSyncStack({
           stackTrace: stackTrace,
           subDomain: 'vc.burn.reconcile',
         );
+        // coverage:ignore-end
       }
     }),
   );
