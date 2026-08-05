@@ -49,7 +49,7 @@ void main() {
   });
 
   tearDown(() async {
-    await harness.tearDown(service);
+    await harness.tearDown();
   });
 
   test('enqueueMessage logs SyncEntityDefinition', () async {

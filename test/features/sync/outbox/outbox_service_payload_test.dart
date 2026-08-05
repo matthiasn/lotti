@@ -51,7 +51,7 @@ void main() {
   });
 
   tearDown(() async {
-    await harness.tearDown(service);
+    await harness.tearDown();
   });
 
   group('Embedded Entry Links', () {
@@ -2084,7 +2084,7 @@ void main() {
   group('_enrichCoveredVcsFromSequenceLog for entry links -', () {
     test(
       'when getLastSentVectorClockForEntry returns a VC, it is merged into '
-      'coveredVectorClocks for a new entry link enqueue (line 1374 path)',
+      'coveredVectorClocks for a new entry link enqueue',
       () async {
         final sequenceLog = MockSyncSequenceLogService();
         const previousVc = VectorClock({'hostA': 3});
@@ -2143,8 +2143,8 @@ void main() {
   });
 
   group('agent payload enriched covered VCs from sequence log -', () {
-    test('SyncAgentEntity new enqueue: getLastSentVectorClockForEntry merges '
-        'into coveredVectorClocks (line 1851 branch)', () async {
+    test('SyncAgentEntity new enqueue merges the last sent vector clock into '
+        'coveredVectorClocks', () async {
       final sequenceLog = MockSyncSequenceLogService();
       const previousVc = VectorClock({'hostA': 7});
       const currentVc = VectorClock({'hostA': 8});
@@ -2208,8 +2208,8 @@ void main() {
       );
     });
 
-    test('SyncAgentLink new enqueue: getLastSentVectorClockForEntry merges '
-        'into coveredVectorClocks (line 1854 branch)', () async {
+    test('SyncAgentLink new enqueue merges the last sent vector clock into '
+        'coveredVectorClocks', () async {
       final sequenceLog = MockSyncSequenceLogService();
       const previousVc = VectorClock({'hostA': 11});
       const currentVc = VectorClock({'hostA': 12});
@@ -2267,99 +2267,101 @@ void main() {
       );
     });
 
-    test('SyncAgentEntity merge: oldCovered and newCovered both contribute to '
-        'merged coveredVectorClocks (line 1728 merge block covered)', () async {
-      const oldVc = VectorClock({'hostA': 2});
-      const newVc = VectorClock({'hostA': 4});
-      const oldCoveredVc = VectorClock({'hostA': 1});
-      const newCoveredVc = VectorClock({'hostA': 3});
+    test(
+      'SyncAgentEntity merge includes old and new covered vector clocks',
+      () async {
+        const oldVc = VectorClock({'hostA': 2});
+        const newVc = VectorClock({'hostA': 4});
+        const oldCoveredVc = VectorClock({'hostA': 1});
+        const newCoveredVc = VectorClock({'hostA': 3});
 
-      final oldEntity = AgentDomainEntity.agent(
-        id: 'agent-both-covered',
-        agentId: 'agent-both-covered',
-        kind: 'task_agent',
-        displayName: 'Old',
-        lifecycle: AgentLifecycle.active,
-        mode: AgentInteractionMode.autonomous,
-        allowedCategoryIds: const {},
-        currentStateId: 'state-1',
-        config: const AgentConfig(),
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 15),
-        vectorClock: oldVc,
-      );
-
-      final oldMessage = SyncMessage.agentEntity(
-        agentEntity: oldEntity,
-        status: SyncEntryStatus.update,
-        coveredVectorClocks: const [oldCoveredVc],
-      );
-
-      when(
-        () => syncDatabase.findPendingByEntryId('agent-both-covered'),
-      ).thenAnswer(
-        (_) async => OutboxItem(
-          id: 77,
-          message: json.encode(oldMessage.toJson()),
-          status: OutboxStatus.pending.index,
-          retries: 0,
+        final oldEntity = AgentDomainEntity.agent(
+          id: 'agent-both-covered',
+          agentId: 'agent-both-covered',
+          kind: 'task_agent',
+          displayName: 'Old',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
           createdAt: DateTime(2024, 3, 15),
           updatedAt: DateTime(2024, 3, 15),
-          subject: 'agentEntity:agent-both-covered',
-          priority: OutboxPriority.normal.index,
-        ),
-      );
+          vectorClock: oldVc,
+        );
 
-      String? capturedMsg;
-      when(
-        () => syncDatabase.updateOutboxMessage(
-          itemId: any(named: 'itemId'),
-          newMessage: any(named: 'newMessage'),
-          newSubject: any(named: 'newSubject'),
-          payloadSize: any(named: 'payloadSize'),
-          priority: any(named: 'priority'),
-        ),
-      ).thenAnswer((inv) async {
-        capturedMsg = inv.namedArguments[#newMessage] as String?;
-        return 1;
-      });
+        final oldMessage = SyncMessage.agentEntity(
+          agentEntity: oldEntity,
+          status: SyncEntryStatus.update,
+          coveredVectorClocks: const [oldCoveredVc],
+        );
 
-      final newEntity = AgentDomainEntity.agent(
-        id: 'agent-both-covered',
-        agentId: 'agent-both-covered',
-        kind: 'task_agent',
-        displayName: 'New',
-        lifecycle: AgentLifecycle.active,
-        mode: AgentInteractionMode.autonomous,
-        allowedCategoryIds: const {},
-        currentStateId: 'state-2',
-        config: const AgentConfig(),
-        createdAt: DateTime(2024, 3, 15),
-        updatedAt: DateTime(2024, 3, 16),
-        vectorClock: newVc,
-      );
+        when(
+          () => syncDatabase.findPendingByEntryId('agent-both-covered'),
+        ).thenAnswer(
+          (_) async => OutboxItem(
+            id: 77,
+            message: json.encode(oldMessage.toJson()),
+            status: OutboxStatus.pending.index,
+            retries: 0,
+            createdAt: DateTime(2024, 3, 15),
+            updatedAt: DateTime(2024, 3, 15),
+            subject: 'agentEntity:agent-both-covered',
+            priority: OutboxPriority.normal.index,
+          ),
+        );
 
-      final newMessage = SyncMessage.agentEntity(
-        agentEntity: newEntity,
-        status: SyncEntryStatus.update,
-        coveredVectorClocks: const [newCoveredVc],
-      );
+        String? capturedMsg;
+        when(
+          () => syncDatabase.updateOutboxMessage(
+            itemId: any(named: 'itemId'),
+            newMessage: any(named: 'newMessage'),
+            newSubject: any(named: 'newSubject'),
+            payloadSize: any(named: 'payloadSize'),
+            priority: any(named: 'priority'),
+          ),
+        ).thenAnswer((inv) async {
+          capturedMsg = inv.namedArguments[#newMessage] as String?;
+          return 1;
+        });
 
-      await service.enqueueMessage(newMessage);
+        final newEntity = AgentDomainEntity.agent(
+          id: 'agent-both-covered',
+          agentId: 'agent-both-covered',
+          kind: 'task_agent',
+          displayName: 'New',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-2',
+          config: const AgentConfig(),
+          createdAt: DateTime(2024, 3, 15),
+          updatedAt: DateTime(2024, 3, 16),
+          vectorClock: newVc,
+        );
 
-      expect(capturedMsg, isNotNull);
-      final decoded = SyncMessage.fromJson(
-        json.decode(capturedMsg!) as Map<String, dynamic>,
-      );
-      expect(decoded, isA<SyncAgentEntity>());
-      final agentMsg = decoded as SyncAgentEntity;
-      expect(agentMsg.coveredVectorClocks, isNotNull);
-      final counters = agentMsg.coveredVectorClocks!
-          .map((vc) => vc.vclock['hostA'])
-          .whereType<int>()
-          .toSet();
-      // Should contain oldVc (2), newVc (4), oldCoveredVc (1), newCoveredVc (3)
-      expect(counters, containsAll([1, 2, 3, 4]));
-    });
+        final newMessage = SyncMessage.agentEntity(
+          agentEntity: newEntity,
+          status: SyncEntryStatus.update,
+          coveredVectorClocks: const [newCoveredVc],
+        );
+
+        await service.enqueueMessage(newMessage);
+
+        expect(capturedMsg, isNotNull);
+        final decoded = SyncMessage.fromJson(
+          json.decode(capturedMsg!) as Map<String, dynamic>,
+        );
+        expect(decoded, isA<SyncAgentEntity>());
+        final agentMsg = decoded as SyncAgentEntity;
+        expect(agentMsg.coveredVectorClocks, isNotNull);
+        final counters = agentMsg.coveredVectorClocks!
+            .map((vc) => vc.vclock['hostA'])
+            .whereType<int>()
+            .toSet();
+        // Should contain oldVc (2), newVc (4), oldCoveredVc (1), newCoveredVc (3)
+        expect(counters, containsAll([1, 2, 3, 4]));
+      },
+    );
   });
 }

@@ -18,7 +18,6 @@ void main() {
   late MockVectorClockService vectorClockService;
   late MockUserActivityService userActivityService;
   late Directory documentsDirectory;
-  late TestableOutboxService service;
 
   TestableOutboxService buildService({
     UserActivityGate? activityGate,
@@ -47,11 +46,10 @@ void main() {
     vectorClockService = harness.vectorClockService;
     userActivityService = harness.userActivityService;
     documentsDirectory = harness.documentsDirectory;
-    service = harness.service;
   });
 
   tearDown(() async {
-    await harness.tearDown(service);
+    await harness.tearDown();
   });
 
   group('sendNext', () {
@@ -230,10 +228,7 @@ void main() {
       final matrixService = stubMatrixService();
       when(matrixService.isLoggedIn).thenReturn(false);
 
-      final svc = buildService(activityGate: gate, ownsActivityGate: false);
-
-      // Inject matrixService by replacing the sender with MatrixOutboxMessageSender
-      // and re-creating the service with matrixService for login gate.
+      // Construct the service with matrixService so the login gate applies.
       final gatedSvc = MatrixOutboxService(
         syncDatabase: syncDatabase,
         loggingService: loggingService,
@@ -254,7 +249,6 @@ void main() {
       verifyNever(() => processor.processQueue());
 
       await gatedSvc.dispose();
-      await svc.dispose();
     });
 
     test('drains when sync enabled and logged in', () async {
@@ -1345,7 +1339,7 @@ void main() {
 
   group('_recordBackoff duplicate call — longer existing backoff not replaced -', () {
     test('when a shorter backoff arrives while a longer one is already set, '
-        'the longer backoff is preserved (line 577 false branch)', () async {
+        'the longer backoff is preserved', () async {
       when(
         () => journalDb.getConfigFlag(enableMatrixFlag),
       ).thenAnswer((_) async => true);
@@ -1399,7 +1393,7 @@ void main() {
   group('sendNext backoff expiry -', () {
     test(
       'when backoff window has already elapsed by the next sendNext call, '
-      '_nextSendAllowedAt is cleared and the drain proceeds (lines 740-741)',
+      '_nextSendAllowedAt is cleared and the drain proceeds',
       () async {
         when(
           () => journalDb.getConfigFlag(enableMatrixFlag),
@@ -1472,15 +1466,16 @@ void main() {
         expect(firstCallFetchCount, greaterThanOrEqualTo(1));
 
         clearInteractions(repository);
+        clearInteractions(processor);
         when(
           () => repository.fetchPending(limit: any(named: 'limit')),
         ).thenAnswer((_) async => <OutboxItem>[]);
 
         // Second call — same state, within quiet window → skips DB probe.
         await svc.sendNext();
-        // fetchPending should NOT be called for state logging (coalesced),
-        // though it may still be called by the watchdog path.
-        // The key assertion: drain ran (processQueue called).
+        verifyNever(
+          () => repository.fetchPending(limit: any(named: 'limit')),
+        );
         verify(() => processor.processQueue()).called(greaterThanOrEqualTo(1));
 
         await svc.dispose();

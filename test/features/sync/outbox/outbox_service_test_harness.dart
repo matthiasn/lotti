@@ -84,6 +84,14 @@ class TestableOutboxService extends MatrixOutboxService {
 
   int enqueueCalls = 0;
   Duration? lastDelay;
+  bool _isDisposed = false;
+
+  @override
+  Future<void> dispose() async {
+    if (_isDisposed) return;
+    _isDisposed = true;
+    await super.dispose();
+  }
 
   @override
   Future<void> enqueueNextSendRequest({
@@ -194,6 +202,8 @@ void configureOutboxServiceTestSuite() {
 
 /// Shared lifecycle and collaborators for the outbox facade satellites.
 class OutboxServiceTestHarness {
+  final List<TestableOutboxService> _builtServices = <TestableOutboxService>[];
+
   late MockSyncDatabase syncDatabase;
   late MockDomainLogger loggingService;
   late MockOutboxRepository repository;
@@ -212,7 +222,7 @@ class OutboxServiceTestHarness {
     Future<void> Function(String path, String json)? saveJsonHandler,
     Duration postDrainSettle = Duration.zero,
   }) {
-    return TestableOutboxService(
+    final built = TestableOutboxService(
       syncDatabase: syncDatabase,
       loggingService: loggingService,
       vectorClockService: vectorClockService,
@@ -228,6 +238,8 @@ class OutboxServiceTestHarness {
       saveJsonHandler: saveJsonHandler,
       postDrainSettle: postDrainSettle,
     );
+    _builtServices.add(built);
+    return built;
   }
 
   Future<void> setUp() async {
@@ -308,8 +320,11 @@ class OutboxServiceTestHarness {
     service = buildService(activityGate: createGate(), ownsActivityGate: false);
   }
 
-  Future<void> tearDown(TestableOutboxService currentService) async {
-    await currentService.dispose();
+  Future<void> tearDown() async {
+    for (final built in _builtServices.reversed) {
+      await built.dispose();
+    }
+    _builtServices.clear();
     if (documentsDirectory.existsSync()) {
       documentsDirectory.deleteSync(recursive: true);
     }

@@ -35,7 +35,7 @@ void main() {
   });
 
   tearDown(() async {
-    await harness.tearDown(service);
+    await harness.tearDown();
   });
 
   test('dispose closes owned activity gate', () async {
@@ -680,8 +680,13 @@ void main() {
       'notLoggedInGateStream getter is accessible on the service and returns '
       'a broadcast stream',
       () async {
-        // Line 201: just accessing the getter covers the getter body.
-        expect(service.notLoggedInGateStream, isA<Stream<void>>());
+        final stream = service.notLoggedInGateStream;
+        expect(stream.isBroadcast, isTrue);
+
+        final first = stream.listen((_) {});
+        final second = stream.listen((_) {});
+        await first.cancel();
+        await second.cancel();
       },
     );
 
