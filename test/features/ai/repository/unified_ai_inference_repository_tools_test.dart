@@ -1,7 +1,6 @@
 // ignore_for_file: unawaited_futures, avoid_redundant_argument_values
 
 import 'dart:async';
-import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -22,8 +21,8 @@ import 'unified_ai_inference_repository_test_helpers.dart';
 
 final harness = UnifiedAiInferenceRepositoryTestHarness();
 
-UnifiedAiInferenceRepository? get repository => harness.repository;
-set repository(UnifiedAiInferenceRepository? value) =>
+UnifiedAiInferenceRepository get repository => harness.repository;
+set repository(UnifiedAiInferenceRepository value) =>
     harness.repository = value;
 ProviderContainer get container => harness.container;
 MockAiConfigRepository get mockAiConfigRepo => harness.mockAiConfigRepo;
@@ -34,17 +33,10 @@ MockJournalRepository get mockJournalRepo => harness.mockJournalRepo;
 MockChecklistRepository get mockChecklistRepo => harness.mockChecklistRepo;
 MockAutoChecklistService get mockAutoChecklistService =>
     harness.mockAutoChecklistService;
-MockLoggingService get mockLoggingService => harness.mockLoggingService;
 MockJournalDb get mockJournalDb => harness.mockJournalDb;
-MockDirectory get mockDirectory => harness.mockDirectory;
-MockCategoryRepository get mockCategoryRepo => harness.mockCategoryRepo;
-MockPromptCapabilityFilter get mockPromptCapabilityFilter =>
-    harness.mockPromptCapabilityFilter;
 MockLabelsRepository get mockLabelsRepository => harness.mockLabelsRepository;
 TestChecklistCompletionService get testChecklistCompletionService =>
     harness.testChecklistCompletionService;
-Directory? get baseTempDir => harness.baseTempDir;
-List<Directory> get overrideTempDirs => harness.overrideTempDirs;
 
 void main() {
   setUpAll(harness.setUpAll);
@@ -124,7 +116,7 @@ void main() {
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
       // Act
-      await repository!.runInference(
+      await repository.runInference(
         entityId: 'test-id',
         promptConfig: promptConfig,
         onProgress: (_) {},
@@ -173,7 +165,7 @@ void main() {
       ];
 
       // Should not throw - the handler will process but skip items not found
-      await repository!.processToolCalls(
+      await repository.processToolCalls(
         toolCalls: toolCalls,
         task: taskEntity,
       );
@@ -265,7 +257,7 @@ void main() {
         ),
       );
 
-      await repository!.runInference(
+      await repository.runInference(
         entityId: taskEntity.id,
         promptConfig: promptConfig,
         onProgress: (_) {},
@@ -343,7 +335,7 @@ void main() {
         () => mockAutoChecklistService.autoCreateChecklist(
           taskId: taskEntity.id,
           suggestions: any(named: 'suggestions'),
-          title: 'to-do',
+          title: 'Todos',
         ),
       ).thenAnswer(
         (_) async => (
@@ -372,7 +364,7 @@ void main() {
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
-      await repository!.runInference(
+      await repository.runInference(
         entityId: taskEntity.id,
         promptConfig: promptConfig,
         onProgress: (_) {},
@@ -489,7 +481,7 @@ void main() {
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
-      await repository!.runInference(
+      await repository.runInference(
         entityId: taskEntity.id,
         promptConfig: promptConfig,
         onProgress: (_) {},
@@ -635,7 +627,7 @@ void main() {
 
         stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
-        await repository!.runInference(
+        await repository.runInference(
           entityId: taskEntity.id,
           promptConfig: promptConfig,
           onProgress: (_) {},
@@ -782,7 +774,7 @@ void main() {
         () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
       ).thenAnswer((_) async => '{"title": "Test Task"}');
 
-      await repository!.runInference(
+      await repository.runInference(
         entityId: taskEntity.id,
         promptConfig: promptConfig,
         onProgress: (_) {},
@@ -877,7 +869,7 @@ void main() {
         () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
       ).thenAnswer((_) async => '{"title": "Test Task"}');
 
-      await repository!.runInference(
+      await repository.runInference(
         entityId: taskEntity.id,
         promptConfig: promptConfig,
         onProgress: (_) {},
@@ -980,7 +972,7 @@ void main() {
         () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
       ).thenAnswer((_) async => '{"title": "Test Task"}');
 
-      await repository!.runInference(
+      await repository.runInference(
         entityId: taskEntity.id,
         promptConfig: promptConfig,
         onProgress: (_) {},
@@ -1082,7 +1074,7 @@ void main() {
         () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
       ).thenAnswer((_) async => '{"title": "Test Task"}');
 
-      await repository!.runInference(
+      await repository.runInference(
         entityId: taskEntity.id,
         promptConfig: promptConfig,
         onProgress: (_) {},
@@ -1121,9 +1113,11 @@ void main() {
         ),
       );
 
-      aiProvider = createAiProvider(
+      aiProvider = createProvider(
         id: 'provider-1',
-        type: InferenceProviderType.openAi,
+        inferenceProviderType: InferenceProviderType.openAi,
+        baseUrl: 'https://api.test.com',
+        apiKey: 'test-key',
       );
 
       model = createModel(
@@ -1132,16 +1126,53 @@ void main() {
         inferenceProviderId: 'provider-1',
       );
     });
-    test('autoChecklistServiceForTesting setter works correctly', () {
-      final mockAutoChecklistService = MockAutoChecklistService();
-      repository!.autoChecklistServiceForTesting = mockAutoChecklistService;
-      // The setter is used for testing purposes
-      expect(
-        () => repository!.autoChecklistServiceForTesting =
-            mockAutoChecklistService,
-        returnsNormally,
-      );
-    });
+    test(
+      'uses the auto-checklist service injected through the test seam',
+      () async {
+        final injectedService = MockAutoChecklistService();
+        when(
+          () => injectedService.autoCreateChecklist(
+            taskId: taskEntity.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'Todos',
+          ),
+        ).thenAnswer(
+          (_) async => (
+            success: false,
+            checklistId: null,
+            createdItems: null,
+            error: 'expected test stop',
+          ),
+        );
+        repository.autoChecklistServiceForTesting = injectedService;
+
+        await repository.processToolCalls(
+          toolCalls: [
+            createMockMessageToolCall(
+              id: 'injected-service-call',
+              functionName: 'add_multiple_checklist_items',
+              arguments: '{"items":[{"title":"Injected item"}]}',
+            ),
+          ],
+          task: taskEntity,
+        );
+
+        verify(
+          () => injectedService.autoCreateChecklist(
+            taskId: taskEntity.id,
+            suggestions: any(named: 'suggestions'),
+            title: 'Todos',
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockAutoChecklistService.autoCreateChecklist(
+            taskId: any(named: 'taskId'),
+            suggestions: any(named: 'suggestions'),
+            title: any(named: 'title'),
+          ),
+        );
+      },
+    );
 
     test('handles model not found error', () async {
       final promptConfig = AiConfigPrompt(
@@ -1165,7 +1196,7 @@ void main() {
       ).thenAnswer((_) async => null);
 
       await expectLater(
-        repository!.runInference(
+        repository.runInference(
           entityId: taskEntity.id,
           promptConfig: promptConfig,
           onProgress: (_) {},
@@ -1180,8 +1211,6 @@ void main() {
         ),
       );
     });
-
-    // Removed conversation approach test due to timeout issues
 
     test('handles tool calls with empty IDs and fallback to index', () async {
       final promptConfig = AiConfigPrompt(
@@ -1209,6 +1238,20 @@ void main() {
       when(
         () => mockAiConfigRepo.getConfigById('provider-1'),
       ).thenAnswer((_) async => aiProvider);
+      when(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: taskEntity.id,
+          suggestions: any(named: 'suggestions'),
+          title: 'Todos',
+        ),
+      ).thenAnswer(
+        (_) async => (
+          success: false,
+          checklistId: null,
+          createdItems: null,
+          error: 'expected test stop',
+        ),
+      );
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
@@ -1218,7 +1261,7 @@ void main() {
         () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
       ).thenAnswer((_) async => '{"title": "Test Task"}');
 
-      final inferenceFuture = repository!.runInference(
+      final inferenceFuture = repository.runInference(
         entityId: taskEntity.id,
         promptConfig: promptConfig,
         onProgress: (_) {},
@@ -1242,7 +1285,7 @@ void main() {
                           ChatCompletionStreamMessageToolCallChunkType.function,
                       function: ChatCompletionStreamMessageFunctionCall(
                         name: 'add_multiple_checklist_items',
-                        arguments: '{"title":',
+                        arguments: '{"items":[{"title":',
                       ),
                     ),
                   ],
@@ -1268,7 +1311,7 @@ void main() {
                       type:
                           ChatCompletionStreamMessageToolCallChunkType.function,
                       function: ChatCompletionStreamMessageFunctionCall(
-                        arguments: '"Test item"}',
+                        arguments: '"Test item"}]}',
                       ),
                     ),
                   ],
@@ -1284,8 +1327,16 @@ void main() {
       await streamController.close();
       await inferenceFuture;
 
-      // Verify that tool calls were processed
-      // In real implementation, this would have processed the add_multiple_checklist_items tool call
+      final capturedSuggestions =
+          verify(
+                () => mockAutoChecklistService.autoCreateChecklist(
+                  taskId: taskEntity.id,
+                  suggestions: captureAny(named: 'suggestions'),
+                  title: 'Todos',
+                ),
+              ).captured.single
+              as List<ChecklistItemData>;
+      expect(capturedSuggestions.map((item) => item.title), ['Test item']);
     });
 
     test('handles tool call with no ID but with function name', () async {
@@ -1314,6 +1365,20 @@ void main() {
       when(
         () => mockAiConfigRepo.getConfigById('provider-1'),
       ).thenAnswer((_) async => aiProvider);
+      when(
+        () => mockAutoChecklistService.autoCreateChecklist(
+          taskId: taskEntity.id,
+          suggestions: any(named: 'suggestions'),
+          title: 'Todos',
+        ),
+      ).thenAnswer(
+        (_) async => (
+          success: false,
+          checklistId: null,
+          createdItems: null,
+          error: 'expected test stop',
+        ),
+      );
 
       stubGenerate(mockCloudInferenceRepo, stream: streamController.stream);
 
@@ -1323,7 +1388,7 @@ void main() {
         () => mockAiInputRepo.buildTaskDetailsJson(id: any(named: 'id')),
       ).thenAnswer((_) async => '{"title": "Test Task"}');
 
-      final inferenceFuture = repository!.runInference(
+      final inferenceFuture = repository.runInference(
         entityId: taskEntity.id,
         promptConfig: promptConfig,
         onProgress: (_) {},
@@ -1346,7 +1411,8 @@ void main() {
                     function: ChatCompletionStreamMessageFunctionCall(
                       name:
                           'add_multiple_checklist_items', // Has name - indicates new tool call
-                      arguments: '{"title": "Item with name but no ID"}',
+                      arguments:
+                          '{"items":[{"title":"Item with name but no ID"}]}',
                     ),
                   ),
                 ],
@@ -1361,8 +1427,18 @@ void main() {
       await streamController.close();
       await inferenceFuture;
 
-      // Verify that tool call was processed
-      // In real implementation, this would have processed the add_multiple_checklist_items tool call
+      final capturedSuggestions =
+          verify(
+                () => mockAutoChecklistService.autoCreateChecklist(
+                  taskId: taskEntity.id,
+                  suggestions: captureAny(named: 'suggestions'),
+                  title: 'Todos',
+                ),
+              ).captured.single
+              as List<ChecklistItemData>;
+      expect(capturedSuggestions.map((item) => item.title), [
+        'Item with name but no ID',
+      ]);
     });
 
     test('handles provider not found error properly', () async {
@@ -1416,7 +1492,7 @@ void main() {
       ).thenAnswer((_) async => '{"title": "Test Task"}');
 
       await expectLater(
-        repository!.runInference(
+        repository.runInference(
           entityId: taskEntity.id,
           promptConfig: promptConfig,
           onProgress: (_) {},

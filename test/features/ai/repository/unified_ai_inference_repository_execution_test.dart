@@ -5,7 +5,6 @@ import 'dart:io';
 import 'dart:typed_data';
 
 import 'package:fake_async/fake_async.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -28,28 +27,14 @@ import 'unified_ai_inference_repository_test_helpers.dart';
 
 final harness = UnifiedAiInferenceRepositoryTestHarness();
 
-UnifiedAiInferenceRepository? get repository => harness.repository;
-set repository(UnifiedAiInferenceRepository? value) =>
-    harness.repository = value;
-ProviderContainer get container => harness.container;
+UnifiedAiInferenceRepository get repository => harness.repository;
 MockAiConfigRepository get mockAiConfigRepo => harness.mockAiConfigRepo;
 MockAiInputRepository get mockAiInputRepo => harness.mockAiInputRepo;
 MockCloudInferenceRepository get mockCloudInferenceRepo =>
     harness.mockCloudInferenceRepo;
 MockJournalRepository get mockJournalRepo => harness.mockJournalRepo;
-MockChecklistRepository get mockChecklistRepo => harness.mockChecklistRepo;
-MockAutoChecklistService get mockAutoChecklistService =>
-    harness.mockAutoChecklistService;
-MockLoggingService get mockLoggingService => harness.mockLoggingService;
 MockJournalDb get mockJournalDb => harness.mockJournalDb;
 MockDirectory get mockDirectory => harness.mockDirectory;
-MockCategoryRepository get mockCategoryRepo => harness.mockCategoryRepo;
-MockPromptCapabilityFilter get mockPromptCapabilityFilter =>
-    harness.mockPromptCapabilityFilter;
-MockLabelsRepository get mockLabelsRepository => harness.mockLabelsRepository;
-TestChecklistCompletionService get testChecklistCompletionService =>
-    harness.testChecklistCompletionService;
-Directory? get baseTempDir => harness.baseTempDir;
 List<Directory> get overrideTempDirs => harness.overrideTempDirs;
 
 void main() {
@@ -112,7 +97,7 @@ void main() {
           () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
         ).thenAnswer((_) async => true);
 
-        await repository!.runInference(
+        await repository.runInference(
           entityId: 'test-id',
           promptConfig: promptConfig,
           onProgress: progressUpdates.add,
@@ -195,7 +180,7 @@ void main() {
 
         final bench = registerInteractionCapture();
 
-        await repository!.runInference(
+        await repository.runInference(
           entityId: taskEntity.id,
           promptConfig: promptConfig,
           onProgress: (_) {},
@@ -288,7 +273,7 @@ void main() {
 
         final bench = registerInteractionCapture();
 
-        await repository!.runInference(
+        await repository.runInference(
           entityId: taskEntity.id,
           promptConfig: promptConfig,
           onProgress: (_) {},
@@ -368,7 +353,7 @@ void main() {
           final bench = registerInteractionCapture();
 
           await expectLater(
-            repository!.runInference(
+            repository.runInference(
               entityId: taskEntity.id,
               promptConfig: promptConfig,
               onProgress: (_) {},
@@ -458,7 +443,7 @@ void main() {
             () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
           ).thenAnswer((_) async => true);
 
-          await repository!.runInference(
+          await repository.runInference(
             entityId: 'test-id',
             promptConfig: prompt,
             onProgress: (_) {},
@@ -616,7 +601,7 @@ void main() {
               () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
             ).thenAnswer((_) async => true);
 
-            await repository!.runInference(
+            await repository.runInference(
               entityId: 'test-id',
               promptConfig: codingPrompt(),
               onProgress: (_) {},
@@ -793,7 +778,7 @@ void main() {
             () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
           ).thenAnswer((_) async => false);
 
-          await repository!.runInference(
+          await repository.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: progressUpdates.add,
@@ -878,7 +863,7 @@ void main() {
         ).thenAnswer((_) async => true);
 
         try {
-          await repository!.runInference(
+          await repository.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: progressUpdates.add,
@@ -979,7 +964,7 @@ void main() {
         ).thenAnswer((_) async => true);
 
         try {
-          await repository!.runInference(
+          await repository.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -1053,7 +1038,7 @@ void main() {
         // runInference logs and rethrows; the file read failure surfaces as
         // a FileSystemException and no idle status is ever emitted.
         await expectLater(
-          repository!.runInference(
+          repository.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -1122,7 +1107,7 @@ void main() {
         final statusChanges = <InferenceStatus>[];
 
         await expectLater(
-          repository!.runInference(
+          repository.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -1203,7 +1188,7 @@ void main() {
         ).thenAnswer((_) async => []);
 
         try {
-          await repository!.runInference(
+          await repository.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: progressUpdates.add,
@@ -1306,7 +1291,7 @@ void main() {
         ).thenAnswer((_) async => []);
 
         try {
-          await repository!.runInference(
+          await repository.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -1386,7 +1371,7 @@ void main() {
           () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
         ).thenAnswer((_) async => true);
 
-        await repository!.runInference(
+        await repository.runInference(
           entityId: 'test-id',
           promptConfig: promptConfig,
           onProgress: progressUpdates.add,
@@ -1456,7 +1441,7 @@ void main() {
           ).thenAnswer((_) async => null);
 
           expect(
-            () => repository!.runInference(
+            () => repository.runInference(
               entityId: 'test-id',
               promptConfig: promptConfig,
               onProgress: (_) {},
@@ -1536,7 +1521,7 @@ void main() {
           ).thenThrow(Exception('Failed to build prompt'));
 
           expect(
-            () => repository!.runInference(
+            () => repository.runInference(
               entityId: 'test-id',
               promptConfig: promptConfig,
               onProgress: (_) {},
@@ -1636,7 +1621,7 @@ void main() {
           () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
         ).thenAnswer((_) async => true);
 
-        await repository!.runInference(
+        await repository.runInference(
           entityId: 'test-id',
           promptConfig: promptConfig,
           onProgress: progressUpdates.add,
@@ -1680,7 +1665,7 @@ void main() {
           ).thenThrow(Exception('Model not found'));
 
           expect(
-            () => repository!.runInference(
+            () => repository.runInference(
               entityId: 'test-id',
               promptConfig: promptConfig,
               onProgress: (_) {},
@@ -1711,7 +1696,7 @@ void main() {
           ).thenAnswer((_) async => null);
 
           expect(
-            () => repository!.runInference(
+            () => repository.runInference(
               entityId: 'test-id',
               promptConfig: promptConfig,
               onProgress: (_) {},
@@ -1815,7 +1800,7 @@ void main() {
           ).thenAnswer((_) async => []);
 
           try {
-            await repository!.runInference(
+            await repository.runInference(
               entityId: 'test-id',
               promptConfig: promptConfig,
               onProgress: progressUpdates.add,
@@ -1927,7 +1912,7 @@ void main() {
           ).thenAnswer((_) async => persisted);
           final bench = registerInteractionCapture();
           if (persisted) {
-            await repository!.runInference(
+            await repository.runInference(
               entityId: audioEntity.id,
               promptConfig: promptConfig,
               onProgress: (_) {},
@@ -1935,7 +1920,7 @@ void main() {
             );
           } else {
             await expectLater(
-              repository!.runInference(
+              repository.runInference(
                 entityId: audioEntity.id,
                 promptConfig: promptConfig,
                 onProgress: (_) {},
@@ -2076,7 +2061,7 @@ void main() {
           ).thenAnswer((_) async => []);
 
           try {
-            await repository!.runInference(
+            await repository.runInference(
               entityId: 'test-id',
               promptConfig: promptConfig,
               onProgress: (_) {},
@@ -2213,7 +2198,7 @@ void main() {
         ).thenAnswer((_) async => true);
 
         try {
-          await repository!.runInference(
+          await repository.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -2338,7 +2323,7 @@ void main() {
         ).thenAnswer((_) async => true);
 
         try {
-          await repository!.runInference(
+          await repository.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: (_) {},

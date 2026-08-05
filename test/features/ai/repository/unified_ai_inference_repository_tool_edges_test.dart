@@ -1,7 +1,4 @@
 import 'dart:async';
-import 'dart:io';
-
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -25,10 +22,7 @@ import 'unified_ai_inference_repository_test_helpers.dart';
 
 final harness = UnifiedAiInferenceRepositoryTestHarness();
 
-UnifiedAiInferenceRepository? get repository => harness.repository;
-set repository(UnifiedAiInferenceRepository? value) =>
-    harness.repository = value;
-ProviderContainer get container => harness.container;
+UnifiedAiInferenceRepository get repository => harness.repository;
 MockAiConfigRepository get mockAiConfigRepo => harness.mockAiConfigRepo;
 MockAiInputRepository get mockAiInputRepo => harness.mockAiInputRepo;
 MockCloudInferenceRepository get mockCloudInferenceRepo =>
@@ -37,17 +31,10 @@ MockJournalRepository get mockJournalRepo => harness.mockJournalRepo;
 MockChecklistRepository get mockChecklistRepo => harness.mockChecklistRepo;
 MockAutoChecklistService get mockAutoChecklistService =>
     harness.mockAutoChecklistService;
-MockLoggingService get mockLoggingService => harness.mockLoggingService;
 MockJournalDb get mockJournalDb => harness.mockJournalDb;
-MockDirectory get mockDirectory => harness.mockDirectory;
-MockCategoryRepository get mockCategoryRepo => harness.mockCategoryRepo;
-MockPromptCapabilityFilter get mockPromptCapabilityFilter =>
-    harness.mockPromptCapabilityFilter;
 MockLabelsRepository get mockLabelsRepository => harness.mockLabelsRepository;
 TestChecklistCompletionService get testChecklistCompletionService =>
     harness.testChecklistCompletionService;
-Directory? get baseTempDir => harness.baseTempDir;
-List<Directory> get overrideTempDirs => harness.overrideTempDirs;
 
 void main() {
   setUpAll(harness.setUpAll);
@@ -56,7 +43,7 @@ void main() {
   tearDownAll(harness.tearDownAll);
 
   group(
-    'processToolCalls – language detection (setTaskLanguage) branches (lines 1120-1178)',
+    'processToolCalls – language detection (setTaskLanguage) branches',
     () {
       Task makeTask({String? languageCode, String id = 'task-lang-test'}) {
         return Task(
@@ -85,7 +72,7 @@ void main() {
       }
 
       test(
-        'sets language when task has no language yet (lines 1149-1162)',
+        'sets language when task has no language yet',
         () async {
           final task = makeTask();
           when(
@@ -95,7 +82,7 @@ void main() {
             () => mockJournalRepo.updateJournalEntity(any()),
           ).thenAnswer((_) async => true);
 
-          final result = await repository!.processToolCalls(
+          final result = await repository.processToolCalls(
             toolCalls: [
               langCall(
                 '{"languageCode":"en","confidence":"high","reason":"Detected English"}',
@@ -110,14 +97,14 @@ void main() {
       );
 
       test(
-        'skips language update when task already has a language set (lines 1171-1174)',
+        'skips language update when task already has a language set',
         () async {
           final task = makeTask(languageCode: 'de');
           when(
             () => mockJournalRepo.getJournalEntityById(task.id),
           ).thenAnswer((_) async => task);
 
-          final result = await repository!.processToolCalls(
+          final result = await repository.processToolCalls(
             toolCalls: [
               langCall(
                 '{"languageCode":"en","confidence":"high","reason":"Detected English"}',
@@ -132,7 +119,7 @@ void main() {
       );
 
       test(
-        'skips language update when freshEntity is not a Task (lines 1138-1143)',
+        'skips language update when freshEntity is not a Task',
         () async {
           final task = makeTask();
           // Return a non-Task entity to hit line 1138
@@ -140,7 +127,7 @@ void main() {
             () => mockJournalRepo.getJournalEntityById(task.id),
           ).thenAnswer((_) async => JournalEntry(meta: createMetadata()));
 
-          final result = await repository!.processToolCalls(
+          final result = await repository.processToolCalls(
             toolCalls: [
               langCall(
                 '{"languageCode":"fr","confidence":"medium","reason":"French"}',
@@ -155,7 +142,7 @@ void main() {
       );
 
       test(
-        'handles updateJournalEntity failure when setting language (lines 1164-1168)',
+        'handles updateJournalEntity failure when setting language',
         () async {
           final task = makeTask();
           when(
@@ -166,7 +153,7 @@ void main() {
           ).thenThrow(Exception('DB write error'));
 
           // Should not throw despite update failure
-          final result = await repository!.processToolCalls(
+          final result = await repository.processToolCalls(
             toolCalls: [
               langCall(
                 '{"languageCode":"es","confidence":"low","reason":"Maybe Spanish"}',
@@ -177,16 +164,17 @@ void main() {
 
           // languageWasSet should be false because update threw
           expect(result, isFalse);
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
         },
       );
 
       test(
-        'handles malformed setTaskLanguage JSON (lines 1176-1181)',
+        'handles malformed setTaskLanguage JSON',
         () async {
           final task = makeTask();
 
           // Should not throw — error is caught internally
-          final result = await repository!.processToolCalls(
+          final result = await repository.processToolCalls(
             toolCalls: [
               createMockMessageToolCall(
                 id: 'bad-lang-call',
@@ -205,7 +193,7 @@ void main() {
   );
 
   group(
-    'processToolCalls – language triggers auto-rerun when response is empty (lines 619-634)',
+    'processToolCalls – language triggers auto-rerun when response is empty',
     () {
       test(
         're-runs inference when language is detected and response is empty',
@@ -303,7 +291,7 @@ void main() {
           stubCreateAiResponseEntry(mockAiInputRepo);
 
           final statusChanges = <InferenceStatus>[];
-          await repository!.runInference(
+          await repository.runInference(
             entityId: taskEntity.id,
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -421,7 +409,7 @@ void main() {
           stubCreateAiResponseEntry(mockAiInputRepo);
 
           final statusChanges = <InferenceStatus>[];
-          await repository!.runInference(
+          await repository.runInference(
             entityId: taskEntity.id,
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -458,11 +446,11 @@ void main() {
     }
 
     test(
-      'skips when arguments contain no valid JSON object (line 906-911 — empty jsonObjects)',
+      'skips when arguments contain no valid JSON object',
       () async {
         final task = makeTask2();
 
-        final result = await repository!.processToolCalls(
+        final result = await repository.processToolCalls(
           toolCalls: [
             createMockMessageToolCall(
               id: 'bad-call',
@@ -481,7 +469,7 @@ void main() {
     );
 
     test(
-      'uses orElse confidence fallback for unknown confidence value (line 932)',
+      'uses low-confidence fallback for an unknown confidence value',
       () async {
         final task = makeTask2();
 
@@ -489,7 +477,7 @@ void main() {
           () => mockJournalRepo.getJournalEntityById(any()),
         ).thenAnswer((_) async => null);
 
-        final result = await repository!.processToolCalls(
+        final result = await repository.processToolCalls(
           toolCalls: [
             createMockMessageToolCall(
               id: 'unknown-confidence',
@@ -513,13 +501,13 @@ void main() {
     );
 
     test(
-      'logs and skips invalid JSON within arguments (lines 942-946)',
+      'logs and skips invalid JSON within arguments',
       () async {
         final task = makeTask2();
 
         // A valid outer JSON structure is needed so jsonObjects is non-empty, but
         // the inner content has a broken type cast.
-        final result = await repository!.processToolCalls(
+        final result = await repository.processToolCalls(
           toolCalls: [
             createMockMessageToolCall(
               id: 'bad-inner',
@@ -557,10 +545,10 @@ void main() {
       );
     }
 
-    test('skips when items field is not a List (line 958-963)', () async {
+    test('skips when items field is not a List', () async {
       final task = makeTaskNoChecklists();
 
-      final result = await repository!.processToolCalls(
+      final result = await repository.processToolCalls(
         toolCalls: [
           createMockMessageToolCall(
             id: 'bad-items',
@@ -581,7 +569,7 @@ void main() {
       );
     });
 
-    test('skips when batch size exceeds maximum (lines 968-973)', () async {
+    test('skips when batch size exceeds maximum', () async {
       // Build an array with 21 items (maxBatchSize is 20)
       final items = List.generate(
         21,
@@ -590,7 +578,7 @@ void main() {
 
       final task = makeTaskNoChecklists();
 
-      final result = await repository!.processToolCalls(
+      final result = await repository.processToolCalls(
         toolCalls: [
           createMockMessageToolCall(
             id: 'too-many',
@@ -612,7 +600,7 @@ void main() {
     });
 
     test(
-      'breaks out of loop when task is not found after checklist creation (lines 1031-1036)',
+      'breaks out of loop when task is not found after checklist creation',
       () async {
         // Task starts with no checklist IDs
         final task = Task(
@@ -653,7 +641,7 @@ void main() {
           () => mockJournalDb.journalEntityById(task.id),
         ).thenAnswer((_) async => null);
 
-        final result = await repository!.processToolCalls(
+        final result = await repository.processToolCalls(
           toolCalls: [
             createMockMessageToolCall(
               id: 'add-cl',
@@ -667,11 +655,28 @@ void main() {
         );
 
         expect(result, isFalse);
+        verify(
+          () => mockAutoChecklistService.autoCreateChecklist(
+            taskId: task.id,
+            suggestions: any(named: 'suggestions'),
+            title: any(named: 'title'),
+          ),
+        ).called(1);
+        verify(() => mockJournalDb.journalEntityById(task.id)).called(1);
+        verifyNever(
+          () => mockChecklistRepo.addItemToChecklist(
+            checklistId: any(named: 'checklistId'),
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            categoryId: any(named: 'categoryId'),
+            checkedBy: any(named: 'checkedBy'),
+          ),
+        );
       },
     );
 
     test(
-      'logs error when autoCreateChecklist fails (lines 1039-1043)',
+      'logs error when autoCreateChecklist fails',
       () async {
         final task = Task(
           meta: createMetadata(id: 'task-cl-fail'),
@@ -704,7 +709,7 @@ void main() {
           ),
         );
 
-        final result = await repository!.processToolCalls(
+        final result = await repository.processToolCalls(
           toolCalls: [
             createMockMessageToolCall(
               id: 'add-fail',
@@ -717,15 +722,31 @@ void main() {
         );
 
         expect(result, isFalse);
+        verify(
+          () => mockAutoChecklistService.autoCreateChecklist(
+            taskId: task.id,
+            suggestions: any(named: 'suggestions'),
+            title: any(named: 'title'),
+          ),
+        ).called(1);
+        verifyNever(
+          () => mockChecklistRepo.addItemToChecklist(
+            checklistId: any(named: 'checklistId'),
+            title: any(named: 'title'),
+            isChecked: any(named: 'isChecked'),
+            categoryId: any(named: 'categoryId'),
+            checkedBy: any(named: 'checkedBy'),
+          ),
+        );
       },
     );
   });
 
   group(
-    'processToolCalls – update_checklist_items failure path (lines 1093-1116)',
+    'processToolCalls – update_checklist_items failure path',
     () {
       test(
-        'logs when processFunctionCall returns failure (lines 1093-1097)',
+        'does not query entries when the update payload is invalid',
         () async {
           final task = Task(
             meta: createMetadata(id: 'task-update-fail'),
@@ -744,7 +765,7 @@ void main() {
           );
 
           // Invalid JSON structure → processFunctionCall returns failure
-          final result = await repository!.processToolCalls(
+          final result = await repository.processToolCalls(
             toolCalls: [
               createMockMessageToolCall(
                 id: 'bad-update',
@@ -756,11 +777,12 @@ void main() {
           );
 
           expect(result, isFalse);
+          verifyNever(() => mockJournalDb.entriesForIds(any()));
         },
       );
 
       test(
-        'catches exception thrown during update_checklist_items (lines 1110-1115)',
+        'catches exception thrown during update_checklist_items',
         () async {
           final task = Task(
             meta: createMetadata(id: 'task-update-throw'),
@@ -780,13 +802,15 @@ void main() {
 
           // DB throws during entriesForIds lookup inside executeUpdates
           final mockSelectable = MockSelectableSimple<JournalDbEntity>();
-          when(mockSelectable.get).thenThrow(Exception('DB exploded'));
+          // Mocktail's `thenThrow` must capture the invocation in a closure.
+          // ignore: unnecessary_lambdas
+          when(() => mockSelectable.get()).thenThrow(Exception('DB exploded'));
           when(
             () => mockJournalDb.entriesForIds(any()),
           ).thenReturn(mockSelectable);
 
           // Should not rethrow; caught internally
-          final result = await repository!.processToolCalls(
+          final result = await repository.processToolCalls(
             toolCalls: [
               createMockMessageToolCall(
                 id: 'throw-update',
@@ -804,7 +828,7 @@ void main() {
   );
 
   group(
-    'processToolCalls – assign_task_labels empty requested set (line 1193)',
+    'processToolCalls – assign_task_labels empty requested set',
     () {
       test(
         'skips when parseLabelCallArgs returns empty selected IDs',
@@ -825,7 +849,7 @@ void main() {
           );
 
           // Empty labelIds → parseLabelCallArgs returns no selectedIds
-          final result = await repository!.processToolCalls(
+          final result = await repository.processToolCalls(
             toolCalls: [
               createMockMessageToolCall(
                 id: 'empty-labels',
@@ -849,7 +873,7 @@ void main() {
   );
 
   group(
-    'processToolCalls – assign_task_labels successful path (lines 1246-1247)',
+    'processToolCalls – assign_task_labels successful path',
     () {
       test(
         'calls processAssignment and logs result when labels are valid',
@@ -909,7 +933,7 @@ void main() {
             ),
           ).thenAnswer((_) async => true);
 
-          final result = await repository!.processToolCalls(
+          final result = await repository.processToolCalls(
             toolCalls: [
               createMockMessageToolCall(
                 id: 'valid-labels',
@@ -939,7 +963,7 @@ void main() {
     },
   );
 
-  group('processToolCalls – unknown tool call (lines 1261-1262)', () {
+  group('processToolCalls – unknown tool call', () {
     test('logs and skips unknown function name', () async {
       final task = Task(
         meta: createMetadata(id: 'task-unknown-tool'),
@@ -957,7 +981,7 @@ void main() {
       );
 
       // Should not throw
-      final result = await repository!.processToolCalls(
+      final result = await repository.processToolCalls(
         toolCalls: [
           createMockMessageToolCall(
             id: 'unknown-tool',
@@ -969,158 +993,178 @@ void main() {
       );
 
       expect(result, isFalse);
+      verifyNever(
+        () => mockChecklistRepo.addItemToChecklist(
+          checklistId: any(named: 'checklistId'),
+          title: any(named: 'title'),
+          isChecked: any(named: 'isChecked'),
+          categoryId: any(named: 'categoryId'),
+          checkedBy: any(named: 'checkedBy'),
+        ),
+      );
+      verifyNever(
+        () => mockLabelsRepository.addLabels(
+          journalEntityId: any(named: 'journalEntityId'),
+          addedLabelIds: any(named: 'addedLabelIds'),
+        ),
+      );
+      verifyNever(() => mockJournalRepo.updateJournalEntity(any()));
     });
   });
 
-  group('processToolCalls – assign_task_labels suppressed-only short-circuit '
-      '(lines 1213-1233)', () {
-    test(
-      'skips processAssignment when every requested label is suppressed',
-      () async {
-        // LabelAssignmentProcessor's constructor resolves getIt<DomainLogger>
-        // even though processAssignment is never reached on this path.
-        final mockDomainLogger = MockDomainLogger();
-        // Registered in this test's GetIt scope; tearDown pops the scope.
-        getIt.registerSingleton<DomainLogger>(mockDomainLogger);
+  group(
+    'processToolCalls – assign_task_labels suppressed-only short-circuit',
+    () {
+      test(
+        'skips processAssignment when every requested label is suppressed',
+        () async {
+          // LabelAssignmentProcessor's constructor resolves getIt<DomainLogger>
+          // even though processAssignment is never reached on this path.
+          final mockDomainLogger = MockDomainLogger();
+          // Registered in this test's GetIt scope; tearDown pops the scope.
+          getIt.registerSingleton<DomainLogger>(mockDomainLogger);
 
-        // Both requested labels (X, Y) are on the task's suppression set, so
-        // `proposed` becomes empty while `requested` is non-empty, taking the
-        // suppressed-only short-circuit (builds the skipped list + noop result
-        // and logs it, then continues without assigning).
+          // Both requested labels (X, Y) are on the task's suppression set, so
+          // `proposed` becomes empty while `requested` is non-empty, taking the
+          // suppressed-only short-circuit (builds the skipped list + noop result
+          // and logs it, then continues without assigning).
+          final task = Task(
+            meta: createMetadata(id: 'task-suppressed-only'),
+            data: TaskData(
+              status: TaskStatus.open(
+                id: 'status-1',
+                createdAt: DateTime(2024, 3, 15),
+                utcOffset: 0,
+              ),
+              title: 'Suppressed Labels Task',
+              statusHistory: const [],
+              dateFrom: DateTime(2024, 3, 15),
+              dateTo: DateTime(2024, 3, 15),
+              aiSuppressedLabelIds: const {'X', 'Y'},
+            ),
+          );
+
+          final result = await repository.processToolCalls(
+            toolCalls: [
+              createMockMessageToolCall(
+                id: 'suppressed-labels',
+                functionName: LabelFunctions.assignTaskLabels,
+                arguments: '{"labelIds":["X","Y"]}',
+              ),
+            ],
+            task: task,
+          );
+
+          // languageWasSet is never flipped by label assignment.
+          expect(result, isFalse);
+          // The short-circuit must NOT persist anything: processAssignment is
+          // skipped, so addLabels is never invoked.
+          verifyNever(
+            () => mockLabelsRepository.addLabels(
+              journalEntityId: any(named: 'journalEntityId'),
+              addedLabelIds: any(named: 'addedLabelIds'),
+            ),
+          );
+        },
+      );
+    },
+  );
+
+  group(
+    'processToolCalls – update_checklist_items refreshes task on success',
+    () {
+      test('invokes onTaskUpdated after a successful item update', () async {
         final task = Task(
-          meta: createMetadata(id: 'task-suppressed-only'),
+          meta: createMetadata(id: 'task-update-success'),
           data: TaskData(
             status: TaskStatus.open(
               id: 'status-1',
               createdAt: DateTime(2024, 3, 15),
               utcOffset: 0,
             ),
-            title: 'Suppressed Labels Task',
+            title: 'Update Success Task',
             statusHistory: const [],
             dateFrom: DateTime(2024, 3, 15),
             dateTo: DateTime(2024, 3, 15),
-            aiSuppressedLabelIds: const {'X', 'Y'},
+            checklistIds: const ['checklist-1'],
           ),
         );
 
-        final result = await repository!.processToolCalls(
+        // A real checklist item that belongs to the task's checklist and is
+        // currently unchecked — flipping isChecked is a genuine change.
+        final checklistItem = ChecklistItem(
+          meta: createMetadata(id: 'item-1'),
+          data: const ChecklistItemData(
+            title: 'Buy milk',
+            isChecked: false,
+            linkedChecklists: ['checklist-1'],
+            // Agent-owned so the sovereignty guard allows the override.
+            checkedBy: ChangeSource.agent,
+          ),
+        );
+
+        // executeUpdates fetches items via entriesForIds(...).get() and
+        // converts each row back through fromDbEntity, so we round-trip the
+        // real ChecklistItem through toDbEntity.
+        final mockSelectable = MockSelectableSimple<JournalDbEntity>();
+        when(
+          mockSelectable.get,
+        ).thenAnswer((_) async => [toDbEntity(checklistItem)]);
+        when(
+          () => mockJournalDb.entriesForIds(['item-1']),
+        ).thenReturn(mockSelectable);
+
+        // The actual write succeeds, driving successCount > 0.
+        when(
+          () => mockChecklistRepo.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: any(named: 'data'),
+            taskId: task.id,
+          ),
+        ).thenAnswer((_) async => true);
+
+        // After a successful update the handler re-fetches the task; returning
+        // a Task triggers the onTaskUpdated callback (line 1085) which swaps
+        // currentTask for the refreshed instance.
+        final refreshedTask = task.copyWith(
+          data: task.data.copyWith(title: 'Refreshed Task Title'),
+        );
+        when(
+          () => mockJournalDb.journalEntityById(task.id),
+        ).thenAnswer((_) async => refreshedTask);
+
+        final result = await repository.processToolCalls(
           toolCalls: [
             createMockMessageToolCall(
-              id: 'suppressed-labels',
-              functionName: LabelFunctions.assignTaskLabels,
-              arguments: '{"labelIds":["X","Y"]}',
+              id: 'update-success',
+              functionName: ChecklistCompletionFunctions.updateChecklistItems,
+              arguments:
+                  '{"items":[{"id":"item-1","isChecked":true,'
+                  '"reason":"Confirmed done in the latest standup notes"}]}',
             ),
           ],
           task: task,
         );
 
-        // languageWasSet is never flipped by label assignment.
+        // update_checklist_items never sets language.
         expect(result, isFalse);
-        // The short-circuit must NOT persist anything: processAssignment is
-        // skipped, so addLabels is never invoked.
-        verifyNever(
-          () => mockLabelsRepository.addLabels(
-            journalEntityId: any(named: 'journalEntityId'),
-            addedLabelIds: any(named: 'addedLabelIds'),
+        // The write must have happened with the flipped, agent-stamped state.
+        verify(
+          () => mockChecklistRepo.updateChecklistItem(
+            checklistItemId: 'item-1',
+            data: any(
+              named: 'data',
+              that: isA<ChecklistItemData>()
+                  .having((d) => d.isChecked, 'isChecked', true)
+                  .having((d) => d.checkedBy, 'checkedBy', ChangeSource.agent),
+            ),
+            taskId: task.id,
           ),
-        );
-      },
-    );
-  });
-
-  group('processToolCalls – update_checklist_items refreshes task on success '
-      '(line 1085 onTaskUpdated)', () {
-    test('invokes onTaskUpdated after a successful item update', () async {
-      final task = Task(
-        meta: createMetadata(id: 'task-update-success'),
-        data: TaskData(
-          status: TaskStatus.open(
-            id: 'status-1',
-            createdAt: DateTime(2024, 3, 15),
-            utcOffset: 0,
-          ),
-          title: 'Update Success Task',
-          statusHistory: const [],
-          dateFrom: DateTime(2024, 3, 15),
-          dateTo: DateTime(2024, 3, 15),
-          checklistIds: const ['checklist-1'],
-        ),
-      );
-
-      // A real checklist item that belongs to the task's checklist and is
-      // currently unchecked — flipping isChecked is a genuine change.
-      final checklistItem = ChecklistItem(
-        meta: createMetadata(id: 'item-1'),
-        data: const ChecklistItemData(
-          title: 'Buy milk',
-          isChecked: false,
-          linkedChecklists: ['checklist-1'],
-          // Agent-owned so the sovereignty guard allows the override.
-          checkedBy: ChangeSource.agent,
-        ),
-      );
-
-      // executeUpdates fetches items via entriesForIds(...).get() and
-      // converts each row back through fromDbEntity, so we round-trip the
-      // real ChecklistItem through toDbEntity.
-      final mockSelectable = MockSelectableSimple<JournalDbEntity>();
-      when(
-        mockSelectable.get,
-      ).thenAnswer((_) async => [toDbEntity(checklistItem)]);
-      when(
-        () => mockJournalDb.entriesForIds(['item-1']),
-      ).thenReturn(mockSelectable);
-
-      // The actual write succeeds, driving successCount > 0.
-      when(
-        () => mockChecklistRepo.updateChecklistItem(
-          checklistItemId: 'item-1',
-          data: any(named: 'data'),
-          taskId: task.id,
-        ),
-      ).thenAnswer((_) async => true);
-
-      // After a successful update the handler re-fetches the task; returning
-      // a Task triggers the onTaskUpdated callback (line 1085) which swaps
-      // currentTask for the refreshed instance.
-      final refreshedTask = task.copyWith(
-        data: task.data.copyWith(title: 'Refreshed Task Title'),
-      );
-      when(
-        () => mockJournalDb.journalEntityById(task.id),
-      ).thenAnswer((_) async => refreshedTask);
-
-      final result = await repository!.processToolCalls(
-        toolCalls: [
-          createMockMessageToolCall(
-            id: 'update-success',
-            functionName: ChecklistCompletionFunctions.updateChecklistItems,
-            arguments:
-                '{"items":[{"id":"item-1","isChecked":true,'
-                '"reason":"Confirmed done in the latest standup notes"}]}',
-          ),
-        ],
-        task: task,
-      );
-
-      // update_checklist_items never sets language.
-      expect(result, isFalse);
-      // The write must have happened with the flipped, agent-stamped state.
-      verify(
-        () => mockChecklistRepo.updateChecklistItem(
-          checklistItemId: 'item-1',
-          data: any(
-            named: 'data',
-            that: isA<ChecklistItemData>()
-                .having((d) => d.isChecked, 'isChecked', true)
-                .having((d) => d.checkedBy, 'checkedBy', ChangeSource.agent),
-          ),
-          taskId: task.id,
-        ),
-      ).called(1);
-      // The success branch re-fetched the task to refresh currentTask,
-      // proving the onTaskUpdated callback path executed.
-      verify(() => mockJournalDb.journalEntityById(task.id)).called(1);
-    });
-  });
+        ).called(1);
+        // The success branch re-fetched the task to refresh currentTask,
+        // proving the onTaskUpdated callback path executed.
+        verify(() => mockJournalDb.journalEntityById(task.id)).called(1);
+      });
+    },
+  );
 }

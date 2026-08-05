@@ -2,8 +2,6 @@
 
 import 'dart:async';
 import 'dart:convert';
-import 'dart:io';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
@@ -25,29 +23,18 @@ import 'unified_ai_inference_repository_test_helpers.dart';
 
 final harness = UnifiedAiInferenceRepositoryTestHarness();
 
-UnifiedAiInferenceRepository? get repository => harness.repository;
-set repository(UnifiedAiInferenceRepository? value) =>
-    harness.repository = value;
+UnifiedAiInferenceRepository get repository => harness.repository;
 ProviderContainer get container => harness.container;
 MockAiConfigRepository get mockAiConfigRepo => harness.mockAiConfigRepo;
 MockAiInputRepository get mockAiInputRepo => harness.mockAiInputRepo;
 MockCloudInferenceRepository get mockCloudInferenceRepo =>
     harness.mockCloudInferenceRepo;
 MockJournalRepository get mockJournalRepo => harness.mockJournalRepo;
-MockChecklistRepository get mockChecklistRepo => harness.mockChecklistRepo;
 MockAutoChecklistService get mockAutoChecklistService =>
     harness.mockAutoChecklistService;
-MockLoggingService get mockLoggingService => harness.mockLoggingService;
-MockJournalDb get mockJournalDb => harness.mockJournalDb;
-MockDirectory get mockDirectory => harness.mockDirectory;
 MockCategoryRepository get mockCategoryRepo => harness.mockCategoryRepo;
 MockPromptCapabilityFilter get mockPromptCapabilityFilter =>
     harness.mockPromptCapabilityFilter;
-MockLabelsRepository get mockLabelsRepository => harness.mockLabelsRepository;
-TestChecklistCompletionService get testChecklistCompletionService =>
-    harness.testChecklistCompletionService;
-Directory? get baseTempDir => harness.baseTempDir;
-List<Directory> get overrideTempDirs => harness.overrideTempDirs;
 
 void main() {
   setUpAll(harness.setUpAll);
@@ -90,7 +77,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
         ).thenAnswer((_) async => [taskPrompt, imagePrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: taskEntity,
         );
 
@@ -126,7 +113,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
         ).thenAnswer((_) async => [taskPrompt, imagePrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: imageEntity,
         );
 
@@ -163,7 +150,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
         ).thenAnswer((_) async => [audioPrompt, taskPrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: audioEntity,
         );
 
@@ -197,7 +184,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
         ).thenAnswer((_) async => [multiInputPrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: taskEntity,
         );
 
@@ -231,7 +218,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
         ).thenAnswer((_) async => [mismatchedPrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: taskEntity,
         );
 
@@ -271,7 +258,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
         ).thenAnswer((_) async => [activePrompt, archivedPrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: taskEntity,
         );
 
@@ -313,7 +300,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
         ).thenAnswer((_) async => [taskPrompt, imagePromptGenPrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: taskEntity,
         );
 
@@ -358,7 +345,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
         ).thenAnswer((_) async => [taskPrompt, promptGenPrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: taskEntity,
         );
 
@@ -382,7 +369,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
         ).thenAnswer((_) async => [taskPrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: journalEntry,
         );
 
@@ -440,7 +427,7 @@ void main() {
             () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
           ).thenAnswer((_) async => [taskEntity]);
 
-          final resultWithTask = await repository!.getActivePromptsForContext(
+          final resultWithTask = await repository.getActivePromptsForContext(
             entity: imageEntity,
           );
 
@@ -455,8 +442,9 @@ void main() {
             () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
           ).thenAnswer((_) async => []);
 
-          final resultWithoutTask = await repository!
-              .getActivePromptsForContext(entity: imageEntity);
+          final resultWithoutTask = await repository.getActivePromptsForContext(
+            entity: imageEntity,
+          );
 
           expect(resultWithoutTask.length, 1);
           expect(resultWithoutTask.first.id, 'image-prompt');
@@ -515,7 +503,7 @@ void main() {
             () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
           ).thenAnswer((_) async => [taskEntity]);
 
-          final resultWithTask = await repository!.getActivePromptsForContext(
+          final resultWithTask = await repository.getActivePromptsForContext(
             entity: audioEntity,
           );
 
@@ -530,8 +518,9 @@ void main() {
             () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
           ).thenAnswer((_) async => []);
 
-          final resultWithoutTask = await repository!
-              .getActivePromptsForContext(entity: audioEntity);
+          final resultWithoutTask = await repository.getActivePromptsForContext(
+            entity: audioEntity,
+          );
 
           expect(resultWithoutTask.length, 1);
           expect(resultWithoutTask.first.id, 'audio-prompt');
@@ -572,7 +561,7 @@ void main() {
             () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
           ).thenAnswer((_) async => [taskPrompt1, taskPrompt2]);
 
-          final result = await repository!.getActivePromptsForContext(
+          final result = await repository.getActivePromptsForContext(
             entity: taskEntity,
           );
 
@@ -615,7 +604,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
         ).thenAnswer((_) async => [taskPrompt]);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: taskEntity,
         );
 
@@ -667,7 +656,7 @@ void main() {
           return prompts.where((p) => p.id == 'cloud-prompt').toList();
         });
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: taskEntity,
         );
 
@@ -721,7 +710,7 @@ void main() {
           return prompts; // Desktop: return all
         });
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: taskEntity,
         );
 
@@ -769,7 +758,7 @@ void main() {
           () => mockAiConfigRepo.getConfigsByType(AiConfigType.prompt),
         ).thenAnswer((_) async => [prompt1, prompt2]);
 
-        await repository!.getActivePromptsForContext(entity: taskEntity);
+        await repository.getActivePromptsForContext(entity: taskEntity);
 
         // Verify exactly one call to filter
         verify(
@@ -822,7 +811,7 @@ void main() {
           return prompts;
         });
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: taskEntity,
         );
 
@@ -921,7 +910,7 @@ void main() {
           () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
         ).thenAnswer((_) async => [linkedTask]);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: audioEntity,
         );
 
@@ -960,7 +949,7 @@ void main() {
           () => mockJournalRepo.getLinkedToEntities(linkedTo: 'test-id'),
         ).thenAnswer((_) async => []);
 
-        final result = await repository!.getActivePromptsForContext(
+        final result = await repository.getActivePromptsForContext(
           entity: audioEntity,
         );
 
@@ -990,7 +979,7 @@ void main() {
         final statusChanges = <InferenceStatus>[];
 
         // Should return without calling any inference machinery
-        await repository!.runInference(
+        await repository.runInference(
           entityId: 'test-id',
           promptConfig: legacyPrompt,
           onProgress: (_) {},
@@ -1020,7 +1009,7 @@ void main() {
 
       final statusChanges = <InferenceStatus>[];
 
-      await repository!.runInference(
+      await repository.runInference(
         entityId: 'test-id',
         promptConfig: legacyPrompt,
         onProgress: (_) {},
@@ -1053,7 +1042,7 @@ void main() {
       );
 
       await expectLater(
-        repository!.runInference(
+        repository.runInference(
           entityId: 'missing-entity-id',
           promptConfig: promptConfig,
           onProgress: (_) {},
@@ -1147,7 +1136,7 @@ void main() {
         return null;
       });
 
-      await repository!.runInference(
+      await repository.runInference(
         entityId: taskEntity.id,
         promptConfig: promptConfig,
         onProgress: (_) {},

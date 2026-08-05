@@ -20,28 +20,16 @@ import 'unified_ai_inference_repository_test_helpers.dart';
 
 final harness = UnifiedAiInferenceRepositoryTestHarness();
 
-UnifiedAiInferenceRepository? get repository => harness.repository;
-set repository(UnifiedAiInferenceRepository? value) =>
-    harness.repository = value;
+UnifiedAiInferenceRepository get repository => harness.repository;
 ProviderContainer get container => harness.container;
 MockAiConfigRepository get mockAiConfigRepo => harness.mockAiConfigRepo;
 MockAiInputRepository get mockAiInputRepo => harness.mockAiInputRepo;
 MockCloudInferenceRepository get mockCloudInferenceRepo =>
     harness.mockCloudInferenceRepo;
 MockJournalRepository get mockJournalRepo => harness.mockJournalRepo;
-MockChecklistRepository get mockChecklistRepo => harness.mockChecklistRepo;
 MockAutoChecklistService get mockAutoChecklistService =>
     harness.mockAutoChecklistService;
-MockLoggingService get mockLoggingService => harness.mockLoggingService;
-MockJournalDb get mockJournalDb => harness.mockJournalDb;
 MockDirectory get mockDirectory => harness.mockDirectory;
-MockCategoryRepository get mockCategoryRepo => harness.mockCategoryRepo;
-MockPromptCapabilityFilter get mockPromptCapabilityFilter =>
-    harness.mockPromptCapabilityFilter;
-MockLabelsRepository get mockLabelsRepository => harness.mockLabelsRepository;
-TestChecklistCompletionService get testChecklistCompletionService =>
-    harness.testChecklistCompletionService;
-Directory? get baseTempDir => harness.baseTempDir;
 List<Directory> get overrideTempDirs => harness.overrideTempDirs;
 
 void main() {
@@ -141,7 +129,7 @@ void main() {
 
           try {
             // Run inference
-            await repository!.runInference(
+            await repository.runInference(
               entityId: 'test-id',
               promptConfig: promptConfig,
               onProgress: (_) {},
@@ -238,7 +226,7 @@ void main() {
           stubCreateAiResponseEntry(mockAiInputRepo);
 
           // Run inference
-          await repository!.runInference(
+          await repository.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -546,7 +534,7 @@ Extract ONLY information from the image that is relevant to this task. Be concis
           ).thenAnswer((_) async => true);
 
           try {
-            await repository!.runInference(
+            await repository.runInference(
               entityId: 'test-id',
               promptConfig: promptConfig,
               onProgress: (_) {},
@@ -845,7 +833,7 @@ Take into account the following task context:
           ).thenAnswer((_) async => true);
 
           try {
-            await repository!.runInference(
+            await repository.runInference(
               entityId: 'test-id',
               promptConfig: promptConfig,
               onProgress: (_) {},
@@ -930,7 +918,7 @@ Take into account the following task context:
         );
         stubCreateAiResponseEntry(mockAiInputRepo);
 
-        await repository!.runInference(
+        await repository.runInference(
           entityId: taskEntity.id,
           promptConfig: promptConfig,
           onProgress: (_) {},
@@ -998,7 +986,7 @@ Take into account the following task context:
           );
           stubCreateAiResponseEntry(mockAiInputRepo);
 
-          await repository!.runInference(
+          await repository.runInference(
             entityId: taskEntity.id,
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -1030,7 +1018,7 @@ Take into account the following task context:
 
         final statusChanges = <InferenceStatus>[];
 
-        await repository!.runInference(
+        await repository.runInference(
           entityId: 'test-id',
           promptConfig: promptConfig,
           onProgress: (_) {},
@@ -1117,7 +1105,7 @@ Take into account the following task context:
 
         // Should complete without rethrowing
         final statusChanges = <InferenceStatus>[];
-        await repository!.runInference(
+        await repository.runInference(
           entityId: 'test-id',
           promptConfig: promptConfig,
           onProgress: (_) {},
@@ -1125,6 +1113,7 @@ Take into account the following task context:
         );
 
         expect(statusChanges, [InferenceStatus.running, InferenceStatus.idle]);
+        verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
       },
     );
   });
@@ -1204,7 +1193,7 @@ Take into account the following task context:
           stubCreateAiResponseEntry(mockAiInputRepo);
 
           final statusChanges = <InferenceStatus>[];
-          await repository!.runInference(
+          await repository.runInference(
             entityId: 'test-id',
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -1215,6 +1204,7 @@ Take into account the following task context:
             InferenceStatus.running,
             InferenceStatus.idle,
           ]);
+          verify(() => mockJournalRepo.updateJournalEntity(any())).called(1);
         },
       );
     },

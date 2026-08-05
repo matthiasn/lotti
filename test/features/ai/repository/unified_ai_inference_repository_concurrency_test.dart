@@ -20,28 +20,16 @@ import 'unified_ai_inference_repository_test_helpers.dart';
 
 final harness = UnifiedAiInferenceRepositoryTestHarness();
 
-UnifiedAiInferenceRepository? get repository => harness.repository;
-set repository(UnifiedAiInferenceRepository? value) =>
-    harness.repository = value;
+UnifiedAiInferenceRepository get repository => harness.repository;
 ProviderContainer get container => harness.container;
 MockAiConfigRepository get mockAiConfigRepo => harness.mockAiConfigRepo;
 MockAiInputRepository get mockAiInputRepo => harness.mockAiInputRepo;
 MockCloudInferenceRepository get mockCloudInferenceRepo =>
     harness.mockCloudInferenceRepo;
 MockJournalRepository get mockJournalRepo => harness.mockJournalRepo;
-MockChecklistRepository get mockChecklistRepo => harness.mockChecklistRepo;
-MockAutoChecklistService get mockAutoChecklistService =>
-    harness.mockAutoChecklistService;
-MockLoggingService get mockLoggingService => harness.mockLoggingService;
-MockJournalDb get mockJournalDb => harness.mockJournalDb;
 MockDirectory get mockDirectory => harness.mockDirectory;
-MockCategoryRepository get mockCategoryRepo => harness.mockCategoryRepo;
-MockPromptCapabilityFilter get mockPromptCapabilityFilter =>
-    harness.mockPromptCapabilityFilter;
-MockLabelsRepository get mockLabelsRepository => harness.mockLabelsRepository;
 TestChecklistCompletionService get testChecklistCompletionService =>
     harness.testChecklistCompletionService;
-Directory? get baseTempDir => harness.baseTempDir;
 List<Directory> get overrideTempDirs => harness.overrideTempDirs;
 
 void main() {
@@ -247,7 +235,7 @@ void main() {
           stubCreateAiResponseEntry(mockAiInputRepo);
 
           // Execute
-          await repository!.runInference(
+          await repository.runInference(
             entityId: imageId,
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -373,7 +361,7 @@ void main() {
           stubCreateAiResponseEntry(mockAiInputRepo);
 
           // Execute
-          await repository!.runInference(
+          await repository.runInference(
             entityId: audioId,
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -498,7 +486,7 @@ void main() {
           stubCreateAiResponseEntry(mockAiInputRepo);
 
           // Execute
-          await repository!.runInference(
+          await repository.runInference(
             entityId: imageId,
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -622,7 +610,7 @@ void main() {
           stubCreateAiResponseEntry(mockAiInputRepo);
 
           // Execute - should complete without throwing
-          await repository!.runInference(
+          await repository.runInference(
             entityId: audioId,
             promptConfig: promptConfig,
             onProgress: (_) {},
@@ -743,7 +731,7 @@ void main() {
         // Clear any captured suggestions from previous tests
         testChecklistCompletionService.capturedSuggestions.clear();
 
-        await repository!.runInference(
+        await repository.runInference(
           entityId: taskEntity.id,
           promptConfig: promptConfig,
           onProgress: (_) {},
@@ -829,7 +817,7 @@ void main() {
         // Clear any captured suggestions from previous tests
         testChecklistCompletionService.capturedSuggestions.clear();
 
-        await repository!.runInference(
+        await repository.runInference(
           entityId: taskEntity.id,
           promptConfig: promptConfig,
           onProgress: (_) {},

@@ -219,6 +219,10 @@ void registerAllFallbackValues() {
   registerFallbackValue(FakeEntryText());
   registerFallbackValue(FakeEventData());
   registerFallbackValue(FakeTaskData());
+  registerFallbackValue(FakeTask());
+  registerFallbackValue(FakeImageData());
+  registerFallbackValue(FakeAudioData());
+  registerFallbackValue(FakeAiResponseData());
   registerFallbackValue(FakeJournalAudio());
   registerFallbackValue(FakePlayable());
   registerFallbackValue(FakeMeasurementData());

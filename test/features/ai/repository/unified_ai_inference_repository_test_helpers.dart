@@ -4,7 +4,6 @@ import 'dart:io';
 import 'package:drift/drift.dart' show Selectable;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
@@ -55,20 +54,10 @@ class TestChecklistCompletionService extends ChecklistCompletionService {
   }
 }
 
-class FakeTask extends Fake implements Task {}
-
-class FakeImageData extends Fake implements ImageData {}
-
-class FakeAudioData extends Fake implements AudioData {}
-
-class FakeAiResponseData extends Fake implements AiResponseData {}
-
-class FakeChecklistData extends Fake implements ChecklistData {}
-
 class MockSelectableSimple<T> extends Mock implements Selectable<T> {}
 
 class UnifiedAiInferenceRepositoryTestHarness {
-  UnifiedAiInferenceRepository? repository;
+  late UnifiedAiInferenceRepository repository;
   late ProviderContainer container;
   late MockAiConfigRepository mockAiConfigRepo;
   late MockAiInputRepository mockAiInputRepo;
@@ -84,26 +73,13 @@ class UnifiedAiInferenceRepositoryTestHarness {
   late MockLabelsRepository mockLabelsRepository;
   late TestChecklistCompletionService testChecklistCompletionService;
   late Directory suiteTempDir;
-  late Directory? baseTempDir;
+  late Directory baseTempDir;
   late List<Directory> overrideTempDirs;
 
   void setUpAll() {
     registerAllFallbackValues();
     getIt.pushNewScope();
-    registerFallbackValue(FakeAiConfigPrompt());
-    registerFallbackValue(FakeAiConfigModel());
-    registerFallbackValue(FakeAiConfigInferenceProvider());
-    registerFallbackValue(FakeMetadata());
-    registerFallbackValue(FakeTaskData());
-    registerFallbackValue(FakeTask());
-    registerFallbackValue(FakeImageData());
-    registerFallbackValue(FakeAudioData());
     registerFallbackValue(InferenceStatus.idle);
-    registerFallbackValue(FakeAiResponseData());
-    registerFallbackValue(fallbackJournalEntity);
-    registerFallbackValue(FakeJournalAudio());
-    registerFallbackValue(FakeChecklistData());
-    registerFallbackValue(FakeChecklistItemData());
     registerFallbackValue(ChatCompletionMessageInputAudioFormat.wav);
     registerFallbackValue(fallbackAiConsumptionEvent);
     suiteTempDir = Directory.systemTemp.createTempSync('lotti_ai_repo_test_');
@@ -124,7 +100,6 @@ class UnifiedAiInferenceRepositoryTestHarness {
     mockLabelsRepository = MockLabelsRepository();
     testChecklistCompletionService = TestChecklistCompletionService();
 
-    reset(mockJournalDb);
     getIt
       ..pushNewScope()
       ..registerSingleton<JournalDb>(mockJournalDb)
@@ -133,7 +108,7 @@ class UnifiedAiInferenceRepositoryTestHarness {
 
     baseTempDir = suiteTempDir.createTempSync('t');
     overrideTempDirs = <Directory>[];
-    when(() => mockDirectory.path).thenReturn(baseTempDir!.path);
+    when(() => mockDirectory.path).thenReturn(baseTempDir.path);
     when(
       () => mockJournalDb.getConfigFlag(enableAiStreamingFlag),
     ).thenAnswer((_) async => false);
@@ -174,16 +149,16 @@ class UnifiedAiInferenceRepositoryTestHarness {
   }
 
   Future<void> tearDown() async {
-    container.dispose();
     try {
+      container.dispose();
       for (final directory in overrideTempDirs) {
         if (directory.existsSync()) {
           directory.deleteSync(recursive: true);
         }
       }
-      when(() => mockDirectory.path).thenReturn(Directory.systemTemp.path);
-    } catch (_) {}
-    await getIt.popScope();
+    } finally {
+      await getIt.popScope();
+    }
   }
 
   Future<void> tearDownAll() async {
@@ -208,20 +183,6 @@ Metadata createMetadata({String? id, String? categoryId}) {
     dateFrom: fixedDate,
     dateTo: fixedDate,
     categoryId: categoryId,
-  );
-}
-
-AiConfigInferenceProvider createAiProvider({
-  required String id,
-  required InferenceProviderType type,
-}) {
-  return AiConfigInferenceProvider(
-    id: id,
-    name: 'Test Provider',
-    baseUrl: 'https://api.test.com',
-    apiKey: 'test-key',
-    createdAt: DateTime(2024, 3, 15, 10, 30),
-    inferenceProviderType: type,
   );
 }
 
@@ -270,11 +231,13 @@ AiConfigModel createModel({
 AiConfigInferenceProvider createProvider({
   required String id,
   required InferenceProviderType inferenceProviderType,
+  String baseUrl = 'https://api.example.com',
+  String apiKey = 'test-api-key',
 }) {
   return AiConfigInferenceProvider(
     id: id,
-    baseUrl: 'https://api.example.com',
-    apiKey: 'test-api-key',
+    baseUrl: baseUrl,
+    apiKey: apiKey,
     name: 'Test Provider',
     createdAt: DateTime(2024, 3, 15, 10, 30),
     inferenceProviderType: inferenceProviderType,
@@ -297,8 +260,9 @@ CreateChatCompletionStreamResponse createStreamChunk(String content) {
 }
 
 /// Creates a mock stream of text chunks. The last chunk includes a stop
-/// finish reason and, when given, the [usage] block providers report on the
-/// final chunk. Replaces verbose inline [Stream.fromIterable] blocks.
+/// finish reason. If [usage] is given, the last chunk also carries it, which
+/// mirrors how providers report usage on the final chunk. Replaces verbose
+/// inline [Stream.fromIterable] blocks.
 Stream<CreateChatCompletionStreamResponse> createMockTextStream(
   List<String> chunks, {
   CompletionUsage? usage,
@@ -434,7 +398,9 @@ void stubInferenceContext({
   ).thenAnswer((_) async => taskDetailsJson);
 }
 
-/// Stubs `AiInputRepository.createAiResponseEntry` to return null.
+/// Stubs `AiInputRepository.createAiResponseEntry` to return an
+/// `AiResponseEntry` built from the captured `id`, `start`, `categoryId`, and
+/// `data` arguments.
 void stubCreateAiResponseEntry(MockAiInputRepository mock) {
   when(
     () => mock.createAiResponseEntry(
