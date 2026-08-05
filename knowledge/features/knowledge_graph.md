@@ -96,6 +96,14 @@ preferences change motion and relationship stroke strength respectively. The
 topology minimap exposes one labelled orientation region rather than claiming a
 screen-reader button action that has no meaningful single destination.
 
+The full-detail sidebar embeds the app's real entry page in a nested
+`Navigator`. `KnowledgeGraphView` may reserve the responsive sidebar slot from
+its root `LayoutBuilder`, but it must activate `EntryDetailSidebar` only in a
+later frame. Mounting the nested Navigator while that ancestor is performing
+layout mutates the overlay render subtree during layout and triggers Flutter's
+render-object mutation assertion. Once activated, the sidebar stays mounted
+through later viewport resizes; only its reserved width is recomputed.
+
 # Inspector data
 
 `task_graph_provider.dart` projects journal entities and typed `EntryLink`
