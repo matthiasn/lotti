@@ -11,6 +11,7 @@ import 'package:lotti/features/tasks/ui/cover_art_background.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/editor_state_service.dart';
 import 'package:lotti/utils/image_utils.dart';
+import 'package:photo_view/photo_view.dart';
 
 import '../../../helpers/fake_entry_controller.dart';
 import '../../../mocks/mocks.dart';
@@ -401,6 +402,8 @@ void main() {
         );
         expect(viewer.file.path, getFullImagePath(image));
         expect(viewer.heroTag, 'task_cover_art_image-1');
+        final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
+        expect(photoView.enableRotation, isTrue);
         expect(find.byIcon(Icons.close_rounded), findsOneWidget);
       });
     });

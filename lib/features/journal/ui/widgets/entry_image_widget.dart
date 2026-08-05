@@ -273,6 +273,7 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                 Positioned.fill(
                   child: PhotoView(
                     imageProvider: imageProvider,
+                    enableRotation: true,
                     backgroundDecoration:
                         widget.backgroundDecoration ??
                         BoxDecoration(
