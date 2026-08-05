@@ -101,7 +101,13 @@ final GetIt getIt = GetIt.instance;
 /// Registers the full per-generation service graph for [profile]'s world.
 /// Called by the bootstrap after the profile-scoped primitives (Directory,
 /// SettingsDb, SecureStorage, ProfileContext) are in place.
-Future<void> registerSingletons({required ProfileContext profile}) async {
+Future<void> registerSingletons({
+  required ProfileContext profile,
+  // Test seam: registration tests exercise the full graph without starting
+  // late/optional runtime work (MatrixService.init, embedding pipeline).
+  // Production callers must leave this true.
+  bool registerLateAndOptional = true,
+}) async {
   getIt
     ..registerSingleton<Fts5Db>(Fts5Db())
     ..registerSingleton<UserActivityService>(
@@ -386,7 +392,9 @@ Future<void> registerSingletons({required ProfileContext profile}) async {
       dispose: (service) => service.dispose(),
     );
 
-  await _registerLateAndOptionalServices(profile: profile);
+  if (registerLateAndOptional) {
+    await _registerLateAndOptionalServices(profile: profile);
+  }
 }
 
 String? _noMatrixUserId() => null;

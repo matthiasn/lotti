@@ -44,6 +44,10 @@ void handleTimezoneConfigurationError(Object error, StackTrace stackTrace) {
   );
 }
 
+// The process entry point cannot execute under flutter test; its pieces are
+// covered individually (app_bootstrap_test, get_it tests, main_test for the
+// error machinery below).
+// coverage:ignore-start
 Future<void> main() async {
   // Raise the file descriptor soft limit before anything opens an FD. On
   // macOS, GUI apps inherit launchd's legacy soft limit of 256, which is
@@ -90,6 +94,7 @@ Future<void> main() async {
     handleUncaughtZoneError,
   );
 }
+// coverage:ignore-end
 
 /// Global framework error handler: presents the error on the console exactly
 /// like Flutter's default handler and persists its full stack once per stable

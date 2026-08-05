@@ -58,7 +58,10 @@ void registerProcessLogging() {
 }
 
 /// One-time, process-global platform initialization. Never re-run on a
-/// profile switch.
+/// profile switch. Excluded from coverage: every line is a native platform
+/// call (window manager, MediaKit, orientation, vodozemac) that cannot run
+/// under flutter test.
+// coverage:ignore-start
 Future<void> initPlatformOnce() async {
   WidgetsFlutterBinding.ensureInitialized();
   // Platform startup call; controller behavior is covered by focused tests.
@@ -108,6 +111,7 @@ Future<void> initPlatformOnce() async {
   // any Matrix stack is constructed, harmless when none ever is.
   await vod.init();
 }
+// coverage:ignore-end
 
 /// What [resolveActiveProfile] found: the OS-derived real root and the
 /// registry's view of which world should be running.
@@ -164,6 +168,7 @@ Future<ProfileContext> bootstrapProfileServices(
   ProfileBootInfo info, {
   required AppLifecycleHolder lifecycleHolder,
   bool restoreWindow = true,
+  bool registerLateAndOptional = true,
 }) async {
   // A dangling marker can point at a world whose directory was removed
   // externally; recreate the skeleton rather than failing boot.
@@ -194,7 +199,10 @@ Future<ProfileContext> bootstrapProfileServices(
     await getIt<WindowService>().restore();
   }
 
-  await registerSingletons(profile: context);
+  await registerSingletons(
+    profile: context,
+    registerLateAndOptional: registerLateAndOptional,
+  );
   return context;
 }
 
