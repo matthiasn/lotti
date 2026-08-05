@@ -20,15 +20,22 @@ import 'in_memory_agent_repository.dart';
 const _agentId = 'agent-1';
 
 void main() {
-  setUpAll(registerAllFallbackValues);
+  setUpAll(() {
+    registerAllFallbackValues();
+    getIt
+      ..pushNewScope()
+      ..registerSingleton<DomainLogger>(MockDomainLogger());
+  });
+
+  tearDownAll(() async {
+    await getIt.resetScope();
+    await getIt.popScope();
+  });
 
   late InMemoryAgentRepository repo;
   late ForkHealer healer;
 
   setUp(() {
-    if (!getIt.isRegistered<DomainLogger>()) {
-      getIt.registerSingleton<DomainLogger>(MockDomainLogger());
-    }
     final bench = makeForkBench();
     repo = bench.repo;
     healer = bench.healer;

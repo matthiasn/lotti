@@ -11,17 +11,6 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
-class MockLinkedFromEntriesController extends LinkedFromEntriesController {
-  MockLinkedFromEntriesController(this._entities);
-
-  final List<JournalEntity> _entities;
-
-  @override
-  Future<List<JournalEntity>> build() async {
-    return _entities;
-  }
-}
-
 void main() {
   late MockJournalRepository mockJournalRepository;
   late MockUpdateNotifications mockUpdateNotifications;

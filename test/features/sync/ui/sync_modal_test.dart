@@ -19,9 +19,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
-class MockSyncMaintenanceRepository extends Mock
-    implements SyncMaintenanceRepository {}
-
 class SpySyncController extends SyncMaintenanceController {
   SpySyncController();
 

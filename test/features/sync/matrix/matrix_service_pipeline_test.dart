@@ -8,14 +8,10 @@ import 'package:lotti/features/sync/matrix/pipeline/sync_metrics.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/queue/inbound_event_queue.dart';
-import 'package:lotti/features/sync/queue/queue_pipeline_coordinator.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
-
-class MockQueuePipelineCoordinator extends Mock
-    implements QueuePipelineCoordinator {}
 
 class _MockInboundQueue extends Mock implements InboundQueue {}
 
