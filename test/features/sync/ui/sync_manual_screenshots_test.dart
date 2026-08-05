@@ -42,6 +42,7 @@ import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/model/sync_node_profile.dart';
 import 'package:lotti/features/sync/models/sync_device_info.dart';
 import 'package:lotti/features/sync/models/sync_models.dart';
+import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/state/backfill_config_controller.dart';
 import 'package:lotti/features/sync/state/backfill_stats_controller.dart';
@@ -639,6 +640,7 @@ void main() {
   late MockMatrixClient matrixClient;
   late MockSyncDatabase syncDatabase;
   late MockMaintenance maintenance;
+  late MockHistoricalSyncService historicalSyncService;
   late MockSyncNodeProfileBroadcaster nodeBroadcaster;
   late MockPersistenceLogic persistenceLogic;
   late MockEntitiesCacheService entitiesCache;
@@ -653,6 +655,7 @@ void main() {
     matrixClient = MockMatrixClient();
     syncDatabase = MockSyncDatabase();
     maintenance = MockMaintenance();
+    historicalSyncService = MockHistoricalSyncService();
     nodeBroadcaster = MockSyncNodeProfileBroadcaster();
     persistenceLogic = MockPersistenceLogic();
     entitiesCache = MockEntitiesCacheService();
@@ -826,6 +829,7 @@ void main() {
     journalDbProvider.overrideWithValue(mocks.journalDb),
     syncDatabaseProvider.overrideWithValue(syncDatabase),
     maintenanceProvider.overrideWithValue(maintenance),
+    historicalSyncServiceProvider.overrideWithValue(historicalSyncService),
     localSyncNodeSelfProvider.overrideWith((ref) => Stream.value(_localNode)),
     knownSyncNodesProvider.overrideWith((ref) => Stream.value(_knownNodes)),
     backfillConfigControllerProvider.overrideWith(

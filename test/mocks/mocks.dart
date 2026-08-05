@@ -152,6 +152,7 @@ import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart'
 import 'package:lotti/features/sync/repository/sync_node_profile_repository.dart';
 import 'package:lotti/features/sync/secure_storage.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/features/sync/services/sync_node_profile_broadcaster.dart';
 import 'package:lotti/features/sync/services/synced_audio_inference_dispatcher.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
@@ -899,6 +900,8 @@ class FakeMeasurementData extends Fake implements MeasurementData {}
 class FakeHabitCompletionData extends Fake implements HabitCompletionData {}
 
 class MockMaintenance extends Mock implements Maintenance {}
+
+class MockHistoricalSyncService extends Mock implements HistoricalSyncService {}
 
 class MockMatrixService extends Mock implements MatrixService {}
 

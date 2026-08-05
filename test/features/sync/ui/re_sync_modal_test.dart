@@ -4,8 +4,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/checkboxes/design_system_checkbox.dart';
@@ -13,9 +11,9 @@ import 'package:lotti/features/design_system/components/selection/design_system_
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
 import 'package:lotti/features/sync/repository/sync_maintenance_repository.dart';
+import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/features/sync/ui/re_sync_modal.dart';
 import 'package:lotti/get_it.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -28,8 +26,7 @@ import '../../../widget_test_utils.dart';
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  late MockMaintenance mockMaintenance;
-  late MockAgentRepository mockAgentRepository;
+  late MockHistoricalSyncService mockHistoricalSyncService;
   late MockSyncMaintenanceRepository mockSyncMaintenanceRepository;
   late MockDomainLogger mockLogging;
 
@@ -50,8 +47,9 @@ void main() {
       );
 
   List<Override> modalOverrides() => [
-    maintenanceProvider.overrideWithValue(mockMaintenance),
-    agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+    historicalSyncServiceProvider.overrideWithValue(
+      mockHistoricalSyncService,
+    ),
     syncMaintenanceRepositoryProvider.overrideWithValue(
       mockSyncMaintenanceRepository,
     ),
@@ -152,8 +150,7 @@ void main() {
           ..registerSingleton<DomainLogger>(mockLogging);
       },
     );
-    mockMaintenance = MockMaintenance();
-    mockAgentRepository = MockAgentRepository();
+    mockHistoricalSyncService = MockHistoricalSyncService();
     mockSyncMaintenanceRepository = MockSyncMaintenanceRepository();
     when(
       () => mockSyncMaintenanceRepository.backfillAgentEntityClocks(
@@ -168,10 +165,9 @@ void main() {
       ),
     ).thenAnswer((_) async {});
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -254,10 +250,9 @@ void main() {
     await tester.pump();
 
     verify(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: start,
         end: DateTime(2024, 1, 3),
-        agentRepository: mockAgentRepository,
         includeJournalEntities: true,
         includeAgentEntities: true,
         onProgress: any(named: 'onProgress'),
@@ -277,10 +272,9 @@ void main() {
     });
 
     verify(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: reSyncEverythingStart,
         end: now,
-        agentRepository: mockAgentRepository,
         includeJournalEntities: true,
         includeAgentEntities: true,
         onProgress: any(named: 'onProgress'),
@@ -319,10 +313,9 @@ void main() {
 
       verifyInOrder([
         () => onboarding.beginOutbound(target),
-        () => mockMaintenance.reSyncInterval(
+        () => mockHistoricalSyncService.reSyncInterval(
           start: reSyncEverythingStart,
           end: any(named: 'end'),
-          agentRepository: mockAgentRepository,
           includeJournalEntities: true,
           includeAgentEntities: true,
           onProgress: any(named: 'onProgress'),
@@ -359,10 +352,9 @@ void main() {
       },
     );
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -408,10 +400,9 @@ void main() {
     ).thenAnswer((_) async => round);
     when(() => onboarding.abortOutbound(round)).thenAnswer((_) async {});
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -480,10 +471,9 @@ void main() {
 
     verifyInOrder([
       () => onboarding.releaseInboundPreflight(target),
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: true,
         includeAgentEntities: true,
         onProgress: any(named: 'onProgress'),
@@ -573,10 +563,9 @@ void main() {
     ).thenAnswer((_) async => round);
     when(() => onboarding.abortOutbound(round)).thenAnswer((_) async {});
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -625,10 +614,9 @@ void main() {
         () => onboarding.completeOutbound(round),
       ).thenAnswer((_) async {});
       when(
-        () => mockMaintenance.reSyncInterval(
+        () => mockHistoricalSyncService.reSyncInterval(
           start: any(named: 'start'),
           end: any(named: 'end'),
-          agentRepository: any(named: 'agentRepository'),
           includeJournalEntities: any(named: 'includeJournalEntities'),
           includeAgentEntities: any(named: 'includeAgentEntities'),
           onProgress: any(named: 'onProgress'),
@@ -678,10 +666,9 @@ void main() {
       () => onboarding.completeOutbound(round),
     ).thenAnswer((_) async {});
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -797,10 +784,9 @@ void main() {
       () => onboarding.abortOutbound(round),
     ).thenAnswer((_) async => throw Exception('end enqueue failed'));
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -834,10 +820,9 @@ void main() {
     });
 
     verify(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: now.subtract(const Duration(days: 30)),
         end: now,
-        agentRepository: mockAgentRepository,
         includeJournalEntities: true,
         includeAgentEntities: true,
         onProgress: any(named: 'onProgress'),
@@ -879,10 +864,9 @@ void main() {
   ) async {
     final completer = Completer<ReSyncResult>();
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -920,10 +904,9 @@ void main() {
   ) async {
     final completer = Completer<ReSyncResult>();
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -960,10 +943,9 @@ void main() {
   ) async {
     final completer = Completer<ReSyncResult>();
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -998,10 +980,9 @@ void main() {
   testWidgets('failure stays in the modal and can be retried', (tester) async {
     var attempts = 0;
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -1047,10 +1028,9 @@ void main() {
       },
     );
     when(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -1077,10 +1057,9 @@ void main() {
     expect(find.text('Messages queued'), findsOneWidget);
     expect(find.byKey(const Key('reSyncFailureDetails')), findsNothing);
     verify(
-      () => mockMaintenance.reSyncInterval(
+      () => mockHistoricalSyncService.reSyncInterval(
         start: any(named: 'start'),
         end: any(named: 'end'),
-        agentRepository: any(named: 'agentRepository'),
         includeJournalEntities: any(named: 'includeJournalEntities'),
         includeAgentEntities: any(named: 'includeAgentEntities'),
         onProgress: any(named: 'onProgress'),
@@ -1100,8 +1079,9 @@ void main() {
           ),
         ),
         overrides: [
-          maintenanceProvider.overrideWithValue(mockMaintenance),
-          agentRepositoryProvider.overrideWithValue(mockAgentRepository),
+          historicalSyncServiceProvider.overrideWithValue(
+            mockHistoricalSyncService,
+          ),
           syncMaintenanceRepositoryProvider.overrideWithValue(
             mockSyncMaintenanceRepository,
           ),
@@ -1139,10 +1119,9 @@ void main() {
       await tester.pump();
 
       verify(
-        () => mockMaintenance.reSyncInterval(
+        () => mockHistoricalSyncService.reSyncInterval(
           start: any(named: 'start'),
           end: any(named: 'end'),
-          agentRepository: mockAgentRepository,
           includeJournalEntities: true,
           includeAgentEntities: false,
           onProgress: any(named: 'onProgress'),
@@ -1162,10 +1141,9 @@ void main() {
       await tester.pump();
 
       verify(
-        () => mockMaintenance.reSyncInterval(
+        () => mockHistoricalSyncService.reSyncInterval(
           start: any(named: 'start'),
           end: any(named: 'end'),
-          agentRepository: mockAgentRepository,
           includeJournalEntities: false,
           includeAgentEntities: true,
           onProgress: any(named: 'onProgress'),

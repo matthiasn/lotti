@@ -4,8 +4,6 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lotti/database/maintenance.dart';
-import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/calendar_pickers/design_system_date_picker_modal.dart';
@@ -16,10 +14,10 @@ import 'package:lotti/features/design_system/components/selection/design_system_
 import 'package:lotti/features/design_system/components/spinners/design_system_spinner.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/sync/onboarding/onboarding_sync_service.dart';
+import 'package:lotti/features/sync/services/historical_sync_service.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:lotti/utils/date_utils_extension.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
@@ -135,11 +133,10 @@ class _ReSyncModalContentState extends ConsumerState<ReSyncModalContent> {
         widget.onOnboardingPreflightHandled?.call();
       }
       final result = await ref
-          .read(maintenanceProvider)
+          .read(historicalSyncServiceProvider)
           .reSyncInterval(
             start: start,
             end: end,
-            agentRepository: ref.read(agentRepositoryProvider),
             includeJournalEntities: _includeJournalEntities,
             includeAgentEntities: _includeAgentEntities,
             onProgress: (progress) {

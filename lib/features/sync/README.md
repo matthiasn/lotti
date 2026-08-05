@@ -99,6 +99,7 @@ lib/features/sync/
 ├── onboarding/  # bounded initial-history suppression protocol
 ├── media/       # self-healing fetch for missing image/audio blobs
 ├── model/       # SyncMessage and node profiles
+├── services/    # historical staging and other Sync orchestration services
 ├── state/       # Riverpod controllers
 └── ui/          # settings, stats, conflicts, outbox monitor
 ```

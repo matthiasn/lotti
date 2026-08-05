@@ -33,7 +33,7 @@ sources:
     title: Historical sync selection and retry UI
     last_modified: 2026-08-05
   - id: historical-sync
-    resource: ../../../lib/database/maintenance.dart
+    resource: ../../../lib/features/sync/services/historical_sync_service.dart
     title: Historical sync staging and failed-row retry
     last_modified: 2026-08-05
 ---
