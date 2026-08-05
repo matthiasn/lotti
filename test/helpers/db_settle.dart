@@ -14,14 +14,27 @@ import 'package:lotti/get_it.dart';
 /// query on the same connection is FIFO-ordered behind the pending work,
 /// so awaiting it guarantees quiescence.
 Future<void> settlePendingDbWork() async {
+  Future<void> probe(Future<void> Function() query) async {
+    try {
+      await query();
+      // Database already closed (e.g. after an explicit shutdown in the
+      // test body): nothing can be pending on a closed connection.
+      // ignore: avoid_catching_errors
+    } on StateError {
+      // Intentionally swallowed — see above.
+    }
+  }
+
   if (getIt.isRegistered<EditorDb>()) {
-    await getIt<EditorDb>().customSelect('SELECT 1').get();
+    await probe(() => getIt<EditorDb>().customSelect('SELECT 1').get());
   }
   if (getIt.isRegistered<JournalDb>()) {
-    await getIt<JournalDb>().customSelect('SELECT 1').get();
+    await probe(() => getIt<JournalDb>().customSelect('SELECT 1').get());
   }
   if (getIt.isRegistered<OnboardingMetricsDb>()) {
-    await getIt<OnboardingMetricsDb>().customSelect('SELECT 1').get();
+    await probe(
+      () => getIt<OnboardingMetricsDb>().customSelect('SELECT 1').get(),
+    );
   }
   await pumpEventQueue(times: 100);
 }

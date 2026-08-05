@@ -1,11 +1,13 @@
 import 'dart:io';
 
+import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
@@ -17,6 +19,7 @@ import 'package:lotti/features/sync/utils.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/service_disposer.dart';
 import 'package:lotti/services/vector_clock_service.dart';
+import 'package:lotti/services/window_service.dart';
 import 'package:path/path.dart' as p;
 
 import 'helpers/db_settle.dart';
@@ -137,6 +140,9 @@ void main() {
         final registry = ProfileRegistry(realRoot: osRoot);
         final guest = await registry.createGuestProfile(name: 'Demo');
         await registry.setActiveProfile(guest.id);
+        // The guest dir vanished externally (dangling marker): boot must
+        // recreate the skeleton rather than fail.
+        await registry.rootFor(guest).delete(recursive: true);
         final before = snapshotTree(
           osRoot,
           exclude: {'guest_profiles'},
@@ -149,7 +155,8 @@ void main() {
         final context = await bootstrapProfileServices(
           info,
           lifecycleHolder: lifecycleHolder,
-          restoreWindow: false,
+          // Default restoreWindow: exercises the cold-boot geometry restore
+          // against the mocked window_manager channel.
         );
 
         // Capability wiring.
@@ -250,6 +257,35 @@ void main() {
       final sequenceLog = getIt<SyncSequenceLogService>();
       expect(sequenceLog.onMissingEntriesDetected, isNotNull);
       sequenceLog.onMissingEntriesDetected!.call();
+
+      // The AI attribution identity resolver consumes the Matrix user-id
+      // thunk wired by the sync registration (no session → null id, local
+      // principal only).
+      final actor = await getIt<AiAttributionIdentityResolver>()
+          .humanInitiator();
+      expect(actor, isNotNull);
+    });
+
+    test('window close after a guest bootstrap runs the pre-flush hook and '
+        'releases the app-exit listener', () async {
+      final registry = ProfileRegistry(realRoot: osRoot);
+      final guest = await registry.createGuestProfile(name: 'Demo');
+      await registry.setActiveProfile(guest.id);
+      registerProcessLogging();
+      final lifecycleHolder = AppLifecycleHolder();
+      await bootstrapProfileServices(
+        await resolveActiveProfile(),
+        lifecycleHolder: lifecycleHolder,
+        restoreWindow: false,
+        registerLateAndOptional: false,
+      );
+      lifecycleHolder.listener = AppLifecycleListener();
+      await settlePendingDbWork();
+
+      await getIt<WindowService>().shutdown();
+
+      // The shutdown pre-flush hook disposed the app-exit listener.
+      expect(lifecycleHolder.listener, isNull);
     });
 
     test(
