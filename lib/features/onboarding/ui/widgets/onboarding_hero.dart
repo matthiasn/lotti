@@ -271,9 +271,12 @@ class _HeroArtworkFrame extends StatelessWidget {
 }
 
 /// The cinematic welcome content: a theme-aware rounded panel with the
-/// animated [heroStyle] hero filling the upper region and the promise + CTA +
-/// skip below. Surface, text, controls, and hero palette all resolve from the
-/// active design-system theme.
+/// animated [heroStyle] hero filling the upper region and the promise, the
+/// action stack and skip below. Surface, text, controls, and hero palette all
+/// resolve from the active design-system theme.
+///
+/// The action stack leads with the demo when [onExploreDemo] is wired — see
+/// that field for why the connect path is the secondary action there.
 class OnboardingHeroPanel extends StatelessWidget {
   const OnboardingHeroPanel({
     required this.onConnect,
@@ -288,9 +291,11 @@ class OnboardingHeroPanel extends StatelessWidget {
   final VoidCallback onConnect;
   final VoidCallback onSkip;
 
-  /// When set, a low-emphasis "Explore with sample data" entry into the demo
-  /// world renders below the skip action. Null hides it (gallery/preview
-  /// hosts without demo plumbing).
+  /// When set, "Explore with sample data" becomes the panel's *primary* call
+  /// to action and the connect path is demoted to secondary: a first-run user
+  /// can see a furnished world before being asked for an API key. Null hides
+  /// the demo entry (gallery/preview hosts without demo plumbing) and leaves
+  /// connect as the primary action, so the panel is never without one.
   final VoidCallback? onExploreDemo;
 
   final double heroHeight;
@@ -302,6 +307,7 @@ class OnboardingHeroPanel extends StatelessWidget {
     final textHigh = tokens.colors.text.highEmphasis;
     final textMed = tokens.colors.text.mediumEmphasis;
     final brightness = Theme.of(context).brightness;
+    final leadsWithDemo = onExploreDemo != null;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -368,12 +374,34 @@ class OnboardingHeroPanel extends StatelessWidget {
                       ),
                     ),
                   ),
+                  // The demo leads: showing a furnished world costs the user
+                  // nothing, where the connect path opens with "paste an API
+                  // key". Where the demo is unavailable, connect keeps the
+                  // primary slot rather than leaving the panel without one.
+                  if (leadsWithDemo)
+                    Padding(
+                      padding: EdgeInsets.only(top: tokens.spacing.step6),
+                      child: DesignSystemButton(
+                        onPressed: onExploreDemo,
+                        label: context.messages.demoOnboardingExplore,
+                        leadingIcon: Icons.science_outlined,
+                        size: DesignSystemButtonSize.large,
+                        fullWidth: true,
+                      ),
+                    ),
                   Padding(
-                    padding: EdgeInsets.only(top: tokens.spacing.step6),
+                    padding: EdgeInsets.only(
+                      top: leadsWithDemo
+                          ? tokens.spacing.step2
+                          : tokens.spacing.step6,
+                    ),
                     child: DesignSystemButton(
                       onPressed: onConnect,
                       label: context.messages.onboardingWelcomeConnectButton,
                       leadingIcon: Icons.arrow_forward_rounded,
+                      variant: leadsWithDemo
+                          ? DesignSystemButtonVariant.secondary
+                          : DesignSystemButtonVariant.primary,
                       size: DesignSystemButtonSize.large,
                       fullWidth: true,
                     ),
@@ -387,18 +415,6 @@ class OnboardingHeroPanel extends StatelessWidget {
                       size: DesignSystemButtonSize.large,
                     ),
                   ),
-                  if (onExploreDemo != null)
-                    Padding(
-                      padding: EdgeInsets.only(top: tokens.spacing.step1),
-                      child: DesignSystemButton(
-                        onPressed: onExploreDemo,
-                        label: context.messages.demoOnboardingExplore,
-                        variant: DesignSystemButtonVariant.tertiary,
-                        // Caption tier: this must not compete with the skip
-                        // action, let alone the primary CTA.
-                        size: DesignSystemButtonSize.dense,
-                      ),
-                    ),
                 ],
               ),
             ),
