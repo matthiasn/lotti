@@ -8,9 +8,13 @@ copy over in the exit sheet.
 
 ## What it does for the user
 
-- **A populated app from the first second.** Tasks with cover art, checklists,
-  logged time, labels, and a fictional AI setup — plus a guided "first
-  mission" checklist with five concrete things to try.
+- **A populated app from the first second.** Twenty-eight linked tasks across
+  three areas — cover art, checklists, logged time, labels, notes, and a
+  fictional AI setup — plus a guided "first mission" checklist with five
+  concrete things to try.
+- **A world worth walking.** Tasks link to each other and to their notes,
+  photos and logged sessions, so the per-task knowledge graph opens onto a
+  real neighbourhood; due dates are relative to now, so today is today.
 - **Three ways in.** The onboarding welcome ("Explore with sample data"), the
   tasks empty-state button, and Settings → Onboarding.
 - **Always clearly marked.** A persistent banner sits above the app while the
@@ -37,9 +41,11 @@ lib/features/demo/
 └── copy/    exit copy-over: candidate discovery + the copier
 ```
 
-The `seed/` fixture doubles as the manual's deterministic screenshot fixture —
-`penguinLogistics()` output must stay pixel-identical, so demo-only content is
-added via `DemoTutorialContent`, never to the fixture itself.
+The `seed/` fixture doubles as the manual's deterministic screenshot fixture,
+so it grows **additively**: never rename, remove or reorder an existing id,
+name or list position. Everything the manual quotes stays exactly where it is;
+new work is appended. Demo-only content (the guided "first mission") still
+lives in `DemoTutorialContent`, outside the shared world.
 
 ## What it delegates
 

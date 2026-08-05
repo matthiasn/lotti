@@ -16,6 +16,14 @@ sources:
     resource: ../../lib/features/demo/seed/demo_seeder.dart
     title: DemoSeeder
     last_modified: 2026-08-05
+  - id: world
+    resource: ../../lib/features/demo/seed/demo_world.dart
+    title: ManualDemoWorld penguin-logistics fixture
+    last_modified: 2026-08-05
+  - id: dates
+    resource: ../../lib/features/demo/seed/demo_dates.dart
+    title: DemoDates semantic clock
+    last_modified: 2026-08-05
   - id: manifest
     resource: ../../lib/features/demo/seed/demo_seed_manifest.dart
     title: DemoSeedManifest
@@ -106,9 +114,10 @@ stateDiagram-v2
 ```
 
 The seeder writes exclusively through the `WorldHandle` — never through
-getIt or `PersistenceLogic` — in dependency order: category + labels, AI
+getIt or `PersistenceLogic` — in dependency order: categories + labels, AI
 configs (providers → models → profiles → skills), media bytes from the asset
-bundle, journal entities in reference order, the hero-task time link, config
+bundle, journal entities in reference order, then every `linked_entries` row
+(links last, because both endpoints must already exist), config
 flags (Daily OS and tooltips on; sync, notifications, geolocation, habits,
 dashboards off), and FTUE suppression in the demo's own `settings.sqlite`.
 Everything arrives with `vectorClock: null` — a guest world has no sync
@@ -218,18 +227,52 @@ the gateway reports them into the static `DemoCopyFailureNotices` mailbox
 generation's `DemoModeScaffold` — mounted in every generation — drains it
 into an error toast.
 
-# Content ownership — do not grow the fixture
+# Content ownership — one world, grown additively
 
-`ManualDemoWorld.penguinLogistics()` is the manual's deterministic
-screenshot fixture first and the demo seed second: the manual screenshot
-suites and the tutorial-video harness depend on its output staying
-pixel-identical. **Never add demo-only content there.** Demo-only content
-goes in
+`ManualDemoWorld.penguinLogistics()` is the manual's deterministic screenshot
+fixture *and* the production demo seed. There is exactly one world; there is
+no production-only content layer beside it.
+
+**The rule is additive only: never rename, remove or reorder an existing id,
+name or list position.** Eight manual pages quote the original nine task
+names as literal text and the screenshot suites resolve them by id, so those
+nine stay first, in order, with their strings unchanged — `demo_world_test`
+pins that as `originalTaskIds`. Growth is appended after them. Demo-only
+content (the guided "first mission") still goes in
 [`DemoTutorialContent`](../../lib/features/demo/seed/demo_tutorial_content.dart),
-which is seeded *on top of* the fixture and invisible to the screenshot
-suites. World content strings live in the `DemoSeedText` locale tables under
-`seed/l10n/` (one source for manual screenshots and the production seed),
-not in ARB files.
+seeded *on top of* the world and invisible to the screenshot suites. World
+content strings live in the `DemoSeedText` locale tables under `seed/l10n/`
+(one source for manual screenshots and the production seed), not in ARB
+files — and `demo_seed_text_test` fails if any string the builders pass
+through `t()` is missing from any of the nine catalogs.
+
+The world is 28 tasks in four clusters (launch readiness, habitat
+engineering, logistics & supply, colony life) across three categories, wired
+by ~110 `linked_entries` rows to each other and to 20 notes, 11 logged-time
+records and the nine bundled cover photos. That web is what the
+[knowledge graph](../../lib/features/knowledge_graph_poc/README.md) walks:
+it BFSes two hops from the focus task, so a fixture of isolated tasks would
+render a single node. Four hub tasks carry six or more neighbours; every
+task carries at least two, and the whole task web sits within three hops of
+the hero task.
+
+## Dates are semantic, not calendar literals
+
+[`DemoDates`](../../lib/features/demo/seed/demo_dates.dart) resolves every
+due date, creation stamp and logged session against the injected `now`:
+`today(17)`, `tomorrow(9)`, `overdue(2)`, `nextMonday(9)`,
+`pastWeekday(3, 14)`. Two properties matter:
+
+- **Whole-day snapping.** A value authored as `anchor + 3h` becomes tomorrow
+  when the demo is entered at 23:00; `today(17)` is today's date whatever
+  the clock says. Overdue content is at least two days back, so no chip
+  depends on the seeding hour.
+- **Byte-identity under the fixed clock.** Every original due date already
+  *meant* "today at 12:00" relative to `manualDemoNow`, so expressing it
+  semantically leaves the screenshot fixture unchanged. Creation and
+  tracking stamps on the original nine still track `now` by a rigid delta;
+  expansion content deliberately does not, because it snaps to day
+  boundaries.
 
 Related: [profiles and demo mode](../architecture/profiles-and-demo-mode.md)
 for isolation and switching,

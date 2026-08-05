@@ -564,4 +564,161 @@ Voer de voedertest uit, voeg de telemetrieafbeelding toe en vraag daarna toestem
   "Pre-launch checks": "Controles voor de lancering",
   "Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.":
       "Afdichtingsronde voltooid: A–F hielden 's nachts 101,3 kPa. Het appel bevestigde alle 37 pinguïns, inclusief die ene die in het vrachtnet sliep.",
+  // Demo-world expansion: linked clusters, notes, logged time, checklists.
+  "Blocked": "Geblokkeerd",
+  "Waiting on": "Wacht op",
+  "Research": "Onderzoek",
+  "Brief the boarding crew": "Instapploeg briefen",
+  "Time the hatch sequence": "Luiksequentie klokken",
+  "Test the intercom": "Intercom testen",
+  "Rehearse the abort call": "Afbreekcommando oefenen",
+  "Vent Bay A": "Ruim A ontluchten",
+  "Swap cartridges A1–A4": "Patronen A1–A4 vervangen",
+  "Log the CO2 baseline": "CO2-nulmeting noteren",
+  "Return the used cartridges": "Gebruikte patronen terugsturen",
+  "Check bay two": "Ruim 2 controleren",
+  "Check the cold ring": "Koelring controleren",
+  "Ask the dock crew": "Dokploeg vragen",
+  "File a loss report": "Verliesmelding indienen",
+  "Colony news": "Kolonienieuws",
+  "Launch update": "Lanceerupdate",
+  "Chick of the month": "Kuiken van de maand",
+  "Sardine recipe": "Sardinerecept",
+  "Pull the log exports": "Logexports ophalen",
+  "Flag every gap": "Elk gat markeren",
+  "Recheck freezer 3": "Vriezer 3 opnieuw controleren",
+  "Sign off the audit": "Audit aftekenen",
+  "Count pods on the dock": "Capsules op het dok tellen",
+  "Match against the manifest": "Vergelijken met de vrachtlijst",
+  "Confirm the cold-chain seals": "Koelketenzegels bevestigen",
+  "Send the corrected list": "Gecorrigeerde lijst versturen",
+  "Rehearsal script": "Repetitiescript",
+  "Scrubber swap": "Filterwissel",
+  "Pallet search": "Palletzoektocht",
+  "Newsletter sections": "Nieuwsbriefsecties",
+  "Freezer log audit": "Audit vriezerlogs",
+  "Manifest checks": "Controles vrachtlijst",
+  "Bay A seals held 101.3 kPa all night.":
+      "Zegels in ruim A hielden de hele nacht 101,3 kPa.",
+  "Cartridge order confirmed, arrives on the next shuttle.":
+      "Patronenbestelling bevestigd, komt met de volgende shuttle.",
+  "Bay C is at 78% humidity, nine points up since Tuesday.":
+      "Ruim C zit op 78% luchtvochtigheid, negen punten hoger dan dinsdag.",
+  "The feeder still aims lunch at Mission Control.":
+      "De voerbak mikt de lunch nog steeds op Mission Control.",
+  "Pallet 14 is not in bay two. Checking the cold ring next.":
+      "Pallet 14 staat niet in ruim 2. Nu de koelring controleren.",
+  "Europa Krill quoted 12% below our current supplier.":
+      "Europa Krill zit 12% onder onze huidige leverancier.",
+  "Customs wants the pod seal certificates before Friday.":
+      "De douane wil de zegelcertificaten van de capsules vóór vrijdag.",
+  "The ice pad clears at 06:40 with a light crosswind.":
+      "Het ijsplatform is om 06:40 vrij, met lichte zijwind.",
+  "Rehearsal ran nine minutes long on the boarding step.":
+      "De repetitie liep negen minuten uit bij het instappen.",
+  "Three flight suits need a wider flipper cut.":
+      "Drie vliegpakken hebben een wijdere flippersnit nodig.",
+  "The draft is done except for the launch section.":
+      "Het concept is klaar, op de lanceersectie na.",
+  "Two volunteers dropped out of the Thursday slot.":
+      "Twee vrijwilligers zijn afgehaakt voor donderdag.",
+  "The colony voted for the documentary about ice.":
+      "De kolonie stemde voor de documentaire over ijs.",
+  "One sprained flipper, so we need softer landings.":
+      "Eén verzwikte flipper, dus we hebben zachtere landingen nodig.",
+  "Tilt is four degrees off after the last burn.":
+      "De hoek staat vier graden scheef na de laatste stuwstoot.",
+  "The recycler filter was clogged with feather down.":
+      "Het filter van de recycler zat verstopt met dons.",
+  "Freezer 3 logged a two-hour gap on Sunday.":
+      "Vriezer 3 had zondag een gat van twee uur in de log.",
+  "The manifest says 40 pods, the dock counted 39.":
+      "De vrachtlijst zegt 40 capsules, het dok telde er 39.",
+  "Mission Control wants fewer fish puns in the launch script.":
+      "Mission Control wil minder viswoordgrappen in het lanceerscript.",
+  "Sir Flaps-a-Lot answered roll call from the cargo netting.":
+      "Sir Flaps-a-Lot meldde zich bij het appel vanuit het vrachtnet.",
+  "Swapped cartridges in Bay A and B.": "Patronen in ruim A en B vervangen.",
+  "Two hours chasing the humidity leak, no source yet.":
+      "Twee uur achter het vochtlek aan, nog geen bron.",
+  "Walked the whole cold ring looking for pallet 14.":
+      "De hele koelring afgelopen op zoek naar pallet 14.",
+  "Full rehearsal run with the boarding crew.":
+      "Volledige repetitie met de instapploeg.",
+  "Reconciled two weeks of freezer logs.": "Twee weken vriezerlogs afgestemd.",
+  "Wrote the colony newsletter draft.":
+      "Concept van de kolonienieuwsbrief geschreven.",
+  "Measured the array tilt against the sun sensor.":
+      "De hoek van het zonnepaneel aan de zonnesensor gemeten.",
+  "Cleaned the recycler filter housing.":
+      "Filterhuis van de recycler schoongemaakt.",
+  "Counted pods on the dock with the shuttle crew.":
+      "Capsules op het dok geteld met de shuttleploeg.",
+  "Rewrote the launch script intro.":
+      "De intro van het lanceerscript herschreven.",
+  "Draft the launch comms plan": "Communicatieplan voor de lancering opstellen",
+  "Agree who announces what on launch day, and in which order.":
+      "Spreek af wie op lanceerdag wat aankondigt, en in welke volgorde.",
+  "Check the ice-pad weather window": "Weerraam op het ijsplatform controleren",
+  "Confirm the crosswind stays under limits for the launch slot.":
+      "Bevestig dat de zijwind in het lanceerraam onder de limiet blijft.",
+  "Audit the cold-chain freezer logs":
+      "Vriezerlogs van de koelketen controleren",
+  "Find every gap in the freezer logs before the sardines ship.":
+      "Vind elk gat in de vriezerlogs voordat de sardines verscheept worden.",
+  "Run the launch-day rehearsal": "Repetitie voor lanceerdag houden",
+  "Walk the whole launch morning once, at full speed, with the crew.":
+      "Loop de hele lanceerochtend één keer op volle snelheid door met de ploeg.",
+  "Fit the penguin flight suits": "Pinguïnvliegpakken aanmeten",
+  "Measure every flyer and send the three wide-flipper suits back.":
+      "Meet elke vlieger op en stuur de drie pakken met wijde flippers terug.",
+  "Replace the air scrubber cartridges":
+      "Filterpatronen van de luchtreiniging vervangen",
+  "Swap all four cartridges in Bay A before the CO2 alarm gets bored.":
+      "Vervang alle vier de patronen in ruim A voordat het CO2-alarm zich gaat vervelen.",
+  "Trace the humidity spike in Bay C": "Vochtpiek in ruim C opsporen",
+  "Nine points in three days is a leak, not weather.":
+      "Negen punten in drie dagen is een lek, geen weer.",
+  "Waiting on the Bay C sensor swap": "Wacht op de sensorwissel in ruim C",
+  "Resurface the habitat ice rink":
+      "IJsbaan van het habitat opnieuw prepareren",
+  "The colony rink has more grooves than ice. Book the resurfacer.":
+      "De kolonie-ijsbaan heeft meer groeven dan ijs. Boek de ijsmachine.",
+  "Retune the solar array tilt": "Hoek van het zonnepaneel bijstellen",
+  "Four degrees of drift is costing the habitat a third of its power.":
+      "Vier graden afwijking kost het habitat een derde van zijn stroom.",
+  "Service the water recycler": "Waterrecycler onderhouden",
+  "Clean the filter housing and log the throughput afterwards.":
+      "Maak het filterhuis schoon en noteer daarna de doorstroom.",
+  "Find the missing squid pallet": "Vermiste inktvispallet vinden",
+  "Pallet 14 left Europa and never reached the cold ring.":
+      "Pallet 14 vertrok van Europa en bereikte de koelring nooit.",
+  "Shortlist a second krill supplier": "Tweede krill-leverancier selecteren",
+  "One supplier for the whole colony is one storm away from trouble.":
+      "Eén leverancier voor de hele kolonie is één storm van problemen verwijderd.",
+  "Reconcile the shuttle manifest": "Vrachtlijst van de shuttle afstemmen",
+  "The manifest and the dock disagree by one pod. Find out which.":
+      "Vrachtlijst en dok verschillen één capsule. Zoek uit welke.",
+  "Order replacement pod seals": "Vervangende capsulezegels bestellen",
+  "Customs will not clear a pod whose seal certificate has expired.":
+      "De douane laat geen capsule door met een verlopen zegelcertificaat.",
+  "Clear customs on Europa": "Douane op Europa regelen",
+  "File the seal certificates and the passenger question together.":
+      "Dien de zegelcertificaten en de passagiersvraag samen in.",
+  "Europa customs is closed until Monday":
+      "Douane van Europa is dicht tot maandag",
+  "Write the colony newsletter": "Kolonienieuwsbrief schrijven",
+  "Four sections, one photo, and no more than one fish pun.":
+      "Vier secties, één foto en hooguit één viswoordgrap.",
+  "Refill the chick daycare rota": "Rooster van de kuikenopvang aanvullen",
+  "Thursday lost two volunteers and the chicks noticed immediately.":
+      "Donderdag verloor twee vrijwilligers en de kuikens hadden het meteen door.",
+  "Pick the film for colony night": "Film kiezen voor de kolonieavond",
+  "The colony voted for the ice documentary. Book the dome.":
+      "De kolonie stemde voor de ijsdocumentaire. Boek de koepel.",
+  "Restart the tobogganing league": "Sleecompetitie hervatten",
+  "Softer landings first, then a rematch against Bay C.":
+      "Eerst zachtere landingen, dan een revanche tegen ruim C.",
+  "Habitat Engineering": "Habitattechniek",
+  "Logistics & Supply": "Logistiek & bevoorrading",
 };

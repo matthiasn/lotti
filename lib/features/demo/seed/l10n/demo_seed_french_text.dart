@@ -600,4 +600,171 @@ Lance le test du distributeur, joins l'image de télémétrie puis demande l'aut
   "Pre-launch checks": "Vérifications avant lancement",
   "Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.":
       "Tournée des joints terminée : A–F ont tenu à 101,3 kPa pendant la nuit. L'appel a confirmé les 37 manchots, y compris celui endormi dans le filet de fret.",
+  // Demo-world expansion: linked clusters, notes, logged time, checklists.
+  "Blocked": "Bloqué",
+  "Waiting on": "En attente de",
+  "Research": "Recherche",
+  "Brief the boarding crew": "Briefer l'équipe d'embarquement",
+  "Time the hatch sequence": "Chronométrer la séquence de l'écoutille",
+  "Test the intercom": "Tester l'interphone",
+  "Rehearse the abort call": "Répéter l'annonce d'abandon",
+  "Vent Bay A": "Purger la baie A",
+  "Swap cartridges A1–A4": "Changer les cartouches A1–A4",
+  "Log the CO2 baseline": "Noter le CO2 de référence",
+  "Return the used cartridges": "Rapporter les cartouches usagées",
+  "Check bay two": "Vérifier la baie deux",
+  "Check the cold ring": "Vérifier l'anneau froid",
+  "Ask the dock crew": "Demander à l'équipe du dock",
+  "File a loss report": "Déposer une déclaration de perte",
+  "Colony news": "Nouvelles de la colonie",
+  "Launch update": "Point sur le lancement",
+  "Chick of the month": "Poussin du mois",
+  "Sardine recipe": "Recette de sardines",
+  "Pull the log exports": "Récupérer les exports de relevés",
+  "Flag every gap": "Signaler chaque lacune",
+  "Recheck freezer 3": "Revérifier le congélateur 3",
+  "Sign off the audit": "Valider l'audit",
+  "Count pods on the dock": "Compter les capsules sur le dock",
+  "Match against the manifest": "Comparer avec le manifeste",
+  "Confirm the cold-chain seals": "Confirmer les joints de la chaîne du froid",
+  "Send the corrected list": "Envoyer la liste corrigée",
+  "Rehearsal script": "Script de répétition",
+  "Scrubber swap": "Changement de cartouches",
+  "Pallet search": "Recherche de palette",
+  "Newsletter sections": "Sections du journal",
+  "Freezer log audit": "Audit des relevés de congélateur",
+  "Manifest checks": "Vérifications du manifeste",
+  "Bay A seals held 101.3 kPa all night.":
+      "Les joints de la baie A ont tenu 101,3 kPa toute la nuit.",
+  "Cartridge order confirmed, arrives on the next shuttle.":
+      "Commande de cartouches confirmée, elle arrive avec la prochaine navette.",
+  "Bay C is at 78% humidity, nine points up since Tuesday.":
+      "La baie C est à 78 % d'humidité, neuf points de plus que mardi.",
+  "The feeder still aims lunch at Mission Control.":
+      "Le distributeur vise toujours Mission Control avec le déjeuner.",
+  "Pallet 14 is not in bay two. Checking the cold ring next.":
+      "La palette 14 n'est pas dans la baie deux. Je vérifie l'anneau froid ensuite.",
+  "Europa Krill quoted 12% below our current supplier.":
+      "Krill d'Europe propose 12 % de moins que notre fournisseur actuel.",
+  "Customs wants the pod seal certificates before Friday.":
+      "La douane veut les certificats de joints de capsule avant vendredi.",
+  "The ice pad clears at 06:40 with a light crosswind.":
+      "La piste glacée se libère à 06:40, avec un léger vent de travers.",
+  "Rehearsal ran nine minutes long on the boarding step.":
+      "La répétition a duré neuf minutes de trop à l'embarquement.",
+  "Three flight suits need a wider flipper cut.":
+      "Trois combinaisons de vol ont besoin d'une coupe plus large aux nageoires.",
+  "The draft is done except for the launch section.":
+      "Le brouillon est prêt, sauf la section lancement.",
+  "Two volunteers dropped out of the Thursday slot.":
+      "Deux bénévoles ont annulé pour le créneau de jeudi.",
+  "The colony voted for the documentary about ice.":
+      "La colonie a voté pour le documentaire sur la glace.",
+  "One sprained flipper, so we need softer landings.":
+      "Une nageoire foulée : il nous faut des atterrissages plus doux.",
+  "Tilt is four degrees off after the last burn.":
+      "L'inclinaison est décalée de quatre degrés après la dernière poussée.",
+  "The recycler filter was clogged with feather down.":
+      "Le filtre du recycleur était bouché par du duvet.",
+  "Freezer 3 logged a two-hour gap on Sunday.":
+      "Le congélateur 3 a enregistré une lacune de deux heures dimanche.",
+  "The manifest says 40 pods, the dock counted 39.":
+      "Le manifeste indique 40 capsules, le dock en a compté 39.",
+  "Mission Control wants fewer fish puns in the launch script.":
+      "Mission Control veut moins de jeux de mots sur les poissons dans le script de lancement.",
+  "Sir Flaps-a-Lot answered roll call from the cargo netting.":
+      "Sir Flaps-a-Lot a répondu à l'appel depuis le filet de fret.",
+  "Swapped cartridges in Bay A and B.":
+      "Cartouches changées dans les baies A et B.",
+  "Two hours chasing the humidity leak, no source yet.":
+      "Deux heures à traquer la fuite d'humidité, toujours sans source.",
+  "Walked the whole cold ring looking for pallet 14.":
+      "Parcouru tout l'anneau froid à la recherche de la palette 14.",
+  "Full rehearsal run with the boarding crew.":
+      "Répétition complète avec l'équipe d'embarquement.",
+  "Reconciled two weeks of freezer logs.":
+      "Deux semaines de relevés de congélateur rapprochées.",
+  "Wrote the colony newsletter draft.":
+      "Rédigé le brouillon du journal de la colonie.",
+  "Measured the array tilt against the sun sensor.":
+      "Mesuré l'inclinaison des panneaux au capteur solaire.",
+  "Cleaned the recycler filter housing.":
+      "Nettoyé le boîtier du filtre du recycleur.",
+  "Counted pods on the dock with the shuttle crew.":
+      "Compté les capsules sur le dock avec l'équipe de la navette.",
+  "Rewrote the launch script intro.":
+      "Réécrit l'introduction du script de lancement.",
+  "Draft the launch comms plan":
+      "Rédiger le plan de communication du lancement",
+  "Agree who announces what on launch day, and in which order.":
+      "Décide qui annonce quoi le jour du lancement, et dans quel ordre.",
+  "Check the ice-pad weather window":
+      "Vérifier la fenêtre météo de la piste glacée",
+  "Confirm the crosswind stays under limits for the launch slot.":
+      "Confirme que le vent de travers reste sous la limite pendant le créneau de lancement.",
+  "Audit the cold-chain freezer logs":
+      "Auditer les relevés de la chaîne du froid",
+  "Find every gap in the freezer logs before the sardines ship.":
+      "Trouve chaque lacune dans les relevés avant l'expédition des sardines.",
+  "Run the launch-day rehearsal": "Faire la répétition du jour de lancement",
+  "Walk the whole launch morning once, at full speed, with the crew.":
+      "Déroule tout le matin du lancement une fois, en temps réel, avec l'équipe.",
+  "Fit the penguin flight suits":
+      "Ajuster les combinaisons de vol des manchots",
+  "Measure every flyer and send the three wide-flipper suits back.":
+      "Mesure chaque manchot volant et renvoie les trois combinaisons à nageoires larges.",
+  "Replace the air scrubber cartridges":
+      "Remplacer les cartouches de l'épurateur d'air",
+  "Swap all four cartridges in Bay A before the CO2 alarm gets bored.":
+      "Change les quatre cartouches de la baie A avant que l'alarme CO2 ne s'ennuie.",
+  "Trace the humidity spike in Bay C":
+      "Repérer le pic d'humidité dans la baie C",
+  "Nine points in three days is a leak, not weather.":
+      "Neuf points en trois jours, c'est une fuite, pas la météo.",
+  "Waiting on the Bay C sensor swap":
+      "En attente du changement de capteur de la baie C",
+  "Resurface the habitat ice rink":
+      "Refaire la glace de la patinoire de l'habitat",
+  "The colony rink has more grooves than ice. Book the resurfacer.":
+      "La patinoire de la colonie a plus de rainures que de glace. Réserve la surfaceuse.",
+  "Retune the solar array tilt": "Ajuster l'inclinaison des panneaux solaires",
+  "Four degrees of drift is costing the habitat a third of its power.":
+      "Quatre degrés de dérive coûtent à l'habitat un tiers de son énergie.",
+  "Service the water recycler": "Entretenir le recycleur d'eau",
+  "Clean the filter housing and log the throughput afterwards.":
+      "Nettoie le boîtier du filtre, puis note le débit.",
+  "Find the missing squid pallet": "Retrouver la palette de calmars disparue",
+  "Pallet 14 left Europa and never reached the cold ring.":
+      "La palette 14 a quitté Europe et n'a jamais atteint l'anneau froid.",
+  "Shortlist a second krill supplier":
+      "Présélectionner un deuxième fournisseur de krill",
+  "One supplier for the whole colony is one storm away from trouble.":
+      "Un seul fournisseur pour toute la colonie : une tempête suffit à tout bloquer.",
+  "Reconcile the shuttle manifest": "Rapprocher le manifeste de la navette",
+  "The manifest and the dock disagree by one pod. Find out which.":
+      "Le manifeste et le dock diffèrent d'une capsule. Trouve laquelle.",
+  "Order replacement pod seals": "Commander des joints de capsule de rechange",
+  "Customs will not clear a pod whose seal certificate has expired.":
+      "La douane ne libère aucune capsule dont le certificat de joint a expiré.",
+  "Clear customs on Europa": "Passer la douane sur Europe",
+  "File the seal certificates and the passenger question together.":
+      "Dépose les certificats de joints et la question des passagers ensemble.",
+  "Europa customs is closed until Monday":
+      "La douane d'Europe est fermée jusqu'à lundi",
+  "Write the colony newsletter": "Rédiger le journal de la colonie",
+  "Four sections, one photo, and no more than one fish pun.":
+      "Quatre sections, une photo et un seul jeu de mots sur les poissons.",
+  "Refill the chick daycare rota":
+      "Compléter le planning de la garderie des poussins",
+  "Thursday lost two volunteers and the chicks noticed immediately.":
+      "Jeudi a perdu deux bénévoles et les poussins l'ont remarqué aussitôt.",
+  "Pick the film for colony night":
+      "Choisir le film de la soirée de la colonie",
+  "The colony voted for the ice documentary. Book the dome.":
+      "La colonie a voté pour le documentaire sur la glace. Réserve le dôme.",
+  "Restart the tobogganing league": "Relancer la ligue de luge",
+  "Softer landings first, then a rematch against Bay C.":
+      "D'abord des atterrissages plus doux, puis la revanche contre la baie C.",
+  "Habitat Engineering": "Ingénierie de l'habitat",
+  "Logistics & Supply": "Logistique et approvisionnement",
 };

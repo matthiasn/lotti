@@ -602,4 +602,156 @@ Proveď test krmítka, přilož obrázek telemetrie a požádej o povolení ke s
   'Pre-launch checks': 'Předstartovní kontroly',
   'Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.':
       'Obchůzka těsnění dokončena: A–F přes noc držela 101,3 kPa. Nástup potvrdil všech 37 tučňáků, včetně toho, který spal v nákladní síti.',
+  // Demo-world expansion: linked clusters, notes, logged time, checklists.
+  'Blocked': 'Blokováno',
+  'Waiting on': 'Čeká na',
+  'Research': 'Rešerše',
+  'Brief the boarding crew': 'Instruovat nástupní četu',
+  'Time the hatch sequence': 'Změřit sekvenci poklopu',
+  'Test the intercom': 'Otestovat interkom',
+  'Rehearse the abort call': 'Nacvičit povel k přerušení',
+  'Vent Bay A': 'Odvětrat sekci A',
+  'Swap cartridges A1–A4': 'Vyměnit patrony A1–A4',
+  'Log the CO2 baseline': 'Zaznamenat výchozí CO2',
+  'Return the used cartridges': 'Vrátit použité patrony',
+  'Check bay two': 'Zkontrolovat sekci dvě',
+  'Check the cold ring': 'Zkontrolovat chladicí prstenec',
+  'Ask the dock crew': 'Zeptat se dokové čety',
+  'File a loss report': 'Podat hlášení o ztrátě',
+  'Colony news': 'Zprávy z kolonie',
+  'Launch update': 'Novinky ke startu',
+  'Chick of the month': 'Mládě měsíce',
+  'Sardine recipe': 'Recept na sardinky',
+  'Pull the log exports': 'Stáhnout exporty protokolů',
+  'Flag every gap': 'Označit každou mezeru',
+  'Recheck freezer 3': 'Znovu zkontrolovat mrazák 3',
+  'Sign off the audit': 'Odsouhlasit audit',
+  'Count pods on the dock': 'Spočítat moduly na doku',
+  'Match against the manifest': 'Porovnat s manifestem',
+  'Confirm the cold-chain seals': 'Potvrdit těsnění chladicího řetězce',
+  'Send the corrected list': 'Odeslat opravený seznam',
+  'Rehearsal script': 'Scénář zkoušky',
+  'Scrubber swap': 'Výměna filtrů',
+  'Pallet search': 'Pátrání po paletě',
+  'Newsletter sections': 'Části zpravodaje',
+  'Freezer log audit': 'Audit protokolů mrazáků',
+  'Manifest checks': 'Kontroly manifestu',
+  'Bay A seals held 101.3 kPa all night.':
+      'Těsnění v sekci A držela celou noc 101,3 kPa.',
+  'Cartridge order confirmed, arrives on the next shuttle.':
+      'Objednávka patron potvrzena, dorazí příštím raketoplánem.',
+  'Bay C is at 78% humidity, nine points up since Tuesday.':
+      'Vlhkost v sekci C je 78 %, o devět bodů víc než v úterý.',
+  'The feeder still aims lunch at Mission Control.':
+      'Krmítko stále míří obědem na řízení mise.',
+  'Pallet 14 is not in bay two. Checking the cold ring next.':
+      'Paleta 14 v sekci dvě není. Teď zkontroluju chladicí prstenec.',
+  'Europa Krill quoted 12% below our current supplier.':
+      'Europa Krill nabídl o 12 % méně než náš současný dodavatel.',
+  'Customs wants the pod seal certificates before Friday.':
+      'Celnice chce certifikáty těsnění modulů do pátku.',
+  'The ice pad clears at 06:40 with a light crosswind.':
+      'Ledová rampa se uvolní v 6:40, slabý boční vítr.',
+  'Rehearsal ran nine minutes long on the boarding step.':
+      'Zkouška se v části s nástupem protáhla o devět minut.',
+  'Three flight suits need a wider flipper cut.':
+      'Tři letecké kombinézy potřebují širší střih na ploutve.',
+  'The draft is done except for the launch section.':
+      'Návrh je hotový, chybí jen část o startu.',
+  'Two volunteers dropped out of the Thursday slot.':
+      'Ze čtvrtečního termínu odpadli dva dobrovolníci.',
+  'The colony voted for the documentary about ice.':
+      'Kolonie hlasovala pro dokument o ledu.',
+  'One sprained flipper, so we need softer landings.':
+      'Jedna vymknutá ploutev, potřebujeme měkčí dopady.',
+  'Tilt is four degrees off after the last burn.':
+      'Náklon je po posledním zážehu o čtyři stupně mimo.',
+  'The recycler filter was clogged with feather down.':
+      'Filtr recyklátoru byl ucpaný prachovým peřím.',
+  'Freezer 3 logged a two-hour gap on Sunday.':
+      'Mrazák 3 zaznamenal v neděli dvouhodinovou mezeru.',
+  'The manifest says 40 pods, the dock counted 39.':
+      'Manifest uvádí 40 modulů, dok napočítal 39.',
+  'Mission Control wants fewer fish puns in the launch script.':
+      'Řízení mise chce ve startovním scénáři méně rybích vtipů.',
+  'Sir Flaps-a-Lot answered roll call from the cargo netting.':
+      'Sir Flaps-a-Lot se ohlásil při nástupu z nákladní sítě.',
+  'Swapped cartridges in Bay A and B.': 'Výměna patron v sekci A a B.',
+  'Two hours chasing the humidity leak, no source yet.':
+      'Dvě hodiny pátrání po úniku vlhkosti, zdroj zatím nikde.',
+  'Walked the whole cold ring looking for pallet 14.':
+      'Obchůzka celého chladicího prstence kvůli paletě 14.',
+  'Full rehearsal run with the boarding crew.':
+      'Kompletní zkouška s nástupní četou.',
+  'Reconciled two weeks of freezer logs.':
+      'Porovnání dvou týdnů protokolů mrazáků.',
+  'Wrote the colony newsletter draft.': 'Sepsání návrhu zpravodaje kolonie.',
+  'Measured the array tilt against the sun sensor.':
+      'Měření náklonu panelů proti slunečnímu senzoru.',
+  'Cleaned the recycler filter housing.': 'Čištění pouzdra filtru recyklátoru.',
+  'Counted pods on the dock with the shuttle crew.':
+      'Počítání modulů na doku s posádkou raketoplánu.',
+  'Rewrote the launch script intro.': 'Přepsání úvodu startovního scénáře.',
+  'Draft the launch comms plan': 'Navrhnout komunikační plán startu',
+  'Agree who announces what on launch day, and in which order.':
+      'Domluv, kdo co v den startu oznamuje a v jakém pořadí.',
+  'Check the ice-pad weather window': 'Zkontrolovat počasí na ledové rampě',
+  'Confirm the crosswind stays under limits for the launch slot.':
+      'Potvrď, že boční vítr zůstane ve startovním okně pod limitem.',
+  'Audit the cold-chain freezer logs': 'Prověřit protokoly chladicího řetězce',
+  'Find every gap in the freezer logs before the sardines ship.':
+      'Najdi v protokolech mrazáků každou mezeru, než se sardinky odešlou.',
+  'Run the launch-day rehearsal': 'Provést generálku na den startu',
+  'Walk the whole launch morning once, at full speed, with the crew.':
+      'Projdi s posádkou celé startovní ráno jednou v reálném čase.',
+  'Fit the penguin flight suits': 'Přizpůsobit tučňáčí letecké kombinézy',
+  'Measure every flyer and send the three wide-flipper suits back.':
+      'Změř každého letce a tři kombinézy se širokými ploutvemi pošli zpět.',
+  'Replace the air scrubber cartridges': 'Vyměnit patrony čističky vzduchu',
+  'Swap all four cartridges in Bay A before the CO2 alarm gets bored.':
+      'Vyměň všechny čtyři patrony v sekci A, než se alarm CO2 začne nudit.',
+  'Trace the humidity spike in Bay C': 'Vystopovat skok vlhkosti v sekci C',
+  'Nine points in three days is a leak, not weather.':
+      'Devět bodů za tři dny je únik, ne počasí.',
+  'Waiting on the Bay C sensor swap': 'Čeká se na výměnu senzoru v sekci C',
+  'Resurface the habitat ice rink': 'Upravit led na kluzišti v obydlí',
+  'The colony rink has more grooves than ice. Book the resurfacer.':
+      'Kluziště kolonie má víc rýh než ledu. Objednej rolbu.',
+  'Retune the solar array tilt': 'Doladit náklon solárních panelů',
+  'Four degrees of drift is costing the habitat a third of its power.':
+      'Čtyři stupně odchylky stojí obydlí třetinu výkonu.',
+  'Service the water recycler': 'Provést údržbu recyklátoru vody',
+  'Clean the filter housing and log the throughput afterwards.':
+      'Vyčisti pouzdro filtru a pak zaznamenej průtok.',
+  'Find the missing squid pallet': 'Najít ztracenou paletu olihní',
+  'Pallet 14 left Europa and never reached the cold ring.':
+      'Paleta 14 opustila Europu a do chladicího prstence nikdy nedorazila.',
+  'Shortlist a second krill supplier': 'Vybrat druhého dodavatele krilu',
+  'One supplier for the whole colony is one storm away from trouble.':
+      'Jeden dodavatel pro celou kolonii je jednu bouři od průšvihu.',
+  'Reconcile the shuttle manifest': 'Porovnat manifest raketoplánu',
+  'The manifest and the dock disagree by one pod. Find out which.':
+      'Manifest a dok se liší o jeden modul. Zjisti který.',
+  'Order replacement pod seals': 'Objednat náhradní těsnění modulů',
+  'Customs will not clear a pod whose seal certificate has expired.':
+      'Celnice nepropustí modul s prošlým certifikátem těsnění.',
+  'Clear customs on Europa': 'Vyřídit celnici na Europě',
+  'File the seal certificates and the passenger question together.':
+      'Podej certifikáty těsnění a dotaz k cestujícím najednou.',
+  'Europa customs is closed until Monday':
+      'Celnice na Europě má do pondělí zavřeno',
+  'Write the colony newsletter': 'Napsat zpravodaj kolonie',
+  'Four sections, one photo, and no more than one fish pun.':
+      'Čtyři části, jedna fotka a nejvýš jeden rybí vtip.',
+  'Refill the chick daycare rota': 'Doplnit rozpis hlídání mláďat',
+  'Thursday lost two volunteers and the chicks noticed immediately.':
+      'Ve čtvrtek odpadli dva dobrovolníci a mláďata si toho hned všimla.',
+  'Pick the film for colony night': 'Vybrat film na večer kolonie',
+  'The colony voted for the ice documentary. Book the dome.':
+      'Kolonie zvolila dokument o ledu. Zarezervuj kupoli.',
+  'Restart the tobogganing league': 'Obnovit sáňkařskou ligu',
+  'Softer landings first, then a rematch against Bay C.':
+      'Nejdřív měkčí dopady, pak odveta se sekcí C.',
+  'Habitat Engineering': 'Technika obydlí',
+  'Logistics & Supply': 'Logistika a zásobování',
 };

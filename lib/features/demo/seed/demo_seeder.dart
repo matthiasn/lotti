@@ -1,7 +1,6 @@
 import 'dart:ui' show Locale;
 
 import 'package:flutter/services.dart' show AssetBundle;
-import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
@@ -11,9 +10,6 @@ import 'package:lotti/features/demo/seed/demo_world_ai.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
 import 'package:lotti/features/profiles/service/world_handle.dart';
 import 'package:lotti/utils/consts.dart';
-
-/// Id of the link that attaches the habitat time record to the hero task.
-const demoHabitatTimeLinkId = 'manual-habitat-time-link';
 
 /// Populates a freshly created demo world with the Intergalactic Penguin
 /// Logistics content plus the tutorial "first mission".
@@ -44,8 +40,9 @@ class DemoSeeder {
   /// `rootBundle`).
   final AssetBundle bundle;
 
-  /// Source of "now" for anchor-relative date rebasing and the manifest
-  /// timestamp. Injected so tests stay deterministic.
+  /// Source of "now" for the world's semantic dates (due today, overdue by
+  /// two days, logged last Tuesday) and for the manifest timestamp. Injected
+  /// so tests stay deterministic.
   final DateTime Function() clock;
 
   /// Seeds the world in dependency order and returns the manifest that was
@@ -59,8 +56,10 @@ class DemoSeeder {
     );
     final tutorial = DemoTutorialContent.build(translate: t, now: now);
 
-    // Category and labels first: every journal entity references them.
-    await world.writeEntityDefinition(penguinWorld.category);
+    // Categories and labels first: every journal entity references them.
+    for (final category in penguinWorld.categories) {
+      await world.writeEntityDefinition(category);
+    }
     for (final label in penguinWorld.labels) {
       await world.writeEntityDefinition(label);
     }
@@ -81,31 +80,22 @@ class DemoSeeder {
     await penguinWorld.installMediaFromBundle(bundle, world.root);
 
     // Journal entities in reference order: images, checklist items, the
-    // checklist that lists them, the tasks that own the checklist, then the
-    // time record and its link to the hero task. The fixture's checklist and
-    // task wiring is already complete in the entity data.
+    // checklists that list them, the tasks that own those checklists, then
+    // the time records and notes. The fixture's checklist and task wiring is
+    // already complete in the entity data.
     final journalEntities = [
-      ...penguinWorld.coverImages,
-      ...penguinWorld.checklistItems,
-      ...penguinWorld.checklists,
-      ...penguinWorld.tasks,
-      ...penguinWorld.timeRecords,
+      ...penguinWorld.journalEntities,
       ...tutorial.journalEntities,
     ];
     for (final entity in journalEntities) {
       await world.writeJournalEntity(entity);
     }
 
-    await world.writeEntryLink(
-      EntryLink.basic(
-        id: demoHabitatTimeLinkId,
-        fromId: manualOrbitalHabitatTaskId,
-        toId: manualHabitatTimeRecordId,
-        createdAt: now,
-        updatedAt: now,
-        vectorClock: null,
-      ),
-    );
+    // Links last: both endpoints must exist before a `linked_entries` row
+    // referencing them is written.
+    for (final entryLink in penguinWorld.links) {
+      await world.writeEntryLink(entryLink);
+    }
 
     await _configureFlags();
 
@@ -122,7 +112,7 @@ class DemoSeeder {
         for (final entity in journalEntities) entity.meta.id,
       ]),
       seededDefinitionIds: List.unmodifiable([
-        penguinWorld.category.id,
+        for (final category in penguinWorld.categories) category.id,
         for (final label in penguinWorld.labels) label.id,
       ]),
       seededAiConfigIds: List.unmodifiable([

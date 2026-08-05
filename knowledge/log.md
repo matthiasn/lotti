@@ -1,6 +1,12 @@
 # Knowledge Bundle Update Log
 
 ## 2026-08-05
+* **Correction**: [Demo mode](features/demo.md) — the fixture-ownership rule
+  is now "additive only" rather than "never grow the fixture". The penguin
+  world is one shared world for the manual and the production demo; it grew
+  to 28 linked tasks so the knowledge graph has somewhere to walk, with
+  semantic (`DemoDates`) due dates. Existing ids, names and list order stay
+  byte-stable, which is what keeps the screenshot suites reproducible.
 * **Addition**: New architecture concept
   [Profiles and demo mode](architecture/profiles-and-demo-mode.md) — the
   registry, the guest-world isolation contract, capability-gated sync, and the

@@ -96,36 +96,10 @@ void main() {
     clock: () => seedTime,
   );
 
-  const expectedJournalIds = {
-    // Cover images.
-    manualHabitatCoverImageId,
-    manualRollCallCoverImageId,
-    manualLaunchReviewCoverImageId,
-    manualLunchCoverImageId,
-    manualSardineFuturesCoverImageId,
-    manualFishFeederCoverImageId,
-    manualSardineCargoCoverImageId,
-    manualPenguinPassengerCoverImageId,
-    manualHeadsetWalkCoverImageId,
-    // Habitat checklist graph.
-    manualHabitatSealsItemId,
-    manualHabitatRollCallItemId,
-    manualHabitatCargoItemId,
-    manualHabitatClearanceItemId,
-    manualHabitatChecklistId,
-    // Tasks.
-    manualRollCallTaskId,
-    manualOrbitalHabitatTaskId,
-    manualLaunchReviewTaskId,
-    manualLunchTaskId,
-    manualSardineFuturesTaskId,
-    manualFishFeederTaskId,
-    manualSardineCargoTaskId,
-    manualPenguinPassengerTaskId,
-    manualHeadsetWalkTaskId,
-    // Time record.
-    manualHabitatTimeRecordId,
-    // Tutorial content.
+  // The tutorial's own entities — the only demo-only content, deliberately
+  // spelled out so a change there is visible in the diff. Everything else is
+  // derived from the shared penguin world.
+  const expectedTutorialIds = {
     demoTutorialCheckItemId,
     demoTutorialTimerItemId,
     demoTutorialAddItemItemId,
@@ -137,8 +111,13 @@ void main() {
 
   const expectedDefinitionIds = {
     manualDemoCategoryId,
+    demoHabitatCategoryId,
+    demoLogisticsCategoryId,
     manualDemoProjectLabelId,
     manualDemoCriticalLabelId,
+    demoBlockedLabelId,
+    demoWaitingLabelId,
+    demoResearchLabelId,
   };
 
   const expectedAiConfigIds = {
@@ -203,10 +182,22 @@ void main() {
         entities.add(entity!);
       }
       expect(entities.whereType<JournalImage>(), hasLength(9));
-      expect(entities.whereType<Task>(), hasLength(10));
-      expect(entities.whereType<Checklist>(), hasLength(2));
-      expect(entities.whereType<ChecklistItem>(), hasLength(9));
-      expect(entities.whereType<JournalEntry>(), hasLength(1));
+      // 28 penguin-world tasks + the tutorial's "Your first mission".
+      expect(entities.whereType<Task>(), hasLength(29));
+      expect(entities.whereType<Checklist>(), hasLength(8));
+      expect(entities.whereType<ChecklistItem>(), hasLength(33));
+      // 11 logged-time records + 20 observations.
+      expect(entities.whereType<JournalEntry>(), hasLength(31));
+
+      // The three categories all landed, so tasks in the new areas resolve
+      // a category (and a colour) rather than rendering uncategorized.
+      for (final id in [demoHabitatCategoryId, demoLogisticsCategoryId]) {
+        expect(
+          await world.journalDb.getCategoryById(id),
+          isNotNull,
+          reason: 'category $id missing',
+        );
+      }
 
       // Dates were rebased onto the seed clock.
       final heroTask = entities.whereType<Task>().singleWhere(
@@ -241,6 +232,28 @@ void main() {
       expect(links.single.fromId, manualOrbitalHabitatTaskId);
       expect(links.single.toId, manualHabitatTimeRecordId);
 
+      // The whole link web landed, and every stored link resolves to two
+      // entities that are actually in the database — the graph explorer
+      // walks these rows, so a dangling endpoint would be a hole in it.
+      final fixture = ManualDemoWorld.penguinLogistics(now: seedTime);
+      final storedLinks = await world.journalDb.linksForEntryIdsBidirectional(
+        {for (final link in fixture.links) link.fromId},
+      );
+      expect(storedLinks.length, greaterThanOrEqualTo(fixture.links.length));
+      final seededIds = manifest.seededJournalIds.toSet();
+      for (final link in fixture.links) {
+        expect(
+          seededIds,
+          containsAll([link.fromId, link.toId]),
+          reason: '${link.id} points outside the seeded world',
+        );
+      }
+      // The hero task's own neighbourhood is worth opening the graph for.
+      final heroLinks = await world.journalDb.linksForEntryIdsBidirectional({
+        manualOrbitalHabitatTaskId,
+      });
+      expect(heroLinks.length, greaterThanOrEqualTo(8));
+
       // Config flags: demo experience on top of the seeded defaults.
       expect(
         await world.journalDb.getConfigFlag(enableDailyOsPageFlag),
@@ -273,6 +286,43 @@ void main() {
       );
 
       // Manifest: written to disk, and lists exactly the seeded ids.
+      //
+      // The manifest is the boundary the exit sheet uses to tell fixture
+      // content from the user's own work, so it must list EVERY row the
+      // seeder wrote — checked here against the database itself, not
+      // against the fixture the manifest was built from.
+      final stored = await world.journalDb.getJournalEntities(
+        types: const [
+          'Task',
+          'JournalEntry',
+          'JournalImage',
+          'JournalAudio',
+          'Checklist',
+          'ChecklistItem',
+          'AiResponseEntry',
+          'MeasurementEntry',
+          'SurveyEntry',
+          'QuantitativeEntry',
+          'WorkoutEntry',
+          'HabitCompletionEntry',
+          'ProjectEntry',
+          'RatingEntry',
+        ],
+        starredStatuses: const [true, false],
+        privateStatuses: const [true, false],
+        flaggedStatuses: [for (final flag in EntryFlag.values) flag.index],
+        ids: null,
+        limit: 1000,
+      );
+      final expectedJournalIds = {
+        for (final entity in stored) entity.meta.id,
+      };
+      expect(
+        expectedJournalIds,
+        containsAll(expectedTutorialIds),
+        reason: 'the tutorial first mission must be part of the seeded world',
+      );
+
       final persisted = await DemoSeedManifest.read(worldRoot);
       expect(persisted, isNotNull);
       expect(persisted!.seedVersion, demoSeedVersion);

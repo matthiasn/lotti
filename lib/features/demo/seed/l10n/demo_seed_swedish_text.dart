@@ -554,4 +554,157 @@ const _copy = <String, String>{
   "Pre-launch checks": "Kontroller före uppskjutning",
   "Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.":
       "Tätningsronden klar: A–F höll 101,3 kPa över natten. Uppropet bekräftade alla 37 pingviner, inklusive den som sov i lastnätet.",
+  // Demo-world expansion: linked clusters, notes, logged time, checklists.
+  "Blocked": "Blockerad",
+  "Waiting on": "Väntar på",
+  "Research": "Efterforskning",
+  "Brief the boarding crew": "Briefa ombordstigningsteamet",
+  "Time the hatch sequence": "Ta tid på lucksekvensen",
+  "Test the intercom": "Testa intercomen",
+  "Rehearse the abort call": "Öva avbrottsordern",
+  "Vent Bay A": "Vädra sektion A",
+  "Swap cartridges A1–A4": "Byt patroner A1–A4",
+  "Log the CO2 baseline": "Notera CO2-utgångsvärdet",
+  "Return the used cartridges": "Lämna tillbaka de gamla patronerna",
+  "Check bay two": "Kolla sektion två",
+  "Check the cold ring": "Kolla kylringen",
+  "Ask the dock crew": "Fråga dockpersonalen",
+  "File a loss report": "Lämna in en förlustanmälan",
+  "Colony news": "Nytt från kolonin",
+  "Launch update": "Nytt om uppskjutningen",
+  "Chick of the month": "Månadens unge",
+  "Sardine recipe": "Sardinrecept",
+  "Pull the log exports": "Hämta loggexporterna",
+  "Flag every gap": "Markera varje lucka",
+  "Recheck freezer 3": "Kolla frys 3 igen",
+  "Sign off the audit": "Signera granskningen",
+  "Count pods on the dock": "Räkna kapslar på dockan",
+  "Match against the manifest": "Stäm av mot manifestet",
+  "Confirm the cold-chain seals": "Bekräfta kylkedjans plomberingar",
+  "Send the corrected list": "Skicka den rättade listan",
+  "Rehearsal script": "Repetitionsmanus",
+  "Scrubber swap": "Filterbyte",
+  "Pallet search": "Pallsökning",
+  "Newsletter sections": "Avsnitt i nyhetsbrevet",
+  "Freezer log audit": "Granskning av frysloggarna",
+  "Manifest checks": "Manifestkontroller",
+  "Bay A seals held 101.3 kPa all night.":
+      "Tätningarna i sektion A höll 101,3 kPa hela natten.",
+  "Cartridge order confirmed, arrives on the next shuttle.":
+      "Patronbeställningen är bekräftad, kommer med nästa färja.",
+  "Bay C is at 78% humidity, nine points up since Tuesday.":
+      "Sektion C ligger på 78 % luftfuktighet, nio punkter upp sedan tisdag.",
+  "The feeder still aims lunch at Mission Control.":
+      "Mataren siktar fortfarande lunchen mot Mission Control.",
+  "Pallet 14 is not in bay two. Checking the cold ring next.":
+      "Pall 14 finns inte i sektion två. Kollar kylringen härnäst.",
+  "Europa Krill quoted 12% below our current supplier.":
+      "Europa Krill offererade 12 % under vår nuvarande leverantör.",
+  "Customs wants the pod seal certificates before Friday.":
+      "Tullen vill ha kapslarnas tätningscertifikat före fredag.",
+  "The ice pad clears at 06:40 with a light crosswind.":
+      "Isplattan är fri från 06:40, med svag sidvind.",
+  "Rehearsal ran nine minutes long on the boarding step.":
+      "Repetitionen drog över nio minuter på ombordstigningen.",
+  "Three flight suits need a wider flipper cut.":
+      "Tre flygdräkter behöver vidare fensnitt.",
+  "The draft is done except for the launch section.":
+      "Utkastet är klart, utom uppskjutningsavsnittet.",
+  "Two volunteers dropped out of the Thursday slot.":
+      "Två frivilliga hoppade av torsdagspasset.",
+  "The colony voted for the documentary about ice.":
+      "Kolonin röstade för dokumentären om is.",
+  "One sprained flipper, so we need softer landings.":
+      "En stukad fena, så vi behöver mjukare landningar.",
+  "Tilt is four degrees off after the last burn.":
+      "Lutningen ligger fyra grader fel efter senaste bränningen.",
+  "The recycler filter was clogged with feather down.":
+      "Återvinnarens filter var igensatt av dun.",
+  "Freezer 3 logged a two-hour gap on Sunday.":
+      "Frys 3 loggade en lucka på två timmar i söndags.",
+  "The manifest says 40 pods, the dock counted 39.":
+      "Manifestet säger 40 kapslar, dockan räknade 39.",
+  "Mission Control wants fewer fish puns in the launch script.":
+      "Mission Control vill ha färre fiskvitsar i uppskjutningsmanuset.",
+  "Sir Flaps-a-Lot answered roll call from the cargo netting.":
+      "Sir Flaps-a-Lot svarade på uppropet från lastnätet.",
+  "Swapped cartridges in Bay A and B.": "Bytte patroner i sektion A och B.",
+  "Two hours chasing the humidity leak, no source yet.":
+      "Två timmar på jakt efter fuktläckan, ingen källa än.",
+  "Walked the whole cold ring looking for pallet 14.":
+      "Gick hela kylringen och letade efter pall 14.",
+  "Full rehearsal run with the boarding crew.":
+      "Full repetition med ombordstigningsteamet.",
+  "Reconciled two weeks of freezer logs.": "Stämde av två veckors frysloggar.",
+  "Wrote the colony newsletter draft.":
+      "Skrev utkastet till kolonins nyhetsbrev.",
+  "Measured the array tilt against the sun sensor.":
+      "Mätte solpanelernas lutning mot solsensorn.",
+  "Cleaned the recycler filter housing.": "Rengjorde återvinnarens filterhus.",
+  "Counted pods on the dock with the shuttle crew.":
+      "Räknade kapslar på dockan med färjans besättning.",
+  "Rewrote the launch script intro.":
+      "Skrev om inledningen till uppskjutningsmanuset.",
+  "Draft the launch comms plan":
+      "Ta fram kommunikationsplanen för uppskjutningen",
+  "Agree who announces what on launch day, and in which order.":
+      "Bestäm vem som meddelar vad på uppskjutningsdagen, och i vilken ordning.",
+  "Check the ice-pad weather window": "Kolla väderfönstret vid isplattan",
+  "Confirm the crosswind stays under limits for the launch slot.":
+      "Bekräfta att sidvinden håller sig under gränsen i uppskjutningsfönstret.",
+  "Audit the cold-chain freezer logs": "Granska kylkedjans frysloggar",
+  "Find every gap in the freezer logs before the sardines ship.":
+      "Hitta varje lucka i frysloggarna innan sardinerna skeppas.",
+  "Run the launch-day rehearsal": "Kör repetitionen inför uppskjutningsdagen",
+  "Walk the whole launch morning once, at full speed, with the crew.":
+      "Gå igenom hela uppskjutningsmorgonen en gång, i full fart, med besättningen.",
+  "Fit the penguin flight suits": "Prova ut pingvinernas flygdräkter",
+  "Measure every flyer and send the three wide-flipper suits back.":
+      "Mät varje flygare och skicka tillbaka de tre dräkterna med vida fenor.",
+  "Replace the air scrubber cartridges": "Byt patronerna i luftreningen",
+  "Swap all four cartridges in Bay A before the CO2 alarm gets bored.":
+      "Byt alla fyra patroner i sektion A innan CO2-larmet tröttnar.",
+  "Trace the humidity spike in Bay C": "Spåra fukttoppen i sektion C",
+  "Nine points in three days is a leak, not weather.":
+      "Nio punkter på tre dagar är en läcka, inte väder.",
+  "Waiting on the Bay C sensor swap": "Väntar på sensorbytet i sektion C",
+  "Resurface the habitat ice rink": "Spola om isbanan i habitatet",
+  "The colony rink has more grooves than ice. Book the resurfacer.":
+      "Kolonins isbana har fler spår än is. Boka ismaskinen.",
+  "Retune the solar array tilt": "Justera solpanelernas lutning",
+  "Four degrees of drift is costing the habitat a third of its power.":
+      "Fyra graders avvikelse kostar habitatet en tredjedel av effekten.",
+  "Service the water recycler": "Serva vattenåtervinnaren",
+  "Clean the filter housing and log the throughput afterwards.":
+      "Rengör filterhuset och logga genomströmningen efteråt.",
+  "Find the missing squid pallet": "Hitta den försvunna bläckfiskpallen",
+  "Pallet 14 left Europa and never reached the cold ring.":
+      "Pall 14 lämnade Europa och nådde aldrig kylringen.",
+  "Shortlist a second krill supplier": "Välj ut en andra krilleverantör",
+  "One supplier for the whole colony is one storm away from trouble.":
+      "En enda leverantör för hela kolonin är en storm från katastrof.",
+  "Reconcile the shuttle manifest": "Stäm av färjans lastmanifest",
+  "The manifest and the dock disagree by one pod. Find out which.":
+      "Manifestet och dockan skiljer sig åt med en kapsel. Ta reda på vilken.",
+  "Order replacement pod seals": "Beställ nya kapseltätningar",
+  "Customs will not clear a pod whose seal certificate has expired.":
+      "Tullen släpper ingen kapsel vars tätningscertifikat har gått ut.",
+  "Clear customs on Europa": "Klarera tullen på Europa",
+  "File the seal certificates and the passenger question together.":
+      "Lämna in tätningscertifikaten och passagerarfrågan tillsammans.",
+  "Europa customs is closed until Monday": "Europas tull är stängd till måndag",
+  "Write the colony newsletter": "Skriv kolonins nyhetsbrev",
+  "Four sections, one photo, and no more than one fish pun.":
+      "Fyra avsnitt, ett foto och högst en fiskvits.",
+  "Refill the chick daycare rota": "Fyll på schemat för pingvindagiset",
+  "Thursday lost two volunteers and the chicks noticed immediately.":
+      "Torsdagen tappade två frivilliga, och ungarna märkte det direkt.",
+  "Pick the film for colony night": "Välj film till kolonikvällen",
+  "The colony voted for the ice documentary. Book the dome.":
+      "Kolonin röstade för isdokumentären. Boka kupolen.",
+  "Restart the tobogganing league": "Starta om pulkaligan",
+  "Softer landings first, then a rematch against Bay C.":
+      "Mjukare landningar först, sedan returmatch mot sektion C.",
+  "Habitat Engineering": "Habitatteknik",
+  "Logistics & Supply": "Logistik och försörjning",
 };

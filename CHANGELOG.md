@@ -16,10 +16,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [1.0.2]
 ### Added
 - **Demo mode: explore Lotti in a play world before trusting it with your own.**
-  From the onboarding welcome, the tasks empty state, or Settings › Onboarding,
-  you can open the Intergalactic Penguin Logistics demo — a fully populated
-  workspace with tasks, checklists, cover art, logged time and a guided "first
-  mission" — living in its own sandbox with separate databases and no sync, so
+  The onboarding welcome now leads with it — exploring sample data is the first
+  thing offered, and connecting an AI provider is the step beside it — and you
+  can also start the demo from the tasks empty state or Settings › Onboarding.
+  The Intergalactic Penguin Logistics workspace is a real week of work: 28 tasks
+  across three areas, linked to each other and to their notes, photos, checklists
+  and logged sessions, with due dates relative to today, plus a guided "first
+  mission". It lives in its own sandbox with separate databases and no sync, so
   nothing reaches your real journal unless you copy it over. A persistent banner marks
   the demo while it is active, and you can leave at any time: exiting keeps the
   demo resumable, and the exit sheet offers to copy the tasks and entries you

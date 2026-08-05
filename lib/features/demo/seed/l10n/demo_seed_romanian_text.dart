@@ -589,4 +589,166 @@ Rulați testul distribuitorului, atașați imaginea de telemetrie, apoi solicita
   'Pre-launch checks': 'Verificări înainte de lansare',
   'Seal walk complete: A–F held at 101.3 kPa overnight. Roll call confirmed all 37 penguins, including the one asleep in the cargo netting.':
       'Turul etanșărilor finalizat: A–F au menținut 101,3 kPa peste noapte. Apelul a confirmat toți cei 37 de pinguini, inclusiv pe cel adormit în plasa de marfă.',
+  // Demo-world expansion: linked clusters, notes, logged time, checklists.
+  'Blocked': 'Blocat',
+  'Waiting on': 'În așteptare',
+  'Research': 'Documentare',
+  'Brief the boarding crew': 'Instruiți echipa de îmbarcare',
+  'Time the hatch sequence': 'Cronometrați secvența trapei',
+  'Test the intercom': 'Testați interfonul',
+  'Rehearse the abort call': 'Repetați comanda de abandon',
+  'Vent Bay A': 'Aerisiți cala A',
+  'Swap cartridges A1–A4': 'Schimbați cartușele A1–A4',
+  'Log the CO2 baseline': 'Notați valoarea de referință CO2',
+  'Return the used cartridges': 'Returnați cartușele uzate',
+  'Check bay two': 'Verificați cala doi',
+  'Check the cold ring': 'Verificați inelul frigorific',
+  'Ask the dock crew': 'Întrebați echipa de la doc',
+  'File a loss report': 'Depuneți un raport de pierdere',
+  'Colony news': 'Noutăți din colonie',
+  'Launch update': 'Noutăți despre lansare',
+  'Chick of the month': 'Puiul lunii',
+  'Sardine recipe': 'Rețetă cu sardine',
+  'Pull the log exports': 'Extrageți exporturile de jurnale',
+  'Flag every gap': 'Marcați fiecare lacună',
+  'Recheck freezer 3': 'Verificați din nou congelatorul 3',
+  'Sign off the audit': 'Semnați auditul',
+  'Count pods on the dock': 'Numărați modulele de la doc',
+  'Match against the manifest': 'Comparați cu manifestul',
+  'Confirm the cold-chain seals': 'Confirmați sigiliile lanțului frigorific',
+  'Send the corrected list': 'Trimiteți lista corectată',
+  'Rehearsal script': 'Scenariul repetiției',
+  'Scrubber swap': 'Schimbarea cartușelor',
+  'Pallet search': 'Căutarea paletului',
+  'Newsletter sections': 'Secțiunile buletinului',
+  'Freezer log audit': 'Auditul jurnalelor de congelator',
+  'Manifest checks': 'Verificări ale manifestului',
+  'Bay A seals held 101.3 kPa all night.':
+      'Etanșările calei A au menținut 101,3 kPa toată noaptea.',
+  'Cartridge order confirmed, arrives on the next shuttle.':
+      'Comanda de cartușe este confirmată, sosește cu naveta următoare.',
+  'Bay C is at 78% humidity, nine points up since Tuesday.':
+      'Cala C are 78% umiditate, cu nouă puncte mai mult decât marți.',
+  'The feeder still aims lunch at Mission Control.':
+      'Distribuitorul tot țintește prânzul spre Controlul misiunii.',
+  'Pallet 14 is not in bay two. Checking the cold ring next.':
+      'Paletul 14 nu este în cala doi. Urmează inelul frigorific.',
+  'Europa Krill quoted 12% below our current supplier.':
+      'Europa Krill a ofertat cu 12% sub furnizorul actual.',
+  'Customs wants the pod seal certificates before Friday.':
+      'Vama vrea certificatele de etanșare a modulelor înainte de vineri.',
+  'The ice pad clears at 06:40 with a light crosswind.':
+      'Pista de gheață se eliberează la 06:40, cu vânt lateral slab.',
+  'Rehearsal ran nine minutes long on the boarding step.':
+      'Repetiția a durat cu nouă minute mai mult la îmbarcare.',
+  'Three flight suits need a wider flipper cut.':
+      'Trei costume de zbor au nevoie de o croială mai largă la aripioare.',
+  'The draft is done except for the launch section.':
+      'Ciorna este gata, mai puțin secțiunea despre lansare.',
+  'Two volunteers dropped out of the Thursday slot.':
+      'Doi voluntari au renunțat la tura de joi.',
+  'The colony voted for the documentary about ice.':
+      'Colonia a votat documentarul despre gheață.',
+  'One sprained flipper, so we need softer landings.':
+      'O aripioară scrântită, deci ne trebuie aterizări mai blânde.',
+  'Tilt is four degrees off after the last burn.':
+      'Înclinarea este deviată cu patru grade după ultima aprindere.',
+  'The recycler filter was clogged with feather down.':
+      'Filtrul reciclatorului era înfundat cu puf.',
+  'Freezer 3 logged a two-hour gap on Sunday.':
+      'Congelatorul 3 a înregistrat duminică o lacună de două ore.',
+  'The manifest says 40 pods, the dock counted 39.':
+      'Manifestul spune 40 de module, la doc s-au numărat 39.',
+  'Mission Control wants fewer fish puns in the launch script.':
+      'Controlul misiunii vrea mai puține glume cu pești în scenariul lansării.',
+  'Sir Flaps-a-Lot answered roll call from the cargo netting.':
+      'Sir Flaps-a-Lot a răspuns la apel din plasa de marfă.',
+  'Swapped cartridges in Bay A and B.':
+      'Am schimbat cartușele în calele A și B.',
+  'Two hours chasing the humidity leak, no source yet.':
+      'Două ore în căutarea scurgerii de umiditate, încă fără sursă.',
+  'Walked the whole cold ring looking for pallet 14.':
+      'Am parcurs tot inelul frigorific în căutarea paletului 14.',
+  'Full rehearsal run with the boarding crew.':
+      'Repetiție completă cu echipa de îmbarcare.',
+  'Reconciled two weeks of freezer logs.':
+      'Am reconciliat două săptămâni de jurnale de congelator.',
+  'Wrote the colony newsletter draft.': 'Am scris ciorna buletinului coloniei.',
+  'Measured the array tilt against the sun sensor.':
+      'Am măsurat înclinarea panourilor față de senzorul solar.',
+  'Cleaned the recycler filter housing.':
+      'Am curățat carcasa filtrului reciclatorului.',
+  'Counted pods on the dock with the shuttle crew.':
+      'Am numărat modulele la doc împreună cu echipajul navetei.',
+  'Rewrote the launch script intro.':
+      'Am rescris introducerea scenariului de lansare.',
+  'Draft the launch comms plan':
+      'Redactați planul de comunicare pentru lansare',
+  'Agree who announces what on launch day, and in which order.':
+      'Stabiliți cine anunță ce în ziua lansării și în ce ordine.',
+  'Check the ice-pad weather window':
+      'Verificați fereastra meteo a pistei de gheață',
+  'Confirm the crosswind stays under limits for the launch slot.':
+      'Confirmați că vântul lateral rămâne sub limită în fereastra de lansare.',
+  'Audit the cold-chain freezer logs':
+      'Auditați jurnalele congelatoarelor din lanțul frigorific',
+  'Find every gap in the freezer logs before the sardines ship.':
+      'Găsiți fiecare lacună din jurnalele congelatoarelor înainte de expedierea sardinelor.',
+  'Run the launch-day rehearsal': 'Faceți repetiția zilei de lansare',
+  'Walk the whole launch morning once, at full speed, with the crew.':
+      'Parcurgeți o dată toată dimineața lansării, în timp real, cu echipajul.',
+  'Fit the penguin flight suits': 'Ajustați costumele de zbor ale pinguinilor',
+  'Measure every flyer and send the three wide-flipper suits back.':
+      'Măsurați fiecare zburător și trimiteți înapoi cele trei costume cu aripioare largi.',
+  'Replace the air scrubber cartridges':
+      'Înlocuiți cartușele epuratorului de aer',
+  'Swap all four cartridges in Bay A before the CO2 alarm gets bored.':
+      'Schimbați toate cele patru cartușe din cala A înainte să se plictisească alarma CO2.',
+  'Trace the humidity spike in Bay C':
+      'Depistați creșterea umidității în cala C',
+  'Nine points in three days is a leak, not weather.':
+      'Nouă puncte în trei zile înseamnă o scurgere, nu vremea.',
+  'Waiting on the Bay C sensor swap':
+      'În așteptarea schimbării senzorului din cala C',
+  'Resurface the habitat ice rink': 'Refaceți gheața patinoarului din habitat',
+  'The colony rink has more grooves than ice. Book the resurfacer.':
+      'Patinoarul coloniei are mai multe șanțuri decât gheață. Rezervați mașina de gheață.',
+  'Retune the solar array tilt': 'Reglați înclinarea panourilor solare',
+  'Four degrees of drift is costing the habitat a third of its power.':
+      'Patru grade de abatere costă habitatul o treime din energie.',
+  'Service the water recycler': 'Întrețineți reciclatorul de apă',
+  'Clean the filter housing and log the throughput afterwards.':
+      'Curățați carcasa filtrului și notați apoi debitul.',
+  'Find the missing squid pallet': 'Găsiți paletul de calmar dispărut',
+  'Pallet 14 left Europa and never reached the cold ring.':
+      'Paletul 14 a plecat de pe Europa și nu a ajuns niciodată la inelul frigorific.',
+  'Shortlist a second krill supplier':
+      'Preselectați un al doilea furnizor de krill',
+  'One supplier for the whole colony is one storm away from trouble.':
+      'Un singur furnizor pentru toată colonia este la o furtună distanță de probleme.',
+  'Reconcile the shuttle manifest': 'Reconciliați manifestul navetei',
+  'The manifest and the dock disagree by one pod. Find out which.':
+      'Manifestul și docul diferă cu un modul. Aflați care.',
+  'Order replacement pod seals': 'Comandați etanșări noi pentru module',
+  'Customs will not clear a pod whose seal certificate has expired.':
+      'Vama nu eliberează un modul cu certificatul de etanșare expirat.',
+  'Clear customs on Europa': 'Treceți vama pe Europa',
+  'File the seal certificates and the passenger question together.':
+      'Depuneți împreună certificatele de etanșare și întrebarea despre pasageri.',
+  'Europa customs is closed until Monday':
+      'Vama de pe Europa este închisă până luni',
+  'Write the colony newsletter': 'Scrieți buletinul coloniei',
+  'Four sections, one photo, and no more than one fish pun.':
+      'Patru secțiuni, o fotografie și cel mult o glumă cu pești.',
+  'Refill the chick daycare rota': 'Completați graficul creșei puilor',
+  'Thursday lost two volunteers and the chicks noticed immediately.':
+      'Joi au lipsit doi voluntari, iar puii au observat imediat.',
+  'Pick the film for colony night': 'Alegeți filmul pentru seara coloniei',
+  'The colony voted for the ice documentary. Book the dome.':
+      'Colonia a votat documentarul despre gheață. Rezervați cupola.',
+  'Restart the tobogganing league': 'Reluați liga de sanie',
+  'Softer landings first, then a rematch against Bay C.':
+      'Întâi aterizări mai blânde, apoi revanșa cu cala C.',
+  'Habitat Engineering': 'Ingineria habitatului',
+  'Logistics & Supply': 'Logistică și aprovizionare',
 };

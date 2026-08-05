@@ -13,6 +13,7 @@ import 'package:lotti/classes/rating_data.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/features/knowledge_graph_poc/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph_poc/state/task_graph_provider.dart';
 import 'package:lotti/get_it.dart';
@@ -667,6 +668,101 @@ void main() {
       await pumpEventQueue();
 
       verifyNever(() => db.journalEntityById(any()));
+    });
+
+    test('the seeded demo world opens as a rich neighbourhood around the '
+        'hero task, not a lonely node', () async {
+      // The demo world is what a first-run user lands in, and the task
+      // header offers the graph from every task — so the seeded fixture has
+      // to survive the real BFS with real links, not just look good in a
+      // list. Depth 2 from the hero task is exactly what the page loads.
+      final demoWorld = ManualDemoWorld.penguinLogistics(
+        now: DateTime(2026, 9, 14, 9),
+      );
+      final byId = {
+        for (final entity in demoWorld.journalEntities) entity.meta.id: entity,
+      };
+      stubEntities(byId);
+      when(() => db.linksForEntryIdsBidirectional(any())).thenAnswer((
+        invocation,
+      ) async {
+        final ids = invocation.positionalArguments.first as Set<String>;
+        return demoWorld.links
+            .where(
+              (link) => ids.contains(link.fromId) || ids.contains(link.toId),
+            )
+            .toList();
+      });
+      when(() => cache.getCategoryById(any())).thenAnswer((invocation) {
+        final id = invocation.positionalArguments.first as String;
+        return demoWorld.categories
+            .where((category) => category.id == id)
+            .firstOrNull;
+      });
+
+      final data = await makeContainer().read(
+        taskGraphProvider(manualOrbitalHabitatTaskId).future,
+      );
+
+      expect(data, isNotNull);
+      final nodes = data!.scenario.nodes;
+      expect(data.scenario.seedId, manualOrbitalHabitatTaskId);
+      expect(
+        nodes.length,
+        greaterThanOrEqualTo(30),
+        reason: 'two hops from the hero task must reach a real web',
+      );
+      expect(
+        data.scenario.edges.length,
+        greaterThanOrEqualTo(40),
+        reason: 'nodes without edges are a list, not a graph',
+      );
+
+      // The walk reaches every kind of thing the world seeds, so the graph
+      // legend and the inspector both have something to show.
+      final types = nodes.map((node) => node.type).toSet();
+      expect(
+        types,
+        containsAll(<GraphNodeType>[
+          GraphNodeType.task,
+          GraphNodeType.textEntry,
+          GraphNodeType.imageEntry,
+          GraphNodeType.checklist,
+          GraphNodeType.checklistItem,
+        ]),
+      );
+
+      // Every node is a real seeded entity, and every edge joins two nodes
+      // that are actually in the rendered scenario.
+      final nodeIds = nodes.map((node) => node.id).toSet();
+      expect(nodeIds.difference(byId.keys.toSet()), isEmpty);
+      for (final edge in data.scenario.edges) {
+        expect(nodeIds, containsAll([edge.fromId, edge.toId]));
+      }
+
+      // Area colouring: all three seeded categories are represented and
+      // resolve to a real colour, so clusters are visually separable.
+      expect(
+        data.categoryColors.keys.toSet(),
+        {
+          manualDemoCategoryId,
+          demoHabitatCategoryId,
+          demoLogisticsCategoryId,
+        },
+      );
+      expect(
+        data.categoryNames[demoLogisticsCategoryId],
+        'Logistics & Supply',
+      );
+      // The hero task's own degree in the rendered graph.
+      final heroDegree = data.scenario.edges
+          .where(
+            (edge) =>
+                edge.fromId == manualOrbitalHabitatTaskId ||
+                edge.toId == manualOrbitalHabitatTaskId,
+          )
+          .length;
+      expect(heroDegree, greaterThanOrEqualTo(8));
     });
   });
 }
