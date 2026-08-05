@@ -754,4 +754,17 @@ Proveď test krmítka, přilož obrázek telemetrie a požádej o povolení ke s
       'Nejdřív měkčí dopady, pak odveta se sekcí C.',
   'Habitat Engineering': 'Technika obydlí',
   'Logistics & Supply': 'Logistika a zásobování',
+  'Check cold-chain telemetry': 'Kontrolovat telemetrii chladicího řetězce',
+  'Scan overnight freezer readings before the first cargo handoff.':
+      'Před prvním předáním nákladu zkontroluj noční hodnoty mrazicích boxů.',
+  'Reconcile outbound cargo manifest': 'Sladit manifest odchozího nákladu',
+  'Match every pod, pallet, and penguin signature before departure.':
+      'Před odletem porovnej každý modul, paletu a podpis tučňáka.',
+  'Send the end-of-shift handoff': 'Odeslat předání na konci směny',
+  'Leave the next specialist a crisp update, including any drifting fish.':
+      'Zanech další specialistce či specialistovi stručné hlášení, včetně '
+      'všech odplouvajících ryb.',
+  'Zero-gravity flipper mobility': 'Mobilita ploutví v beztíži',
+  'Complete three gentle mobility sessions before the weekly cargo sprint.':
+      'Před týdenním nákladním sprintem absolvuj tři lehká cvičení mobility.',
 };

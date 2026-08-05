@@ -736,4 +736,22 @@ const _copy = <String, String>{
       "Prima atterraggi più morbidi, poi la rivincita contro la Baia C.",
   "Habitat Engineering": "Ingegneria dell'habitat",
   "Logistics & Supply": "Logistica e rifornimenti",
+  "Check cold-chain telemetry":
+      "Controlla la telemetria della catena del freddo",
+  "Scan overnight freezer readings before the first cargo handoff.":
+      "Controlla le letture notturne dei congelatori prima del primo "
+      "passaggio di carico.",
+  "Reconcile outbound cargo manifest":
+      "Riconcilia il manifesto del carico in uscita",
+  "Match every pod, pallet, and penguin signature before departure.":
+      "Abbina ogni capsula, pallet e firma di pinguino prima della partenza.",
+  "Send the end-of-shift handoff":
+      "Invia il passaggio di consegne di fine turno",
+  "Leave the next specialist a crisp update, including any drifting fish.":
+      "Lascia alla persona del turno successivo un aggiornamento chiaro, "
+      "compresi eventuali pesci alla deriva.",
+  "Zero-gravity flipper mobility": "Mobilità delle pinne a gravità zero",
+  "Complete three gentle mobility sessions before the weekly cargo sprint.":
+      "Completa tre sessioni leggere di mobilità prima dello sprint "
+      "logistico settimanale.",
 };

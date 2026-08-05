@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/services.dart' show AssetBundle, rootBundle;
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/app_root.dart';
@@ -37,14 +36,12 @@ class DemoModeGateway {
   DemoModeGateway({
     required this.registry,
     required this.activate,
-    AssetBundle? bundle,
     DateTime Function()? clock,
     @visibleForTesting ProfileContext? Function()? profileContext,
     @visibleForTesting DemoSeedRunner? seedRunner,
     @visibleForTesting this.prepareCopyOverride,
     @visibleForTesting this.applyCopyOverride,
-  }) : _bundle = bundle ?? rootBundle,
-       _clock = clock ?? DateTime.now,
+  }) : _clock = clock ?? DateTime.now,
        _profileContext = profileContext ?? _activeProfileContext {
     _seedRunner = seedRunner ?? _defaultSeedRunner;
   }
@@ -60,7 +57,6 @@ class DemoModeGateway {
   /// `ProfileSwitcher.switchTo`.
   final Future<void> Function(String profileId) activate;
 
-  final AssetBundle _bundle;
   final DateTime Function() _clock;
   final ProfileContext? Function() _profileContext;
   late final DemoSeedRunner _seedRunner;
@@ -83,7 +79,6 @@ class DemoModeGateway {
   Future<void> _defaultSeedRunner(WorldHandle world, Locale locale) =>
       DemoSeeder(
         world: world,
-        bundle: _bundle,
         clock: _clock,
       ).seed(locale: locale);
 

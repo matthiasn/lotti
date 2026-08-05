@@ -767,4 +767,20 @@ Lance le test du distributeur, joins l'image de télémétrie puis demande l'aut
       "D'abord des atterrissages plus doux, puis la revanche contre la baie C.",
   "Habitat Engineering": "Ingénierie de l'habitat",
   "Logistics & Supply": "Logistique et approvisionnement",
+  "Check cold-chain telemetry": "Vérifier la télémétrie de la chaîne du froid",
+  "Scan overnight freezer readings before the first cargo handoff.":
+      "Analyse les relevés nocturnes des congélateurs avant le premier "
+      "transfert de cargaison.",
+  "Reconcile outbound cargo manifest":
+      "Rapprocher le manifeste des cargaisons sortantes",
+  "Match every pod, pallet, and penguin signature before departure.":
+      "Vérifie chaque capsule, palette et signature de manchot avant le départ.",
+  "Send the end-of-shift handoff": "Envoyer la relève de fin de service",
+  "Leave the next specialist a crisp update, including any drifting fish.":
+      "Laisse à la personne suivante un point clair, y compris sur tout "
+      "poisson à la dérive.",
+  "Zero-gravity flipper mobility": "Mobilité des nageoires en apesanteur",
+  "Complete three gentle mobility sessions before the weekly cargo sprint.":
+      "Effectue trois séances de mobilité en douceur avant le sprint "
+      "logistique hebdomadaire.",
 };

@@ -1,6 +1,6 @@
 import 'dart:io';
+import 'dart:typed_data';
 
-import 'package:flutter/services.dart' show AssetBundle;
 import 'package:lotti/classes/checklist_data.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -8,11 +8,13 @@ import 'package:lotti/classes/entry_link.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
+import 'package:lotti/features/demo/media/demo_media_hydrator.dart';
 import 'package:lotti/features/demo/seed/demo_dates.dart';
 import 'package:lotti/features/demo/seed/demo_entity_factories.dart';
 import 'package:lotti/features/demo/seed/demo_ids.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
-import 'package:lotti/utils/image_utils.dart';
+import 'package:path/path.dart' as p;
 
 /// Fixed clock shared by the manual screenshot fixtures — the anchor every
 /// date in [ManualDemoWorld.penguinLogistics] is expressed against.
@@ -92,26 +94,6 @@ final String manualHeadsetWalkCoverImageId = demoUuid(
   'manual-penguin-headset-walk-cover',
 );
 
-final Map<String, String> manualDemoCoverAssets = <String, String>{
-  manualHabitatCoverImageId:
-      'assets/design_system/manual_task_cover_habitat.webp',
-  manualRollCallCoverImageId:
-      'assets/design_system/manual_task_cover_roll_call.webp',
-  manualLaunchReviewCoverImageId:
-      'assets/design_system/manual_task_cover_launch_review.webp',
-  manualLunchCoverImageId: 'assets/design_system/manual_task_cover_lunch.webp',
-  manualSardineFuturesCoverImageId:
-      'assets/design_system/manual_task_cover_sardine_futures.webp',
-  manualFishFeederCoverImageId:
-      'assets/design_system/manual_task_cover_feeder.webp',
-  manualSardineCargoCoverImageId:
-      'assets/design_system/manual_task_cover_cargo.webp',
-  manualPenguinPassengerCoverImageId:
-      'assets/design_system/manual_task_cover_legal.webp',
-  manualHeadsetWalkCoverImageId:
-      'assets/design_system/manual_task_cover_headset_walk.webp',
-};
-
 // ---------------------------------------------------------------------------
 // Expansion: the walkable world.
 //
@@ -130,11 +112,15 @@ const demoHabitatCategoryId = 'manual-habitat-engineering';
 /// real UUID.
 /// Days of habit completion history seeded before today. Comfortably beyond
 /// the habits page's own 14-day window so the chart is full at either edge.
-const _habitHistoryDays = 21;
+const _habitHistoryDays = 28;
 
 const manualRollCallHabitId = 'habit-emperor-roll-call';
 const manualHabitatSealsHabitId = 'habit-habitat-seals';
 const manualSardineForecastHabitId = 'habit-sardine-forecast';
+const demoColdChainTelemetryHabitId = 'habit-cold-chain-telemetry';
+const demoOutboundManifestHabitId = 'habit-outbound-manifest';
+const demoShiftHandoffHabitId = 'habit-shift-handoff';
+const demoFlipperMobilityHabitId = 'habit-flipper-mobility';
 
 /// Logistics & supply: everything that moves fish and parts between moons.
 const demoLogisticsCategoryId = 'manual-logistics-supply';
@@ -273,6 +259,7 @@ final List<(String, String)> _demoEntryPairs = <(String, String)>[
   (demoMovieNightTaskId, demoUuid('note-movie-vote')),
   (demoTobogganingTaskId, demoUuid('note-toboggan-injury')),
   (manualHeadsetWalkTaskId, demoUuid('note-toboggan-injury')),
+  (demoIceRinkTaskId, demoUuid('note-toboggan-injury')),
   (demoSolarArrayTaskId, demoUuid('note-solar-tilt')),
   (demoWaterRecyclerTaskId, demoUuid('note-recycler-filter')),
   (demoColdChainAuditTaskId, demoUuid('note-freezer-log')),
@@ -283,6 +270,8 @@ final List<(String, String)> _demoEntryPairs = <(String, String)>[
   (manualLaunchReviewTaskId, demoUuid('note-comms-tone')),
   (manualRollCallTaskId, demoUuid('note-roll-call-late')),
   (manualOrbitalHabitatTaskId, demoUuid('note-roll-call-late')),
+  (manualPenguinPassengerTaskId, demoUuid('note-customs-form')),
+  (manualLunchTaskId, demoUuid('note-lunch-wellness')),
   // Logged work.
   (demoAirScrubbersTaskId, demoUuid('time-scrubber-swap')),
   (demoHumiditySpikeTaskId, demoUuid('time-humidity-hunt')),
@@ -294,26 +283,6 @@ final List<(String, String)> _demoEntryPairs = <(String, String)>[
   (demoWaterRecyclerTaskId, demoUuid('time-recycler-clean')),
   (demoShuttleManifestTaskId, demoUuid('time-manifest-count')),
   (demoLaunchCommsTaskId, demoUuid('time-comms-rewrite')),
-  // Photos: the nine bundled covers, attached to the task they picture and
-  // to the expansion task that inherited the same artwork.
-  (manualOrbitalHabitatTaskId, manualHabitatCoverImageId),
-  (demoAirScrubbersTaskId, manualHabitatCoverImageId),
-  (manualRollCallTaskId, manualRollCallCoverImageId),
-  (demoChickDaycareTaskId, manualRollCallCoverImageId),
-  (manualLaunchReviewTaskId, manualLaunchReviewCoverImageId),
-  (demoLaunchRehearsalTaskId, manualLaunchReviewCoverImageId),
-  (manualLunchTaskId, manualLunchCoverImageId),
-  (demoMovieNightTaskId, manualLunchCoverImageId),
-  (manualSardineFuturesTaskId, manualSardineFuturesCoverImageId),
-  (demoKrillSupplierTaskId, manualSardineFuturesCoverImageId),
-  (manualFishFeederTaskId, manualFishFeederCoverImageId),
-  (demoWaterRecyclerTaskId, manualFishFeederCoverImageId),
-  (manualSardineCargoTaskId, manualSardineCargoCoverImageId),
-  (demoShuttleManifestTaskId, manualSardineCargoCoverImageId),
-  (manualPenguinPassengerTaskId, manualPenguinPassengerCoverImageId),
-  (demoCustomsEuropaTaskId, manualPenguinPassengerCoverImageId),
-  (manualHeadsetWalkTaskId, manualHeadsetWalkCoverImageId),
-  (demoIceRinkTaskId, manualHeadsetWalkCoverImageId),
 ];
 
 /// One deterministic, production-shaped data set reused across manual pages
@@ -328,6 +297,7 @@ class ManualDemoWorld {
     required this.category,
     required this.categories,
     required this.labels,
+    required this.images,
     required this.coverImages,
     required this.tasks,
     required this.checklists,
@@ -420,24 +390,46 @@ class ManualDemoWorld {
         private: false,
       ),
     ];
-    final coverImages = manualDemoCoverAssets.entries.map((entry) {
+    final originalCoverIds = <String>{
+      manualHabitatCoverImageId,
+      manualRollCallCoverImageId,
+      manualLaunchReviewCoverImageId,
+      manualLunchCoverImageId,
+      manualSardineFuturesCoverImageId,
+      manualFishFeederCoverImageId,
+      manualSardineCargoCoverImageId,
+      manualPenguinPassengerCoverImageId,
+      manualHeadsetWalkCoverImageId,
+    };
+    final imageAssets = demoMediaAssets
+        .where((asset) => asset.taskId != demoUuid('demo-tutorial-first-steps'))
+        .toList();
+    final images = imageAssets.map((asset) {
+      final capturedAt = originalCoverIds.contains(asset.id)
+          ? anchor
+          : dates.daysAgo(asset.capturedDaysAgo, asset.capturedHour);
+      final caption = asset.caption(t);
       return JournalImage(
         meta: Metadata(
-          id: entry.key,
-          createdAt: anchor,
-          updatedAt: anchor,
-          dateFrom: anchor,
-          dateTo: anchor,
-          categoryId: manualDemoCategoryId,
+          id: asset.id,
+          createdAt: capturedAt,
+          updatedAt: capturedAt,
+          dateFrom: capturedAt,
+          dateTo: capturedAt,
+          categoryId: asset.categoryId,
         ),
         data: ImageData(
-          capturedAt: anchor,
-          imageId: '${entry.key}-file',
-          imageFile: entry.value.split('/').last,
-          imageDirectory: '/manual_demo/',
+          capturedAt: capturedAt,
+          imageId: '${asset.id}-file',
+          imageFile: asset.fileName,
+          imageDirectory: asset.imageDirectory,
         ),
+        entryText: caption == null ? null : EntryText(plainText: caption),
       );
     }).toList();
+    final coverImages = images
+        .where((image) => originalCoverIds.contains(image.meta.id))
+        .toList();
 
     Task task({
       required String id,
@@ -1002,6 +994,17 @@ class ManualDemoWorld {
           'Sir Flatterviel meldete sich beim Appell aus dem Frachtnetz.',
         ),
       ),
+      note(
+        id: demoUuid('note-lunch-wellness'),
+        from: dates.daysAgo(1, 13),
+        text: t(
+          'Eat something recognizable as food before the robot nutritionist '
+              'files another orbital wellness incident.',
+          'Iss etwas, das als Essen erkennbar ist, bevor der '
+              'Roboter-Ernährungsberater den nächsten orbitalen '
+              'Gesundheitsvorfall meldet.',
+        ),
+      ),
     ];
 
     // Logged work: real spans on past weekdays, so time tracking has data.
@@ -1144,7 +1147,7 @@ class ManualDemoWorld {
         status: openAt('launch-comms', 9),
         priority: TaskPriority.p2Medium,
         due: dates.tomorrow(9),
-        coverArtId: null,
+        coverArtId: demoMediaCoverForTask(demoLaunchCommsTaskId).id,
         labelIds: const [manualDemoProjectLabelId],
         estimate: const Duration(minutes: 45),
         createdAt: dates.daysAgo(9),
@@ -1164,7 +1167,7 @@ class ManualDemoWorld {
         status: runningAt('ice-pad-weather', 2),
         priority: TaskPriority.p1High,
         due: dates.today(17),
-        coverArtId: null,
+        coverArtId: demoMediaCoverForTask(demoIcePadWeatherTaskId).id,
         labelIds: const [manualDemoProjectLabelId, demoResearchLabelId],
         estimate: const Duration(minutes: 30),
         createdAt: dates.daysAgo(11),
@@ -1184,7 +1187,7 @@ class ManualDemoWorld {
         status: doneAt('cold-chain-audit', 1),
         priority: TaskPriority.p2Medium,
         due: dates.inDays(2, 12),
-        coverArtId: null,
+        coverArtId: demoMediaCoverForTask(demoColdChainAuditTaskId).id,
         labelIds: const [manualDemoProjectLabelId],
         estimate: const Duration(hours: 2),
         createdAt: dates.daysAgo(30),
@@ -1201,7 +1204,7 @@ class ManualDemoWorld {
         status: groomedAt('launch-rehearsal', 4),
         priority: TaskPriority.p1High,
         due: dates.inDays(3, 9),
-        coverArtId: manualLaunchReviewCoverImageId,
+        coverArtId: demoMediaCoverForTask(demoLaunchRehearsalTaskId).id,
         labelIds: const [manualDemoProjectLabelId],
         estimate: const Duration(hours: 3),
         createdAt: dates.daysAgo(13),
@@ -1219,7 +1222,7 @@ class ManualDemoWorld {
         status: openAt('flight-suit', 12),
         priority: TaskPriority.p3Low,
         due: dates.nextMonday(9),
-        coverArtId: null,
+        coverArtId: demoMediaCoverForTask(demoFlightSuitTaskId).id,
         labelIds: const [manualDemoProjectLabelId, demoWaitingLabelId],
         estimate: const Duration(hours: 1, minutes: 30),
         createdAt: dates.daysAgo(12),
@@ -1240,7 +1243,7 @@ class ManualDemoWorld {
         status: runningAt('air-scrubbers', 2),
         priority: TaskPriority.p0Urgent,
         due: dates.today(17),
-        coverArtId: manualHabitatCoverImageId,
+        coverArtId: demoMediaCoverForTask(demoAirScrubbersTaskId).id,
         labelIds: const [manualDemoCriticalLabelId],
         estimate: const Duration(hours: 2),
         categoryId: demoHabitatCategoryId,
@@ -1269,7 +1272,7 @@ class ManualDemoWorld {
         ),
         priority: TaskPriority.p1High,
         due: dates.overdue(2),
-        coverArtId: null,
+        coverArtId: demoMediaCoverForTask(demoHumiditySpikeTaskId).id,
         labelIds: const [manualDemoCriticalLabelId, demoBlockedLabelId],
         estimate: const Duration(hours: 3),
         categoryId: demoHabitatCategoryId,
@@ -1289,7 +1292,7 @@ class ManualDemoWorld {
         status: openAt('ice-rink', 15),
         priority: TaskPriority.p3Low,
         due: dates.nextMonday(15),
-        coverArtId: manualHeadsetWalkCoverImageId,
+        coverArtId: demoMediaCoverForTask(demoIceRinkTaskId).id,
         labelIds: const [],
         estimate: const Duration(hours: 2),
         categoryId: demoHabitatCategoryId,
@@ -1310,7 +1313,7 @@ class ManualDemoWorld {
         status: groomedAt('solar-array', 6),
         priority: TaskPriority.p2Medium,
         due: dates.inDays(4, 12),
-        coverArtId: null,
+        coverArtId: demoMediaCoverForTask(demoSolarArrayTaskId).id,
         labelIds: const [demoResearchLabelId],
         estimate: const Duration(hours: 1, minutes: 30),
         categoryId: demoHabitatCategoryId,
@@ -1327,7 +1330,7 @@ class ManualDemoWorld {
         status: doneAt('water-recycler', 5),
         priority: TaskPriority.p2Medium,
         due: dates.inDays(5, 9),
-        coverArtId: manualFishFeederCoverImageId,
+        coverArtId: demoMediaCoverForTask(demoWaterRecyclerTaskId).id,
         labelIds: const [],
         estimate: const Duration(hours: 1, minutes: 30),
         categoryId: demoHabitatCategoryId,
@@ -1348,7 +1351,7 @@ class ManualDemoWorld {
         status: runningAt('squid-pallet', 5),
         priority: TaskPriority.p1High,
         due: dates.today(17),
-        coverArtId: null,
+        coverArtId: demoMediaCoverForTask(demoSquidPalletTaskId).id,
         labelIds: const [manualDemoProjectLabelId],
         estimate: const Duration(hours: 1),
         categoryId: demoLogisticsCategoryId,
@@ -1370,7 +1373,7 @@ class ManualDemoWorld {
         status: openAt('krill-supplier', 7),
         priority: TaskPriority.p2Medium,
         due: null,
-        coverArtId: manualSardineFuturesCoverImageId,
+        coverArtId: demoMediaCoverForTask(demoKrillSupplierTaskId).id,
         labelIds: const [demoResearchLabelId],
         estimate: const Duration(hours: 2),
         categoryId: demoLogisticsCategoryId,
@@ -1391,7 +1394,7 @@ class ManualDemoWorld {
         status: openAt('shuttle-manifest', 1),
         priority: TaskPriority.p2Medium,
         due: dates.tomorrow(9),
-        coverArtId: manualSardineCargoCoverImageId,
+        coverArtId: demoMediaCoverForTask(demoShuttleManifestTaskId).id,
         labelIds: const [manualDemoProjectLabelId],
         estimate: const Duration(hours: 1),
         categoryId: demoLogisticsCategoryId,
@@ -1413,7 +1416,7 @@ class ManualDemoWorld {
         status: openAt('pod-seal-order', 10),
         priority: TaskPriority.p1High,
         due: dates.overdue(5),
-        coverArtId: null,
+        coverArtId: demoMediaCoverForTask(demoPodSealOrderTaskId).id,
         labelIds: const [demoWaitingLabelId],
         estimate: const Duration(minutes: 30),
         categoryId: demoLogisticsCategoryId,
@@ -1439,7 +1442,7 @@ class ManualDemoWorld {
         ),
         priority: TaskPriority.p2Medium,
         due: dates.inDays(3, 17),
-        coverArtId: manualPenguinPassengerCoverImageId,
+        coverArtId: demoMediaCoverForTask(demoCustomsEuropaTaskId).id,
         labelIds: const [demoWaitingLabelId],
         estimate: const Duration(hours: 1),
         categoryId: demoLogisticsCategoryId,
@@ -1457,7 +1460,7 @@ class ManualDemoWorld {
         status: openAt('colony-newsletter', 4),
         priority: TaskPriority.p3Low,
         due: dates.tomorrow(9),
-        coverArtId: null,
+        coverArtId: demoMediaCoverForTask(demoColonyNewsletterTaskId).id,
         labelIds: const [],
         estimate: const Duration(hours: 1),
         createdAt: dates.daysAgo(14),
@@ -1478,7 +1481,7 @@ class ManualDemoWorld {
         status: groomedAt('chick-daycare', 16),
         priority: TaskPriority.p2Medium,
         due: dates.inDays(5, 17),
-        coverArtId: manualRollCallCoverImageId,
+        coverArtId: demoMediaCoverForTask(demoChickDaycareTaskId).id,
         labelIds: const [demoWaitingLabelId],
         estimate: const Duration(minutes: 45),
         createdAt: dates.daysAgo(16),
@@ -1497,7 +1500,7 @@ class ManualDemoWorld {
         status: openAt('movie-night', 18),
         priority: TaskPriority.p3Low,
         due: dates.nextMonday(12, plusDays: 2),
-        coverArtId: manualLunchCoverImageId,
+        coverArtId: demoMediaCoverForTask(demoMovieNightTaskId).id,
         labelIds: const [],
         estimate: const Duration(minutes: 20),
         createdAt: dates.daysAgo(18),
@@ -1513,7 +1516,7 @@ class ManualDemoWorld {
         status: groomedAt('tobogganing', 21),
         priority: TaskPriority.p3Low,
         due: null,
-        coverArtId: null,
+        coverArtId: demoMediaCoverForTask(demoTobogganingTaskId).id,
         labelIds: const [],
         estimate: const Duration(hours: 1),
         createdAt: dates.daysAgo(21),
@@ -1542,6 +1545,7 @@ class ManualDemoWorld {
       ),
       for (final (from, to) in _demoTaskPairs) link(from, to),
       for (final (from, to) in _demoEntryPairs) link(from, to),
+      for (final asset in imageAssets) link(asset.taskId, asset.id),
     ];
 
     HabitDefinition habit({
@@ -1613,6 +1617,82 @@ class ManualDemoWorld {
         categoryId: demoLogisticsCategoryId,
         active: false,
       ),
+      habit(
+        id: demoColdChainTelemetryHabitId,
+        name: t(
+          'Check cold-chain telemetry',
+          'Kühlketten-Telemetrie prüfen',
+        ),
+        description: t(
+          'Scan overnight freezer readings before the first cargo handoff.',
+          'Prüfe vor der ersten Frachtübergabe die nächtlichen '
+              'Kühlraumwerte.',
+        ),
+        categoryId: demoLogisticsCategoryId,
+        schedule: HabitSchedule.daily(
+          requiredCompletions: 1,
+          showFrom: dates.today(7),
+          alertAtTime: dates.today(7, 15),
+        ),
+        activeFrom: dates.daysAgo(_habitHistoryDays + 7),
+        priority: true,
+      ),
+      habit(
+        id: demoOutboundManifestHabitId,
+        name: t(
+          'Reconcile outbound cargo manifest',
+          'Ausgehende Frachtliste abgleichen',
+        ),
+        description: t(
+          'Match every pod, pallet, and penguin signature before departure.',
+          'Gleiche vor dem Abflug jede Kapsel, Palette und '
+              'Pinguin-Unterschrift ab.',
+        ),
+        categoryId: demoLogisticsCategoryId,
+        schedule: HabitSchedule.daily(
+          requiredCompletions: 1,
+          showFrom: dates.today(8),
+          alertAtTime: dates.today(8, 30),
+        ),
+        activeFrom: dates.daysAgo(_habitHistoryDays + 7),
+      ),
+      habit(
+        id: demoShiftHandoffHabitId,
+        name: t(
+          'Send the end-of-shift handoff',
+          'Schichtübergabe senden',
+        ),
+        description: t(
+          'Leave the next specialist a crisp update, including any drifting '
+              'fish.',
+          'Hinterlasse der nächsten Fachkraft ein klares Update, '
+              'einschließlich abdriftender Fische.',
+        ),
+        categoryId: manualDemoCategoryId,
+        schedule: HabitSchedule.daily(
+          requiredCompletions: 1,
+          showFrom: dates.today(17),
+          alertAtTime: dates.today(17, 45),
+        ),
+        activeFrom: dates.daysAgo(_habitHistoryDays + 7),
+      ),
+      habit(
+        id: demoFlipperMobilityHabitId,
+        name: t(
+          'Zero-gravity flipper mobility',
+          'Flossen-Mobilität in Schwerelosigkeit',
+        ),
+        description: t(
+          'Complete three gentle mobility sessions before the weekly cargo '
+              'sprint.',
+          'Absolviere vor dem wöchentlichen Frachtsprint drei sanfte '
+              'Mobilitätseinheiten.',
+        ),
+        categoryId: manualDemoCategoryId,
+        schedule: const HabitSchedule.weekly(requiredCompletions: 3),
+        activeFrom: dates.daysAgo(_habitHistoryDays + 7),
+        private: true,
+      ),
     ];
 
     HabitCompletionEntry completion({
@@ -1620,13 +1700,14 @@ class ManualDemoWorld {
       required int daysAgo,
       required HabitCompletionType type,
       required int hour,
+      String categoryId = manualDemoCategoryId,
     }) {
       final at = dates.daysAgo(daysAgo, hour);
       return HabitCompletionEntry(
         meta: TestMetadataFactory.create(
           id: demoUuid('habit-completion-$habitId-$daysAgo'),
           createdAt: at,
-          categoryId: manualDemoCategoryId,
+          categoryId: categoryId,
         ),
         data: HabitCompletionData(
           dateFrom: at,
@@ -1662,6 +1743,47 @@ class ManualDemoWorld {
                 : (HabitCompletionType.success),
             hour: 7,
           ),
+      for (var day = _habitHistoryDays; day >= 1; day--)
+        if (day % 7 != 0)
+          completion(
+            habitId: demoColdChainTelemetryHabitId,
+            daysAgo: day,
+            type: day == 11
+                ? HabitCompletionType.skip
+                : HabitCompletionType.success,
+            hour: 7,
+            categoryId: demoLogisticsCategoryId,
+          ),
+      for (var day = _habitHistoryDays; day >= 1; day--)
+        if (day % 4 != 0)
+          completion(
+            habitId: demoOutboundManifestHabitId,
+            daysAgo: day,
+            type: day == 13
+                ? HabitCompletionType.fail
+                : HabitCompletionType.success,
+            hour: 8,
+            categoryId: demoLogisticsCategoryId,
+          ),
+      for (var day = _habitHistoryDays; day >= 1; day--)
+        if (day % 5 != 0)
+          completion(
+            habitId: demoShiftHandoffHabitId,
+            daysAgo: day,
+            type: day == 6
+                ? HabitCompletionType.skip
+                : HabitCompletionType.success,
+            hour: 17,
+          ),
+      for (final day in const [27, 25, 22, 20, 18, 15, 13, 11, 8, 6, 4, 2])
+        completion(
+          habitId: demoFlipperMobilityHabitId,
+          daysAgo: day,
+          type: day == 13
+              ? HabitCompletionType.skip
+              : HabitCompletionType.success,
+          hour: 18,
+        ),
     ];
 
     return ManualDemoWorld._(
@@ -1694,6 +1816,7 @@ class ManualDemoWorld {
       labels: labels,
       habits: habits,
       habitCompletions: habitCompletions,
+      images: images,
       coverImages: coverImages,
       checklists: [habitatChecklist, ...expansionChecklists],
       checklistItems: [
@@ -1897,6 +2020,13 @@ class ManualDemoWorld {
   final List<CategoryDefinition> categories;
 
   final List<LabelDefinition> labels;
+
+  /// Every R2-backed image entity in the manual world. The first nine remain
+  /// separately exposed through [coverImages] for existing screenshot
+  /// composition, while seeded demo worlds write this complete collection.
+  final List<JournalImage> images;
+
+  /// The original nine manual covers, retained as a stable screenshot subset.
   final List<JournalImage> coverImages;
   final List<Task> tasks;
 
@@ -1933,7 +2063,7 @@ class ManualDemoWorld {
 
   /// Every journal entity in the world, in seeding (reference) order.
   List<JournalEntity> get journalEntities => [
-    ...coverImages,
+    ...images,
     ...checklistItems,
     ...checklists,
     ...tasks,
@@ -1971,11 +2101,11 @@ class ManualDemoWorld {
   Task taskById(String id) => tasks.singleWhere((task) => task.meta.id == id);
 
   JournalImage coverImageById(String id) =>
-      coverImages.singleWhere((image) => image.meta.id == id);
+      images.singleWhere((image) => image.meta.id == id);
 
   JournalEntity? entityById(String id) {
-    for (final coverImage in coverImages) {
-      if (id == coverImage.meta.id) return coverImage;
+    for (final image in images) {
+      if (id == image.meta.id) return image;
     }
     for (final task in tasks) {
       if (task.meta.id == id) return task;
@@ -1995,59 +2125,48 @@ class ManualDemoWorld {
     return null;
   }
 
-  /// Copies the bundled artwork into the same document-relative path used by
-  /// production cover-art widgets.
+  /// Materializes the original manual-cover subset from the same R2 catalog
+  /// used in production.
   ///
-  /// Reads asset files straight from the working directory, which is where
-  /// `flutter test` runs — production seeding uses [installMediaFromBundle]
-  /// instead, because a packaged app has no `assets/` directory on disk.
-  Future<List<File>> installMedia(Directory documentsDirectory) async {
-    final installedFiles = <File>[];
-    for (final coverImage in coverImages) {
-      final target = File(
-        getFullImagePath(
-          coverImage,
-          documentsDirectory: documentsDirectory.path,
-        ),
-      );
-      await target.parent.create(recursive: true);
-      installedFiles.add(
-        await File(
-          manualDemoCoverAssets[coverImage.meta.id]!,
-        ).copy(target.path),
-      );
+  /// This synchronous helper is only for screenshot capture, which needs the
+  /// pixels before its first frame. Production demo startup uses the
+  /// fire-and-forget [DemoMediaHydrator] registration instead. [download] is
+  /// injectable so focused fixture tests never need the network.
+  Future<List<File>> installMedia(
+    Directory documentsDirectory, {
+    Future<Uint8List> Function(Uri uri)? download,
+    List<DemoMediaAsset>? catalog,
+  }) async {
+    final coverIds = coverImages.map((image) => image.meta.id).toSet();
+    final assets =
+        catalog ??
+        demoMediaAssets.where((asset) => coverIds.contains(asset.id)).toList();
+    final hydrator = download == null
+        ? DemoMediaHydrator.network(
+            root: documentsDirectory,
+            assets: assets,
+          )
+        : DemoMediaHydrator(
+            root: documentsDirectory,
+            assets: assets,
+            download: download,
+          );
+    try {
+      final result = await hydrator.hydrate();
+      if (!result.isComplete) {
+        throw StateError('Unable to hydrate every manual demo cover');
+      }
+    } finally {
+      hydrator.dispose();
     }
-    return installedFiles;
-  }
-
-  /// Copies the bundled artwork out of [bundle] (e.g. `rootBundle`) into the
-  /// document-relative paths used by production cover-art widgets.
-  ///
-  /// The production twin of [installMedia]: the nine cover webp files ship
-  /// inside the app bundle (`assets/design_system/`), so seeding a demo world
-  /// on a device must read them through the asset bundle rather than dart:io.
-  Future<List<File>> installMediaFromBundle(
-    AssetBundle bundle,
-    Directory documentsDirectory,
-  ) async {
-    final installedFiles = <File>[];
-    for (final coverImage in coverImages) {
-      final target = File(
-        getFullImagePath(
-          coverImage,
-          documentsDirectory: documentsDirectory.path,
+    return [
+      for (final asset in assets)
+        File(
+          p.joinAll([
+            documentsDirectory.path,
+            ...asset.relativePath.split('/'),
+          ]),
         ),
-      );
-      await target.parent.create(recursive: true);
-      final data = await bundle.load(
-        manualDemoCoverAssets[coverImage.meta.id]!,
-      );
-      await target.writeAsBytes(
-        data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes),
-        flush: true,
-      );
-      installedFiles.add(target);
-    }
-    return installedFiles;
+    ];
   }
 }

@@ -705,4 +705,17 @@ const _copy = <String, String>{
       "Først blødere landinger, så en omkamp mod rum C.",
   "Habitat Engineering": "Habitatteknik",
   "Logistics & Supply": "Logistik & forsyning",
+  "Check cold-chain telemetry": "Tjek kølekædens telemetri",
+  "Scan overnight freezer readings before the first cargo handoff.":
+      "Gennemgå nattens frysermålinger før den første fragtoverdragelse.",
+  "Reconcile outbound cargo manifest": "Afstem manifestet for udgående fragt",
+  "Match every pod, pallet, and penguin signature before departure.":
+      "Match hver kapsel, palle og pingvinunderskrift før afgang.",
+  "Send the end-of-shift handoff": "Send vagtskifteoverdragelsen",
+  "Leave the next specialist a crisp update, including any drifting fish.":
+      "Giv den næste specialist en klar opdatering, inklusive eventuelle fisk "
+      "på afveje.",
+  "Zero-gravity flipper mobility": "Luffemobilitet i vægtløshed",
+  "Complete three gentle mobility sessions before the weekly cargo sprint.":
+      "Gennemfør tre rolige mobilitetspas før ugens fragtsprint.",
 };

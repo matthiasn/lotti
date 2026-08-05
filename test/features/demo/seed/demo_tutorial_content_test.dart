@@ -17,6 +17,7 @@ void main() {
       expect(content.task.data.status, isA<TaskOpen>());
       expect(content.task.data.priority, TaskPriority.p2Medium);
       expect(content.task.meta.categoryId, manualDemoCategoryId);
+      expect(content.task.data.coverArtId, content.image.meta.id);
 
       expect(content.checklist.meta.id, demoTutorialChecklistId);
       expect(content.checklist.data.title, 'Learn the ropes');
@@ -55,10 +56,21 @@ void main() {
       for (final item in content.checklistItems) {
         expect(item.data.linkedChecklists, [demoTutorialChecklistId]);
       }
-      // Seed-write order: items first, then the checklist, then the task.
+      expect(content.images, hasLength(3));
+      expect(content.links, hasLength(content.images.length));
+      expect(
+        content.links.map((link) => link.fromId),
+        everyElement(demoTutorialTaskId),
+      );
+      expect(
+        content.links.map((link) => link.toId).toSet(),
+        content.images.map((image) => image.meta.id).toSet(),
+      );
+      // Seed-write order: image and items first, then checklist and task.
       expect(
         content.journalEntities.map((entity) => entity.meta.id).toList(),
         [
+          for (final image in content.images) image.meta.id,
           for (final item in content.checklistItems) item.meta.id,
           demoTutorialChecklistId,
           demoTutorialTaskId,

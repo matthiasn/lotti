@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.4]
+### Added
+- **The demo is now a whole absurd penguin logistics world.** Its 29 tasks each
+  have unique cover art, multiple attached operational photos or artifacts,
+  and lived-in notes, checklists, or logged work. Six active space-logistics
+  habits carry four weeks of imperfect history. All 91 images stream from a
+  checksummed Cloudflare R2 catalog in the background, so slow or unavailable
+  networking never blocks seeding or opening the demo and incomplete downloads
+  retry on the next startup.
+
 ### Changed
 - **The task knowledge graph is now a readable local workspace.** Instead of
   presenting the whole topology as a field of mostly anonymous dots, it shows a

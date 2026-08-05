@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -30,16 +29,6 @@ import 'package:mocktail/mocktail.dart';
 import '../../../helpers/entity_factories.dart';
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
-
-/// Serves the repo's real asset files from disk, standing in for
-/// `rootBundle` (tests run with the repository root as working directory).
-class _FileSystemAssetBundle extends CachingAssetBundle {
-  @override
-  Future<ByteData> load(String key) async {
-    final bytes = await File(key).readAsBytes();
-    return ByteData.sublistView(bytes);
-  }
-}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -785,7 +774,6 @@ void main() {
         registry: registry,
         activate: (id) async => activated.add(id),
         profileContext: () => activeContext,
-        bundle: _FileSystemAssetBundle(),
         clock: () => DateTime(2026, 8, 5, 10),
       );
 

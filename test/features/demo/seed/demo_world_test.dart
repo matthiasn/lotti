@@ -1,12 +1,14 @@
 import 'dart:io';
+import 'dart:typed_data';
 import 'dart:ui' show Locale;
 
+import 'package:crypto/crypto.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
-import 'package:lotti/utils/image_utils.dart';
 import 'package:lotti/utils/uuid.dart';
 
 /// The nine tasks the manual quotes by name and the screenshot suites resolve
@@ -339,6 +341,67 @@ void main() {
       );
     });
 
+    test('every task owns a distinct cover that is also linked as a photo', () {
+      final world = ManualDemoWorld.penguinLogistics();
+      final imagesById = {
+        for (final image in world.images) image.meta.id: image,
+      };
+      final linkedPairs = {
+        for (final link in world.links) (link.fromId, link.toId),
+      };
+
+      expect(world.images, hasLength(88));
+      expect(
+        world.tasks.map((task) => task.data.coverArtId).toSet(),
+        hasLength(world.tasks.length),
+      );
+      for (final task in world.tasks) {
+        final coverId = task.data.coverArtId;
+        expect(coverId, isNotNull, reason: '${task.data.title} has no cover');
+        expect(imagesById, contains(coverId));
+        expect(
+          linkedPairs,
+          contains((task.meta.id, coverId)),
+          reason: '${task.data.title} does not expose its cover as a photo',
+        );
+        final attachedImages = world.images.where(
+          (image) => linkedPairs.contains((task.meta.id, image.meta.id)),
+        );
+        expect(
+          attachedImages.length,
+          greaterThanOrEqualTo(3),
+          reason: '${task.data.title} needs a cover plus two attachments',
+        );
+      }
+    });
+
+    test('every task has non-image activity beyond its task relationships', () {
+      final world = ManualDemoWorld.penguinLogistics();
+      final taskIds = world.tasks.map((task) => task.meta.id).toSet();
+      final imageIds = world.images.map((image) => image.meta.id).toSet();
+
+      for (final task in world.tasks) {
+        final activityIds = <String>{...?task.data.checklistIds};
+        for (final link in world.links) {
+          final otherId = switch ((link.fromId, link.toId)) {
+            (final from, final to) when from == task.meta.id => to,
+            (final from, final to) when to == task.meta.id => from,
+            _ => null,
+          };
+          if (otherId != null &&
+              !taskIds.contains(otherId) &&
+              !imageIds.contains(otherId)) {
+            activityIds.add(otherId);
+          }
+        }
+        expect(
+          activityIds,
+          isNotEmpty,
+          reason: '${task.data.title} has no note, logged work, or checklist',
+        );
+      }
+    });
+
     test('due dates are semantic: they follow the injected clock, and the '
         'expansion fills the intended buckets', () {
       // A Monday at 23:40 — the "next Monday" bucket is then a full week
@@ -447,7 +510,7 @@ void main() {
       final now = DateTime(2026, 9, 16, 10);
       final world = ManualDemoWorld.penguinLogistics(now: now);
 
-      expect(world.entries, hasLength(20));
+      expect(world.entries, hasLength(21));
       final ages = <int>[];
       for (final entry in world.entries) {
         final text = entry.entryText!.plainText;
@@ -544,6 +607,10 @@ void main() {
           manualRollCallHabitId,
           manualHabitatSealsHabitId,
           manualSardineForecastHabitId,
+          demoColdChainTelemetryHabitId,
+          demoOutboundManifestHabitId,
+          demoShiftHandoffHabitId,
+          demoFlipperMobilityHabitId,
         ],
       );
 
@@ -562,7 +629,14 @@ void main() {
       }
       expect(
         byHabit.keys.toSet(),
-        {manualRollCallHabitId, manualHabitatSealsHabitId},
+        {
+          manualRollCallHabitId,
+          manualHabitatSealsHabitId,
+          demoColdChainTelemetryHabitId,
+          demoOutboundManifestHabitId,
+          demoShiftHandoffHabitId,
+          demoFlipperMobilityHabitId,
+        },
         reason: 'a retired habit must not accrue completions',
       );
 
@@ -577,7 +651,7 @@ void main() {
         );
         expect(
           midnight.difference(completion.data.dateFrom).inDays,
-          lessThanOrEqualTo(21),
+          lessThanOrEqualTo(28),
           reason: 'history beyond the seeded window is unreachable',
         );
         expect(isUuid(completion.meta.id), isTrue);
@@ -602,32 +676,40 @@ void main() {
       expect(types, contains(HabitCompletionType.fail));
     });
 
-    test('installMedia copies every bundled cover into the document-relative '
-        'path production cover-art widgets resolve', () async {
-      final documents = Directory.systemTemp.createTempSync('lotti_world_');
-      addTearDown(() => documents.delete(recursive: true));
-      final world = ManualDemoWorld.penguinLogistics();
-
-      final installed = await world.installMedia(documents);
-
-      expect(installed, hasLength(world.coverImages.length));
-      for (final coverImage in world.coverImages) {
-        final target = File(
-          getFullImagePath(
-            coverImage,
-            documentsDirectory: documents.path,
-          ),
+    test(
+      'installMedia hydrates catalog bytes into the production path',
+      () async {
+        final documents = Directory.systemTemp.createTempSync('lotti_world_');
+        addTearDown(() => documents.delete(recursive: true));
+        final world = ManualDemoWorld.penguinLogistics();
+        final bytes = Uint8List.fromList([12, 34, 56, 78]);
+        final asset = DemoMediaAsset(
+          id: 'test-image-id',
+          fileName: 'manual-test.webp',
+          sha256: sha256.convert(bytes).toString(),
+          taskId: 'test-task-id',
+          categoryId: 'test-category-id',
+          capturedDaysAgo: 0,
+          capturedHour: 10,
+          isCover: true,
         );
+
+        final installed = await world.installMedia(
+          documents,
+          catalog: [asset],
+          download: (uri) async {
+            expect(uri, asset.uri);
+            return bytes;
+          },
+        );
+
+        expect(installed, hasLength(1));
+        expect(await installed.single.readAsBytes(), bytes);
         expect(
-          target.existsSync(),
-          isTrue,
-          reason: '${coverImage.meta.id} must land at the production path',
+          installed.single.path,
+          endsWith(asset.relativePath.replaceAll('/', Platform.pathSeparator)),
         );
-        // Byte identity with the repo asset, so the demo world shows the
-        // exact artwork the manual documents.
-        final asset = File(manualDemoCoverAssets[coverImage.meta.id]!);
-        expect(target.lengthSync(), asset.lengthSync());
-      }
-    });
+      },
+    );
   });
 }

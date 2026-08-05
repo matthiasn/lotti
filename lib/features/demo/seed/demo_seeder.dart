@@ -1,6 +1,5 @@
 import 'dart:ui' show Locale;
 
-import 'package:flutter/services.dart' show AssetBundle;
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
@@ -29,16 +28,11 @@ import 'package:lotti/utils/consts.dart';
 class DemoSeeder {
   DemoSeeder({
     required this.world,
-    required this.bundle,
     DateTime Function()? clock,
   }) : clock = clock ?? DateTime.now;
 
   /// Storage handles of the (not yet active) demo world.
   final WorldHandle world;
-
-  /// Asset bundle carrying the nine cover-art webp files (production passes
-  /// `rootBundle`).
-  final AssetBundle bundle;
 
   /// Source of "now" for the world's semantic dates (due today, overdue by
   /// two days, logged last Tuesday) and for the manifest timestamp. Injected
@@ -81,9 +75,6 @@ class DemoSeeder {
       await world.writeAiConfig(config);
     }
 
-    // Media bytes before the image entities that reference them.
-    await penguinWorld.installMediaFromBundle(bundle, world.root);
-
     // Journal entities in reference order: images, checklist items, the
     // checklists that list them, the tasks that own those checklists, then
     // the time records and notes. The fixture's checklist and task wiring is
@@ -98,7 +89,7 @@ class DemoSeeder {
 
     // Links last: both endpoints must exist before a `linked_entries` row
     // referencing them is written.
-    for (final entryLink in penguinWorld.links) {
+    for (final entryLink in [...penguinWorld.links, ...tutorial.links]) {
       await world.writeEntryLink(entryLink);
     }
 
@@ -133,7 +124,7 @@ class DemoSeeder {
   /// tooltips and the habits page on; sync, notifications, geolocation and the
   /// dashboards page off.
   ///
-  /// Habits are on because the world seeds three of them with three weeks of
+  /// Habits are on because the world seeds a lived-in collection with
   /// completion history — the page has something to show, and hiding it would
   /// leave that data unreachable.
   Future<void> _configureFlags() async {

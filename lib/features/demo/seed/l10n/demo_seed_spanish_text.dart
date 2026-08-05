@@ -806,4 +806,20 @@ Ejecuta la prueba del alimentador, adjunta la imagen de telemetría y luego soli
       'Primero aterrizajes más suaves, luego la revancha contra la bahía C.',
   'Habitat Engineering': 'Ingeniería del hábitat',
   'Logistics & Supply': 'Logística y suministros',
+  'Check cold-chain telemetry': 'Revisar la telemetría de la cadena de frío',
+  'Scan overnight freezer readings before the first cargo handoff.':
+      'Revisa las lecturas nocturnas de los congeladores antes de la primera '
+      'entrega de carga.',
+  'Reconcile outbound cargo manifest':
+      'Conciliar el manifiesto de carga saliente',
+  'Match every pod, pallet, and penguin signature before departure.':
+      'Comprueba cada cápsula, palé y firma de pingüino antes de la salida.',
+  'Send the end-of-shift handoff': 'Enviar el relevo de fin de turno',
+  'Leave the next specialist a crisp update, including any drifting fish.':
+      'Deja a la siguiente persona una actualización clara, incluidos los '
+      'peces que estén a la deriva.',
+  'Zero-gravity flipper mobility': 'Movilidad de aletas en gravedad cero',
+  'Complete three gentle mobility sessions before the weekly cargo sprint.':
+      'Completa tres sesiones suaves de movilidad antes del sprint logístico '
+      'semanal.',
 };
