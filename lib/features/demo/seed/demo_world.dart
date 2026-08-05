@@ -123,6 +123,19 @@ final Map<String, String> manualDemoCoverAssets = <String, String>{
 /// Habitat engineering: the pressure/air/water/power side of the colony.
 const demoHabitatCategoryId = 'manual-habitat-engineering';
 
+/// Habit definition ids. Plain slugs rather than [demoUuid] values, like the
+/// category and label ids beside them: habits are reached through
+/// `/settings/habits/by_id/:habitId`, and settings routes carry no `isUuid`
+/// gate. Only journal entities — including the completions below — need a
+/// real UUID.
+/// Days of habit completion history seeded before today. Comfortably beyond
+/// the habits page's own 14-day window so the chart is full at either edge.
+const _habitHistoryDays = 21;
+
+const manualRollCallHabitId = 'habit-emperor-roll-call';
+const manualHabitatSealsHabitId = 'habit-habitat-seals';
+const manualSardineForecastHabitId = 'habit-sardine-forecast';
+
 /// Logistics & supply: everything that moves fish and parts between moons.
 const demoLogisticsCategoryId = 'manual-logistics-supply';
 
@@ -322,6 +335,8 @@ class ManualDemoWorld {
     required this.timeRecords,
     required this.entries,
     required this.links,
+    required this.habits,
+    required this.habitCompletions,
   });
 
   /// Builds the Intergalactic Penguin Logistics world.
@@ -1529,6 +1544,126 @@ class ManualDemoWorld {
       for (final (from, to) in _demoEntryPairs) link(from, to),
     ];
 
+    HabitDefinition habit({
+      required String id,
+      required String name,
+      required String description,
+      String? categoryId,
+      HabitSchedule? schedule,
+      DateTime? activeFrom,
+      bool priority = false,
+      bool private = false,
+      bool active = true,
+    }) => HabitDefinition(
+      id: id,
+      name: name,
+      description: description,
+      createdAt: anchor,
+      updatedAt: anchor,
+      vectorClock: null,
+      habitSchedule:
+          schedule ?? const HabitSchedule.daily(requiredCompletions: 1),
+      activeFrom: activeFrom,
+      active: active,
+      private: private,
+      priority: priority,
+      categoryId: categoryId,
+    );
+
+    final habits = <HabitDefinition>[
+      habit(
+        id: manualRollCallHabitId,
+        name: t('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
+        description: t(
+          'Account for all 37 expedition penguins before launch.',
+          'Vor dem Start alle 37 Expeditionspinguine erfassen.',
+        ),
+        categoryId: manualDemoCategoryId,
+        schedule: HabitSchedule.daily(
+          requiredCompletions: 1,
+          showFrom: dates.today(6),
+          alertAtTime: dates.today(6, 30),
+        ),
+        // Well before the completion history below, so the habit does not
+        // look like it started mid-streak.
+        activeFrom: dates.daysAgo(_habitHistoryDays + 7),
+        priority: true,
+      ),
+      habit(
+        id: manualHabitatSealsHabitId,
+        name: t('Walk the habitat seals', 'Habitatdichtungen ablaufen'),
+        description: t(
+          'Inspect every pressure seal after the artificial sunrise.',
+          'Nach dem künstlichen Sonnenaufgang jede Druckdichtung inspizieren.',
+        ),
+        categoryId: manualDemoCategoryId,
+        activeFrom: dates.daysAgo(_habitHistoryDays + 7),
+        private: true,
+      ),
+      // Retired on purpose: the habits page has a distinct treatment for an
+      // inactive habit, and a world where every habit is live never shows
+      // it. It carries no completions for the same reason.
+      habit(
+        id: manualSardineForecastHabitId,
+        name: t('Review sardine forecast', 'Sardinenprognose prüfen'),
+        description: t(
+          'Paused while the Europa exchange recalibrates its fish index.',
+          'Pausiert, während die Europa-Börse ihren Fischindex neu kalibriert.',
+        ),
+        categoryId: demoLogisticsCategoryId,
+        active: false,
+      ),
+    ];
+
+    HabitCompletionEntry completion({
+      required String habitId,
+      required int daysAgo,
+      required HabitCompletionType type,
+      required int hour,
+    }) {
+      final at = dates.daysAgo(daysAgo, hour);
+      return HabitCompletionEntry(
+        meta: TestMetadataFactory.create(
+          id: demoUuid('habit-completion-$habitId-$daysAgo'),
+          createdAt: at,
+          categoryId: manualDemoCategoryId,
+        ),
+        data: HabitCompletionData(
+          dateFrom: at,
+          dateTo: at,
+          habitId: habitId,
+          completionType: type,
+        ),
+      );
+    }
+
+    // A history that reads as lived-in rather than perfect: the roll call is
+    // near-unbroken with one skipped day, the seal walk is patchier and has
+    // a genuine failure. Both stop short of today, so the demo opens with
+    // something the user can actually tick off.
+    final habitCompletions = <HabitCompletionEntry>[
+      for (var day = _habitHistoryDays; day >= 1; day--)
+        if (day != 5)
+          completion(
+            habitId: manualRollCallHabitId,
+            daysAgo: day,
+            type: day == 9
+                ? HabitCompletionType.skip
+                : (HabitCompletionType.success),
+            hour: 6,
+          ),
+      for (var day = _habitHistoryDays; day >= 1; day--)
+        if (day % 3 != 0)
+          completion(
+            habitId: manualHabitatSealsHabitId,
+            daysAgo: day,
+            type: day == 4
+                ? HabitCompletionType.fail
+                : (HabitCompletionType.success),
+            hour: 7,
+          ),
+    ];
+
     return ManualDemoWorld._(
       category: category,
       categories: [
@@ -1557,6 +1692,8 @@ class ManualDemoWorld {
         ),
       ],
       labels: labels,
+      habits: habits,
+      habitCompletions: habitCompletions,
       coverImages: coverImages,
       checklists: [habitatChecklist, ...expansionChecklists],
       checklistItems: [
@@ -1779,6 +1916,16 @@ class ManualDemoWorld {
   /// knowledge graph around it, actually has to show.
   final List<JournalEntry> entries;
 
+  /// Expedition habits: two live daily habits under Penguin Operations and
+  /// one retired habit, so the habits page has an inactive row to render as
+  /// well as active ones.
+  final List<HabitDefinition> habits;
+
+  /// Completion history for the live habits, ending yesterday. The habits
+  /// page reads a 14-day window, so [_habitHistoryDays] covers it with room
+  /// left for the streak counts to be real.
+  final List<HabitCompletionEntry> habitCompletions;
+
   /// Every `linked_entries` row in the world: task↔task, task↔note,
   /// task↔logged time and task↔photo. Written by the seeder after the
   /// entities themselves, since both endpoints must already exist.
@@ -1792,6 +1939,7 @@ class ManualDemoWorld {
     ...tasks,
     ...timeRecords,
     ...entries,
+    ...habitCompletions,
   ];
 
   Task get orbitalHabitatTask => taskById(manualOrbitalHabitatTaskId);

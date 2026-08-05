@@ -118,6 +118,9 @@ void main() {
     demoBlockedLabelId,
     demoWaitingLabelId,
     demoResearchLabelId,
+    manualRollCallHabitId,
+    manualHabitatSealsHabitId,
+    manualSardineForecastHabitId,
   };
 
   const expectedAiConfigIds = {
@@ -260,11 +263,16 @@ void main() {
         isTrue,
       );
       expect(await world.journalDb.getConfigFlag(enableTooltipFlag), isTrue);
+      // On, because the world seeds habits with completion history — the
+      // page would otherwise hide data the seed just wrote.
+      expect(
+        await world.journalDb.getConfigFlag(enableHabitsPageFlag),
+        isTrue,
+      );
       for (final flag in [
         enableMatrixFlag,
         enableNotificationsFlag,
         recordLocationFlag,
-        enableHabitsPageFlag,
         enableDashboardsPageFlag,
       ]) {
         expect(

@@ -118,12 +118,21 @@ stateDiagram-v2
 ```
 
 The seeder writes exclusively through the `WorldHandle` — never through
-getIt or `PersistenceLogic` — in dependency order: categories + labels, AI
-configs (providers → models → profiles → skills), media bytes from the asset
-bundle, journal entities in reference order, then every `linked_entries` row
-(links last, because both endpoints must already exist), config
-flags (Daily OS and tooltips on; sync, notifications, geolocation, habits,
-dashboards off), and FTUE suppression in the demo's own `settings.sqlite`.
+getIt or `PersistenceLogic` — in dependency order: categories + labels +
+habits, AI configs (providers → models → profiles → skills), media bytes from
+the asset bundle, journal entities in reference order (habit completions among
+them, which is why the habit definitions precede them), then every
+`linked_entries` row (links last, because both endpoints must already exist),
+config flags (Daily OS, tooltips and the habits page on; sync, notifications,
+geolocation and dashboards off), and FTUE suppression in the demo's own
+`settings.sqlite`.
+
+The habits page is on because the world carries three habits — two live daily
+ones under Penguin Operations and one retired — with three weeks of completion
+history ending *yesterday*, so the demo opens with a real streak and something
+still to tick off. The history is deliberately imperfect: it contains a skipped
+day and a failure, because a page of unbroken green teaches nothing about what
+the states look like.
 Everything arrives with `vectorClock: null` — a guest world has no sync
 stack to stamp one.
 

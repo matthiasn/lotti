@@ -236,8 +236,11 @@ HabitDefinition _habit({
   categoryId: categoryId,
 );
 
+// Ids (and copy) come from the shared penguin world, which owns these three
+// habits and seeds them into the demo. The composition here stays local: the
+// settings pages need categories the demo world deliberately does not have.
 final HabitDefinition _rollCall = _habit(
-  id: 'habit-emperor-roll-call',
+  id: manualRollCallHabitId,
   name: _t('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
   description: _t(
     'Account for all 37 expedition penguins before launch.',
@@ -253,7 +256,7 @@ final HabitDefinition _rollCall = _habit(
   priority: true,
 );
 final HabitDefinition _habitatSealWalk = _habit(
-  id: 'habit-habitat-seals',
+  id: manualHabitatSealsHabitId,
   name: _t('Walk the habitat seals', 'Habitatdichtungen ablaufen'),
   description: _t(
     'Inspect every pressure seal after the artificial sunrise.',
@@ -263,7 +266,7 @@ final HabitDefinition _habitatSealWalk = _habit(
   private: true,
 );
 final HabitDefinition _sardineForecast = _habit(
-  id: 'habit-sardine-forecast',
+  id: manualSardineForecastHabitId,
   name: _t('Review sardine forecast', 'Sardinenprognose prüfen'),
   description: _t(
     'Paused while the Europa exchange recalibrates its fish index.',
