@@ -11,7 +11,7 @@ sources:
   - id: eval
     resource: ../../../test/features/daily_os_next/eval
     title: Day-planning eval framework and live runner
-    last_modified: 2026-07-28
+    last_modified: 2026-08-05
   - id: integration
     resource: ../../../test/features/daily_os_next/integration
     title: Full durable multi-agent integration fixtures
@@ -58,6 +58,24 @@ credit it did nothing to earn.
 Likewise, a constraint that reads the plan is **inapplicable when no plan was
 persisted** — an empty block list would otherwise read as "no overlaps, nothing
 fabricated, every omission honoured" and hand a failed run a clean sweep.
+
+## Constraint code ownership
+
+`framework/eval_constraints.dart` owns the public ids, signal metadata, and
+`scoreAll` registry. Its private implementation is split into library parts that
+match the scoring responsibility rather than one monolith:
+
+- `eval_constraints_schedule.dart` — block structure, placement, dependency,
+  visibility, omission, and working-hours constraints;
+- `eval_constraints_estimates.dart` — estimate fidelity, effective capacity,
+  and audited partial-placement evidence;
+- `eval_constraints_trade.dart` — conflict surfacing and task-bound trade
+  disclosure;
+- `eval_constraints_content.dart` — required/invented/typed work, directives,
+  calendar claims, rejection compliance, and shared plan helpers.
+
+The five `*_test.dart` files mirror those source files. Their deterministic plan
+builders live in `eval_constraints_test_helpers.dart`, which has no `main()`.
 
 ## Three load-bearing semantics
 
