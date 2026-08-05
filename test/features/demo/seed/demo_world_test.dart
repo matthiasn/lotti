@@ -2,6 +2,8 @@ import 'dart:io';
 import 'dart:ui' show Locale;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
 import 'package:lotti/features/demo/seed/demo_world.dart';
 import 'package:lotti/utils/image_utils.dart';
@@ -529,6 +531,75 @@ void main() {
         world.penguinPassengerTask,
         same(world.taskById(manualPenguinPassengerTaskId)),
       );
+    });
+
+    test('habits carry a lived-in completion history that stops before '
+        'today, and the retired habit carries none', () {
+      final now = DateTime(2026, 9, 14, 8);
+      final world = ManualDemoWorld.penguinLogistics(now: now);
+
+      expect(
+        world.habits.map((habit) => habit.id),
+        [
+          manualRollCallHabitId,
+          manualHabitatSealsHabitId,
+          manualSardineForecastHabitId,
+        ],
+      );
+
+      final retired = world.habits.singleWhere(
+        (habit) => habit.id == manualSardineForecastHabitId,
+      );
+      expect(
+        retired.active,
+        isFalse,
+        reason: 'the habits page needs an inactive row to render',
+      );
+
+      final byHabit = <String, List<HabitCompletionEntry>>{};
+      for (final completion in world.habitCompletions) {
+        byHabit.putIfAbsent(completion.data.habitId, () => []).add(completion);
+      }
+      expect(
+        byHabit.keys.toSet(),
+        {manualRollCallHabitId, manualHabitatSealsHabitId},
+        reason: 'a retired habit must not accrue completions',
+      );
+
+      final midnight = DateTime(now.year, now.month, now.day);
+      for (final completion in world.habitCompletions) {
+        expect(
+          completion.data.dateFrom.isBefore(midnight),
+          isTrue,
+          reason:
+              '${completion.meta.id} lands on or after today — the demo '
+              'must open with something left to tick off',
+        );
+        expect(
+          midnight.difference(completion.data.dateFrom).inDays,
+          lessThanOrEqualTo(21),
+          reason: 'history beyond the seeded window is unreachable',
+        );
+        expect(isUuid(completion.meta.id), isTrue);
+      }
+
+      // Every habit is active well before its own history starts, so no
+      // streak begins on the day the habit appeared.
+      for (final habit in world.habits.where((h) => h.activeFrom != null)) {
+        final earliest = byHabit[habit.id]
+            ?.map((c) => c.data.dateFrom)
+            .reduce((a, b) => a.isBefore(b) ? a : b);
+        if (earliest == null) continue;
+        expect(habit.activeFrom!.isBefore(earliest), isTrue);
+      }
+
+      // Not a perfect record: the page has to show a skip and a failure.
+      final types = world.habitCompletions
+          .map((completion) => completion.data.completionType)
+          .toSet();
+      expect(types, contains(HabitCompletionType.success));
+      expect(types, contains(HabitCompletionType.skip));
+      expect(types, contains(HabitCompletionType.fail));
     });
 
     test('installMedia copies every bundled cover into the document-relative '

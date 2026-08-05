@@ -63,6 +63,11 @@ class DemoSeeder {
     for (final label in penguinWorld.labels) {
       await world.writeEntityDefinition(label);
     }
+    // Habits before their completion entries, which are journal entities
+    // written in the block below and reference these ids.
+    for (final habit in penguinWorld.habits) {
+      await world.writeEntityDefinition(habit);
+    }
 
     // AI configs in dependency order: providers → models → profiles →
     // skills.
@@ -114,6 +119,7 @@ class DemoSeeder {
       seededDefinitionIds: List.unmodifiable([
         for (final category in penguinWorld.categories) category.id,
         for (final label in penguinWorld.labels) label.id,
+        for (final habit in penguinWorld.habits) habit.id,
       ]),
       seededAiConfigIds: List.unmodifiable([
         for (final config in aiConfigs) config.id,
@@ -123,9 +129,13 @@ class DemoSeeder {
     return manifest;
   }
 
-  /// Seeds the default flag rows, then adjusts the demo experience: Daily OS
-  /// and tooltips on; sync, notifications, geolocation, and the legacy
-  /// habits/dashboards pages off.
+  /// Seeds the default flag rows, then adjusts the demo experience: Daily OS,
+  /// tooltips and the habits page on; sync, notifications, geolocation and the
+  /// dashboards page off.
+  ///
+  /// Habits are on because the world seeds three of them with three weeks of
+  /// completion history — the page has something to show, and hiding it would
+  /// leave that data unreachable.
   Future<void> _configureFlags() async {
     await initConfigFlags(world.journalDb, inMemoryDatabase: false);
     const statuses = <String, bool>{
@@ -134,7 +144,7 @@ class DemoSeeder {
       enableMatrixFlag: false,
       enableNotificationsFlag: false,
       recordLocationFlag: false,
-      enableHabitsPageFlag: false,
+      enableHabitsPageFlag: true,
       enableDashboardsPageFlag: false,
     };
     for (final entry in statuses.entries) {
