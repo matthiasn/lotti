@@ -5921,6 +5921,30 @@ abstract class AppLocalizations {
   /// **'{count, plural, one{{count} word} other{{count} words}}'**
   String conflictWordCount(int count);
 
+  /// No description provided for @contactUsDiscordLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Discord'**
+  String get contactUsDiscordLabel;
+
+  /// No description provided for @contactUsEmailSubject.
+  ///
+  /// In en, this message translates to:
+  /// **'Lotti feedback'**
+  String get contactUsEmailSubject;
+
+  /// No description provided for @contactUsGithubLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'GitHub'**
+  String get contactUsGithubLabel;
+
+  /// No description provided for @contactUsLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Contact Us'**
+  String get contactUsLabel;
+
   /// No description provided for @copyAsMarkdown.
   ///
   /// In en, this message translates to:

@@ -1615,6 +1615,10 @@
       }
     }
   },
+  "contactUsDiscordLabel": "Discord",
+  "contactUsEmailSubject": "Lotti-Feedback",
+  "contactUsGithubLabel": "GitHub",
+  "contactUsLabel": "Kontaktiere uns",
   "copyAsMarkdown": "Als Markdown kopieren",
   "copyAsText": "Als Text kopieren",
   "correctionExampleCancel": "Abbrechen",

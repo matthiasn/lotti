@@ -1,6 +1,7 @@
 import 'dart:async' show FutureOr;
 import 'dart:ui' show Locale;
 
+import 'package:flutter/widgets.dart' show WidgetsBinding;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/get_it.dart';
@@ -90,6 +91,28 @@ Future<void> openManualInBrowser({
     mode: LaunchMode.externalApplication,
   );
 }
+
+/// Resolves the Manual URL from the platform locale and the user's override.
+///
+/// Every in-app surface that links to the Manual — the Settings tree row and
+/// the Contact Us footer — resolves the target through here. Resolving it once
+/// is what stops one of them drifting onto a different locale than the other
+/// after a language override is set. Resolution is kept separate from opening
+/// so a caller that wants its own launch behaviour (the Contact Us footer
+/// guards against a platform with no handler) does not have to duplicate it.
+///
+/// Resolves the Manual root. A caller that deep-links to a page builds its own
+/// URI through [manualUriFor], which takes a `path`.
+Uri manualUriForCurrentLocale(WidgetRef ref) => manualUriFor(
+  systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
+  override: ref.read(manualLanguageControllerProvider).value,
+);
+
+/// Opens [manualUriForCurrentLocale] in the system browser.
+Future<void> openManualForCurrentLocale(WidgetRef ref) => launchUrl(
+  manualUriForCurrentLocale(ref),
+  mode: LaunchMode.externalApplication,
+);
 
 /// Persists the optional language override for Lotti and the external Manual.
 ///

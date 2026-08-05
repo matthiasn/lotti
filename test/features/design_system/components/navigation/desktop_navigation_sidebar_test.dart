@@ -784,6 +784,76 @@ void main() {
         expect(find.byKey(slotKey), findsNothing);
       },
     );
+
+    testWidgets(
+      'footerBand spans the rail edge to edge while every other slot keeps '
+      'the gutters',
+      (tester) async {
+        const bandKey = Key('footer-band');
+        const belowKey = Key('below-settings');
+        final settings = DesktopSidebarDestination(
+          label: 'Settings',
+          iconBuilder: ({required bool active}) => const Icon(Icons.settings),
+        );
+
+        await tester.pumpWidget(
+          wrap(
+            DesktopNavigationSidebar(
+              destinations: buildDestinations(),
+              activeIndex: 0,
+              onDestinationSelected: (_) {},
+              settingsDestination: settings,
+              width: 256,
+              footerBand: const SizedBox(key: bandKey, height: 20),
+              belowSettings: const SizedBox(key: belowKey, height: 18),
+            ),
+          ),
+        );
+        await tester.pump();
+
+        final sidebar = tester.getRect(find.byType(DesktopNavigationSidebar));
+        final band = tester.getRect(find.byKey(bandKey));
+        final below = tester.getRect(find.byKey(belowKey));
+        final settingsRow = tester.getRect(find.text('Settings'));
+
+        // The whole point of the slot: 32 px more than a padded row gets,
+        // which is what lets the Contact Us footer hold one line at 256.
+        expect(band.left, sidebar.left);
+        expect(band.right, sidebar.right);
+        expect(band.width, sidebar.width);
+
+        // Its neighbours are unaffected — the sync strip still sits inside the
+        // gutters, so its hover wash cannot run to the rail edge.
+        expect(below.left, greaterThan(sidebar.left));
+        expect(below.right, lessThan(sidebar.right));
+        expect(settingsRow.left, greaterThan(sidebar.left));
+
+        // Order: Settings, then the band, then the ambient strip last.
+        expect(band.top, greaterThanOrEqualTo(settingsRow.bottom));
+        expect(below.top, greaterThanOrEqualTo(band.bottom));
+      },
+    );
+
+    testWidgets('footerBand is suppressed in collapsed mode', (tester) async {
+      const bandKey = Key('footer-band');
+
+      await tester.pumpWidget(
+        wrap(
+          DesktopNavigationSidebar(
+            destinations: buildDestinations(),
+            activeIndex: 0,
+            onDestinationSelected: (_) {},
+            footerBand: const SizedBox(key: bandKey, height: 20),
+            collapsed: true,
+          ),
+        ),
+      );
+      await tester.pump();
+
+      // The icon-only rail is 72 px — narrower than the three glyphs the band
+      // carries, never mind the label.
+      expect(find.byKey(bandKey), findsNothing);
+    });
   });
 
   group('DesktopNavigationSidebar collapsed', () {

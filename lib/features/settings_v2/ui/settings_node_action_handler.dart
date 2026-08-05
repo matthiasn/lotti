@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings_v2/domain/settings_node.dart';
@@ -13,12 +12,7 @@ import 'package:lotti/features/settings_v2/domain/settings_node.dart';
 bool handleSettingsNodeAction(WidgetRef ref, SettingsNode node) {
   switch (node.action) {
     case SettingsNodeAction.openManual:
-      unawaited(
-        openManualInBrowser(
-          systemLocale: WidgetsBinding.instance.platformDispatcher.locale,
-          override: ref.read(manualLanguageControllerProvider).value,
-        ),
-      );
+      unawaited(openManualForCurrentLocale(ref));
       return true;
     case null:
       return false;

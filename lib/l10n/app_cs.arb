@@ -1622,6 +1622,10 @@
       }
     }
   },
+  "contactUsDiscordLabel": "Discord",
+  "contactUsEmailSubject": "Zpětná vazba k Lotti",
+  "contactUsGithubLabel": "GitHub",
+  "contactUsLabel": "Kontaktuj nás",
   "copyAsMarkdown": "Kopírovat jako Markdown",
   "copyAsText": "Kopírovat jako text",
   "correctionExampleCancel": "Zrušit",

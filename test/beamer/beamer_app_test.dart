@@ -62,6 +62,7 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/services/time_service.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/consts.dart';
+import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/misc/desktop_menu.dart';
 import 'package:lotti/widgets/misc/sidebar_activity_summary.dart';
 import 'package:lotti/widgets/misc/sidebar_audio_recording_section.dart';
@@ -1387,6 +1388,78 @@ void main() {
       expect(find.byType(DesktopNavigationSidebar), findsOneWidget);
       expect(find.byType(SidebarSavedTaskFilters), findsOneWidget);
       expect(find.byType(DesignSystemBottomNavigationBar), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets('pins the Contact Us footer beneath Settings in the sidebar', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(0),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
+
+      expect(find.byType(ContactSupportRow), findsOneWidget);
+      // Below Settings, not among the destinations: nothing in the footer
+      // switches tabs, so it must not read as one more place to navigate to.
+      expect(
+        tester.getRect(find.byType(ContactSupportRow)).top,
+        greaterThan(tester.getRect(find.text('Settings')).bottom),
+      );
+      // And inside the rail, not floating over the content pane.
+      final sidebar = tester.getRect(find.byType(DesktopNavigationSidebar));
+      expect(
+        tester.getRect(find.byType(ContactSupportRow)).right,
+        lessThanOrEqualTo(sidebar.right),
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets('drops the Contact Us footer while the sidebar is collapsed', (
+      tester,
+    ) async {
+      final mockNavService = MockNavService();
+      await _stubNavService(
+        mockNavService,
+        indexStream: Stream.value(0),
+        isProjectsEnabled: () => true,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
+
+      await tester.tap(find.byKey(desktopSidebarToggleKey));
+      await tester.pump();
+
+      // The icon-only rail is 72 px wide — narrower than the three glyphs
+      // alone. The footer goes away with the labels rather than overflowing,
+      // the same as the activity summary above Settings.
+      expect(find.byType(ContactSupportRow), findsNothing);
 
       await tester.pumpWidget(const SizedBox.shrink());
       await tester.pump();

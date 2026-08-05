@@ -3565,6 +3565,18 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get contactUsDiscordLabel => 'Discord';
+
+  @override
+  String get contactUsEmailSubject => 'Zpětná vazba k Lotti';
+
+  @override
+  String get contactUsGithubLabel => 'GitHub';
+
+  @override
+  String get contactUsLabel => 'Kontaktuj nás';
+
+  @override
   String get copyAsMarkdown => 'Kopírovat jako Markdown';
 
   @override

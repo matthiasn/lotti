@@ -1615,6 +1615,10 @@
       }
     }
   },
+  "contactUsDiscordLabel": "Discord",
+  "contactUsEmailSubject": "Retour sur Lotti",
+  "contactUsGithubLabel": "GitHub",
+  "contactUsLabel": "Contacte-nous",
   "copyAsMarkdown": "Copier en Markdown",
   "copyAsText": "Copier en texte",
   "correctionExampleCancel": "Annuler",

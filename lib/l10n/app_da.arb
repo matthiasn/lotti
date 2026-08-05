@@ -1802,6 +1802,10 @@
       }
     }
   },
+  "contactUsDiscordLabel": "Discord",
+  "contactUsEmailSubject": "Feedback om Lotti",
+  "contactUsGithubLabel": "GitHub",
+  "contactUsLabel": "Kontakt os",
   "copyAsMarkdown": "Kopier som Markdown",
   "copyAsText": "Kopier som tekst",
   "correctionExampleCancel": "Annuller",

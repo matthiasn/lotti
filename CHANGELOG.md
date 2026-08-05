@@ -5,6 +5,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.3]
+### Added
+- **Getting in touch is now one tap from the navigation.** A Contact Us line
+  sits at the foot of the sidebar on desktop, below Settings, and at the bottom
+  of the More sheet on a phone. Tapping the words opens a mail draft to the
+  project; beside them are three marks — the manual, which opens in your
+  language, the source repository, and the Discord community. All four leave
+  Lotti and open in your browser or mail app. On a collapsed sidebar the line
+  goes away with the other labels, and the manual is still in Settings.
+
 ### Fixed
 - **Initial Sync setup no longer gets stuck on impossible checks or one bad
   row.** A first device skips the comparison code that only a second device can

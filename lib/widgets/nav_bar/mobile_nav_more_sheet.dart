@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
 /// One overflow destination row in the More sheet.
@@ -30,6 +31,13 @@ class MobileNavMoreSheetItem {
 /// Opens the More overflow sheet: every enabled destination that did not fit
 /// the five-slot bar, one row each. Selecting a row dismisses the sheet and
 /// navigates; the bar's More slot then renders that destination as active.
+///
+/// The sheet closes with the [ContactSupportRow] footer, under a rule. Mobile
+/// has no persistent chrome to pin it to the way the desktop sidebar does, and
+/// this sheet is already where everything that did not fit the bar lives — so
+/// it is the one place a phone user reliably passes on the way out of the app's
+/// navigation. The external destinations sit below the rule precisely because
+/// they are *not* destinations: nothing there switches tabs.
 Future<void> showMobileNavMoreSheet({
   required BuildContext context,
   required List<MobileNavMoreSheetItem> items,
@@ -48,6 +56,7 @@ Future<void> showMobileNavMoreSheet({
               item.onSelected();
             },
           ),
+        const ContactSupportRow(),
       ],
     ),
   );
