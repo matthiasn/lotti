@@ -5,7 +5,7 @@ description: Outbox staging, the CAS claim that makes merges safe, dequeue-time 
 resource: ../../../lib/features/sync/outbox
 tags: [sync, outbox, bundling, retries]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-06T00:30:48+02:00 }
 stale_after: 2026-11-02
 sources:
   - id: outbox
@@ -15,7 +15,11 @@ sources:
   - id: payload-sender
     resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
     title: MatrixPayloadSender — wire encoding
-    last_modified: 2026-08-01
+    last_modified: 2026-08-06
+  - id: agent-payload-sender
+    resource: ../../../lib/features/sync/matrix/matrix_payload_sender_notifications.dart
+    title: Agent and notification payload encoding
+    last_modified: 2026-08-06
   - id: media-repair
     resource: ../../../lib/features/sync/media
     title: Media self-healing — request and response
@@ -163,6 +167,24 @@ is currently being serialised onto the wire.
 Without this, the pre-merge Matrix event would still go out while the new
 `coveredVectorClocks` list sat in a row that would never be sent — producing
 scattered single-counter holes on receivers that only backfill could repair.
+
+# File payload identity follows the claimed generation
+
+Every JSON-backed send records the successful Matrix file-event id in the text
+envelope as `attachmentEventId`. The relative path remains the cache location
+and the compatibility key for older peers; it is no longer the identity of a
+new payload generation.
+
+Agent outbox rows make the send-side half explicit. A pending
+`SyncAgentEntity` retains the serialized entity inline even though the sender
+strips it from the wire text after upload. The uploader uses those inline bytes,
+not the mutable `/agent_entities/<id>.json` sidecar. If a newer local update
+overwrites that sidecar after the old row is claimed, the in-flight row still
+uploads its own payload and stamps the event id returned for those exact bytes.
+Legacy rows that contain only `jsonPath` continue to read the sidecar so mixed
+versions remain sendable. Journal and notification senders already snapshot
+their file bytes before upload and reconcile the envelope against that same
+snapshot; outbox bundles use a fresh UUID path and stamp the manifest upload id.
 
 # Item lifecycle
 

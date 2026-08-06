@@ -7,7 +7,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 
-enum _GeneratedAttachmentOperationKind { record, find }
+enum _GeneratedAttachmentOperationKind { record, find, findByEventId }
 
 enum _GeneratedAttachmentEventIdMode { valid, empty, throws }
 
@@ -111,6 +111,7 @@ class _GeneratedAttachmentScenario {
 
 class _ExpectedAttachmentIndex {
   final _byPath = <String, Event>{};
+  final _byEventId = <String, Event>{};
   final _seenEventIds = <String>{};
   final emittedPaths = <String>[];
 
@@ -126,6 +127,9 @@ class _ExpectedAttachmentIndex {
 
     _byPath[canonical] = event;
     _byPath[noSlash] = event;
+    if (eventId != null) {
+      _byEventId[eventId] = event;
+    }
     emittedPaths.add(canonical);
     return true;
   }
@@ -136,6 +140,8 @@ class _ExpectedAttachmentIndex {
         : '/$relativePath';
     return _byPath[relativePath] ?? _byPath[alt];
   }
+
+  Event? findByEventId(String eventId) => _byEventId[eventId];
 }
 
 extension _AnyGeneratedAttachmentScenario on glados.Any {
@@ -267,6 +273,26 @@ void main() {
       ).called(2);
     },
   );
+
+  test('exact event lookup preserves older generations at a reused path', () {
+    final index = AttachmentIndex(logging: MockDomainLogger());
+    final older = makeEvent(
+      eventId: 'older-event',
+      relativePath: 'agent_entities/agent-1.json',
+    );
+    final newer = makeEvent(
+      eventId: 'newer-event',
+      relativePath: 'agent_entities/agent-1.json',
+    );
+
+    expect(index.record(older), isTrue);
+    expect(index.record(newer), isTrue);
+
+    expect(index.find('/agent_entities/agent-1.json'), same(newer));
+    expect(index.findByEventId('older-event'), same(older));
+    expect(index.findByEventId('newer-event'), same(newer));
+    expect(index.findByEventId('missing-event'), isNull);
+  });
 
   test('record and find works with and without leading slash', () {
     final logging = MockDomainLogger();
@@ -411,6 +437,12 @@ void main() {
               expect(
                 index.find(operation.queryPath),
                 same(model.find(operation.queryPath)),
+                reason: '$scenario\n$operation',
+              );
+            case _GeneratedAttachmentOperationKind.findByEventId:
+              expect(
+                index.findByEventId(operation.eventId),
+                same(model.findByEventId(operation.eventId)),
                 reason: '$scenario\n$operation',
               );
           }

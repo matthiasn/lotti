@@ -1,5 +1,7 @@
 // ignore_for_file: avoid_redundant_argument_values
 
+import 'dart:convert';
+
 import 'package:drift/drift.dart' show Value;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
@@ -39,6 +41,7 @@ void main() {
   late SyncDatabase aliceSyncDb;
   late SyncDatabase bobSyncDb;
   late JournalDb aliceJournalDb;
+  late JournalDb bobJournalDb;
   late MockOutboxService aliceOutbox;
   late MockOutboxService bobOutbox;
   late MockDomainLogger aliceLogging;
@@ -48,6 +51,7 @@ void main() {
   late SyncSequenceLogService aliceSequenceService;
   late SyncSequenceLogService bobSequenceService;
   late BackfillResponseHandler aliceResponseHandler;
+  late BackfillResponseHandler bobResponseHandler;
 
   setUpAll(() {
     registerFallbackValue(
@@ -78,6 +82,7 @@ void main() {
     aliceSyncDb = SyncDatabase(inMemoryDatabase: true);
     bobSyncDb = SyncDatabase(inMemoryDatabase: true);
     aliceJournalDb = JournalDb(inMemoryDatabase: true);
+    bobJournalDb = JournalDb(inMemoryDatabase: true);
 
     // Create mocks
     aliceOutbox = MockOutboxService();
@@ -136,12 +141,21 @@ void main() {
       loggingService: aliceLogging,
       vectorClockService: aliceVcService,
     );
+
+    bobResponseHandler = BackfillResponseHandler(
+      journalDb: bobJournalDb,
+      sequenceLogService: bobSequenceService,
+      outboxService: bobOutbox,
+      loggingService: bobLogging,
+      vectorClockService: bobVcService,
+    );
   });
 
   tearDown(() async {
     await aliceSyncDb.close();
     await bobSyncDb.close();
     await aliceJournalDb.close();
+    await bobJournalDb.close();
   });
 
   group('Backfill Integration', () {
@@ -507,83 +521,237 @@ void main() {
       expect(missingHighLimit, hasLength(1));
     });
 
-    test('backfill sends hint when VC does not cover own counter', () async {
-      // Scenario: Entry was created at counter 2, then modified at counter 5.
-      // The current entry has VC={alice:5} but someone requests counter 2.
-      // In this case, the originator must send an unresolvable response so the
-      // requester can clear the stuck counter (it's not in the VC anymore).
+    test(
+      'backfill sends hint when the current VC supersedes a counter',
+      () async {
+        // Scenario: Entry was created at counter 2, then modified at counter 5.
+        // The current entry has VC={alice:5} but someone requests counter 2.
+        // In this case, the originator must send an unresolvable response so the
+        // requester can clear the stuck counter (it's not in the VC anymore).
 
-      // Alice records the entry with its CURRENT VC (after modification)
-      const modifiedEntryId = 'modified-entry-id';
-      await aliceSequenceService.recordSentEntry(
-        entryId: modifiedEntryId,
-        vectorClock: const VectorClock({aliceHostId: 5}),
-      );
-
-      // Also record the ORIGINAL counter 2 that pointed to this entry
-      // (simulating sequence log having both historical and current counters)
-      final testTime = DateTime(2024, 3, 15, 10, 30);
-      await aliceSyncDb.recordSequenceEntry(
-        SyncSequenceLogCompanion(
-          hostId: const Value(aliceHostId),
-          counter: const Value(2),
-          entryId: const Value(modifiedEntryId),
-          status: Value(SyncSequenceStatus.received.index),
-          createdAt: Value(testTime),
-          updatedAt: Value(testTime),
-        ),
-      );
-
-      // Create the journal entry in Alice's DB with VC={alice:5}
-      final modifiedEntry = JournalEntity.journalEntry(
-        meta: Metadata(
-          id: modifiedEntryId,
-          createdAt: DateTime(2024, 1, 1, 10),
-          updatedAt: DateTime(2024, 1, 1, 11),
-          dateFrom: DateTime(2024, 1, 1, 10),
-          dateTo: DateTime(2024, 1, 1, 10),
+        // Alice records the entry with its CURRENT VC (after modification)
+        const modifiedEntryId = 'modified-entry-id';
+        await aliceSequenceService.recordSentEntry(
+          entryId: modifiedEntryId,
           vectorClock: const VectorClock({aliceHostId: 5}),
-        ),
-        entryText: const EntryText(plainText: 'Modified entry'),
-      );
-      await aliceJournalDb.upsertJournalDbEntity(toDbEntity(modifiedEntry));
+        );
 
-      // Bob requests counter 2 (the original counter before modification)
-      const request = SyncBackfillRequest(
-        entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 2)],
-        requesterId: bobHostId,
-      );
+        // Also record the ORIGINAL counter 2 that pointed to this entry
+        // (simulating sequence log having both historical and current counters)
+        final testTime = DateTime(2024, 3, 15, 10, 30);
+        await aliceSyncDb.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(aliceHostId),
+            counter: const Value(2),
+            entryId: const Value(modifiedEntryId),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(testTime),
+            updatedAt: Value(testTime),
+          ),
+        );
 
-      // Alice handles the request
-      await aliceResponseHandler.handleBackfillRequest(request);
+        // Create the journal entry in Alice's DB with VC={alice:5}
+        final modifiedEntry = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: modifiedEntryId,
+            createdAt: DateTime(2024, 1, 1, 10),
+            updatedAt: DateTime(2024, 1, 1, 11),
+            dateFrom: DateTime(2024, 1, 1, 10),
+            dateTo: DateTime(2024, 1, 1, 10),
+            vectorClock: const VectorClock({aliceHostId: 5}),
+          ),
+          entryText: const EntryText(plainText: 'Modified entry'),
+        );
+        await aliceJournalDb.upsertJournalDbEntity(toDbEntity(modifiedEntry));
 
-      // Verify Alice sent BOTH the entry AND a hint response
-      // because VC[alice]=5 but requested counter=2, so VC doesn't cover it.
-      // The hint contains payloadId so the receiver can map the counter to
-      // the payload and mark it as backfilled.
-      final capturedMessages = verify(
-        () => aliceOutbox.enqueueMessage(captureAny()),
-      ).captured;
+        // Bob requests counter 2 (the original counter before modification)
+        const request = SyncBackfillRequest(
+          entries: [BackfillRequestEntry(hostId: aliceHostId, counter: 2)],
+          requesterId: bobHostId,
+        );
 
-      expect(capturedMessages, hasLength(2));
+        // Alice handles the request
+        await aliceResponseHandler.handleBackfillRequest(request);
 
-      // First should be the journal entity
-      expect(capturedMessages[0], isA<SyncJournalEntity>());
-      final journalEntity = capturedMessages[0] as SyncJournalEntity;
-      expect(journalEntity.id, modifiedEntryId);
+        // Verify Alice sent BOTH the entry AND a hint response
+        // because VC[alice]=5 but requested counter=2, so VC doesn't cover it.
+        // The hint contains payloadId so the receiver can map the counter to
+        // the payload and mark it as backfilled.
+        final capturedMessages = verify(
+          () => aliceOutbox.enqueueMessage(captureAny()),
+        ).captured;
 
-      // Second should be a BackfillResponse hint with payloadId
-      expect(capturedMessages[1], isA<SyncBackfillResponse>());
-      final backfillResponse = capturedMessages[1] as SyncBackfillResponse;
-      expect(backfillResponse.hostId, aliceHostId);
-      expect(backfillResponse.counter, 2);
-      expect(backfillResponse.deleted, false);
-      expect(backfillResponse.unresolvable, isNull);
-      expect(backfillResponse.payloadId, modifiedEntryId);
-      expect(
-        backfillResponse.payloadType,
-        SyncSequencePayloadType.journalEntity,
-      );
-    });
+        expect(capturedMessages, hasLength(2));
+
+        // First should be the journal entity
+        expect(capturedMessages[0], isA<SyncJournalEntity>());
+        final journalEntity = capturedMessages[0] as SyncJournalEntity;
+        expect(journalEntity.id, modifiedEntryId);
+
+        // Second should be a BackfillResponse hint with payloadId
+        expect(capturedMessages[1], isA<SyncBackfillResponse>());
+        final backfillResponse = capturedMessages[1] as SyncBackfillResponse;
+        expect(backfillResponse.hostId, aliceHostId);
+        expect(backfillResponse.counter, 2);
+        expect(backfillResponse.deleted, false);
+        expect(backfillResponse.unresolvable, isNull);
+        expect(backfillResponse.payloadId, modifiedEntryId);
+        expect(
+          backfillResponse.payloadType,
+          SyncSequencePayloadType.journalEntity,
+        );
+      },
+    );
+
+    test(
+      'delayed exact backfill payload rejects an unproven envelope counter '
+      'without synthetic gaps, including replay after service restart',
+      () async {
+        const payloadId = 'superseding-backfill-entry';
+        const payloadClock = VectorClock({aliceHostId: 5});
+        const coveredClocks = [
+          VectorClock({aliceHostId: 2}),
+          VectorClock({aliceHostId: 3}),
+          VectorClock({aliceHostId: 4}),
+        ];
+        final payload = JournalEntity.journalEntry(
+          meta: Metadata(
+            id: payloadId,
+            createdAt: DateTime.utc(2024, 3, 15, 10),
+            updatedAt: DateTime.utc(2024, 3, 15, 11),
+            dateFrom: DateTime.utc(2024, 3, 15, 10),
+            dateTo: DateTime.utc(2024, 3, 15, 10),
+            vectorClock: payloadClock,
+          ),
+          entryText: const EntryText(plainText: 'Exact backfill payload'),
+        );
+
+        // Alice has a historical counter that is legitimately superseded by
+        // the current payload clock. Backfill must send the payload plus a
+        // covering hint, never payload plus an unresolvable response.
+        final recordedAt = DateTime.utc(2024, 3, 15, 12);
+        await aliceSyncDb.recordSequenceEntry(
+          SyncSequenceLogCompanion(
+            hostId: const Value(aliceHostId),
+            counter: const Value(2),
+            entryId: const Value(payloadId),
+            payloadType: Value(
+              SyncSequencePayloadType.journalEntity.index,
+            ),
+            originatingHostId: const Value(aliceHostId),
+            status: Value(SyncSequenceStatus.received.index),
+            createdAt: Value(recordedAt),
+            updatedAt: Value(recordedAt),
+          ),
+        );
+        await aliceJournalDb.upsertJournalDbEntity(toDbEntity(payload));
+
+        await bobSequenceService.recordReceivedEntry(
+          entryId: entryId1,
+          vectorClock: const VectorClock({aliceHostId: 1}),
+          originatingHostId: aliceHostId,
+        );
+        final initialGaps = await bobSequenceService.recordReceivedEntry(
+          entryId: entryId3,
+          vectorClock: const VectorClock({aliceHostId: 3}),
+          originatingHostId: aliceHostId,
+        );
+        expect(initialGaps, [(hostId: aliceHostId, counter: 2)]);
+        await bobSequenceService.markAsRequested([
+          (hostId: aliceHostId, counter: 2),
+        ]);
+
+        await aliceResponseHandler.handleBackfillRequest(
+          const SyncBackfillRequest(
+            entries: [
+              BackfillRequestEntry(hostId: aliceHostId, counter: 2),
+            ],
+            requesterId: bobHostId,
+          ),
+        );
+
+        final responses = verify(
+          () => aliceOutbox.enqueueMessage(captureAny()),
+        ).captured.cast<SyncMessage>();
+        expect(responses, hasLength(2));
+        final outboundPayload = responses.whereType<SyncJournalEntity>().single;
+        final hint = responses.whereType<SyncBackfillResponse>().single;
+        expect(hint.payloadId, payloadId);
+        expect(hint.unresolvable, isNull);
+
+        // Matrix may deliver the text hint before the file-backed payload.
+        // The receiver stores it durably and waits for the payload.
+        await bobResponseHandler.handleBackfillResponse(hint);
+        final waiting = await bobSyncDb.getEntryByHostAndCounter(
+          aliceHostId,
+          2,
+        );
+        expect(waiting?.status, SyncSequenceStatus.requested.index);
+        expect(waiting?.entryId, payloadId);
+
+        // Model the sender's additive exact-id enrichment and a corrupted old
+        // envelope clock. The immutable attachment still decodes payload VC 5,
+        // so counter 30 is unproven and must not create rows or gaps. The
+        // proven covered clocks resolve the delayed counter-2 hint first.
+        final wirePayload =
+            SyncMessage.fromJson(
+                  jsonDecode(
+                        jsonEncode(
+                          outboundPayload.copyWith(
+                            vectorClock: const VectorClock({aliceHostId: 30}),
+                            coveredVectorClocks: coveredClocks,
+                            attachmentEventId: 'matrix-payload-event-5',
+                          ),
+                        ),
+                      )
+                      as Map<String, dynamic>,
+                )
+                as SyncJournalEntity;
+        expect(wirePayload.attachmentEventId, 'matrix-payload-event-5');
+        await bobJournalDb.upsertJournalDbEntity(toDbEntity(payload));
+
+        Future<void> applyExactPayload(SyncSequenceLogService service) async {
+          final gaps = await service.recordReceivedEntry(
+            entryId: payloadId,
+            vectorClock: wirePayload.vectorClock!,
+            originatingHostId: wirePayload.originatingHostId!,
+            coveredVectorClocks: wirePayload.coveredVectorClocks,
+            jsonPath: wirePayload.jsonPath,
+            payloadVectorClock: payloadClock,
+            canonicalPayloadVectorClock: payloadClock,
+          );
+          expect(gaps, isEmpty);
+        }
+
+        await applyExactPayload(bobSequenceService);
+        expect(await bobSequenceService.getMissingEntries(), isEmpty);
+        expect(
+          await bobSyncDb.getEntryByHostAndCounter(aliceHostId, 30),
+          isNull,
+        );
+        final resolved = await bobSyncDb.getEntryByHostAndCounter(
+          aliceHostId,
+          2,
+        );
+        expect(resolved?.status, SyncSequenceStatus.received.index);
+        expect(resolved?.entryId, payloadId);
+
+        // Recreating the service models an app restart: durable state and an
+        // exact event replay remain idempotent even though in-memory caches are
+        // empty again.
+        final restartedSequenceService = SyncSequenceLogService(
+          syncDatabase: bobSyncDb,
+          vectorClockService: bobVcService,
+          loggingService: bobLogging,
+        );
+        await applyExactPayload(restartedSequenceService);
+        expect(await restartedSequenceService.getMissingEntries(), isEmpty);
+        expect(
+          await bobSyncDb.getEntryByHostAndCounter(aliceHostId, 30),
+          isNull,
+        );
+        verifyNever(() => bobOutbox.enqueueMessage(any()));
+      },
+    );
   });
 }

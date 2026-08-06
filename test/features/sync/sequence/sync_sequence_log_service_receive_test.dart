@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
+import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/tuning.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -38,6 +39,81 @@ void main() {
   });
 
   group('recordReceivedEntry', () {
+    test(
+      'rejects an announced counter and its covered clocks when the decoded '
+      'payload vector clock cannot prove them, including duplicate replays',
+      () async {
+        final bench = RealSequenceLogTestBench.create(myHostId: myHostId);
+        try {
+          for (var replay = 0; replay < 2; replay++) {
+            final gaps = await bench.service.recordReceivedEntry(
+              entryId: 'payload-behind-announcement',
+              vectorClock: const VectorClock({aliceHostId: 5}),
+              payloadVectorClock: const VectorClock({aliceHostId: 3}),
+              coveredVectorClocks: const [
+                VectorClock({aliceHostId: 4}),
+              ],
+              originatingHostId: aliceHostId,
+            );
+            expect(gaps, isEmpty);
+          }
+
+          expect(await bench.database.getSequenceLogCount(), 0);
+          expect(await bench.database.hasActionableEntries(), isFalse);
+          expect(bench.missingCallbackCount, 0);
+        } finally {
+          await bench.close();
+        }
+      },
+    );
+
+    test(
+      'runs explicit canonical repair after recording a valid payload and '
+      'reports retired historical mappings',
+      () async {
+        when(
+          () => mockDb.getLastCounterForHost(aliceHostId),
+        ).thenAnswer((_) async => 0);
+        when(
+          () => mockDb.getEntryByHostAndCounter(aliceHostId, 1),
+        ).thenAnswer((_) async => null);
+        when(
+          () => mockDb.recordSequenceEntry(any()),
+        ).thenAnswer((_) async => 1);
+        when(
+          () => mockDb.retireInvalidPayloadMappings(
+            payloadType: any(named: 'payloadType'),
+            payloadId: any(named: 'payloadId'),
+            payloadCounters: any(named: 'payloadCounters'),
+          ),
+        ).thenAnswer((_) async => 2);
+
+        final gaps = await service.recordReceivedEntry(
+          entryId: 'canonical-payload',
+          vectorClock: const VectorClock({aliceHostId: 1}),
+          payloadVectorClock: const VectorClock({aliceHostId: 1}),
+          canonicalPayloadVectorClock: const VectorClock({aliceHostId: 1}),
+          originatingHostId: aliceHostId,
+        );
+
+        expect(gaps, isEmpty);
+        verify(
+          () => mockDb.retireInvalidPayloadMappings(
+            payloadType: SyncSequencePayloadType.journalEntity,
+            payloadId: 'canonical-payload',
+            payloadCounters: const {aliceHostId: 1},
+          ),
+        ).called(1);
+        verify(
+          () => mockLogging.log(
+            LogDomain.sync,
+            any<String>(that: contains('retired 2 contradictory mappings')),
+            subDomain: 'sequence.mappingRetired',
+          ),
+        ).called(1);
+      },
+    );
+
     test(
       "does not reopen a burned row for the originating host's own counter — "
       'burned is terminal even against a contradictory re-send',

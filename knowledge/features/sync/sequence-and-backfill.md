@@ -5,13 +5,33 @@ description: Causal accounting over (hostId, counter) pairs, bounded initial-onb
 resource: ../../../lib/features/sync/sequence
 tags: [sync, sequence-log, backfill, gap-detection]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-05T00:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-06T00:00:00Z }
 stale_after: 2026-11-02
 sources:
   - id: sequence
     resource: ../../../lib/features/sync/sequence
     title: SyncSequenceLogService
-    last_modified: 2026-08-01
+    last_modified: 2026-08-06
+  - id: sequence-db
+    resource: ../../../lib/database/sync_db_sequence.dart
+    title: Sequence-log persistence and mapping repair
+    last_modified: 2026-08-06
+  - id: journal-receive
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_journal_handlers.dart
+    title: Journal receive and sequence mapping
+    last_modified: 2026-08-06
+  - id: agent-receive
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
+    title: Agent receive and sequence mapping
+    last_modified: 2026-08-06
+  - id: notification-receive
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_notification_handlers.dart
+    title: Notification receive and sequence mapping
+    last_modified: 2026-08-06
+  - id: backfill-response
+    resource: ../../../lib/features/sync/backfill/backfill_response_handler.dart
+    title: Backfill payload proof and response handling
+    last_modified: 2026-08-06
   - id: status
     resource: ../../../lib/database/sync_sequence_status.dart
     title: SyncSequenceStatus
@@ -133,6 +153,34 @@ index), so neither blocks progress.
   `sync_sequence_watermarks`. Migrated hosts warm that row lazily on the first
   `getLastCounterForHost`, so startup does not recompute every historic host
   with the compatibility `ROW_NUMBER` scan.
+
+## Payload proof and contradictory mappings
+
+For every exact-attachment, sequence-tracked file payload, the vector clock
+decoded from the named attachment generation is the proof source. Journal and
+notification envelopes distinguish that clock from the envelope's announced
+clock; agent entity and link receipts already derive their recorded clock from
+the decoded payload. A `(hostId, counter)` mapping is recorded only when the
+payload clock reaches the announced counter. Covered clocks are subject to the
+same proof before they can suppress gap detection. An attachment whose payload
+is behind its envelope therefore creates neither a mapping nor a synthetic gap,
+and replaying the same stale event remains a no-op.
+
+After applying an exact payload, the receiver compares every historical row
+bound to the same payload id and type with the canonical local payload clock.
+Bindings beyond that clock are retired explicitly:
+
+- `received` and `backfilled` rows become reopenable `unresolvable` rows;
+- actionable rows retain their lifecycle status so a genuine payload can still
+  arrive; and
+- every contradictory row loses both its payload id and mutable path hint.
+
+The repair is idempotent because repaired rows no longer match the payload
+binding query. In-memory watermark and materialization caches are cleared when
+any row changes. Exact journal, notification, agent entity, and agent link
+events use this proof-and-repair path. Legacy path-only envelopes retain the
+historical behavior for mixed-version peers because they cannot prove which
+generation a mutable sidecar path returned.
 
 # Requesting
 
@@ -319,6 +367,22 @@ redundant 250-counter requests on a slow onboarding device.
 Responses are rate-limited and cooled down per `(hostId, counter)` — 5-minute
 cooldown, a 1-minute rate window — so repair traffic cannot turn into its own
 feedback loop.
+
+An exact sequence row is not sufficient evidence by itself. Before resend, the
+handler loads the current payload and distinguishes absence from an absent
+vector clock. A missing payload follows the per-type `deleted` path. A present
+payload whose clock is null, lacks the requested host, or is behind the counter
+is rejected before any resend. The originating host answers that rejection with
+only `unresolvable`; a relay searches later resolved rows and uses only a
+candidate whose loaded payload clock covers the requested counter. A payload
+whose clock is ahead is a valid superseding answer and travels with a mapping
+hint.
+
+The hint and payload may arrive in either order. A first-arriving hint remains
+`missing` or `requested` with its payload id until the payload is locally
+available. The later receive path verifies it with the decoded payload clock;
+an already-present payload is verified immediately. Duplicate hint, payload,
+and replay processing does not downgrade a resolved row.
 
 # Two statistics paths, on purpose
 

@@ -380,15 +380,17 @@ class BackfillResponseHandler {
       final payloadType = SyncSequencePayloadType.values.elementAt(
         logEntry.payloadType,
       );
-      final payloadVc = await _loadPayloadVectorClock(
+      final payloadState = await _loadPayloadClockState(
         payloadId: logEntry.entryId!,
         payloadType: payloadType,
       );
-      final vcCounter = payloadVc?.vclock[hostId];
+      final vcCounter = payloadState.vectorClock?.vclock[hostId];
 
       // An exact row is only safe to answer from when the current payload VC
-      // still covers the requested counter. Otherwise the row is stale.
-      if (payloadVc != null && (vcCounter == null || vcCounter < counter)) {
+      // still covers the requested counter. A payload that exists without a
+      // vector clock proves no counter at all. Missing/deleted payloads stay on
+      // the per-type path below so they produce a deleted response instead.
+      if (payloadState.exists && (vcCounter == null || vcCounter < counter)) {
         _trace(
           'exact entry VC does not cover counter, rejecting '
           'hostId=$hostId requestedCounter=$counter '

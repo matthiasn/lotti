@@ -14,6 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   networking never blocks seeding or opening the demo and incomplete downloads
   retry on the next startup.
 
+### Fixed
+- **Multi-device sync no longer mistakes a newer file for an older message.**
+  File-backed messages now name the exact encrypted attachment version they
+  were sent with, so delayed, reordered, duplicated, or replayed events cannot
+  manufacture missing-change storms from a different version at the same
+ path. Backfill also verifies that a payload really covers the requested
+  change before sending it and repairs stale historical mappings. Older app
+  versions remain compatible while upgraded peers gain the exact guarantee.
+
 ### Changed
 - **The task knowledge graph is now a readable local workspace.** Instead of
   presenting the whole topology as a field of mostly anonymous dots, it shows a

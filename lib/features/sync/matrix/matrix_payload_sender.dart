@@ -26,6 +26,8 @@ import 'package:path/path.dart' as p;
 
 part 'matrix_payload_sender_notifications.dart';
 
+typedef _FileSendResult = ({String? eventId, bool succeeded});
+
 /// Attachment/file and outbox-bundle payload uploads for
 /// [MatrixMessageSender].
 ///
@@ -69,6 +71,21 @@ class MatrixPayloadSender {
     required String relativePath,
     Uint8List? bytes,
   }) async {
+    final result = await _sendFile(
+      room: room,
+      fullPath: fullPath,
+      relativePath: relativePath,
+      bytes: bytes,
+    );
+    return result.succeeded;
+  }
+
+  Future<_FileSendResult> _sendFile({
+    required Room room,
+    required String fullPath,
+    required String relativePath,
+    Uint8List? bytes,
+  }) async {
     try {
       final file = File(fullPath);
       // ignore: avoid_slow_async_io
@@ -78,7 +95,7 @@ class MatrixPayloadSender {
           'skipping missing file $relativePath (not found at $fullPath)',
           subDomain: 'sendMatrixMsg',
         );
-        return true;
+        return (eventId: null, succeeded: true);
       }
 
       final fileBytes = bytes ?? await file.readAsBytes();
@@ -110,11 +127,11 @@ class MatrixPayloadSender {
           'Failed sending $relativePath file message to $room',
           subDomain: 'sendMatrixMsg',
         );
-        return false;
+        return (eventId: null, succeeded: false);
       }
 
       sentEventRegistry.register(eventId);
-      return true;
+      return (eventId: eventId, succeeded: true);
     } catch (error, stackTrace) {
       _trace(
         'EXCEPTION sendFile path=$relativePath '
@@ -127,7 +144,7 @@ class MatrixPayloadSender {
         stackTrace: stackTrace,
         subDomain: 'sendMatrixMsg',
       );
-      return false;
+      return (eventId: null, succeeded: false);
     }
   }
 
@@ -158,14 +175,15 @@ class MatrixPayloadSender {
       return null;
     }
 
-    final jsonSent = await sendFile(
+    final jsonUpload = await _sendFile(
       room: room,
       fullPath: jsonFullPath,
       relativePath: message.jsonPath,
       bytes: jsonBytes,
     );
 
-    if (!jsonSent) {
+    final attachmentEventId = jsonUpload.eventId;
+    if (!jsonUpload.succeeded || attachmentEventId == null) {
       return null;
     }
 
@@ -195,7 +213,7 @@ class MatrixPayloadSender {
 
     final messageVectorClock = message.vectorClock;
     final jsonVectorClock = journalEntity.meta.vectorClock;
-    var outbound = message;
+    var outbound = message.copyWith(attachmentEventId: attachmentEventId);
     if (messageVectorClock != null && jsonVectorClock != null) {
       final status = VectorClock.compare(jsonVectorClock, messageVectorClock);
       if (status != VclockStatus.equal) {
@@ -206,7 +224,7 @@ class MatrixPayloadSender {
             jsonVectorClock,
           ],
         );
-        outbound = message.copyWith(
+        outbound = outbound.copyWith(
           vectorClock: jsonVectorClock,
           coveredVectorClocks: covered,
         );
@@ -231,7 +249,7 @@ class MatrixPayloadSender {
           jsonVectorClock,
         ],
       );
-      outbound = message.copyWith(
+      outbound = outbound.copyWith(
         vectorClock: jsonVectorClock,
         coveredVectorClocks: covered,
       );
@@ -531,6 +549,7 @@ class MatrixPayloadSender {
 
     return message.copyWith(
       jsonPath: relativePath,
+      attachmentEventId: uploadEventId,
       children: const [],
     );
   }

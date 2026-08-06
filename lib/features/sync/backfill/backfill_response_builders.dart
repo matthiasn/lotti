@@ -57,30 +57,44 @@ extension _BackfillResponseBuilders on BackfillResponseHandler {
     );
   }
 
-  /// Load the vector clock for a payload by type and ID.
-  /// Used to verify covering entries before using them.
-  Future<VectorClock?> _loadPayloadVectorClock({
+  /// Load payload existence and its vector clock by type and ID.
+  ///
+  /// Existence must remain distinct from a null vector clock: a deleted
+  /// payload is answered through the per-type deleted path, while a payload
+  /// that exists but has no clock cannot prove any sequence mapping and must
+  /// be rejected before it is re-sent.
+  Future<({bool exists, VectorClock? vectorClock})> _loadPayloadClockState({
     required String payloadId,
     required SyncSequencePayloadType payloadType,
   }) async {
     switch (payloadType) {
       case SyncSequencePayloadType.journalEntity:
         final entry = await _journalDb.journalEntityById(payloadId);
-        return entry?.meta.vectorClock;
+        return (
+          exists: entry != null,
+          vectorClock: entry?.meta.vectorClock,
+        );
       case SyncSequencePayloadType.entryLink:
         final link = await _journalDb.entryLinkById(payloadId);
-        return link?.vectorClock;
+        return (exists: link != null, vectorClock: link?.vectorClock);
       case SyncSequencePayloadType.agentEntity:
-        return (await agentRepository?.getEntity(payloadId))?.vectorClock;
+        final entity = await agentRepository?.getEntity(payloadId);
+        return (exists: entity != null, vectorClock: entity?.vectorClock);
       case SyncSequencePayloadType.agentLink:
-        return (await agentRepository?.getLinkById(payloadId))?.vectorClock;
+        final link = await agentRepository?.getLinkById(payloadId);
+        return (exists: link != null, vectorClock: link?.vectorClock);
       case SyncSequencePayloadType.notification:
       case SyncSequencePayloadType.notificationStateUpdate:
-        return (await _notificationsDb?.notificationById(
+        final notification = await _notificationsDb?.notificationById(
           payloadId,
-        ))?.meta.vectorClock;
+        );
+        return (
+          exists: notification != null,
+          vectorClock: notification?.meta.vectorClock,
+        );
       case SyncSequencePayloadType.consumptionEvent:
-        return await consumptionRepository?.getVectorClock(payloadId);
+        final event = await consumptionRepository?.getEvent(payloadId);
+        return (exists: event != null, vectorClock: event?.vectorClock);
     }
   }
 
@@ -104,11 +118,11 @@ extension _BackfillResponseBuilders on BackfillResponseHandler {
       final payloadType = SyncSequencePayloadType.values.elementAt(
         covering.payloadType,
       );
-      final coveringVc = await _loadPayloadVectorClock(
+      final coveringState = await _loadPayloadClockState(
         payloadId: covering.entryId!,
         payloadType: payloadType,
       );
-      final coveringVcCounter = coveringVc?.vclock[hostId];
+      final coveringVcCounter = coveringState.vectorClock?.vclock[hostId];
 
       if (coveringVcCounter != null && coveringVcCounter >= requestedCounter) {
         _trace(

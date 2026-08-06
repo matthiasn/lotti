@@ -5,6 +5,7 @@ import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/sync/matrix/consts.dart';
 import 'package:lotti/features/sync/matrix/matrix_payload_sender.dart';
 import 'package:lotti/features/sync/matrix/sent_event_registry.dart';
@@ -250,6 +251,7 @@ void main() {
         message: message,
       );
       expect(result, isNotNull, reason: 'the send must succeed');
+      expect(result!.attachmentEventId, 'event-1');
       return uploaded;
     }
 
@@ -341,6 +343,7 @@ void main() {
       );
 
       expect(result, isNotNull);
+      expect(result!.attachmentEventId, 'manifest-event');
       final manifest =
           json.decode(
                 utf8.decode(gzip.decode(uploadedManifest!.bytes)),
@@ -708,5 +711,61 @@ void main() {
         reason: 'The normal path must not start deleting live sidecars.',
       );
     });
+
+    test(
+      'uploads the claimed inline generation when the sidecar is newer',
+      () async {
+        final claimed = makeTestCapture(
+          id: 'entity-race',
+          transcript: 'claimed generation',
+          vectorClock: const VectorClock({'host-A': 3}),
+        );
+        final newer = makeTestCapture(
+          id: 'entity-race',
+          transcript: 'newer sidecar generation',
+          vectorClock: const VectorClock({'host-A': 30}),
+        );
+        final relativePath = relativeAgentEntityPath('entity-race');
+        final sidecar = File('${documentsDirectory.path}$relativePath')
+          ..parent.createSync(recursive: true)
+          ..writeAsStringSync(jsonEncode(newer.toJson()));
+
+        MatrixFile? uploadedFile;
+        when(
+          () => room.sendFileEvent(
+            any<MatrixFile>(),
+            extraContent: any<Map<String, dynamic>>(named: 'extraContent'),
+          ),
+        ).thenAnswer((invocation) async {
+          uploadedFile = invocation.positionalArguments.single as MatrixFile;
+          return 'claimed-generation-event';
+        });
+
+        final result = await payloadSender.enrichAndUploadAgentPayload(
+          room: room,
+          message: SyncMessage.agentEntity(
+            agentEntity: claimed,
+            jsonPath: relativePath,
+            status: SyncEntryStatus.update,
+          ),
+        );
+
+        expect(result, isA<SyncAgentEntity>());
+        final envelope = result! as SyncAgentEntity;
+        expect(envelope.attachmentEventId, 'claimed-generation-event');
+        final uploaded = AgentDomainEntity.fromJson(
+          jsonDecode(utf8.decode(gzip.decode(uploadedFile!.bytes)))
+              as Map<String, dynamic>,
+        );
+        expect(uploaded, claimed);
+        expect(
+          AgentDomainEntity.fromJson(
+            jsonDecode(sidecar.readAsStringSync()) as Map<String, dynamic>,
+          ),
+          newer,
+          reason: 'The send must not rewrite the newer canonical sidecar.',
+        );
+      },
+    );
   });
 }

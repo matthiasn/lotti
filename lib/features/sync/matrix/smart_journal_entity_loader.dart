@@ -19,8 +19,9 @@ import 'package:lotti/utils/image_utils.dart';
 import 'package:matrix/matrix.dart' show Event;
 
 /// Smart loader that ensures JSON presence/currency based on an incoming vector
-/// clock. It uses the AttachmentIndex to fetch missing/stale JSON and writes
-/// atomically before parsing.
+/// clock. Exact-generation envelopes are parsed directly from their referenced
+/// Matrix attachment; legacy path-only envelopes use the mutable disk cache and
+/// latest-by-path compatibility lookup.
 class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   SmartJournalEntityLoader({
     required this._attachmentIndex,
@@ -75,12 +76,21 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
   Future<JournalEntity> load({
     required String jsonPath,
     VectorClock? incomingVectorClock,
+    String? attachmentEventId,
   }) async {
     final targetFile = _resolveCandidateFile(jsonPath);
     // Build a canonical index key once and reuse it to avoid inconsistencies
     // across platforms (Windows vs. POSIX). The key always uses forward slashes
     // and has a single leading '/'. Any leading '/' or '\\' characters are trimmed.
     final indexKey = _buildIndexKey(jsonPath);
+    if (attachmentEventId != null) {
+      return _loadExactAttachment(
+        jsonPath: jsonPath,
+        indexKey: indexKey,
+        attachmentEventId: attachmentEventId,
+        incomingVectorClock: incomingVectorClock,
+      );
+    }
     // If we have an incoming vector clock, decide whether a fetch is needed.
     if (incomingVectorClock != null) {
       try {
@@ -216,6 +226,78 @@ class SmartJournalEntityLoader implements SyncJournalEntityLoader {
     // Missing media must not block entity application. The JSON payload is the
     // authoritative state; referenced audio/image files can arrive later via
     // the attachment pipeline or descriptor catch-up.
+    await _ensureMediaOnMissing(entity);
+    return entity;
+  }
+
+  Future<JournalEntity> _loadExactAttachment({
+    required String jsonPath,
+    required String indexKey,
+    required String attachmentEventId,
+    required VectorClock? incomingVectorClock,
+  }) async {
+    final descriptorEvent = _attachmentIndex.findByEventId(attachmentEventId);
+    if (descriptorEvent == null) {
+      _logging.log(
+        LogDomain.sync,
+        'smart.fetch.miss.exact path=$jsonPath key=$indexKey '
+        'eventId=$attachmentEventId',
+        subDomain: 'SmartLoader.fetch',
+      );
+      throw FileSystemException(
+        'attachment descriptor not yet available',
+        jsonPath,
+      );
+    }
+
+    final descriptorPath = descriptorEvent.content['relativePath'];
+    if (descriptorPath is! String ||
+        _buildIndexKey(descriptorPath) != indexKey) {
+      throw FormatException(
+        'attachment descriptor path does not match envelope path',
+        attachmentEventId,
+      );
+    }
+
+    final String candidateJson;
+    var bytesLength = 0;
+    if (incomingVectorClock != null) {
+      final descriptor = await _descriptorDownloader.download(
+        descriptorEvent: descriptorEvent,
+        incomingVectorClock: incomingVectorClock,
+        jsonPath: jsonPath,
+      );
+      candidateJson = descriptor.json;
+      bytesLength = descriptor.bytesLength;
+    } else {
+      final matrixFile = await downloadAttachmentWithTimeout(
+        descriptorEvent,
+        pathForError: jsonPath,
+      );
+      final downloadedBytes = matrixFile.bytes;
+      if (downloadedBytes.isEmpty) {
+        throw const FileSystemException('empty attachment bytes');
+      }
+      final bytes = await decodeAttachmentBytes(
+        event: descriptorEvent,
+        downloadedBytes: downloadedBytes,
+        relativePath: jsonPath,
+        logging: _logging,
+      );
+      candidateJson = utf8.decode(bytes);
+      bytesLength = bytes.length;
+    }
+
+    final decoded =
+        (await decodeJsonStringMaybeIsolate(candidateJson))!
+            as Map<String, dynamic>;
+    final entity = JournalEntity.fromJson(decoded);
+    _logging.log(
+      LogDomain.sync,
+      'smart.fetch.exact path=$jsonPath eventId=$attachmentEventId '
+      'bytes=$bytesLength',
+      subDomain: 'SmartLoader.fetch',
+    );
     await _ensureMediaOnMissing(entity);
     return entity;
   }

@@ -163,7 +163,7 @@ void main() {
         final result = await unpacker.prepare(
           event: event,
           msg: bundle,
-          resolveSidecar: (_) async {
+          resolveSidecar: ({required jsonPath, attachmentEventId}) async {
             fail('sidecar resolution must not run when children are inline');
           },
           prepareChild: (e, m) async => _preparedFor(e, m),
@@ -185,6 +185,7 @@ void main() {
         const stripped = SyncOutboxBundle(
           children: [],
           jsonPath: '/outbox_bundles/abc-123.json',
+          attachmentEventId: 'bundle-file-event',
         );
         const fullBundle = SyncOutboxBundle(
           children: [
@@ -196,8 +197,9 @@ void main() {
         final result = await unpacker.prepare(
           event: event,
           msg: stripped,
-          resolveSidecar: (jsonPath) async {
+          resolveSidecar: ({required jsonPath, attachmentEventId}) async {
             expect(jsonPath, '/outbox_bundles/abc-123.json');
+            expect(attachmentEventId, 'bundle-file-event');
             return fullBundle;
           },
           prepareChild: (e, m) async => _preparedFor(e, m),
@@ -225,7 +227,8 @@ void main() {
         final result = await unpacker.prepare(
           event: event,
           msg: stripped,
-          resolveSidecar: (_) async => null,
+          resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
+              null,
           prepareChild: (e, m) async {
             fail('prepareChild must not run when sidecar resolution fails');
           },
@@ -250,7 +253,8 @@ void main() {
           unpacker.prepare(
             event: event,
             msg: bundle,
-            resolveSidecar: (_) async => bundle,
+            resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
+                bundle,
             prepareChild: (_, _) async =>
                 throw const FileSystemException('descriptor not yet available'),
           ),
@@ -283,7 +287,8 @@ void main() {
         final result = await unpacker.prepare(
           event: event,
           msg: bundle,
-          resolveSidecar: (_) async => bundle,
+          resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
+              bundle,
           prepareChild: (e, m) async {
             final id = (m as SyncAiConfigDelete).id;
             if (id == 'boom') throw StateError('child blew up');
@@ -323,7 +328,8 @@ void main() {
         final result = await unpacker.prepare(
           event: event,
           msg: bundle,
-          resolveSidecar: (_) async => bundle,
+          resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
+              bundle,
           prepareChild: (e, m) async => _preparedFor(e, m),
         );
 
@@ -355,7 +361,8 @@ void main() {
         final prepareFuture = unpacker.prepare(
           event: event,
           msg: bundle,
-          resolveSidecar: (_) async => bundle,
+          resolveSidecar: ({required jsonPath, attachmentEventId}) async =>
+              bundle,
           prepareChild: (e, m) async {
             final id = (m as SyncAiConfigDelete).id;
             final generated = scenario.children.singleWhere(

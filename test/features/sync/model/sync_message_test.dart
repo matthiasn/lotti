@@ -270,6 +270,106 @@ void main() {
     });
   });
 
+  group('file-backed attachment identity', () {
+    test(
+      'all file-backed variants use an additive optional attachment id for '
+      'mixed-version compatibility',
+      () {
+        String? attachmentEventId(SyncMessage message) {
+          if (message case SyncJournalEntity(:final attachmentEventId)) {
+            return attachmentEventId;
+          }
+          if (message case SyncNotification(:final attachmentEventId)) {
+            return attachmentEventId;
+          }
+          if (message case SyncAgentEntity(:final attachmentEventId)) {
+            return attachmentEventId;
+          }
+          if (message case SyncAgentLink(:final attachmentEventId)) {
+            return attachmentEventId;
+          }
+          if (message case SyncAgentBundle(:final attachmentEventId)) {
+            return attachmentEventId;
+          }
+          if (message case SyncOutboxBundle(:final attachmentEventId)) {
+            return attachmentEventId;
+          }
+          throw StateError('not a file-backed message: $message');
+        }
+
+        const eventId = r'$attachment-event';
+        const messages = <SyncMessage>[
+          SyncMessage.journalEntity(
+            id: 'journal-1',
+            jsonPath: '/entries/journal-1.json',
+            vectorClock: VectorClock({'host-a': 1}),
+            status: SyncEntryStatus.update,
+            attachmentEventId: eventId,
+          ),
+          SyncMessage.notification(
+            id: 'notification-1',
+            jsonPath: '/notifications/notification-1.json',
+            vectorClock: VectorClock({'host-a': 2}),
+            originatingHostId: 'host-a',
+            attachmentEventId: eventId,
+          ),
+          SyncMessage.agentEntity(
+            status: SyncEntryStatus.update,
+            jsonPath: '/agent_entities/agent-1.json',
+            attachmentEventId: eventId,
+          ),
+          SyncMessage.agentLink(
+            status: SyncEntryStatus.update,
+            jsonPath: '/agent_links/link-1.json',
+            attachmentEventId: eventId,
+          ),
+          SyncMessage.agentBundle(
+            agentId: 'agent-1',
+            wakeRunKey: 'wake-1',
+            jsonPath: '/agent_bundles/wake-1.json',
+            attachmentEventId: eventId,
+          ),
+          SyncMessage.outboxBundle(
+            children: [SyncMessage.aiConfigDelete(id: 'child-1')],
+            jsonPath: '/outbox_bundles/bundle-1.json',
+            attachmentEventId: eventId,
+          ),
+        ];
+
+        for (final message in messages) {
+          final exactJson =
+              jsonDecode(jsonEncode(message)) as Map<String, dynamic>;
+          expect(exactJson['attachmentEventId'], eventId);
+          expect(
+            attachmentEventId(SyncMessage.fromJson(exactJson)),
+            eventId,
+          );
+
+          // Old senders omit the field. New receivers retain the legacy
+          // path-based representation instead of rejecting the envelope.
+          final legacyJson = Map<String, dynamic>.from(exactJson)
+            ..remove('attachmentEventId');
+          final legacy = SyncMessage.fromJson(legacyJson);
+          expect(attachmentEventId(legacy), isNull);
+          expect(
+            legacy.toJson()['runtimeType'],
+            exactJson['runtimeType'],
+          );
+
+          // The protocol's decoder ignores additive unknown keys, which is
+          // the same compatibility rule older generated decoders apply to the
+          // new attachmentEventId field.
+          final futureJson = Map<String, dynamic>.from(exactJson)
+            ..['futurePayloadDigest'] = 'sha256:test';
+          expect(
+            attachmentEventId(SyncMessage.fromJson(futureJson)),
+            eventId,
+          );
+        }
+      },
+    );
+  });
+
   group('SyncAgentEntity serialization', () {
     final testDate = DateTime(2024, 3, 15);
     const testVectorClock = VectorClock({'host-a': 1, 'host-b': 2});

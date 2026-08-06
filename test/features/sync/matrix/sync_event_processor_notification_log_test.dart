@@ -2,10 +2,12 @@
 
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/notification_entity.dart';
 import 'package:lotti/database/notifications_db.dart';
+import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/features/sync/model/sync_message.dart';
 import 'package:lotti/features/sync/sequence/sync_sequence_log_service.dart';
@@ -13,6 +15,7 @@ import 'package:lotti/features/sync/sequence/sync_sequence_payload_type.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
+import 'package:matrix/matrix.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:path/path.dart' as path;
 
@@ -398,6 +401,126 @@ void main() {
             notification,
           );
           verify(() => scheduler.schedule(notification)).called(1);
+        },
+      );
+
+      test(
+        'exact attachment id applies the referenced notification generation '
+        'after the stable path and disk cache advance',
+        () async {
+          const relativePath = '/notifications/versioned.json';
+          final older = hNotification(
+            id: 'versioned-notification',
+            linkedTaskId: 'task-from-referenced-generation',
+          );
+          final newer = hNotification(
+            id: 'versioned-notification',
+            linkedTaskId: 'task-from-newer-generation',
+          );
+
+          MockEvent descriptor({
+            required String eventId,
+            required NotificationEntity payload,
+          }) {
+            final result = MockEvent();
+            when(() => result.eventId).thenReturn(eventId);
+            when(
+              () => result.attachmentMimetype,
+            ).thenReturn('application/json');
+            when(
+              () => result.content,
+            ).thenReturn({'relativePath': relativePath});
+            when(result.downloadAndDecryptAttachment).thenAnswer(
+              (_) async => MatrixFile(
+                bytes: Uint8List.fromList(
+                  utf8.encode(jsonEncode(payload.toJson())),
+                ),
+                name: '$eventId.json',
+              ),
+            );
+            return result;
+          }
+
+          final olderDescriptor = descriptor(
+            eventId: 'notification-payload-older',
+            payload: older,
+          );
+          final newerDescriptor = descriptor(
+            eventId: 'notification-payload-newer',
+            payload: newer,
+          );
+          final index = AttachmentIndex()
+            ..record(olderDescriptor)
+            ..record(newerDescriptor);
+          await notificationsDb.upsertNotification(older);
+          when(
+            () => sequenceLog.recordReceivedEntry(
+              entryId: any(named: 'entryId'),
+              vectorClock: any(named: 'vectorClock'),
+              originatingHostId: any(named: 'originatingHostId'),
+              coveredVectorClocks: any(named: 'coveredVectorClocks'),
+              payloadType: any(named: 'payloadType'),
+              jsonPath: any(named: 'jsonPath'),
+              payloadVectorClock: any(named: 'payloadVectorClock'),
+              canonicalPayloadVectorClock: any(
+                named: 'canonicalPayloadVectorClock',
+              ),
+            ),
+          ).thenAnswer((_) async => []);
+          final exactProcessor = SyncEventProcessor(
+            loggingService: loggingService,
+            updateNotifications: updateNotifications,
+            aiConfigRepository: aiConfigRepository,
+            savedTaskFiltersRepository: savedTaskFiltersRepository,
+            settingsDb: settingsDb,
+            journalEntityLoader: journalEntityLoader,
+            notificationsDb: notificationsDb,
+            notificationScheduler: scheduler,
+            sequenceLogService: sequenceLog,
+            attachmentIndex: index,
+          );
+          File(path.join(tempDir.path, 'notifications', 'versioned.json'))
+            ..parent.createSync(recursive: true)
+            ..writeAsStringSync(jsonEncode(newer.toJson()));
+
+          final message = SyncMessage.notification(
+            id: older.meta.id,
+            jsonPath: relativePath,
+            attachmentEventId: 'notification-payload-older',
+            vectorClock: older.meta.vectorClock,
+            originatingHostId: 'remote-host',
+          );
+          when(() => event.text).thenReturn(encodeMessage(message));
+
+          await exactProcessor.process(event: event, journalDb: journalDb);
+
+          expect(
+            await notificationsDb.notificationById(older.meta.id),
+            older,
+          );
+          verify(
+            () => sequenceLog.recordReceivedEntry(
+              entryId: older.meta.id,
+              vectorClock: older.meta.vectorClock,
+              originatingHostId: 'remote-host',
+              coveredVectorClocks: null,
+              payloadType: SyncSequencePayloadType.notification,
+              jsonPath: relativePath,
+              payloadVectorClock: older.meta.vectorClock,
+              canonicalPayloadVectorClock: older.meta.vectorClock,
+            ),
+          ).called(1);
+          verify(olderDescriptor.downloadAndDecryptAttachment).called(1);
+          verifyNever(newerDescriptor.downloadAndDecryptAttachment);
+          final cached = NotificationEntity.fromJson(
+            jsonDecode(
+                  File(
+                    path.join(tempDir.path, 'notifications', 'versioned.json'),
+                  ).readAsStringSync(),
+                )
+                as Map<String, dynamic>,
+          );
+          expect(cached.linkedEntityId, 'task-from-newer-generation');
         },
       );
     });

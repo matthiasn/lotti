@@ -7,6 +7,7 @@ extension _NotificationHandlers on SyncEventProcessor {
     return _resolveAgentPayload(
       inline: null,
       jsonPath: msg.jsonPath,
+      attachmentEventId: msg.attachmentEventId,
       fromJson: NotificationEntity.fromJson,
       typeName: 'notification',
     );
@@ -18,9 +19,13 @@ extension _NotificationHandlers on SyncEventProcessor {
   }) async {
     final db = _notificationsDb;
     final notification = resolvedNotification;
+    VectorClock? canonicalVectorClock;
 
     if (db != null && notification != null) {
       final saved = await db.upsertNotification(notification);
+      canonicalVectorClock =
+          saved?.meta.vectorClock ??
+          (await db.notificationById(notification.meta.id))?.meta.vectorClock;
       if (saved != null) {
         await _notificationScheduler?.schedule(saved);
         _updateNotifications.notify(
@@ -53,7 +58,11 @@ extension _NotificationHandlers on SyncEventProcessor {
       return;
     }
 
-    await _recordNotificationReceived(msg);
+    await _recordNotificationReceived(
+      msg,
+      notification: notification,
+      canonicalVectorClock: canonicalVectorClock,
+    );
   }
 
   Future<void> _applyNotificationStateUpdateMessage(
@@ -108,16 +117,23 @@ extension _NotificationHandlers on SyncEventProcessor {
     await _recordNotificationStateUpdateReceived(msg);
   }
 
-  Future<void> _recordNotificationReceived(SyncNotification msg) async {
+  Future<void> _recordNotificationReceived(
+    SyncNotification msg, {
+    required NotificationEntity? notification,
+    required VectorClock? canonicalVectorClock,
+  }) async {
     if (_sequenceLogService == null || msg.originatingHostId.isEmpty) return;
     try {
+      final isExact = msg.attachmentEventId != null && notification != null;
       final gaps = await _sequenceLogService.recordReceivedEntry(
-        entryId: msg.id,
+        entryId: notification?.meta.id ?? msg.id,
         vectorClock: msg.vectorClock,
         originatingHostId: msg.originatingHostId,
         coveredVectorClocks: msg.coveredVectorClocks,
         payloadType: SyncSequencePayloadType.notification,
         jsonPath: msg.jsonPath,
+        payloadVectorClock: isExact ? notification.meta.vectorClock : null,
+        canonicalPayloadVectorClock: isExact ? canonicalVectorClock : null,
       );
       if (gaps.isNotEmpty) {
         _trace(

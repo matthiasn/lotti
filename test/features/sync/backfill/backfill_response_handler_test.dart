@@ -1990,16 +1990,12 @@ void main() {
     });
 
     test(
-      'own-host entry with null payload VC re-sends the entity then sends '
-      'unresolvable via the hint-or-unresolvable path',
+      'own-host entry with null payload VC sends only unresolvable because '
+      'the payload cannot prove the exact mapping',
       () async {
-        // The exact-row staleness guard only fires when the payload VC is
-        // non-null. Here the journal entity has a NULL vector clock, so that
-        // guard is bypassed and the entity is re-sent. Afterwards the
-        // requested counter is absent from the (null) VC, so the
-        // hint-or-unresolvable decision runs: own host + vcCounter == null
-        // means the mapping can never self-heal, so an unresolvable response
-        // is emitted (not a hint).
+        // The journal entity exists but has no vector clock. It cannot prove
+        // the requested counter, so the exact-row guard rejects it before the
+        // resend path and emits only the originator-authoritative burn marker.
         const request = SyncBackfillRequest(
           entries: [
             BackfillRequestEntry(hostId: aliceHostId, counter: 3),
@@ -2028,12 +2024,9 @@ void main() {
           () => mockOutboxService.enqueueMessage(captureAny()),
         ).captured.cast<SyncMessage>();
 
-        // First the entity is re-sent, then the unresolvable response.
-        expect(captured.length, 2);
-        expect(captured[0], isA<SyncJournalEntity>());
-        expect((captured[0] as SyncJournalEntity).id, entryId);
+        expect(captured, hasLength(1));
         expect(
-          captured[1],
+          captured.single,
           isA<SyncBackfillResponse>()
               .having((r) => r.hostId, 'hostId', aliceHostId)
               .having((r) => r.counter, 'counter', 3)
@@ -2045,6 +2038,7 @@ void main() {
                 SyncSequencePayloadType.journalEntity,
               ),
         );
+        expect(captured.whereType<SyncJournalEntity>(), isEmpty);
 
         // The unresolvable path also terminalizes our own counter locally.
         verify(

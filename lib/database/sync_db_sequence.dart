@@ -352,6 +352,62 @@ mixin _SyncDbSequenceLog on _$SyncDatabase, _SyncDbSequenceWatermarks {
         .get();
   }
 
+  /// Removes counter-to-payload bindings that [payloadCounters] cannot prove.
+  ///
+  /// Historical payload/path races could bind a stable payload id to a counter
+  /// ahead of the canonical payload's vector clock. Resolved rows are retired
+  /// to [SyncSequenceStatus.unresolvable]; actionable rows keep their status so
+  /// a genuine payload can still arrive, but lose the contradictory hint.
+  /// Every invalid row also drops its `json_path` because that path belonged to
+  /// the rejected binding. Returns the number of repaired rows.
+  Future<int> retireInvalidPayloadMappings({
+    required SyncSequencePayloadType payloadType,
+    required String payloadId,
+    required Map<String, int> payloadCounters,
+    DateTime? now,
+  }) async {
+    final timestamp = now ?? DateTime.now();
+    return transaction(() async {
+      final rows =
+          await (select(syncSequenceLog)..where(
+                (t) =>
+                    t.entryId.equals(payloadId) &
+                    t.payloadType.equals(payloadType.index),
+              ))
+              .get();
+      final invalid = rows
+          .where((row) {
+            final payloadCounter = payloadCounters[row.hostId];
+            return payloadCounter == null || payloadCounter < row.counter;
+          })
+          .toList(growable: false);
+      if (invalid.isEmpty) return 0;
+
+      await batch((batch) {
+        for (final row in invalid) {
+          final currentStatus = SyncSequenceStatus.values[row.status];
+          final repairedStatus = switch (currentStatus) {
+            SyncSequenceStatus.received ||
+            SyncSequenceStatus.backfilled => SyncSequenceStatus.unresolvable,
+            _ => currentStatus,
+          };
+          batch.update(
+            syncSequenceLog,
+            SyncSequenceLogCompanion(
+              entryId: const Value(null),
+              jsonPath: const Value(null),
+              status: Value(repairedStatus.index),
+              updatedAt: Value(timestamp),
+            ),
+            where: (t) =>
+                t.hostId.equals(row.hostId) & t.counter.equals(row.counter),
+          );
+        }
+      });
+      return invalid.length;
+    });
+  }
+
   /// Get the total count of entries in the sequence log.
   Future<int> getSequenceLogCount() async {
     final countQuery = selectOnly(syncSequenceLog)

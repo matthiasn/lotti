@@ -94,11 +94,14 @@ class SyncSequenceReceiver {
     List<VectorClock>? coveredVectorClocks,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
     String? jsonPath,
+    VectorClock? payloadVectorClock,
+    VectorClock? canonicalPayloadVectorClock,
   }) async {
     final gaps = GapAccumulator();
     var newMissingDetected = false;
     final myHost = await _vectorClockService.getHost();
     final now = DateTime.now();
+    final provingVectorClock = payloadVectorClock ?? vectorClock;
 
     // Update host activity for the originating host - they're online!
     await _syncDatabase.updateHostActivity(originatingHostId, now);
@@ -109,10 +112,15 @@ class SyncSequenceReceiver {
     // This prevents false positives: covered counters are pre-emptively marked
     // as received, so gap detection (which checks `existing == null`) will
     // skip them instead of incorrectly marking them as missing.
-    final filteredCovered = _gapMaterializer.filterCoveredVectorClocks(
+    final legacyFilteredCovered = _gapMaterializer.filterCoveredVectorClocks(
       coveredVectorClocks,
       vectorClock,
     );
+    final filteredCovered = payloadVectorClock == null
+        ? legacyFilteredCovered
+        : legacyFilteredCovered
+              .where((clock) => _coversClock(provingVectorClock, clock))
+              .toList(growable: false);
     if (filteredCovered.isNotEmpty && myHost != null) {
       _tracer.trace(
         'recordReceivedEntry: coveredVCs count=${filteredCovered.length} '
@@ -135,6 +143,17 @@ class SyncSequenceReceiver {
 
       // Skip our own host
       if (hostId == myHost) continue;
+
+      final provingCounter = provingVectorClock.vclock[hostId];
+      if (provingCounter == null || provingCounter < counter) {
+        _tracer.trace(
+          'recordReceivedEntry: rejected unproven mapping '
+          'hostId=$hostId counter=$counter entryId=$entryId '
+          'payloadCounter=$provingCounter type=$payloadType',
+          subDomain: 'sequence.mappingRejected',
+        );
+        continue;
+      }
 
       // Only detect gaps for hosts that have been seen "online" (i.e., have
       // sent us a message directly). This prevents false positive gaps for
@@ -475,6 +494,25 @@ class SyncSequenceReceiver {
       );
     }
 
+    final repairClock = canonicalPayloadVectorClock;
+    if (repairClock != null) {
+      final retired = await _syncDatabase.retireInvalidPayloadMappings(
+        payloadType: payloadType,
+        payloadId: entryId,
+        payloadCounters: repairClock.vclock,
+      );
+      if (retired > 0) {
+        _cache
+          ..clearLastCounterCache()
+          ..clearMaterializedUpperBound();
+        _tracer.trace(
+          'recordReceivedEntry: retired $retired contradictory mappings '
+          'for type=$payloadType entryId=$entryId',
+          subDomain: 'sequence.mappingRetired',
+        );
+      }
+    }
+
     // After processing the VC, check for any pending backfill hints.
     // This handles the case where a BackfillResponse arrived before the
     // actual entry. The hint contains the entryId, and now that we have
@@ -482,7 +520,7 @@ class SyncSequenceReceiver {
     await _backfillResponder.resolvePendingHints(
       payloadType: payloadType,
       payloadId: entryId,
-      payloadVectorClock: vectorClock,
+      payloadVectorClock: provingVectorClock,
     );
 
     // Note: Covered vector clocks are processed at the START of this method,
@@ -496,6 +534,16 @@ class SyncSequenceReceiver {
     }
 
     return gaps.toGapList();
+  }
+
+  static bool _coversClock(VectorClock candidate, VectorClock required) {
+    for (final entry in required.vclock.entries) {
+      final candidateCounter = candidate.vclock[entry.key];
+      if (candidateCounter == null || candidateCounter < entry.value) {
+        return false;
+      }
+    }
+    return true;
   }
 
   /// Cheap existence probe for any actionable (`missing` or `requested`)

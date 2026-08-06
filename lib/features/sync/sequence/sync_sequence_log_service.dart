@@ -140,6 +140,8 @@ class SyncSequenceLogService {
     List<VectorClock>? coveredVectorClocks,
     SyncSequencePayloadType payloadType = SyncSequencePayloadType.journalEntity,
     String? jsonPath,
+    VectorClock? payloadVectorClock,
+    VectorClock? canonicalPayloadVectorClock,
   }) => _receiver.recordReceivedEntry(
     entryId: entryId,
     vectorClock: vectorClock,
@@ -147,6 +149,8 @@ class SyncSequenceLogService {
     coveredVectorClocks: coveredVectorClocks,
     payloadType: payloadType,
     jsonPath: jsonPath,
+    payloadVectorClock: payloadVectorClock,
+    canonicalPayloadVectorClock: canonicalPayloadVectorClock,
   );
 
   Future<List<({String hostId, int counter})>> recordReceivedEntryLink({

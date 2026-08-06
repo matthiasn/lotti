@@ -171,10 +171,17 @@ extension _JournalHandlers on SyncEventProcessor {
     }
 
     try {
-      final journalEntity = await _journalEntityLoader.load(
-        jsonPath: syncMessage.jsonPath,
-        incomingVectorClock: syncMessage.vectorClock,
-      );
+      final attachmentEventId = syncMessage.attachmentEventId;
+      final journalEntity = attachmentEventId == null
+          ? await _journalEntityLoader.load(
+              jsonPath: syncMessage.jsonPath,
+              incomingVectorClock: syncMessage.vectorClock,
+            )
+          : await _journalEntityLoader.load(
+              jsonPath: syncMessage.jsonPath,
+              incomingVectorClock: syncMessage.vectorClock,
+              attachmentEventId: attachmentEventId,
+            );
       return PreparedSyncEvent._(
         event: event,
         syncMessage: syncMessage,
@@ -433,13 +440,43 @@ extension _JournalHandlers on SyncEventProcessor {
           await journalDb.journalEntityById(journalEntity.meta.id) != null;
       if (entryExistsInJournal) {
         try {
-          final gaps = await _sequenceLogService.recordReceivedEntry(
-            entryId: journalEntity.meta.id,
-            vectorClock: syncMessage.vectorClock!,
-            originatingHostId: syncMessage.originatingHostId!,
-            coveredVectorClocks: syncMessage.coveredVectorClocks,
-            jsonPath: syncMessage.jsonPath,
-          );
+          final List<({String hostId, int counter})> gaps;
+          if (syncMessage.attachmentEventId == null) {
+            // Mixed-version compatibility: path-only envelopes cannot prove
+            // which mutable sidecar generation was read, so retain the legacy
+            // sequence behavior until both peers send exact attachment ids.
+            gaps = await _sequenceLogService.recordReceivedEntry(
+              entryId: journalEntity.meta.id,
+              vectorClock: syncMessage.vectorClock!,
+              originatingHostId: syncMessage.originatingHostId!,
+              coveredVectorClocks: syncMessage.coveredVectorClocks,
+              jsonPath: syncMessage.jsonPath,
+            );
+          } else {
+            final payloadVectorClock = journalEntity.meta.vectorClock;
+            final canonicalVectorClock = updateResult.applied
+                ? payloadVectorClock
+                : (await journalDb.journalEntityById(
+                    journalEntity.meta.id,
+                  ))?.meta.vectorClock;
+            if (payloadVectorClock == null) {
+              _trace(
+                'apply.sequenceMappingSkipped id=${journalEntity.meta.id} '
+                'reason=payloadMissingVectorClock',
+                subDomain: 'processor.sequenceMapping',
+              );
+              return diag;
+            }
+            gaps = await _sequenceLogService.recordReceivedEntry(
+              entryId: journalEntity.meta.id,
+              vectorClock: syncMessage.vectorClock!,
+              originatingHostId: syncMessage.originatingHostId!,
+              coveredVectorClocks: syncMessage.coveredVectorClocks,
+              jsonPath: syncMessage.jsonPath,
+              payloadVectorClock: payloadVectorClock,
+              canonicalPayloadVectorClock: canonicalVectorClock,
+            );
+          }
           if (gaps.isNotEmpty) {
             _trace(
               'apply.gapsDetected count=${gaps.length} '

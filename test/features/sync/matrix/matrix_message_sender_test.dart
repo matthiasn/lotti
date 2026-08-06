@@ -1027,6 +1027,10 @@ void main() {
     final syncNotification = outbound as SyncNotification;
     expect(syncNotification.id, 'notification-send');
     expect(syncNotification.jsonPath, jsonPath);
+    expect(
+      syncNotification.attachmentEventId,
+      r'$notification-file-event-id',
+    );
     expect(syncNotification.originatingHostId, 'message-host');
     expect(syncNotification.vectorClock, const VectorClock({'hostA': 5}));
     expect(
@@ -2607,6 +2611,7 @@ void main() {
       final entityResult = result! as SyncAgentEntity;
       expect(entityResult.agentEntity, isNull);
       expect(entityResult.jsonPath, relativePath);
+      expect(entityResult.attachmentEventId, 'file-id');
       expect(entityResult.status, SyncEntryStatus.update);
 
       final extras = verify(
@@ -2843,6 +2848,7 @@ void main() {
               as Map<String, dynamic>;
       expect(decoded['agentEntity'], isNull);
       expect(decoded['jsonPath'], '/agent_entities/legacy-agent.json');
+      expect(decoded['attachmentEventId'], 'file-id');
     });
 
     test('returns false when agent entity upload fails', () async {
@@ -3099,6 +3105,10 @@ void main() {
         expect(stripped!.children, isEmpty);
         expect(stripped.jsonPath, startsWith('/outbox_bundles/'));
         expect(stripped.jsonPath, endsWith('.json'));
+        expect(
+          stripped.attachmentEventId,
+          r'$generated-bundle-file-id',
+        );
         if (scenario.pathKind == _GeneratedBundlePathKind.safe) {
           expect(stripped.jsonPath, scenario.jsonPath);
         } else {

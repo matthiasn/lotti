@@ -5,7 +5,7 @@ description: The Drift-backed inbound queue, the anchored catch-up bridge, per-r
 resource: ../../../lib/features/sync/queue
 tags: [sync, inbound-queue, catch-up, matrix]
 status: stable
-generated: { by: codex/5, at: 2026-07-27T02:34:38+02:00 }
+generated: { by: codex/gpt-5, at: 2026-08-06T00:25:30+02:00 }
 stale_after: 2026-11-02
 sources:
   - id: queue
@@ -15,7 +15,23 @@ sources:
   - id: processor
     resource: ../../../lib/features/sync/matrix/sync_event_processor.dart
     title: SyncEventProcessor
-    last_modified: 2026-07-21
+    last_modified: 2026-08-06
+  - id: attachment-index
+    resource: ../../../lib/features/sync/matrix/pipeline/attachment_index.dart
+    title: Exact and path attachment lookup
+    last_modified: 2026-08-06
+  - id: agent-resolution
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
+    title: Exact file-backed payload resolution
+    last_modified: 2026-08-06
+  - id: journal-resolution
+    resource: ../../../lib/features/sync/matrix/smart_journal_entity_loader.dart
+    title: Exact journal payload resolution
+    last_modified: 2026-08-06
+  - id: bundle-resolution
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_outbox_bundle.dart
+    title: Exact bundle manifest resolution
+    last_modified: 2026-08-06
   - id: tuning
     resource: ../../../lib/features/sync/tuning.dart
     title: SyncTuning
@@ -64,6 +80,19 @@ Two primitives carry the durability guarantees:
   primitive. Live ingestion and bridge walks can both offer the same event; the
   constraint decides.
 - **`lease_until`** is a durable worker lease that survives crashes.
+
+`AttachmentIndex` has two lookup contracts. Latest-by-path remains the
+compatibility path for envelopes from peers that know only `jsonPath`. Exact
+lookup retains every attachment by Matrix event id, so a newer attachment at a
+reused path cannot replace the generation named by an envelope carrying
+`attachmentEventId`. If that exact event has not been observed yet, prepare
+stays retryable and does not fall back to a different descriptor or a mutable
+disk cache. Recording the matching attachment still emits the canonical path
+signal, which wakes the pending queue row without weakening the exact-id check.
+The same rule is enforced for journal JSON, agent entity/link JSON,
+notifications, and outbox bundle manifests. Exact descriptors must also declare
+the same normalized `relativePath` as the envelope; a mismatched immutable id is
+malformed rather than a reason to read some other file.
 
 Per-room markers advance only after a successful slice commit, so a crash
 mid-drain simply re-leases the same rows on restart.

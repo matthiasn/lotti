@@ -5,13 +5,13 @@ description: The twenty-five SyncMessage families, which seven are sequence-trac
 resource: ../../../lib/features/sync/model/sync_message.dart
 tags: [sync, wire-format, sync-message]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-02T16:09:19Z }
+generated: { by: codex/gpt-5, at: 2026-08-06T00:30:48+02:00 }
 stale_after: 2026-11-02
 sources:
   - id: sync-message
     resource: ../../../lib/features/sync/model/sync_message.dart
     title: SyncMessage freezed union
-    last_modified: 2026-08-02
+    last_modified: 2026-08-06
   - id: payload-type
     resource: ../../../lib/features/sync/sequence/sync_sequence_payload_type.dart
     title: SyncSequencePayloadType
@@ -20,6 +20,30 @@ sources:
     resource: ../../../lib/features/sync/matrix/sync_event_processor_apply.dart
     title: Apply path
     last_modified: 2026-08-02
+  - id: attachment-index
+    resource: ../../../lib/features/sync/matrix/pipeline/attachment_index.dart
+    title: AttachmentIndex exact and legacy lookup
+    last_modified: 2026-08-06
+  - id: agent-resolution
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_agent_handlers.dart
+    title: Exact agent attachment resolution
+    last_modified: 2026-08-06
+  - id: journal-resolution
+    resource: ../../../lib/features/sync/matrix/smart_journal_entity_loader.dart
+    title: Exact journal attachment resolution
+    last_modified: 2026-08-06
+  - id: bundle-resolution
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_outbox_bundle.dart
+    title: Exact outbox manifest resolution
+    last_modified: 2026-08-06
+  - id: payload-sender
+    resource: ../../../lib/features/sync/matrix/matrix_payload_sender.dart
+    title: File-backed payload upload and event-id binding
+    last_modified: 2026-08-06
+  - id: agent-payload-sender
+    resource: ../../../lib/features/sync/matrix/matrix_payload_sender_notifications.dart
+    title: Claimed agent payload upload
+    last_modified: 2026-08-06
 ---
 
 # Families
@@ -118,6 +142,32 @@ carries a `jsonPath` and the bytes ride as a Matrix attachment. Those payloads
 are resolved through the attachment index and loader before they are applied,
 which is why attachment ordering and dedupe are load-bearing for sync
 correctness rather than a storage detail.
+
+The transition away from mutable-path identity is backward compatible. A
+file-backed envelope may also carry `attachmentEventId`, the Matrix event id of
+the exact JSON attachment generation it represents. When that field is present,
+journal, agent, notification and outbox-manifest resolution looks up only that
+event and waits when it has not arrived; it never reads another descriptor or
+the on-disk cache at the same `jsonPath`. `AttachmentIndex` therefore retains
+every observed event by id while still exposing latest-by-path lookup for legacy
+envelopes. Older peers omit the field and continue through the path-first,
+disk-fallback compatibility path. The field is additive and generated decoders
+ignore unknown keys, so older receivers can still read current envelopes and
+use their `jsonPath`; they simply cannot enforce exact-generation identity.
+Exact causality therefore activates per envelope when a current sender includes
+the id and a current receiver understands it, without a flag-day upgrade.
+
+The wire field stays optional for mixed-version rollout, but every current JSON
+attachment sender populates it from the successful upload: journal entities,
+notifications, agent entities and links, and outbox bundle manifests. Agent
+rows carry their exact serialized payload inline while pending, so the sender
+uploads those claimed bytes before stripping the large entity from the wire
+envelope; a newer enqueue overwriting the stable sidecar cannot change the
+generation already claimed for send. A legacy file-only outbox row still reads
+its sidecar as a compatibility fallback. Exact journal payloads are parsed
+directly from their referenced attachment rather than written through the
+mutable stable-path cache; outbox manifests retain their existing cache write
+because each current sender allocates a fresh UUID path per manifest.
 
 A journal entity's media blob is a *second* file event, sent alongside the JSON
 only when the payload calls for it — `status == initial`,

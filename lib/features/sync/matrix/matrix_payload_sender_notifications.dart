@@ -34,13 +34,14 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
       return null;
     }
 
-    final jsonSent = await sendFile(
+    final jsonUpload = await _sendFile(
       room: room,
       fullPath: jsonFullPath,
       relativePath: message.jsonPath,
       bytes: jsonBytes,
     );
-    if (!jsonSent) return null;
+    final attachmentEventId = jsonUpload.eventId;
+    if (!jsonUpload.succeeded || attachmentEventId == null) return null;
 
     late final NotificationEntity notification;
     try {
@@ -57,7 +58,7 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
       return null;
     }
 
-    var outbound = message;
+    var outbound = message.copyWith(attachmentEventId: attachmentEventId);
     final jsonVectorClock = notification.meta.vectorClock;
     final status = VectorClock.compare(jsonVectorClock, message.vectorClock);
     if (status != VclockStatus.equal) {
@@ -66,7 +67,7 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
         message.vectorClock,
         jsonVectorClock,
       ]);
-      outbound = message.copyWith(
+      outbound = outbound.copyWith(
         vectorClock: jsonVectorClock,
         coveredVectorClocks: covered,
       );
@@ -193,6 +194,7 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
       room: room,
       relativePath: enrichedPath,
       logLabel: logLabel,
+      inlineJson: inlineJson,
     );
     // Clean up whether or not the upload succeeded. On failure the row is
     // retried, and the retry would find the file already present, leave
@@ -201,27 +203,32 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
     if (restoredForThisSend) {
       await _deletePayloadFromDisk(enrichedPath);
     }
-    if (!uploaded) return null;
+    if (uploaded == null) return null;
 
     return switch (message) {
       // Agent entities can be large — strip inline, use file only.
       final SyncAgentEntity m => m.copyWith(
         jsonPath: enrichedPath,
+        attachmentEventId: uploaded,
         agentEntity: null,
       ),
       // Agent links are small (like entry links) — keep inline for
       // reliable sync, avoiding race conditions with file downloads.
-      final SyncAgentLink m => m.copyWith(jsonPath: enrichedPath),
+      final SyncAgentLink m => m.copyWith(
+        jsonPath: enrichedPath,
+        attachmentEventId: uploaded,
+      ),
       _ => throw StateError('unreachable'),
     };
   }
 
   /// Reads the JSON file at [relativePath] from disk and uploads it via
-  /// [sendFile]. Returns true on success, false on failure.
-  Future<bool> _uploadAgentPayload({
+  /// [_sendFile]. Returns the exact attachment event id on success.
+  Future<String?> _uploadAgentPayload({
     required Room room,
     required String relativePath,
     required String logLabel,
+    required String? inlineJson,
   }) async {
     final fullPath = _resolveSidecarPath(relativePath);
     if (fullPath == null) {
@@ -230,12 +237,14 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
         'refusing $logLabel send: jsonPath escapes the documents directory',
         subDomain: 'sendMatrixMsg',
       );
-      return false;
+      return null;
     }
 
     late final Uint8List jsonBytes;
     try {
-      jsonBytes = await File(fullPath).readAsBytes();
+      jsonBytes = inlineJson == null
+          ? await File(fullPath).readAsBytes()
+          : Uint8List.fromList(utf8.encode(inlineJson));
     } catch (error, stackTrace) {
       loggingService.error(
         LogDomain.sync,
@@ -243,15 +252,16 @@ extension MatrixPayloadSenderNotifications on MatrixPayloadSender {
         stackTrace: stackTrace,
         subDomain: 'sendMatrixMsg.$logLabel',
       );
-      return false;
+      return null;
     }
 
-    return sendFile(
+    final upload = await _sendFile(
       room: room,
       fullPath: fullPath,
       relativePath: relativePath,
       bytes: jsonBytes,
     );
+    return upload.succeeded ? upload.eventId : null;
   }
 
   /// Removes a sidecar this send rebuilt, so restoring it for the upload does

@@ -14,21 +14,35 @@ extension _DescriptorCache on SyncEventProcessor {
     required String jsonPath,
     required File targetFile,
     required String typeName,
+    String? attachmentEventId,
+    bool writeToDisk = true,
   }) async {
     final index = _attachmentIndex;
     if (index == null) return null;
 
     final indexKey = _buildAgentIndexKey(jsonPath);
-    final descriptorEvent = index.find(indexKey);
+    final descriptorEvent = attachmentEventId == null
+        ? index.find(indexKey)
+        : index.findByEventId(attachmentEventId);
     if (descriptorEvent == null) {
       _trace(
-        '$typeName.descriptor.miss path=$jsonPath key=$indexKey',
+        '$typeName.descriptor.miss path=$jsonPath key=$indexKey '
+        'eventId=${attachmentEventId ?? 'legacy'}',
         subDomain: 'processor.resolve',
       );
       return null;
     }
 
-    final dedupeKey = '$indexKey@${descriptorEvent.eventId}';
+    if (attachmentEventId != null) {
+      final descriptorPath = descriptorEvent.content['relativePath'];
+      if (descriptorPath is! String ||
+          _buildAgentIndexKey(descriptorPath) != indexKey) {
+        throw UnrecoverableSyncPayloadException(typeName);
+      }
+    }
+
+    final dedupeKey =
+        '$indexKey@${descriptorEvent.eventId}@writeToDisk=$writeToDisk';
     final existing = _inFlightDescriptorFetches[dedupeKey];
     if (existing != null) {
       return existing;
@@ -39,6 +53,7 @@ extension _DescriptorCache on SyncEventProcessor {
       targetFile: targetFile,
       typeName: typeName,
       descriptorEvent: descriptorEvent,
+      writeToDisk: writeToDisk,
     );
     _inFlightDescriptorFetches[dedupeKey] = future;
     return future.whenComplete(() {
@@ -51,6 +66,7 @@ extension _DescriptorCache on SyncEventProcessor {
     required File targetFile,
     required String typeName,
     required Event descriptorEvent,
+    required bool writeToDisk,
   }) async {
     try {
       final matrixFile = await downloadAttachmentWithTimeout(
@@ -68,9 +84,12 @@ extension _DescriptorCache on SyncEventProcessor {
         logging: _loggingService,
       );
       final jsonString = utf8.decode(bytes);
-      await saveJson(targetFile.path, jsonString);
+      if (writeToDisk) {
+        await saveJson(targetFile.path, jsonString);
+      }
       _trace(
-        '$typeName.descriptor.fetched path=$jsonPath bytes=${bytes.length}',
+        '$typeName.descriptor.fetched path=$jsonPath bytes=${bytes.length} '
+        'cached=$writeToDisk',
         subDomain: 'processor.resolve',
       );
       return jsonString;
