@@ -23,6 +23,7 @@ import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
@@ -65,8 +66,8 @@ import 'package:uuid/uuid.dart';
 
 export 'package:lotti/features/agents/workflow/wake_result.dart';
 
-part 'task_agent_persistence_helpers.dart';
 part 'task_agent_execute.dart';
+part 'task_agent_persistence_helpers.dart';
 
 /// Assembles context, runs a conversation, and persists results for a single
 /// Task Agent wake cycle.
@@ -90,7 +91,7 @@ part 'task_agent_execute.dart';
 /// 12. Persist new observation notes (agentJournal entries).
 /// 13. Persist updated agent state (revision, wake counter, failure count).
 /// 14. Clean up the in-memory conversation in a `finally` block.
-class TaskAgentWorkflow {
+class TaskAgentWorkflow with AgentErrorLogging {
   TaskAgentWorkflow({
     required this.agentRepository,
     required this.conversationRepository,
@@ -133,7 +134,11 @@ class TaskAgentWorkflow {
   final SoulDocumentService? soulDocumentService;
 
   /// Optional domain logger for structured, PII-safe logging.
+  @override
   final DomainLogger? domainLogger;
+
+  @override
+  LogDomain get errorLogDomain => LogDomain.agentWorkflow;
 
   /// Optional embedding dependencies. When both are provided, agent reports
   /// are embedded for vector search after persistence. The pipeline is
@@ -202,7 +207,7 @@ class TaskAgentWorkflow {
     syncService: syncService,
     aiInputRepository: aiInputRepository,
     journalDb: journalDb,
-    logError: _logError,
+    logError: logError,
   );
 
   void _log(String message, {String? subDomain}) {
@@ -211,24 +216,6 @@ class TaskAgentWorkflow {
       message,
       subDomain: subDomain,
     );
-  }
-
-  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    if (domainLogger != null) {
-      domainLogger!.error(
-        LogDomain.agentWorkflow,
-        error ?? message,
-        message: error != null ? message : null,
-        stackTrace: stackTrace,
-      );
-    } else {
-      developer.log(
-        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
-        name: 'TaskAgentWorkflow',
-        error: error?.runtimeType,
-        stackTrace: stackTrace,
-      );
-    }
   }
 
   /// Execute a full wake cycle for the given agent.
@@ -333,7 +320,7 @@ class TaskAgentWorkflow {
         rethrowInferenceErrors: true,
       );
     } catch (e, s) {
-      _logError(
+      logError(
         'forced update_report retry failed — persisting partial wake',
         error: e,
         stackTrace: s,

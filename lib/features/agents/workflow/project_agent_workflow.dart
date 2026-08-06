@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
@@ -15,8 +13,10 @@ import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/project_tool_definitions.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
+import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/project_agent_strategy.dart';
@@ -32,7 +32,6 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
-import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -48,7 +47,7 @@ part 'project_agent_execute.dart';
 /// pattern). Fetches the project entity + linked tasks, builds a system prompt
 /// with project context, runs the conversation, and persists report,
 /// observations, and state updates.
-class ProjectAgentWorkflow {
+class ProjectAgentWorkflow with AgentErrorLogging {
   ProjectAgentWorkflow({
     required this.agentRepository,
     required this.conversationRepository,
@@ -74,7 +73,11 @@ class ProjectAgentWorkflow {
   final JournalRepository journalRepository;
   final AgentTemplateService templateService;
   final SoulDocumentService? soulDocumentService;
+  @override
   final DomainLogger? domainLogger;
+
+  @override
+  LogDomain get errorLogDomain => LogDomain.agentWorkflow;
   final void Function(String agentId)? onPersistedStateChanged;
 
   /// Captures the wake's project-linked journal entries into the agent's
@@ -97,7 +100,7 @@ class ProjectAgentWorkflow {
       ProjectAgentContextBuilder(
         agentRepository: agentRepository,
         journalRepository: journalRepository,
-        logError: _logError,
+        logError: logError,
       );
 
   void _log(String message, {String? subDomain}) {
@@ -106,24 +109,6 @@ class ProjectAgentWorkflow {
       message,
       subDomain: subDomain,
     );
-  }
-
-  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    if (domainLogger != null) {
-      domainLogger!.error(
-        LogDomain.agentWorkflow,
-        error ?? message,
-        message: error != null ? message : null,
-        stackTrace: stackTrace,
-      );
-    } else {
-      developer.log(
-        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
-        name: 'ProjectAgentWorkflow',
-        error: error?.runtimeType,
-        stackTrace: stackTrace,
-      );
-    }
   }
 
   /// Execute a full wake cycle for the given project agent.
@@ -209,7 +194,7 @@ class ProjectAgentWorkflow {
         ),
       );
     } catch (e, s) {
-      _logError('failed to persist token usage', error: e, stackTrace: s);
+      logError('failed to persist token usage', error: e, stackTrace: s);
     }
   }
 

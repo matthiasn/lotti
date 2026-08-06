@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -276,16 +277,52 @@ void main() {
 
   ScheduledWakeManager createAndStart({
     Duration checkInterval = const Duration(minutes: 1),
+    DomainLogger? domainLogger,
   }) {
     return ScheduledWakeManager(
       repository: repository,
       orchestrator: orchestrator,
       syncService: syncService,
       checkInterval: checkInterval,
+      domainLogger: domainLogger,
     )..start();
   }
 
   group('ScheduledWakeManager', () {
+    test('a failed pass is contained and reported as runtime', () async {
+      // The manager polls on a timer. A failing pass must not escape into the
+      // timer callback — an uncaught error there would tear down the poll and
+      // silently stop every scheduled wake for the rest of the process.
+      //
+      // Also pins the domain: `agentRuntime`, so these are visible to a reader
+      // filtering runtime failures rather than workflow ones.
+      final logger = MockDomainLogger();
+      when(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          message: any<String?>(named: 'message'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) {});
+      when(
+        () => repository.getDueScheduledAgentStates(any()),
+      ).thenAnswer((_) async => throw StateError('due query failed'));
+
+      final manager = createAndStart(domainLogger: logger);
+      addTearDown(manager.stop);
+      await pumpEventQueue();
+
+      verify(
+        () => logger.error(
+          LogDomain.agentRuntime,
+          any<Object>(),
+          message: 'error checking scheduled wakes',
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
     glados.Glados(
       glados.any.scheduledWakeBatchScenario,
       glados.ExploreConfig(numRuns: 180),

@@ -102,7 +102,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
           runKey: runKey,
         );
       } catch (e) {
-        _logError('failed to capture wake inputs', error: e);
+        logError('failed to capture wake inputs', error: e);
       }
     }
 
@@ -197,34 +197,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       systemMessage: systemPrompt,
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
-    final recordConsumption =
-        getIt.isRegistered<AiInteractionCapture>() &&
-        getIt.isRegistered<AiAttributionService>();
-
-    Future<void> finalizeCarrierlessAttribution({
-      required AiWorkStatus status,
-      required String errorCode,
-      String? errorSummary,
-    }) async {
-      if (!recordConsumption) return;
-      try {
-        final attribution = await getIt<AiAttributionService>()
-            .prepareCompletion(
-              attributionId: agentWakeAttributionId(runKey),
-              outputs: const [],
-              status: status,
-              errorCode: errorCode,
-              errorSummary: errorSummary,
-            );
-        await getIt<AiAttributionService>().finalize(attribution);
-      } catch (error, stackTrace) {
-        _logError(
-          'failed to terminalize carrier-less attribution',
-          error: error,
-          stackTrace: stackTrace,
-        );
-      }
-    }
+    final recordConsumption = canRecordAgentConsumption;
 
     // 8a. Persist user message for inspectability — as a v2 prompt record
     // when the read flipped (the log block is derivable from the synced
@@ -263,7 +236,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         ),
       );
     } catch (e) {
-      _logError('failed to persist user message', error: e);
+      logError('failed to persist user message', error: e);
     }
 
     try {
@@ -292,7 +265,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
             soulVersionId: templateCtx.soulVersion?.id,
           );
         } catch (e) {
-          _logError('failed to record template provenance', error: e);
+          logError('failed to record template provenance', error: e);
         }
       }
 
@@ -354,19 +327,10 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
       final reportId = reportContent.isEmpty
           ? null
           : ProjectAgentWorkflow._uuid.v4();
-      AiWorkAttribution? attributionEnvelope;
-      if (reportId != null && getIt.isRegistered<AiAttributionService>()) {
-        attributionEnvelope = await getIt<AiAttributionService>()
-            .prepareCompletion(
-              attributionId: agentWakeAttributionId(runKey),
-              outputs: [
-                AiArtifactReference(
-                  type: AiArtifactType.agentReport,
-                  id: reportId,
-                ),
-              ],
-            );
-      }
+      final attributionEnvelope = await prepareAgentReportAttribution(
+        runKey: runKey,
+        reportId: reportId,
+      );
       await syncService.runInTransaction(() async {
         final latestState =
             await agentRepository.getAgentState(agentId) ?? state;
@@ -555,14 +519,16 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
         try {
           await getIt<AiAttributionService>().finalize(attributionEnvelope);
         } catch (error, stackTrace) {
-          _logError(
+          logError(
             'report attribution projection remains pending for recovery',
             error: error,
             stackTrace: stackTrace,
           );
         }
       } else if (recordConsumption) {
-        await finalizeCarrierlessAttribution(
+        await finalizeCarrierlessAgentAttribution(
+          runKey: runKey,
+          logger: this,
           status: AiWorkStatus.partial,
           errorCode: 'output_carrier_unavailable',
         );
@@ -577,9 +543,11 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
 
       return const WakeResult(success: true);
     } catch (e, s) {
-      _logError('wake failed', error: e, stackTrace: s);
+      logError('wake failed', error: e, stackTrace: s);
 
-      await finalizeCarrierlessAttribution(
+      await finalizeCarrierlessAgentAttribution(
+        runKey: runKey,
+        logger: this,
         status: AiWorkStatus.failed,
         errorCode: e.runtimeType.toString(),
         errorSummary: e.toString(),
@@ -593,7 +561,7 @@ extension ProjectAgentExecute on ProjectAgentWorkflow {
           ),
         );
       } catch (stateError, s) {
-        _logError(
+        logError(
           'failed to update failure count',
           error: stateError,
           stackTrace: s,

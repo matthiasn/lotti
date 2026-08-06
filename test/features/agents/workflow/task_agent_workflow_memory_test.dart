@@ -7,9 +7,11 @@ import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/proposal_ledger.dart';
 import 'package:lotti/features/agents/projection/content_digest.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 import 'task_agent_workflow_test_helpers.dart';
 
 void main() {
@@ -113,6 +115,95 @@ void main() {
           // The workflow rendered the linked journal entry into a source.
           expect(capture.sources.map((s) => s.contentEntryId), ['linked-1']);
           expect(capture.sources.single.content['text'], 'a captured note');
+        },
+      );
+
+      test(
+        'an image-analysis lookup failure degrades the capture, not the wake',
+        () async {
+          // Image AI analyses hang off the image, not the task, so they need a
+          // second bulk lookup. That lookup is an enrichment: losing it must
+          // capture *without* analyses rather than skip the capture or fail the
+          // wake, because the task sources themselves are already in hand.
+          final capture = RecordingCaptureService();
+          final linkedEntry = makeLinkedTimeEntry(
+            id: 'linked-1',
+            dateFrom: DateTime(2024, 6),
+            dateTo: DateTime(2024, 6),
+            text: 'a captured note',
+          );
+          // A linked *image* is required: the enrichment lookup short-circuits
+          // when the task has none, so without one the failing call is never
+          // reached and this test would pass vacuously.
+          when(
+            () => mockJournalDb.getLinkedEntities(taskId),
+          ).thenAnswer((_) async => [linkedEntry, testImageEntry]);
+          when(
+            () => mockJournalDb.getBulkLinkedEntities(any()),
+          ).thenAnswer((_) async => throw StateError('bulk lookup failed'));
+
+          final logger = MockDomainLogger();
+          when(
+            () => logger.error(
+              any<LogDomain>(),
+              any<Object>(),
+              message: any<String?>(named: 'message'),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).thenAnswer((_) {});
+
+          final workflow = createTestWorkflow(
+            agentRepository: mockAgentRepository,
+            conversationRepository: mockConversationRepository,
+            aiInputRepository: mockAiInputRepository,
+            aiConfigRepository: mockAiConfigRepository,
+            journalDb: mockJournalDb,
+            cloudInferenceRepository: mockCloudInferenceRepository,
+            journalRepository: mockJournalRepository,
+            checklistRepository: mockChecklistRepository,
+            labelsRepository: mockLabelsRepository,
+            syncService: mockSyncService,
+            templateService: mockTemplateService,
+            inputCaptureService: capture,
+            domainLogger: logger,
+          );
+          stubFullExecutePath(
+            mockAgentRepository: mockAgentRepository,
+            mockAiInputRepository: mockAiInputRepository,
+            mockAiConfigRepository: mockAiConfigRepository,
+            mockConversationManager: mockConversationManager,
+            testAgentState: testAgentState,
+            geminiModel: geminiModel,
+            geminiProvider: geminiProvider,
+            agentId: agentId,
+            taskId: taskId,
+          );
+
+          final result = await workflow.execute(
+            agentIdentity: testAgentIdentity,
+            runKey: runKey,
+            triggerTokens: {},
+            threadId: threadId,
+          );
+
+          // Wake succeeded, and the capture still carries both task sources —
+          // the note and the image itself. Only the image's *analyses* were
+          // lost, which is the degradation this path is designed for.
+          expect(result.success, isTrue);
+          expect(capture.callCount, 1);
+          expect(
+            capture.sources.map((s) => s.contentEntryId),
+            containsAll(['linked-1', testImageEntry.meta.id]),
+          );
+          // And the lost enrichment was reported rather than swallowed.
+          verify(
+            () => logger.error(
+              LogDomain.agentWorkflow,
+              any<Object>(),
+              message: 'failed to fetch image AI responses for capture',
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
         },
       );
 

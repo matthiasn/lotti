@@ -5,9 +5,17 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-04T00:59:29Z }
+generated: { by: claude-code/opus-5, at: 2026-08-06T17:10:00Z }
 stale_after: 2026-10-12
 sources:
+  - id: error-logging
+    resource: ../../../lib/features/agents/util/agent_error_logging.dart
+    title: AgentErrorLogging — the shared content-free diagnostic path
+    last_modified: 2026-08-06
+  - id: carrierless-attribution
+    resource: ../../../lib/features/agents/workflow/carrierless_attribution.dart
+    title: prepareAgentReportAttribution and finalizeCarrierlessAgentAttribution
+    last_modified: 2026-08-07
   - id: db
     resource: ../../../lib/features/agents/database/agent_database.dart
     title: AgentDatabase
@@ -519,6 +527,14 @@ output, raw tool arguments, or arbitrary exception strings.
 The durable agent message log remains the memory and audit surface; it is never
 copied into runtime log files.
 
+For the seven runtime and workflow classes that share `AgentErrorLogging`
+(`agents/util/agent_error_logging.dart`), the rule is enforced in one place: its
+no-logger fallback passes `error.runtimeType` to `developer.log`, never the error
+object. That mixin replaced a byte-identical copy of the method in each class, so
+the rule can no longer be upheld in six places and broken in the seventh.
+`DayAgentWorkflow` deliberately does not adopt it — its logger is non-nullable
+and it has no fallback branch at all — so it carries the rule on its own.
+
 # AI consumption provenance
 
 Every agent report carrier receives AI-consumption provenance. Task agents
@@ -557,3 +573,27 @@ report carrier is authoritative and the local attribution projection is updated
 after the report write. Log-compaction inference is a separate carrier-less AI
 operation, captured before each backend call and terminalized as **partial**
 because its checkpoint format has no attribution record.
+
+A wake that fails before it reaches inference, or takes a branch that makes no
+call, would otherwise leave its envelope open and look perpetually in flight.
+`finalizeCarrierlessAgentAttribution`
+(`agents/workflow/carrierless_attribution.dart`) closes it explicitly, and is a
+no-op unless **both** `AiInteractionCapture` and `AiAttributionService` are
+registered — attribution without capture would be an envelope over nothing. The
+close is contained on failure: bookkeeping never converts a successful wake into
+a failed one.
+
+**The pair is required to open an envelope as well as to close one.** The
+project and event workflows both open theirs through
+`prepareAgentReportAttribution` in the same file, which returns `null` — writing
+the report with no `aiAttributionV1` provenance — when there is no report or when
+`canRecordAgentConsumption` is false. Gating on `AiAttributionService` alone
+would attribute a wake whose interaction rows nobody recorded, so the wake would
+appear in the consumption surfaces at zero cost rather than not at all.
+
+The task path has not been migrated: `WakeOutputWriter` still opens its envelope
+on `AiAttributionService` alone, and `task_agent_execute.dart` still gates its
+consumption fields on `AiInteractionCapture` alone. Both halves of that path
+would have to move together, so it is left as it is rather than made
+half-consistent. `lib/get_it.dart` registers the two services adjacently, so no
+shipping configuration reaches the divergent state.

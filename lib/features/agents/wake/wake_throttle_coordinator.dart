@@ -1,8 +1,8 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Manages throttle timing with deferred drains and deadlines.
@@ -10,7 +10,7 @@ import 'package:lotti/services/domain_logging.dart';
 /// Ensures that subscription-triggered wakes for the same agent are spaced
 /// at least [throttleWindow] apart. Persists the `nextWakeAt` timestamp
 /// to the agent's state entity so the UI can show a countdown timer.
-class WakeThrottleCoordinator {
+class WakeThrottleCoordinator with AgentErrorLogging {
   WakeThrottleCoordinator({
     required this.repository,
     required this.onDrainRequested,
@@ -23,31 +23,17 @@ class WakeThrottleCoordinator {
   final Future<void> Function() onDrainRequested;
   final void Function(String agentId)? onPersistedStateChanged;
   final Duration throttleWindow;
+  @override
   final DomainLogger? domainLogger;
+
+  @override
+  LogDomain get errorLogDomain => LogDomain.agentRuntime;
 
   final _throttleDeadlines = <String, DateTime>{};
   final _deferredDrainTimers = <String, Timer>{};
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(LogDomain.agentRuntime, message, subDomain: subDomain);
-  }
-
-  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    if (domainLogger != null) {
-      domainLogger!.error(
-        LogDomain.agentRuntime,
-        error ?? message,
-        message: error != null ? message : null,
-        stackTrace: stackTrace,
-      );
-    } else {
-      developer.log(
-        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
-        name: 'WakeThrottleCoordinator',
-        error: error?.runtimeType,
-        stackTrace: stackTrace,
-      );
-    }
   }
 
   /// Whether [agentId] is still inside its cooldown window. Evicts the
@@ -104,7 +90,7 @@ class WakeThrottleCoordinator {
         onPersistedStateChanged?.call(agentId);
       }
     } catch (e, s) {
-      _logError(
+      logError(
         'failed to persist throttle deadline '
         'for ${DomainLogger.sanitizeId(agentId)}',
         error: e,
@@ -164,7 +150,7 @@ class WakeThrottleCoordinator {
         onPersistedStateChanged?.call(agentId);
       }
     } catch (e, s) {
-      _logError(
+      logError(
         'failed to clear persisted throttle '
         'for ${DomainLogger.sanitizeId(agentId)}',
         error: e,

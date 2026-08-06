@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_time_utils.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/wake/run_key_factory.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
@@ -138,7 +138,7 @@ int _defaultMaxConcurrentWakes() => defaultAgentWakeConcurrency;
 /// - Enqueues [WakeJob]s into [WakeQueue] with deterministic run keys.
 /// - Dispatches queued jobs through [WakeRunner] (single-flight per agent).
 /// - Persists every wake attempt to the [AgentRepository] wake-run log.
-class WakeOrchestrator {
+class WakeOrchestrator with AgentErrorLogging {
   WakeOrchestrator({
     required this.repository,
     required this.queue,
@@ -171,7 +171,11 @@ class WakeOrchestrator {
   final MaxConcurrentWakes maxConcurrentWakes;
 
   /// Optional domain logger for structured, PII-safe logging.
+  @override
   final DomainLogger? domainLogger;
+
+  @override
+  LogDomain get errorLogDomain => LogDomain.agentRuntime;
 
   /// Optional callback that performs the actual agent execution during
   /// [processNext]. When set, the orchestrator delegates to this function
@@ -389,24 +393,6 @@ class WakeOrchestrator {
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(LogDomain.agentRuntime, message, subDomain: subDomain);
-  }
-
-  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    if (domainLogger != null) {
-      domainLogger!.error(
-        LogDomain.agentRuntime,
-        error ?? message,
-        message: error != null ? message : null,
-        stackTrace: stackTrace,
-      );
-    } else {
-      developer.log(
-        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
-        name: 'WakeOrchestrator',
-        error: error?.runtimeType,
-        stackTrace: stackTrace,
-      );
-    }
   }
 
   // ── Subscription management ────────────────────────────────────────────────

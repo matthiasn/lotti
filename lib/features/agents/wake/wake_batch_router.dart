@@ -327,7 +327,7 @@ extension WakeBatchRouter on WakeOrchestrator {
       }
       onPersistedStateChanged?.call(agentId);
     } catch (error, stackTrace) {
-      _logError(
+      logError(
         'failed to persist stale report watermark for '
         '${DomainLogger.sanitizeId(agentId)}',
         error: error,
@@ -436,7 +436,7 @@ extension WakeBatchRouter on WakeOrchestrator {
       // Mirror is intentionally left untouched: we don't know whether the
       // persisted flag still applies, so we fail open without rewriting
       // local state.
-      _logError(
+      logError(
         'content-gate: error checking content for '
         '${DomainLogger.sanitizeId(job.agentId)}',
         error: e,

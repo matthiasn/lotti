@@ -1,5 +1,3 @@
-import 'dart:developer' as developer;
-
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -10,7 +8,9 @@ import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
+import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
 import 'package:lotti/features/agents/workflow/event_agent_context_builder.dart';
 import 'package:lotti/features/agents/workflow/event_agent_strategy.dart';
@@ -24,7 +24,6 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
-import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -40,7 +39,7 @@ import 'package:uuid/uuid.dart';
 /// no health band. It does persist deferred proposals (follow-up tasks) as a
 /// pending change set. After a successful run the content gate is cleared
 /// (`awaitingContent = false`).
-class EventAgentWorkflow {
+class EventAgentWorkflow with AgentErrorLogging {
   EventAgentWorkflow({
     required this.agentRepository,
     required this.conversationRepository,
@@ -62,7 +61,11 @@ class EventAgentWorkflow {
   final JournalRepository journalRepository;
   final AgentTemplateService templateService;
   final SoulDocumentService? soulDocumentService;
+  @override
   final DomainLogger? domainLogger;
+
+  @override
+  LogDomain get errorLogDomain => LogDomain.agentWorkflow;
   final void Function(String agentId)? onPersistedStateChanged;
 
   static const _uuid = Uuid();
@@ -71,29 +74,11 @@ class EventAgentWorkflow {
       EventAgentContextBuilder(
         agentRepository: agentRepository,
         journalRepository: journalRepository,
-        logError: _logError,
+        logError: logError,
       );
 
   void _log(String message, {String? subDomain}) {
     domainLogger?.log(LogDomain.agentWorkflow, message, subDomain: subDomain);
-  }
-
-  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    if (domainLogger != null) {
-      domainLogger!.error(
-        LogDomain.agentWorkflow,
-        error ?? message,
-        message: error != null ? message : null,
-        stackTrace: stackTrace,
-      );
-    } else {
-      developer.log(
-        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
-        name: 'EventAgentWorkflow',
-        error: error?.runtimeType,
-        stackTrace: stackTrace,
-      );
-    }
   }
 
   /// Execute a full wake cycle for the given event agent.
@@ -193,35 +178,20 @@ class EventAgentWorkflow {
       systemMessage: systemPrompt,
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
-    final recordConsumption =
-        getIt.isRegistered<AiInteractionCapture>() &&
-        getIt.isRegistered<AiAttributionService>();
+    final recordConsumption = canRecordAgentConsumption;
 
-    Future<void> finalizeCarrierlessAttribution({
-      required AiWorkStatus status,
-      required String errorCode,
-      String? errorSummary,
-    }) async {
-      if (!recordConsumption) return;
-      try {
-        final attribution = await getIt<AiAttributionService>()
-            .prepareCompletion(
-              attributionId: agentWakeAttributionId(runKey),
-              outputs: const [],
-              status: status,
-              errorCode: errorCode,
-              errorSummary: errorSummary,
-            );
-        await getIt<AiAttributionService>().finalize(attribution);
-      } catch (error, stackTrace) {
-        _logError(
-          'failed to terminalize carrier-less attribution',
-          error: error,
-          stackTrace: stackTrace,
-        );
-      }
-    }
-
+    // Persist the user message for inspectability as the full blob — *not* as a
+    // v2 prompt record (ADR 0020), unlike the otherwise near-identical project
+    // path in `project_agent_execute.dart`.
+    //
+    // That difference is deliberate, not drift. A v2 record stores a prompt
+    // minus its derivable log block and re-derives that block on read, which
+    // presupposes a compacted memory log to derive it from. A v1 event agent has
+    // none: it is a narrate-only recap assembled from the event, its
+    // observations and its linked entries, so every byte of this prompt is
+    // non-derivable and there is nothing to elide. Storing a record here would
+    // add a marker pointing at an empty derivation and cost a reconstruction
+    // pass to get the same string back.
     try {
       final userPayloadId = _uuid.v4();
       await syncService.upsertEntity(
@@ -246,7 +216,7 @@ class EventAgentWorkflow {
         ),
       );
     } catch (e) {
-      _logError('failed to persist user message', error: e);
+      logError('failed to persist user message', error: e);
     }
 
     try {
@@ -275,7 +245,7 @@ class EventAgentWorkflow {
             soulVersionId: templateCtx.soulVersion?.id,
           );
         } catch (e) {
-          _logError('failed to record template provenance', error: e);
+          logError('failed to record template provenance', error: e);
         }
       }
 
@@ -360,19 +330,10 @@ class EventAgentWorkflow {
       final extractedObservations = strategy.extractObservations();
       final deferredItems = strategy.extractDeferredItems();
       final reportId = hasReport ? _uuid.v4() : null;
-      AiWorkAttribution? attributionEnvelope;
-      if (reportId != null && getIt.isRegistered<AiAttributionService>()) {
-        attributionEnvelope = await getIt<AiAttributionService>()
-            .prepareCompletion(
-              attributionId: agentWakeAttributionId(runKey),
-              outputs: [
-                AiArtifactReference(
-                  type: AiArtifactType.agentReport,
-                  id: reportId,
-                ),
-              ],
-            );
-      }
+      final attributionEnvelope = await prepareAgentReportAttribution(
+        runKey: runKey,
+        reportId: reportId,
+      );
 
       await syncService.runInTransaction(() async {
         final latestState =
@@ -528,14 +489,16 @@ class EventAgentWorkflow {
         try {
           await getIt<AiAttributionService>().finalize(attributionEnvelope);
         } catch (error, stackTrace) {
-          _logError(
+          logError(
             'report attribution projection remains pending for recovery',
             error: error,
             stackTrace: stackTrace,
           );
         }
       } else if (recordConsumption) {
-        await finalizeCarrierlessAttribution(
+        await finalizeCarrierlessAgentAttribution(
+          runKey: runKey,
+          logger: this,
           status: AiWorkStatus.partial,
           errorCode: 'output_carrier_unavailable',
         );
@@ -554,9 +517,11 @@ class EventAgentWorkflow {
               error: 'event agent produced no recap',
             );
     } catch (e, s) {
-      _logError('wake failed', error: e, stackTrace: s);
+      logError('wake failed', error: e, stackTrace: s);
 
-      await finalizeCarrierlessAttribution(
+      await finalizeCarrierlessAgentAttribution(
+        runKey: runKey,
+        logger: this,
         status: AiWorkStatus.failed,
         errorCode: e.runtimeType.toString(),
         errorSummary: e.toString(),
@@ -577,7 +542,7 @@ class EventAgentWorkflow {
           );
         });
       } catch (stateError, s) {
-        _logError(
+        logError(
           'failed to update failure count',
           error: stateError,
           stackTrace: s,
@@ -622,7 +587,7 @@ class EventAgentWorkflow {
         ),
       );
     } catch (e, s) {
-      _logError('failed to persist token usage', error: e, stackTrace: s);
+      logError('failed to persist token usage', error: e, stackTrace: s);
     }
   }
 
@@ -684,7 +649,7 @@ class EventAgentWorkflow {
         rethrowInferenceErrors: true,
       );
     } catch (e, s) {
-      _logError(
+      logError(
         'forced update_report retry failed — persisting partial wake',
         error: e,
         stackTrace: s,

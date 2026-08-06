@@ -6,6 +6,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/wake/wake_throttle_coordinator.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:meta/meta.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -326,16 +327,66 @@ void main() {
   WakeThrottleCoordinator createCoordinator({
     required Future<void> Function() onDrainRequested,
     void Function(String agentId)? onPersistedStateChanged,
+    DomainLogger? domainLogger,
   }) {
     return WakeThrottleCoordinator(
       repository: repository,
       onDrainRequested: onDrainRequested,
       onPersistedStateChanged: onPersistedStateChanged,
       throttleWindow: _generatedThrottleWindow,
+      domainLogger: domainLogger,
     );
   }
 
   group('WakeThrottleCoordinator', () {
+    test('a failed deadline persist is contained and reported as runtime', () {
+      // Throttling is an in-memory decision; the persisted `nextWakeAt` only
+      // survives a restart. A write failure must therefore not propagate into
+      // the caller that was merely recording a deadline.
+      //
+      // Also pins the domain: these failures belong to `agentRuntime`, not
+      // `agentWorkflow`, because a reader filtering on the workflow domain
+      // would otherwise never see them.
+      final logger = MockDomainLogger();
+      when(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          message: any<String?>(named: 'message'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) {});
+      when(
+        () => repository.upsertEntity(any()),
+      ).thenAnswer((_) async => throw StateError('write failed'));
+
+      fakeAsync((async) {
+        final coordinator = createCoordinator(
+          onDrainRequested: () async {},
+          domainLogger: logger,
+        );
+        addTearDown(coordinator.dispose);
+
+        expect(
+          () => coordinator.setDeadline('agent-1'),
+          returnsNormally,
+        );
+        async.flushMicrotasks();
+      });
+
+      verify(
+        () => logger.error(
+          LogDomain.agentRuntime,
+          any<Object>(),
+          message: any<String?>(
+            named: 'message',
+            that: contains('failed to persist throttle deadline'),
+          ),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+
     test('setDeadline persists next wake timestamp and notifies', () {
       final now = DateTime(2024, 3, 15, 10, 30);
       final persistedAgentIds = <String>[];

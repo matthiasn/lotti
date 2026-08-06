@@ -196,7 +196,7 @@ extension WakeDrainEngine on WakeOrchestrator {
               // escapes that boundary (for example, a logging implementation
               // throwing before `_executeJob` enters its outer try/finally).
               runner.release(job.agentId);
-              _logError(
+              logError(
                 'unexpected wake execution failure for '
                 '${DomainLogger.sanitizeId(job.runKey)}',
                 error: error,
@@ -268,7 +268,7 @@ extension WakeDrainEngine on WakeOrchestrator {
     try {
       entity = await repository.getEntity(job.agentId);
     } catch (error, stackTrace) {
-      _logError(
+      logError(
         'failed to load agent policy; allowing wake to proceed',
         error: error,
         stackTrace: stackTrace,
@@ -316,7 +316,7 @@ extension WakeDrainEngine on WakeOrchestrator {
       try {
         await repository.insertWakeRun(entry: entry);
       } catch (e, s) {
-        _logError(
+        logError(
           'insertWakeRun failed for ${DomainLogger.sanitizeId(job.runKey)}',
           error: e,
           stackTrace: s,
@@ -327,7 +327,7 @@ extension WakeDrainEngine on WakeOrchestrator {
 
       final executor = wakeExecutor;
       if (executor == null) {
-        _logError('no wakeExecutor set — marking run as failed');
+        logError('no wakeExecutor set — marking run as failed');
         await _safeUpdateStatus(
           job.runKey,
           WakeRunStatus.failed.name,
@@ -354,7 +354,7 @@ extension WakeDrainEngine on WakeOrchestrator {
             threadId,
           ).timeout(WakeOrchestrator.wakeStartHookTimeout);
         } catch (e, s) {
-          _logError(
+          logError(
             'pre-wake hook failed for ${DomainLogger.sanitizeId(job.agentId)}',
             error: e,
             stackTrace: s,
@@ -527,7 +527,7 @@ extension WakeDrainEngine on WakeOrchestrator {
       } catch (e) {
         _suppression.clearPreRegistered(job.agentId);
         final elapsed = clock.now().difference(startTime);
-        _logError(
+        logError(
           'wake failed in ${elapsed.inMilliseconds}ms '
           'for ${DomainLogger.sanitizeId(job.runKey)}',
           error: e,
@@ -562,7 +562,7 @@ extension WakeDrainEngine on WakeOrchestrator {
         errorMessage: errorMessage,
       );
     } catch (e, s) {
-      _logError(
+      logError(
         'failed to update wake run status '
         'for ${DomainLogger.sanitizeId(runKey)} to $status',
         error: e,
@@ -604,7 +604,7 @@ extension WakeDrainEngine on WakeOrchestrator {
       }
       onPersistedStateChanged?.call(agentId);
     } catch (error, stackTrace) {
-      _logError(
+      logError(
         'failed to persist fresh report watermark for '
         '${DomainLogger.sanitizeId(agentId)}',
         error: error,
