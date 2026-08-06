@@ -97,6 +97,12 @@ class DemoMediaHydrator {
   bool _disposed = false;
 
   Future<DemoMediaHydrationResult> hydrate() async {
+    // File watchers are installed by mounted cover widgets before the first
+    // R2 response may arrive. Their parent directories must therefore exist
+    // synchronously, rather than only after [_hydrateAsset] writes a file.
+    for (final asset in assets) {
+      _target(asset).parent.createSync(recursive: true);
+    }
     var alreadyComplete = 0;
     var downloaded = 0;
     var failed = 0;

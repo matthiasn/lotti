@@ -25,6 +25,7 @@ class DemoSeedManifest {
     required this.seededJournalIds,
     required this.seededDefinitionIds,
     required this.seededAiConfigIds,
+    this.seededLinkIds,
   });
 
   factory DemoSeedManifest.fromJson(Map<String, dynamic> json) {
@@ -35,6 +36,7 @@ class DemoSeedManifest {
       seededJournalIds: _idList(json['seededJournalIds']),
       seededDefinitionIds: _idList(json['seededDefinitionIds']),
       seededAiConfigIds: _idList(json['seededAiConfigIds']),
+      seededLinkIds: _optionalIdList(json['seededLinkIds']),
     );
   }
 
@@ -57,6 +59,10 @@ class DemoSeedManifest {
   /// Ids of every seeded AI config (providers, models, profiles, skills).
   final List<String> seededAiConfigIds;
 
+  /// Ids of every seeded entry-link row. `null` denotes a legacy manifest
+  /// written before link ownership was recorded.
+  final List<String>? seededLinkIds;
+
   /// Whether this world was seeded by the current app's seed content. A
   /// mismatch means the profile should be wiped and reseeded before reuse.
   bool get isCurrentVersion => seedVersion == demoSeedVersion;
@@ -68,6 +74,7 @@ class DemoSeedManifest {
     'seededJournalIds': seededJournalIds,
     'seededDefinitionIds': seededDefinitionIds,
     'seededAiConfigIds': seededAiConfigIds,
+    if (seededLinkIds != null) 'seededLinkIds': seededLinkIds,
   };
 
   /// The manifest file for a demo world rooted at [root].
@@ -95,4 +102,7 @@ class DemoSeedManifest {
 
   static List<String> _idList(dynamic value) =>
       List<String>.unmodifiable((value as List<dynamic>).cast<String>());
+
+  static List<String>? _optionalIdList(dynamic value) =>
+      value == null ? null : _idList(value);
 }

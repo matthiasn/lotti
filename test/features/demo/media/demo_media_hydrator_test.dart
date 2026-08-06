@@ -144,6 +144,7 @@ void main() {
       );
 
       final hydration = hydrator.hydrate();
+      expect(target(image).parent.existsSync(), isTrue);
       await requested.future;
       hydrator.dispose();
       response.complete(bytes);

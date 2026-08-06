@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:get_it/get_it.dart';
 import 'package:http/http.dart' as http;
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_hydrator.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
@@ -24,6 +25,7 @@ Future<void> registerDemoMediaHydration({
   required List<DemoMediaAsset> catalog,
   @visibleForTesting DemoMediaDownload? download,
   @visibleForTesting http.Client? client,
+  @visibleForTesting Future<Set<String>> Function()? activeJournalIds,
   @visibleForTesting void Function()? closeDownloader,
   @visibleForTesting DemoMediaHydrationLaunch? launch,
 }) async {
@@ -45,10 +47,31 @@ Future<void> registerDemoMediaHydration({
   }
   if (manifest == null) return;
 
+  Set<String> presentIds;
+  try {
+    final readActiveJournalIds =
+        activeJournalIds ??
+        () async {
+          return (await serviceLocator<JournalDb>()
+                  .allNonDeletedJournalEntityIds())
+              .toSet();
+        };
+    presentIds = await readActiveJournalIds();
+  } catch (error, stackTrace) {
+    logger.error(
+      LogDomain.general,
+      error,
+      stackTrace: stackTrace,
+      subDomain: 'demoMediaJournal',
+      message: 'Unable to inspect demo media entities',
+    );
+    return;
+  }
+
   final seededIds = manifest.seededJournalIds.toSet();
   final requiredAssets = [
     for (final asset in catalog)
-      if (seededIds.contains(asset.id)) asset,
+      if (seededIds.contains(asset.id) && presentIds.contains(asset.id)) asset,
   ];
   if (requiredAssets.isEmpty) return;
 

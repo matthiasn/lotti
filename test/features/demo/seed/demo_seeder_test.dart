@@ -260,6 +260,13 @@ void main() {
         tutorialLinks.map((link) => link.toId).toSet(),
         demoMediaForTask(demoTutorialTaskId).map((asset) => asset.id).toSet(),
       );
+      expect(
+        manifest.seededLinkIds,
+        containsAll([
+          ...fixture.links.map((link) => link.id),
+          ...tutorialLinks.map((link) => link.id),
+        ]),
+      );
 
       // Config flags: demo experience on top of the seeded defaults.
       expect(
@@ -354,6 +361,7 @@ void main() {
         hasLength(expectedAiConfigIds.length),
       );
       expect(manifest.seededJournalIds, persisted.seededJournalIds);
+      expect(persisted.seededLinkIds, manifest.seededLinkIds);
 
       // Isolation: the canary (active) world is byte-identical.
       expect(snapshotTree(canaryRealRoot), before);
