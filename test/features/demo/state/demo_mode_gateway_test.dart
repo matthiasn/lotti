@@ -483,6 +483,36 @@ void main() {
       );
     });
 
+    test('a stale world preserves edits to a seeded row', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final stale = (await gateway.findDemoProfile())!;
+      await writeManifest(
+        stale,
+        seedVersion: demoSeedVersion - 1,
+        seededJournalIds: const ['seeded-task'],
+      );
+      final handle = activateGeneration(stale);
+      await handle.writeJournalEntity(
+        TestTaskFactory.create(
+          id: 'seeded-task',
+          title: 'Edited mission',
+          createdAt: DateTime.utc(2026, 8, 6),
+        ),
+      );
+
+      final reseeded = await gateway.refreshStaleDemoWorld(
+        locale: const Locale('fr'),
+      );
+
+      expect(reseeded, isFalse);
+      expect((await gateway.findDemoProfile())!.id, stale.id);
+      expect(
+        (await handle.journalDb.journalEntityById('seeded-task')),
+        isNotNull,
+      );
+    });
+
     test('a world on the current seed version is left alone', () async {
       final gateway = buildGateway();
       await gateway.enterDemo(locale: const Locale('en'));

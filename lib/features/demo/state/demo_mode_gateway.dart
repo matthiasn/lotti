@@ -5,6 +5,7 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/app_root.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
@@ -307,6 +308,7 @@ class DemoModeGateway {
       return await _hasUserWorkIn(
         profile: profile,
         journalIds: opened.journalDb.allNonDeletedJournalEntityIds,
+        journalEntities: opened.journalDb.getJournalEntitiesForIds,
         entryLinks: opened.journalDb.linksForEntryIdsBidirectional,
         inferenceProviders: () => AiConfigRepository(
           opened.aiConfigDb,
@@ -330,6 +332,7 @@ class DemoModeGateway {
       return await _hasUserWorkIn(
         profile: profile,
         journalIds: getIt<JournalDb>().allNonDeletedJournalEntityIds,
+        journalEntities: getIt<JournalDb>().getJournalEntitiesForIds,
         entryLinks: getIt<JournalDb>().linksForEntryIdsBidirectional,
         inferenceProviders: () => getIt<AiConfigRepository>().getConfigsByType(
           AiConfigType.inferenceProvider,
@@ -348,6 +351,7 @@ class DemoModeGateway {
   Future<bool> _hasUserWorkIn({
     required Profile profile,
     required Future<List<String>> Function() journalIds,
+    required Future<List<JournalEntity>> Function(Set<String>) journalEntities,
     required Future<List<EntryLink>> Function(Set<String> ids) entryLinks,
     required Future<List<AiConfig>> Function() inferenceProviders,
   }) async {
@@ -363,6 +367,15 @@ class DemoModeGateway {
     final ids = await journalIds();
     if (ids.any((id) => !seededJournalIds.contains(id))) {
       return true;
+    }
+    if (manifest != null && seededJournalIds.isNotEmpty) {
+      final seededRows = await journalEntities(seededJournalIds);
+      final seededAt = manifest.seededAt;
+      if (seededRows.any(
+        (entity) => entity.meta.updatedAt.isAfter(seededAt),
+      )) {
+        return true;
+      }
     }
     final links = await entryLinks(seededJournalIds);
     if (links.any(
