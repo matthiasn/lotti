@@ -10829,6 +10829,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Themaselectie';
 
   @override
+  String syncQueueCountMillions(String value) {
+    return '${value}M';
+  }
+
+  @override
+  String syncQueueCountThousands(String value) {
+    return '${value}K';
+  }
+
+  @override
   String syncReauthExplanation(String deviceName) {
     return 'De synchronisatieserver accepteerde het opgeslagen wachtwoord niet. Voer het huidige wachtwoord van je synchronisatieaccount in om $deviceName uit de synchronisatie te verwijderen.';
   }

@@ -4308,6 +4308,24 @@
   "syncPayloadSavedTaskFilterDelete": "Smazání uloženého filtru úkolů",
   "syncPayloadSyncNodeProfile": "Profil synchronizačního uzlu",
   "syncPayloadThemingSelection": "Výběr tématu",
+  "syncQueueCountMillions": "{value}M",
+  "@syncQueueCountMillions": {
+    "description": "Compact sync queue depth in millions, e.g. 1.2M. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueCountThousands": "{value}K",
+  "@syncQueueCountThousands": {
+    "description": "Compact sync queue depth in thousands, e.g. 18K. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "syncReauthExplanation": "Server synchronizace uložené heslo nepřijal. Zadej aktuální heslo ke svému synchronizačnímu účtu a odeber {deviceName}.",
   "syncReauthInvalidPassword": "Toto heslo nefungovalo. Zkontroluj ho a zkus to znovu.",
   "syncReauthPasswordLabel": "Heslo k synchronizačnímu účtu",

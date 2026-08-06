@@ -1,17 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
+import 'package:lotti/features/sync/state/outbox_state_controller.dart';
+import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
 import 'package:lotti/widgets/nav_bar/mobile_nav_more_sheet.dart';
 import 'package:wolt_modal_sheet/wolt_modal_sheet.dart';
 
+import '../../mocks/mocks.dart';
+import '../../mocks/sync_config_test_mocks.dart';
 import '../../widget_test_utils.dart';
 
 void main() {
   Future<void> pumpAndOpenSheet(
     WidgetTester tester, {
     required List<MobileNavMoreSheetItem> items,
+    List<Override> overrides = const [],
   }) async {
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
@@ -25,6 +32,7 @@ void main() {
           ),
         ),
         theme: DesignSystemTheme.light(),
+        overrides: overrides,
       ),
     );
     await tester.tap(find.text('open'));
@@ -265,6 +273,40 @@ void main() {
         ),
         findsNothing,
       );
+    });
+
+    testWidgets('lays out a real sync-count trailing widget in a sheet row', (
+      tester,
+    ) async {
+      // `_MoreSheetRow` renders `item.trailing` as an *inflexible* child of
+      // its Row, which hands it unbounded horizontal constraints — while
+      // `OutboxTrailingBadge` lays its two pills out with `Flexible`. This
+      // pins the combination end to end with the real widget rather than a
+      // stand-in, because a stand-in is exactly what would not catch it.
+      await pumpAndOpenSheet(
+        tester,
+        overrides: [
+          journalDbProvider.overrideWithValue(
+            mockJournalDbWithSyncFlag(enabled: true),
+          ),
+          syncDatabaseProvider.overrideWithValue(mockSyncDatabaseWithCount(12)),
+          inboundQueueDepthProvider.overrideWith(
+            (_) => Stream<int>.value(18342),
+          ),
+        ],
+        items: [
+          MobileNavMoreSheetItem(
+            label: 'Settings',
+            icon: const Icon(Icons.settings_rounded),
+            trailing: const OutboxTrailingBadge(),
+            onSelected: () {},
+          ),
+        ],
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('↓ 18K'), findsOneWidget);
+      expect(find.text('↑ 12'), findsOneWidget);
     });
   });
 }

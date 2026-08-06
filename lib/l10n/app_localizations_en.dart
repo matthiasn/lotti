@@ -10719,6 +10719,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Theming selection';
 
   @override
+  String syncQueueCountMillions(String value) {
+    return '${value}M';
+  }
+
+  @override
+  String syncQueueCountThousands(String value) {
+    return '${value}K';
+  }
+
+  @override
   String syncReauthExplanation(String deviceName) {
     return 'The sync server didn\'t accept the saved password. Enter the current password for your sync account to remove $deviceName.';
   }

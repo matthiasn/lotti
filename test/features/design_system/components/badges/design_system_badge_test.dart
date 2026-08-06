@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/themes/theme.dart' show numericBadgeFontFeatures;
 
 import '../../../../widget_test_utils.dart';
 
@@ -262,6 +263,82 @@ void main() {
         dsTokensLight.typography.styles.others.caption,
         dsTokensLight.colors.text.mediumEmphasis,
       );
+    });
+
+    testWidgets('outlined badges leave word labels unshaped by default', (
+      tester,
+    ) async {
+      // "Unverified" and "This device" are words, not counts — digit shaping
+      // is not theirs to inherit just because a count shares the shape.
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.outlined(
+          label: 'Unverified',
+          tone: DesignSystemBadgeTone.neutral,
+        ),
+      );
+
+      expect(
+        _findTextNode(tester, 'Unverified').text.style!.fontFeatures,
+        isNull,
+      );
+    });
+
+    testWidgets('an outlined badge marked numeric gets tabular figures', (
+      tester,
+    ) async {
+      // The sync queue depths beside Settings are counts rendered in the
+      // outlined shape. Without tabular figures their digits change width as
+      // the value changes, so the pills twitch on every sync tick.
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.outlined(
+          label: '↓ 18K',
+          tone: DesignSystemBadgeTone.neutral,
+          numeric: true,
+        ),
+      );
+
+      expect(
+        _findTextNode(tester, '↓ 18K').text.style!.fontFeatures,
+        numericBadgeFontFeatures,
+      );
+    });
+
+    testWidgets('a numeric outlined badge holds its width as digits change', (
+      tester,
+    ) async {
+      double widthOf(String label) => tester
+          .getSize(
+            find
+                .ancestor(
+                  of: find.text(label),
+                  matching: find.byType(DecoratedBox),
+                )
+                .first,
+          )
+          .width;
+
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.outlined(
+          label: '↓ 111',
+          tone: DesignSystemBadgeTone.neutral,
+          numeric: true,
+        ),
+      );
+      final narrowDigits = widthOf('↓ 111');
+
+      await _pumpBadge(
+        tester,
+        const DesignSystemBadge.outlined(
+          label: '↓ 999',
+          tone: DesignSystemBadgeTone.neutral,
+          numeric: true,
+        ),
+      );
+
+      expect(widthOf('↓ 999'), narrowDigits);
     });
 
     testWidgets('renders the neutral filled badge on the surface overlay', (

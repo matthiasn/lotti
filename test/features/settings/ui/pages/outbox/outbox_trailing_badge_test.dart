@@ -124,6 +124,129 @@ void main() {
       );
     });
 
+    testWidgets('renders large counts compactly rather than in full', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const OutboxTrailingBadge(),
+          overrides: [
+            journalDbProvider.overrideWithValue(
+              mockJournalDbWithSyncFlag(enabled: true),
+            ),
+            syncDatabaseProvider.overrideWithValue(
+              mockSyncDatabaseWithCount(1204),
+            ),
+            inboundQueueDepthProvider.overrideWith(
+              (_) => Stream<int>.value(18342),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The uncapped form ('↓ 18342') is what let a busy queue take the
+      // Settings label's width until the label wrapped into a column of
+      // letters.
+      expect(find.text('↓ 18K'), findsOneWidget);
+      expect(find.text('↑ 1.2K'), findsOneWidget);
+      expect(find.text('↓ 18342'), findsNothing);
+    });
+
+    testWidgets('keeps the exact count in the accessible label', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const OutboxTrailingBadge(),
+          overrides: [
+            journalDbProvider.overrideWithValue(
+              mockJournalDbWithSyncFlag(enabled: true),
+            ),
+            syncDatabaseProvider.overrideWithValue(
+              mockSyncDatabaseWithCount(1204),
+            ),
+            inboundQueueDepthProvider.overrideWith(
+              (_) => Stream<int>.value(18342),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Compaction serves the row's width budget; a screen reader has no such
+      // constraint and should hear the real figure.
+      final context = tester.element(find.byType(OutboxTrailingBadge));
+      expect(
+        tester
+            .widgetList<DesignSystemBadge>(find.byType(DesignSystemBadge))
+            .map((badge) => badge.semanticLabel),
+        [
+          '${context.messages.syncActivityInboxLabel}: 18342',
+          '${context.messages.syncActivityOutboxLabel}: 1204',
+        ],
+      );
+    });
+
+    testWidgets('shapes both pills as counts so their digits do not jitter', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const OutboxTrailingBadge(),
+          overrides: [
+            journalDbProvider.overrideWithValue(
+              mockJournalDbWithSyncFlag(enabled: true),
+            ),
+            syncDatabaseProvider.overrideWithValue(
+              mockSyncDatabaseWithCount(4),
+            ),
+            inboundQueueDepthProvider.overrideWith(
+              (_) => Stream<int>.value(3),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        tester
+            .widgetList<DesignSystemBadge>(find.byType(DesignSystemBadge))
+            .map((badge) => badge.numeric),
+        everyElement(isTrue),
+      );
+    });
+
+    testWidgets('the pills share a too-narrow slot instead of overflowing it', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const SizedBox(
+            width: 40,
+            child: OutboxTrailingBadge(),
+          ),
+          overrides: [
+            journalDbProvider.overrideWithValue(
+              mockJournalDbWithSyncFlag(enabled: true),
+            ),
+            syncDatabaseProvider.overrideWithValue(
+              mockSyncDatabaseWithCount(999999),
+            ),
+            inboundQueueDepthProvider.overrideWith(
+              (_) => Stream<int>.value(999999),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // Six-figure queues in both directions on a 200 px rail is the case the
+      // sidebar clamps. Both directions shorten together rather than one
+      // winning the row and the other spilling out of it.
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets('renders nothing when sync is disabled', (tester) async {
       final syncDbMock = mockSyncDatabaseWithCount(9);
       final dbMock = mockJournalDbWithSyncFlag(enabled: false);

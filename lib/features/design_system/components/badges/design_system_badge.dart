@@ -40,7 +40,8 @@ class DesignSystemBadge extends StatelessWidget {
     super.key,
   }) : _type = _DesignSystemBadgeType.dot,
        _label = null,
-       _icon = null;
+       _icon = null,
+       numeric = false;
 
   const DesignSystemBadge.number({
     required String value,
@@ -50,7 +51,8 @@ class DesignSystemBadge extends StatelessWidget {
     super.key,
   }) : _type = _DesignSystemBadgeType.number,
        _label = value,
-       _icon = null;
+       _icon = null,
+       numeric = true;
 
   const DesignSystemBadge.filled({
     required String this._label,
@@ -59,13 +61,15 @@ class DesignSystemBadge extends StatelessWidget {
     this.excludeFromSemantics = false,
     super.key,
   }) : _type = _DesignSystemBadgeType.filled,
-       _icon = null;
+       _icon = null,
+       numeric = false;
 
   const DesignSystemBadge.outlined({
     required String this._label,
     this.tone = DesignSystemBadgeTone.primary,
     this.semanticLabel,
     this.excludeFromSemantics = false,
+    this.numeric = false,
     super.key,
   }) : _type = _DesignSystemBadgeType.outlined,
        _icon = null;
@@ -77,11 +81,22 @@ class DesignSystemBadge extends StatelessWidget {
     this.excludeFromSemantics = false,
     super.key,
   }) : _type = _DesignSystemBadgeType.icon,
-       _label = null;
+       _label = null,
+       numeric = false;
 
   final DesignSystemBadgeTone tone;
   final String? semanticLabel;
   final bool excludeFromSemantics;
+
+  /// Whether the label is a count and should be shaped as one.
+  ///
+  /// `.number` is numeric by construction; `.outlined` opts in, because the
+  /// shape also carries word labels ("Unverified", "This device") that gain
+  /// nothing from digit shaping. It is what a count rendered as an outlined
+  /// pill — the sync queue depths beside Settings — uses to stop its digits
+  /// jittering as the value changes.
+  final bool numeric;
+
   final _DesignSystemBadgeType _type;
   final String? _label;
   final IconData? _icon;
@@ -95,6 +110,7 @@ class DesignSystemBadge extends StatelessWidget {
       type: _type,
       label: _label,
       textScaler: textScaler,
+      numeric: numeric,
     );
     final styleSpec = _BadgeStyleSpec.fromTokens(
       tokens: tokens,
@@ -176,6 +192,7 @@ class _BadgeSizeSpec {
     required _DesignSystemBadgeType type,
     required String? label,
     required TextScaler textScaler,
+    required bool numeric,
   }) {
     final caption = tokens.typography.styles.others.caption;
     final baseBadgeHeight =
@@ -234,7 +251,11 @@ class _BadgeSizeSpec {
         verticalPadding: tokens.spacing.step1,
         cornerRadius: tokens.radii.xs,
         iconSize: 0,
-        textStyle: caption,
+        // A count in a text pill earns the same digit shaping a `.number`
+        // badge gets; a word label is left alone.
+        textStyle: numeric
+            ? caption.copyWith(fontFeatures: numericBadgeFontFeatures)
+            : caption,
         borderWidth: tokens.spacing.step1 / 2,
       ),
     };

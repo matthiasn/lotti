@@ -78,15 +78,27 @@ void main() {
       expect(find.byIcon(Icons.forum_outlined), findsOneWidget);
     });
 
-    testWidgets('separates itself from the content above with a rule', (
+    testWidgets('draws no rule above the group', (tester) async {
+      await tester.pumpWidget(wrap(buildRow()));
+      await tester.pump();
+
+      // These are the quietest controls either navigation surface has. A
+      // divider gave them the weight of a section boundary, announcing a
+      // separation from Settings that neither surface actually has.
+      expect(find.byType(DesignSystemDivider), findsNothing);
+    });
+
+    testWidgets('separates itself from the content above with spacing', (
       tester,
     ) async {
       await tester.pumpWidget(wrap(buildRow()));
       await tester.pump();
 
-      final rule = tester.getRect(find.byType(DesignSystemDivider));
-      final email = tester.getRect(find.byKey(emailKey));
-      expect(rule.bottom, lessThanOrEqualTo(email.top));
+      // Distance is the whole separation now, so it belongs to the band
+      // rather than to whatever the host happens to put above it.
+      final band = tester.getRect(find.byType(DesignSystemContactRow));
+      final firstAction = tester.getRect(find.byKey(emailKey));
+      expect(firstAction.top - band.top, dsTokensDark.spacing.step2);
     });
 
     testWidgets('keeps the actions in the supplied order', (tester) async {
@@ -161,21 +173,19 @@ void main() {
       expect(targets.map((target) => target.center.dy).toSet(), hasLength(1));
     });
 
-    testWidgets('runs the rule full width while insetting the actions', (
+    testWidgets('insets the actions inside the full-bleed band', (
       tester,
     ) async {
       await tester.pumpWidget(wrap(buildRow()));
       await tester.pump();
 
-      final rule = tester.getRect(find.byType(DesignSystemDivider));
       final row = tester.getRect(find.byType(DesignSystemContactRow));
-      final firstAction = tester.getRect(find.byKey(emailKey));
       final lastAction = tester.getRect(find.byKey(discordKey));
 
-      expect(rule.left, row.left);
-      expect(rule.right, row.right);
-      expect(firstAction.left, greaterThan(row.left));
-      expect(lastAction.right, lessThan(row.right));
+      // `step3`, not the rail's `step5` gutter: four 44 px targets need
+      // 176 px and a step5-inset 200 px rail leaves only 168 px, so the group
+      // would wrap. This is the reason the band is full-bleed at all.
+      expect(row.right - lastAction.right, dsTokensDark.spacing.step3);
     });
   });
 

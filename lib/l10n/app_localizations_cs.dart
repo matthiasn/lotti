@@ -10931,6 +10931,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Výběr tématu';
 
   @override
+  String syncQueueCountMillions(String value) {
+    return '${value}M';
+  }
+
+  @override
+  String syncQueueCountThousands(String value) {
+    return '${value}K';
+  }
+
+  @override
   String syncReauthExplanation(String deviceName) {
     return 'Server synchronizace uložené heslo nepřijal. Zadej aktuální heslo ke svému synchronizačnímu účtu a odeber $deviceName.';
   }

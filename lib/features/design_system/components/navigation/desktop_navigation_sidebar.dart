@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/branding/design_system_brand_logo.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -132,9 +134,10 @@ class DesktopNavigationSidebar extends StatelessWidget {
   ///
   /// Unlike every other slot, this one is laid out edge to edge rather than
   /// inside the rail's horizontal gutters — it owns whatever inset it wants.
-  /// The Lotti app uses it for the Contact Us footer, which is a band with a
-  /// rule across the rail rather than a row in a column of rows. The actions
-  /// own their compact inset while the rule remains full width.
+  /// The Lotti app uses it for the Contact Us footer, whose four compact
+  /// targets need more width than a gutter-inset row has at the rail's 200 px
+  /// minimum; giving the band the full width lets it choose a narrower inset
+  /// instead of wrapping.
   ///
   /// Suppressed in [collapsed] mode for the same reason as [aboveSettings].
   final Widget? footerBand;
@@ -504,6 +507,10 @@ class _DesktopSidebarNavItem extends StatelessWidget {
   }
 }
 
+/// Width of the fixed leading column the 20 px glyph is centred in. Sized so
+/// labels align down the rail regardless of glyph width.
+const double _iconColumnWidth = 32;
+
 class _ExpandedRowContent extends StatelessWidget {
   const _ExpandedRowContent({
     required this.destination,
@@ -522,40 +529,86 @@ class _ExpandedRowContent extends StatelessWidget {
         horizontal: tokens.spacing.step5,
         vertical: tokens.spacing.step4,
       ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          SizedBox(
-            width: 32,
-            child: Align(
-              alignment: Alignment.centerLeft,
-              child: ExcludeSemantics(
-                child: IconTheme(
-                  data: IconThemeData(
-                    size: 20,
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                  child: destination.iconBuilder(active: active),
-                ),
-              ),
-            ),
+      // Inside the padding, so `maxWidth` is already the row's content width
+      // and the inset is stated once. The trailing slot has to be measured
+      // against that width rather than laid out unbounded: a `Row` gives its
+      // inflexible children infinite width, so a trailing group wider than
+      // the row overflows however far the label has already ellipsized — and
+      // the label bottoms out at zero long before a 200 px rail can hold two
+      // counts and a glyph. Clamping lets the trailing shrink as the last
+      // resort, after the label has given up everything it had.
+      child: LayoutBuilder(
+        builder: (context, constraints) => _buildRow(
+          tokens,
+          trailingMaxWidth: math.max<double>(
+            0,
+            constraints.maxWidth - _iconColumnWidth - tokens.spacing.step3,
           ),
-          Expanded(
-            child: ExcludeSemantics(
-              child: Text(
-                destination.label,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-            ),
-          ),
-          if (destination.trailingBuilder != null) ...[
-            SizedBox(width: tokens.spacing.step3),
-            destination.trailingBuilder!(active: active),
-          ],
-        ],
+        ),
       ),
+    );
+  }
+
+  Widget _buildRow(
+    DsTokens tokens, {
+    required double trailingMaxWidth,
+  }) {
+    return Row(
+      // Relies on Row's default centre cross-alignment, and must: the glyph
+      // is a fixed 20 px while the label grows with the platform text scale,
+      // so start-aligning them leaves the icon stranded at the top of a
+      // label several times its height. The glyph deliberately does *not*
+      // scale with the text — at large scales it would cost the label more
+      // width than it is worth.
+      children: [
+        SizedBox(
+          width: _iconColumnWidth,
+          child: Align(
+            alignment: Alignment.centerLeft,
+            child: ExcludeSemantics(
+              child: IconTheme(
+                data: IconThemeData(
+                  size: 20,
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+                child: destination.iconBuilder(active: active),
+              ),
+            ),
+          ),
+        ),
+        Expanded(
+          child: ExcludeSemantics(
+            child: Text(
+              destination.label,
+              // One line, always. The rail is user-resizable down to 200 px
+              // and the trailing slot can carry counts, so a wrapping label
+              // does not degrade gracefully — it stacks into a column of
+              // single letters and pushes the row to several times its
+              // height. Ellipsis is the honest failure: the label is the
+              // only part of the row that can be shortened without losing
+              // information the glyph does not already carry.
+              maxLines: 1,
+              softWrap: false,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.body.bodyMedium.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
+          ),
+        ),
+        // The trailing group keeps its natural size until the label has
+        // ellipsized to nothing, so the label is what yields first. That is
+        // the intended order: a count truncated to `↓ 1…` would be wrong
+        // rather than merely short, while a clipped label still has its
+        // glyph to identify it.
+        if (destination.trailingBuilder != null) ...[
+          SizedBox(width: tokens.spacing.step3),
+          ConstrainedBox(
+            constraints: BoxConstraints(maxWidth: trailingMaxWidth),
+            child: destination.trailingBuilder!(active: active),
+          ),
+        ],
+      ],
     );
   }
 }
