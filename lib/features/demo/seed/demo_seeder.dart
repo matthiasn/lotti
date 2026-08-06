@@ -1,5 +1,7 @@
+import 'dart:convert';
 import 'dart:ui' show Locale;
 
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/features/demo/seed/demo_seed_manifest.dart';
 import 'package:lotti/features/demo/seed/demo_seed_text.dart';
@@ -49,6 +51,11 @@ class DemoSeeder {
       now: now,
     );
     final tutorial = DemoTutorialContent.build(translate: t, now: now);
+    final seededDefinitions = <EntityDefinition>[
+      ...penguinWorld.categories,
+      ...penguinWorld.labels,
+      ...penguinWorld.habits,
+    ];
 
     // Categories and labels first: every journal entity references them.
     for (final category in penguinWorld.categories) {
@@ -93,6 +100,13 @@ class DemoSeeder {
       await world.writeEntryLink(entryLink);
     }
 
+    final seededJournalUpdatedAt = {
+      for (final entity in await world.journalDb.getJournalEntitiesForIds(
+        journalEntities.map((entity) => entity.meta.id).toSet(),
+      ))
+        entity.meta.id: entity.meta.updatedAt,
+    };
+
     await _configureFlags();
 
     // FTUE suppression: the demo world must open straight onto the seeded
@@ -107,6 +121,11 @@ class DemoSeeder {
       seededJournalIds: List.unmodifiable([
         for (final entity in journalEntities) entity.meta.id,
       ]),
+      seededJournalUpdatedAt: Map.unmodifiable(seededJournalUpdatedAt),
+      seededDefinitionFingerprints: Map.unmodifiable({
+        for (final definition in seededDefinitions)
+          definition.id: jsonEncode(definition.toJson()),
+      }),
       seededDefinitionIds: List.unmodifiable([
         for (final category in penguinWorld.categories) category.id,
         for (final label in penguinWorld.labels) label.id,

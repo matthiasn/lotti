@@ -192,6 +192,23 @@ mixin _JournalDbJournalQueries on _$JournalDb, _JournalDbConfigFlags {
     return dbEntities.map(fromDbEntity).toList();
   }
 
+  /// Fetches journal rows by id including soft-deleted tombstones.
+  ///
+  /// Demo reseed protection uses this inventory to distinguish a deleted
+  /// seeded row from an untouched world before replacing stale seed content.
+  Future<List<JournalEntity>> getJournalEntitiesForIdsIncludingDeleted(
+    Set<String> ids,
+  ) async {
+    if (ids.isEmpty) return const <JournalEntity>[];
+    final placeholders = List.filled(ids.length, '?').join(', ');
+    final rows = await customSelect(
+      'SELECT * FROM journal WHERE id IN ($placeholders)',
+      variables: [for (final id in ids) Variable<String>(id)],
+      readsFrom: {journal},
+    ).asyncMap(journal.mapFromRow).get();
+    return rows.map(fromDbEntity).toList(growable: false);
+  }
+
   Future<List<JournalEntity>> getJournalEntitiesForIdsUnordered(
     Set<String> ids,
   ) async {

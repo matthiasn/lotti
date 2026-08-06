@@ -402,6 +402,9 @@ void main() {
       when(
         () => brokenDb.getConfigFlagByName(any()),
       ).thenAnswer((_) async => null);
+      when(
+        () => brokenDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => const []);
       final brokenWorld = MockWorldHandle();
       when(() => brokenWorld.root).thenReturn(worldRoot);
       when(() => brokenWorld.journalDb).thenReturn(brokenDb);

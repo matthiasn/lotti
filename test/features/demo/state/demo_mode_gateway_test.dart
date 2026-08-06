@@ -415,6 +415,7 @@ void main() {
       Profile demo, {
       required int seedVersion,
       List<String> seededJournalIds = const [],
+      Map<String, DateTime>? seededJournalUpdatedAt,
     }) => DemoSeedManifest(
       seedVersion: seedVersion,
       seededAt: DateTime.utc(2026),
@@ -422,6 +423,7 @@ void main() {
       seededJournalIds: seededJournalIds,
       seededDefinitionIds: const [],
       seededAiConfigIds: const [],
+      seededJournalUpdatedAt: seededJournalUpdatedAt,
     ).write(registry.rootFor(demo));
 
     test('a stale world holding no user work is wiped and reseeded with the '
@@ -487,12 +489,17 @@ void main() {
       final gateway = buildGateway();
       await gateway.enterDemo(locale: const Locale('en'));
       final stale = (await gateway.findDemoProfile())!;
+      final handle = activateGeneration(stale);
+      await handle.writeJournalEntity(
+        TestTaskFactory.create(id: 'seeded-task', title: 'Seeded mission'),
+      );
+      final seeded = await handle.journalDb.journalEntityById('seeded-task');
       await writeManifest(
         stale,
         seedVersion: demoSeedVersion - 1,
         seededJournalIds: const ['seeded-task'],
+        seededJournalUpdatedAt: {'seeded-task': seeded!.meta.updatedAt},
       );
-      final handle = activateGeneration(stale);
       await handle.writeJournalEntity(
         TestTaskFactory.create(
           id: 'seeded-task',
@@ -507,10 +514,9 @@ void main() {
 
       expect(reseeded, isFalse);
       expect((await gateway.findDemoProfile())!.id, stale.id);
-      expect(
-        await handle.journalDb.journalEntityById('seeded-task'),
-        isNotNull,
-      );
+      final preserved = await handle.journalDb.journalEntityById('seeded-task');
+      expect(preserved, isNotNull);
+      expect((preserved! as Task).data.title, 'Edited mission');
     });
 
     test('a world on the current seed version is left alone', () async {

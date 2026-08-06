@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
@@ -308,7 +309,9 @@ class DemoModeGateway {
       return await _hasUserWorkIn(
         profile: profile,
         journalIds: opened.journalDb.allNonDeletedJournalEntityIds,
-        journalEntities: opened.journalDb.getJournalEntitiesForIds,
+        journalEntities:
+            opened.journalDb.getJournalEntitiesForIdsIncludingDeleted,
+        definitionFingerprints: () => _definitionFingerprints(opened.journalDb),
         entryLinks: opened.journalDb.linksForEntryIdsBidirectional,
         inferenceProviders: () => AiConfigRepository(
           opened.aiConfigDb,
@@ -332,7 +335,10 @@ class DemoModeGateway {
       return await _hasUserWorkIn(
         profile: profile,
         journalIds: getIt<JournalDb>().allNonDeletedJournalEntityIds,
-        journalEntities: getIt<JournalDb>().getJournalEntitiesForIds,
+        journalEntities:
+            getIt<JournalDb>().getJournalEntitiesForIdsIncludingDeleted,
+        definitionFingerprints: () =>
+            _definitionFingerprints(getIt<JournalDb>()),
         entryLinks: getIt<JournalDb>().linksForEntryIdsBidirectional,
         inferenceProviders: () => getIt<AiConfigRepository>().getConfigsByType(
           AiConfigType.inferenceProvider,
@@ -352,6 +358,7 @@ class DemoModeGateway {
     required Profile profile,
     required Future<List<String>> Function() journalIds,
     required Future<List<JournalEntity>> Function(Set<String>) journalEntities,
+    required Future<Map<String, String>> Function() definitionFingerprints,
     required Future<List<EntryLink>> Function(Set<String> ids) entryLinks,
     required Future<List<AiConfig>> Function() inferenceProviders,
   }) async {
@@ -363,6 +370,7 @@ class DemoModeGateway {
     }
     final seededJournalIds = {...?manifest?.seededJournalIds};
     final seededAiIds = {...?manifest?.seededAiConfigIds};
+    final seededDefinitionIds = {...?manifest?.seededDefinitionIds};
 
     final ids = await journalIds();
     if (ids.any((id) => !seededJournalIds.contains(id))) {
@@ -370,12 +378,28 @@ class DemoModeGateway {
     }
     if (manifest != null && seededJournalIds.isNotEmpty) {
       final seededRows = await journalEntities(seededJournalIds);
-      final seededAt = manifest.seededAt;
-      if (seededRows.any(
-        (entity) => entity.meta.updatedAt.isAfter(seededAt),
-      )) {
+      if (seededRows.length != seededJournalIds.length) {
         return true;
       }
+      final baseline = manifest.seededJournalUpdatedAt;
+      if (baseline != null &&
+          seededRows.any(
+            (entity) => baseline[entity.meta.id] != entity.meta.updatedAt,
+          )) {
+        return true;
+      }
+    }
+    final currentDefinitions = await definitionFingerprints();
+    final baselineDefinitions = manifest?.seededDefinitionFingerprints;
+    final definitionsChanged = baselineDefinitions != null
+        ? currentDefinitions.length != baselineDefinitions.length ||
+              currentDefinitions.entries.any(
+                (entry) => baselineDefinitions[entry.key] != entry.value,
+              )
+        : currentDefinitions.length != seededDefinitionIds.length ||
+              !currentDefinitions.keys.toSet().containsAll(seededDefinitionIds);
+    if (definitionsChanged) {
+      return true;
     }
     final links = await entryLinks(seededJournalIds);
     if (links.any(
@@ -385,6 +409,18 @@ class DemoModeGateway {
     }
     final providers = await inferenceProviders();
     return providers.any((config) => !seededAiIds.contains(config.id));
+  }
+
+  Future<Map<String, String>> _definitionFingerprints(JournalDb db) async {
+    final definitions = [
+      ...await db.getAllCategories(),
+      ...await db.getAllLabelDefinitions(),
+      ...await db.getAllHabitDefinitions(),
+    ];
+    return {
+      for (final definition in definitions)
+        definition.id: jsonEncode(definition.toJson()),
+    };
   }
 
   /// Legacy v4 manifests did not record seeded link IDs. Their links were
