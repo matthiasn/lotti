@@ -535,6 +535,9 @@ class _MediaCarousel extends StatelessWidget {
                   key: ValueKey('knowledge-graph-media-$path'),
                   fit: BoxFit.cover,
                   alignment: alignment,
+                  // Keep the previous frame on provider changes (e.g. a DPR
+                  // change altering cacheWidth) instead of flashing blank.
+                  gaplessPlayback: true,
                   cacheWidth: (width * MediaQuery.devicePixelRatioOf(context))
                       .round(),
                   errorBuilder: (_, _, _) => ColoredBox(

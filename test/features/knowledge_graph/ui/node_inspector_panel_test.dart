@@ -627,6 +627,9 @@ void main() {
           ),
         );
         expect(cover.alignment, const Alignment(0.5, 0));
+        // Provider changes (e.g. a DPR change altering cacheWidth) must keep
+        // the previous frame instead of flashing the tile blank.
+        expect(cover.gaplessPlayback, isTrue);
         final resized = cover.image as ResizeImage;
         expect(
           resized.width,

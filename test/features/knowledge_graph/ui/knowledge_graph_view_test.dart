@@ -13,6 +13,7 @@ import 'package:lotti/features/knowledge_graph/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_projection.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_scenarios.dart';
+import 'package:lotti/features/knowledge_graph/state/graph_image_cache.dart';
 import 'package:lotti/features/knowledge_graph/ui/entry_detail_sidebar.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_visual_spec.dart';
@@ -61,9 +62,11 @@ void main() {
     bool disableAnimations = false,
     void Function(String taskId, String previousFocusId)? onTaskFocusChanged,
     GraphImageLoader? imageLoader,
+    GraphImageCache? thumbnailCache,
     GraphVisualSpec? visualSpec,
     Size size = desktopSize,
     List<Override> extraOverrides = const [],
+    Key? viewKey,
   }) async {
     tester.view.physicalSize = size;
     tester.view.devicePixelRatio = 1.0;
@@ -73,6 +76,7 @@ void main() {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         KnowledgeGraphView(
+          key: viewKey,
           scenario: scenario,
           categoryColors: categoryColors,
           categoryNames: categoryNames,
@@ -84,6 +88,7 @@ void main() {
           showTitle: showTitle,
           showLegend: showLegend,
           imageLoader: imageLoader,
+          thumbnailCache: thumbnailCache,
           visualSpec: visualSpec,
         ),
         mediaQueryData: MediaQueryData(
@@ -791,6 +796,149 @@ void main() {
         expect(images.keys, isNot(contains('photo')));
         // Disposal of the loaded image happens when the widget tears down at the
         // end of the test (covers the dispose loop with a real entry).
+      },
+    );
+  });
+
+  group('shared thumbnail cache across remounts', () {
+    const coverPath = '/task-cover.png';
+
+    /// A fresh scenario OBJECT per call, mirroring how the task page hands the
+    /// remounted view a newly merged scenario after every data refresh.
+    GraphScenario coverScenario() => GraphScenario(
+      name: 'Cover art',
+      seedId: 'task',
+      nodes: [
+        GraphNode(
+          id: 'task',
+          type: GraphNodeType.task,
+          label: 'Task with cover art',
+          categoryId: catWork,
+          createdAt: fixedNow,
+          coverImagePath: coverPath,
+        ),
+      ],
+      edges: const [],
+      now: fixedNow,
+    );
+
+    testWidgets(
+      'remounted view paints the cached thumbnail on its first frame and '
+      'skips re-decoding it',
+      (tester) async {
+        // Regression: walking to a linked task remounts the view (the host
+        // keys it on the scenario); without the shared cache every node
+        // flashed imageless while all thumbnails re-decoded from disk.
+        late final ui.Image cover;
+        await tester.runAsync(() async {
+          final recorder = ui.PictureRecorder();
+          Canvas(recorder).drawColor(const Color(0xFF3366CC), BlendMode.src);
+          cover = await recorder.endRecording().toImage(8, 8);
+        });
+
+        final cache = GraphImageCache();
+        var decodes = 0;
+        await pumpView(
+          tester,
+          viewKey: const ValueKey('mount-1'),
+          scenario: coverScenario(),
+          thumbnailCache: cache,
+          imageLoader: (path, targetExtent) async {
+            decodes++;
+            return cover;
+          },
+        );
+        await tester.pump();
+        expect(painterOf(tester).images[coverPath], same(cover));
+        expect(decodes, 1);
+
+        // Remount with a decoder that never completes: if the first frame
+        // depended on re-decoding, the node would render imageless forever.
+        final neverDecodes = Completer<ui.Image>();
+        await pumpView(
+          tester,
+          viewKey: const ValueKey('mount-2'),
+          scenario: coverScenario(),
+          thumbnailCache: cache,
+          imageLoader: (path, targetExtent) {
+            decodes++;
+            return neverDecodes.future;
+          },
+        );
+
+        expect(
+          painterOf(tester).images[coverPath],
+          same(cover),
+          reason: 'the already-decoded thumbnail must survive the remount',
+        );
+        expect(
+          decodes,
+          1,
+          reason: 'a thumbnail cached at the target extent is not re-decoded',
+        );
+        expect(cover.debugDisposed, isFalse);
+
+        // The shared cache owns the images; the remounted views never do.
+        await tester.pumpWidget(const SizedBox.shrink());
+        expect(cover.debugDisposed, isFalse);
+        cache.dispose();
+        expect(cover.debugDisposed, isTrue);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
+      'remount prunes cached thumbnails the new scenario no longer references',
+      (tester) async {
+        late final ui.Image cover;
+        await tester.runAsync(() async {
+          final recorder = ui.PictureRecorder();
+          Canvas(recorder).drawColor(const Color(0xFF3366CC), BlendMode.src);
+          cover = await recorder.endRecording().toImage(8, 8);
+        });
+
+        final cache = GraphImageCache();
+        await pumpView(
+          tester,
+          viewKey: const ValueKey('mount-1'),
+          scenario: coverScenario(),
+          thumbnailCache: cache,
+          imageLoader: (path, targetExtent) async => cover,
+        );
+        await tester.pump();
+        expect(cache.imageOf(coverPath), same(cover));
+
+        // Remount around a scenario without any media: the stale thumbnail
+        // must not linger in the cache (unbounded growth across walks).
+        await pumpView(
+          tester,
+          viewKey: const ValueKey('mount-2'),
+          scenario: GraphScenario(
+            name: 'No media',
+            seedId: 'task',
+            nodes: [
+              GraphNode(
+                id: 'task',
+                type: GraphNodeType.task,
+                label: 'Task without cover art',
+                categoryId: catWork,
+                createdAt: fixedNow,
+              ),
+            ],
+            edges: const [],
+            now: fixedNow,
+          ),
+          thumbnailCache: cache,
+          imageLoader: (path, targetExtent) async =>
+              fail('nothing to decode in a media-less scenario'),
+        );
+        await tester.pump();
+
+        expect(cache.imageOf(coverPath), isNull);
+        expect(cover.debugDisposed, isTrue);
+        expect(painterOf(tester).images, isEmpty);
+        cache.dispose();
+        expect(tester.takeException(), isNull);
       },
     );
   });
