@@ -169,6 +169,14 @@ atomically inside that guest root. Individual failures are
 logged and contained; placeholders remain usable and the next startup retries
 the incomplete catalog.
 
+`DemoMediaHydrator.progress` publishes the successfully verified or installed
+catalog count against the manifest-owned total, plus any failed or cancelled
+items. `DemoModeBanner` observes that snapshot with the shared determinate
+progress component: it hides only after every asset succeeds; otherwise it
+keeps the incomplete count visible and explains that failed items retry on the
+next startup. The workspace stays usable without one live announcement per
+image.
+
 ```mermaid
 flowchart LR
     B[Profile bootstrap] --> M{Guest with demo manifest?}

@@ -2,14 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/demo/media/demo_media_hydrator.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Wraps the app shell in the persistent demo banner while a demo world is
@@ -191,59 +194,66 @@ class DemoModeBanner extends StatelessWidget {
                 horizontal: tokens.spacing.step4,
                 vertical: tokens.spacing.step3,
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Sized against the whole two-line block rather than the
-                  // identity line alone: an emoji is drawn well inside its
-                  // em box, so at the identity line's own size it reads as
-                  // a speck beside two lines of text instead of anchoring
-                  // them.
-                  ExcludeSemantics(
-                    child: Text(
-                      _penguin,
-                      style: tokens.typography.styles.heading.heading2,
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          context.messages.demoBannerLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.subtitle.subtitle1
-                              .copyWith(
-                                color: tokens.colors.text.highEmphasis,
-                              ),
+                  Row(
+                    children: [
+                      // Sized against the whole two-line block rather than
+                      // the identity line alone: an emoji is drawn well
+                      // inside its em box, so at the identity line's own
+                      // size it reads as a speck beside two lines of text
+                      // instead of anchoring them.
+                      ExcludeSemantics(
+                        child: Text(
+                          _penguin,
+                          style: tokens.typography.styles.heading.heading2,
                         ),
-                        SizedBox(height: tokens.spacing.step1),
-                        Text(
-                          context.messages.demoBannerSubtitle,
-                          // Two lines, because at 390px the column left over
-                          // beside the glyph and the exit button cannot hold
-                          // this sentence in one — and truncating the very
-                          // reassurance the banner exists to give would be
-                          // the worst thing to cut. The strip's height is
-                          // reserved structurally, so growing is safe.
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
+                      ),
+                      SizedBox(width: tokens.spacing.step3),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              context.messages.demoBannerLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: tokens.typography.styles.subtitle.subtitle1
+                                  .copyWith(
+                                    color: tokens.colors.text.highEmphasis,
+                                  ),
+                            ),
+                            SizedBox(height: tokens.spacing.step1),
+                            Text(
+                              context.messages.demoBannerSubtitle,
+                              // The descriptive column owns the available
+                              // width; the enlarged exit affordance sits on
+                              // its own row so translated reassurance text
+                              // never loses space to the action.
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: tokens.typography.styles.body.bodySmall
+                                  .copyWith(
+                                    color: tokens.colors.text.mediumEmphasis,
+                                  ),
+                            ),
+                            const _DemoMediaProgressLine(),
+                          ],
                         ),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: tokens.spacing.step3),
-                  DesignSystemButton(
-                    label: context.messages.demoBannerExit,
-                    variant: DesignSystemButtonVariant.tertiary,
-                    size: DesignSystemButtonSize.dense,
-                    onPressed: () => _openExitSheet(context),
+                  SizedBox(height: tokens.spacing.step2),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: DesignSystemButton(
+                      label: context.messages.demoBannerExit,
+                      variant: DesignSystemButtonVariant.tertiary,
+                      onPressed: () => _openExitSheet(context),
+                    ),
                   ),
                 ],
               ),
@@ -251,6 +261,39 @@ class DemoModeBanner extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DemoMediaProgressLine extends StatelessWidget {
+  const _DemoMediaProgressLine();
+
+  @override
+  Widget build(BuildContext context) {
+    if (!getIt.isRegistered<DemoMediaHydrator>()) {
+      return const SizedBox.shrink();
+    }
+    final hydrator = getIt<DemoMediaHydrator>();
+    final tokens = context.designTokens;
+
+    return ValueListenableBuilder<DemoMediaHydrationProgress>(
+      valueListenable: hydrator.progress,
+      builder: (context, progress, _) {
+        if (progress.isComplete) return const SizedBox.shrink();
+        return Padding(
+          padding: EdgeInsets.only(top: tokens.spacing.step1),
+          child: DesignSystemProgressBar(
+            value: progress.fraction,
+            label: progress.hasFailures
+                ? context.messages.demoMediaDownloadRetry
+                : context.messages.demoMediaDownloadProgress,
+            progressText: context.messages.demoMediaDownloadCount(
+              progress.completed,
+              progress.total,
+            ),
+          ),
+        );
+      },
     );
   }
 }

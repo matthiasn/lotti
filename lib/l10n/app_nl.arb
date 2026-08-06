@@ -2442,6 +2442,19 @@
   "demoExitSheetBody": "Je demowereld blijft bewaard — je kunt altijd terugkomen.",
   "demoExitSheetTitle": "Demo verlaten?",
   "demoExitTakeWork": "Mijn werk meenemen…",
+  "demoMediaDownloadCount": "{completed} van {total}",
+  "@demoMediaDownloadCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "demoMediaDownloadProgress": "Demofoto's downloaden",
+  "demoMediaDownloadRetry": "Sommige demofoto's konden niet worden gedownload. Bij de volgende start wordt het opnieuw geprobeerd.",
   "demoOnboardingExplore": "Verkennen met voorbeeldgegevens",
   "demoSettingsDeleteConfirm": "Demowereld en alle bijbehorende gegevens verwijderen?",
   "demoSettingsDeleteTitle": "Demogegevens verwijderen",

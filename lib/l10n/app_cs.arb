@@ -2210,6 +2210,19 @@
   "demoExitSheetBody": "Tvůj demo svět zůstane uložený — můžeš se kdykoli vrátit.",
   "demoExitSheetTitle": "Opustit demo?",
   "demoExitTakeWork": "Vzít si práci s sebou…",
+  "demoMediaDownloadCount": "{completed} z {total}",
+  "@demoMediaDownloadCount": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "demoMediaDownloadProgress": "Stahují se ukázkové obrázky",
+  "demoMediaDownloadRetry": "Některé ukázkové obrázky se nepodařilo stáhnout. Při příštím spuštění to zkusíme znovu.",
   "demoOnboardingExplore": "Prozkoumat s ukázkovými daty",
   "demoSettingsDeleteConfirm": "Smazat demo svět a všechna jeho data?",
   "demoSettingsDeleteTitle": "Smazat demo data",

@@ -1,8 +1,7 @@
 import 'dart:async';
 import 'dart:io';
-import 'dart:typed_data';
-
 import 'package:crypto/crypto.dart';
+import 'package:flutter/foundation.dart';
 import 'package:http/http.dart' as http;
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:path/path.dart' as p;
@@ -20,6 +19,29 @@ typedef DemoMediaHydrationError =
       Object error,
       StackTrace stackTrace,
     );
+
+/// Snapshot of background demo-media reconciliation.
+@immutable
+class DemoMediaHydrationProgress {
+  const DemoMediaHydrationProgress({
+    required this.completed,
+    required this.total,
+    this.failed = 0,
+    this.cancelled = 0,
+  });
+
+  /// Items whose local file was verified or whose download installed safely.
+  final int completed;
+  final int total;
+  final int failed;
+  final int cancelled;
+
+  bool get isComplete => completed == total;
+
+  bool get hasFailures => failed > 0;
+
+  double get fraction => total == 0 ? 0 : completed / total;
+}
 
 class DemoMediaHydrationResult {
   const DemoMediaHydrationResult({
@@ -94,6 +116,11 @@ class DemoMediaHydrator {
   final DemoMediaFileDigest _digestFile;
   final DemoMediaFileRename _renameFile;
 
+  /// Updates as catalog items finish verification or download.
+  final ValueNotifier<DemoMediaHydrationProgress> progress = ValueNotifier(
+    const DemoMediaHydrationProgress(completed: 0, total: 0),
+  );
+
   bool _disposed = false;
 
   Future<DemoMediaHydrationResult> hydrate() async {
@@ -109,10 +136,23 @@ class DemoMediaHydrator {
     var cancelled = 0;
     var nextIndex = 0;
 
+    void report() {
+      if (_disposed) return;
+      progress.value = DemoMediaHydrationProgress(
+        completed: alreadyComplete + downloaded,
+        total: assets.length,
+        failed: failed,
+        cancelled: cancelled,
+      );
+    }
+
+    report();
+
     final pending = <DemoMediaAsset>[];
     for (final asset in assets) {
       if (await _isComplete(asset)) {
         alreadyComplete++;
+        report();
       } else {
         pending.add(asset);
       }
@@ -135,6 +175,7 @@ class DemoMediaHydrator {
           failed++;
           onError?.call(asset, error, stackTrace);
         }
+        report();
       }
     }
 
@@ -207,5 +248,6 @@ class DemoMediaHydrator {
   void dispose() {
     _disposed = true;
     closeDownloader?.call();
+    progress.dispose();
   }
 }

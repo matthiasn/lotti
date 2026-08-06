@@ -7,9 +7,11 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/demo/media/demo_media_hydrator.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_mode_banner.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -50,6 +52,81 @@ void main() {
   }
 
   group('DemoModeScaffold', () {
+    testWidgets('shows determinate background demo-media progress while '
+        'downloads are pending', (tester) async {
+      addTearDown(() async {
+        await tearDownTestGetIt();
+      });
+      await setUpTestGetIt();
+      final hydrator = DemoMediaHydrator(
+        root: Directory.systemTemp,
+        assets: const [],
+        download: (_) async => throw UnimplementedError(),
+      );
+      getIt.registerSingleton<DemoMediaHydrator>(
+        hydrator,
+        dispose: (service) {
+          service.dispose();
+        },
+      );
+      hydrator.progress.value = const DemoMediaHydrationProgress(
+        completed: 0,
+        total: 1,
+      );
+
+      await tester.pumpWidget(
+        host(overrides: [demoModeActiveProvider.overrideWithValue(true)]),
+      );
+      expect(find.text('Downloading demo images'), findsOneWidget);
+      expect(find.text('0 of 1'), findsOneWidget);
+      expect(find.byType(DesignSystemProgressBar), findsOneWidget);
+
+      hydrator.progress.value = const DemoMediaHydrationProgress(
+        completed: 1,
+        total: 1,
+      );
+      await tester.pump();
+      expect(find.textContaining('Downloading demo images'), findsNothing);
+      expect(find.byType(DesignSystemProgressBar), findsNothing);
+      expect(find.byType(DemoModeBanner), findsOneWidget);
+    });
+
+    testWidgets('shows retry guidance when demo-media hydration fails', (
+      tester,
+    ) async {
+      addTearDown(() async {
+        await tearDownTestGetIt();
+      });
+      await setUpTestGetIt();
+      final hydrator = DemoMediaHydrator(
+        root: Directory.systemTemp,
+        assets: const [],
+        download: (_) async => throw UnimplementedError(),
+      );
+      getIt.registerSingleton<DemoMediaHydrator>(
+        hydrator,
+        dispose: (service) => service.dispose(),
+      );
+      hydrator.progress.value = const DemoMediaHydrationProgress(
+        completed: 0,
+        total: 1,
+        failed: 1,
+      );
+
+      await tester.pumpWidget(
+        host(overrides: [demoModeActiveProvider.overrideWithValue(true)]),
+      );
+
+      expect(
+        find.text(
+          "Some demo images couldn't be downloaded. They'll retry next time.",
+        ),
+        findsOneWidget,
+      );
+      expect(find.text('0 of 1'), findsOneWidget);
+      expect(find.byType(DesignSystemProgressBar), findsOneWidget);
+    });
+
     testWidgets('outside demo mode the child passes through unwrapped', (
       tester,
     ) async {
@@ -110,6 +187,12 @@ void main() {
       // The explicit exit affordance survives the taller layout.
       expect(find.text('Exit'), findsOneWidget);
       expect(find.byType(DesignSystemButton), findsOneWidget);
+      expect(
+        tester.widget<DesignSystemButton>(find.byType(DesignSystemButton)).size,
+        DesignSystemButtonSize.small,
+        reason:
+            'the persistent exit affordance must remain comfortably tappable',
+      );
 
       final bannerHeight = tester.getSize(find.byType(DemoModeBanner)).height;
       expect(

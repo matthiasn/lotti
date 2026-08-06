@@ -5086,6 +5086,18 @@ class AppLocalizationsFr extends AppLocalizations {
   String get demoExitTakeWork => 'Emporter mon travail…';
 
   @override
+  String demoMediaDownloadCount(int completed, int total) {
+    return '$completed sur $total';
+  }
+
+  @override
+  String get demoMediaDownloadProgress => 'Téléchargement des images de démo';
+
+  @override
+  String get demoMediaDownloadRetry =>
+      'Certaines images de démo n’ont pas pu être téléchargées. Un nouvel essai aura lieu au prochain démarrage.';
+
+  @override
   String get demoOnboardingExplore => 'Explorer avec des données d\'exemple';
 
   @override

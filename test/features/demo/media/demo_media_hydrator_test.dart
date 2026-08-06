@@ -62,6 +62,34 @@ void main() {
     },
   );
 
+  test(
+    'reports determinate progress for verified and downloaded assets',
+    () async {
+      final completeBytes = Uint8List.fromList([31]);
+      final missingBytes = Uint8List.fromList([32]);
+      final complete = asset('already-complete', completeBytes);
+      final missing = asset('missing-progress', missingBytes);
+      await target(complete).parent.create(recursive: true);
+      await target(complete).writeAsBytes(completeBytes);
+      final hydrator = DemoMediaHydrator(
+        root: root,
+        assets: [complete, missing],
+        concurrency: 1,
+        download: (uri) async => missingBytes,
+      );
+      final updates = <DemoMediaHydrationProgress>[];
+      hydrator.progress.addListener(() => updates.add(hydrator.progress.value));
+
+      await hydrator.hydrate();
+
+      expect(
+        updates.map((progress) => (progress.completed, progress.total)),
+        containsAll([(0, 2), (1, 2), (2, 2)]),
+      );
+      expect(hydrator.progress.value.isComplete, isTrue);
+    },
+  );
+
   test('does not request an asset whose local checksum is current', () async {
     final bytes = Uint8List.fromList([5, 6, 7]);
     final image = asset('complete', bytes);
@@ -123,6 +151,9 @@ void main() {
     expect(result.failed, 1);
     expect(result.downloaded, 1);
     expect(result.isComplete, isFalse);
+    expect(hydrator.progress.value.completed, 1);
+    expect(hydrator.progress.value.failed, 1);
+    expect(hydrator.progress.value.isComplete, isFalse);
   });
 
   test(
