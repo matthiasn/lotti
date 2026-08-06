@@ -145,6 +145,12 @@ void main() {
       // The explicit exit affordance survives the taller layout.
       expect(find.text('Exit'), findsOneWidget);
       expect(find.byType(DesignSystemButton), findsOneWidget);
+      expect(
+        tester.widget<DesignSystemButton>(find.byType(DesignSystemButton)).size,
+        DesignSystemButtonSize.small,
+        reason:
+            'the persistent exit affordance must remain comfortably tappable',
+      );
 
       final bannerHeight = tester.getSize(find.byType(DemoModeBanner)).height;
       expect(

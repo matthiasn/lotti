@@ -108,6 +108,25 @@ void main() {
     expect(find.text('Leave the demo?'), findsOneWidget);
     expect(find.text('Take my work with me…'), findsNothing);
 
+    final exitButton = tester.widget<DesignSystemButton>(
+      find.widgetWithText(DesignSystemButton, 'Exit demo'),
+    );
+    final cancelButton = tester.widget<DesignSystemButton>(
+      find.widgetWithText(
+        DesignSystemButton,
+        MaterialLocalizations.of(
+          tester.element(find.text('Cancel')),
+        ).cancelButtonLabel,
+      ),
+    );
+    expect(exitButton.fullWidth, isTrue);
+    expect(cancelButton.fullWidth, isFalse);
+    expect(
+      tester.getTopLeft(find.text('Cancel')).dy,
+      greaterThan(tester.getBottomLeft(find.text('Exit demo')).dy),
+      reason: 'Cancel is the quieter second-row escape hatch',
+    );
+
     await tester.tap(find.text('Exit demo'));
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 100));

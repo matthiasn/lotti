@@ -193,60 +193,66 @@ class DemoModeBanner extends StatelessWidget {
                 horizontal: tokens.spacing.step4,
                 vertical: tokens.spacing.step3,
               ),
-              child: Row(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  // Sized against the whole two-line block rather than the
-                  // identity line alone: an emoji is drawn well inside its
-                  // em box, so at the identity line's own size it reads as
-                  // a speck beside two lines of text instead of anchoring
-                  // them.
-                  ExcludeSemantics(
-                    child: Text(
-                      _penguin,
-                      style: tokens.typography.styles.heading.heading2,
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.step3),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(
-                          context.messages.demoBannerLabel,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.subtitle.subtitle1
-                              .copyWith(
-                                color: tokens.colors.text.highEmphasis,
-                              ),
+                  Row(
+                    children: [
+                      // Sized against the whole two-line block rather than
+                      // the identity line alone: an emoji is drawn well
+                      // inside its em box, so at the identity line's own
+                      // size it reads as a speck beside two lines of text
+                      // instead of anchoring them.
+                      ExcludeSemantics(
+                        child: Text(
+                          _penguin,
+                          style: tokens.typography.styles.heading.heading2,
                         ),
-                        SizedBox(height: tokens.spacing.step1),
-                        Text(
-                          context.messages.demoBannerSubtitle,
-                          // Two lines, because at 390px the column left over
-                          // beside the glyph and the exit button cannot hold
-                          // this sentence in one — and truncating the very
-                          // reassurance the banner exists to give would be
-                          // the worst thing to cut. The strip's height is
-                          // reserved structurally, so growing is safe.
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
+                      ),
+                      SizedBox(width: tokens.spacing.step3),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              context.messages.demoBannerLabel,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: tokens.typography.styles.subtitle.subtitle1
+                                  .copyWith(
+                                    color: tokens.colors.text.highEmphasis,
+                                  ),
+                            ),
+                            SizedBox(height: tokens.spacing.step1),
+                            Text(
+                              context.messages.demoBannerSubtitle,
+                              // The descriptive column owns the available
+                              // width; the enlarged exit affordance sits on
+                              // its own row so translated reassurance text
+                              // never loses space to the action.
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: tokens.typography.styles.body.bodySmall
+                                  .copyWith(
+                                    color: tokens.colors.text.mediumEmphasis,
+                                  ),
+                            ),
+                            _DemoMediaProgressLine(),
+                          ],
                         ),
-                        _DemoMediaProgressLine(),
-                      ],
-                    ),
+                      ),
+                    ],
                   ),
-                  SizedBox(width: tokens.spacing.step3),
-                  DesignSystemButton(
-                    label: context.messages.demoBannerExit,
-                    variant: DesignSystemButtonVariant.tertiary,
-                    size: DesignSystemButtonSize.dense,
-                    onPressed: () => _openExitSheet(context),
+                  SizedBox(height: tokens.spacing.step2),
+                  Align(
+                    alignment: AlignmentDirectional.centerEnd,
+                    child: DesignSystemButton(
+                      label: context.messages.demoBannerExit,
+                      variant: DesignSystemButtonVariant.tertiary,
+                      onPressed: () => _openExitSheet(context),
+                    ),
                   ),
                 ],
               ),
