@@ -6228,6 +6228,12 @@ class AppLocalizationsCs extends AppLocalizations {
   String get imageViewerDownloadTooltip => 'Stáhnout obrázek';
 
   @override
+  String get imageViewerNextTooltip => 'Další obrázek';
+
+  @override
+  String get imageViewerPreviousTooltip => 'Předchozí obrázek';
+
+  @override
   String get inactiveLabel => 'Neaktivní';
 
   @override
@@ -7044,6 +7050,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get knowledgeGraphOpenDetails => 'Otevřít podrobnosti';
+
+  @override
+  String get knowledgeGraphOpenPhoto => 'Zobrazit fotku na celé obrazovce';
 
   @override
   String knowledgeGraphPhotosSection(int count) {

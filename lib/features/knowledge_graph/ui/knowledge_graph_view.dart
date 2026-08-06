@@ -302,7 +302,12 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
           _disposeImages(loaded.images.values, retained: _images.values);
           return;
         }
-        _installImages(loaded.images, loaded.signatures, targetExtent);
+        _installImages(
+          loaded.images,
+          loaded.signatures,
+          loaded.evictions,
+          targetExtent,
+        );
         _loadedImageTargetExtent = targetExtent;
       }
     } finally {
@@ -334,21 +339,36 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     }
   }
 
-  Future<({Map<String, ui.Image> images, Map<String, String?> signatures})>
+  Future<
+    ({
+      Map<String, ui.Image> images,
+      Map<String, String?> signatures,
+      Set<String> evictions,
+    })
+  >
   _loadImages(int targetExtent) async {
     final loaded = <String, ui.Image>{};
     final signatures = <String, String?>{};
+    final evictions = <String>{};
     final loadImage = widget.imageLoader ?? decodeGraphImageFile;
     for (final path in _scenarioImagePaths()) {
       // Cached thumbnails survive remounts via the shared cache — only decode
       // what is missing, too small for the current device-pixel target, or
       // whose source file changed since it was decoded. An unavailable
-      // signature (test loaders) falls back to the extent-only check.
+      // signature falls back to the extent-only check (test loaders use
+      // synthetic paths), EXCEPT when the entry was decoded from a real file
+      // (it has a signature) and that file is now gone — then the entry is
+      // evicted so a deleted photo falls back to the type glyph instead of
+      // rendering its stale thumbnail forever.
       final signature = _fileSignatureOf(path);
-      final cachedFresh =
-          _thumbnails.decodedExtentOf(path) >= targetExtent &&
-          (signature == null || signature == _thumbnails.signatureOf(path));
-      if (cachedFresh) continue;
+      if (signature == null && _thumbnails.signatureOf(path) != null) {
+        evictions.add(path);
+      } else {
+        final cachedFresh =
+            _thumbnails.decodedExtentOf(path) >= targetExtent &&
+            (signature == null || signature == _thumbnails.signatureOf(path));
+        if (cachedFresh) continue;
+      }
       try {
         final image = await loadImage(path, targetExtent);
         if (!mounted) {
@@ -361,6 +381,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
           return (
             images: const <String, ui.Image>{},
             signatures: const <String, String?>{},
+            evictions: const <String>{},
           );
           // coverage:ignore-end
         }
@@ -370,16 +391,23 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
         // Missing/unreadable file — fall back to the type glyph.
       }
     }
-    return (images: loaded, signatures: signatures);
+    return (images: loaded, signatures: signatures, evictions: evictions);
   }
 
   void _installImages(
     Map<String, ui.Image> loaded,
     Map<String, String?> signatures,
+    Set<String> evictions,
     int targetExtent,
   ) {
-    if (loaded.isEmpty) return;
+    if (loaded.isEmpty && evictions.isEmpty) return;
     final replaced = <ui.Image>[];
+    // Apply evictions (deleted source files) before installs, so a path that
+    // both evicted and successfully re-decoded ends up with the fresh image.
+    for (final path in evictions) {
+      final removed = _thumbnails.remove(path);
+      if (removed != null) replaced.add(removed);
+    }
     for (final MapEntry(:key, :value) in loaded.entries) {
       final displaced = _thumbnails.put(
         key,

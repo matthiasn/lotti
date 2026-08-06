@@ -10565,6 +10565,18 @@ abstract class AppLocalizations {
   /// **'Download image'**
   String get imageViewerDownloadTooltip;
 
+  /// No description provided for @imageViewerNextTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Next image'**
+  String get imageViewerNextTooltip;
+
+  /// No description provided for @imageViewerPreviousTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Previous image'**
+  String get imageViewerPreviousTooltip;
+
   /// No description provided for @inactiveLabel.
   ///
   /// In en, this message translates to:
@@ -12046,6 +12058,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Open details'**
   String get knowledgeGraphOpenDetails;
+
+  /// No description provided for @knowledgeGraphOpenPhoto.
+  ///
+  /// In en, this message translates to:
+  /// **'View photo full screen'**
+  String get knowledgeGraphOpenPhoto;
 
   /// No description provided for @knowledgeGraphPhotosSection.
   ///

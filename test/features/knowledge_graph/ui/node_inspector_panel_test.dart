@@ -1,6 +1,9 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph/ui/node_inspector_panel.dart';
@@ -637,6 +640,121 @@ void main() {
                   tester.view.devicePixelRatio)
               .round(),
         );
+      },
+    );
+
+    testWidgets(
+      'tapping a carousel tile opens the fullscreen gallery at that image',
+      (tester) async {
+        // Real files: the pushed viewer resolves them via FileImage, and a
+        // missing file would surface as an async load exception.
+        final tempDir = Directory.systemTemp.createTempSync('lotti_kg_panel_');
+        addTearDown(() => tempDir.deleteSync(recursive: true));
+        final paths = [
+          for (var i = 0; i < 3; i++) '${tempDir.path}/photo_$i.png',
+        ];
+        const transparentPng = [
+          0x89,
+          0x50,
+          0x4E,
+          0x47,
+          0x0D,
+          0x0A,
+          0x1A,
+          0x0A,
+          0x00,
+          0x00,
+          0x00,
+          0x0D,
+          0x49,
+          0x48,
+          0x44,
+          0x52,
+          0x00,
+          0x00,
+          0x00,
+          0x01,
+          0x00,
+          0x00,
+          0x00,
+          0x01,
+          0x08,
+          0x06,
+          0x00,
+          0x00,
+          0x00,
+          0x1F,
+          0x15,
+          0xC4,
+          0x89,
+          0x00,
+          0x00,
+          0x00,
+          0x0A,
+          0x49,
+          0x44,
+          0x41,
+          0x54,
+          0x78,
+          0x9C,
+          0x63,
+          0x00,
+          0x01,
+          0x00,
+          0x00,
+          0x05,
+          0x00,
+          0x01,
+          0x0D,
+          0x0A,
+          0x2D,
+          0xB4,
+          0x00,
+          0x00,
+          0x00,
+          0x00,
+          0x49,
+          0x45,
+          0x4E,
+          0x44,
+          0xAE,
+          0x42,
+          0x60,
+          0x82,
+        ];
+        for (final path in paths) {
+          File(path).writeAsBytesSync(transparentPng);
+        }
+
+        await pumpPanel(
+          tester,
+          node: node(coverImagePath: paths.first, mediaPaths: paths),
+        );
+
+        // The second tile only peeks into the carousel viewport, so a
+        // hit-tested tap can miss; invoke its InkWell directly — the tap
+        // affordance itself, not hit testing, is under test here.
+        final tile = tester.widget<InkWell>(
+          find.ancestor(
+            of: find.byKey(ValueKey('knowledge-graph-media-${paths[1]}')),
+            matching: find.byType(InkWell),
+          ),
+        );
+        tile.onTap!();
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        final viewer = tester.widget<HeroPhotoViewRouteWrapper>(
+          find.byType(HeroPhotoViewRouteWrapper),
+        );
+        expect(viewer.file.path, paths[1]);
+        expect(viewer.initialIndex, 1);
+        expect(
+          viewer.gallery!.map((file) => file.path).toList(),
+          paths,
+          reason: 'the whole carousel is navigable from the viewer',
+        );
+        expect(viewer.heroTag, 'knowledge-graph-media-hero-${paths[1]}');
       },
     );
 

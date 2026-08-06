@@ -3307,6 +3307,8 @@
   },
   "imageViewerDownloadSavedToGallery": "Saved to Photos",
   "imageViewerDownloadTooltip": "Download image",
+  "imageViewerNextTooltip": "Next image",
+  "imageViewerPreviousTooltip": "Previous image",
   "inactiveLabel": "Inactive",
   "inactiveSwitchDescription": "Can be chosen for new entries when on",
   "inferenceProfileChooseModelTitle": "Choose a model",
@@ -3649,6 +3651,7 @@
   "knowledgeGraphNodeTypeTask": "Task",
   "knowledgeGraphOneHop": "1 hop",
   "knowledgeGraphOpenDetails": "Open details",
+  "knowledgeGraphOpenPhoto": "View photo full screen",
   "knowledgeGraphPhotosSection": "{count, plural, =1{PHOTO · 1} other{PHOTOS · {count}}}",
   "@knowledgeGraphPhotosSection": {
     "placeholders": {

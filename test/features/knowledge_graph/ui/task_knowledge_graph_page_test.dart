@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -714,6 +715,55 @@ void main() {
       expect(identical(refreshed.scenario, initial.scenario), isFalse);
       // …but the decoded-thumbnail store is the same page-owned instance.
       expect(refreshed.thumbnailCache, same(initial.thumbnailCache));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
+    'releases retained thumbnails when a refresh collapses the graph to the '
+    'empty state',
+    (tester) async {
+      // The empty branch mounts no view, so nothing runs the mount-time
+      // retainOnly prune — the page itself must release the previous graph's
+      // decoded thumbnails instead of holding them until the page closes.
+      var empty = false;
+      final result = makeTestableWidgetWithContainer(
+        const TaskKnowledgeGraphPage(taskId: taskId),
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        overrides: [
+          taskGraphProvider(taskId).overrideWith(
+            (ref) async => empty ? seedOnlyData() : multiNodeData(),
+          ),
+        ],
+      );
+      addTearDown(result.container.dispose);
+
+      await tester.pumpWidget(result.widget);
+      await tester.pump();
+
+      final cache = tester
+          .widget<KnowledgeGraphView>(find.byType(KnowledgeGraphView))
+          .thumbnailCache!;
+      // Stand in for a decoded node thumbnail retained by the page cache.
+      final recorder = ui.PictureRecorder();
+      ui.Canvas(recorder).drawPaint(ui.Paint());
+      final picture = recorder.endRecording();
+      final retained = picture.toImageSync(4, 4);
+      picture.dispose();
+      cache.put('/stale-thumb.png', retained, extent: 112);
+
+      empty = true;
+      await tester.runAsync(() async {
+        result.container.invalidate(taskGraphProvider(taskId));
+        await result.container.read(taskGraphProvider(taskId).future);
+      });
+      await pumpUntil(
+        tester,
+        () => find.byType(KnowledgeGraphView).evaluate().isEmpty,
+        reason: 'refresh to the empty state',
+      );
+
+      expect(retained.debugDisposed, isTrue);
       expect(tester.takeException(), isNull);
     },
   );

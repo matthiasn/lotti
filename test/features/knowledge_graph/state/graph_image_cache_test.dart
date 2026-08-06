@@ -146,6 +146,38 @@ void main() {
       },
     );
 
+    test(
+      'remove hands back the dropped image unless another path references it',
+      () {
+        final cache = GraphImageCache();
+        final single = makeImage();
+        final shared = makeImage();
+        cache
+          ..put('/single.png', single, extent: 112)
+          ..put('/a.png', shared, extent: 112)
+          ..put('/b.png', shared, extent: 112);
+
+        // Absent path → nothing to hand back.
+        expect(cache.remove('/missing.png'), isNull);
+
+        // Sole reference → caller's to dispose (deferred, like put).
+        expect(cache.remove('/single.png'), same(single));
+        expect(single.debugDisposed, isFalse);
+        expect(cache.imageOf('/single.png'), isNull);
+        single.dispose();
+
+        // Still referenced by /b.png → withheld.
+        expect(cache.remove('/a.png'), isNull);
+        expect(shared.debugDisposed, isFalse);
+
+        // Last reference → handed back.
+        expect(cache.remove('/b.png'), same(shared));
+        shared.dispose();
+
+        cache.dispose();
+      },
+    );
+
     test('retainOnly disposes dropped thumbnails and keeps retained ones', () {
       final cache = GraphImageCache();
       final kept = makeImage();

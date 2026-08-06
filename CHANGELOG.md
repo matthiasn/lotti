@@ -6,6 +6,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.4]
 ### Added
+- **Knowledge-graph photos now open full screen.** Tapping an image in the
+  graph inspector's photo carousel opens the shared full-screen viewer with
+  zoom, rotation and download, and — new for collections — chevron buttons
+  and the left/right arrow keys move through all of the entry's photos, with
+  a position counter showing where you are.
 - **The demo is now a whole absurd penguin logistics world.** Its 29 tasks each
   have unique cover art, multiple attached operational photos or artifacts,
   and lived-in notes, checklists, or logged work. Six active space-logistics

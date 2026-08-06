@@ -1017,6 +1017,84 @@ void main() {
     );
 
     testWidgets(
+      'evicts a cached thumbnail when its source file was deleted',
+      (tester) async {
+        // A deleted photo must fall back to the type glyph instead of
+        // rendering its stale thumbnail forever (the entity may keep
+        // referencing the path across refreshes).
+        late final Directory tempDir;
+        late final String pngPath;
+        late final ui.Image decoded;
+        await tester.runAsync(() async {
+          tempDir = Directory.systemTemp.createTempSync('lotti_kg_del_test');
+          pngPath = '${tempDir.path}/photo.png';
+          File(pngPath).writeAsBytesSync(List.filled(64, 7));
+          final recorder = ui.PictureRecorder();
+          Canvas(recorder).drawColor(const Color(0xFF3366CC), BlendMode.src);
+          decoded = await recorder.endRecording().toImage(4, 4);
+        });
+        addTearDown(() => tempDir.deleteSync(recursive: true));
+
+        GraphScenario photoScenario() => GraphScenario(
+          name: 'Deleted photo',
+          seedId: 'photo',
+          nodes: [
+            GraphNode(
+              id: 'photo',
+              type: GraphNodeType.imageEntry,
+              label: 'Photo entry',
+              categoryId: catWork,
+              createdAt: fixedNow,
+              imagePath: pngPath,
+            ),
+          ],
+          edges: const [],
+          now: fixedNow,
+        );
+
+        final cache = GraphImageCache();
+        var decodeCalls = 0;
+        await pumpView(
+          tester,
+          viewKey: const ValueKey('mount-1'),
+          scenario: photoScenario(),
+          thumbnailCache: cache,
+          imageLoader: (path, targetExtent) async {
+            decodeCalls++;
+            return decoded;
+          },
+        );
+        await tester.pump();
+        expect(painterOf(tester).images[pngPath], same(decoded));
+
+        File(pngPath).deleteSync();
+
+        // Remount after the delete: the entry is evicted and the re-decode
+        // fails like the production loader would on a missing file.
+        await pumpView(
+          tester,
+          viewKey: const ValueKey('mount-2'),
+          scenario: photoScenario(),
+          thumbnailCache: cache,
+          imageLoader: (path, targetExtent) async {
+            decodeCalls++;
+            throw const FileSystemException('gone', 'photo.png');
+          },
+        );
+        await tester.pump();
+
+        expect(decodeCalls, 2, reason: 'the deleted file is re-attempted');
+        expect(cache.imageOf(pngPath), isNull);
+        expect(painterOf(tester).images, isEmpty);
+        expect(decoded.debugDisposed, isTrue);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        cache.dispose();
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
       'remount prunes cached thumbnails the new scenario no longer references',
       (tester) async {
         late final ui.Image cover;

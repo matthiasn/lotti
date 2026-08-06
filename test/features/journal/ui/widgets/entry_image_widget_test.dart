@@ -325,6 +325,8 @@ void main() {
       BoxDecoration? backgroundDecoration,
       ImageExporter? imageExporter,
       MediaQueryData? mediaQueryData,
+      List<File>? gallery,
+      int initialIndex = 0,
     }) {
       return ProviderScope(
         child: MaterialApp(
@@ -343,12 +345,26 @@ void main() {
                   child: child!,
                 ),
           home: HeroPhotoViewRouteWrapper(
-            file: imageFile,
+            file: gallery == null ? imageFile : gallery[initialIndex],
             backgroundDecoration: backgroundDecoration,
             imageExporter: imageExporter,
+            gallery: gallery,
+            initialIndex: initialIndex,
           ),
         ),
       );
+    }
+
+    /// Three distinct real files so provider assertions can key on the path.
+    List<File> writeGallery() => [
+      for (var i = 0; i < 3; i++)
+        File('${tempDir.path}/gallery_$i.png')
+          ..writeAsBytesSync(_transparentPng),
+    ];
+
+    String shownPath(WidgetTester tester) {
+      final photoView = tester.widget<PhotoView>(find.byType(PhotoView));
+      return (photoView.imageProvider! as FileImage).file.path;
     }
 
     testWidgets(
@@ -826,5 +842,150 @@ void main() {
         expect(fileImage.file.path, imageFile.path);
       },
     );
+
+    group('gallery navigation', () {
+      testWidgets(
+        'a single image shows no chevrons and no position counter',
+        (tester) async {
+          await tester.pumpWidget(buildWrapper());
+          await tester.pump();
+
+          expect(find.byTooltip('Previous image'), findsNothing);
+          expect(find.byTooltip('Next image'), findsNothing);
+          expect(find.text('1 / 1'), findsNothing);
+        },
+      );
+
+      testWidgets(
+        'chevron buttons walk the gallery, clamp at the ends, and update '
+        'the shown image + counter',
+        (tester) async {
+          final gallery = writeGallery();
+          await tester.pumpWidget(buildWrapper(gallery: gallery));
+          await tester.pump();
+
+          expect(find.text('1 / 3'), findsOneWidget);
+          expect(shownPath(tester), gallery[0].path);
+          // At the first image the previous chevron is disabled.
+          final prevAtStart = tester.widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.chevron_left_rounded),
+          );
+          expect(prevAtStart.onPressed, isNull);
+
+          _pressIconButton(tester, Icons.chevron_right_rounded);
+          await tester.pump();
+          expect(find.text('2 / 3'), findsOneWidget);
+          expect(shownPath(tester), gallery[1].path);
+
+          _pressIconButton(tester, Icons.chevron_right_rounded);
+          await tester.pump();
+          expect(find.text('3 / 3'), findsOneWidget);
+          expect(shownPath(tester), gallery[2].path);
+          // At the last image the next chevron is disabled.
+          final nextAtEnd = tester.widget<IconButton>(
+            find.widgetWithIcon(IconButton, Icons.chevron_right_rounded),
+          );
+          expect(nextAtEnd.onPressed, isNull);
+
+          _pressIconButton(tester, Icons.chevron_left_rounded);
+          await tester.pump();
+          expect(find.text('2 / 3'), findsOneWidget);
+          expect(shownPath(tester), gallery[1].path);
+        },
+      );
+
+      testWidgets(
+        'left/right arrow keys navigate and ignore presses beyond the ends',
+        (tester) async {
+          final gallery = writeGallery();
+          await tester.pumpWidget(buildWrapper(gallery: gallery));
+          await tester.pump();
+
+          // Beyond the start: no-op, not an exception.
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+          await tester.pump();
+          expect(find.text('1 / 3'), findsOneWidget);
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+          await tester.pump();
+          expect(find.text('2 / 3'), findsOneWidget);
+          expect(shownPath(tester), gallery[1].path);
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+          await tester.pump();
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowRight);
+          await tester.pump();
+          // Beyond the end: clamped.
+          expect(find.text('3 / 3'), findsOneWidget);
+          expect(shownPath(tester), gallery[2].path);
+
+          await tester.sendKeyEvent(LogicalKeyboardKey.arrowLeft);
+          await tester.pump();
+          expect(find.text('2 / 3'), findsOneWidget);
+          expect(tester.takeException(), isNull);
+        },
+      );
+
+      testWidgets(
+        'opens at initialIndex and only the initial image carries the hero',
+        (tester) async {
+          final gallery = writeGallery();
+          await tester.pumpWidget(
+            buildWrapper(gallery: gallery, initialIndex: 1),
+          );
+          await tester.pump();
+
+          expect(find.text('2 / 3'), findsOneWidget);
+          expect(shownPath(tester), gallery[1].path);
+          expect(
+            tester.widget<PhotoView>(find.byType(PhotoView)).heroAttributes,
+            isNotNull,
+          );
+
+          // Navigating away must drop the hero: a pop would otherwise fly
+          // the wrong image back to the tile the viewer was opened from.
+          _pressIconButton(tester, Icons.chevron_right_rounded);
+          await tester.pump();
+          expect(
+            tester.widget<PhotoView>(find.byType(PhotoView)).heroAttributes,
+            isNull,
+          );
+
+          // Returning to the initial image restores it.
+          _pressIconButton(tester, Icons.chevron_left_rounded);
+          await tester.pump();
+          expect(
+            tester.widget<PhotoView>(find.byType(PhotoView)).heroAttributes,
+            isNotNull,
+          );
+        },
+      );
+
+      testWidgets(
+        'download saves the image currently shown, not the opening one',
+        (tester) async {
+          final gallery = writeGallery();
+          final exported = <String>[];
+          await tester.pumpWidget(
+            buildWrapper(
+              gallery: gallery,
+              imageExporter: (file) async {
+                exported.add(file.path);
+                return const ImageExportResult.savedToFile('photo.png');
+              },
+            ),
+          );
+          await tester.pump();
+
+          _pressIconButton(tester, Icons.chevron_right_rounded);
+          await tester.pump();
+          _pressIconButton(tester, Icons.download_rounded);
+          await tester.pump();
+          await tester.pump();
+
+          expect(exported, [gallery[1].path]);
+        },
+      );
+    });
   });
 }

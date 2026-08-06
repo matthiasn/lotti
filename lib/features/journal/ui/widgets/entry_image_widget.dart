@@ -79,10 +79,17 @@ class EntryImageWidget extends ConsumerWidget {
 /// [heroTag] identifies the source image for the transition. Callers outside
 /// [EntryImageWidget] should provide a distinct tag so another image on the
 /// current route cannot be selected as the Hero source.
+///
+/// Passing [gallery] (which must contain [file] at [initialIndex]) turns the
+/// viewer into a navigable gallery: chevron buttons on both edges and the
+/// left/right arrow keys move between images, and a counter chip shows the
+/// position.
 void showFullscreenImageViewer(
   BuildContext context, {
   required File file,
   Object heroTag = 'entry_img',
+  List<File>? gallery,
+  int initialIndex = 0,
 }) {
   Navigator.of(context, rootNavigator: true).push(
     PageRouteBuilder<void>(
@@ -94,6 +101,8 @@ void showFullscreenImageViewer(
           HeroPhotoViewRouteWrapper(
             file: file,
             heroTag: heroTag,
+            gallery: gallery,
+            initialIndex: initialIndex,
           ),
     ),
   );
@@ -107,6 +116,8 @@ class HeroPhotoViewRouteWrapper extends StatefulWidget {
     this.backgroundDecoration,
     this.heroTag = 'entry_img',
     this.imageExporter,
+    this.gallery,
+    this.initialIndex = 0,
   });
 
   final File file;
@@ -116,6 +127,16 @@ class HeroPhotoViewRouteWrapper extends StatefulWidget {
   /// Saves the image to a platform-appropriate destination. Defaults to
   /// [defaultImageExporter]; injected in tests to avoid real platform channels.
   final ImageExporter? imageExporter;
+
+  /// All images of the surrounding collection, in display order, when the
+  /// viewer should allow moving between them. Null (or a single entry) keeps
+  /// the single-image behavior. [file] is expected to sit at [initialIndex].
+  final List<File>? gallery;
+
+  /// Index of the initially shown image within [gallery]. Only the initial
+  /// image participates in the Hero transition — after navigating away, a pop
+  /// would otherwise fly the wrong image back to the source tile.
+  final int initialIndex;
 
   @override
   State<HeroPhotoViewRouteWrapper> createState() =>
@@ -136,6 +157,42 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
   double? _minimumScale;
   Size? _lastSize;
   bool _isDownloading = false;
+
+  late final List<File> _files =
+      (widget.gallery == null || widget.gallery!.isEmpty)
+      ? [widget.file]
+      : widget.gallery!;
+  late final int _initialIndex = widget.initialIndex.clamp(
+    0,
+    _files.length - 1,
+  );
+  late int _index = _initialIndex;
+
+  bool get _hasGallery => _files.length > 1;
+  bool get _canGoPrevious => _index > 0;
+  bool get _canGoNext => _index < _files.length - 1;
+
+  File get _currentFile => _files[_index];
+
+  void _goToPrevious() => _goTo(_index - 1);
+
+  void _goToNext() => _goTo(_index + 1);
+
+  void _goTo(int index) {
+    if (index < 0 || index >= _files.length || index == _index) return;
+    setState(() {
+      _index = index;
+      // Re-learn the new image's contained scale so zoom % and the zoom-out
+      // floor are correct for its aspect ratio.
+      _minimumScale = null;
+    });
+    // Show each image fresh: contained, unrotated, centered.
+    _scaleStateController.reset();
+    _photoController.updateMultiple(
+      position: Offset.zero,
+      rotation: 0,
+    );
+  }
 
   @override
   void initState() {
@@ -203,7 +260,7 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
 
     setState(() => _isDownloading = true);
     try {
-      final result = await _exporter(widget.file);
+      final result = await _exporter(_currentFile);
       if (!mounted) {
         return;
       }
@@ -252,7 +309,7 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
       _minimumScale = null;
     }
 
-    final imageProvider = FileImage(widget.file);
+    final imageProvider = FileImage(_currentFile);
     final tokens = context.designTokens;
     final padding = MediaQuery.paddingOf(context);
     final edge = isMobile ? tokens.spacing.step3 : tokens.spacing.step8;
@@ -263,6 +320,10 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
       child: CallbackShortcuts(
         bindings: {
           const SingleActivator(LogicalKeyboardKey.escape): _close,
+          if (_hasGallery) ...{
+            const SingleActivator(LogicalKeyboardKey.arrowLeft): _goToPrevious,
+            const SingleActivator(LogicalKeyboardKey.arrowRight): _goToNext,
+          },
         },
         child: Focus(
           autofocus: true,
@@ -281,15 +342,52 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                         ),
                     controller: _photoController,
                     scaleStateController: _scaleStateController,
-                    heroAttributes: PhotoViewHeroAttributes(
-                      tag: widget.heroTag,
-                    ),
+                    // Only the initially opened image flies back to its source
+                    // tile; after navigating, a hero pop would pair the wrong
+                    // image with the tile the viewer was opened from.
+                    heroAttributes: _index == _initialIndex
+                        ? PhotoViewHeroAttributes(tag: widget.heroTag)
+                        : null,
                     minScale: PhotoViewComputedScale.contained,
                     maxScale: PhotoViewComputedScale.covered * 4,
                     initialScale: PhotoViewComputedScale.contained,
                     strictScale: true,
                   ),
                 ),
+                if (_hasGallery) ...[
+                  Positioned(
+                    left: padding.left + edge,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: _ImageViewerIconButton(
+                        tooltip: context.messages.imageViewerPreviousTooltip,
+                        icon: Icons.chevron_left_rounded,
+                        onPressed: _canGoPrevious ? _goToPrevious : null,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    right: padding.right + edge,
+                    top: 0,
+                    bottom: 0,
+                    child: Center(
+                      child: _ImageViewerIconButton(
+                        tooltip: context.messages.imageViewerNextTooltip,
+                        icon: Icons.chevron_right_rounded,
+                        onPressed: _canGoNext ? _goToNext : null,
+                      ),
+                    ),
+                  ),
+                  Positioned(
+                    left: padding.left + edge,
+                    top: padding.top + tokens.spacing.step3,
+                    child: _ImageViewerCounterChip(
+                      index: _index,
+                      total: _files.length,
+                    ),
+                  ),
+                ],
                 Positioned(
                   right: padding.right + edge,
                   top: padding.top + tokens.spacing.step3,
@@ -334,6 +432,39 @@ class _HeroPhotoViewRouteWrapperState extends State<HeroPhotoViewRouteWrapper> {
                 ),
               ],
             ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// "3 / 7" position pill for gallery mode. Digits only, so it needs no
+/// translation.
+class _ImageViewerCounterChip extends StatelessWidget {
+  const _ImageViewerCounterChip({
+    required this.index,
+    required this.total,
+  });
+
+  final int index;
+  final int total;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Material(
+      color: Theme.of(context).colorScheme.scrim.withValues(alpha: 0.62),
+      borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+      child: Padding(
+        padding: EdgeInsets.symmetric(
+          horizontal: tokens.spacing.step4,
+          vertical: tokens.spacing.step2,
+        ),
+        child: Text(
+          '${index + 1} / $total',
+          style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: Colors.white,
           ),
         ),
       ),
