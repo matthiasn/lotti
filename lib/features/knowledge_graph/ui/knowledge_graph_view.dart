@@ -864,7 +864,13 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     _fromPan = _pan;
     _gestureStartScale = _scale;
     _gestureStartPan = _pan;
-    _gestureStartFocal = d.focalPoint;
+    // LOCAL coordinates, never global: the painter's `world * scale + pan`
+    // transform lives in the canvas's own space. In the real app the canvas
+    // sits below/right of surrounding chrome (sidebar, header), so the global
+    // focal is offset by a constant K — and anchoring on it makes the zoom
+    // fixed point miss the cursor by K/scale, a scale-DEPENDENT error that
+    // visibly slides the content under the cursor while zooming.
+    _gestureStartFocal = d.localFocalPoint;
   }
 
   double _gestureStartScale = 1;
@@ -873,11 +879,15 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
 
   void _onScaleUpdate(ScaleUpdateDetails d) {
     final newScale = (_gestureStartScale * d.scale).clamp(0.25, 3.0);
+    // Anchor-point zoom: the world point that sat under the gesture's start
+    // focal must stay under the (current) focal. Trackpad scroll-zoom reports
+    // a focal fixed at the cursor, so the content under the cursor holds
+    // still; a moving touch/pinch focal additionally pans by its own delta.
     final worldUnderFocal =
         (_gestureStartFocal - _gestureStartPan) / _gestureStartScale;
     setState(() {
       _scale = newScale;
-      _pan = d.focalPoint - worldUnderFocal * newScale;
+      _pan = d.localFocalPoint - worldUnderFocal * newScale;
     });
   }
 

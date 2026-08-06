@@ -2249,6 +2249,81 @@ void main() {
       expect(after.scale, greaterThan(scaleBefore));
       expect(after.focusId, scenario.seedId);
     });
+
+    testWidgets(
+      'trackpad zoom anchors the content under the cursor even when the '
+      'canvas is offset from the window origin',
+      (tester) async {
+        // In the real app the canvas sits below/right of the app chrome
+        // (sidebar + header), so global focal coordinates are offset from the
+        // canvas's local space by a constant. Regression: anchoring the zoom
+        // on the GLOBAL focal made the fixed point miss the cursor by
+        // offset/scale — a scale-dependent error that slid the content under
+        // the cursor during every zoom gesture.
+        const chromeOffset = Offset(220, 140);
+        tester.view.physicalSize = desktopSize;
+        tester.view.devicePixelRatio = 1.0;
+        addTearDown(tester.view.resetPhysicalSize);
+        addTearDown(tester.view.resetDevicePixelRatio);
+
+        await tester.pumpWidget(
+          makeTestableWidgetNoScroll(
+            Padding(
+              padding: EdgeInsets.only(
+                left: chromeOffset.dx,
+                top: chromeOffset.dy,
+              ),
+              child: KnowledgeGraphView(scenario: taskEgoNetworkScenario()),
+            ),
+            mediaQueryData: const MediaQueryData(size: desktopSize),
+          ),
+        );
+        await tester.pump();
+
+        // Cursor parked away from the canvas center, in GLOBAL coordinates.
+        final canvasTopLeft = tester.getTopLeft(
+          find.byType(KnowledgeGraphView),
+        );
+        expect(canvasTopLeft, chromeOffset);
+        final globalCursor = canvasTopLeft + const Offset(300, 200);
+        final localCursor = globalCursor - chromeOffset;
+
+        Offset worldUnderCursor() {
+          final painter = painterOf(tester);
+          return (localCursor - painter.pan) / painter.scale;
+        }
+
+        final before = worldUnderCursor();
+        final scaleBefore = painterOf(tester).scale;
+
+        final pointer = TestPointer(1, ui.PointerDeviceKind.trackpad);
+        await tester.sendEventToBinding(pointer.panZoomStart(globalCursor));
+        await tester.pump();
+        await tester.sendEventToBinding(
+          pointer.panZoomUpdate(globalCursor, pan: const Offset(0, -80)),
+        );
+        await tester.pump();
+
+        // Mid-gesture: the world point under the cursor has not moved.
+        expect(painterOf(tester).scale, greaterThan(scaleBefore));
+        var now = worldUnderCursor();
+        expect(now.dx, moreOrLessEquals(before.dx, epsilon: 0.01));
+        expect(now.dy, moreOrLessEquals(before.dy, epsilon: 0.01));
+
+        // Keep zooming: the anchor must hold across the whole gesture.
+        await tester.sendEventToBinding(
+          pointer.panZoomUpdate(globalCursor, pan: const Offset(0, -160)),
+        );
+        await tester.pump();
+        await tester.sendEventToBinding(pointer.panZoomEnd());
+        await tester.pump();
+
+        now = worldUnderCursor();
+        expect(now.dx, moreOrLessEquals(before.dx, epsilon: 0.01));
+        expect(now.dy, moreOrLessEquals(before.dy, epsilon: 0.01));
+        expect(tester.takeException(), isNull);
+      },
+    );
   });
 
   group('full-details overlay (desktop)', () {

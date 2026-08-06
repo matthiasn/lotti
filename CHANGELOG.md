@@ -26,6 +26,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   wrap safely when the layout needs more room.
   Seeded tasks now expose task-specific four-step checklists, and editing a
   seeded row protects the user's work when a later demo seed is introduced.
+- **Knowledge-graph zoom now stays anchored under the cursor.** Two-finger
+  trackpad zoom (and pinch) kept sliding the graph while zooming because the
+  fixed point was computed in window coordinates instead of the canvas's own —
+  the content under the cursor drifted by an offset that grew with the zoom
+  level. The point under the cursor now holds still through the whole gesture,
+  matching maps/canvas-tool conventions.
 - **Knowledge-graph images no longer flash away when selecting a node.**
   Walking to a linked task (or any refresh of the graph data) rebuilt the
   canvas from scratch, briefly dropping every already-visible node image and
