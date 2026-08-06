@@ -881,13 +881,16 @@ class ManualDemoWorld {
     ({Checklist checklist, List<ChecklistItem> items}) supplementalChecklist({
       required String slug,
       required String taskId,
-      required String title,
+      required (String, String) taskTitle,
       required List<(String, String)> runbook,
       String categoryId = manualDemoCategoryId,
     }) {
       final id = supplementalChecklistId(slug);
+      // Keep the checklist visibly tied to its owning task while retaining
+      // the shared, localized operational vocabulary for the remaining steps.
+      final taskRunbook = [taskTitle, ...runbook.take(3)];
       final items = [
-        for (final (index, spec) in runbook.indexed)
+        for (final (index, spec) in taskRunbook.indexed)
           checklistItem(
             id: demoUuid('manual-$slug-item-$index'),
             title: t(spec.$1, spec.$2),
@@ -901,7 +904,7 @@ class ManualDemoWorld {
       return (
         checklist: checklist(
           id: id,
-          title: title,
+          title: t(taskTitle.$1, taskTitle.$2),
           taskId: taskId,
           items: items,
           categoryId: categoryId,
@@ -914,140 +917,185 @@ class ManualDemoWorld {
       supplementalChecklist(
         slug: 'roll-call',
         taskId: manualRollCallTaskId,
-        title: t('Newsletter sections', 'Abschnitte des Koloniebriefs'),
+        taskTitle: ('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
         runbook: colonyRunbook,
       ),
       supplementalChecklist(
         slug: 'launch-review',
         taskId: manualLaunchReviewTaskId,
-        title: t('Rehearsal script', 'Probenskript'),
+        taskTitle: (
+          'Project Waddle launch review',
+          'Startprüfung für Project Waddle',
+        ),
         runbook: launchRunbook,
       ),
       supplementalChecklist(
         slug: 'lunch',
         taskId: manualLunchTaskId,
-        title: t('Newsletter sections', 'Abschnitte des Koloniebriefs'),
+        taskTitle: (
+          'Lunch (coffee is not a vegetable)',
+          'Mittagessen (Kaffee ist kein Gemüse)',
+        ),
         runbook: colonyRunbook,
       ),
       supplementalChecklist(
         slug: 'sardine-futures',
         taskId: manualSardineFuturesTaskId,
-        title: t('Pallet search', 'Palettensuche'),
+        taskTitle: ('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
         runbook: logisticsRunbook,
         categoryId: demoLogisticsCategoryId,
       ),
       supplementalChecklist(
         slug: 'fish-feeder',
         taskId: manualFishFeederTaskId,
-        title: t('Scrubber swap', 'Filtertausch'),
+        taskTitle: (
+          'Recalibrate the zero-gravity fish feeder',
+          'Schwerelosen Fischfütterer neu kalibrieren',
+        ),
         runbook: habitatRunbook,
       ),
       supplementalChecklist(
         slug: 'sardine-cargo',
         taskId: manualSardineCargoTaskId,
-        title: t('Pallet search', 'Palettensuche'),
+        taskTitle: (
+          'Confirm the interplanetary sardine cargo pods',
+          'Interplanetare Sardinen-Frachtkapseln bestätigen',
+        ),
         runbook: logisticsRunbook,
         categoryId: demoLogisticsCategoryId,
       ),
       supplementalChecklist(
         slug: 'penguin-passenger',
         taskId: manualPenguinPassengerTaskId,
-        title: t('Pallet search', 'Palettensuche'),
+        taskTitle: (
+          'Ask Legal whether a penguin is a passenger',
+          'Rechtsabteilung fragen, ob ein Pinguin Passagier ist',
+        ),
         runbook: logisticsRunbook,
         categoryId: demoLogisticsCategoryId,
       ),
       supplementalChecklist(
         slug: 'headset-walk',
         taskId: manualHeadsetWalkTaskId,
-        title: t('Newsletter sections', 'Abschnitte des Koloniebriefs'),
+        taskTitle: ('Walk without a headset', 'Spaziergang ohne Headset'),
         runbook: colonyRunbook,
       ),
       supplementalChecklist(
         slug: 'launch-comms-plan',
         taskId: demoLaunchCommsTaskId,
-        title: t(
-          'Rehearsal script',
-          'Probenskript',
+        taskTitle: (
+          'Draft the launch comms plan',
+          'Kommunikationsplan entwerfen',
         ),
         runbook: launchRunbook,
       ),
       supplementalChecklist(
         slug: 'ice-pad-weather',
         taskId: demoIcePadWeatherTaskId,
-        title: t('Rehearsal script', 'Probenskript'),
+        taskTitle: (
+          'Check the ice-pad weather window',
+          'Wetterfenster am Eisstartplatz prüfen',
+        ),
         runbook: launchRunbook,
       ),
       supplementalChecklist(
         slug: 'flight-suit-fitting',
         taskId: demoFlightSuitTaskId,
-        title: t('Rehearsal script', 'Probenskript'),
+        taskTitle: (
+          'Fit the penguin flight suits',
+          'Pinguin-Fluganzüge anpassen',
+        ),
         runbook: launchRunbook,
       ),
       supplementalChecklist(
         slug: 'humidity-spike',
         taskId: demoHumiditySpikeTaskId,
-        title: t('Scrubber swap', 'Filtertausch'),
+        taskTitle: (
+          'Trace the humidity spike in Bay C',
+          'Feuchtigkeitsspitze in Bucht C aufspüren',
+        ),
         runbook: habitatRunbook,
         categoryId: demoHabitatCategoryId,
       ),
       supplementalChecklist(
         slug: 'ice-rink-resurface',
         taskId: demoIceRinkTaskId,
-        title: t('Scrubber swap', 'Filtertausch'),
+        taskTitle: (
+          'Resurface the habitat ice rink',
+          'Eisbahn im Habitat neu aufbereiten',
+        ),
         runbook: habitatRunbook,
         categoryId: demoHabitatCategoryId,
       ),
       supplementalChecklist(
         slug: 'solar-array-tilt',
         taskId: demoSolarArrayTaskId,
-        title: t('Scrubber swap', 'Filtertausch'),
+        taskTitle: (
+          'Retune the solar array tilt',
+          'Neigung der Solarfläche justieren',
+        ),
         runbook: habitatRunbook,
         categoryId: demoHabitatCategoryId,
       ),
       supplementalChecklist(
         slug: 'water-recycler',
         taskId: demoWaterRecyclerTaskId,
-        title: t('Scrubber swap', 'Filtertausch'),
+        taskTitle: ('Service the water recycler', 'Wasseraufbereiter warten'),
         runbook: habitatRunbook,
         categoryId: demoHabitatCategoryId,
       ),
       supplementalChecklist(
         slug: 'krill-supplier',
         taskId: demoKrillSupplierTaskId,
-        title: t('Pallet search', 'Palettensuche'),
+        taskTitle: (
+          'Shortlist a second krill supplier',
+          'Zweiten Krill-Lieferanten finden',
+        ),
         runbook: logisticsRunbook,
         categoryId: demoLogisticsCategoryId,
       ),
       supplementalChecklist(
         slug: 'pod-seal-order',
         taskId: demoPodSealOrderTaskId,
-        title: t('Pallet search', 'Palettensuche'),
+        taskTitle: (
+          'Order replacement pod seals',
+          'Ersatzdichtungen für Kapseln bestellen',
+        ),
         runbook: logisticsRunbook,
         categoryId: demoLogisticsCategoryId,
       ),
       supplementalChecklist(
         slug: 'customs-europa',
         taskId: demoCustomsEuropaTaskId,
-        title: t('Pallet search', 'Palettensuche'),
+        taskTitle: ('Clear customs on Europa', 'Zoll auf Europa erledigen'),
         runbook: logisticsRunbook,
         categoryId: demoLogisticsCategoryId,
       ),
       supplementalChecklist(
         slug: 'chick-daycare',
         taskId: demoChickDaycareTaskId,
-        title: t('Newsletter sections', 'Abschnitte des Koloniebriefs'),
+        taskTitle: (
+          'Refill the chick daycare rota',
+          'Dienstplan der Kükenbetreuung füllen',
+        ),
         runbook: colonyRunbook,
       ),
       supplementalChecklist(
         slug: 'movie-night',
         taskId: demoMovieNightTaskId,
-        title: t('Newsletter sections', 'Abschnitte des Koloniebriefs'),
+        taskTitle: (
+          'Pick the film for colony night',
+          'Film für den Kolonieabend wählen',
+        ),
         runbook: colonyRunbook,
       ),
       supplementalChecklist(
         slug: 'tobogganing-league',
         taskId: demoTobogganingTaskId,
-        title: t('Newsletter sections', 'Abschnitte des Koloniebriefs'),
+        taskTitle: (
+          'Restart the tobogganing league',
+          'Rodel-Liga wieder starten',
+        ),
         runbook: colonyRunbook,
       ),
     ];
