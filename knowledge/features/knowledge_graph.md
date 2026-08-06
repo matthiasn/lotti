@@ -5,13 +5,13 @@ description: "A local-first, walkable knowledge graph with a topology minimap, r
 resource: ../../lib/features/knowledge_graph
 tags: [knowledge-graph, visualization, navigation]
 status: draft
-generated: { by: claude-code/opus-5, at: 2026-07-26T04:15:00Z }
+generated: { by: claude-code/fable-5, at: 2026-08-06T12:30:00Z }
 stale_after: 2027-03-08
 sources:
   - id: src
     resource: ../../lib/features/knowledge_graph
     title: Knowledge-graph explorer source
-    last_modified: 2026-08-05
+    last_modified: 2026-08-06
 ---
 
 The task knowledge-graph explorer described in ADR 0029.
@@ -94,9 +94,13 @@ prunes entries the new scenario no longer references), and tracks the decode
 extent plus a source-file signature (size + mtime) per path so only missing,
 too-small, or changed-on-disk thumbnails are re-decoded — media files are
 overwritten in place at deterministic paths (photo re-import, sync
-self-healing fetch), so extent alone cannot prove freshness. A standalone
-view without a host-provided cache owns a private one that dies with its
-state.
+self-healing fetch), so extent alone cannot prove freshness. An entry whose
+source file disappears (stat fails where a signature was recorded) is
+evicted, so a deleted photo falls back to the type glyph instead of rendering
+its stale thumbnail forever, and the page clears the cache when a refresh
+collapses the graph to the empty state (no view mounts there to run the
+mount-time prune). A standalone view without a host-provided cache owns a
+private one that dies with its state.
 
 `graph_label_layout.dart` measures labels and places them at one of eight anchors
 using deterministic priority and collision avoidance. Focus, selection,
@@ -119,6 +123,13 @@ later frame. Mounting the nested Navigator while that ancestor is performing
 layout mutates the overlay render subtree during layout and triggers Flutter's
 render-object mutation assertion. Once activated, the sidebar stays mounted
 through later viewport resizes; only its reserved width is recomputed.
+
+The inspector's photo carousel is tappable: a tile opens the app's shared
+full-screen viewer (`showFullscreenImageViewer` in
+`lib/features/journal/ui/widgets/entry_image_widget.dart`) in gallery mode —
+chevron buttons on both edges and the left/right arrow keys move through the
+node's media list, a counter chip shows the position, and zoom, rotation and
+download apply to the image currently shown.
 
 # Inspector data
 

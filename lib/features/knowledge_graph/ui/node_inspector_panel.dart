@@ -4,6 +4,7 @@ import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/journal/ui/widgets/entry_image_widget.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_style.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -522,29 +523,51 @@ class _MediaCarousel extends StatelessWidget {
               final alignment = isCover
                   ? Alignment((coverCropX.clamp(0, 1) * 2) - 1, 0)
                   : Alignment.center;
-              return Container(
-                width: width,
-                clipBehavior: Clip.antiAlias,
-                decoration: BoxDecoration(
-                  color: tokens.colors.background.level02,
+              final heroTag = 'knowledge-graph-media-hero-$path';
+              return Semantics(
+                button: true,
+                label: context.messages.knowledgeGraphOpenPhoto,
+                child: InkWell(
+                  onTap: () => showFullscreenImageViewer(
+                    context,
+                    file: File(path),
+                    heroTag: heroTag,
+                    gallery: [for (final p in paths) File(p)],
+                    initialIndex: index,
+                  ),
                   borderRadius: BorderRadius.circular(tokens.radii.l),
-                  border: Border.all(color: tokens.colors.decorative.level01),
-                ),
-                child: Image.file(
-                  File(path),
-                  key: ValueKey('knowledge-graph-media-$path'),
-                  fit: BoxFit.cover,
-                  alignment: alignment,
-                  // Keep the previous frame on provider changes (e.g. a DPR
-                  // change altering cacheWidth) instead of flashing blank.
-                  gaplessPlayback: true,
-                  cacheWidth: (width * MediaQuery.devicePixelRatioOf(context))
-                      .round(),
-                  errorBuilder: (_, _, _) => ColoredBox(
-                    color: tokens.colors.background.level02,
-                    child: Icon(
-                      Icons.broken_image_outlined,
-                      color: tokens.colors.text.lowEmphasis,
+                  child: Container(
+                    width: width,
+                    clipBehavior: Clip.antiAlias,
+                    decoration: BoxDecoration(
+                      color: tokens.colors.background.level02,
+                      borderRadius: BorderRadius.circular(tokens.radii.l),
+                      border: Border.all(
+                        color: tokens.colors.decorative.level01,
+                      ),
+                    ),
+                    child: Hero(
+                      tag: heroTag,
+                      child: Image.file(
+                        File(path),
+                        key: ValueKey('knowledge-graph-media-$path'),
+                        fit: BoxFit.cover,
+                        alignment: alignment,
+                        // Keep the previous frame on provider changes (e.g. a
+                        // DPR change altering cacheWidth) instead of flashing
+                        // blank.
+                        gaplessPlayback: true,
+                        cacheWidth:
+                            (width * MediaQuery.devicePixelRatioOf(context))
+                                .round(),
+                        errorBuilder: (_, _, _) => ColoredBox(
+                          color: tokens.colors.background.level02,
+                          child: Icon(
+                            Icons.broken_image_outlined,
+                            color: tokens.colors.text.lowEmphasis,
+                          ),
+                        ),
+                      ),
                     ),
                   ),
                 ),

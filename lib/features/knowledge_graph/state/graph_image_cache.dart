@@ -75,6 +75,17 @@ class GraphImageCache {
     return _isReferenced(previous) ? null : previous;
   }
 
+  /// Drops [path]'s entry. Like [put], returns the removed image once it is
+  /// safe to dispose — null when the path was absent or another entry still
+  /// references the same object. The caller disposes it after swapping its
+  /// painter snapshot.
+  ui.Image? remove(String path) {
+    assert(!_disposed, 'GraphImageCache used after dispose');
+    final entry = _entries.remove(path);
+    if (entry == null) return null;
+    return _isReferenced(entry.image) ? null : entry.image;
+  }
+
   /// Drops entries whose path is not in [keep] and disposes their images
   /// (unless a kept entry still references the same object).
   void retainOnly(Set<String> keep) {

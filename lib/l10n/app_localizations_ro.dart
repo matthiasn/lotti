@@ -6267,6 +6267,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get imageViewerDownloadTooltip => 'Descărcați imaginea';
 
   @override
+  String get imageViewerNextTooltip => 'Imaginea următoare';
+
+  @override
+  String get imageViewerPreviousTooltip => 'Imaginea anterioară';
+
+  @override
   String get inactiveLabel => 'Inactiv';
 
   @override
@@ -7088,6 +7094,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get knowledgeGraphOpenDetails => 'Deschideți detaliile';
+
+  @override
+  String get knowledgeGraphOpenPhoto => 'Vizualizați fotografia pe tot ecranul';
 
   @override
   String knowledgeGraphPhotosSection(int count) {

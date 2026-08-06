@@ -6252,6 +6252,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get imageViewerDownloadTooltip => 'Descargar imagen';
 
   @override
+  String get imageViewerNextTooltip => 'Imagen siguiente';
+
+  @override
+  String get imageViewerPreviousTooltip => 'Imagen anterior';
+
+  @override
   String get inactiveLabel => 'Inactivo';
 
   @override
@@ -7059,6 +7065,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get knowledgeGraphOpenDetails => 'Abrir detalles';
+
+  @override
+  String get knowledgeGraphOpenPhoto => 'Ver la foto en pantalla completa';
 
   @override
   String knowledgeGraphPhotosSection(int count) {

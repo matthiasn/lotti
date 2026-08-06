@@ -273,6 +273,10 @@ class _TaskKnowledgeGraphPageState
   Widget _graphContent(TaskGraphData? data) {
     // Only the focus node and nothing linked -> nothing to explore.
     if (data == null || data.scenario.nodes.length <= 1) {
+      // No view mounts on this path, so nothing runs the mount-time
+      // `retainOnly` prune — release the previous graph's thumbnails here
+      // instead of holding them until the page closes.
+      _thumbnailCache.retainOnly(const {});
       return const _EmptyState();
     }
     _setVisibleData(data);
