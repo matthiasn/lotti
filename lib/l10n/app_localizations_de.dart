@@ -10865,6 +10865,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Designauswahl';
 
   @override
+  String syncQueueCountMillions(String value) {
+    return '${value}M';
+  }
+
+  @override
+  String syncQueueCountThousands(String value) {
+    return '${value}K';
+  }
+
+  @override
   String syncReauthExplanation(String deviceName) {
     return 'Der Sync-Server hat das gespeicherte Passwort nicht akzeptiert. Gib das aktuelle Passwort deines Sync-Kontos ein, um $deviceName zu entfernen.';
   }

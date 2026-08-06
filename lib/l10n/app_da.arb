@@ -4853,6 +4853,24 @@
   "syncPayloadSavedTaskFilterDelete": "Slet filter for gemte opgaver",
   "syncPayloadSyncNodeProfile": "Synkroniseringsnodeprofil",
   "syncPayloadThemingSelection": "Valg af tema",
+  "syncQueueCountMillions": "{value}M",
+  "@syncQueueCountMillions": {
+    "description": "Compact sync queue depth in millions, e.g. 1.2M. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueCountThousands": "{value}K",
+  "@syncQueueCountThousands": {
+    "description": "Compact sync queue depth in thousands, e.g. 18K. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "syncReauthExplanation": "Synkroniseringsserveren accepterede ikke den gemte adgangskode. Indtast den aktuelle adgangskode til din synkroniseringskonto for at fjerne {deviceName}.",
   "syncReauthInvalidPassword": "Den adgangskode virkede ikke. Tjek den, og prøv igen.",
   "syncReauthPasswordLabel": "Adgangskode til synkroniseringskonto",

@@ -4853,6 +4853,24 @@
   "syncPayloadSavedTaskFilterDelete": "Cancellare il filtro attività salvato",
   "syncPayloadSyncNodeProfile": "Profilo di Sync node",
   "syncPayloadThemingSelection": "La selezione dei nomi",
+  "syncQueueCountMillions": "{value}M",
+  "@syncQueueCountMillions": {
+    "description": "Compact sync queue depth in millions, e.g. 1.2M. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueCountThousands": "{value}K",
+  "@syncQueueCountThousands": {
+    "description": "Compact sync queue depth in thousands, e.g. 18K. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "syncReauthExplanation": "Il server di sincronizzazione non ha accettato la password salvata. Inserisci la password attuale del tuo account di sincronizzazione per rimuovere {deviceName}.",
   "syncReauthInvalidPassword": "Quella password non ha funzionato. Controllala e riprova.",
   "syncReauthPasswordLabel": "Password dell’account di sincronizzazione",

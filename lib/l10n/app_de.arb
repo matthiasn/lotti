@@ -4301,6 +4301,24 @@
   "syncPayloadSavedTaskFilterDelete": "Gespeicherter Aufgabenfilter gelöscht",
   "syncPayloadSyncNodeProfile": "Sync-Knoten-Profil",
   "syncPayloadThemingSelection": "Designauswahl",
+  "syncQueueCountMillions": "{value}M",
+  "@syncQueueCountMillions": {
+    "description": "Compact sync queue depth in millions, e.g. 1.2M. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueCountThousands": "{value}K",
+  "@syncQueueCountThousands": {
+    "description": "Compact sync queue depth in thousands, e.g. 18K. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "syncReauthExplanation": "Der Sync-Server hat das gespeicherte Passwort nicht akzeptiert. Gib das aktuelle Passwort deines Sync-Kontos ein, um {deviceName} zu entfernen.",
   "syncReauthInvalidPassword": "Dieses Passwort hat nicht funktioniert. Prüf es und versuch es noch einmal.",
   "syncReauthPasswordLabel": "Passwort des Sync-Kontos",

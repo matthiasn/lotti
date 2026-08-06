@@ -18381,6 +18381,18 @@ abstract class AppLocalizations {
   /// **'Theming selection'**
   String get syncPayloadThemingSelection;
 
+  /// Compact sync queue depth in millions, e.g. 1.2M. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}M'**
+  String syncQueueCountMillions(String value);
+
+  /// Compact sync queue depth in thousands, e.g. 18K. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.
+  ///
+  /// In en, this message translates to:
+  /// **'{value}K'**
+  String syncQueueCountThousands(String value);
+
   /// Body of the re-authentication sheet (dialog on desktop) shown when removing a device failed because the stored sync password is out of date.
   ///
   /// In en, this message translates to:

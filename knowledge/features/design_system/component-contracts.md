@@ -209,7 +209,7 @@ a danger primary, where the neutral outlined treatment reads as Cancel
 ## In a dense row instead: `DesignSystemContactRow`
 
 The support footer both navigation surfaces close with — four equal,
-glyph-only external destinations under a rule. Email comes first, followed by
+glyph-only external destinations. Email comes first, followed by
 the Manual, GitHub and Discord. The envelope is intentionally no longer a
 labelled or otherwise privileged affordance: all four actions take the same
 target, icon theme, hover treatment, tooltip and semantic construction. The
@@ -233,9 +233,14 @@ order. Four 44 px targets need 176 px; even the 200 px minimum sidebar leaves
 without depending on label length or text scale. The component test pins that
 budget and verifies every target has the same square geometry.
 
-The rule spends none of that inset — it runs edge to edge, because a divider
-stopping short of both edges reads as a row that failed to line up rather than
-as the foot of the panel. Only the content below it is inset.
+**There is no rule above the group, and that is why the band is full-bleed at
+all.** A divider once ran edge to edge here; it gave the quietest controls
+either surface has the weight of a section boundary, announcing a separation
+between Settings and four external links that neither surface actually has.
+What remains of the band's full width is the `step3` inset above: a
+`step5`-gutter row cannot hold the group at the 200 px minimum, so the slot
+hands the band the whole rail and lets it choose its own, narrower inset. The
+vertical separation is now the band's own leading gap, not a line.
 
 Two contracts beyond the sizing:
 
@@ -270,6 +275,13 @@ outlined neutral pills. `↓ count` identifies incoming work from
 `outboxPendingCountProvider`. Each direction disappears independently at zero,
 and the whole trailing group disappears while sync is disabled. Pending work is
 routine sync state, not an error, so neither fill nor danger tone belongs there.
+
+**Both pills are counts, and both are shaped as counts.** `.outlined` carries
+word labels too ("Unverified", "This device"), so digit shaping is opt-in via
+`numeric: true` rather than inherited from the shape — see
+[the sidebar's Settings row](../../architecture/navigation.md#the-settings-row-and-its-counts)
+for why the width these two occupy is a property of the row rather than of the
+badge.
 
 # Inline callouts
 

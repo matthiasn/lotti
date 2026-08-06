@@ -10797,6 +10797,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Valg af tema';
 
   @override
+  String syncQueueCountMillions(String value) {
+    return '${value}M';
+  }
+
+  @override
+  String syncQueueCountThousands(String value) {
+    return '${value}K';
+  }
+
+  @override
   String syncReauthExplanation(String deviceName) {
     return 'Synkroniseringsserveren accepterede ikke den gemte adgangskode. Indtast den aktuelle adgangskode til din synkroniseringskonto for at fjerne $deviceName.';
   }

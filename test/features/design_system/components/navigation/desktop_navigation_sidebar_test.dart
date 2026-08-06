@@ -464,7 +464,7 @@ void main() {
       },
     );
 
-    testWidgets('label text is rendered without forced single-line clipping', (
+    testWidgets('label text is pinned to a single ellipsized line', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -484,12 +484,185 @@ void main() {
       );
       await tester.pump();
 
-      // The label uses the Text defaults so the row can grow with the
-      // text scaler instead of getting clipped to a fixed 48 px item.
+      // The rail is user-resizable down to 200 px, so a wrapping label
+      // degrades into a column of single letters rather than a shorter row.
       final text = tester.widget<Text>(find.text('Insights'));
-      expect(text.overflow, isNull);
-      expect(text.softWrap, isNull);
-      expect(text.maxLines, isNull);
+      expect(text.maxLines, 1);
+      expect(text.softWrap, isFalse);
+      expect(text.overflow, TextOverflow.ellipsis);
+    });
+
+    // The conditions the design review actually complained about: a rail
+    // dragged to its 200 px minimum, a trailing count beside the label, and an
+    // enlarged platform text scale. Property assertions above say the label is
+    // configured to truncate; these say the row survives.
+    group('under a squeezed row', () {
+      Widget narrowSidebar({
+        required double width,
+        double textScale = 1,
+        Widget? trailing,
+        String label = 'Settings',
+      }) {
+        return makeTestableWidget2(
+          Theme(
+            data: DesignSystemTheme.dark(),
+            child: MediaQuery(
+              data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+              child: Scaffold(
+                body: SizedBox(
+                  width: width,
+                  height: 900,
+                  child: DesktopNavigationSidebar(
+                    destinations: [
+                      DesktopSidebarDestination(
+                        label: label,
+                        iconBuilder: ({required bool active}) =>
+                            const Icon(Icons.settings_rounded),
+                        trailingBuilder: trailing == null
+                            ? null
+                            : ({required bool active}) => trailing,
+                      ),
+                    ],
+                    activeIndex: 0,
+                    onDestinationSelected: (_) {},
+                    width: width,
+                  ),
+                ),
+              ),
+            ),
+          ),
+        );
+      }
+
+      testWidgets('the label stays one line tall at the 200 px minimum', (
+        tester,
+      ) async {
+        await tester.pumpWidget(narrowSidebar(width: 320));
+        await tester.pump();
+        final roomyHeight = tester.getSize(find.text('Settings')).height;
+
+        await tester.pumpWidget(
+          narrowSidebar(
+            width: 200,
+            trailing: const SizedBox(width: 90, height: 20),
+          ),
+        );
+        await tester.pump();
+        final squeezedHeight = tester.getSize(find.text('Settings')).height;
+
+        // Before this change the same label rendered as `S/e/tt/in/g/s` — six
+        // lines and roughly six times this height.
+        expect(
+          squeezedHeight,
+          roomyHeight,
+          reason: 'A squeezed label must ellipsize, never wrap',
+        );
+      });
+
+      testWidgets('the label yields its width, not the trailing count', (
+        tester,
+      ) async {
+        const trailing = SizedBox(width: 90, height: 20, key: Key('count'));
+
+        await tester.pumpWidget(
+          narrowSidebar(width: 200, trailing: trailing),
+        );
+        await tester.pump();
+
+        // A count clipped to `↓ 1…` would be wrong rather than merely short,
+        // so the trailing group keeps every pixel it asked for and the label
+        // absorbs the shortfall.
+        expect(tester.getSize(find.byKey(const Key('count'))).width, 90);
+        expect(
+          tester.getSize(find.text('Settings')).width,
+          lessThan(tester.getSize(find.byKey(const Key('count'))).width),
+        );
+      });
+
+      testWidgets(
+        'a trailing group wider than the row is clamped, not overflowed',
+        (tester) async {
+          // 200 px rail − 2×16 gutter − 2×16 row padding − 32 icon − 8 gap
+          // leaves 96 px. A trailing slot that asks for more than the row has
+          // is where the label has already given up everything it had, so the
+          // only remaining choice is to clamp it or to overflow.
+          await tester.pumpWidget(
+            narrowSidebar(
+              width: 200,
+              trailing: const SizedBox(
+                width: 200,
+                height: 20,
+                key: Key('count'),
+              ),
+            ),
+          );
+          await tester.pump();
+
+          expect(
+            tester.takeException(),
+            isNull,
+            reason: 'An over-wide trailing group must not overflow the rail',
+          );
+          expect(tester.getSize(find.byKey(const Key('count'))).width, 96);
+        },
+      );
+
+      testWidgets('a trailing group within budget keeps its natural width', (
+        tester,
+      ) async {
+        await tester.pumpWidget(
+          narrowSidebar(
+            width: 200,
+            trailing: const SizedBox(width: 96, height: 20, key: Key('count')),
+          ),
+        );
+        await tester.pump();
+
+        expect(tester.takeException(), isNull);
+        expect(tester.getSize(find.byKey(const Key('count'))).width, 96);
+      });
+
+      testWidgets('icon and label share a vertical centre at 1.0 scale', (
+        tester,
+      ) async {
+        await tester.pumpWidget(narrowSidebar(width: 320));
+        await tester.pump();
+
+        final iconCentre = tester
+            .getCenter(find.byIcon(Icons.settings_rounded))
+            .dy;
+        final labelCentre = tester.getCenter(find.text('Settings')).dy;
+        expect((iconCentre - labelCentre).abs(), lessThan(1));
+      });
+
+      testWidgets('icon and label stay centred when the text scale doubles', (
+        tester,
+      ) async {
+        await tester.pumpWidget(narrowSidebar(width: 320, textScale: 2));
+        await tester.pump();
+
+        final iconCentre = tester
+            .getCenter(find.byIcon(Icons.settings_rounded))
+            .dy;
+        final labelCentre = tester.getCenter(find.text('Settings')).dy;
+
+        // The glyph stays 20 px while the label grows, so start-alignment
+        // strands the icon near the top of a much taller label.
+        expect((iconCentre - labelCentre).abs(), lessThan(1));
+      });
+
+      testWidgets('the icon does not grow with the text scale', (tester) async {
+        await tester.pumpWidget(narrowSidebar(width: 320));
+        await tester.pump();
+        final baseIcon = tester.getSize(find.byIcon(Icons.settings_rounded));
+
+        await tester.pumpWidget(narrowSidebar(width: 320, textScale: 2));
+        await tester.pump();
+
+        // Deliberate: a glyph that scaled with the text would take the width
+        // the label needs more.
+        expect(tester.getSize(find.byIcon(Icons.settings_rounded)), baseIcon);
+      });
     });
 
     testWidgets(

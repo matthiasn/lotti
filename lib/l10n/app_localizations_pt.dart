@@ -10901,6 +10901,16 @@ class AppLocalizationsPt extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Seleção de tema';
 
   @override
+  String syncQueueCountMillions(String value) {
+    return '${value}M';
+  }
+
+  @override
+  String syncQueueCountThousands(String value) {
+    return '${value}K';
+  }
+
+  @override
   String syncReauthExplanation(String deviceName) {
     return 'O servidor de sincronização não aceitou a palavra-passe guardada. Introduz a palavra-passe atual da tua conta de sincronização para remover $deviceName.';
   }

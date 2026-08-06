@@ -32,6 +32,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the content under the cursor drifted by an offset that grew with the zoom
   level. The point under the cursor now holds still through the whole gesture,
   matching maps/canvas-tool conventions.
+- **"Settings" no longer stacks into a column of letters in a narrow sidebar.**
+  Dragging the sidebar narrow, or raising the system text size, used to wrap the
+  label one character per line and stretch the row to several times its height.
+  Navigation labels now stay on one line and shorten with an ellipsis instead —
+  the icon still identifies the row — and every icon is vertically centred on
+  its label rather than pinned to the top of it, which was visible even at the
+  default text size.
 - **Knowledge-graph images no longer flash away when selecting a node.**
   Walking to a linked task (or any refresh of the graph data) rebuilt the
   canvas from scratch, briefly dropping every already-visible node image and
@@ -47,6 +54,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   versions remain compatible while upgraded peers gain the exact guarantee.
 
 ### Changed
+- **Queued sync counts beside Settings are now abbreviated.** A busy queue
+  printed its full figure and took the space the Settings label needed; counts
+  now read exactly through 999 and then compactly (`1.2K`, `18K`), with the
+  precise number still announced to screen readers. The divider between
+  Settings and the contact buttons has been removed on both the desktop
+  sidebar and the phone's More sheet.
 - **Demo image downloads now show live progress.** The demo banner reports the
   completed image count while its R2 catalog hydrates in the background,
   without delaying entry into the workspace.

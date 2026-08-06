@@ -4852,6 +4852,24 @@
   "syncPayloadSavedTaskFilterDelete": "Opgeslagen taakfilter verwijderen",
   "syncPayloadSyncNodeProfile": "Knoopprofiel synchroniseren",
   "syncPayloadThemingSelection": "Themaselectie",
+  "syncQueueCountMillions": "{value}M",
+  "@syncQueueCountMillions": {
+    "description": "Compact sync queue depth in millions, e.g. 1.2M. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueCountThousands": "{value}K",
+  "@syncQueueCountThousands": {
+    "description": "Compact sync queue depth in thousands, e.g. 18K. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "syncReauthExplanation": "De synchronisatieserver accepteerde het opgeslagen wachtwoord niet. Voer het huidige wachtwoord van je synchronisatieaccount in om {deviceName} uit de synchronisatie te verwijderen.",
   "syncReauthInvalidPassword": "Dat wachtwoord werkte niet. Controleer het en probeer het opnieuw.",
   "syncReauthPasswordLabel": "Wachtwoord voor je synchronisatieaccount",

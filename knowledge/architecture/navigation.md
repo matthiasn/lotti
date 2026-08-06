@@ -204,6 +204,37 @@ Journal are the primary destinations that survive the narrowest window; the rest
 start behind a *More* sheet and are promoted into their own slots as width
 allows, until everything fits and the More slot disappears.
 
+## The Settings row and its counts
+
+The desktop sidebar is user-resizable between 200 px and 500 px, and Settings is
+the one row that carries a trailing widget: `OutboxTrailingBadge`, up to two
+sync-queue pills. That makes it the only row where a *label*, a *glyph* and a
+*number* compete for the same width, and the rail's 200 px minimum is not wide
+enough for all three at once. Which one gives is therefore a decision, not an
+accident:
+
+1. **The counts are never shortened while anything else can give.** A count
+   clipped to `↓ 1…` is wrong rather than merely short.
+2. **The label ellipsizes, down to nothing if the row demands it.** It is pinned
+   to `maxLines: 1` — a wrapping label does not degrade, it stacks into a column
+   of single letters and multiplies the row's height. The gear identifies the
+   row on its own, which is exactly why the label is the affordable one.
+3. **The counts are bounded before any of this**, by `formatSyncQueueCount`:
+   exact through 999, one decimal below 10K, whole thousands above. An unbounded
+   integer is what made the row unresolvable in the first place.
+4. **Only when the counts alone exceed the row** — six-figure queues in both
+   directions at 200 px — does the trailing slot clamp, and then both pills
+   shorten together rather than one winning the row.
+
+Steps 3 and 4 are what keep a `RenderFlex` overflow off the rail: a `Row` hands
+its inflexible children infinite width, so without the clamp a wide trailing
+group overflows no matter how far the label has already ellipsized.
+
+Icon and label are **centred** on each other rather than top-aligned. The glyph
+is a fixed 20 px and deliberately does not scale with the platform text scale —
+at large scales it would cost the label more width than it is worth — so
+top-aligning strands the icon above a label several times its height.
+
 # The one thing in the chrome that is not a destination
 
 `ContactSupportRow` — equal glyph buttons for email, the Manual, the repository
@@ -211,22 +242,27 @@ and the Discord invite — is the exception to everything above. Nothing in it
 changes the tab index, opens a `BeamLocation`, or touches `NavService`; every
 one of its four targets leaves the app through `url_launcher`.
 
-That is why it renders **under a rule, below the last real destination**, on both
-form factors:
+That is why it renders **below the last real destination**, on both form
+factors:
 
 | Form factor | Where | Suppressed when |
 |-------------|-------|-----------------|
 | Desktop | sidebar `footerBand`, under Settings | the sidebar is collapsed |
 | Mobile | last child of the *More* sheet | never — the sheet is its only home |
 
+**No rule separates it from the rows above, on either surface.** These are the
+quietest controls the app's navigation has, and a divider gave them the weight
+of a section boundary — announcing a separation that neither surface actually
+has. Distance and the glyph-only treatment carry it instead.
+
 `footerBand` is the sidebar's one **full-bleed** slot: it spans the rail edge to
 edge rather than sitting inside the 16 px gutters every other row shares, and
-owns its own smaller inset. A rule that runs the full width reads as the foot of
-the panel rather than as a row that failed to line up. The band is always the
-expanded sidebar's final child, with no optional status row beneath Settings to
-displace it. Collapsing the sidebar removes the band entirely — the icon-only rail is
-72 px, narrower than the four glyphs — and the Manual stays reachable from
-Settings meanwhile.
+owns its own smaller inset. That is a width argument, not a decorative one —
+four 44 px targets need 176 px, and a gutter-inset row at the 200 px minimum
+offers 168. The band is always the expanded sidebar's final child, with no
+optional status row beneath Settings to displace it. Collapsing the sidebar
+removes the band entirely — the icon-only rail is 72 px, narrower than the four
+glyphs — and the Manual stays reachable from Settings meanwhile.
 
 The actions themselves are one right-aligned group. Email is a plain envelope
 button with the same 44 px target, colour, tooltip and semantics as Manual,

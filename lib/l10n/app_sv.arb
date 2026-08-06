@@ -4853,6 +4853,24 @@
   "syncPayloadSavedTaskFilterDelete": "Sparad uppgiftsfilter borttagning",
   "syncPayloadSyncNodeProfile": "Synknodprofil",
   "syncPayloadThemingSelection": "Tematval",
+  "syncQueueCountMillions": "{value}M",
+  "@syncQueueCountMillions": {
+    "description": "Compact sync queue depth in millions, e.g. 1.2M. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueCountThousands": "{value}K",
+  "@syncQueueCountThousands": {
+    "description": "Compact sync queue depth in thousands, e.g. 18K. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "syncReauthExplanation": "Synkroniseringsservern accepterade inte det sparade lösenordet. Ange det aktuella lösenordet för ditt synkroniseringskonto för att ta bort {deviceName}.",
   "syncReauthInvalidPassword": "Det lösenordet fungerade inte. Kontrollera det och försök igen.",
   "syncReauthPasswordLabel": "Lösenord för synkroniseringskonto",

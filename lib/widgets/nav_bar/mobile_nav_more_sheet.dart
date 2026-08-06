@@ -32,12 +32,13 @@ class MobileNavMoreSheetItem {
 /// the five-slot bar, one row each. Selecting a row dismisses the sheet and
 /// navigates; the bar's More slot then renders that destination as active.
 ///
-/// The sheet closes with the [ContactSupportRow] footer, under a rule. Mobile
-/// has no persistent chrome to pin it to the way the desktop sidebar does, and
-/// this sheet is already where everything that did not fit the bar lives — so
-/// it is the one place a phone user reliably passes on the way out of the app's
-/// navigation. The external destinations sit below the rule precisely because
-/// they are *not* destinations: nothing there switches tabs.
+/// The sheet closes with the [ContactSupportRow] footer. Mobile has no
+/// persistent chrome to pin it to the way the desktop sidebar does, and this
+/// sheet is already where everything that did not fit the bar lives — so it is
+/// the one place a phone user reliably passes on the way out of the app's
+/// navigation. Those external destinations are *not* destinations — nothing
+/// there switches tabs — and what separates them from the rows above is the
+/// footer's own spacing and its glyph-only treatment, not a rule.
 Future<void> showMobileNavMoreSheet({
   required BuildContext context,
   required List<MobileNavMoreSheetItem> items,

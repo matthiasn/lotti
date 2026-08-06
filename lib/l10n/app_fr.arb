@@ -4301,6 +4301,24 @@
   "syncPayloadSavedTaskFilterDelete": "Suppression du filtre de tâches enregistré",
   "syncPayloadSyncNodeProfile": "Profil du nœud de synchronisation",
   "syncPayloadThemingSelection": "Sélection de thème",
+  "syncQueueCountMillions": "{value}M",
+  "@syncQueueCountMillions": {
+    "description": "Compact sync queue depth in millions, e.g. 1.2M. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
+  "syncQueueCountThousands": "{value}K",
+  "@syncQueueCountThousands": {
+    "description": "Compact sync queue depth in thousands, e.g. 18K. Keep it as short as the language allows: it shares one narrow sidebar row with the Settings label.",
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "syncReauthExplanation": "Le serveur de synchronisation n’a pas accepté le mot de passe enregistré. Saisis le mot de passe actuel de ton compte de synchronisation pour retirer {deviceName}.",
   "syncReauthInvalidPassword": "Ce mot de passe n’a pas fonctionné. Vérifie-le et réessaie.",
   "syncReauthPasswordLabel": "Mot de passe du compte de synchronisation",

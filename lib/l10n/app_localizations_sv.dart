@@ -10800,6 +10800,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncPayloadThemingSelection => 'Tematval';
 
   @override
+  String syncQueueCountMillions(String value) {
+    return '${value}M';
+  }
+
+  @override
+  String syncQueueCountThousands(String value) {
+    return '${value}K';
+  }
+
+  @override
   String syncReauthExplanation(String deviceName) {
     return 'Synkroniseringsservern accepterade inte det sparade lösenordet. Ange det aktuella lösenordet för ditt synkroniseringskonto för att ta bort $deviceName.';
   }

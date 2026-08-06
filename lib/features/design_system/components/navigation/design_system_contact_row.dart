@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:lotti/features/design_system/components/dividers/design_system_divider.dart';
 import 'package:lotti/features/design_system/components/navigation/design_system_five_slot_nav_bar.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
@@ -34,12 +33,17 @@ class DesignSystemContactAction {
   final Key? iconKey;
 }
 
-/// The support footer: one right-aligned group of glyph-only destinations
-/// under a rule.
+/// The support footer: one right-aligned group of glyph-only destinations.
 ///
 /// Both navigation surfaces host it — the desktop sidebar pins it beneath
 /// Settings, the mobile More sheet closes with it — so the two never drift
 /// apart in wording, order, or behaviour.
+///
+/// **There is deliberately no rule above the group.** These are the quietest
+/// controls either surface has, and a divider gave them the weight of a
+/// section boundary — announcing a separation between Settings and four
+/// external links that neither surface actually has. Distance carries it
+/// instead.
 ///
 /// Every destination, including email, uses the same compact navigation target
 /// and ambient [IconTheme]. Keeping all four in one [Row] makes their spacing
@@ -59,36 +63,37 @@ class DesignSystemContactRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return Column(
-      mainAxisSize: MainAxisSize.min,
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        // The rule runs the full width it is given; only the content below it
-        // is inset. On the desktop rail that is the point of the band — a
-        // divider stopping short of both edges reads as a row that failed to
-        // line up rather than as the foot of the panel.
-        const DesignSystemDivider(),
-        SizedBox(height: tokens.spacing.step2),
-        Padding(
-          padding: EdgeInsets.symmetric(horizontal: tokens.spacing.step3),
-          child: Align(
-            alignment: Alignment.centerRight,
-            child: IconTheme.merge(
-              data: IconThemeData(
-                size: IconSizes.m,
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  for (final action in actions)
-                    _ContactIconAction(action: action),
-                ],
-              ),
-            ),
+    return Padding(
+      // The horizontal inset is `step3` rather than the rail's `step5` gutter
+      // for a measured reason: four 44 px targets need 176 px, and the 200 px
+      // minimum sidebar leaves only 168 px inside a `step5` gutter. The group
+      // would wrap. The leading gap replaces the rule that used to sit here —
+      // it is the whole separation now, so it is the band's own spacing rather
+      // than something the host happens to supply.
+      padding: EdgeInsets.only(
+        left: tokens.spacing.step3,
+        right: tokens.spacing.step3,
+        top: tokens.spacing.step2,
+      ),
+      child: Align(
+        alignment: Alignment.centerRight,
+        // Shrink-wraps vertically. Without this the band takes every pixel the
+        // host offers, which on the desktop rail means swallowing the space
+        // above Settings rather than sitting at the foot of it.
+        heightFactor: 1,
+        child: IconTheme.merge(
+          data: IconThemeData(
+            size: IconSizes.m,
+            color: tokens.colors.text.mediumEmphasis,
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (final action in actions) _ContactIconAction(action: action),
+            ],
           ),
         ),
-      ],
+      ),
     );
   }
 }
