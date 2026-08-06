@@ -2443,6 +2443,17 @@
   "demoExitSheetBody": "Din demoverden bliver gemt — du kan altid vende tilbage.",
   "demoExitSheetTitle": "Forlad demoen?",
   "demoExitTakeWork": "Tag mit arbejde med…",
+  "demoMediaDownloadProgress": "Henter demobilleder · {completed} af {total}",
+  "@demoMediaDownloadProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoOnboardingExplore": "Udforsk med eksempeldata",
   "demoSettingsDeleteConfirm": "Slet demoverdenen og alle dens data?",
   "demoSettingsDeleteTitle": "Slet demodata",

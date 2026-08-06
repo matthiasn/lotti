@@ -5004,6 +5004,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get demoExitTakeWork => 'Tag mit arbejde med…';
 
   @override
+  String demoMediaDownloadProgress(int completed, int total) {
+    return 'Henter demobilleder · $completed af $total';
+  }
+
+  @override
   String get demoOnboardingExplore => 'Udforsk med eksempeldata';
 
   @override

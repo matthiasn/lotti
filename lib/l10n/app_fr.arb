@@ -2203,6 +2203,17 @@
   "demoExitSheetBody": "Ton monde démo reste enregistré — tu peux revenir à tout moment.",
   "demoExitSheetTitle": "Quitter la démo ?",
   "demoExitTakeWork": "Emporter mon travail…",
+  "demoMediaDownloadProgress": "Téléchargement des images de démo · {completed} sur {total}",
+  "@demoMediaDownloadProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoOnboardingExplore": "Explorer avec des données d'exemple",
   "demoSettingsDeleteConfirm": "Supprimer le monde démo et toutes ses données ?",
   "demoSettingsDeleteTitle": "Supprimer les données de démo",

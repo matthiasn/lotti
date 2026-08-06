@@ -2443,6 +2443,17 @@
   "demoExitSheetBody": "Il tuo mondo demo resta salvato — puoi tornare quando vuoi.",
   "demoExitSheetTitle": "Uscire dalla demo?",
   "demoExitTakeWork": "Porta il mio lavoro con me…",
+  "demoMediaDownloadProgress": "Download delle immagini demo · {completed} di {total}",
+  "@demoMediaDownloadProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoOnboardingExplore": "Esplora con dati di esempio",
   "demoSettingsDeleteConfirm": "Eliminare il mondo demo e tutti i suoi dati?",
   "demoSettingsDeleteTitle": "Elimina i dati demo",

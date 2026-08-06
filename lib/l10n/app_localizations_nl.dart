@@ -5017,6 +5017,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get demoExitTakeWork => 'Mijn werk meenemen…';
 
   @override
+  String demoMediaDownloadProgress(int completed, int total) {
+    return 'Demofoto\'s downloaden · $completed van $total';
+  }
+
+  @override
   String get demoOnboardingExplore => 'Verkennen met voorbeeldgegevens';
 
   @override

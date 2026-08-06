@@ -5061,6 +5061,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get demoExitTakeWork => 'Vzít si práci s sebou…';
 
   @override
+  String demoMediaDownloadProgress(int completed, int total) {
+    return 'Stahují se ukázkové obrázky · $completed z $total';
+  }
+
+  @override
   String get demoOnboardingExplore => 'Prozkoumat s ukázkovými daty';
 
   @override

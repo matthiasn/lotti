@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/demo/media/demo_media_hydrator.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/profiles/state/profile_providers.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Wraps the app shell in the persistent demo banner while a demo world is
@@ -235,6 +237,7 @@ class DemoModeBanner extends StatelessWidget {
                                 color: tokens.colors.text.mediumEmphasis,
                               ),
                         ),
+                        _DemoMediaProgressLine(),
                       ],
                     ),
                   ),
@@ -251,6 +254,36 @@ class DemoModeBanner extends StatelessWidget {
           ),
         ),
       ),
+    );
+  }
+}
+
+class _DemoMediaProgressLine extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    if (!getIt.isRegistered<DemoMediaHydrator>()) {
+      return const SizedBox.shrink();
+    }
+    final hydrator = getIt<DemoMediaHydrator>();
+    final tokens = context.designTokens;
+
+    return ValueListenableBuilder<DemoMediaHydrationProgress>(
+      valueListenable: hydrator.progress,
+      builder: (context, progress, _) {
+        if (progress.isComplete) return const SizedBox.shrink();
+        return Padding(
+          padding: EdgeInsets.only(top: tokens.spacing.step1),
+          child: Text(
+            context.messages.demoMediaDownloadProgress(
+              progress.completed,
+              progress.total,
+            ),
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        );
+      },
     );
   }
 }

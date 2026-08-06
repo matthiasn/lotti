@@ -55,7 +55,9 @@ The 91-image media catalog is hosted exclusively on Cloudflare R2. Seeding
 writes image metadata only and never waits for the network. Every demo-world
 startup compares the manifest-owned catalog with tenant-local checksums and
 downloads missing or corrupt files in the background; a slow or failed request
-leaves a normal placeholder and is retried on a later startup.
+leaves a normal placeholder and is retried on a later startup. While that
+reconciliation runs, the persistent demo banner shows its exact completed-item
+count without blocking the workspace.
 
 ## What it delegates
 

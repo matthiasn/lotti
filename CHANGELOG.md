@@ -24,6 +24,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   versions remain compatible while upgraded peers gain the exact guarantee.
 
 ### Changed
+- **Demo image downloads now show live progress.** The demo banner reports the
+  completed image count while its R2 catalog hydrates in the background,
+  without delaying entry into the workspace.
 - **The task knowledge graph is now a readable local workspace.** Instead of
   presenting the whole topology as a field of mostly anonymous dots, it shows a
   bounded one- or two-hop neighbourhood with prioritized full labels, stronger

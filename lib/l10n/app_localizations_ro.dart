@@ -5090,6 +5090,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get demoExitTakeWork => 'Luați-vă munca cu dvs.…';
 
   @override
+  String demoMediaDownloadProgress(int completed, int total) {
+    return 'Se descarcă imaginile demo · $completed din $total';
+  }
+
+  @override
   String get demoOnboardingExplore => 'Explorați cu date de exemplu';
 
   @override

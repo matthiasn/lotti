@@ -8483,6 +8483,12 @@ abstract class AppLocalizations {
   /// **'Take my work with me…'**
   String get demoExitTakeWork;
 
+  /// No description provided for @demoMediaDownloadProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Downloading demo images · {completed} of {total}'**
+  String demoMediaDownloadProgress(int completed, int total);
+
   /// No description provided for @demoOnboardingExplore.
   ///
   /// In en, this message translates to:

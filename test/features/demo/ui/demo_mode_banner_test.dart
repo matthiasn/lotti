@@ -7,6 +7,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/demo/media/demo_media_hydrator.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_mode_banner.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
@@ -50,6 +51,40 @@ void main() {
   }
 
   group('DemoModeScaffold', () {
+    testWidgets('shows determinate background demo-media progress while '
+        'downloads are pending', (tester) async {
+      addTearDown(() async {
+        await getIt.reset();
+      });
+      final hydrator = DemoMediaHydrator(
+        root: Directory.systemTemp,
+        assets: const [],
+        download: (_) async => throw UnimplementedError(),
+      );
+      getIt.registerSingleton<DemoMediaHydrator>(
+        hydrator,
+        dispose: (service) {
+          service.dispose();
+        },
+      );
+      hydrator.progress.value = const DemoMediaHydrationProgress(
+        completed: 0,
+        total: 1,
+      );
+
+      await tester.pumpWidget(
+        host(overrides: [demoModeActiveProvider.overrideWithValue(true)]),
+      );
+      expect(find.text('Downloading demo images · 0 of 1'), findsOneWidget);
+
+      hydrator.progress.value = const DemoMediaHydrationProgress(
+        completed: 1,
+        total: 1,
+      );
+      await tester.pump();
+      expect(find.text('Downloading demo images · 0 of 1'), findsNothing);
+    });
+
     testWidgets('outside demo mode the child passes through unwrapped', (
       tester,
     ) async {

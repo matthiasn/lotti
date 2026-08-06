@@ -2443,6 +2443,17 @@
   "demoExitSheetBody": "Din demovärld sparas — du kan komma tillbaka när som helst.",
   "demoExitSheetTitle": "Lämna demon?",
   "demoExitTakeWork": "Ta med mitt arbete…",
+  "demoMediaDownloadProgress": "Hämtar demobilder · {completed} av {total}",
+  "@demoMediaDownloadProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoOnboardingExplore": "Utforska med exempeldata",
   "demoSettingsDeleteConfirm": "Radera demovärlden och alla dess data?",
   "demoSettingsDeleteTitle": "Radera demodata",

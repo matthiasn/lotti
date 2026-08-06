@@ -5064,6 +5064,11 @@ class AppLocalizationsIt extends AppLocalizations {
   String get demoExitTakeWork => 'Porta il mio lavoro con me…';
 
   @override
+  String demoMediaDownloadProgress(int completed, int total) {
+    return 'Download delle immagini demo · $completed di $total';
+  }
+
+  @override
   String get demoOnboardingExplore => 'Esplora con dati di esempio';
 
   @override

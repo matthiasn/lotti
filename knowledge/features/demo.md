@@ -169,6 +169,12 @@ atomically inside that guest root. Individual failures are
 logged and contained; placeholders remain usable and the next startup retries
 the incomplete catalog.
 
+`DemoMediaHydrator.progress` publishes the catalog items that have reached a
+verification or download terminal state against the manifest-owned total.
+`DemoModeBanner` observes that snapshot and shows a compact determinate line
+only while work remains, so the workspace stays usable without one live
+announcement per image.
+
 ```mermaid
 flowchart LR
     B[Profile bootstrap] --> M{Guest with demo manifest?}

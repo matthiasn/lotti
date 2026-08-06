@@ -2203,6 +2203,17 @@
   "demoExitSheetBody": "Lumea dvs. demo rămâne salvată — puteți reveni oricând.",
   "demoExitSheetTitle": "Părăsiți demo-ul?",
   "demoExitTakeWork": "Luați-vă munca cu dvs.…",
+  "demoMediaDownloadProgress": "Se descarcă imaginile demo · {completed} din {total}",
+  "@demoMediaDownloadProgress": {
+    "placeholders": {
+      "completed": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
   "demoOnboardingExplore": "Explorați cu date de exemplu",
   "demoSettingsDeleteConfirm": "Ștergeți lumea demo și toate datele ei?",
   "demoSettingsDeleteTitle": "Ștergeți datele demo",
