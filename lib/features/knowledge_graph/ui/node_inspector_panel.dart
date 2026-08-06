@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:ui';
 
@@ -262,6 +263,50 @@ class _InspectorContent extends StatefulWidget {
 
 class _InspectorContentState extends State<_InspectorContent> {
   bool _summaryExpanded = false;
+  final ScrollController _scroll = ScrollController();
+
+  /// Whether content extends past the bottom edge. Drives both the bottom
+  /// fade and the "more below" affordance: a permanently-on fade over a
+  /// scrollable list read as a disabled section, so the linked entries below
+  /// it were taken for the whole set.
+  bool _hasMoreBelow = false;
+
+  @override
+  void initState() {
+    super.initState();
+    // Scrolling alone does not rebuild this widget, so the overflow state has
+    // to follow the controller — a build-time check would leave the
+    // affordance showing after the user reached the end.
+    _scroll.addListener(_syncOverflow);
+  }
+
+  @override
+  void dispose() {
+    _scroll
+      ..removeListener(_syncOverflow)
+      ..dispose();
+    super.dispose();
+  }
+
+  void _syncOverflow() {
+    if (!_scroll.hasClients) return;
+    final position = _scroll.position;
+    final more = position.maxScrollExtent - position.pixels > 1;
+    if (more != _hasMoreBelow && mounted) {
+      setState(() => _hasMoreBelow = more);
+    }
+  }
+
+  void _scrollToEnd() {
+    if (!_scroll.hasClients) return;
+    unawaited(
+      _scroll.animateTo(
+        _scroll.position.maxScrollExtent,
+        duration: kThemeAnimationDuration,
+        curve: Curves.easeOut,
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -269,6 +314,8 @@ class _InspectorContentState extends State<_InspectorContent> {
     final tokens = widget.tokens;
     final summary = resolveInspectorSummary(node);
     final media = inspectorMediaPaths(node);
+    // Overflow depends on laid-out content, so re-check after each frame.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _syncOverflow());
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -277,7 +324,17 @@ class _InspectorContentState extends State<_InspectorContent> {
           child: Stack(
             children: [
               SingleChildScrollView(
-                padding: EdgeInsets.all(tokens.spacing.cardPadding),
+                controller: _scroll,
+                // The bottom strip belongs to the fade + overflow pill, so
+                // reserve it unconditionally: content scrolls clear of them
+                // instead of being covered, and the reserve never changes as
+                // the affordance appears or disappears.
+                padding: EdgeInsets.fromLTRB(
+                  tokens.spacing.cardPadding,
+                  tokens.spacing.cardPadding,
+                  tokens.spacing.cardPadding,
+                  tokens.spacing.cardPadding + tokens.spacing.sectionGap,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -434,39 +491,115 @@ class _InspectorContentState extends State<_InspectorContent> {
                   ],
                 ),
               ),
-              // Bottom fade — signals "more below" when the timeline scrolls,
-              // dissolving the last row into the surface rather than cutting it.
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: 0,
-                height: tokens.spacing.sectionGap,
-                child: IgnorePointer(
-                  child: DecoratedBox(
-                    decoration: BoxDecoration(
-                      gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [
-                          tokens.colors.background.level01.withValues(alpha: 0),
-                          tokens.colors.background.level01.withValues(
-                            alpha: 0.82,
-                          ),
-                        ],
+              // Bottom fade — shown only while content actually continues
+              // below, dissolving the next row into the surface instead of
+              // cutting it. At the end of the list it disappears, so the fade
+              // never reads as a permanently dimmed (disabled) section.
+              if (_hasMoreBelow)
+                Positioned(
+                  left: 0,
+                  right: 0,
+                  bottom: 0,
+                  height: tokens.spacing.sectionGap,
+                  child: IgnorePointer(
+                    child: DecoratedBox(
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter,
+                          colors: [
+                            tokens.colors.background.level01.withValues(
+                              alpha: 0,
+                            ),
+                            tokens.colors.background.level01.withValues(
+                              alpha: 0.82,
+                            ),
+                          ],
+                        ),
                       ),
                     ),
                   ),
                 ),
-              ),
             ],
           ),
         ),
+        // Explicit "there is more" control: the count in the LINKED eyebrow
+        // promised entries the panel appeared not to have. It sits in its own
+        // row rather than floating over the list, so it never covers the entry
+        // it is pointing past.
+        if (_hasMoreBelow)
+          Padding(
+            padding: EdgeInsets.only(top: tokens.spacing.step1),
+            child: Center(
+              child: _MoreBelowButton(
+                label: context.messages.knowledgeGraphMoreBelow,
+                cat: widget.cat,
+                tokens: tokens,
+                onTap: _scrollToEnd,
+              ),
+            ),
+          ),
         _Footer(
           createdLabel: widget.createdLabel,
           cat: widget.cat,
           tokens: tokens,
         ),
       ],
+    );
+  }
+}
+
+/// Pill that appears at the panel's bottom edge while content continues below,
+/// and scrolls the panel to the end when tapped.
+class _MoreBelowButton extends StatelessWidget {
+  const _MoreBelowButton({
+    required this.label,
+    required this.cat,
+    required this.tokens,
+    required this.onTap,
+  });
+
+  final String label;
+  final Color cat;
+  final DsTokens tokens;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      button: true,
+      label: label,
+      child: Material(
+        color: tokens.colors.background.level02,
+        borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: onTap,
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step3,
+              vertical: tokens.spacing.step1,
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  label,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+                SizedBox(width: tokens.spacing.step1),
+                Icon(
+                  Icons.keyboard_arrow_down_rounded,
+                  size: IconSizes.s,
+                  color: cat,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -6928,6 +6928,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get knowledgeGraphMoreBelow => 'Mer nedan';
+
+  @override
   String get knowledgeGraphMoreLinks => 'fler länkar';
 
   @override

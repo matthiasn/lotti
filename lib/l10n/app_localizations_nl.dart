@@ -6944,6 +6944,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get knowledgeGraphMoreBelow => 'Meer hieronder';
+
+  @override
   String get knowledgeGraphMoreLinks => 'meer links';
 
   @override

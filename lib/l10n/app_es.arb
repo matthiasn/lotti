@@ -2883,6 +2883,7 @@
   "knowledgeGraphLast7Days": "Últimos 7 días",
   "knowledgeGraphLast90Days": "Últimos 90 días",
   "knowledgeGraphLinkedSection": "ENLAZADO · {count}",
+  "knowledgeGraphMoreBelow": "Hay más abajo",
   "knowledgeGraphMoreLinks": "Más enlaces",
   "knowledgeGraphNodeCount": "Nodos: {count}",
   "knowledgeGraphNodeTypeAiSummary": "Resumen de IA",

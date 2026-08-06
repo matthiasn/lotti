@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
@@ -796,6 +797,103 @@ void main() {
         expect(images.keys, isNot(contains('photo')));
         // Disposal of the loaded image happens when the widget tears down at the
         // end of the test (covers the dispose loop with a real entry).
+      },
+    );
+  });
+
+  group('floating chrome is measured, not estimated', () {
+    /// True when [rects] contains one that fully covers [target].
+    bool covers(List<Rect> rects, Rect target) => rects.any(
+      (rect) =>
+          rect.left <= target.left + 0.5 &&
+          rect.top <= target.top + 0.5 &&
+          rect.right >= target.right - 0.5 &&
+          rect.bottom >= target.bottom - 0.5,
+    );
+
+    testWidgets(
+      'the toolbar, legend and minimap footprints are reserved for labels',
+      (tester) async {
+        // Regression: the reserved list covered only the inspector and an
+        // ESTIMATED legend block (assumed to be exactly one minimap tall), and
+        // ignored the toolbar entirely — so node callouts printed underneath
+        // the mode chips and behind the legend card.
+        await pumpView(tester, scenario: taskEgoNetworkScenario());
+        // A second frame: the post-frame measurement lands and is applied.
+        await tester.pump();
+
+        final view = find.byType(KnowledgeGraphView);
+        final origin = tester.getTopLeft(view);
+        Rect localRect(Finder finder) => tester.getRect(finder).shift(-origin);
+
+        final reserved = painterOf(tester).reservedLabelRects;
+        expect(
+          covers(reserved, localRect(find.byType(GraphWorkspaceToolbar))),
+          isTrue,
+          reason: 'toolbar footprint is not reserved',
+        );
+        expect(
+          covers(reserved, localRect(find.byType(TopologyMiniMap))),
+          isTrue,
+          reason: 'minimap footprint is not reserved',
+        );
+      },
+    );
+
+    testWidgets(
+      'the framing keeps the focus clear of the measured chrome, not of a '
+      'fixed guess',
+      (tester) async {
+        // The legend + minimap column is far taller than the fixed 104px the
+        // framing used to reserve, so the neighbourhood it framed ran straight
+        // into that column instead of stopping above it.
+        await pumpView(tester, scenario: taskEgoNetworkScenario());
+        await tester.pump();
+
+        final view = find.byType(KnowledgeGraphView);
+        final origin = tester.getTopLeft(view);
+        final painter = painterOf(tester);
+        final minimap = tester
+            .getRect(find.byType(TopologyMiniMap))
+            .shift(-origin);
+        final toolbar = tester
+            .getRect(find.byType(GraphWorkspaceToolbar))
+            .shift(
+              -origin,
+            );
+
+        // Bounding box of what the framing exists to show — the focus and its
+        // 2-hop neighbourhood — measured over node BODIES, since a clipped
+        // circle is as unusable as a hidden one.
+        var top = double.infinity;
+        var bottom = double.negativeInfinity;
+        for (final node in painter.scenario.nodes) {
+          if ((painter.hops[node.id] ?? 99) > 2) continue;
+          final centre =
+              painter.positions[node.id]! * painter.scale + painter.pan;
+          final radius = KnowledgeGraphPainter.nodeRadiusFor(
+            node: node,
+            scenario: painter.scenario,
+            degrees: painter.degrees,
+            focusId: painter.focusId,
+            hops: painter.hops,
+            scale: painter.scale,
+            visualSpec: null,
+          );
+          top = math.min(top, centre.dy - radius);
+          bottom = math.max(bottom, centre.dy + radius);
+        }
+
+        expect(
+          bottom,
+          lessThanOrEqualTo(minimap.top),
+          reason: 'neighbourhood framed down into the legend/minimap column',
+        );
+        expect(
+          top,
+          greaterThanOrEqualTo(toolbar.top),
+          reason: 'neighbourhood framed up past the toolbar',
+        );
       },
     );
   });

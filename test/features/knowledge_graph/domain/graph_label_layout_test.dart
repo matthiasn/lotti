@@ -138,4 +138,119 @@ void main() {
     expect(result['oversized']!.rect.topLeft, viewport.topLeft);
     expect(result['oversized']!.rect.size, candidate.labelSize);
   });
+
+  group('required labels vs reserved chrome', () {
+    test(
+      'a required label crowded out of every anchor still keeps off the '
+      'reserved chrome',
+      () {
+        // Regression: the fallback for a required label clamped it into the
+        // viewport while ignoring reservedRects, which printed focus/neighbour
+        // callouts underneath the floating toolbar.
+        //
+        // The node sits inside a deep toolbar strip, so its vertical anchors
+        // land ON the toolbar (in-viewport, hence never clamped) and its
+        // horizontal/diagonal anchors fall outside the viewport — every anchor
+        // fails, which is what drives the required-label fallback.
+        const viewport = Rect.fromLTWH(0, 0, 400, 300);
+        const toolbar = Rect.fromLTWH(0, 0, 400, 140);
+        const candidate = GraphLabelCandidate(
+          id: 'focus',
+          center: Offset(200, 70),
+          nodeRadius: 20,
+          labelSize: Size(220, 28),
+          priority: 1000,
+          required: true,
+        );
+
+        final result = solveGraphLabelLayout(
+          candidates: const [candidate],
+          viewport: viewport,
+          nodeObstacles: const {},
+          reservedRects: const [toolbar],
+        );
+
+        final placement = result['focus'];
+        expect(placement, isNotNull, reason: 'required label must be placed');
+        expect(
+          placement!.rect.overlaps(toolbar),
+          isFalse,
+          reason: 'label overlaps the reserved toolbar strip',
+        );
+        expect(viewport.contains(placement.rect.topLeft), isTrue);
+        expect(
+          viewport.containsRect(placement.rect),
+          isTrue,
+          reason: 'label escaped the viewport',
+        );
+      },
+    );
+
+    test(
+      'a crowded required label takes the least-obstructed anchor instead of '
+      'the first one',
+      () {
+        // Every anchor collides with something, so the fallback runs. A heavy
+        // obstacle covers the whole lower half (where the default "bottom"
+        // anchor lives); a thin one clips only the top anchors. The label must
+        // land in the lightly-obstructed band, not squarely on the heavy
+        // blocker just because "bottom" is tried first.
+        const viewport = Rect.fromLTWH(0, 0, 400, 400);
+        const heavy = Rect.fromLTWH(0, 185, 400, 215);
+        const light = Rect.fromLTWH(0, 170, 400, 15);
+        const candidate = GraphLabelCandidate(
+          id: 'crowded',
+          center: Offset(200, 200),
+          nodeRadius: 20,
+          labelSize: Size(100, 20),
+          priority: 500,
+          required: true,
+        );
+
+        final result = solveGraphLabelLayout(
+          candidates: const [candidate],
+          viewport: viewport,
+          nodeObstacles: const {'heavy': heavy, 'light': light},
+        );
+
+        final placement = result['crowded'];
+        expect(placement, isNotNull);
+        expect(
+          placement!.rect.overlaps(heavy),
+          isFalse,
+          reason: 'label was placed on the heavy obstacle',
+        );
+      },
+    );
+
+    test('reserved rects still never displace a non-required label', () {
+      // Optional labels are dropped rather than relocated — culling keeps the
+      // canvas readable when space runs out.
+      const viewport = Rect.fromLTWH(0, 0, 200, 200);
+      const candidate = GraphLabelCandidate(
+        id: 'optional',
+        center: Offset(100, 20),
+        nodeRadius: 10,
+        labelSize: Size(180, 30),
+        priority: 100,
+      );
+
+      final result = solveGraphLabelLayout(
+        candidates: const [candidate],
+        viewport: viewport,
+        nodeObstacles: const {},
+        reservedRects: const [Rect.fromLTWH(0, 0, 200, 200)],
+      );
+
+      expect(result, isEmpty);
+    });
+  });
+}
+
+extension on Rect {
+  bool containsRect(Rect other) =>
+      other.left >= left &&
+      other.top >= top &&
+      other.right <= right &&
+      other.bottom <= bottom;
 }

@@ -7038,6 +7038,9 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get knowledgeGraphMoreBelow => 'Plus bas';
+
+  @override
   String get knowledgeGraphMoreLinks => 'Plus de liens';
 
   @override

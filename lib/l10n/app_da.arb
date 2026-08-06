@@ -3286,6 +3286,7 @@
       }
     }
   },
+  "knowledgeGraphMoreBelow": "Mere nedenfor",
   "knowledgeGraphMoreLinks": "Flere links",
   "knowledgeGraphNodeCount": "{count, plural, =1{1 node} other{{count} noder}}",
   "@knowledgeGraphNodeCount": {

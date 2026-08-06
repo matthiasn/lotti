@@ -234,19 +234,26 @@ class GraphStyle {
               : t.colors.text.mediumEmphasis,
           width: highContrast ? 2 : 1.4,
         ),
+        // Dotted, so a checklist tie is distinguishable from a note/log tie
+        // (solid) by shape alone — they previously differed only in tone,
+        // which collapses to one line in greyscale or at low contrast.
         RelStyle.checklist: EdgeVisual(
           color: highContrast
               ? t.colors.text.mediumEmphasis
               : t.colors.text.lowEmphasis,
           width: highContrast ? 2.1 : 1.5,
+          dash: const [2, 3.5],
         ),
         // AI-source uses the info cyan, rating uses the remove pink — both are
         // OUTSIDE the category palette (teal/terracotta/indigo/purple/orange/
         // green) so an edge hue is never confused with a node category.
+        // Sparse dots: an AI-source tie is derived rather than authored, and
+        // the wide gaps keep it separable from a linked-task tie (long dashes)
+        // without relying on the cyan hue.
         RelStyle.provenance: EdgeVisual(
           color: t.colors.alert.info.defaultColor,
           width: 1.9,
-          dash: const [7, 5],
+          dash: const [1.5, 7],
           directional: true,
         ),
         RelStyle.evaluation: EdgeVisual(

@@ -7048,6 +7048,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get knowledgeGraphMoreBelow => 'Mai jos sunt mai multe';
+
+  @override
   String get knowledgeGraphMoreLinks => 'Mai multe legături';
 
   @override

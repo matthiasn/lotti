@@ -2890,6 +2890,7 @@
   "knowledgeGraphLast7Days": "Posledních 7 dní",
   "knowledgeGraphLast90Days": "Posledních 90 dní",
   "knowledgeGraphLinkedSection": "PROPOJENO · {count}",
+  "knowledgeGraphMoreBelow": "Níže je toho víc",
   "knowledgeGraphMoreLinks": "Další propojení",
   "knowledgeGraphNodeCount": "{count, plural, one{1 uzel} few{{count} uzly} other{{count} uzlů}}",
   "knowledgeGraphNodeTypeAiSummary": "Souhrn AI",

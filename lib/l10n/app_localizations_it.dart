@@ -7007,6 +7007,9 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get knowledgeGraphMoreBelow => 'Altro qui sotto';
+
+  @override
   String get knowledgeGraphMoreLinks => 'più collegamenti';
 
   @override
