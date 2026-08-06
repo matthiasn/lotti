@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/demo/copy/demo_copy_candidates.dart';
 import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -121,10 +122,11 @@ void main() {
     );
     expect(exitButton.fullWidth, isTrue);
     expect(cancelButton.fullWidth, isFalse);
+    expect(find.byType(DesignSystemModalActionBar), findsOneWidget);
     expect(
       tester.getTopLeft(find.text('Cancel')).dy,
-      greaterThan(tester.getBottomLeft(find.text('Exit demo')).dy),
-      reason: 'Cancel is the quieter second-row escape hatch',
+      tester.getTopLeft(find.text('Exit demo')).dy,
+      reason: 'the exit choices share an action row when their labels fit',
     );
 
     await tester.tap(find.text('Exit demo'));

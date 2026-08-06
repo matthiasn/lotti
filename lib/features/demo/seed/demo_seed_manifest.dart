@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 
 /// Version of the demo seed content. Bump when the seeded world changes in a
 /// way that should trigger a wipe-and-reseed of existing demo profiles.
-const demoSeedVersion = 5;
+const demoSeedVersion = 6;
 
 /// File name of the manifest written at the demo world's root.
 const demoSeedManifestFileName = 'demo_seed_manifest.json';

@@ -330,6 +330,31 @@ class ManualDemoWorld {
     final t = translate ?? demoSeedTextFromEnvironment();
     final anchor = now ?? manualDemoNow;
     final dates = DemoDates(anchor);
+    final supplementalChecklistIds = <String, String>{
+      manualRollCallTaskId: demoUuid('manual-roll-call-checklist'),
+      manualLaunchReviewTaskId: demoUuid('manual-launch-review-checklist'),
+      manualLunchTaskId: demoUuid('manual-lunch-checklist'),
+      manualSardineFuturesTaskId: demoUuid('manual-sardine-futures-checklist'),
+      manualFishFeederTaskId: demoUuid('manual-fish-feeder-checklist'),
+      manualSardineCargoTaskId: demoUuid('manual-sardine-cargo-checklist'),
+      manualPenguinPassengerTaskId: demoUuid(
+        'manual-penguin-passenger-checklist',
+      ),
+      manualHeadsetWalkTaskId: demoUuid('manual-headset-walk-checklist'),
+      demoLaunchCommsTaskId: demoUuid('manual-launch-comms-plan-checklist'),
+      demoIcePadWeatherTaskId: demoUuid('manual-ice-pad-weather-checklist'),
+      demoFlightSuitTaskId: demoUuid('manual-flight-suit-fitting-checklist'),
+      demoHumiditySpikeTaskId: demoUuid('manual-humidity-spike-checklist'),
+      demoIceRinkTaskId: demoUuid('manual-ice-rink-resurface-checklist'),
+      demoSolarArrayTaskId: demoUuid('manual-solar-array-tilt-checklist'),
+      demoWaterRecyclerTaskId: demoUuid('manual-water-recycler-checklist'),
+      demoKrillSupplierTaskId: demoUuid('manual-krill-supplier-checklist'),
+      demoPodSealOrderTaskId: demoUuid('manual-pod-seal-order-checklist'),
+      demoCustomsEuropaTaskId: demoUuid('manual-customs-europa-checklist'),
+      demoChickDaycareTaskId: demoUuid('manual-chick-daycare-checklist'),
+      demoMovieNightTaskId: demoUuid('manual-movie-night-checklist'),
+      demoTobogganingTaskId: demoUuid('manual-tobogganing-league-checklist'),
+    };
 
     final category = CategoryDefinition(
       id: manualDemoCategoryId,
@@ -458,7 +483,7 @@ class ManualDemoWorld {
         statusHistory: [status],
         categoryId: categoryId,
         estimate: estimate,
-        checklistIds: checklistIds,
+        checklistIds: checklistIds ?? [supplementalChecklistIds[id]!],
       );
       return base.copyWith(
         meta: base.meta.copyWith(labelIds: labelIds),
@@ -818,6 +843,215 @@ class ManualDemoWorld {
         taskId: demoShuttleManifestTaskId,
         items: manifestItems,
         categoryId: demoLogisticsCategoryId,
+      ),
+    ];
+
+    // Every task is a small, usable piece of penguin logistics work. The
+    // original fixture predates the expanded task world, so these runbooks
+    // give its remaining tasks — and the expansion tasks without bespoke
+    // checklists above — the same interactive, mixed-progress experience.
+    String supplementalChecklistId(String slug) =>
+        demoUuid('manual-$slug-checklist');
+
+    final launchRunbook = <(String, String)>[
+      ('Confirm the launch window', 'Startfenster bestätigen'),
+      ('Brief the waddle crew', 'Watschel-Crew briefen'),
+      ('Secure the fish rations', 'Fischrationen sichern'),
+      ('Send the go/no-go update', 'Go/No-Go-Update senden'),
+    ];
+    final habitatRunbook = <(String, String)>[
+      ('Read the habitat sensors', 'Habitat-Sensoren ablesen'),
+      ('Inspect penguin-safe equipment', 'Pinguinsichere Ausrüstung prüfen'),
+      ('Coordinate the bay response', 'Einsatz in der Bucht koordinieren'),
+      ('Log the engineering handoff', 'Technikübergabe protokollieren'),
+    ];
+    final logisticsRunbook = <(String, String)>[
+      ('Verify cargo identifiers', 'Frachtkennungen prüfen'),
+      (
+        'Inspect seals and cold-chain tags',
+        'Siegel und Kühlketten-Tags prüfen',
+      ),
+      ('Update the orbital manifest', 'Orbitfrachtliste aktualisieren'),
+      ('Brief the receiving penguins', 'Empfangende Pinguine informieren'),
+    ];
+    final colonyRunbook = <(String, String)>[
+      ('Confirm colony requirements', 'Bedarf der Kolonie bestätigen'),
+      ('Reserve the habitat resources', 'Habitat-Ressourcen reservieren'),
+      ('Announce the waddle plan', 'Watschelplan ankündigen'),
+      ('Record the shift handoff', 'Schichtübergabe festhalten'),
+    ];
+
+    ({Checklist checklist, List<ChecklistItem> items}) supplementalChecklist({
+      required String slug,
+      required String taskId,
+      required String title,
+      required List<(String, String)> runbook,
+      String categoryId = manualDemoCategoryId,
+    }) {
+      final id = supplementalChecklistId(slug);
+      final items = [
+        for (final (index, spec) in runbook.indexed)
+          checklistItem(
+            id: demoUuid('manual-$slug-item-$index'),
+            title: t(spec.$1, spec.$2),
+            isChecked: index == 0,
+            checkedAgo: Duration(hours: 18 + index),
+            checklistId: id,
+            categoryId: categoryId,
+            createdAt: dates.daysAgo(2),
+          ),
+      ];
+      return (
+        checklist: checklist(
+          id: id,
+          title: title,
+          taskId: taskId,
+          items: items,
+          categoryId: categoryId,
+        ),
+        items: items,
+      );
+    }
+
+    final supplementalChecklists = [
+      supplementalChecklist(
+        slug: 'roll-call',
+        taskId: manualRollCallTaskId,
+        title: t('Roll-call runbook', 'Appell-Runbook'),
+        runbook: colonyRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'launch-review',
+        taskId: manualLaunchReviewTaskId,
+        title: t('Launch review runbook', 'Startprüfungs-Runbook'),
+        runbook: launchRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'lunch',
+        taskId: manualLunchTaskId,
+        title: t('Wellbeing runbook', 'Wohlfühl-Runbook'),
+        runbook: colonyRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'sardine-futures',
+        taskId: manualSardineFuturesTaskId,
+        title: t('Fish-market runbook', 'Fischmarkt-Runbook'),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'fish-feeder',
+        taskId: manualFishFeederTaskId,
+        title: t('Feeder runbook', 'Futterautomaten-Runbook'),
+        runbook: habitatRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'sardine-cargo',
+        taskId: manualSardineCargoTaskId,
+        title: t('Cargo runbook', 'Fracht-Runbook'),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'penguin-passenger',
+        taskId: manualPenguinPassengerTaskId,
+        title: t('Passenger runbook', 'Passagier-Runbook'),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'headset-walk',
+        taskId: manualHeadsetWalkTaskId,
+        title: t('Mobility runbook', 'Mobilitäts-Runbook'),
+        runbook: colonyRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'launch-comms-plan',
+        taskId: demoLaunchCommsTaskId,
+        title: t(
+          'Launch communications runbook',
+          'Startkommunikations-Runbook',
+        ),
+        runbook: launchRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'ice-pad-weather',
+        taskId: demoIcePadWeatherTaskId,
+        title: t('Weather-window runbook', 'Wetterfenster-Runbook'),
+        runbook: launchRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'flight-suit-fitting',
+        taskId: demoFlightSuitTaskId,
+        title: t('Flight-suit runbook', 'Fluganzug-Runbook'),
+        runbook: launchRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'humidity-spike',
+        taskId: demoHumiditySpikeTaskId,
+        title: t('Humidity response runbook', 'Feuchtigkeits-Runbook'),
+        runbook: habitatRunbook,
+        categoryId: demoHabitatCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'ice-rink-resurface',
+        taskId: demoIceRinkTaskId,
+        title: t('Ice-rink runbook', 'Eisbahn-Runbook'),
+        runbook: habitatRunbook,
+        categoryId: demoHabitatCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'solar-array-tilt',
+        taskId: demoSolarArrayTaskId,
+        title: t('Solar-array runbook', 'Solarflächen-Runbook'),
+        runbook: habitatRunbook,
+        categoryId: demoHabitatCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'water-recycler',
+        taskId: demoWaterRecyclerTaskId,
+        title: t('Recycler runbook', 'Aufbereiter-Runbook'),
+        runbook: habitatRunbook,
+        categoryId: demoHabitatCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'krill-supplier',
+        taskId: demoKrillSupplierTaskId,
+        title: t('Supplier runbook', 'Lieferanten-Runbook'),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'pod-seal-order',
+        taskId: demoPodSealOrderTaskId,
+        title: t('Pod-seal runbook', 'Kapseldichtungs-Runbook'),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'customs-europa',
+        taskId: demoCustomsEuropaTaskId,
+        title: t('Customs runbook', 'Zoll-Runbook'),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'chick-daycare',
+        taskId: demoChickDaycareTaskId,
+        title: t('Daycare runbook', 'Kükenbetreuungs-Runbook'),
+        runbook: colonyRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'movie-night',
+        taskId: demoMovieNightTaskId,
+        title: t('Colony-night runbook', 'Kolonieabend-Runbook'),
+        runbook: colonyRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'tobogganing-league',
+        taskId: demoTobogganingTaskId,
+        title: t('Tobogganing runbook', 'Rodel-Runbook'),
+        runbook: colonyRunbook,
       ),
     ];
 
@@ -1818,7 +2052,11 @@ class ManualDemoWorld {
       habitCompletions: habitCompletions,
       images: images,
       coverImages: coverImages,
-      checklists: [habitatChecklist, ...expansionChecklists],
+      checklists: [
+        habitatChecklist,
+        ...expansionChecklists,
+        for (final seed in supplementalChecklists) seed.checklist,
+      ],
       checklistItems: [
         ...habitatChecklistItems,
         ...rehearsalItems,
@@ -1827,6 +2065,7 @@ class ManualDemoWorld {
         ...newsletterItems,
         ...freezerItems,
         ...manifestItems,
+        for (final seed in supplementalChecklists) ...seed.items,
       ],
       timeRecords: [habitatTimeRecord, ...expansionTimeRecords],
       entries: notes,

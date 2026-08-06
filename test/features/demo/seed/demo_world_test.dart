@@ -189,8 +189,8 @@ void main() {
         for (final item in world.checklistItems) item.meta.id: item,
       };
 
-      expect(world.checklists, hasLength(7));
-      expect(world.checklistItems, hasLength(28));
+      expect(world.checklists, hasLength(28));
+      expect(world.checklistItems, hasLength(112));
 
       for (final checklist in world.checklists) {
         final ownerId = checklist.data.linkedTasks.single;
@@ -200,7 +200,11 @@ void main() {
           contains(checklist.meta.id),
           reason: '${checklist.meta.id} is not listed on its owning task',
         );
-        expect(checklist.data.linkedChecklistItems, hasLength(4));
+        expect(
+          checklist.data.linkedChecklistItems,
+          hasLength(4),
+          reason: 'every task runbook has four actionable steps',
+        );
         for (final itemId in checklist.data.linkedChecklistItems) {
           final item = itemsById[itemId];
           expect(item, isNotNull, reason: '$itemId is referenced but missing');
@@ -214,6 +218,11 @@ void main() {
           ...checklist.data.linkedChecklistItems,
       };
       expect(itemsById.keys.toSet(), claimed);
+      expect(
+        world.tasks.every((task) => task.data.checklistIds?.length == 1),
+        isTrue,
+        reason: 'every seeded task must open with one interactive runbook',
+      );
     });
 
     test('every seeded journal entity carries a real UUID, so the detail '
