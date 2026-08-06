@@ -9,9 +9,10 @@ copy over in the exit sheet.
 ## What it does for the user
 
 - **A populated app from the first second.** Twenty-nine linked tasks across
-  three areas — each with unique cover art and at least two attached photos
-  or operational artifacts — plus checklists, logged time, labels, notes, a
-  fictional AI setup, and a guided "first mission" with five things to try.
+  three areas — the twenty-eight penguin-world tasks each have unique cover
+  art, at least two attached photos or operational artifacts, and a four-step
+  themed checklist; the guided first-mission task has five checklist items —
+  plus logged time, labels, notes, and a fictional AI setup.
 - **Lived-in routines.** Six active logistics habits and one retired habit
   carry four imperfect weeks of completions, skips, and failures ending
   yesterday, so there is useful work waiting today.

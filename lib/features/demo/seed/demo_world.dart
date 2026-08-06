@@ -330,6 +330,31 @@ class ManualDemoWorld {
     final t = translate ?? demoSeedTextFromEnvironment();
     final anchor = now ?? manualDemoNow;
     final dates = DemoDates(anchor);
+    final supplementalChecklistIds = <String, String>{
+      manualRollCallTaskId: demoUuid('manual-roll-call-checklist'),
+      manualLaunchReviewTaskId: demoUuid('manual-launch-review-checklist'),
+      manualLunchTaskId: demoUuid('manual-lunch-checklist'),
+      manualSardineFuturesTaskId: demoUuid('manual-sardine-futures-checklist'),
+      manualFishFeederTaskId: demoUuid('manual-fish-feeder-checklist'),
+      manualSardineCargoTaskId: demoUuid('manual-sardine-cargo-checklist'),
+      manualPenguinPassengerTaskId: demoUuid(
+        'manual-penguin-passenger-checklist',
+      ),
+      manualHeadsetWalkTaskId: demoUuid('manual-headset-walk-checklist'),
+      demoLaunchCommsTaskId: demoUuid('manual-launch-comms-plan-checklist'),
+      demoIcePadWeatherTaskId: demoUuid('manual-ice-pad-weather-checklist'),
+      demoFlightSuitTaskId: demoUuid('manual-flight-suit-fitting-checklist'),
+      demoHumiditySpikeTaskId: demoUuid('manual-humidity-spike-checklist'),
+      demoIceRinkTaskId: demoUuid('manual-ice-rink-resurface-checklist'),
+      demoSolarArrayTaskId: demoUuid('manual-solar-array-tilt-checklist'),
+      demoWaterRecyclerTaskId: demoUuid('manual-water-recycler-checklist'),
+      demoKrillSupplierTaskId: demoUuid('manual-krill-supplier-checklist'),
+      demoPodSealOrderTaskId: demoUuid('manual-pod-seal-order-checklist'),
+      demoCustomsEuropaTaskId: demoUuid('manual-customs-europa-checklist'),
+      demoChickDaycareTaskId: demoUuid('manual-chick-daycare-checklist'),
+      demoMovieNightTaskId: demoUuid('manual-movie-night-checklist'),
+      demoTobogganingTaskId: demoUuid('manual-tobogganing-league-checklist'),
+    };
 
     final category = CategoryDefinition(
       id: manualDemoCategoryId,
@@ -458,7 +483,7 @@ class ManualDemoWorld {
         statusHistory: [status],
         categoryId: categoryId,
         estimate: estimate,
-        checklistIds: checklistIds,
+        checklistIds: checklistIds ?? [supplementalChecklistIds[id]!],
       );
       return base.copyWith(
         meta: base.meta.copyWith(labelIds: labelIds),
@@ -818,6 +843,260 @@ class ManualDemoWorld {
         taskId: demoShuttleManifestTaskId,
         items: manifestItems,
         categoryId: demoLogisticsCategoryId,
+      ),
+    ];
+
+    // Every task is a small, usable piece of penguin logistics work. The
+    // original fixture predates the expanded task world, so these runbooks
+    // give its remaining tasks — and the expansion tasks without bespoke
+    // checklists above — the same interactive, mixed-progress experience.
+    String supplementalChecklistId(String slug) =>
+        demoUuid('manual-$slug-checklist');
+
+    final launchRunbook = <(String, String)>[
+      ('Brief the boarding crew', 'Die Einsteigemannschaft briefen'),
+      ('Time the hatch sequence', 'Die Lukensequenz stoppen'),
+      ('Test the intercom', 'Die Gegensprechanlage testen'),
+      ('Rehearse the abort call', 'Den Abbruchruf proben'),
+    ];
+    final habitatRunbook = <(String, String)>[
+      ('Vent Bay A', 'Bucht A entlüften'),
+      ('Swap cartridges A1–A4', 'Patronen A1–A4 tauschen'),
+      ('Log the CO2 baseline', 'CO2-Ausgangswert notieren'),
+      ('Return the used cartridges', 'Die alten Patronen zurückgeben'),
+    ];
+    final logisticsRunbook = <(String, String)>[
+      ('Check bay two', 'Bucht zwei prüfen'),
+      ('Check the cold ring', 'Den Kühlring prüfen'),
+      ('Ask the dock crew', 'Die Dockmannschaft fragen'),
+      ('File a loss report', 'Verlustmeldung einreichen'),
+    ];
+    final colonyRunbook = <(String, String)>[
+      ('Colony news', 'Neues aus der Kolonie'),
+      ('Launch update', 'Neues zum Start'),
+      ('Chick of the month', 'Küken des Monats'),
+      ('Sardine recipe', 'Sardinenrezept'),
+    ];
+
+    ({Checklist checklist, List<ChecklistItem> items}) supplementalChecklist({
+      required String slug,
+      required String taskId,
+      required (String, String) taskTitle,
+      required List<(String, String)> runbook,
+      String categoryId = manualDemoCategoryId,
+    }) {
+      final id = supplementalChecklistId(slug);
+      // Keep the checklist visibly tied to its owning task while retaining
+      // the shared, localized operational vocabulary for the remaining steps.
+      final taskRunbook = [taskTitle, ...runbook.take(3)];
+      final items = [
+        for (final (index, spec) in taskRunbook.indexed)
+          checklistItem(
+            id: demoUuid('manual-$slug-item-$index'),
+            title: t(spec.$1, spec.$2),
+            isChecked: index == 0,
+            checkedAgo: Duration(hours: 18 + index),
+            checklistId: id,
+            categoryId: categoryId,
+            createdAt: dates.daysAgo(2),
+          ),
+      ];
+      return (
+        checklist: checklist(
+          id: id,
+          title: t(taskTitle.$1, taskTitle.$2),
+          taskId: taskId,
+          items: items,
+          categoryId: categoryId,
+        ),
+        items: items,
+      );
+    }
+
+    final supplementalChecklists = [
+      supplementalChecklist(
+        slug: 'roll-call',
+        taskId: manualRollCallTaskId,
+        taskTitle: ('Emperor penguin roll call', 'Kaiserpinguine durchzählen'),
+        runbook: colonyRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'launch-review',
+        taskId: manualLaunchReviewTaskId,
+        taskTitle: (
+          'Project Waddle launch review',
+          'Startprüfung für Project Waddle',
+        ),
+        runbook: launchRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'lunch',
+        taskId: manualLunchTaskId,
+        taskTitle: (
+          'Lunch (coffee is not a vegetable)',
+          'Mittagessen (Kaffee ist kein Gemüse)',
+        ),
+        runbook: colonyRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'sardine-futures',
+        taskId: manualSardineFuturesTaskId,
+        taskTitle: ('Negotiate sardine futures', 'Sardinen-Futures verhandeln'),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'fish-feeder',
+        taskId: manualFishFeederTaskId,
+        taskTitle: (
+          'Recalibrate the zero-gravity fish feeder',
+          'Schwerelosen Fischfütterer neu kalibrieren',
+        ),
+        runbook: habitatRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'sardine-cargo',
+        taskId: manualSardineCargoTaskId,
+        taskTitle: (
+          'Confirm the interplanetary sardine cargo pods',
+          'Interplanetare Sardinen-Frachtkapseln bestätigen',
+        ),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'penguin-passenger',
+        taskId: manualPenguinPassengerTaskId,
+        taskTitle: (
+          'Ask Legal whether a penguin is a passenger',
+          'Rechtsabteilung fragen, ob ein Pinguin Passagier ist',
+        ),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'headset-walk',
+        taskId: manualHeadsetWalkTaskId,
+        taskTitle: ('Walk without a headset', 'Spaziergang ohne Headset'),
+        runbook: colonyRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'launch-comms-plan',
+        taskId: demoLaunchCommsTaskId,
+        taskTitle: (
+          'Draft the launch comms plan',
+          'Kommunikationsplan entwerfen',
+        ),
+        runbook: launchRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'ice-pad-weather',
+        taskId: demoIcePadWeatherTaskId,
+        taskTitle: (
+          'Check the ice-pad weather window',
+          'Wetterfenster am Eisstartplatz prüfen',
+        ),
+        runbook: launchRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'flight-suit-fitting',
+        taskId: demoFlightSuitTaskId,
+        taskTitle: (
+          'Fit the penguin flight suits',
+          'Pinguin-Fluganzüge anpassen',
+        ),
+        runbook: launchRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'humidity-spike',
+        taskId: demoHumiditySpikeTaskId,
+        taskTitle: (
+          'Trace the humidity spike in Bay C',
+          'Feuchtigkeitsspitze in Bucht C aufspüren',
+        ),
+        runbook: habitatRunbook,
+        categoryId: demoHabitatCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'ice-rink-resurface',
+        taskId: demoIceRinkTaskId,
+        taskTitle: (
+          'Resurface the habitat ice rink',
+          'Eisbahn im Habitat neu aufbereiten',
+        ),
+        runbook: habitatRunbook,
+        categoryId: demoHabitatCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'solar-array-tilt',
+        taskId: demoSolarArrayTaskId,
+        taskTitle: (
+          'Retune the solar array tilt',
+          'Neigung der Solarfläche justieren',
+        ),
+        runbook: habitatRunbook,
+        categoryId: demoHabitatCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'water-recycler',
+        taskId: demoWaterRecyclerTaskId,
+        taskTitle: ('Service the water recycler', 'Wasseraufbereiter warten'),
+        runbook: habitatRunbook,
+        categoryId: demoHabitatCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'krill-supplier',
+        taskId: demoKrillSupplierTaskId,
+        taskTitle: (
+          'Shortlist a second krill supplier',
+          'Zweiten Krill-Lieferanten finden',
+        ),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'pod-seal-order',
+        taskId: demoPodSealOrderTaskId,
+        taskTitle: (
+          'Order replacement pod seals',
+          'Ersatzdichtungen für Kapseln bestellen',
+        ),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'customs-europa',
+        taskId: demoCustomsEuropaTaskId,
+        taskTitle: ('Clear customs on Europa', 'Zoll auf Europa erledigen'),
+        runbook: logisticsRunbook,
+        categoryId: demoLogisticsCategoryId,
+      ),
+      supplementalChecklist(
+        slug: 'chick-daycare',
+        taskId: demoChickDaycareTaskId,
+        taskTitle: (
+          'Refill the chick daycare rota',
+          'Dienstplan der Kükenbetreuung füllen',
+        ),
+        runbook: colonyRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'movie-night',
+        taskId: demoMovieNightTaskId,
+        taskTitle: (
+          'Pick the film for colony night',
+          'Film für den Kolonieabend wählen',
+        ),
+        runbook: colonyRunbook,
+      ),
+      supplementalChecklist(
+        slug: 'tobogganing-league',
+        taskId: demoTobogganingTaskId,
+        taskTitle: (
+          'Restart the tobogganing league',
+          'Rodel-Liga wieder starten',
+        ),
+        runbook: colonyRunbook,
       ),
     ];
 
@@ -1818,7 +2097,11 @@ class ManualDemoWorld {
       habitCompletions: habitCompletions,
       images: images,
       coverImages: coverImages,
-      checklists: [habitatChecklist, ...expansionChecklists],
+      checklists: [
+        habitatChecklist,
+        ...expansionChecklists,
+        for (final seed in supplementalChecklists) seed.checklist,
+      ],
       checklistItems: [
         ...habitatChecklistItems,
         ...rehearsalItems,
@@ -1827,6 +2110,7 @@ class ManualDemoWorld {
         ...newsletterItems,
         ...freezerItems,
         ...manifestItems,
+        for (final seed in supplementalChecklists) ...seed.items,
       ],
       timeRecords: [habitatTimeRecord, ...expansionTimeRecords],
       entries: notes,

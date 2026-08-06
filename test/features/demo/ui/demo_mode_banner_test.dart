@@ -158,9 +158,8 @@ void main() {
 
       expect(find.byType(DemoModeBanner), findsOneWidget);
 
-      // Two lines, stacked: the identity line names the world and the
-      // quieter line carries the reassurance that used to be crammed into
-      // one bodySmall row nobody read.
+      // The compact identity block keeps the label and reassurance readable
+      // while the exit affordance shares the same horizontal banner row.
       final identity = find.text('Demo world');
       final reassurance = find.text('Your journal is untouched');
       expect(identity, findsOneWidget);
@@ -188,6 +187,11 @@ void main() {
       expect(find.text('Exit'), findsOneWidget);
       expect(find.byType(DesignSystemButton), findsOneWidget);
       expect(
+        tester.getTopLeft(find.text('Exit')).dy,
+        closeTo(tester.getTopLeft(identity).dy, 4),
+        reason: 'Exit belongs on the identity line, not below the banner copy',
+      );
+      expect(
         tester.widget<DesignSystemButton>(find.byType(DesignSystemButton)).size,
         DesignSystemButtonSize.small,
         reason:
@@ -202,10 +206,8 @@ void main() {
       );
       expect(
         bannerHeight - 47,
-        greaterThan(48),
-        reason:
-            'two-line strip: roughly double the ~28px the single bodySmall '
-            'row occupied, which is why it was read as ignorable chrome',
+        lessThan(80),
+        reason: 'the inline action avoids reserving a separate button row',
       );
       expect(
         tester.getTopLeft(find.byKey(childKey)).dy,

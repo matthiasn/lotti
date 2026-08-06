@@ -9,6 +9,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/demo/copy/demo_copy_candidates.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_modal_action_bar.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
@@ -192,22 +193,30 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
               ),
             ),
             SizedBox(height: tokens.spacing.step6),
-            DesignSystemButton(
-              label: messages.demoExitConfirm,
-              size: DesignSystemButtonSize.large,
-              fullWidth: true,
-              onPressed: resolved ? () => unawaited(_exitPlain()) : null,
-            ),
-            if (hasCandidates) ...[
-              SizedBox(height: tokens.spacing.step3),
-              DesignSystemButton(
-                label: messages.demoExitTakeWork,
-                variant: DesignSystemButtonVariant.secondary,
+            DesignSystemModalActionBar(
+              layout: DesignSystemModalActionBarLayout.compactPrimary,
+              primary: DesignSystemButton(
+                label: messages.demoExitConfirm,
                 size: DesignSystemButtonSize.large,
                 fullWidth: true,
-                onPressed: () => setState(() => _step = _ExitStep.pick),
+                onPressed: resolved ? () => unawaited(_exitPlain()) : null,
               ),
-            ],
+              secondary: [
+                if (hasCandidates)
+                  DesignSystemButton(
+                    label: messages.demoExitTakeWork,
+                    variant: DesignSystemButtonVariant.secondary,
+                    size: DesignSystemButtonSize.large,
+                    onPressed: () => setState(() => _step = _ExitStep.pick),
+                  ),
+                DesignSystemButton(
+                  label: MaterialLocalizations.of(context).cancelButtonLabel,
+                  variant: DesignSystemButtonVariant.tertiary,
+                  size: DesignSystemButtonSize.large,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+              ],
+            ),
             if (snapshot.hasError) ...[
               // A failed candidate read must not silently remove the copy
               // option — say so; the plain exit stays available.
@@ -220,13 +229,6 @@ class _DemoExitSheetContentState extends State<DemoExitSheetContent> {
                 ),
               ),
             ],
-            SizedBox(height: tokens.spacing.step2),
-            DesignSystemButton(
-              label: MaterialLocalizations.of(context).cancelButtonLabel,
-              variant: DesignSystemButtonVariant.tertiary,
-              size: DesignSystemButtonSize.large,
-              onPressed: () => Navigator.of(context).pop(),
-            ),
           ],
         );
       },

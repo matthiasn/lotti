@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter/widgets.dart';
@@ -415,13 +416,18 @@ void main() {
       Profile demo, {
       required int seedVersion,
       List<String> seededJournalIds = const [],
+      Map<String, DateTime>? seededJournalUpdatedAt,
+      List<String> seededDefinitionIds = const [],
+      Map<String, String>? seededDefinitionFingerprints,
     }) => DemoSeedManifest(
       seedVersion: seedVersion,
       seededAt: DateTime.utc(2026),
       localeTag: 'en',
       seededJournalIds: seededJournalIds,
-      seededDefinitionIds: const [],
+      seededDefinitionIds: seededDefinitionIds,
       seededAiConfigIds: const [],
+      seededJournalUpdatedAt: seededJournalUpdatedAt,
+      seededDefinitionFingerprints: seededDefinitionFingerprints,
     ).write(registry.rootFor(demo));
 
     test('a stale world holding no user work is wiped and reseeded with the '
@@ -481,6 +487,82 @@ void main() {
         isNotNull,
         reason: 'the user-created task survived the boot',
       );
+    });
+
+    test('a stale world preserves edits to a seeded row', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final stale = (await gateway.findDemoProfile())!;
+      final handle = activateGeneration(stale);
+      await handle.writeJournalEntity(
+        TestTaskFactory.create(id: 'seeded-task', title: 'Seeded mission'),
+      );
+      final seeded = await handle.journalDb.journalEntityById('seeded-task');
+      await writeManifest(
+        stale,
+        seedVersion: demoSeedVersion - 1,
+        seededJournalIds: const ['seeded-task'],
+        seededJournalUpdatedAt: {'seeded-task': seeded!.meta.updatedAt},
+      );
+      await handle.writeJournalEntity(
+        TestTaskFactory.create(
+          id: 'seeded-task',
+          title: 'Edited mission',
+          createdAt: DateTime.utc(2026, 8, 6),
+        ),
+      );
+
+      final reseeded = await gateway.refreshStaleDemoWorld(
+        locale: const Locale('fr'),
+      );
+
+      expect(reseeded, isFalse);
+      expect((await gateway.findDemoProfile())!.id, stale.id);
+      final preserved = await handle.journalDb.journalEntityById('seeded-task');
+      expect(preserved, isNotNull);
+      expect((preserved! as Task).data.title, 'Edited mission');
+    });
+
+    test('a stale world preserves edits to a seeded definition', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final stale = (await gateway.findDemoProfile())!;
+      final handle = activateGeneration(stale);
+      final category = ManualDemoWorld.penguinLogistics().categories.first;
+      await handle.writeEntityDefinition(category);
+      await writeManifest(
+        stale,
+        seedVersion: demoSeedVersion - 1,
+        seededDefinitionIds: [category.id],
+        seededDefinitionFingerprints: {
+          category.id: jsonEncode(category.toJson()),
+        },
+      );
+      await handle.writeEntityDefinition(category.copyWith(name: 'Edited'));
+
+      expect(
+        await gateway.refreshStaleDemoWorld(locale: const Locale('fr')),
+        isFalse,
+      );
+      expect((await gateway.findDemoProfile())!.id, stale.id);
+    });
+
+    test('a stale world preserves a deleted seeded row', () async {
+      final gateway = buildGateway();
+      await gateway.enterDemo(locale: const Locale('en'));
+      final stale = (await gateway.findDemoProfile())!;
+      activateGeneration(stale);
+      await writeManifest(
+        stale,
+        seedVersion: demoSeedVersion - 1,
+        seededJournalIds: const ['deleted-seeded-row'],
+      );
+
+      expect(
+        await gateway.refreshStaleDemoWorld(locale: const Locale('fr')),
+        isFalse,
+      );
+      expect((await gateway.findDemoProfile())!.id, stale.id);
     });
 
     test('a world on the current seed version is left alone', () async {

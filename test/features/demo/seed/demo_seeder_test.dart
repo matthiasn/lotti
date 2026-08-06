@@ -182,8 +182,8 @@ void main() {
       expect(entities.whereType<JournalImage>(), hasLength(91));
       // 28 penguin-world tasks + the tutorial's "Your first mission".
       expect(entities.whereType<Task>(), hasLength(29));
-      expect(entities.whereType<Checklist>(), hasLength(8));
-      expect(entities.whereType<ChecklistItem>(), hasLength(33));
+      expect(entities.whereType<Checklist>(), hasLength(29));
+      expect(entities.whereType<ChecklistItem>(), hasLength(117));
       // 11 logged-time records + 21 observations.
       expect(entities.whereType<JournalEntry>(), hasLength(32));
 
@@ -402,6 +402,9 @@ void main() {
       when(
         () => brokenDb.getConfigFlagByName(any()),
       ).thenAnswer((_) async => null);
+      when(
+        () => brokenDb.getJournalEntitiesForIds(any()),
+      ).thenAnswer((_) async => const []);
       final brokenWorld = MockWorldHandle();
       when(() => brokenWorld.root).thenReturn(worldRoot);
       when(() => brokenWorld.journalDb).thenReturn(brokenDb);

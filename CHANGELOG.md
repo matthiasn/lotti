@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   retry on the next startup.
 
 ### Fixed
+- **The penguin demo is easier to read and explore.** Its persistent banner is
+  shorter, more prominent, and themed blue, with the exit action aligned in
+  the same row; the exit sheet buttons align inline when space permits and
+  wrap safely when the layout needs more room.
+  Seeded tasks now expose task-specific four-step checklists, and editing a
+  seeded row protects the user's work when a later demo seed is introduced.
 - **Knowledge-graph images no longer flash away when selecting a node.**
   Walking to a linked task (or any refresh of the graph data) rebuilt the
   canvas from scratch, briefly dropping every already-visible node image and

@@ -137,6 +137,13 @@ config flags (Daily OS, tooltips and the habits page on; sync, notifications,
 geolocation and dashboards off), and FTUE suppression in the demo's own
 `settings.sqlite`.
 
+Each of the twenty-eight penguin-world tasks owns one four-step, themed
+checklist with a mixed completion state. The cold-chain audit runbook is the
+fully completed example; the remaining runbooks deliberately mix checked and
+unchecked steps. The guided first-mission task is separate and has five items.
+This makes task detail usable as an interactive demo surface rather than a
+read-only fixture.
+
 The habits page is on because the world carries seven habits — six active
 logistics/operations routines and one retired — with four weeks of completion
 history ending *yesterday*, so the demo opens with real streaks and something

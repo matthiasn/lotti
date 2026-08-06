@@ -982,6 +982,29 @@ void main() {
           expect(ids.indexOf('sort-id-a'), lessThan(ids.indexOf('sort-id-b')));
         },
       );
+
+      test('including-deleted lookup returns tombstones', () async {
+        final deletedAt = DateTime(2024, 11, 11, 10);
+        final entry =
+            buildJournalEntry(
+              id: 'deleted-seed-row',
+              timestamp: deletedAt,
+              text: 'Deleted seed row',
+            ).copyWith(
+              meta: buildJournalEntry(
+                id: 'deleted-seed-row',
+                timestamp: deletedAt,
+                text: 'Deleted seed row',
+              ).meta.copyWith(deletedAt: deletedAt),
+            );
+        await db!.upsertJournalDbEntity(toDbEntity(entry));
+
+        final results = await db!.getJournalEntitiesForIdsIncludingDeleted({
+          entry.meta.id,
+        });
+
+        expect(results.single.meta.deletedAt, deletedAt);
+      });
     });
 
     group('getJournalEntityIdsSortedByDateFromDesc -', () {

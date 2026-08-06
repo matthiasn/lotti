@@ -5,7 +5,7 @@ import 'package:path/path.dart' as p;
 
 /// Version of the demo seed content. Bump when the seeded world changes in a
 /// way that should trigger a wipe-and-reseed of existing demo profiles.
-const demoSeedVersion = 5;
+const demoSeedVersion = 6;
 
 /// File name of the manifest written at the demo world's root.
 const demoSeedManifestFileName = 'demo_seed_manifest.json';
@@ -26,6 +26,8 @@ class DemoSeedManifest {
     required this.seededDefinitionIds,
     required this.seededAiConfigIds,
     this.seededLinkIds,
+    this.seededJournalUpdatedAt,
+    this.seededDefinitionFingerprints,
   });
 
   factory DemoSeedManifest.fromJson(Map<String, dynamic> json) {
@@ -37,6 +39,10 @@ class DemoSeedManifest {
       seededDefinitionIds: _idList(json['seededDefinitionIds']),
       seededAiConfigIds: _idList(json['seededAiConfigIds']),
       seededLinkIds: _optionalIdList(json['seededLinkIds']),
+      seededJournalUpdatedAt: _updatedAtMap(json['seededJournalUpdatedAt']),
+      seededDefinitionFingerprints: _stringMap(
+        json['seededDefinitionFingerprints'],
+      ),
     );
   }
 
@@ -63,6 +69,15 @@ class DemoSeedManifest {
   /// written before link ownership was recorded.
   final List<String>? seededLinkIds;
 
+  /// Persisted update timestamps captured after seeding. A changed timestamp
+  /// on a manifest-owned row means the user edited it and stale reseeding must
+  /// leave the world intact. Null denotes a legacy manifest without this
+  /// protection inventory.
+  final Map<String, DateTime>? seededJournalUpdatedAt;
+
+  /// Serialized baselines for seeded categories, labels, and habits.
+  final Map<String, String>? seededDefinitionFingerprints;
+
   /// Whether this world was seeded by the current app's seed content. A
   /// mismatch means the profile should be wiped and reseeded before reuse.
   bool get isCurrentVersion => seedVersion == demoSeedVersion;
@@ -75,7 +90,30 @@ class DemoSeedManifest {
     'seededDefinitionIds': seededDefinitionIds,
     'seededAiConfigIds': seededAiConfigIds,
     if (seededLinkIds != null) 'seededLinkIds': seededLinkIds,
+    if (seededJournalUpdatedAt != null)
+      'seededJournalUpdatedAt': {
+        for (final entry in seededJournalUpdatedAt!.entries)
+          entry.key: entry.value.toIso8601String(),
+      },
+    if (seededDefinitionFingerprints != null)
+      'seededDefinitionFingerprints': seededDefinitionFingerprints,
   };
+
+  static Map<String, DateTime>? _updatedAtMap(Object? value) {
+    if (value is! Map) return null;
+    return {
+      for (final entry in value.entries)
+        entry.key as String: DateTime.parse(entry.value as String),
+    };
+  }
+
+  static Map<String, String>? _stringMap(Object? value) {
+    if (value is! Map) return null;
+    return {
+      for (final entry in value.entries)
+        entry.key as String: entry.value as String,
+    };
+  }
 
   /// The manifest file for a demo world rooted at [root].
   static File fileFor(Directory root) =>
