@@ -813,6 +813,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   }
 
   void _recenter() {
+    _userAdjustedCamera = true;
     _focusWorld = _layout.positions[_focusId] ?? Offset.zero;
     final (ts, tp) = _framedTransform(_lastSize, _focusId);
     _fromScale = _scale;
@@ -1370,6 +1371,10 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                         maxWidth: visualSpec.legendMaxWidth,
                       ),
                       child: _LegendBar(
+                        // Stable finder for tests asserting the legend's
+                        // footprint is reserved (the measuring GlobalKey sits
+                        // on the ConstrainedBox above and is private).
+                        key: const ValueKey('knowledge-graph-legend'),
                         scenario: _displayScenario,
                         style: style,
                         categoryNames: widget.categoryNames,
@@ -1506,6 +1511,7 @@ class _LegendBar extends StatelessWidget {
     required this.style,
     required this.categoryNames,
     required this.tokens,
+    super.key,
   });
 
   final GraphScenario scenario;

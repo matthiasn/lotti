@@ -233,7 +233,11 @@ Rect _pushOutOfReserved(Rect rect, List<Rect> reserved, Rect viewport) {
               viewport.contains(option.topLeft) &&
               viewport.contains(option.bottomRight),
         );
-    if (candidates.isEmpty) return rect;
+    // No escape from THIS rect keeps the label in the viewport. Return what we
+    // have rather than the original: earlier passes may already have cleared
+    // other reserved rects, and discarding that progress would put the label
+    // back onto chrome it had escaped.
+    if (candidates.isEmpty) return current;
     var best = candidates.first;
     var bestTravel = double.infinity;
     for (final option in candidates) {

@@ -837,6 +837,14 @@ void main() {
           isTrue,
           reason: 'minimap footprint is not reserved',
         );
+        expect(
+          covers(
+            reserved,
+            localRect(find.byKey(const ValueKey('knowledge-graph-legend'))),
+          ),
+          isTrue,
+          reason: 'legend footprint is not reserved',
+        );
       },
     );
 
@@ -891,8 +899,8 @@ void main() {
         );
         expect(
           top,
-          greaterThanOrEqualTo(toolbar.top),
-          reason: 'neighbourhood framed up past the toolbar',
+          greaterThanOrEqualTo(toolbar.bottom),
+          reason: 'neighbourhood framed up under the toolbar',
         );
       },
     );
