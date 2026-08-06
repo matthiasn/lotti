@@ -44,8 +44,9 @@ class GraphImageCache {
   /// The extent [path]'s thumbnail was decoded at (0 when absent).
   int decodedExtentOf(String path) => _entries[path]?.extent ?? 0;
 
-  /// The source-file signature [path]'s thumbnail was decoded from (null when
-  /// absent or when none was recorded).
+  /// The source-file signature [path]'s thumbnail was decoded from. Null both
+  /// when the path is absent and when its entry carries no signature —
+  /// callers that need to tell those apart check [imageOf] as well.
   String? signatureOf(String path) => _entries[path]?.signature;
 
   /// Immutable path → image view of the cache, suitable for handing straight

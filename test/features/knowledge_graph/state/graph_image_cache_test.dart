@@ -96,9 +96,12 @@ void main() {
       cache.put('/a.png', updated, extent: 112, signature: '104:2')?.dispose();
       expect(cache.signatureOf('/a.png'), '104:2');
 
-      // No signature recorded → null, distinguishable from "absent".
+      // No signature recorded → null, the same value an absent path reports;
+      // callers distinguish the two cases via imageOf.
       cache.put('/b.png', makeImage(), extent: 112);
       expect(cache.signatureOf('/b.png'), isNull);
+      expect(cache.imageOf('/b.png'), isNotNull);
+      expect(cache.imageOf('/missing.png'), isNull);
 
       cache.dispose();
     });

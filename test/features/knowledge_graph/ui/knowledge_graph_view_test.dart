@@ -898,6 +898,7 @@ void main() {
         late final String pngPath;
         late final ui.Image firstDecode;
         late final ui.Image secondDecode;
+        late final ui.Image thirdDecode;
         await tester.runAsync(() async {
           tempDir = Directory.systemTemp.createTempSync('lotti_kg_sig_test');
           pngPath = '${tempDir.path}/photo.png';
@@ -908,6 +909,9 @@ void main() {
           final recorder2 = ui.PictureRecorder();
           Canvas(recorder2).drawColor(const Color(0xFF33CC66), BlendMode.src);
           secondDecode = await recorder2.endRecording().toImage(4, 4);
+          final recorder3 = ui.PictureRecorder();
+          Canvas(recorder3).drawColor(const Color(0xFFCC6633), BlendMode.src);
+          thirdDecode = await recorder3.endRecording().toImage(4, 4);
         });
         addTearDown(() => tempDir.deleteSync(recursive: true));
 
@@ -933,9 +937,11 @@ void main() {
         var decodeCount = 0;
         Future<ui.Image> loader(String path, int targetExtent) {
           decodeCount++;
-          return decodeCount == 1
-              ? Future.value(firstDecode)
-              : secondDecodeReady.future;
+          return switch (decodeCount) {
+            1 => Future.value(firstDecode),
+            2 => secondDecodeReady.future,
+            _ => Future.value(thirdDecode),
+          };
         }
 
         await pumpView(
@@ -984,9 +990,28 @@ void main() {
         expect(painterOf(tester).images[pngPath], same(secondDecode));
         expect(firstDecode.debugDisposed, isTrue);
 
+        // Overwrite with the SAME byte count but a different mtime: the
+        // signature's size component alone cannot see this change, so this
+        // exercises the mtime half of the size + mtime contract.
+        File(pngPath)
+          ..writeAsBytesSync(List.filled(128, 11))
+          ..setLastModifiedSync(DateTime.utc(2021));
+
+        await pumpView(
+          tester,
+          viewKey: const ValueKey('mount-4'),
+          scenario: photoScenario(),
+          thumbnailCache: cache,
+          imageLoader: loader,
+        );
+        await tester.pump();
+        expect(decodeCount, 3);
+        expect(painterOf(tester).images[pngPath], same(thirdDecode));
+        expect(secondDecode.debugDisposed, isTrue);
+
         await tester.pumpWidget(const SizedBox.shrink());
         cache.dispose();
-        expect(secondDecode.debugDisposed, isTrue);
+        expect(thirdDecode.debugDisposed, isTrue);
         expect(tester.takeException(), isNull);
       },
     );
