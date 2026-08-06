@@ -3,6 +3,7 @@ import 'dart:developer' as developer;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
@@ -90,9 +91,12 @@ void wireWakeExecutor(
       return result.mutatedEntries;
     }
 
-    if (identity.kind == AgentKinds.dayAgent) {
-      final dayWorkflow = ref.read(dayAgentWorkflowProvider);
-      final result = await dayWorkflow.execute(
+    // Kinds contributed by their owning feature (see agentWakeRunnersProvider).
+    // Consulted before the task-agent default so an owning feature can add a
+    // kind without this file naming it.
+    final registeredRunner = ref.read(agentWakeRunnersProvider)[identity.kind];
+    if (registeredRunner != null) {
+      final result = await registeredRunner(
         agentIdentity: identity,
         runKey: runKey,
         triggerTokens: triggers,
@@ -100,7 +104,7 @@ void wireWakeExecutor(
       );
 
       if (!result.success) {
-        throw StateError(result.error ?? 'Day agent wake failed');
+        throw StateError(result.error ?? '${identity.kind} wake failed');
       }
 
       await _notifyWakeCompletion(

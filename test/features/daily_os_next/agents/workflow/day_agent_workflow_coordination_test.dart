@@ -279,8 +279,12 @@ void main() {
           type: AgentEntityTypes.capture,
         ),
       ).thenAnswer((_) async => [capture]);
+      // The day wrap renderers are Daily OS's contribution to the shared
+      // reconstructor (see buildProviderOverrides); without them the
+      // `<day_log>` section would splice in verbatim.
       final reconstructed = await WakePromptReconstructor(
         syncService: syncService,
+        wrapRenderers: dayPromptLogWrapRenderers,
       ).reconstruct(agentId: agentId, content: record);
       expect(reconstructed, conversationRepository.lastUserMessage);
     });

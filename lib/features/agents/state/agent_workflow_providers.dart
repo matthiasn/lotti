@@ -15,15 +15,11 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
-import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
-import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/notifications/repository/notification_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
-import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 
@@ -169,41 +165,5 @@ EventAgentWorkflow eventAgentWorkflow(Ref ref) {
     soulDocumentService: ref.watch(soulDocumentServiceProvider),
     domainLogger: ref.watch(domainLoggerProvider),
     onPersistedStateChanged: persistedStateChangedNotifier(notifications),
-  );
-}
-
-/// The Daily OS day-agent workflow with all dependencies resolved.
-final dayAgentWorkflowProvider = Provider<DayAgentWorkflow>(
-  dayAgentWorkflow,
-  name: 'dayAgentWorkflowProvider',
-);
-DayAgentWorkflow dayAgentWorkflow(Ref ref) {
-  final notifications = ref.watch(updateNotificationsProvider);
-  return DayAgentWorkflow(
-    agentRepository: ref.watch(agentRepositoryProvider),
-    conversationRepository: ref.watch(conversationRepositoryProvider.notifier),
-    aiConfigRepository: ref.watch(aiConfigRepositoryProvider),
-    cloudInferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
-    syncService: ref.watch(agentSyncServiceProvider),
-    templateService: ref.watch(agentTemplateServiceProvider),
-    captureService: ref.watch(dayAgentCaptureServiceProvider),
-    planService: ref.watch(dayAgentPlanServiceProvider),
-    knowledgeService: ref.watch(dayAgentKnowledgeServiceProvider),
-    weekContextService: ref.watch(dayAgentWeekContextServiceProvider),
-    directiveService: ref.watch(dayAgentDirectiveServiceProvider),
-    dependencyResolver: ref.watch(taskDependencyResolverProvider),
-    soulDocumentService: ref.watch(soulDocumentServiceProvider),
-    dayAudioEntryContextService: DayAudioEntryContextService(
-      journalDb: ref.watch(journalDbProvider),
-      assetRoot: getIt(),
-    ),
-    domainLogger: ref.watch(domainLoggerProvider),
-    onPersistedStateChanged: persistedStateChangedNotifier(notifications),
-    logSummarizer: AgentLogLlmSummarizer(
-      inferenceRepository: ref.watch(cloudInferenceRepositoryProvider),
-    ),
-    // No input capture service: the day agent's durable inputs (capture
-    // transcripts, observations) are already synced log entities, projected as
-    // inline events.
   );
 }

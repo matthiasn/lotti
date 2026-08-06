@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
+import 'package:lotti/features/agents/projection/capture_events.dart';
 
 CaptureEntity _capture(
   String id, {

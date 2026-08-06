@@ -4,13 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
 import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
@@ -154,6 +157,16 @@ class InitProviderBench {
           mockProjectAgentService,
         ),
         dayAgentServiceProvider.overrideWithValue(mockDayAgentService),
+        // Mirror buildProviderOverrides: Daily OS plugs its agent kind into the
+        // shared runtime through these registries rather than being imported by
+        // it. Left un-overridden, the runtime would have no day kind at all and
+        // every day-agent assertion below would pass vacuously.
+        agentWakeRunnersProvider.overrideWith(
+          (ref) => ref.watch(dayAgentWakeRunnersProvider),
+        ),
+        agentRuntimeMaintenanceProvider.overrideWith(
+          (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
+        ),
         projectRepositoryProvider.overrideWithValue(mockProjectRepository),
         agentTemplateServiceProvider.overrideWithValue(mockTemplateService),
         soulDocumentServiceProvider.overrideWithValue(

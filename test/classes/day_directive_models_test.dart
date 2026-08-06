@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
+import 'package:lotti/classes/day_agent_plan_models.dart';
+import 'package:lotti/classes/day_directive_models.dart';
 
 void main() {
   group('DayDirectiveCommitment', () {

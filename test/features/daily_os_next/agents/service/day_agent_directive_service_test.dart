@@ -1,9 +1,9 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
+import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart'
     show DayAgentDirectToolResult;
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_directive_service.dart';

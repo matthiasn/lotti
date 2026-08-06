@@ -1,6 +1,7 @@
 import 'package:drift/drift.dart' show Value, Variable;
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/day_directive_models.dart' show DayStatusKind;
 import 'package:lotti/classes/day_plan.dart' show dayAgentIdForDate;
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_repo_internals.dart';
@@ -10,12 +11,10 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/agent_link.dart'
     show AgentLinkSelection;
+import 'package:lotti/features/agents/model/agent_link.dart' as model;
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart'
-    show DayStatusKind;
 import 'package:lotti/features/sync/vector_clock.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';

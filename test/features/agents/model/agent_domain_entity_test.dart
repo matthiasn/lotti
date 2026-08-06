@@ -1,14 +1,14 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_agent_plan_models.dart';
+import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 

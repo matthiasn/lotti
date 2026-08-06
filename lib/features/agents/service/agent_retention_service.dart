@@ -1,9 +1,9 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_retention_policy.dart';
 import 'package:lotti/features/agents/service/agent_sidecar_reclaimer.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Outcome of one retention sweep, per source.

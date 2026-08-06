@@ -1,4 +1,6 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
+import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -17,14 +19,12 @@ import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:uuid/uuid.dart';
 
-export 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart'
+export 'package:lotti/classes/day_agent_identity.dart'
     show dailyOsPlannerAgentId;
 
 /// Daily OS day-agent lifecycle management.

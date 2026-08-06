@@ -5,7 +5,7 @@ description: The persisted agent runtime — five agent kinds, their startup wir
 resource: ../../../lib/features/agents
 tags: [agents, runtime, wake, ai]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-01T16:18:08Z }
+generated: { by: claude-code/opus-5, at: 2026-08-06T15:20:00Z }
 stale_after: 2026-10-12
 sources:
   - id: agents-src
@@ -16,6 +16,18 @@ sources:
     resource: ../../../lib/features/agents/model/agent_constants.dart
     title: AgentKinds and AgentLinkTypes
     last_modified: 2026-07-24
+  - id: runtime-registry
+    resource: ../../../lib/features/agents/state/agent_runtime_registry.dart
+    title: AgentWakeRunner, AgentRuntimeMaintenance and the setup-sheet launcher
+    last_modified: 2026-08-06
+  - id: wake-executor
+    resource: ../../../lib/features/agents/state/agent_wiring.dart
+    title: wireWakeExecutor — kind routing and the registry lookup
+    last_modified: 2026-08-06
+  - id: import-guard
+    resource: ../../../test/architecture/feature_import_direction_test.dart
+    title: The enforced import direction between agents and daily_os_next
+    last_modified: 2026-08-07
   - id: enums
     resource: ../../../lib/features/agents/model/agent_enums.dart
     title: WakeReason and AgentLifecycle
@@ -51,9 +63,36 @@ reads the journal on demand during a wake.
 | `template_improver` | `activeTemplateId` | `ImproverAgentWorkflow` | scheduled ritual |
 | `day_agent` | day workspace (`day:<dayId>`), no single slot | `DayAgentWorkflow` | day-scoped pre-warms and capture wakes |
 
-The day agent is the single long-lived Daily OS planner (ADR 0022). The wake
-executor routes `AgentKinds.dayAgent` to `DayAgentWorkflow`, but that workflow
-and its service live in [`daily_os_next`](../daily_os_next/), not here.
+The day agent is the single long-lived Daily OS planner (ADR 0022). Its workflow
+and service live in [`daily_os_next`](../daily_os_next/), not here — and
+**nothing in `features/agents` imports them.**
+
+## How an owning feature plugs a kind in
+
+The first four kinds above are wired directly in `wireWakeExecutor`, because this
+feature owns their workflows. `day_agent` is not: it is contributed through the
+registries in `agent_runtime_registry.dart`, which default to empty and are
+overridden in the composition root (`buildProviderOverrides`) — the one place
+allowed to see both features.
+
+| Registry | Contributes | Consumed by |
+|----------|-------------|-------------|
+| `agentWakeRunnersProvider` | one `AgentWakeRunner` per kind | `wireWakeExecutor`, consulted before the task-agent default |
+| `agentRuntimeMaintenanceProvider` | `beforeWakeScan()` / `restoreSubscriptions()` hooks | `scheduledWakeManagerProvider`'s pre-check and the startup restoration pass |
+| `promptLogWrapRenderersProvider` | per-`wrap`-kind prompt-log splices | `WakePromptReconstructor` |
+| `dailyOsSetupSheetLauncherProvider` | the inference-setup sheet opener | the agent internals "current setup" row |
+
+The dependency therefore points from the owning feature *inward* to the runtime,
+never back out. That direction is enforced by a test
+(`test/architecture/feature_import_direction_test.dart`), because it was
+previously violated: `AgentDomainEntity` itself imported Daily OS domain models,
+making the two features a cycle. The shared day vocabulary those variants need
+now lives in [`lib/classes/`](../../domain/) instead.
+
+A registry left un-overridden fails silently rather than loudly — an unregistered
+kind falls through to the task-agent workflow, and an unrenderable wrap splices
+its log verbatim — so the composition-root registrations are pinned by
+`test/app_bootstrap_test.dart` (the `agent runtime registrations` group).
 
 **There is no persisted `meta_improver` kind.** A meta-improver is a
 `template_improver` whose `recursionDepth > 0`. `recursionDepth` and the ritual

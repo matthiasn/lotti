@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_report_provenance.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_activity_log.dart';
 import 'package:lotti/features/agents/ui/agent_controls.dart';
@@ -15,7 +16,6 @@ import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_token_usage_section.dart';
 import 'package:lotti/features/agents/ui/task_agent_model_identity.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
-import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -311,6 +311,10 @@ class _ProfileSection extends ConsumerWidget {
         .value
         ?.mapOrNull(agent: (value) => value);
     final isDailyOs = identity?.kind == AgentKinds.dayAgent;
+    // Daily OS owns its setup sheet and contributes the launcher; null when
+    // that feature is not wired, which disables the row rather than opening
+    // nothing.
+    final dailyOsSetupLauncher = ref.watch(dailyOsSetupSheetLauncherProvider);
     final setup = ref.watch(agentResolvedSetupProvider(agentId)).value;
     final route = setup?.profile == null
         ? null
@@ -357,7 +361,9 @@ class _ProfileSection extends ConsumerWidget {
             ),
             trailing: const Icon(Icons.chevron_right_rounded),
             onTap: isDailyOs
-                ? () => DailyOsInferenceSetupSheet.show(context)
+                ? (dailyOsSetupLauncher == null
+                      ? null
+                      : () => dailyOsSetupLauncher(context))
                 : taskId == null
                 ? null
                 : () => AgentModelSheet.show(

@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
 import 'package:lotti/features/agents/service/wake_prompt_reconstructor.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
@@ -296,6 +297,7 @@ Future<String?> agentMessagePayloadText(
     final reconstructor = WakePromptReconstructor(
       syncService: ref.watch(agentSyncServiceProvider),
       domainLogger: ref.watch(domainLoggerProvider),
+      wrapRenderers: ref.watch(promptLogWrapRenderersProvider),
     );
     final reconstructed = await reconstructor.reconstruct(
       agentId: entity.agentId,

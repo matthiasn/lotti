@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/database/fts5_db.dart';
@@ -13,16 +11,10 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_plan_service.dart';
-import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
-import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
-import 'package:lotti/features/daily_os_next/state/day_processing_runtime_provider.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/tasks/repository/checklist_repository.dart';
-import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
@@ -37,100 +29,6 @@ import '../../../widget_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
-
-  group('dayAgentWorkflowProvider', () {
-    setUp(() async {
-      await setUpTestGetIt(
-        additionalSetup: () {
-          getIt
-            ..registerSingleton<Fts5Db>(MockFts5Db())
-            ..registerSingleton<Directory>(Directory.systemTemp);
-        },
-      );
-    });
-
-    tearDown(tearDownTestGetIt);
-
-    test('resolves dependencies and wires persisted-state notifications', () {
-      final repository = MockAgentRepository();
-      final syncService = MockAgentSyncService();
-      final journalDb = MockJournalDb();
-      final journalRepository = MockJournalRepository();
-      final aiConfigRepository = MockAiConfigRepository();
-      final cloudInferenceRepository = MockCloudInferenceRepository();
-      final templateService = MockAgentTemplateService();
-      final soulDocumentService = MockSoulDocumentService();
-      final domainLogger = MockDomainLogger();
-      final wakeOrchestrator = MockWakeOrchestrator();
-      final notifications = MockUpdateNotifications();
-      final dayProcessingOutbox = MockDayProcessingOutboxRepository();
-      final container = ProviderContainer(
-        overrides: [
-          dayProcessingOutboxRepositoryProvider.overrideWithValue(
-            dayProcessingOutbox,
-          ),
-          agentRepositoryProvider.overrideWithValue(repository),
-          conversationRepositoryProvider.overrideWith(
-            ConversationRepository.new,
-          ),
-          aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
-          cloudInferenceRepositoryProvider.overrideWithValue(
-            cloudInferenceRepository,
-          ),
-          agentSyncServiceProvider.overrideWithValue(syncService),
-          journalDbProvider.overrideWithValue(journalDb),
-          journalRepositoryProvider.overrideWithValue(journalRepository),
-          wakeOrchestratorProvider.overrideWithValue(wakeOrchestrator),
-          agentTemplateServiceProvider.overrideWithValue(templateService),
-          soulDocumentServiceProvider.overrideWithValue(soulDocumentService),
-          domainLoggerProvider.overrideWithValue(domainLogger),
-          updateNotificationsProvider.overrideWithValue(notifications),
-        ],
-      );
-      addTearDown(container.dispose);
-
-      final workflow = container.read(dayAgentWorkflowProvider);
-
-      expect(workflow, isA<DayAgentWorkflow>());
-      expect(workflow.captureService, isA<DayAgentCaptureService>());
-      expect(workflow.planService, isA<DayAgentPlanService>());
-      expect(workflow.captureService?.agentRepository, same(repository));
-      expect(workflow.captureService?.syncService, same(syncService));
-      expect(workflow.captureService?.journalDb, same(journalDb));
-      expect(
-        workflow.captureService?.journalRepository,
-        same(journalRepository),
-      );
-      expect(workflow.captureService?.outbox, same(dayProcessingOutbox));
-      expect(workflow.captureService?.domainLogger, same(domainLogger));
-      expect(workflow.planService?.agentRepository, same(repository));
-      expect(workflow.planService?.syncService, same(syncService));
-      expect(workflow.planService?.journalDb, same(journalDb));
-      expect(workflow.planService?.domainLogger, same(domainLogger));
-      expect(workflow.weekContextService, isA<DayAgentWeekContextService>());
-      expect(workflow.weekContextService?.agentRepository, same(repository));
-      expect(workflow.weekContextService?.syncService, same(syncService));
-      expect(workflow.weekContextService?.journalDb, same(journalDb));
-      expect(workflow.weekContextService?.domainLogger, same(domainLogger));
-      expect(workflow.dayAudioEntryContextService?.journalDb, same(journalDb));
-      expect(
-        workflow.dayAudioEntryContextService?.assetRoot?.path,
-        Directory.systemTemp.path,
-      );
-      expect(workflow.dependencyResolver, isA<TaskDependencyResolver>());
-      expect(
-        workflow.dependencyResolver?.journalRepository,
-        same(journalRepository),
-      );
-      workflow.onPersistedStateChanged?.call('day-agent-001');
-      verify(
-        () => notifications.notifyUiOnly({
-          'day-agent-001',
-          agentNotification,
-        }),
-      ).called(1);
-    });
-  });
 
   group('other workflow providers', () {
     late MockAgentRepository repository;

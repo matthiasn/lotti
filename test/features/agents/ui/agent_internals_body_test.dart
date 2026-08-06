@@ -7,10 +7,13 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_body.dart';
 import 'package:lotti/features/ai/model/resolved_profile.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart';
+import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 
 import '../../../test_helper.dart';
 import '../test_data/ai_config_factories.dart';
@@ -298,6 +301,11 @@ void main() {
               providers: [provider],
             ),
           ),
+          // Daily OS contributes its setup sheet through the runtime registry,
+          // as buildProviderOverrides does in the app.
+          dailyOsSetupSheetLauncherProvider.overrideWithValue(
+            DailyOsInferenceSetupSheet.show,
+          ),
         ],
         child: const SingleChildScrollView(
           child: AgentInternalsBody(
@@ -322,4 +330,104 @@ void main() {
 
     expect(find.text('Use Daily OS default'), findsOneWidget);
   });
+
+  testWidgets(
+    'Daily OS setup row is inert when no launcher is contributed',
+    (tester) async {
+      // The launcher defaults to null when Daily OS is not wired into the
+      // runtime. The row must then be disabled rather than tappable-but-dead:
+      // a tap that opens nothing reads as a broken screen.
+      final profile = testInferenceProfile(
+        id: 'profile-1',
+        thinkingModelId: 'model-1',
+      );
+      final model = testAiModel();
+      final provider = testInferenceProvider();
+      final identity = makeTestIdentity(
+        id: dailyOsPlannerAgentId,
+        agentId: dailyOsPlannerAgentId,
+        kind: AgentKinds.dayAgent,
+        config: const AgentConfig(
+          profileId: 'profile-1',
+          inferenceSetup: AgentInferenceSetup(
+            mode: AgentInferenceSetupMode.configured,
+            origin: AgentInferenceSetupOrigin.user,
+            baseProfileId: 'profile-1',
+          ),
+        ),
+      );
+      final resolved = ResolvedAgentSetup(
+        status: AgentSetupResolutionStatus.resolved,
+        profile: ResolvedProfile(
+          thinkingModelId: model.providerModelId,
+          thinkingProvider: provider,
+          thinkingModel: model,
+        ),
+        source: AgentSetupResolutionSource.baseProfile,
+        setupOrigin: AgentInferenceSetupOrigin.user,
+      );
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+          overrides: [
+            agentIdentityProvider.overrideWith(
+              (ref, agentId) async => identity,
+            ),
+            agentStateProvider.overrideWith((ref, agentId) async => null),
+            templateForAgentProvider.overrideWith((ref, agentId) async => null),
+            taskAgentResolvedSetupProvider.overrideWith(
+              (ref, agentId) async => resolved,
+            ),
+            taskAgentSetupOptionsProvider.overrideWith(
+              (ref) async => TaskAgentSetupOptions(
+                profiles: [profile],
+                models: [model],
+                providers: [provider],
+              ),
+            ),
+            // Deliberately NOT overriding dailyOsSetupSheetLauncherProvider.
+          ],
+          child: const SingleChildScrollView(
+            child: AgentInternalsBody(
+              agentId: dailyOsPlannerAgentId,
+              lifecycle: AgentLifecycle.active,
+              stateAsync: AsyncValue.data(null),
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.scrollUntilVisible(
+        find.text('Test Model \u00b7 via Gemini'),
+        200,
+        scrollable: find.byType(Scrollable).at(1),
+      );
+      // The row still renders its state — only the action is withheld.
+      expect(find.text('Current planner setup'), findsOneWidget);
+
+      // Assert the row is genuinely *disabled*, not merely tappable-and-dead: a
+      // null `onTap` is what makes it render without ink and stay inert. The tap
+      // below would pass either way, so this is the load-bearing assertion.
+      final row = tester.widget<DesignSystemListItem>(
+        find.ancestor(
+          of: find.text('Test Model \u00b7 via Gemini'),
+          matching: find.byType(DesignSystemListItem),
+        ),
+      );
+      expect(
+        row.onTap,
+        isNull,
+        reason:
+            'with no contributed launcher the setup row must carry no action, '
+            'so it reads as disabled rather than broken',
+      );
+
+      await tester.tap(find.text('Test Model \u00b7 via Gemini'));
+      await tester.pumpAndSettle();
+
+      // And nothing opened.
+      expect(find.text('Use Daily OS default'), findsNothing);
+    },
+  );
 }

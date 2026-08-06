@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/event_data.dart';
 import 'package:lotti/classes/event_status.dart';
@@ -22,6 +23,7 @@ import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/scheduled_wake_manager.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/wake/wake_queue.dart';
@@ -37,7 +39,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/ollama_embedding_repository.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
@@ -67,6 +69,38 @@ import 'agent_providers_test_helpers.dart';
 
 extension on WakeQueue {
   WakeJob? dequeue() => dequeueFirstWhere((_) => true);
+}
+
+/// A contributor whose failure escapes `beforeWakeScan`.
+///
+/// No production contributor does this — `DailyOsRuntimeMaintenance` contains
+/// its own repair failures — so the runtime's own containment is only reachable
+/// from a double.
+class _ThrowingMaintenance implements AgentRuntimeMaintenance {
+  int beforeCalls = 0;
+
+  @override
+  Future<void> beforeWakeScan() async {
+    beforeCalls++;
+    throw StateError('repair unavailable');
+  }
+
+  @override
+  Future<void> restoreSubscriptions() async {}
+}
+
+/// A contributor that only records that it ran, to prove the loop continues
+/// past a failing predecessor.
+class _RecordingMaintenance implements AgentRuntimeMaintenance {
+  int beforeCalls = 0;
+
+  @override
+  Future<void> beforeWakeScan() async {
+    beforeCalls++;
+  }
+
+  @override
+  Future<void> restoreSubscriptions() async {}
 }
 
 void main() {
@@ -2332,6 +2366,11 @@ void main() {
           updateNotificationsProvider.overrideWithValue(notifications),
           domainLoggerProvider.overrideWithValue(MockDomainLogger()),
           dayAgentServiceProvider.overrideWithValue(dayAgentService),
+          // Daily OS contributes the pre-scan repairs through the runtime
+          // registry, exactly as buildProviderOverrides does.
+          agentRuntimeMaintenanceProvider.overrideWith(
+            (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
+          ),
         ],
       );
       addTearDown(() {
@@ -2383,6 +2422,11 @@ void main() {
             updateNotificationsProvider.overrideWithValue(notifications),
             domainLoggerProvider.overrideWithValue(domainLogger),
             dayAgentServiceProvider.overrideWithValue(dayAgentService),
+            // Daily OS contributes the pre-scan repairs through the
+            // runtime registry, exactly as buildProviderOverrides does.
+            agentRuntimeMaintenanceProvider.overrideWith(
+              (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
+            ),
           ],
         );
         addTearDown(() {
@@ -2433,6 +2477,11 @@ void main() {
             updateNotificationsProvider.overrideWithValue(notifications),
             domainLoggerProvider.overrideWithValue(domainLogger),
             dayAgentServiceProvider.overrideWithValue(dayAgentService),
+            // Daily OS contributes the pre-scan repairs through the
+            // runtime registry, exactly as buildProviderOverrides does.
+            agentRuntimeMaintenanceProvider.overrideWith(
+              (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
+            ),
           ],
         );
         addTearDown(() {
@@ -2452,6 +2501,75 @@ void main() {
             subDomain: any(named: 'subDomain'),
           ),
         ).called(1);
+      },
+    );
+
+    test(
+      'its pre-check reports an escaping contributor and runs the rest',
+      () async {
+        // The runtime cannot know which of a feature's repairs are optional, so
+        // contributors contain their own expected failures — `DailyOsRuntimeMaintenance`
+        // never throws. This covers the case it cannot: a contributor whose
+        // failure escapes anyway. The scan must not abort, because a repair that
+        // cannot run must not also stop the wakes that are already due, and a
+        // later contributor must still get its turn.
+        final notifications = UpdateNotifications();
+        final domainLogger = MockDomainLogger();
+        when(
+          () => domainLogger.error(
+            any(),
+            any(),
+            message: any(named: 'message'),
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).thenReturn(null);
+
+        final throwing = _ThrowingMaintenance();
+        final following = _RecordingMaintenance();
+
+        final container = ProviderContainer(
+          overrides: [
+            agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+            wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
+            agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+            updateNotificationsProvider.overrideWithValue(notifications),
+            domainLoggerProvider.overrideWithValue(domainLogger),
+            agentRuntimeMaintenanceProvider.overrideWithValue([
+              throwing,
+              following,
+            ]),
+          ],
+        );
+        addTearDown(() {
+          notifications.dispose();
+          container.dispose();
+        });
+
+        await expectLater(
+          container.read(scheduledWakeManagerProvider).beforeCheck!(),
+          completes,
+        );
+
+        // The failure is named by contributor type, so a diagnostic points at
+        // which feature's repair broke rather than just "maintenance failed".
+        verify(
+          () => domainLogger.error(
+            LogDomain.agentRuntime,
+            any(that: isA<StateError>()),
+            message:
+                'failed pre-scan maintenance for '
+                '_ThrowingMaintenance before wake scan',
+            stackTrace: any(named: 'stackTrace'),
+            subDomain: any(named: 'subDomain'),
+          ),
+        ).called(1);
+        expect(throwing.beforeCalls, 1);
+        expect(
+          following.beforeCalls,
+          1,
+          reason: 'a contributor after the failing one must still run',
+        );
       },
     );
   });

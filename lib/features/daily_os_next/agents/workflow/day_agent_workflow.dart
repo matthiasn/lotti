@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
+import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -8,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
+import 'package:lotti/features/agents/projection/capture_events.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
@@ -28,10 +31,8 @@ import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/daily_os_planner_wake_context.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_config.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_reconcile_models.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/day_agent_slots.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/planner_knowledge.dart';
 import 'package:lotti/features/daily_os_next/agents/domain/week_context.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
@@ -51,7 +52,6 @@ import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tool_names.d
 import 'package:lotti/features/daily_os_next/agents/tools/day_agent_tools.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_strategy.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow_models.dart';
-import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
 import 'package:lotti/features/tasks/repository/task_dependency_resolver.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -60,8 +60,8 @@ import 'package:openai_dart/openai_dart.dart';
 
 part 'day_agent_context_builder.dart';
 part 'day_agent_persistence.dart';
-part 'day_agent_tool_handlers.dart';
 part 'day_agent_prompt_builder.dart';
+part 'day_agent_tool_handlers.dart';
 
 typedef _TimeSensitiveDayAgentContext = ({
   Map<String, Object?>? digestContext,

@@ -9,9 +9,9 @@ generated: { by: claude-code/opus-5, at: 2026-08-02T00:30:00Z }
 stale_after: 2026-10-26
 sources:
   - id: identity
-    resource: ../../../lib/features/daily_os_next/agents/domain/day_agent_identity.dart
+    resource: ../../../lib/classes/day_agent_identity.dart
     title: perDayAgentId, isPerDayAgentId, dayIdOfPerDayAgent
-    last_modified: 2026-08-02
+    last_modified: 2026-08-06
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Day-agent services and workflow

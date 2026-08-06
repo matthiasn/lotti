@@ -8,9 +8,12 @@ import 'package:lotti/features/agents/service/wake_prompt_reconstructor.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
+import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -29,6 +32,7 @@ void main() {
   late AgentInputCaptureService capture;
   late AgentLogCompactor compactor;
   late WakePromptReconstructor reconstructor;
+  late WakePromptReconstructor dayReconstructor;
 
   setUp(() {
     repo = InMemoryAgentRepository()..seed([makeTestState(agentId: _agentId)]);
@@ -47,6 +51,12 @@ void main() {
     capture = AgentInputCaptureService(syncService: sync);
     compactor = AgentLogCompactor(syncService: sync);
     reconstructor = WakePromptReconstructor(syncService: sync);
+    // The day agent's wrap kinds are Daily OS's payload formats, contributed
+    // through the renderer registry rather than known to the reconstructor.
+    dayReconstructor = WakePromptReconstructor(
+      syncService: sync,
+      wrapRenderers: dayPromptLogWrapRenderers,
+    );
   });
 
   RenderedSource src(String entryId, String text, {required int day}) =>
@@ -130,7 +140,7 @@ void main() {
         },
       };
 
-      final reconstructed = (await reconstructor.reconstruct(
+      final reconstructed = (await dayReconstructor.reconstruct(
         agentId: _agentId,
         content: record,
       ))!;
@@ -167,7 +177,7 @@ void main() {
         },
       };
 
-      final reconstructed = (await reconstructor.reconstruct(
+      final reconstructed = (await dayReconstructor.reconstruct(
         agentId: _agentId,
         content: record,
       ))!;
@@ -200,7 +210,7 @@ void main() {
         ),
       ).thenAnswer((_) async => [capture]);
 
-      final reconstructed = (await reconstructor.reconstruct(
+      final reconstructed = (await dayReconstructor.reconstruct(
         agentId: _agentId,
         content: <String, Object?>{
           'promptFormat': 'v2',
@@ -405,5 +415,154 @@ void main() {
     // Capture load failed → no day-capture events, but the payload-backed log
     // still reconstructs (never null).
     expect(reconstructed, 'H\n${assembled.text}\nT');
+  });
+
+  group('wrap kinds without a registered renderer', () {
+    /// Builds a v2 record around the current log, tagged with [wrap].
+    Future<Map<String, Object?>> recordWithWrap(String? wrap) async {
+      await captureAll([src('e1', 'note', day: 1)], 10);
+      final assembled = await compactor.assembleContextDetailed(_agentId);
+      return <String, Object?>{
+        'promptFormat': 'v2',
+        'head': 'H\n',
+        'tail': '\nT',
+        'wrap': ?wrap,
+        'log': <String, Object?>{
+          if (assembled.lastEventPosition != null)
+            'until': <String, Object?>{
+              'at': assembled.lastEventPosition!.at.toIso8601String(),
+              'sourceAt': assembled.lastEventPosition!.sourceAt
+                  .toIso8601String(),
+              'key': assembled.lastEventPosition!.key,
+            },
+        },
+      };
+    }
+
+    test(
+      'splices verbatim and reports an unrenderable non-plain kind',
+      () async {
+        // A record persisted by a feature whose renderer was never wired: the
+        // history UI must still show something readable, but silence would hide
+        // a real wiring bug, so the fallback is diagnosed.
+        final logger = MockDomainLogger();
+        when(
+          () => logger.error(
+            any<LogDomain>(),
+            any<Object>(),
+            message: any<String?>(named: 'message'),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).thenAnswer((_) {});
+
+        final record = await recordWithWrap('some-unwired-kind');
+        final assembled = await compactor.assembleContextDetailed(_agentId);
+
+        final reconstructed = await WakePromptReconstructor(
+          syncService: sync,
+          domainLogger: logger,
+        ).reconstruct(agentId: _agentId, content: record);
+
+        expect(reconstructed, 'H\n${assembled.text}\nT');
+        verify(
+          () => logger.error(
+            LogDomain.agentWorkflow,
+            any<Object>(),
+            message: any<String?>(
+              named: 'message',
+              that: contains('unrenderable wrap kind'),
+            ),
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test('stays silent for the plain kind, which needs no renderer', () async {
+      // Plain is the default splice, not a missing registration — diagnosing it
+      // would make every markdown-prompt wake log an error.
+      final logger = MockDomainLogger();
+      when(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          message: any<String?>(named: 'message'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) {});
+
+      final record = await recordWithWrap(promptRecordWrapPlain);
+
+      await WakePromptReconstructor(
+        syncService: sync,
+        domainLogger: logger,
+      ).reconstruct(agentId: _agentId, content: record);
+
+      // Scoped to this branch's diagnostic: the shared harness's in-memory
+      // repository legitimately triggers the contained capture-load warning,
+      // which is unrelated to wrap resolution.
+      verifyNever(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          message: any<String?>(
+            named: 'message',
+            that: contains('unrenderable wrap kind'),
+          ),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      );
+    });
+
+    test('an absent wrap field defaults to plain and stays silent', () async {
+      final logger = MockDomainLogger();
+      when(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          message: any<String?>(named: 'message'),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      ).thenAnswer((_) {});
+
+      final record = await recordWithWrap(null);
+      final assembled = await compactor.assembleContextDetailed(_agentId);
+
+      final reconstructed = await WakePromptReconstructor(
+        syncService: sync,
+        domainLogger: logger,
+      ).reconstruct(agentId: _agentId, content: record);
+
+      expect(reconstructed, 'H\n${assembled.text}\nT');
+      // Scoped to this branch's diagnostic: the shared harness's in-memory
+      // repository legitimately triggers the contained capture-load warning,
+      // which is unrelated to wrap resolution.
+      verifyNever(
+        () => logger.error(
+          any<LogDomain>(),
+          any<Object>(),
+          message: any<String?>(
+            named: 'message',
+            that: contains('unrenderable wrap kind'),
+          ),
+          stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        ),
+      );
+    });
+
+    test('a registered renderer wins over the verbatim fallback', () async {
+      final record = await recordWithWrap('custom');
+      final assembled = await compactor.assembleContextDetailed(_agentId);
+
+      final reconstructed = await WakePromptReconstructor(
+        syncService: sync,
+        wrapRenderers: {
+          'custom': ({required head, required log, required tail}) =>
+              '$head[[$log]]$tail',
+        },
+      ).reconstruct(agentId: _agentId, content: record);
+
+      expect(reconstructed, 'H\n[[${assembled.text}]]\nT');
+    });
   });
 }

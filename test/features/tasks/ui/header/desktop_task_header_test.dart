@@ -964,21 +964,46 @@ void main() {
       'narrow viewport: status and priority lead; the due date and estimate '
       'wrap together as a full second row',
       (tester) async {
-        // 420px is the real mobile header width. Every attribute is its own
-        // wrap unit, so the lane breaks into two *balanced* rows: the state
-        // pair (status + its caret-bearing priority) up top, the time pair
-        // (due + estimate) below. The pathology this guards against is the
-        // old bonded due+estimate unit dropping as one atom while half of the
-        // first row sat empty — a wrapped row that is itself full is fine.
-        await _pumpDesktop(
-          tester,
-          DesktopTaskHeader(
-            data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
-            onTitleSaved: (_) {},
-            estimateSlot: const Text('0h / 1h'),
-          ),
-          size: const Size(420, 800),
+        // A lane one pixel too narrow for the due chip breaks into two
+        // *balanced* rows: the state pair (status + its caret-bearing
+        // priority) up top, the time pair (due + estimate) below. What this
+        // pins is that the break lands on the semantic seam and that the
+        // wrapped row is itself full — not a lone chip stranded under a row
+        // with slack left in it.
+        Widget header() => DesktopTaskHeader(
+          data: _fixture(dueDate: _dueFixture, labels: _labelFixtures),
+          onTitleSaved: (_) {},
+          estimateSlot: const Text('0h / 1h'),
         );
+        Rect chipRect(String label) => tester.getRect(
+          find.ancestor(of: find.text(label), matching: find.byType(DsPill)),
+        );
+
+        // Measure the lane on one line before narrowing it. A hard-coded phone
+        // width cannot express "one pixel too narrow for the due chip": glyph
+        // metrics differ between hosts (a square test font locally, real
+        // proportional fonts on CI), so the same number lands on either side
+        // of the wrap depending on where the suite runs. Deriving the width
+        // from the chips themselves pins the *wrap*, which is the behaviour
+        // under test, rather than one machine's font.
+        await _pumpDesktop(tester, header(), size: const Size(1280, 800));
+        final statusChip = chipRect('Open');
+        final priorityChip = chipRect('High');
+        final dueChip = chipRect('Due: Apr 1, 2026');
+        final estimateWidth = tester.getRect(find.text('0h / 1h')).width;
+        final chipGap = priorityChip.left - statusChip.right;
+
+        // One pixel short of what the due chip needs to stay on row one.
+        final laneWidth = priorityChip.right + chipGap + dueChip.width - 1;
+        // ...and still wide enough for the time pair to share row two, which
+        // is what makes the wrap a two-row break rather than a three-row one.
+        expect(
+          laneWidth,
+          greaterThanOrEqualTo(dueChip.width + chipGap + estimateWidth),
+          reason: 'the calibrated lane must still hold due + estimate together',
+        );
+
+        await _pumpDesktop(tester, header(), size: Size(laneWidth, 800));
         final status = tester.getTopLeft(find.text('Open')).dy;
         final priority = tester.getTopLeft(find.text('High')).dy;
         final due = tester.getTopLeft(find.text('Due: Apr 1, 2026')).dy;
@@ -990,9 +1015,8 @@ void main() {
           due,
           greaterThan(status),
           reason:
-              'the time pair wraps below the state pair at this width — the '
-              "priority pill's disclosure caret buys tap-scent on row one at "
-              'the cost of the slack the due chip used to squeeze into',
+              'the state pair holds row one and the time pair wraps below it, '
+              'rather than the due chip splitting off from the estimate',
         );
         expect(
           (due - estimate).abs(),

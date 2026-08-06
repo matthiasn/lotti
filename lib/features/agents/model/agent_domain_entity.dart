@@ -1,11 +1,11 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
+import 'package:lotti/classes/day_agent_plan_models.dart';
+import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_directive_models.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 

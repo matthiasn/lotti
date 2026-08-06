@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
+import 'package:lotti/features/agents/projection/capture_events.dart';
 import 'package:lotti/features/agents/service/agent_log_llm_summarizer.dart';
 import 'package:lotti/features/agents/service/agent_service.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
@@ -32,7 +33,6 @@ import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.da
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_week_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_audio_entry_context_service.dart';
 import 'package:lotti/features/daily_os_next/agents/workflow/day_agent_workflow.dart';
-import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
 import 'package:lotti/features/daily_os_next/logic/mock_day_agent.dart';
 import 'package:lotti/features/daily_os_next/logic/real_day_agent.dart';
 import 'package:lotti/features/daily_os_next/services/day_processing_outbox_processor.dart';
