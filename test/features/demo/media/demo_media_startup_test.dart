@@ -220,6 +220,40 @@ void main() {
     expect(services.isRegistered<DemoMediaHydrator>(), isFalse);
   });
 
+  test(
+    'logs and skips hydration when journal rows cannot be inspected',
+    () async {
+      final seeded = asset('journal-read-failure', [12]);
+      await DemoSeedManifest(
+        seedVersion: demoSeedVersion,
+        seededAt: DateTime(2026, 8, 5),
+        localeTag: 'en',
+        seededJournalIds: [seeded.id],
+        seededDefinitionIds: const [],
+        seededAiConfigIds: const [],
+      ).write(root);
+
+      await registerDemoMediaHydration(
+        serviceLocator: services,
+        profile: context(ProfileType.guest),
+        catalog: [seeded],
+        activeJournalIds: () async => throw StateError('journal unavailable'),
+        download: (uri) async => Uint8List.fromList([12]),
+      );
+
+      expect(services.isRegistered<DemoMediaHydrator>(), isFalse);
+      verify(
+        () => logger.error(
+          LogDomain.general,
+          any(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: 'demoMediaJournal',
+          message: 'Unable to inspect demo media entities',
+        ),
+      ).called(1);
+    },
+  );
+
   test('network failures are contained and logged per asset', () async {
     final bytes = Uint8List.fromList([13]);
     final seeded = asset('network-failure', bytes);

@@ -273,6 +273,51 @@ void main() {
       expect(root.existsSync(), isTrue);
     });
 
+    test(
+      'a stale manifest inventories its seeded links before reseeding',
+      () async {
+        final gateway = buildGateway();
+        await gateway.enterDemo(locale: const Locale('en'));
+        final first = (await gateway.findDemoProfile())!;
+        final root = registry.rootFor(first);
+        await DemoSeedManifest(
+          seedVersion: demoSeedVersion - 1,
+          seededAt: DateTime.utc(2026),
+          localeTag: 'en',
+          seededJournalIds: const ['seeded-task-a', 'seeded-task-b'],
+          seededDefinitionIds: const [],
+          seededAiConfigIds: const [],
+          seededLinkIds: const ['seeded-link'],
+        ).write(root);
+        final work = WorldHandle.open(root);
+        await work.writeJournalEntity(
+          TestTaskFactory.create(id: 'seeded-task-a', title: 'Seeded A'),
+        );
+        await work.writeJournalEntity(
+          TestTaskFactory.create(id: 'seeded-task-b', title: 'Seeded B'),
+        );
+        await work.writeEntryLink(
+          EntryLink.basic(
+            id: 'seeded-link',
+            fromId: 'seeded-task-a',
+            toId: 'seeded-task-b',
+            createdAt: DateTime.utc(2026),
+            updatedAt: DateTime.utc(2026),
+            vectorClock: null,
+          ),
+        );
+        await work.close();
+        activated.clear();
+        seededLocales.clear();
+
+        await gateway.enterDemo(locale: const Locale('en'));
+
+        expect(seededLocales, ['en']);
+        expect(activated, isNotEmpty);
+        expect((await gateway.findDemoProfile())!.id, isNot(first.id));
+      },
+    );
+
     test('a stale manifest with only a user-connected AI provider (their '
         'API key) also resumes instead of wiping', () async {
       final gateway = buildGateway();
