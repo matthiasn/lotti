@@ -13,13 +13,20 @@ library;
 import 'dart:ui' as ui;
 
 class _CacheEntry {
-  const _CacheEntry(this.image, this.extent);
+  const _CacheEntry(this.image, this.extent, this.signature);
 
   final ui.Image image;
 
   /// Longest-side pixel extent the image was decoded at — lets callers skip
   /// re-decoding a path whose cached thumbnail already meets their target.
   final int extent;
+
+  /// Content signature of the source file at decode time (size + mtime).
+  /// Media files are overwritten in place at deterministic paths (photo
+  /// re-import, sync self-healing fetch), so extent alone cannot prove a
+  /// cached thumbnail still matches the bytes on disk. Null when the caller
+  /// could not stat the source (e.g. test loaders with synthetic paths).
+  final String? signature;
 }
 
 /// Owns decoded graph thumbnails keyed by source-file path.
@@ -37,6 +44,10 @@ class GraphImageCache {
   /// The extent [path]'s thumbnail was decoded at (0 when absent).
   int decodedExtentOf(String path) => _entries[path]?.extent ?? 0;
 
+  /// The source-file signature [path]'s thumbnail was decoded from (null when
+  /// absent or when none was recorded).
+  String? signatureOf(String path) => _entries[path]?.signature;
+
   /// Immutable path → image view of the cache, suitable for handing straight
   /// to the painter. Each call returns a fresh map so identity-based
   /// `shouldRepaint` checks see cache updates.
@@ -50,10 +61,15 @@ class GraphImageCache {
   /// different image was stored for [path] and no other entry still references
   /// that object. The caller disposes it after swapping its painter snapshot,
   /// so an in-flight frame never paints a disposed image.
-  ui.Image? put(String path, ui.Image image, {required int extent}) {
+  ui.Image? put(
+    String path,
+    ui.Image image, {
+    required int extent,
+    String? signature,
+  }) {
     assert(!_disposed, 'GraphImageCache used after dispose');
     final previous = _entries[path]?.image;
-    _entries[path] = _CacheEntry(image, extent);
+    _entries[path] = _CacheEntry(image, extent, signature);
     if (previous == null || identical(previous, image)) return null;
     return _isReferenced(previous) ? null : previous;
   }

@@ -8,6 +8,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -298,10 +299,10 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
         final targetExtent = _requestedImageTargetExtent;
         final loaded = await _loadImages(targetExtent);
         if (!mounted) {
-          _disposeImages(loaded.values, retained: _images.values);
+          _disposeImages(loaded.images.values, retained: _images.values);
           return;
         }
-        _installImages(loaded, targetExtent);
+        _installImages(loaded.images, loaded.signatures, targetExtent);
         _loadedImageTargetExtent = targetExtent;
       }
     } finally {
@@ -317,16 +318,37 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     ],
   };
 
-  Future<Map<String, ui.Image>> _loadImages(int targetExtent) async {
+  /// Content signature (size + mtime) of the file at [path], or null when it
+  /// cannot be stat'ed (missing file, synthetic test path). Media files are
+  /// overwritten in place at deterministic paths (photo re-import, sync
+  /// self-healing fetch), so cache validity must track the bytes on disk, not
+  /// just the decode extent. Synchronous by design: `stat` metadata is cheap,
+  /// and async real IO would stall the drain under widget-test fake async.
+  static String? _fileSignatureOf(String path) {
+    try {
+      final stat = File(path).statSync();
+      if (stat.type == FileSystemEntityType.notFound) return null;
+      return '${stat.size}:${stat.modified.microsecondsSinceEpoch}';
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<({Map<String, ui.Image> images, Map<String, String?> signatures})>
+  _loadImages(int targetExtent) async {
     final loaded = <String, ui.Image>{};
+    final signatures = <String, String?>{};
     final loadImage = widget.imageLoader ?? decodeGraphImageFile;
-    // Cached thumbnails already decoded at (or above) the target survive
-    // remounts via the shared cache — only decode what is missing or too
-    // small for the current device-pixel target.
-    final paths = _scenarioImagePaths().where(
-      (path) => _thumbnails.decodedExtentOf(path) < targetExtent,
-    );
-    for (final path in paths) {
+    for (final path in _scenarioImagePaths()) {
+      // Cached thumbnails survive remounts via the shared cache — only decode
+      // what is missing, too small for the current device-pixel target, or
+      // whose source file changed since it was decoded. An unavailable
+      // signature (test loaders) falls back to the extent-only check.
+      final signature = _fileSignatureOf(path);
+      final cachedFresh =
+          _thumbnails.decodedExtentOf(path) >= targetExtent &&
+          (signature == null || signature == _thumbnails.signatureOf(path));
+      if (cachedFresh) continue;
       try {
         final image = await loadImage(path, targetExtent);
         if (!mounted) {
@@ -336,22 +358,35 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
             [...loaded.values, image],
             retained: _images.values,
           );
-          return const {};
+          return (
+            images: const <String, ui.Image>{},
+            signatures: const <String, String?>{},
+          );
           // coverage:ignore-end
         }
         loaded[path] = image;
+        signatures[path] = signature;
       } on Object {
         // Missing/unreadable file — fall back to the type glyph.
       }
     }
-    return loaded;
+    return (images: loaded, signatures: signatures);
   }
 
-  void _installImages(Map<String, ui.Image> loaded, int targetExtent) {
+  void _installImages(
+    Map<String, ui.Image> loaded,
+    Map<String, String?> signatures,
+    int targetExtent,
+  ) {
     if (loaded.isEmpty) return;
     final replaced = <ui.Image>[];
     for (final MapEntry(:key, :value) in loaded.entries) {
-      final displaced = _thumbnails.put(key, value, extent: targetExtent);
+      final displaced = _thumbnails.put(
+        key,
+        value,
+        extent: targetExtent,
+        signature: signatures[key],
+      );
       if (displaced != null) replaced.add(displaced);
     }
     setState(() {

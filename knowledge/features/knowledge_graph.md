@@ -90,10 +90,13 @@ linked task, a sync or DB notification — replaces the scenario and remounts
 synchronously in `initState`, so established node images paint on the first
 frame instead of flashing away while they re-decode. The cache owns image
 disposal (`put` hands a displaced image back for deferred disposal; mounting
-prunes entries the new scenario no longer references), tracks the decode
-extent per path so only missing or too-small thumbnails are re-decoded, and a
-standalone view without a host-provided cache owns a private one that dies
-with its state.
+prunes entries the new scenario no longer references), and tracks the decode
+extent plus a source-file signature (size + mtime) per path so only missing,
+too-small, or changed-on-disk thumbnails are re-decoded — media files are
+overwritten in place at deterministic paths (photo re-import, sync
+self-healing fetch), so extent alone cannot prove freshness. A standalone
+view without a host-provided cache owns a private one that dies with its
+state.
 
 `graph_label_layout.dart` measures labels and places them at one of eight anchors
 using deterministic priority and collision avoidance. Focus, selection,

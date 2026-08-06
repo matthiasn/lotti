@@ -888,6 +888,110 @@ void main() {
     );
 
     testWidgets(
+      're-decodes a cached thumbnail when its source file changed on disk, '
+      'and keeps skipping when it did not',
+      (tester) async {
+        // Media files are overwritten in place at deterministic paths (photo
+        // re-import, sync self-healing fetch); the cache must not serve a
+        // stale decode of the old bytes forever.
+        late final Directory tempDir;
+        late final String pngPath;
+        late final ui.Image firstDecode;
+        late final ui.Image secondDecode;
+        await tester.runAsync(() async {
+          tempDir = Directory.systemTemp.createTempSync('lotti_kg_sig_test');
+          pngPath = '${tempDir.path}/photo.png';
+          File(pngPath).writeAsBytesSync(List.filled(64, 7));
+          final recorder = ui.PictureRecorder();
+          Canvas(recorder).drawColor(const Color(0xFF3366CC), BlendMode.src);
+          firstDecode = await recorder.endRecording().toImage(4, 4);
+          final recorder2 = ui.PictureRecorder();
+          Canvas(recorder2).drawColor(const Color(0xFF33CC66), BlendMode.src);
+          secondDecode = await recorder2.endRecording().toImage(4, 4);
+        });
+        addTearDown(() => tempDir.deleteSync(recursive: true));
+
+        GraphScenario photoScenario() => GraphScenario(
+          name: 'Changing photo',
+          seedId: 'photo',
+          nodes: [
+            GraphNode(
+              id: 'photo',
+              type: GraphNodeType.imageEntry,
+              label: 'Photo entry',
+              categoryId: catWork,
+              createdAt: fixedNow,
+              imagePath: pngPath,
+            ),
+          ],
+          edges: const [],
+          now: fixedNow,
+        );
+
+        final cache = GraphImageCache();
+        final secondDecodeReady = Completer<ui.Image>();
+        var decodeCount = 0;
+        Future<ui.Image> loader(String path, int targetExtent) {
+          decodeCount++;
+          return decodeCount == 1
+              ? Future.value(firstDecode)
+              : secondDecodeReady.future;
+        }
+
+        await pumpView(
+          tester,
+          viewKey: const ValueKey('mount-1'),
+          scenario: photoScenario(),
+          thumbnailCache: cache,
+          imageLoader: loader,
+        );
+        await tester.pump();
+        expect(decodeCount, 1);
+        expect(painterOf(tester).images[pngPath], same(firstDecode));
+
+        // Same file, remount: the cached decode is fresh — no re-decode.
+        await pumpView(
+          tester,
+          viewKey: const ValueKey('mount-2'),
+          scenario: photoScenario(),
+          thumbnailCache: cache,
+          imageLoader: loader,
+        );
+        await tester.pump();
+        expect(decodeCount, 1);
+
+        // Overwrite the file in place (different size → different signature).
+        File(pngPath).writeAsBytesSync(List.filled(128, 9));
+
+        await pumpView(
+          tester,
+          viewKey: const ValueKey('mount-3'),
+          scenario: photoScenario(),
+          thumbnailCache: cache,
+          imageLoader: loader,
+        );
+        // The changed file triggers a re-decode…
+        expect(decodeCount, 2);
+        // …but stale-while-revalidate keeps the old thumbnail painting while
+        // it is pending (no flash).
+        expect(painterOf(tester).images[pngPath], same(firstDecode));
+
+        secondDecodeReady.complete(secondDecode);
+        await tester.pump();
+        await tester.pump();
+
+        // The fresh decode then replaces the stale one.
+        expect(painterOf(tester).images[pngPath], same(secondDecode));
+        expect(firstDecode.debugDisposed, isTrue);
+
+        await tester.pumpWidget(const SizedBox.shrink());
+        cache.dispose();
+        expect(secondDecode.debugDisposed, isTrue);
+        expect(tester.takeException(), isNull);
+      },
+    );
+
+    testWidgets(
       'remount prunes cached thumbnails the new scenario no longer references',
       (tester) async {
         late final ui.Image cover;

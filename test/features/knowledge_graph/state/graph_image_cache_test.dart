@@ -82,6 +82,27 @@ void main() {
       },
     );
 
+    test('records the source-file signature a thumbnail was decoded from', () {
+      final cache = GraphImageCache();
+      final image = makeImage();
+      final updated = makeImage();
+
+      cache.put('/a.png', image, extent: 112, signature: '100:1');
+      expect(cache.signatureOf('/a.png'), '100:1');
+      expect(cache.signatureOf('/missing.png'), isNull);
+
+      // Re-putting (e.g. after the file changed on disk) replaces the
+      // signature along with the image.
+      cache.put('/a.png', updated, extent: 112, signature: '104:2')?.dispose();
+      expect(cache.signatureOf('/a.png'), '104:2');
+
+      // No signature recorded → null, distinguishable from "absent".
+      cache.put('/b.png', makeImage(), extent: 112);
+      expect(cache.signatureOf('/b.png'), isNull);
+
+      cache.dispose();
+    });
+
     test('re-putting the identical image displaces nothing', () {
       final cache = GraphImageCache();
       final image = makeImage();
