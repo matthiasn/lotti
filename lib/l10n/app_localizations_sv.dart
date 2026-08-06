@@ -5007,9 +5007,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get demoExitTakeWork => 'Ta med mitt arbete…';
 
   @override
-  String demoMediaDownloadProgress(int completed, int total) {
-    return 'Hämtar demobilder · $completed av $total';
+  String demoMediaDownloadCount(int completed, int total) {
+    return '$completed av $total';
   }
+
+  @override
+  String get demoMediaDownloadProgress => 'Hämtar demobilder';
+
+  @override
+  String get demoMediaDownloadRetry =>
+      'Vissa demobilder kunde inte hämtas. Ett nytt försök görs vid nästa start.';
 
   @override
   String get demoOnboardingExplore => 'Utforska med exempeldata';

@@ -2203,8 +2203,8 @@
   "demoExitSheetBody": "Deine Demo-Welt bleibt gespeichert — du kannst jederzeit zurückkommen.",
   "demoExitSheetTitle": "Demo verlassen?",
   "demoExitTakeWork": "Meine Arbeit mitnehmen…",
-  "demoMediaDownloadProgress": "Demo-Bilder werden geladen · {completed} von {total}",
-  "@demoMediaDownloadProgress": {
+  "demoMediaDownloadCount": "{completed} von {total}",
+  "@demoMediaDownloadCount": {
     "placeholders": {
       "completed": {
         "type": "int"
@@ -2214,6 +2214,8 @@
       }
     }
   },
+  "demoMediaDownloadProgress": "Demo-Bilder werden heruntergeladen",
+  "demoMediaDownloadRetry": "Einige Demo-Bilder konnten nicht heruntergeladen werden. Beim nächsten Start wird es erneut versucht.",
   "demoOnboardingExplore": "Mit Beispieldaten erkunden",
   "demoSettingsDeleteConfirm": "Demo-Welt und alle zugehörigen Daten löschen?",
   "demoSettingsDeleteTitle": "Demo-Daten löschen",

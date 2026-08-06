@@ -5090,9 +5090,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get demoExitTakeWork => 'Luați-vă munca cu dvs.…';
 
   @override
-  String demoMediaDownloadProgress(int completed, int total) {
-    return 'Se descarcă imaginile demo · $completed din $total';
+  String demoMediaDownloadCount(int completed, int total) {
+    return '$completed din $total';
   }
+
+  @override
+  String get demoMediaDownloadProgress => 'Se descarcă imaginile demo';
+
+  @override
+  String get demoMediaDownloadRetry =>
+      'Unele imagini demo nu au putut fi descărcate. Vom încerca din nou la următoarea pornire.';
 
   @override
   String get demoOnboardingExplore => 'Explorați cu date de exemplu';

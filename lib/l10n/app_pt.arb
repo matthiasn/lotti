@@ -2442,8 +2442,8 @@
   "demoExitSheetBody": "O teu mundo de demonstração fica guardado — podes voltar quando quiseres.",
   "demoExitSheetTitle": "Sair da demo?",
   "demoExitTakeWork": "Levar o meu trabalho…",
-  "demoMediaDownloadProgress": "A transferir imagens de demonstração · {completed} de {total}",
-  "@demoMediaDownloadProgress": {
+  "demoMediaDownloadCount": "{completed} de {total}",
+  "@demoMediaDownloadCount": {
     "placeholders": {
       "completed": {
         "type": "int"
@@ -2453,6 +2453,8 @@
       }
     }
   },
+  "demoMediaDownloadProgress": "A transferir imagens de demonstração",
+  "demoMediaDownloadRetry": "Não foi possível transferir algumas imagens de demonstração. Será feita nova tentativa no próximo arranque.",
   "demoOnboardingExplore": "Explorar com dados de exemplo",
   "demoSettingsDeleteConfirm": "Apagar o mundo de demonstração e todos os seus dados?",
   "demoSettingsDeleteTitle": "Apagar dados da demo",

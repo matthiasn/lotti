@@ -26,12 +26,21 @@ class DemoMediaHydrationProgress {
   const DemoMediaHydrationProgress({
     required this.completed,
     required this.total,
+    this.failed = 0,
+    this.cancelled = 0,
   });
 
+  /// Items whose local file was verified or whose download installed safely.
   final int completed;
   final int total;
+  final int failed;
+  final int cancelled;
 
-  bool get isComplete => completed >= total;
+  bool get isComplete => completed == total;
+
+  bool get hasFailures => failed > 0;
+
+  double get fraction => total == 0 ? 0 : completed / total;
 }
 
 class DemoMediaHydrationResult {
@@ -130,8 +139,10 @@ class DemoMediaHydrator {
     void report() {
       if (_disposed) return;
       progress.value = DemoMediaHydrationProgress(
-        completed: alreadyComplete + downloaded + failed + cancelled,
+        completed: alreadyComplete + downloaded,
         total: assets.length,
+        failed: failed,
+        cancelled: cancelled,
       );
     }
 

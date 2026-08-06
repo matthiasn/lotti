@@ -2443,8 +2443,8 @@
   "demoExitSheetBody": "Din demoverden bliver gemt — du kan altid vende tilbage.",
   "demoExitSheetTitle": "Forlad demoen?",
   "demoExitTakeWork": "Tag mit arbejde med…",
-  "demoMediaDownloadProgress": "Henter demobilleder · {completed} af {total}",
-  "@demoMediaDownloadProgress": {
+  "demoMediaDownloadCount": "{completed} af {total}",
+  "@demoMediaDownloadCount": {
     "placeholders": {
       "completed": {
         "type": "int"
@@ -2454,6 +2454,8 @@
       }
     }
   },
+  "demoMediaDownloadProgress": "Henter demobilleder",
+  "demoMediaDownloadRetry": "Nogle demobilleder kunne ikke hentes. Der forsøges igen ved næste opstart.",
   "demoOnboardingExplore": "Udforsk med eksempeldata",
   "demoSettingsDeleteConfirm": "Slet demoverdenen og alle dens data?",
   "demoSettingsDeleteTitle": "Slet demodata",

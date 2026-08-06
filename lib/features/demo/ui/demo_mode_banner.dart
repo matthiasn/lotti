@@ -7,6 +7,7 @@ import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/demo/ui/demo_entry_launcher.dart';
 import 'package:lotti/features/demo/ui/demo_exit_sheet.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/progress_bars/design_system_progress_bar.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -239,7 +240,7 @@ class DemoModeBanner extends StatelessWidget {
                                     color: tokens.colors.text.mediumEmphasis,
                                   ),
                             ),
-                            _DemoMediaProgressLine(),
+                            const _DemoMediaProgressLine(),
                           ],
                         ),
                       ),
@@ -265,6 +266,8 @@ class DemoModeBanner extends StatelessWidget {
 }
 
 class _DemoMediaProgressLine extends StatelessWidget {
+  const _DemoMediaProgressLine();
+
   @override
   Widget build(BuildContext context) {
     if (!getIt.isRegistered<DemoMediaHydrator>()) {
@@ -279,13 +282,14 @@ class _DemoMediaProgressLine extends StatelessWidget {
         if (progress.isComplete) return const SizedBox.shrink();
         return Padding(
           padding: EdgeInsets.only(top: tokens.spacing.step1),
-          child: Text(
-            context.messages.demoMediaDownloadProgress(
+          child: DesignSystemProgressBar(
+            value: progress.fraction,
+            label: progress.hasFailures
+                ? context.messages.demoMediaDownloadRetry
+                : context.messages.demoMediaDownloadProgress,
+            progressText: context.messages.demoMediaDownloadCount(
               progress.completed,
               progress.total,
-            ),
-            style: tokens.typography.styles.body.bodySmall.copyWith(
-              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
         );

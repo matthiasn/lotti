@@ -5049,9 +5049,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get demoExitTakeWork => 'Levar o meu trabalho…';
 
   @override
-  String demoMediaDownloadProgress(int completed, int total) {
-    return 'A transferir imagens de demonstração · $completed de $total';
+  String demoMediaDownloadCount(int completed, int total) {
+    return '$completed de $total';
   }
+
+  @override
+  String get demoMediaDownloadProgress =>
+      'A transferir imagens de demonstração';
+
+  @override
+  String get demoMediaDownloadRetry =>
+      'Não foi possível transferir algumas imagens de demonstração. Será feita nova tentativa no próximo arranque.';
 
   @override
   String get demoOnboardingExplore => 'Explorar com dados de exemplo';

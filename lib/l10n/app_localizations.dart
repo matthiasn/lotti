@@ -8483,11 +8483,23 @@ abstract class AppLocalizations {
   /// **'Take my work with me…'**
   String get demoExitTakeWork;
 
+  /// No description provided for @demoMediaDownloadCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{completed} of {total}'**
+  String demoMediaDownloadCount(int completed, int total);
+
   /// No description provided for @demoMediaDownloadProgress.
   ///
   /// In en, this message translates to:
-  /// **'Downloading demo images · {completed} of {total}'**
-  String demoMediaDownloadProgress(int completed, int total);
+  /// **'Downloading demo images'**
+  String get demoMediaDownloadProgress;
+
+  /// No description provided for @demoMediaDownloadRetry.
+  ///
+  /// In en, this message translates to:
+  /// **'Some demo images couldn\'t be downloaded. They\'ll retry next time.'**
+  String get demoMediaDownloadRetry;
 
   /// No description provided for @demoOnboardingExplore.
   ///

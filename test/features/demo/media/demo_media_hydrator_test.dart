@@ -151,6 +151,9 @@ void main() {
     expect(result.failed, 1);
     expect(result.downloaded, 1);
     expect(result.isComplete, isFalse);
+    expect(hydrator.progress.value.completed, 1);
+    expect(hydrator.progress.value.failed, 1);
+    expect(hydrator.progress.value.isComplete, isFalse);
   });
 
   test(
