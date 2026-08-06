@@ -508,7 +508,7 @@ void main() {
       expect(reseeded, isFalse);
       expect((await gateway.findDemoProfile())!.id, stale.id);
       expect(
-        (await handle.journalDb.journalEntityById('seeded-task')),
+        await handle.journalDb.journalEntityById('seeded-task'),
         isNotNull,
       );
     });
