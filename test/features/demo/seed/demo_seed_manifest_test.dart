@@ -14,6 +14,10 @@ void main() {
     seededDefinitionIds: const ['category-1'],
     seededAiConfigIds: const ['provider-1', 'model-1'],
     seededLinkIds: const ['link-1'],
+    seededJournalUpdatedAt: {
+      'task-1': DateTime.utc(2026, 7, 17, 8, 30, 1),
+    },
+    seededDefinitionFingerprints: const {'category-1': '{"name":"Ops"}'},
   );
 
   group('DemoSeedManifest', () {
@@ -29,6 +33,11 @@ void main() {
       expect(decoded.seededDefinitionIds, manifest.seededDefinitionIds);
       expect(decoded.seededAiConfigIds, manifest.seededAiConfigIds);
       expect(decoded.seededLinkIds, manifest.seededLinkIds);
+      expect(decoded.seededJournalUpdatedAt, manifest.seededJournalUpdatedAt);
+      expect(
+        decoded.seededDefinitionFingerprints,
+        manifest.seededDefinitionFingerprints,
+      );
       expect(decoded.isCurrentVersion, isTrue);
     });
 
