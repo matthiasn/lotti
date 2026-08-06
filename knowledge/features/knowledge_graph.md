@@ -82,6 +82,22 @@ side to the visual spec's maximum media-node extent multiplied by the device
 pixel ratio; source-sized phone photos are never retained for node-sized canvas
 thumbnails.
 
+Decoded thumbnails live in a `GraphImageCache`
+(`state/graph_image_cache.dart`) that `task_knowledge_graph_page.dart` owns
+across the view's scenario-keyed remounts. Every data refresh — walking to a
+linked task, a sync or DB notification — replaces the scenario and remounts
+`KnowledgeGraphView`; the remounted state seeds its painter map from the cache
+synchronously in `initState`, so established node images paint on the first
+frame instead of flashing away while they re-decode. The cache owns image
+disposal (`put` hands a displaced image back for deferred disposal; mounting
+prunes entries the new scenario no longer references), and tracks the decode
+extent plus a source-file signature (size + mtime) per path so only missing,
+too-small, or changed-on-disk thumbnails are re-decoded — media files are
+overwritten in place at deterministic paths (photo re-import, sync
+self-healing fetch), so extent alone cannot prove freshness. A standalone
+view without a host-provided cache owns a private one that dies with its
+state.
+
 `graph_label_layout.dart` measures labels and places them at one of eight anchors
 using deterministic priority and collision avoidance. Focus, selection,
 aggregates, direct neighbours, and second-hop context descend in priority;

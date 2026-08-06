@@ -15,6 +15,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   retry on the next startup.
 
 ### Fixed
+- **Knowledge-graph images no longer flash away when selecting a node.**
+  Walking to a linked task (or any refresh of the graph data) rebuilt the
+  canvas from scratch, briefly dropping every already-visible node image and
+  cover thumbnail while they re-decoded from disk. Decoded thumbnails now
+  survive those rebuilds, so established images stay on screen through node
+  selection, navigation, and background sync refreshes.
 - **Multi-device sync no longer mistakes a newer file for an older message.**
   File-backed messages now name the exact encrypted attachment version they
   were sent with, so delayed, reordered, duplicated, or replayed events cannot

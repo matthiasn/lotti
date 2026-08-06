@@ -670,6 +670,55 @@ void main() {
   );
 
   testWidgets(
+    'hands the view one long-lived thumbnail cache across data-refresh '
+    'remounts',
+    (tester) async {
+      // Regression: every data refresh remounts the view around a fresh
+      // scenario; without a page-owned cache each remount dropped all decoded
+      // thumbnails and the nodes flashed imageless while they re-decoded.
+      var seedHasNote = false;
+      final result = makeTestableWidgetWithContainer(
+        const TaskKnowledgeGraphPage(taskId: taskId),
+        mediaQueryData: const MediaQueryData(size: Size(1280, 800)),
+        overrides: [
+          taskGraphProvider(taskId).overrideWith(
+            (ref) async => projectHubData(includeSeedNote: seedHasNote),
+          ),
+        ],
+      );
+      addTearDown(result.container.dispose);
+
+      await tester.pumpWidget(result.widget);
+      await tester.pump();
+
+      final initial = tester.widget<KnowledgeGraphView>(
+        find.byType(KnowledgeGraphView),
+      );
+      expect(initial.thumbnailCache, isNotNull);
+
+      seedHasNote = true;
+      await tester.runAsync(() async {
+        result.container.invalidate(taskGraphProvider(taskId));
+        await result.container.read(taskGraphProvider(taskId).future);
+      });
+      await pumpUntil(
+        tester,
+        () => graphNodeIds(tester).contains('seed-note'),
+        reason: 'seed refresh to remount the view around the new scenario',
+      );
+
+      final refreshed = tester.widget<KnowledgeGraphView>(
+        find.byType(KnowledgeGraphView),
+      );
+      // The refresh really remounted the view around a new scenario…
+      expect(identical(refreshed.scenario, initial.scenario), isFalse);
+      // …but the decoded-thumbnail store is the same page-owned instance.
+      expect(refreshed.thumbnailCache, same(initial.thumbnailCache));
+      expect(tester.takeException(), isNull);
+    },
+  );
+
+  testWidgets(
     'expanded graph remerges seed and expanded task provider updates',
     (tester) async {
       var seedHasNote = false;

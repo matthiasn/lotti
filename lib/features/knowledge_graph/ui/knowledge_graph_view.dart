@@ -8,6 +8,7 @@
 library;
 
 import 'dart:async';
+import 'dart:io';
 import 'dart:math' as math;
 import 'dart:ui' as ui;
 
@@ -20,6 +21,7 @@ import 'package:lotti/features/knowledge_graph/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_projection.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_scenarios.dart';
+import 'package:lotti/features/knowledge_graph/state/graph_image_cache.dart';
 import 'package:lotti/features/knowledge_graph/state/graph_viewport_controller.dart';
 import 'package:lotti/features/knowledge_graph/ui/entry_detail_sidebar.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_connections_view.dart';
@@ -80,6 +82,7 @@ class KnowledgeGraphView extends StatefulWidget {
     this.showLegend = true,
     this.showInspector = true,
     this.imageLoader,
+    this.thumbnailCache,
     this.visualSpec,
     super.key,
   });
@@ -118,6 +121,13 @@ class KnowledgeGraphView extends StatefulWidget {
 
   /// Overrides local image decoding for deterministic tests.
   final GraphImageLoader? imageLoader;
+
+  /// Long-lived store of decoded thumbnails. Hosts that remount this view on
+  /// every data refresh (the task page keys it on the scenario) pass one cache
+  /// so already-decoded node images paint on the remounted view's first frame
+  /// instead of flashing away while they re-decode. When null the view owns a
+  /// private cache with the pre-cache lifecycle (images die with the state).
+  final GraphImageCache? thumbnailCache;
 
   /// Overrides graph geometry and styling for deterministic hosts and tests.
   final GraphVisualSpec? visualSpec;
@@ -160,6 +170,8 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   String? _previousFocusId;
   List<String> _walkPath = const [];
   Offset _focusWorld = Offset.zero;
+  late final GraphImageCache _thumbnails;
+  late final bool _ownsThumbnails;
   Map<String, ui.Image> _images = const {};
 
   double _scale = 1;
@@ -181,6 +193,14 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     super.initState();
     _scenario = widget.scenario ?? exploreWorldScenario();
     _visualSpec = widget.visualSpec;
+    _thumbnails = widget.thumbnailCache ?? GraphImageCache();
+    _ownsThumbnails = widget.thumbnailCache == null;
+    // A shared cache carries thumbnails across host-driven remounts: prune
+    // entries the new scenario no longer references, then paint whatever is
+    // already decoded on the very first frame — a data refresh must never
+    // flash established node images away while they re-decode.
+    _thumbnails.retainOnly(_scenarioImagePaths());
+    _images = _thumbnails.snapshot();
     _rawAdjacency = _adjacencyFor(_scenario);
     final initialFocusId =
         widget.initialFocusId != null &&
@@ -279,10 +299,10 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
         final targetExtent = _requestedImageTargetExtent;
         final loaded = await _loadImages(targetExtent);
         if (!mounted) {
-          _disposeImages(loaded.values, retained: _images.values);
+          _disposeImages(loaded.images.values, retained: _images.values);
           return;
         }
-        _installImages(loaded);
+        _installImages(loaded.images, loaded.signatures, targetExtent);
         _loadedImageTargetExtent = targetExtent;
       }
     } finally {
@@ -290,17 +310,45 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     }
   }
 
-  Future<Map<String, ui.Image>> _loadImages(int targetExtent) async {
+  Set<String> _scenarioImagePaths() => {
+    for (final node in _scenario.nodes) ...[
+      if (node.imagePath case final path? when path.isNotEmpty) path,
+      if (node.coverImagePath case final path? when path.isNotEmpty) path,
+      ...node.mediaPaths.where((path) => path.isNotEmpty),
+    ],
+  };
+
+  /// Content signature (size + mtime) of the file at [path], or null when it
+  /// cannot be stat'ed (missing file, synthetic test path). Media files are
+  /// overwritten in place at deterministic paths (photo re-import, sync
+  /// self-healing fetch), so cache validity must track the bytes on disk, not
+  /// just the decode extent. Synchronous by design: `stat` metadata is cheap,
+  /// and async real IO would stall the drain under widget-test fake async.
+  static String? _fileSignatureOf(String path) {
+    try {
+      final stat = File(path).statSync();
+      if (stat.type == FileSystemEntityType.notFound) return null;
+      return '${stat.size}:${stat.modified.microsecondsSinceEpoch}';
+    } on Object {
+      return null;
+    }
+  }
+
+  Future<({Map<String, ui.Image> images, Map<String, String?> signatures})>
+  _loadImages(int targetExtent) async {
     final loaded = <String, ui.Image>{};
+    final signatures = <String, String?>{};
     final loadImage = widget.imageLoader ?? decodeGraphImageFile;
-    final paths = <String>{
-      for (final node in _scenario.nodes) ...[
-        if (node.imagePath case final path? when path.isNotEmpty) path,
-        if (node.coverImagePath case final path? when path.isNotEmpty) path,
-        ...node.mediaPaths.where((path) => path.isNotEmpty),
-      ],
-    };
-    for (final path in paths) {
+    for (final path in _scenarioImagePaths()) {
+      // Cached thumbnails survive remounts via the shared cache — only decode
+      // what is missing, too small for the current device-pixel target, or
+      // whose source file changed since it was decoded. An unavailable
+      // signature (test loaders) falls back to the extent-only check.
+      final signature = _fileSignatureOf(path);
+      final cachedFresh =
+          _thumbnails.decodedExtentOf(path) >= targetExtent &&
+          (signature == null || signature == _thumbnails.signatureOf(path));
+      if (cachedFresh) continue;
       try {
         final image = await loadImage(path, targetExtent);
         if (!mounted) {
@@ -310,33 +358,44 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
             [...loaded.values, image],
             retained: _images.values,
           );
-          return const {};
+          return (
+            images: const <String, ui.Image>{},
+            signatures: const <String, String?>{},
+          );
           // coverage:ignore-end
         }
         loaded[path] = image;
+        signatures[path] = signature;
       } on Object {
         // Missing/unreadable file — fall back to the type glyph.
       }
     }
-    return loaded;
+    return (images: loaded, signatures: signatures);
   }
 
-  void _installImages(Map<String, ui.Image> loaded) {
+  void _installImages(
+    Map<String, ui.Image> loaded,
+    Map<String, String?> signatures,
+    int targetExtent,
+  ) {
     if (loaded.isEmpty) return;
     final replaced = <ui.Image>[];
-    final next = {..._images};
     for (final MapEntry(:key, :value) in loaded.entries) {
-      final previous = next[key];
-      next[key] = value;
-      if (previous != null && !identical(previous, value)) {
-        replaced.add(previous);
-      }
+      final displaced = _thumbnails.put(
+        key,
+        value,
+        extent: targetExtent,
+        signature: signatures[key],
+      );
+      if (displaced != null) replaced.add(displaced);
     }
     setState(() {
-      // Reassign a fresh (unmodifiable) map so the painter's identity-based
-      // `shouldRepaint` detects the completed thumbnail batch.
-      _images = Map<String, ui.Image>.unmodifiable(next);
+      // Snapshot is a fresh (unmodifiable) map so the painter's
+      // identity-based `shouldRepaint` detects the completed thumbnail batch.
+      _images = _thumbnails.snapshot();
     });
+    // Displaced (lower-extent) images are disposed only after the painter's
+    // map has been swapped, so a pending frame never paints a disposed image.
     _disposeImages(replaced, retained: _images.values);
   }
 
@@ -363,7 +422,11 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     _motion.dispose();
     _viewport.dispose();
     _graphFocusNode.dispose();
-    _disposeImages(_images.values);
+    // A host-provided cache outlives this state by design — the host disposes
+    // it. Only a view-private cache dies with the state.
+    if (_ownsThumbnails) {
+      _thumbnails.dispose();
+    }
     super.dispose();
   }
 

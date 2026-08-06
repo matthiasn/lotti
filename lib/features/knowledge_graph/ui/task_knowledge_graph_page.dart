@@ -10,6 +10,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_layout_engine.dart';
 import 'package:lotti/features/knowledge_graph/domain/graph_models.dart';
+import 'package:lotti/features/knowledge_graph/state/graph_image_cache.dart';
 import 'package:lotti/features/knowledge_graph/state/task_graph_provider.dart';
 import 'package:lotti/features/knowledge_graph/ui/knowledge_graph_view.dart';
 import 'package:lotti/get_it.dart';
@@ -100,6 +101,13 @@ class _TaskKnowledgeGraphPageState
     extends ConsumerState<TaskKnowledgeGraphPage> {
   TaskGraphData? _visibleData;
   TaskGraphData? _seedData;
+
+  /// Decoded node thumbnails, shared across the scenario-keyed remounts of
+  /// [KnowledgeGraphView] below. Every data refresh (walking to a linked task,
+  /// a sync/db notification) replaces the scenario and remounts the view; the
+  /// shared cache keeps already-decoded images painting on the remounted
+  /// view's first frame instead of flashing them away while they re-decode.
+  final GraphImageCache _thumbnailCache = GraphImageCache();
   final Map<String, TaskGraphData> _expansions = {};
   final Map<String, ProviderSubscription<AsyncValue<TaskGraphData?>>>
   _expansionSubscriptions = {};
@@ -125,6 +133,7 @@ class _TaskKnowledgeGraphPageState
   @override
   void dispose() {
     _clearExpansions();
+    _thumbnailCache.dispose();
     super.dispose();
   }
 
@@ -278,6 +287,7 @@ class _TaskKnowledgeGraphPageState
       initialFocusId: _initialFocusId,
       initialPreviousFocusId: _initialPreviousFocusId,
       onTaskFocusChanged: _handleTaskFocusChanged,
+      thumbnailCache: _thumbnailCache,
       // Relaxed off the main thread in the provider so the first frame
       // renders without a layout pass on the UI thread.
       layout: visibleData.layout,
