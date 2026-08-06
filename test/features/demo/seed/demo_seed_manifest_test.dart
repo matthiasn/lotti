@@ -77,11 +77,16 @@ void main() {
     test('reads a v4 manifest without a seeded-link inventory', () {
       final legacy = DemoSeedManifest.fromJson(
         {
-          ...manifest.toJson(),
-        }..remove('seededLinkIds'),
+            ...manifest.toJson(),
+          }
+          ..remove('seededLinkIds')
+          ..remove('seededJournalUpdatedAt')
+          ..remove('seededDefinitionFingerprints'),
       );
 
       expect(legacy.seededLinkIds, isNull);
+      expect(legacy.seededJournalUpdatedAt, isNull);
+      expect(legacy.seededDefinitionFingerprints, isNull);
     });
   });
 }
