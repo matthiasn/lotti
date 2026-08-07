@@ -1,0 +1,58 @@
+# Docker Compose for the Matrix provisioning admin app
+# Usage: docker compose -f docker-compose.matrix-admin.yml up
+#
+# Starts: matrix-provisioning-service, matrix-admin
+# Admin UI available at: http://localhost:5174
+#
+# Required in .env (or the environment):
+#   MATRIX_HOMESERVER   e.g. https://matrix.example.com
+#   MATRIX_ADMIN_TOKEN  a long-lived Synapse admin access token (preferred), or
+#   MATRIX_ADMIN_USER + MATRIX_ADMIN_PASSWORD as a fallback
+
+services:
+  matrix-provisioning-service:
+    build:
+      context: .
+      dockerfile: matrix-provisioning-service/Dockerfile
+    container_name: matrix-provisioning-service
+    ports:
+      - "8003:8003"
+    environment:
+      - MATRIX_HOMESERVER=${MATRIX_HOMESERVER}
+      - MATRIX_ADMIN_TOKEN=${MATRIX_ADMIN_TOKEN:-}
+      - MATRIX_ADMIN_USER=${MATRIX_ADMIN_USER:-}
+      - MATRIX_ADMIN_PASSWORD=${MATRIX_ADMIN_PASSWORD:-}
+      - API_KEYS=${API_KEY:-dev-key}
+      - ADMIN_API_KEYS=${ADMIN_API_KEY:-dev-admin-key}
+      - RETENTION_DAYS=${RETENTION_DAYS:-30}
+      - POLL_INTERVAL_SECONDS=${POLL_INTERVAL_SECONDS:-300}
+      - ENABLE_REDEMPTION_POLLING=${ENABLE_REDEMPTION_POLLING:-true}
+      - LOG_LEVEL=INFO
+      - PORT=8003
+      - CORS_ALLOWED_ORIGINS=http://localhost:5174
+    volumes:
+      - provisioning-data:/app/data
+    networks:
+      - matrix-admin-network
+    restart: unless-stopped
+
+  matrix-admin:
+    build:
+      context: ./matrix-admin
+      args:
+        VITE_ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key}
+    container_name: matrix-admin-frontend
+    ports:
+      - "5174:5174"
+    depends_on:
+      - matrix-provisioning-service
+    networks:
+      - matrix-admin-network
+
+volumes:
+  provisioning-data:
+    driver: local
+
+networks:
+  matrix-admin-network:
+    driver: bridge
