@@ -39,6 +39,20 @@ SERVER_NAME = "example.com"
 HOMESERVER = "https://matrix.example.com"
 ROOM_ID = "!syncroom:example.com"
 
+# Mutable mock state so a media DELETE is observable by later GETs, which is
+# what lets a test assert that bytes were actually reclaimed.
+_state = {"media_deleted": False, "purges": 0}
+
+
+@pytest.fixture(autouse=True)
+def reset_mock_synapse_state():
+    """Keep mock homeserver state from leaking between tests."""
+    _state["media_deleted"] = False
+    _state["purges"] = 0
+    yield
+    _state["media_deleted"] = False
+    _state["purges"] = 0
+
 
 @pytest.fixture
 def anyio_backend():
@@ -65,6 +79,12 @@ def synapse_handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"access_token": "user_tok"})
 
     if path.startswith("/_synapse/admin/v1/users/") and path.endswith("/media"):
+        if request.method == "DELETE":
+            _state["media_deleted"] = True
+            return httpx.Response(200, json={"deleted_media": ["mxc://a"], "total": 1})
+        # Shrinks once media has been deleted, so bytes_freed is measurable.
+        if _state["media_deleted"]:
+            return httpx.Response(200, json={"total": 1, "media": [{"media_length": 1000}]})
         return httpx.Response(
             200,
             json={
@@ -91,7 +111,11 @@ def synapse_handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"status": "complete"})
 
     if path.startswith("/_synapse/admin/v1/purge_history/"):
-        return httpx.Response(200, json={"purge_id": "purge_abc"})
+        # Real Synapse returns a distinct id per purge; reusing one would let a
+        # multi-room sweep collide on the purge_runs primary key.
+        _state["purges"] += 1
+        suffix = "" if _state["purges"] == 1 else f"_{_state['purges']}"
+        return httpx.Response(200, json={"purge_id": f"purge_abc{suffix}"})
 
     return httpx.Response(404, json={"errcode": "M_NOT_FOUND", "path": path})
 

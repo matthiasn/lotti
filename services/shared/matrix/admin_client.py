@@ -50,6 +50,14 @@ class UserMediaUsage:
 
 
 @dataclass(frozen=True)
+class MediaDeletion:
+    """Result of deleting a user's media from the homeserver."""
+
+    user_mxid: str
+    deleted_count: int
+
+
+@dataclass(frozen=True)
 class PurgeHandle:
     """A started history purge, to be polled for completion."""
 
@@ -226,6 +234,50 @@ class SynapseAdminClient:
         if not purge_id:
             raise ProvisioningError(f"Synapse did not return a purge_id for room {room_id}")
         return PurgeHandle(purge_id=purge_id, room_id=room_id)
+
+    async def delete_user_media(
+        self, user_mxid: str, before_ts_ms: int
+    ) -> MediaDeletion:
+        """Delete media uploaded by a user before a timestamp.
+
+        This is what actually reclaims disk. ``purge_history`` removes events
+        from the database; the uploaded files live in Synapse's separate media
+        store and survive it, so trimming history alone frees very little on a
+        server whose bulk is attachments.
+
+        Safe for Lotti sync rooms specifically: each room is private,
+        non-federated and has a single member, so that user's media is not
+        referenced by anyone else. A device that has not downloaded a blob yet
+        can still recover it peer-to-peer through media repair, on the same
+        terms as event backfill — any peer still holding the file may answer.
+
+        Args:
+            user_mxid: Owner of the media.
+            before_ts_ms: Unix epoch milliseconds; media uploaded strictly
+                before this is deleted.
+
+        Returns:
+            How many files were removed.
+
+        Raises:
+            httpx.HTTPStatusError: If Synapse rejects the request.
+        """
+        encoded = encode_mxid_for_path(user_mxid)
+        async with self._client() as client:
+            headers = await self._auth_headers(client)
+            resp = await client.delete(
+                f"/_synapse/admin/v1/users/{encoded}/media",
+                headers=headers,
+                params={"before_ts": before_ts_ms},
+            )
+            resp.raise_for_status()
+            payload = resp.json()
+
+        deleted = payload.get("deleted_media") or []
+        return MediaDeletion(
+            user_mxid=user_mxid,
+            deleted_count=int(payload.get("total", len(deleted))),
+        )
 
     async def get_purge_status(self, purge_id: str) -> PurgeStatus:
         """Poll the status of a previously started purge."""

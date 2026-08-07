@@ -221,3 +221,85 @@ async def test_purge_all_validates_retention_before_any_work(
         await service.purge_all(retention_days=2)
 
     assert requests == []
+
+
+# -- media reclamation ------------------------------------------------------
+
+
+async def test_purge_deletes_media_and_reports_bytes_freed(
+    repository, credentials, mock_transport
+):
+    """Purging history alone frees almost nothing; media is the disk."""
+    user = await _redeemed_user(repository)
+    service = _service(repository, credentials, mock_transport)
+
+    result = await service.purge_room(user.bundle_id)
+
+    assert result["media_deleted"] == 1
+    # Mock reports 3500 bytes before and 1000 after the delete.
+    assert result["bytes_freed"] == 2500
+
+
+async def test_media_delete_uses_the_same_cutoff_as_the_history_purge(
+    repository, credentials, tracking_transport
+):
+    transport, requests = tracking_transport
+    user = await _redeemed_user(repository)
+    service = _service(repository, credentials, transport)
+
+    result = await service.purge_room(user.bundle_id, retention_days=30)
+
+    delete = next(
+        r for r in requests if r.method == "DELETE" and "/media" in str(r.url)
+    )
+    assert int(delete.url.params["before_ts"]) == result["purge_up_to_ts"]
+
+
+async def test_include_media_false_leaves_files_alone(
+    repository, credentials, tracking_transport
+):
+    """History-only mode must not touch the media store."""
+    transport, requests = tracking_transport
+    user = await _redeemed_user(repository)
+    service = _service(repository, credentials, transport)
+
+    result = await service.purge_room(user.bundle_id, include_media=False)
+
+    assert result["media_deleted"] == 0
+    assert result["bytes_freed"] == 0
+    assert not [r for r in requests if r.method == "DELETE"]
+
+
+async def test_media_failure_after_history_purge_reports_partial_success(
+    repository, credentials
+):
+    """The operator must learn history went but media did not."""
+    user = await _redeemed_user(repository)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "DELETE" and "/media" in str(request.url):
+            return httpx.Response(500, json={"errcode": "M_UNKNOWN"})
+        return synapse_handler(request)
+
+    service = _service(repository, credentials, httpx.MockTransport(handler))
+
+    with pytest.raises(SynapseUnavailableException, match="History purged"):
+        await service.purge_room(user.bundle_id)
+
+    # The history purge really did happen, so it stays on the record.
+    assert await repository.list_purges(user.bundle_id) != []
+
+
+async def test_purge_all_reclaims_media_for_every_eligible_room(
+    repository, credentials, tracking_transport
+):
+    transport, requests = tracking_transport
+    await _redeemed_user(repository, username="one_user")
+    await _redeemed_user(repository, username="two_user")
+    service = _service(repository, credentials, transport)
+
+    started = await service.purge_all()
+
+    deletes = [r for r in requests if r.method == "DELETE" and "/media" in str(r.url)]
+    assert len(started) == 2
+    assert len(deletes) == 2

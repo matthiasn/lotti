@@ -96,6 +96,9 @@ async def update_bundle(bundle_id: str, request: UpdateUserRequest) -> Provision
             bundle_id,
             payment_status=request.payment_status,
             notes=request.notes,
+            retention_days=request.retention_days,
+            retention_exempt=request.retention_exempt,
+            clear_retention_override=request.clear_retention_override,
         )
     except BundleNotFoundException as exc:
         raise HTTPException(
@@ -223,10 +226,19 @@ async def purge_room(
     retention_days: int | None = Query(
         None, description="Override the default retention window"
     ),
+    include_media: bool = Query(
+        True, description="Also delete media files, which is what frees disk"
+    ),
 ) -> dict:
-    """Purge one sync room's history older than the retention window."""
+    """Reclaim storage for one user older than the retention window.
+
+    Purges room events and, by default, deletes the user's media. Media is the
+    bulk of the storage, so history-only runs free very little.
+    """
     try:
-        return await container.get_retention_service().purge_room(bundle_id, retention_days)
+        return await container.get_retention_service().purge_room(
+            bundle_id, retention_days, include_media
+        )
     except BundleNotFoundException as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Unknown bundle {bundle_id}"
@@ -243,11 +255,16 @@ async def purge_room(
 
 @router.post("/purges", tags=["retention"])
 async def purge_all(
-    retention_days: int | None = Query(None, description="Override the default window")
+    retention_days: int | None = Query(None, description="Override the default window"),
+    include_media: bool = Query(
+        True, description="Also delete media files, which is what frees disk"
+    ),
 ) -> dict:
-    """Purge every redeemed, non-revoked sync room."""
+    """Reclaim storage across every redeemed, non-revoked sync room."""
     try:
-        started = await container.get_retention_service().purge_all(retention_days)
+        started = await container.get_retention_service().purge_all(
+            retention_days, include_media
+        )
     except ValueError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)

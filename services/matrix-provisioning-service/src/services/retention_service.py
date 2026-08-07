@@ -29,6 +29,11 @@ Two further facts make the purge itself correct:
   admin client always sends the flag as true.
 * Synapse never purges the most recent events or the current room state, so a
   purge cannot leave a room unusable even at an aggressive cutoff.
+* Events and media are stored separately, so reclaiming disk needs both:
+  ``purge_history`` for the database rows and a media deletion for the files.
+  On a journalling app the files are the bulk, so history alone frees little.
+  Media is recoverable on the same terms as events — peers still holding a blob
+  answer a media-repair broadcast.
 
 When repair does fail, it fails visibly: the entry retires to ``unresolvable``
 (reopenable by a later hint or an explicit "ask peers again") or to ``deleted``
@@ -86,20 +91,34 @@ class RetentionService:
             )
         return resolved
 
-    async def purge_room(self, bundle_id: str, retention_days: int | None = None) -> dict:
-        """Purge one user's sync-room history older than the retention window.
+    async def purge_room(
+        self,
+        bundle_id: str,
+        retention_days: int | None = None,
+        include_media: bool = True,
+    ) -> dict:
+        """Reclaim storage for one user older than the retention window.
+
+        Two distinct operations, because Synapse stores them separately:
+
+        * ``purge_history`` removes room **events** from the database.
+        * deleting the user's **media** removes the uploaded files.
+
+        Media is where the disk actually goes on a journalling app, so this
+        does both by default. Purging events alone frees very little.
 
         Args:
-            bundle_id: Which provisioned user's room to purge.
+            bundle_id: Which provisioned user to reclaim.
             retention_days: Override for the default window.
+            include_media: Set false to trim history only and leave files.
 
         Returns:
-            A dict with the purge ID, room ID and cutoff timestamp.
+            A dict describing both operations, including bytes actually freed.
 
         Raises:
             BundleNotFoundException: If the bundle is unknown.
             ValueError: If the retention window is below the floor.
-            SynapseUnavailableException: If Synapse rejects the purge.
+            SynapseUnavailableException: If Synapse rejects either operation.
         """
         resolved_days = self._validate_retention(retention_days)
 
@@ -108,6 +127,18 @@ class RetentionService:
             raise BundleNotFoundException(bundle_id)
 
         cutoff_ms = self._cutoff_ms(resolved_days)
+
+        # Measured before and after so the caller can report real reclaimed
+        # bytes rather than a file count that means nothing to an operator.
+        bytes_before = 0
+        if include_media:
+            try:
+                bytes_before = (
+                    await self._admin_client.get_media_usage(user.user_mxid)
+                ).media_length_bytes
+            except (httpx.HTTPError, ProvisioningError) as exc:
+                logger.warning("Could not read media usage for %s: %s", user.user_mxid, exc)
+
         try:
             handle = await self._admin_client.purge_room_history(user.room_id, cutoff_ms)
         except (httpx.HTTPError, ProvisioningError) as exc:
@@ -118,11 +149,33 @@ class RetentionService:
         await self._repository.record_purge(
             handle.purge_id, bundle_id, user.room_id, cutoff_ms
         )
+
+        media_deleted = 0
+        bytes_freed = 0
+        if include_media:
+            try:
+                deletion = await self._admin_client.delete_user_media(
+                    user.user_mxid, cutoff_ms
+                )
+                media_deleted = deletion.deleted_count
+                bytes_after = (
+                    await self._admin_client.get_media_usage(user.user_mxid)
+                ).media_length_bytes
+                bytes_freed = max(0, bytes_before - bytes_after)
+            except (httpx.HTTPError, ProvisioningError) as exc:
+                # History is already purged at this point; surfacing the media
+                # failure as a hard error would hide that partial success.
+                raise SynapseUnavailableException(
+                    f"History purged for {user.room_id}, but media deletion "
+                    f"failed for {user.user_mxid}: {exc}"
+                ) from exc
+
         logger.info(
-            "Started purge %s for room %s (cutoff %s, %sd retention)",
+            "Reclaimed for %s: purge %s, %s media file(s), %s bytes (%sd retention)",
+            user.user_mxid,
             handle.purge_id,
-            user.room_id,
-            cutoff_ms,
+            media_deleted,
+            bytes_freed,
             resolved_days,
         )
         return {
@@ -131,6 +184,9 @@ class RetentionService:
             "bundle_id": bundle_id,
             "purge_up_to_ts": cutoff_ms,
             "retention_days": resolved_days,
+            "media_deleted": media_deleted,
+            "bytes_freed": bytes_freed,
+            "include_media": include_media,
         }
 
     async def refresh_purge_status(self, purge_id: str) -> str:
@@ -149,35 +205,50 @@ class RetentionService:
         await self._repository.update_purge_status(purge_id, status.status)
         return status.status
 
-    async def purge_all(self, retention_days: int | None = None) -> list[dict]:
-        """Purge every tracked sync room that has actually been used.
+    async def purge_all(
+        self, retention_days: int | None = None, include_media: bool = True
+    ) -> list[dict]:
+        """Reclaim storage across every user the sweep is allowed to touch.
 
-        Unredeemed and revoked bundles are skipped: an unredeemed room holds
-        nothing worth purging, and a revoked one may be pending investigation.
+        Each user's own ``retention_days`` wins over the argument, which in turn
+        wins over the service default — so pinning one user to a longer window
+        survives a change to the global setting.
+
+        Users are selected in SQL (redeemed, not revoked, not exempt) rather
+        than filtered in Python after paging the whole roster.
+
+        Args:
+            retention_days: Window for users with no override of their own.
+            include_media: Passed through; false trims history only.
 
         Returns:
-            One result dict per room a purge was started for.
+            One result dict per user a purge was started for.
         """
-        resolved_days = self._validate_retention(retention_days)
+        fallback_days = self._validate_retention(retention_days)
 
         started: list[dict] = []
-        page = 1
-        while True:
-            users, total = await self._repository.list_users(page=page, page_size=100)
-            if not users:
-                break
-            for user in users:
-                if user.first_login_at is None or user.revoked_at is not None:
-                    continue
-                try:
-                    started.append(await self.purge_room(user.bundle_id, resolved_days))
-                except SynapseUnavailableException as exc:
-                    logger.warning(
-                        "Skipping purge for %s: %s", user.user_mxid, exc
-                    )
-            if page * 100 >= total:
-                break
-            page += 1
+        skipped = 0
+        for user in await self._repository.list_purgeable():
+            window = user.retention_days or fallback_days
+            try:
+                window = self._validate_retention(window)
+            except ValueError as exc:
+                logger.warning("Skipping %s: %s", user.user_mxid, exc)
+                skipped += 1
+                continue
+            try:
+                started.append(
+                    await self.purge_room(user.bundle_id, window, include_media)
+                )
+            except SynapseUnavailableException as exc:
+                logger.warning("Skipping purge for %s: %s", user.user_mxid, exc)
+                skipped += 1
 
-        logger.info("Started %s purge(s) at %sd retention", len(started), resolved_days)
+        freed = sum(result["bytes_freed"] for result in started)
+        logger.info(
+            "Retention sweep: %s purged, %s skipped, %s bytes reclaimed",
+            len(started),
+            skipped,
+            freed,
+        )
         return started

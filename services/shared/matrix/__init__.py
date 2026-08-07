@@ -5,6 +5,7 @@ matrix-provisioning-service web API so the two can never drift apart.
 """
 
 from .admin_client import (
+    MediaDeletion,
     PurgeHandle,
     PurgeStatus,
     SynapseAdminClient,
@@ -29,6 +30,7 @@ __all__ = [
     "AdminCredentials",
     "BundleDecodeError",
     "BundleKind",
+    "MediaDeletion",
     "ProvisionResult",
     "ProvisioningError",
     "PurgeHandle",
