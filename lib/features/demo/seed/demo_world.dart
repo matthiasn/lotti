@@ -882,19 +882,26 @@ class ManualDemoWorld {
       required String slug,
       required String taskId,
       required (String, String) taskTitle,
-      required List<(String, String)> runbook,
+      List<(String, String)>? runbook,
+      List<(String, String)>? steps,
+      int checkedCount = 1,
       String categoryId = manualDemoCategoryId,
     }) {
+      assert(
+        (steps == null) != (runbook == null),
+        'Pass exactly one of runbook (shared vocabulary) or steps (bespoke).',
+      );
       final id = supplementalChecklistId(slug);
-      // Keep the checklist visibly tied to its owning task while retaining
-      // the shared, localized operational vocabulary for the remaining steps.
-      final taskRunbook = [taskTitle, ...runbook.take(3)];
+      // Bespoke steps describe the task's own work; the shared runbooks keep
+      // the original fixture's checklists visibly tied to their owning task
+      // while retaining the localized operational vocabulary.
+      final taskRunbook = steps ?? [taskTitle, ...runbook!.take(3)];
       final items = [
         for (final (index, spec) in taskRunbook.indexed)
           checklistItem(
             id: demoUuid('manual-$slug-item-$index'),
             title: t(spec.$1, spec.$2),
-            isChecked: index == 0,
+            isChecked: index < checkedCount,
             checkedAgo: Duration(hours: 18 + index),
             checklistId: id,
             categoryId: categoryId,
@@ -987,7 +994,24 @@ class ManualDemoWorld {
           'Draft the launch comms plan',
           'Kommunikationsplan entwerfen',
         ),
-        runbook: launchRunbook,
+        steps: [
+          (
+            'List every launch-day announcement',
+            'Alle Ansagen des Starttags auflisten',
+          ),
+          (
+            'Name a speaker for each slot',
+            'Für jeden Slot eine Stimme benennen',
+          ),
+          (
+            'Write the fallback script for a hold',
+            'Das Ersatzskript für einen Halt schreiben',
+          ),
+          (
+            'Get sign-off from Flight Direction',
+            'Das Okay der Flugleitung einholen',
+          ),
+        ],
       ),
       supplementalChecklist(
         slug: 'ice-pad-weather',
@@ -996,7 +1020,21 @@ class ManualDemoWorld {
           'Check the ice-pad weather window',
           'Wetterfenster am Eisstartplatz prüfen',
         ),
-        runbook: launchRunbook,
+        steps: [
+          ('Pull the morning soundings', 'Die Morgensondierungen ziehen'),
+          (
+            'Compare the three forecast models',
+            'Die drei Wettermodelle vergleichen',
+          ),
+          (
+            'Check the crosswind against the 18-knot limit',
+            'Den Seitenwind gegen das 18-Knoten-Limit prüfen',
+          ),
+          (
+            'Send the go or no-go call to Flight Direction',
+            'Das Go oder No-Go an die Flugleitung melden',
+          ),
+        ],
       ),
       supplementalChecklist(
         slug: 'flight-suit-fitting',
@@ -1005,7 +1043,18 @@ class ManualDemoWorld {
           'Fit the penguin flight suits',
           'Pinguin-Fluganzüge anpassen',
         ),
-        runbook: launchRunbook,
+        steps: [
+          ('Remeasure all twelve flyers', 'Alle zwölf Flieger neu vermessen'),
+          (
+            'Tag the three wide-flipper returns',
+            'Die drei Rückläufer mit weiten Flossen kennzeichnen',
+          ),
+          ('Book the courier pickup', 'Die Kurierabholung buchen'),
+          (
+            'Confirm the replacement delivery date',
+            'Den Liefertermin des Ersatzes bestätigen',
+          ),
+        ],
       ),
       supplementalChecklist(
         slug: 'humidity-spike',
@@ -1014,7 +1063,24 @@ class ManualDemoWorld {
           'Trace the humidity spike in Bay C',
           'Feuchtigkeitsspitze in Bucht C aufspüren',
         ),
-        runbook: habitatRunbook,
+        steps: [
+          (
+            'Chart the humidity readings by day',
+            'Die Feuchtigkeitswerte nach Tagen aufzeichnen',
+          ),
+          (
+            'Wait for the Bay C sensor swap',
+            'Auf den Sensortausch in Bucht C warten',
+          ),
+          (
+            'Walk the seam line with the thermal camera',
+            'Die Nahtlinie mit der Wärmebildkamera ablaufen',
+          ),
+          (
+            'Report the leak or clear the bay',
+            'Das Leck melden oder die Bucht freigeben',
+          ),
+        ],
         categoryId: demoHabitatCategoryId,
       ),
       supplementalChecklist(
@@ -1024,7 +1090,21 @@ class ManualDemoWorld {
           'Resurface the habitat ice rink',
           'Eisbahn im Habitat neu aufbereiten',
         ),
-        runbook: habitatRunbook,
+        steps: [
+          (
+            'Book the resurfacer for an evening slot',
+            'Die Maschine für einen Abendtermin buchen',
+          ),
+          (
+            'Announce the one-session closure',
+            'Die Sperrung für eine Einheit ankündigen',
+          ),
+          (
+            'Resurface and inspect the ice',
+            'Die Bahn aufbereiten und das Eis abnehmen',
+          ),
+          ('Post the new ice rules', 'Die neuen Eisregeln aushängen'),
+        ],
         categoryId: demoHabitatCategoryId,
       ),
       supplementalChecklist(
@@ -1034,14 +1114,38 @@ class ManualDemoWorld {
           'Retune the solar array tilt',
           'Neigung der Solarfläche justieren',
         ),
-        runbook: habitatRunbook,
+        steps: [
+          (
+            'Recalibrate against the noon reference',
+            'Am Mittagsreferenzpunkt neu kalibrieren',
+          ),
+          (
+            'Verify the tracking curve for a full day',
+            'Die Nachführkurve einen ganzen Tag prüfen',
+          ),
+          (
+            'Log the recovered wattage',
+            'Die zurückgewonnene Leistung protokollieren',
+          ),
+          (
+            'Close the storm-damage ticket',
+            'Das Sturmschaden-Ticket schließen',
+          ),
+        ],
         categoryId: demoHabitatCategoryId,
       ),
       supplementalChecklist(
         slug: 'water-recycler',
         taskId: demoWaterRecyclerTaskId,
         taskTitle: ('Service the water recycler', 'Wasseraufbereiter warten'),
-        runbook: habitatRunbook,
+        steps: [
+          ('Flush the recycler loop', 'Den Kreislauf der Anlage spülen'),
+          ('Clean the filter housing', 'Das Filtergehäuse reinigen'),
+          ('Swap the pre-filter', 'Den Vorfilter tauschen'),
+          ('Log the throughput numbers', 'Die Durchsatzwerte protokollieren'),
+        ],
+        // The task is done, so its checklist reads as finished work.
+        checkedCount: 4,
         categoryId: demoHabitatCategoryId,
       ),
       supplementalChecklist(
@@ -1051,7 +1155,24 @@ class ManualDemoWorld {
           'Shortlist a second krill supplier',
           'Zweiten Krill-Lieferanten finden',
         ),
-        runbook: logisticsRunbook,
+        steps: [
+          (
+            'Write down the selection criteria',
+            'Die Auswahlkriterien aufschreiben',
+          ),
+          (
+            'Collect quotes from three candidates',
+            'Angebote von drei Kandidaten einholen',
+          ),
+          (
+            'Order sample crates from the best two',
+            'Bei den besten zwei Probekisten bestellen',
+          ),
+          (
+            'Put a recommendation to the council',
+            'Dem Rat eine Empfehlung vorlegen',
+          ),
+        ],
         categoryId: demoLogisticsCategoryId,
       ),
       supplementalChecklist(
@@ -1061,14 +1182,39 @@ class ManualDemoWorld {
           'Order replacement pod seals',
           'Ersatzdichtungen für Kapseln bestellen',
         ),
-        runbook: logisticsRunbook,
+        steps: [
+          (
+            'Confirm seal sizes against the pod register',
+            'Die Dichtungsgrößen mit dem Kapselregister abgleichen',
+          ),
+          ('Place the rush order', 'Die Eilbestellung aufgeben'),
+          (
+            'Chase the delivery confirmation',
+            'Die Lieferbestätigung nachfassen',
+          ),
+          (
+            'Warn Logistics about the affected pods',
+            'Die Logistik über die betroffenen Kapseln warnen',
+          ),
+        ],
         categoryId: demoLogisticsCategoryId,
       ),
       supplementalChecklist(
         slug: 'customs-europa',
         taskId: demoCustomsEuropaTaskId,
         taskTitle: ('Clear customs on Europa', 'Zoll auf Europa erledigen'),
-        runbook: logisticsRunbook,
+        steps: [
+          (
+            'Assemble the certificate folder',
+            'Den Zertifikatsordner zusammenstellen',
+          ),
+          (
+            'Draft the passenger ruling request',
+            'Die Anfrage zur Passagierfrage aufsetzen',
+          ),
+          ('Copy the current manifest', 'Die aktuelle Frachtliste kopieren'),
+          ('Book the Monday customs slot', 'Den Zolltermin am Montag buchen'),
+        ],
         categoryId: demoLogisticsCategoryId,
       ),
       supplementalChecklist(
@@ -1078,7 +1224,24 @@ class ManualDemoWorld {
           'Refill the chick daycare rota',
           'Dienstplan der Kükenbetreuung füllen',
         ),
-        runbook: colonyRunbook,
+        steps: [
+          (
+            'Ask the reserve list for Thursday',
+            'Die Reserveliste für Donnerstag fragen',
+          ),
+          (
+            'Post the open shifts on the colony board',
+            'Die offenen Schichten ans Koloniebrett hängen',
+          ),
+          (
+            'Confirm two names per shift',
+            'Zwei Namen pro Schicht bestätigen',
+          ),
+          (
+            'Publish the full week by Friday',
+            'Den vollen Wochenplan bis Freitag aushängen',
+          ),
+        ],
       ),
       supplementalChecklist(
         slug: 'movie-night',
@@ -1087,7 +1250,21 @@ class ManualDemoWorld {
           'Pick the film for colony night',
           'Film für den Kolonieabend wählen',
         ),
-        runbook: colonyRunbook,
+        steps: [
+          ('Request the screening licence', 'Die Vorführlizenz anfragen'),
+          (
+            'Reserve the dome for the evening',
+            'Die Kuppel für den Abend reservieren',
+          ),
+          (
+            'Schedule the heater shutdown',
+            'Das Abschalten der Heizung einplanen',
+          ),
+          (
+            'Post the start time on the colony board',
+            'Die Anfangszeit ans Koloniebrett schreiben',
+          ),
+        ],
       ),
       supplementalChecklist(
         slug: 'tobogganing-league',
@@ -1096,7 +1273,24 @@ class ManualDemoWorld {
           'Restart the tobogganing league',
           'Rodel-Liga wieder starten',
         ),
-        runbook: colonyRunbook,
+        steps: [
+          (
+            'Pile fresh snow on the run-out',
+            'Frischen Schnee in den Auslauf schaufeln',
+          ),
+          (
+            'Set the doubles-sled weight limit',
+            'Das Gewichtslimit für den Doppelschlitten festlegen',
+          ),
+          (
+            'Draft the new season schedule',
+            'Den neuen Saisonplan entwerfen',
+          ),
+          (
+            'Send the rematch challenge to Bay C',
+            'Die Revanche-Anfrage an Bucht C schicken',
+          ),
+        ],
       ),
     ];
 
@@ -1420,8 +1614,18 @@ class ManualDemoWorld {
         id: demoLaunchCommsTaskId,
         title: t('Draft the launch comms plan', 'Kommunikationsplan entwerfen'),
         description: t(
-          'Agree who announces what on launch day, and in which order.',
-          'Klärt, wer am Starttag was verkündet — und in welcher Reihenfolge.',
+          'Agree who announces what on launch day, and in which order. '
+              'Mission Control wants one voice on the public feed, the colony '
+              'wants updates in plain penguin, and the sponsors expect their '
+              'logo mentioned exactly twice. Draft the running order, name a '
+              'speaker per slot, and get sign-off from Flight Direction '
+              'before the rehearsal.',
+          'Klärt, wer am Starttag was verkündet — und in welcher Reihenfolge. '
+              'Mission Control will eine Stimme auf dem öffentlichen Kanal, '
+              'die Kolonie will Updates in klarem Pinguinisch, und die '
+              'Sponsoren erwarten ihr Logo genau zweimal. Entwerft den '
+              'Ablaufplan, benennt pro Slot eine Stimme und holt vor der '
+              'Probe das Okay der Flugleitung ein.',
         ),
         status: openAt('launch-comms', 9),
         priority: TaskPriority.p2Medium,
@@ -1439,9 +1643,17 @@ class ManualDemoWorld {
           'Wetterfenster am Eisstartplatz prüfen',
         ),
         description: t(
-          'Confirm the crosswind stays under limits for the launch slot.',
+          'Confirm the crosswind stays under limits for the launch slot. The '
+              'ice pad tolerates 18 knots across the strip and the forecast '
+              'has been flirting with 20 all week. Pull the morning '
+              'soundings, compare the three forecast models, and give Flight '
+              'Direction a clear go or no-go with a confidence note by 15:00.',
           'Bestätigt, dass der Seitenwind im Startfenster unter dem Limit '
-              'bleibt.',
+              'bleibt. Der Eisstartplatz verträgt 18 Knoten quer zur Bahn, '
+              'und die Vorhersage kokettiert die ganze Woche mit 20. Zieht '
+              'die Morgensondierungen, vergleicht die drei Wettermodelle und '
+              'gebt der Flugleitung bis 15:00 ein klares Go oder No-Go samt '
+              'Konfidenznotiz.',
         ),
         status: runningAt('ice-pad-weather', 2),
         priority: TaskPriority.p1High,
@@ -1459,9 +1671,17 @@ class ManualDemoWorld {
           'Kühlketten-Protokolle prüfen',
         ),
         description: t(
-          'Find every gap in the freezer logs before the sardines ship.',
+          'Find every gap in the freezer logs before the sardines ship. '
+              'Freezer 3 dropped out of range twice last month, and customs '
+              'wants an unbroken cold-chain record for every pod on the '
+              'manifest. Export the logs, flag every excursion with its '
+              'duration, and sign the audit so the shipment can clear.',
           'Findet jede Lücke in den Kühlprotokollen, bevor die Sardinen '
-              'verschifft werden.',
+              'verschifft werden. Kühler 3 ist letzten Monat zweimal aus dem '
+              'Sollbereich gefallen, und der Zoll verlangt eine lückenlose '
+              'Kühlkette für jede Kapsel auf der Frachtliste. Exportiert die '
+              'Protokolle, markiert jede Abweichung samt Dauer und zeichnet '
+              'die Prüfung ab, damit die Ladung freikommt.',
         ),
         status: doneAt('cold-chain-audit', 1),
         priority: TaskPriority.p2Medium,
@@ -1477,8 +1697,17 @@ class ManualDemoWorld {
         id: demoLaunchRehearsalTaskId,
         title: t('Run the launch-day rehearsal', 'Startprobe durchführen'),
         description: t(
-          'Walk the whole launch morning once, at full speed, with the crew.',
-          'Geht den ganzen Startmorgen einmal in Echtzeit mit der Crew durch.',
+          'Walk the whole launch morning once, at full speed, with the crew. '
+              'Every handoff gets timed, every call gets spoken out loud, and '
+              'nobody pauses to explain — that is what the debrief is for. '
+              'Reserve the pad for three hours and rehearse the abort call '
+              'until it sounds boring.',
+          'Geht den ganzen Startmorgen einmal in Echtzeit mit der Crew '
+              'durch. Jede Übergabe wird gestoppt, jeder Funkspruch laut '
+              'gesprochen, und niemand hält an, um etwas zu erklären — dafür '
+              'ist die Nachbesprechung da. Reserviert den Startplatz für '
+              'drei Stunden und probt den Abbruchruf, bis er langweilig '
+              'klingt.',
         ),
         status: groomedAt('launch-rehearsal', 4),
         priority: TaskPriority.p1High,
@@ -1494,9 +1723,17 @@ class ManualDemoWorld {
         id: demoFlightSuitTaskId,
         title: t('Fit the penguin flight suits', 'Pinguin-Fluganzüge anpassen'),
         description: t(
-          'Measure every flyer and send the three wide-flipper suits back.',
+          'Measure every flyer and send the three wide-flipper suits back. '
+              'The supplier mixed up the flipper gauges, so half the squad '
+              'is wearing suits that whistle above Mach 0.2. Remeasure all '
+              'twelve flyers, tag the returns, and confirm the replacement '
+              'delivery lands before the rehearsal.',
           'Vermesst jeden Flieger und schickt die drei Anzüge mit weiten '
-              'Flossen zurück.',
+              'Flossen zurück. Der Lieferant hat die Flossenmaße vertauscht, '
+              'deshalb pfeift bei der halben Staffel der Anzug ab Mach 0,2. '
+              'Vermesst alle zwölf Flieger neu, kennzeichnet die '
+              'Rücksendungen und bestätigt, dass der Ersatz vor der Probe '
+              'eintrifft.',
         ),
         status: openAt('flight-suit', 12),
         priority: TaskPriority.p3Low,
@@ -1515,9 +1752,18 @@ class ManualDemoWorld {
           'Filterpatronen der Luftreinigung tauschen',
         ),
         description: t(
-          'Swap all four cartridges in Bay A before the CO2 alarm gets bored.',
+          'Swap all four cartridges in Bay A before the CO2 alarm gets '
+              'bored. The current set is 12 percent over its rated hours and '
+              'the alarm has started clearing its throat at night. Vent the '
+              'bay first, swap A1 through A4 in order, and log the new CO2 '
+              'baseline so Habitat Engineering can close the maintenance '
+              'ticket.',
           'Tauscht alle vier Patronen in Bucht A, bevor dem CO2-Alarm '
-              'langweilig wird.',
+              'langweilig wird. Der aktuelle Satz liegt 12 Prozent über '
+              'seinen Soll-Stunden, und der Alarm räuspert sich nachts '
+              'schon. Entlüftet zuerst die Bucht, tauscht A1 bis A4 der '
+              'Reihe nach und notiert den neuen CO2-Ausgangswert, damit die '
+              'Habitat-Technik das Wartungsticket schließen kann.',
         ),
         status: runningAt('air-scrubbers', 2),
         priority: TaskPriority.p0Urgent,
@@ -1537,8 +1783,17 @@ class ManualDemoWorld {
           'Feuchtigkeitsspitze in Bucht C aufspüren',
         ),
         description: t(
-          'Nine points in three days is a leak, not weather.',
-          'Neun Punkte in drei Tagen sind ein Leck, kein Wetter.',
+          'Nine points in three days is a leak, not weather. Bay C sits '
+              'between the ice rink and the nursery, so a hidden leak there '
+              'ends up in every feather on the station. The wall sensor is '
+              'being swapped; once it reports again, walk the seam line with '
+              'the thermal camera and either find the leak or clear the bay.',
+          'Neun Punkte in drei Tagen sind ein Leck, kein Wetter. Bucht C '
+              'liegt zwischen Eisbahn und Kinderstube — ein verstecktes Leck '
+              'dort landet in allen Federn der Station. Der Wandsensor wird '
+              'gerade getauscht; sobald er wieder meldet, lauft die '
+              'Nahtlinie mit der Wärmebildkamera ab und findet das Leck oder '
+              'gebt die Bucht frei.',
         ),
         status: TaskStatus.blocked(
           id: 'status-humidity-spike',
@@ -1565,8 +1820,17 @@ class ManualDemoWorld {
           'Eisbahn im Habitat neu aufbereiten',
         ),
         description: t(
-          'The colony rink has more grooves than ice. Book the resurfacer.',
-          'Die Kolonie-Eisbahn hat mehr Rillen als Eis. Bucht die Maschine.',
+          'The colony rink has more grooves than ice. Book the resurfacer. '
+              'Tobogganing practice starts again next month and the juniors '
+              'keep catching their flippers in the ruts. Reserve the '
+              'resurfacer for a quiet evening, close the rink for one '
+              'session, and post the new ice rules before reopening.',
+          'Die Kolonie-Eisbahn hat mehr Rillen als Eis. Bucht die Maschine. '
+              'Nächsten Monat beginnt wieder das Rodeltraining, und die '
+              'Junioren bleiben ständig mit den Flossen in den Rillen '
+              'hängen. Reserviert die Maschine für einen ruhigen Abend, '
+              'schließt die Bahn für eine Einheit und hängt vor der '
+              'Wiedereröffnung die neuen Eisregeln aus.',
         ),
         status: openAt('ice-rink', 15),
         priority: TaskPriority.p3Low,
@@ -1585,9 +1849,18 @@ class ManualDemoWorld {
           'Neigung der Solarfläche justieren',
         ),
         description: t(
-          'Four degrees of drift is costing the habitat a third of its power.',
+          'Four degrees of drift is costing the habitat a third of its '
+              'power. The tracking motor lost its calibration in the last '
+              'dust storm and the batteries have dipped below reserve every '
+              'night since. Recalibrate the tilt against the noon reference, '
+              'verify the tracking curve over a full day, and log the '
+              'recovered wattage.',
           'Vier Grad Abweichung kosten das Habitat ein Drittel seiner '
-              'Leistung.',
+              'Leistung. Der Nachführmotor hat im letzten Staubsturm seine '
+              'Kalibrierung verloren, und die Batterien rutschen seitdem '
+              'jede Nacht unter die Reserve. Kalibriert die Neigung am '
+              'Mittagsreferenzpunkt neu, prüft die Nachführkurve über einen '
+              'ganzen Tag und protokolliert die zurückgewonnene Leistung.',
         ),
         status: groomedAt('solar-array', 6),
         priority: TaskPriority.p2Medium,
@@ -1603,8 +1876,17 @@ class ManualDemoWorld {
         id: demoWaterRecyclerTaskId,
         title: t('Service the water recycler', 'Wasseraufbereiter warten'),
         description: t(
-          'Clean the filter housing and log the throughput afterwards.',
-          'Reinigt das Filtergehäuse und protokolliert danach den Durchsatz.',
+          'Clean the filter housing and log the throughput afterwards. '
+              'Routine service, but the last crew skipped the throughput log '
+              'and Habitat Engineering had to guess the filter age. Do the '
+              'full sequence this time: flush the loop, clean the housing, '
+              'swap the pre-filter, and write the numbers down.',
+          'Reinigt das Filtergehäuse und protokolliert danach den '
+              'Durchsatz. Routinewartung — aber die letzte Crew hat das '
+              'Durchsatzprotokoll ausgelassen, und die Habitat-Technik '
+              'musste das Filteralter raten. Diesmal die volle Sequenz: '
+              'Kreislauf spülen, Gehäuse reinigen, Vorfilter tauschen und '
+              'die Zahlen aufschreiben.',
         ),
         status: doneAt('water-recycler', 5),
         priority: TaskPriority.p2Medium,
@@ -1624,8 +1906,19 @@ class ManualDemoWorld {
           'Verschwundene Tintenfisch-Palette finden',
         ),
         description: t(
-          'Pallet 14 left Europa and never reached the cold ring.',
-          'Palette 14 hat Europa verlassen und den Kühlring nie erreicht.',
+          'Pallet 14 left Europa and never reached the cold ring. The dock '
+              'scanner shows it entering bay two at 04:12, then nothing — '
+              'and the squid inside has a five-day cold rating that runs out '
+              'on Thursday. Trace the scan trail, search both bays, and '
+              'either find the pallet or file the loss report before the '
+              'insurance window closes.',
+          'Palette 14 hat Europa verlassen und den Kühlring nie erreicht. '
+              'Der Dock-Scanner zeigt sie um 04:12 in Bucht zwei, danach '
+              'nichts — und der Tintenfisch darin hat eine Kühlfreigabe von '
+              'fünf Tagen, die am Donnerstag abläuft. Verfolgt die '
+              'Scan-Spur, durchsucht beide Buchten und findet die Palette — '
+              'oder reicht die Verlustmeldung ein, bevor das '
+              'Versicherungsfenster schließt.',
         ),
         status: runningAt('squid-pallet', 5),
         priority: TaskPriority.p1High,
@@ -1645,9 +1938,20 @@ class ManualDemoWorld {
           'Zweiten Krill-Lieferanten finden',
         ),
         description: t(
-          'One supplier for the whole colony is one storm away from trouble.',
+          'One supplier for the whole colony is one storm away from '
+              'trouble. Procurement wants a second source signed before the '
+              'winter contracts renew. Write down the criteria that actually '
+              'matter — delivery time, cold-chain rating, price per tonne — '
+              'collect quotes from at least three candidates, order a sample '
+              'crate from the best two, and put a recommendation in front of '
+              'the council.',
           'Ein Lieferant für die ganze Kolonie ist einen Sturm vom Problem '
-              'entfernt.',
+              'entfernt. Der Einkauf will eine zweite Quelle unter Vertrag, '
+              'bevor die Winterverträge verlängert werden. Schreibt die '
+              'Kriterien auf, die wirklich zählen — Lieferzeit, '
+              'Kühlketten-Bewertung, Preis pro Tonne —, holt Angebote von '
+              'mindestens drei Kandidaten ein, bestellt bei den besten zwei '
+              'eine Probekiste und legt dem Rat eine Empfehlung vor.',
         ),
         status: openAt('krill-supplier', 7),
         priority: TaskPriority.p2Medium,
@@ -1666,9 +1970,19 @@ class ManualDemoWorld {
           'Frachtliste des Shuttles abgleichen',
         ),
         description: t(
-          'The manifest and the dock disagree by one pod. Find out which.',
+          'The manifest and the dock disagree by one pod. Find out which. '
+              'Twenty-three pods on paper, twenty-four on the dock — and '
+              'launch clearance needs the two lists to match to the pod. '
+              'Count what is actually standing there, reconcile against the '
+              'manifest line by line, and send the corrected list to Europa '
+              'before the shuttle is loaded.',
           'Frachtliste und Dock unterscheiden sich um eine Kapsel. Findet '
-              'heraus, welche.',
+              'heraus, welche. Dreiundzwanzig Kapseln auf dem Papier, '
+              'vierundzwanzig am Dock — und die Startfreigabe braucht zwei '
+              'Listen, die bis auf die Kapsel übereinstimmen. Zählt, was '
+              'wirklich dort steht, gleicht Zeile für Zeile mit der '
+              'Frachtliste ab und schickt die korrigierte Liste nach Europa, '
+              'bevor das Shuttle beladen wird.',
         ),
         status: openAt('shuttle-manifest', 1),
         priority: TaskPriority.p2Medium,
@@ -1688,9 +2002,19 @@ class ManualDemoWorld {
           'Ersatzdichtungen für Kapseln bestellen',
         ),
         description: t(
-          'Customs will not clear a pod whose seal certificate has expired.',
+          'Customs will not clear a pod whose seal certificate has expired. '
+              'Eight pods run out of certificate next week and the seal '
+              'supplier quotes ten days for delivery — the order is already '
+              'five days late. Confirm the sizes against the pod register, '
+              'place the rush order, and warn Logistics which pods will miss '
+              'the next shuttle either way.',
           'Der Zoll gibt keine Kapsel frei, deren Dichtungszertifikat '
-              'abgelaufen ist.',
+              'abgelaufen ist. Bei acht Kapseln läuft das Zertifikat nächste '
+              'Woche ab, und der Lieferant nennt zehn Tage Lieferzeit — die '
+              'Bestellung ist schon fünf Tage überfällig. Prüft die Größen '
+              'gegen das Kapselregister, gebt die Eilbestellung auf und '
+              'warnt die Logistik, welche Kapseln das nächste Shuttle so '
+              'oder so verpassen.',
         ),
         status: openAt('pod-seal-order', 10),
         priority: TaskPriority.p1High,
@@ -1706,9 +2030,18 @@ class ManualDemoWorld {
         id: demoCustomsEuropaTaskId,
         title: t('Clear customs on Europa', 'Zoll auf Europa erledigen'),
         description: t(
-          'File the seal certificates and the passenger question together.',
+          'File the seal certificates and the passenger question together. '
+              'Europa customs reopens Monday, and they process bundled '
+              'filings faster than loose paperwork. Have the certificate '
+              'folder, the passenger ruling request, and the manifest copy '
+              'ready in one envelope so the whole stack clears in a single '
+              'visit.',
           'Reicht die Dichtungszertifikate und die Passagierfrage zusammen '
-              'ein.',
+              'ein. Der Zoll von Europa öffnet am Montag wieder — und '
+              'gebündelte Anträge bearbeitet er schneller als lose Zettel. '
+              'Legt den Zertifikatsordner, die Anfrage zur Passagierfrage '
+              'und die Kopie der Frachtliste in einen Umschlag, damit der '
+              'ganze Stapel bei einem Besuch durchgeht.',
         ),
         status: TaskStatus.onHold(
           id: 'status-customs-europa',
@@ -1733,8 +2066,16 @@ class ManualDemoWorld {
         id: demoColonyNewsletterTaskId,
         title: t('Write the colony newsletter', 'Koloniebrief schreiben'),
         description: t(
-          'Four sections, one photo, and no more than one fish pun.',
-          'Vier Abschnitte, ein Foto und höchstens ein Fischwitz.',
+          'Four sections, one photo, and no more than one fish pun. The '
+              'colony reads it over breakfast, so keep it short and warm: '
+              'what happened, what is coming, who hatched, and what the '
+              'kitchen is planning. The launch update must match what Comms '
+              'announces — check with them before printing.',
+          'Vier Abschnitte, ein Foto und höchstens ein Fischwitz. Die '
+              'Kolonie liest ihn beim Frühstück — also kurz und warm: was '
+              'war, was kommt, wer geschlüpft ist und was die Küche plant. '
+              'Das Start-Update muss zu dem passen, was Comms verkündet — '
+              'fragt dort nach, bevor gedruckt wird.',
         ),
         status: openAt('colony-newsletter', 4),
         priority: TaskPriority.p3Low,
@@ -1753,9 +2094,17 @@ class ManualDemoWorld {
           'Dienstplan der Kükenbetreuung füllen',
         ),
         description: t(
-          'Thursday lost two volunteers and the chicks noticed immediately.',
+          'Thursday lost two volunteers and the chicks noticed immediately. '
+              'The rota needs two names per shift or the nursery closes '
+              'early, and early closing means chicks at the launch briefing '
+              'again. Ask the reserve list first, then post the open shifts '
+              'on the colony board, and confirm the full week by Friday.',
           'Am Donnerstag fehlen zwei Freiwillige, und die Küken haben es '
-              'sofort gemerkt.',
+              'sofort gemerkt. Der Dienstplan braucht zwei Namen pro '
+              'Schicht, sonst schließt die Kinderstube früher — und das '
+              'heißt wieder Küken im Start-Briefing. Fragt zuerst die '
+              'Reserveliste, hängt dann die offenen Schichten ans '
+              'Koloniebrett und bestätigt die volle Woche bis Freitag.',
         ),
         status: groomedAt('chick-daycare', 16),
         priority: TaskPriority.p2Medium,
@@ -1773,8 +2122,16 @@ class ManualDemoWorld {
           'Film für den Kolonieabend wählen',
         ),
         description: t(
-          'The colony voted for the ice documentary. Book the dome.',
-          'Die Kolonie hat für die Eis-Doku gestimmt. Bucht die Kuppel.',
+          'The colony voted for the ice documentary. Book the dome. The '
+              'distributor needs three days of notice for the screening '
+              'licence, and the dome heater has to be off for two hours '
+              'before anyone brings blankets. Book the licence, reserve the '
+              'dome, and put the start time on the colony board.',
+          'Die Kolonie hat für die Eis-Doku gestimmt. Bucht die Kuppel. Der '
+              'Verleih braucht drei Tage Vorlauf für die Vorführlizenz, und '
+              'die Kuppelheizung muss zwei Stunden vorher aus sein, bevor '
+              'jemand Decken mitbringt. Bucht die Lizenz, reserviert die '
+              'Kuppel und schreibt die Anfangszeit ans Koloniebrett.',
         ),
         status: openAt('movie-night', 18),
         priority: TaskPriority.p3Low,
@@ -1789,8 +2146,16 @@ class ManualDemoWorld {
         id: demoTobogganingTaskId,
         title: t('Restart the tobogganing league', 'Rodel-Liga wieder starten'),
         description: t(
-          'Softer landings first, then a rematch against Bay C.',
-          'Erst weichere Landungen, dann ein Rückspiel gegen Bucht C.',
+          'Softer landings first, then a rematch against Bay C. The league '
+              'stopped after two bruised tails and one very formal '
+              'complaint. Pile fresh snow on the run-out, set a weight limit '
+              'for the doubles sled, and only then challenge Bay C — they '
+              'have been practising.',
+          'Erst weichere Landungen, dann ein Rückspiel gegen Bucht C. Die '
+              'Liga hat nach zwei geprellten Schwänzen und einer sehr '
+              'förmlichen Beschwerde pausiert. Schaufelt frischen Schnee in '
+              'den Auslauf, setzt ein Gewichtslimit für den Doppelschlitten '
+              'und fordert erst dann Bucht C heraus — die haben geübt.',
         ),
         status: groomedAt('tobogganing', 21),
         priority: TaskPriority.p3Low,

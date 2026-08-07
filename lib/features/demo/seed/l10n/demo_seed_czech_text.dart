@@ -767,4 +767,188 @@ Proveď test krmítka, přilož obrázek telemetrie a požádej o povolení ke s
   'Zero-gravity flipper mobility': 'Mobilita ploutví v beztíži',
   'Complete three gentle mobility sessions before the weekly cargo sprint.':
       'Před týdenním nákladním sprintem absolvuj tři lehká cvičení mobility.',
+  // Demo-world expansion: subtask checklists and long task descriptions.
+  'List every launch-day announcement':
+      'Sepsat všechna oznámení pro den startu',
+  'Name a speaker for each slot': 'Určit pro každý slot mluvčího',
+  'Write the fallback script for a hold':
+      'Napsat záložní scénář pro pozastavení startu',
+  'Get sign-off from Flight Direction': 'Získat schválení od vedení letu',
+  'Pull the morning soundings': 'Stáhnout ranní sondáže',
+  'Compare the three forecast models': 'Porovnat tři modely předpovědi',
+  'Check the crosswind against the 18-knot limit':
+      'Zkontrolovat boční vítr proti limitu 18 uzlů',
+  'Send the go or no-go call to Flight Direction':
+      'Nahlásit vedení letu go, nebo no-go',
+  'Remeasure all twelve flyers': 'Znovu změřit všech dvanáct letců',
+  'Tag the three wide-flipper returns':
+      'Označit tři vratky se širokými ploutvemi',
+  'Book the courier pickup': 'Objednat vyzvednutí kurýrem',
+  'Confirm the replacement delivery date': 'Potvrdit termín dodání náhrady',
+  'Chart the humidity readings by day': 'Zaznamenat hodnoty vlhkosti po dnech',
+  'Wait for the Bay C sensor swap': 'Počkat na výměnu senzoru v sekci C',
+  'Walk the seam line with the thermal camera':
+      'Projít linii švů s termokamerou',
+  'Report the leak or clear the bay':
+      'Nahlásit únik, nebo sekci prohlásit za čistou',
+  'Book the resurfacer for an evening slot': 'Objednat rolbu na večerní termín',
+  'Announce the one-session closure': 'Oznámit uzavření na jedno bruslení',
+  'Resurface and inspect the ice': 'Upravit a zkontrolovat led',
+  'Post the new ice rules': 'Vyvěsit nová pravidla pro led',
+  'Recalibrate against the noon reference':
+      'Znovu kalibrovat podle polední reference',
+  'Verify the tracking curve for a full day':
+      'Ověřit křivku natáčení za celý den',
+  'Log the recovered wattage': 'Zaznamenat znovu získaný výkon',
+  'Close the storm-damage ticket': 'Uzavřít tiket škod po bouři',
+  'Flush the recycler loop': 'Propláchnout okruh recyklátoru',
+  'Clean the filter housing': 'Vyčistit pouzdro filtru',
+  'Swap the pre-filter': 'Vyměnit předfiltr',
+  'Log the throughput numbers': 'Zaznamenat hodnoty průtoku',
+  'Write down the selection criteria': 'Sepsat kritéria výběru',
+  'Collect quotes from three candidates': 'Získat nabídky od tří kandidátů',
+  'Order sample crates from the best two':
+      'Objednat vzorkové bedny od dvou nejlepších',
+  'Put a recommendation to the council': 'Předložit radě doporučení',
+  'Confirm seal sizes against the pod register':
+      'Ověřit velikosti těsnění podle registru modulů',
+  'Place the rush order': 'Zadat expresní objednávku',
+  'Chase the delivery confirmation': 'Urgovat potvrzení dodání',
+  'Warn Logistics about the affected pods':
+      'Upozornit logistiku na dotčené moduly',
+  'Assemble the certificate folder': 'Sestavit složku s certifikáty',
+  'Draft the passenger ruling request':
+      'Sepsat žádost o posouzení otázky cestujících',
+  'Copy the current manifest': 'Zkopírovat aktuální manifest',
+  'Book the Monday customs slot': 'Zarezervovat pondělní termín na celnici',
+  'Ask the reserve list for Thursday': 'Zeptat se náhradníků na čtvrtek',
+  'Post the open shifts on the colony board':
+      'Vyvěsit volné směny na nástěnku kolonie',
+  'Confirm two names per shift': 'Potvrdit dvě jména na směnu',
+  'Publish the full week by Friday': 'Zveřejnit celý týden do pátku',
+  'Request the screening licence': 'Zažádat o promítací licenci',
+  'Reserve the dome for the evening': 'Zarezervovat kupoli na večer',
+  'Schedule the heater shutdown': 'Naplánovat vypnutí topení',
+  'Post the start time on the colony board':
+      'Vyvěsit čas začátku na nástěnku kolonie',
+  'Pile fresh snow on the run-out': 'Nahrnout čerstvý sníh do dojezdu',
+  'Set the doubles-sled weight limit':
+      'Stanovit váhový limit dvojmístných saní',
+  'Draft the new season schedule': 'Navrhnout rozpis nové sezóny',
+  'Send the rematch challenge to Bay C': 'Poslat výzvu k odvetě sekci C',
+  'Agree who announces what on launch day, and in which order. Mission Control wants one voice on the public feed, the colony wants updates in plain penguin, and the sponsors expect their logo mentioned exactly twice. Draft the running order, name a speaker per slot, and get sign-off from Flight Direction before the rehearsal.':
+      'Domluvte, kdo co v den startu oznamuje — a v jakém pořadí. Řízení '
+      'mise chce na veřejném kanálu jeden hlas, kolonie chce novinky v '
+      'srozumitelné tučňáčtině a sponzoři očekávají, že jejich logo zazní '
+      'přesně dvakrát. Navrhněte plán průběhu, určete pro každý slot '
+      'mluvčího a před zkouškou získejte schválení od vedení letu.',
+  'Confirm the crosswind stays under limits for the launch slot. The ice pad tolerates 18 knots across the strip and the forecast has been flirting with 20 all week. Pull the morning soundings, compare the three forecast models, and give Flight Direction a clear go or no-go with a confidence note by 15:00.':
+      'Potvrďte, že boční vítr zůstane ve startovním okně pod limitem. '
+      'Ledová rampa snese 18 uzlů napříč dráhou a předpověď celý týden '
+      'koketuje s dvacítkou. Stáhněte ranní sondáže, porovnejte tři modely '
+      'předpovědi a dejte vedení letu do 15:00 jasné go, nebo no-go s '
+      'poznámkou o míře jistoty.',
+  'Find every gap in the freezer logs before the sardines ship. Freezer 3 dropped out of range twice last month, and customs wants an unbroken cold-chain record for every pod on the manifest. Export the logs, flag every excursion with its duration, and sign the audit so the shipment can clear.':
+      'Najděte v protokolech mrazáků každou mezeru, než se sardinky '
+      'odešlou. Mrazák 3 minulý měsíc dvakrát vypadl z povoleného rozsahu '
+      'a celnice chce nepřerušený záznam chladicího řetězce pro každý '
+      'modul na manifestu. Exportujte protokoly, označte každou odchylku '
+      'i s délkou trvání a odsouhlaste audit, aby zásilka mohla projít.',
+  'Walk the whole launch morning once, at full speed, with the crew. Every handoff gets timed, every call gets spoken out loud, and nobody pauses to explain — that is what the debrief is for. Reserve the pad for three hours and rehearse the abort call until it sounds boring.':
+      'Projděte s posádkou celé startovní ráno jednou, v plné rychlosti. '
+      'Každé předání se stopuje, každý povel se říká nahlas a nikdo se '
+      'nezastavuje kvůli vysvětlování — od toho je závěrečné shrnutí. '
+      'Zarezervujte rampu na tři hodiny a nacvičujte povel k přerušení, '
+      'dokud nezní nudně.',
+  'Measure every flyer and send the three wide-flipper suits back. The supplier mixed up the flipper gauges, so half the squad is wearing suits that whistle above Mach 0.2. Remeasure all twelve flyers, tag the returns, and confirm the replacement delivery lands before the rehearsal.':
+      'Změřte každého letce a tři kombinézy se širokými ploutvemi pošlete '
+      'zpět. Dodavatel popletl míry ploutví, takže půlka letky nosí '
+      'kombinézy, které nad Machem 0,2 pískají. Znovu změřte všech dvanáct '
+      'letců, označte vratky a potvrďte, že náhrada dorazí před zkouškou.',
+  'Swap all four cartridges in Bay A before the CO2 alarm gets bored. The current set is 12 percent over its rated hours and the alarm has started clearing its throat at night. Vent the bay first, swap A1 through A4 in order, and log the new CO2 baseline so Habitat Engineering can close the maintenance ticket.':
+      'Vyměňte všechny čtyři patrony v sekci A, než se alarm CO2 začne '
+      'nudit. Současná sada je 12 procent nad předepsanými hodinami a '
+      'alarm si v noci začal odkašlávat. Nejdřív sekci odvětrejte, vyměňte '
+      'A1 až A4 popořadě a zaznamenejte nový výchozí CO2, aby Technika '
+      'obydlí mohla uzavřít tiket údržby.',
+  'Nine points in three days is a leak, not weather. Bay C sits between the ice rink and the nursery, so a hidden leak there ends up in every feather on the station. The wall sensor is being swapped; once it reports again, walk the seam line with the thermal camera and either find the leak or clear the bay.':
+      'Devět bodů za tři dny je únik, ne počasí. Sekce C leží mezi '
+      'kluzištěm a školkou mláďat, takže skrytý únik tam skončí v každém '
+      'peříčku na stanici. Nástěnný senzor se právě mění; jakmile se zase '
+      'ozve, projděte linii švů s termokamerou a únik buď najděte, nebo '
+      'sekci prohlaste za čistou.',
+  'The colony rink has more grooves than ice. Book the resurfacer. Tobogganing practice starts again next month and the juniors keep catching their flippers in the ruts. Reserve the resurfacer for a quiet evening, close the rink for one session, and post the new ice rules before reopening.':
+      'Kluziště kolonie má víc rýh než ledu. Objednejte rolbu. Příští '
+      'měsíc znovu začíná sáňkařský trénink a junioři si pořád zachytávají '
+      'ploutve v rýhách. Zarezervujte rolbu na klidný večer, zavřete '
+      'kluziště na jedno bruslení a před znovuotevřením vyvěste nová '
+      'pravidla pro led.',
+  'Four degrees of drift is costing the habitat a third of its power. The tracking motor lost its calibration in the last dust storm and the batteries have dipped below reserve every night since. Recalibrate the tilt against the noon reference, verify the tracking curve over a full day, and log the recovered wattage.':
+      'Čtyři stupně odchylky stojí obydlí třetinu výkonu. Motor natáčení '
+      'přišel při poslední prachové bouři o kalibraci a baterie od té doby '
+      'každou noc klesají pod rezervu. Znovu kalibrujte náklon podle '
+      'polední reference, ověřte křivku natáčení za celý den a '
+      'zaznamenejte znovu získaný výkon.',
+  'Clean the filter housing and log the throughput afterwards. Routine service, but the last crew skipped the throughput log and Habitat Engineering had to guess the filter age. Do the full sequence this time: flush the loop, clean the housing, swap the pre-filter, and write the numbers down.':
+      'Vyčistěte pouzdro filtru a potom zaznamenejte průtok. Běžná údržba '
+      '— ale minulá posádka záznam průtoku vynechala a Technika obydlí '
+      'musela stáří filtru hádat. Tentokrát proveďte celou sekvenci: '
+      'propláchněte okruh, vyčistěte pouzdro, vyměňte předfiltr a čísla '
+      'zapište.',
+  'Pallet 14 left Europa and never reached the cold ring. The dock scanner shows it entering bay two at 04:12, then nothing — and the squid inside has a five-day cold rating that runs out on Thursday. Trace the scan trail, search both bays, and either find the pallet or file the loss report before the insurance window closes.':
+      'Paleta 14 opustila Europu a do chladicího prstence nikdy '
+      'nedorazila. Skener doku ji ukazuje ve 04:12 při vjezdu do sekce '
+      'dvě, pak nic — a olihně uvnitř mají pětidenní chladicí lhůtu, která '
+      'vyprší ve čtvrtek. Sledujte stopu skenů, prohledejte obě sekce a '
+      'paletu buď najděte, nebo podejte hlášení o ztrátě, než se zavře '
+      'pojistné okno.',
+  'One supplier for the whole colony is one storm away from trouble. Procurement wants a second source signed before the winter contracts renew. Write down the criteria that actually matter — delivery time, cold-chain rating, price per tonne — collect quotes from at least three candidates, order a sample crate from the best two, and put a recommendation in front of the council.':
+      'Jeden dodavatel pro celou kolonii je jednu bouři od průšvihu. Nákup '
+      'chce mít podepsaný druhý zdroj, než se obnoví zimní smlouvy. '
+      'Sepište kritéria, na kterých skutečně záleží — dodací lhůtu, '
+      'hodnocení chladicího řetězce, cenu za tunu —, získejte nabídky od '
+      'nejméně tří kandidátů, objednejte od dvou nejlepších vzorkovou '
+      'bednu a předložte radě doporučení.',
+  'The manifest and the dock disagree by one pod. Find out which. Twenty-three pods on paper, twenty-four on the dock — and launch clearance needs the two lists to match to the pod. Count what is actually standing there, reconcile against the manifest line by line, and send the corrected list to Europa before the shuttle is loaded.':
+      'Manifest a dok se liší o jeden modul. Zjistěte který. Třiadvacet '
+      'modulů na papíře, čtyřiadvacet na doku — a povolení ke startu '
+      'potřebuje, aby oba seznamy seděly na modul přesně. Spočítejte, co '
+      'tam skutečně stojí, porovnejte to řádek po řádku s manifestem a '
+      'pošlete opravený seznam na Europu, než se raketoplán naloží.',
+  'Customs will not clear a pod whose seal certificate has expired. Eight pods run out of certificate next week and the seal supplier quotes ten days for delivery — the order is already five days late. Confirm the sizes against the pod register, place the rush order, and warn Logistics which pods will miss the next shuttle either way.':
+      'Celnice nepropustí modul s prošlým certifikátem těsnění. Osmi '
+      'modulům vyprší certifikát příští týden a dodavatel těsnění udává '
+      'deset dní na dodání — objednávka má už teď pět dní zpoždění. '
+      'Ověřte velikosti podle registru modulů, zadejte expresní '
+      'objednávku a upozorněte logistiku, které moduly tak jako tak '
+      'nestihnou příští raketoplán.',
+  'File the seal certificates and the passenger question together. Europa customs reopens Monday, and they process bundled filings faster than loose paperwork. Have the certificate folder, the passenger ruling request, and the manifest copy ready in one envelope so the whole stack clears in a single visit.':
+      'Podejte certifikáty těsnění a dotaz k cestujícím najednou. Celnice '
+      'na Europě v pondělí znovu otevírá a svázaná podání vyřizuje '
+      'rychleji než volné papíry. Mějte složku s certifikáty, žádost o '
+      'posouzení otázky cestujících a kopii manifestu připravené v jedné '
+      'obálce, aby celý štos prošel na jednu návštěvu.',
+  'Four sections, one photo, and no more than one fish pun. The colony reads it over breakfast, so keep it short and warm: what happened, what is coming, who hatched, and what the kitchen is planning. The launch update must match what Comms announces — check with them before printing.':
+      'Čtyři části, jedna fotka a nejvýš jeden rybí vtip. Kolonie ho čte '
+      'u snídaně, tak ať je krátký a vřelý: co se stalo, co se chystá, '
+      'kdo se vyklubal a co plánuje kuchyně. Novinky ke startu musí sedět '
+      'na to, co oznámí Comms — před tiskem si to s nimi ověřte.',
+  'Thursday lost two volunteers and the chicks noticed immediately. The rota needs two names per shift or the nursery closes early, and early closing means chicks at the launch briefing again. Ask the reserve list first, then post the open shifts on the colony board, and confirm the full week by Friday.':
+      'Ve čtvrtek odpadli dva dobrovolníci a mláďata si toho hned všimla. '
+      'Rozpis potřebuje dvě jména na směnu, jinak školka zavírá dřív — a '
+      'dřívější zavírání znamená zase mláďata na startovním briefingu. '
+      'Nejdřív se zeptejte náhradníků, potom vyvěste volné směny na '
+      'nástěnku kolonie a do pátku potvrďte celý týden.',
+  'The colony voted for the ice documentary. Book the dome. The distributor needs three days of notice for the screening licence, and the dome heater has to be off for two hours before anyone brings blankets. Book the licence, reserve the dome, and put the start time on the colony board.':
+      'Kolonie zvolila dokument o ledu. Zarezervujte kupoli. Distributor '
+      'potřebuje pro promítací licenci tři dny předem a topení v kupoli '
+      'musí být vypnuté dvě hodiny předtím, než někdo přinese deky. '
+      'Zajistěte licenci, zarezervujte kupoli a napište čas začátku na '
+      'nástěnku kolonie.',
+  'Softer landings first, then a rematch against Bay C. The league stopped after two bruised tails and one very formal complaint. Pile fresh snow on the run-out, set a weight limit for the doubles sled, and only then challenge Bay C — they have been practising.':
+      'Nejdřív měkčí dopady, pak odveta se sekcí C. Liga se zastavila po '
+      'dvou pohmožděných ocasech a jedné velmi formální stížnosti. '
+      'Nahrňte čerstvý sníh do dojezdu, stanovte váhový limit '
+      'dvojmístných saní a teprve potom vyzvěte sekci C — mezitím '
+      'trénovali.',
 };

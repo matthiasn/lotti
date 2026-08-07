@@ -739,4 +739,114 @@ const _copy = <String, String>{
       'Mobilidade das nadadeiras em gravidade zero',
   'Complete three gentle mobility sessions before the weekly cargo sprint.':
       'Faz três sessões leves de mobilidade antes da corrida logística semanal.',
+  // Demo-world expansion: launch-week checklist items and task descriptions.
+  'List every launch-day announcement':
+      'Liste todos os anúncios do dia do lançamento',
+  'Name a speaker for each slot': 'Indique uma voz para cada bloco',
+  'Write the fallback script for a hold':
+      'Escreva o roteiro reserva para uma espera',
+  'Get sign-off from Flight Direction': 'Obtenha o aval da Direção de Voo',
+  'Pull the morning soundings': 'Baixe as sondagens da manhã',
+  'Compare the three forecast models': 'Compare os três modelos de previsão',
+  'Check the crosswind against the 18-knot limit':
+      'Confira o vento cruzado contra o limite de 18 nós',
+  'Send the go or no-go call to Flight Direction':
+      'Envie o go ou no-go à Direção de Voo',
+  'Remeasure all twelve flyers': 'Meça novamente todos os doze aviadores',
+  'Tag the three wide-flipper returns':
+      'Etiquete as três devoluções de nadadeira larga',
+  'Book the courier pickup': 'Agende a coleta da transportadora',
+  'Confirm the replacement delivery date':
+      'Confirme a data de entrega da reposição',
+  'Chart the humidity readings by day':
+      'Monte o gráfico das leituras de umidade por dia',
+  'Wait for the Bay C sensor swap': 'Aguarde a troca do sensor da Baía C',
+  'Walk the seam line with the thermal camera':
+      'Percorra a linha de juntas com a câmera térmica',
+  'Report the leak or clear the bay': 'Relate o vazamento ou libere a baía',
+  'Book the resurfacer for an evening slot':
+      'Reserve a máquina para um horário à noite',
+  'Announce the one-session closure': 'Anuncie o fechamento por uma sessão',
+  'Resurface and inspect the ice': 'Recupere a pista e inspecione o gelo',
+  'Post the new ice rules': 'Publique as novas regras do gelo',
+  'Recalibrate against the noon reference':
+      'Recalibre com a referência do meio-dia',
+  'Verify the tracking curve for a full day':
+      'Verifique a curva de rastreamento por um dia inteiro',
+  'Log the recovered wattage': 'Registre a potência recuperada',
+  'Close the storm-damage ticket': 'Feche o chamado de danos da tempestade',
+  'Flush the recycler loop': 'Lave o circuito do reciclador',
+  'Clean the filter housing': 'Limpe a caixa do filtro',
+  'Swap the pre-filter': 'Troque o pré-filtro',
+  'Log the throughput numbers': 'Registre os números de vazão',
+  'Write down the selection criteria': 'Anote os critérios de seleção',
+  'Collect quotes from three candidates': 'Colete cotações de três candidatos',
+  'Order sample crates from the best two':
+      'Peça caixas de amostra aos dois melhores',
+  'Put a recommendation to the council':
+      'Apresente uma recomendação ao conselho',
+  'Confirm seal sizes against the pod register':
+      'Confirme os tamanhos dos selos com o registro das cápsulas',
+  'Place the rush order': 'Faça o pedido urgente',
+  'Chase the delivery confirmation': 'Cobre a confirmação de entrega',
+  'Warn Logistics about the affected pods':
+      'Avise a Logística sobre as cápsulas afetadas',
+  'Assemble the certificate folder': 'Monte a pasta de certificados',
+  'Draft the passenger ruling request':
+      'Redija o pedido de parecer sobre os passageiros',
+  'Copy the current manifest': 'Copie o manifesto atual',
+  'Book the Monday customs slot': 'Reserve o horário da alfândega na segunda',
+  'Ask the reserve list for Thursday':
+      'Consulte a lista de reservas para quinta',
+  'Post the open shifts on the colony board':
+      'Publique os turnos abertos no mural da colônia',
+  'Confirm two names per shift': 'Confirme dois nomes por turno',
+  'Publish the full week by Friday': 'Publique a semana completa até sexta',
+  'Request the screening licence': 'Solicite a licença de exibição',
+  'Reserve the dome for the evening': 'Reserve a cúpula para a noite',
+  'Schedule the heater shutdown': 'Programe o desligamento do aquecedor',
+  'Post the start time on the colony board':
+      'Publique o horário de início no mural da colônia',
+  'Pile fresh snow on the run-out': 'Amontoe neve fresca na área de chegada',
+  'Set the doubles-sled weight limit': 'Defina o limite de peso do trenó duplo',
+  'Draft the new season schedule': 'Esboce o calendário da nova temporada',
+  'Send the rematch challenge to Bay C': 'Envie o desafio de revanche à Baía C',
+  'Agree who announces what on launch day, and in which order. Mission Control wants one voice on the public feed, the colony wants updates in plain penguin, and the sponsors expect their logo mentioned exactly twice. Draft the running order, name a speaker per slot, and get sign-off from Flight Direction before the rehearsal.':
+      'Defina quem anuncia o quê no dia do lançamento — e em que ordem. O Controle da Missão quer uma só voz no canal público, a colônia quer atualizações em pinguinês claro, e os patrocinadores esperam o logotipo mencionado exatamente duas vezes. Esboce a ordem do programa, indique uma voz para cada bloco e obtenha o aval da Direção de Voo antes do ensaio.',
+  'Confirm the crosswind stays under limits for the launch slot. The ice pad tolerates 18 knots across the strip and the forecast has been flirting with 20 all week. Pull the morning soundings, compare the three forecast models, and give Flight Direction a clear go or no-go with a confidence note by 15:00.':
+      'Confirme que o vento cruzado fica abaixo do limite na janela de lançamento. A plataforma de gelo tolera 18 nós de través, e a previsão anda flertando com 20 a semana toda. Baixe as sondagens da manhã, compare os três modelos de previsão e dê à Direção de Voo um go ou no-go claro, com nota de confiança, até as 15:00.',
+  'Find every gap in the freezer logs before the sardines ship. Freezer 3 dropped out of range twice last month, and customs wants an unbroken cold-chain record for every pod on the manifest. Export the logs, flag every excursion with its duration, and sign the audit so the shipment can clear.':
+      'Encontre cada lacuna nos registros do freezer antes de as sardinhas embarcarem. O freezer 3 saiu da faixa duas vezes no mês passado, e a alfândega quer um histórico de cadeia de frio sem interrupções para cada cápsula do manifesto. Exporte os registros, marque cada desvio com sua duração e aprove a auditoria para a carga poder ser liberada.',
+  'Walk the whole launch morning once, at full speed, with the crew. Every handoff gets timed, every call gets spoken out loud, and nobody pauses to explain — that is what the debrief is for. Reserve the pad for three hours and rehearse the abort call until it sounds boring.':
+      'Percorra toda a manhã do lançamento uma vez, em tempo real, com a equipe. Cada passagem é cronometrada, cada chamado é dito em voz alta, e ninguém para no meio para explicar — é para isso que serve a avaliação no fim. Reserve a plataforma por três horas e ensaie o chamado de aborto até ele soar entediante.',
+  'Measure every flyer and send the three wide-flipper suits back. The supplier mixed up the flipper gauges, so half the squad is wearing suits that whistle above Mach 0.2. Remeasure all twelve flyers, tag the returns, and confirm the replacement delivery lands before the rehearsal.':
+      'Meça cada aviador e devolva os três trajes de nadadeira larga. O fornecedor trocou as medidas das nadadeiras, então metade do esquadrão está com trajes que assobiam acima de Mach 0,2. Meça novamente todos os doze aviadores, etiquete as devoluções e confirme que a reposição chega antes do ensaio.',
+  'Swap all four cartridges in Bay A before the CO2 alarm gets bored. The current set is 12 percent over its rated hours and the alarm has started clearing its throat at night. Vent the bay first, swap A1 through A4 in order, and log the new CO2 baseline so Habitat Engineering can close the maintenance ticket.':
+      'Troque os quatro cartuchos da Baía A antes que o alarme de CO2 fique entediado. O conjunto atual está 12% acima das horas previstas, e o alarme já anda pigarreando de madrugada. Ventile a baía primeiro, troque A1 a A4 em ordem e registre a nova linha de base de CO2 para a Engenharia do Habitat poder fechar o chamado de manutenção.',
+  'Nine points in three days is a leak, not weather. Bay C sits between the ice rink and the nursery, so a hidden leak there ends up in every feather on the station. The wall sensor is being swapped; once it reports again, walk the seam line with the thermal camera and either find the leak or clear the bay.':
+      'Nove pontos em três dias é vazamento, não clima. A Baía C fica entre a pista de gelo e a creche, então um vazamento escondido ali acaba em cada pena da estação. O sensor da parede está sendo trocado; assim que ele voltar a reportar, percorra a linha de juntas com a câmera térmica e encontre o vazamento — ou libere a baía.',
+  'The colony rink has more grooves than ice. Book the resurfacer. Tobogganing practice starts again next month and the juniors keep catching their flippers in the ruts. Reserve the resurfacer for a quiet evening, close the rink for one session, and post the new ice rules before reopening.':
+      'A pista da colônia tem mais sulcos que gelo. Reserve a máquina. O treino de tobogã recomeça no mês que vem, e os juniores vivem prendendo as nadadeiras nos sulcos. Reserve a máquina para uma noite tranquila, feche a pista por uma sessão e publique as novas regras do gelo antes da reabertura.',
+  'Four degrees of drift is costing the habitat a third of its power. The tracking motor lost its calibration in the last dust storm and the batteries have dipped below reserve every night since. Recalibrate the tilt against the noon reference, verify the tracking curve over a full day, and log the recovered wattage.':
+      'Quatro graus de desvio custam ao habitat um terço da energia. O motor de rastreamento perdeu a calibração na última tempestade de poeira, e desde então as baterias caem abaixo da reserva toda noite. Recalibre a inclinação com a referência do meio-dia, verifique a curva de rastreamento ao longo de um dia inteiro e registre a potência recuperada.',
+  'Clean the filter housing and log the throughput afterwards. Routine service, but the last crew skipped the throughput log and Habitat Engineering had to guess the filter age. Do the full sequence this time: flush the loop, clean the housing, swap the pre-filter, and write the numbers down.':
+      'Limpe a caixa do filtro e registre a vazão depois. Manutenção de rotina — mas a última equipe pulou o registro de vazão, e a Engenharia do Habitat teve que adivinhar a idade do filtro. Desta vez, faça a sequência completa: lave o circuito, limpe a caixa, troque o pré-filtro e anote os números.',
+  'Pallet 14 left Europa and never reached the cold ring. The dock scanner shows it entering bay two at 04:12, then nothing — and the squid inside has a five-day cold rating that runs out on Thursday. Trace the scan trail, search both bays, and either find the pallet or file the loss report before the insurance window closes.':
+      'O palete 14 saiu de Europa e nunca chegou ao anel frio. O scanner da doca mostra a entrada dele na baía dois às 04:12, depois nada — e a lula lá dentro tem uma validade refrigerada de cinco dias que vence na quinta. Rastreie a trilha de escaneamento, vasculhe as duas baías e encontre o palete — ou abra o registro de perda antes que a janela do seguro feche.',
+  'One supplier for the whole colony is one storm away from trouble. Procurement wants a second source signed before the winter contracts renew. Write down the criteria that actually matter — delivery time, cold-chain rating, price per tonne — collect quotes from at least three candidates, order a sample crate from the best two, and put a recommendation in front of the council.':
+      'Um só fornecedor para toda a colônia está a uma tempestade do problema. O setor de Compras quer uma segunda fonte contratada antes da renovação dos contratos de inverno. Anote os critérios que importam de verdade — prazo de entrega, classificação da cadeia de frio, preço por tonelada —, colete cotações de pelo menos três candidatos, peça uma caixa de amostra aos dois melhores e apresente uma recomendação ao conselho.',
+  'The manifest and the dock disagree by one pod. Find out which. Twenty-three pods on paper, twenty-four on the dock — and launch clearance needs the two lists to match to the pod. Count what is actually standing there, reconcile against the manifest line by line, and send the corrected list to Europa before the shuttle is loaded.':
+      'O manifesto e a doca divergem em uma cápsula. Descubra qual. Vinte e três cápsulas no papel, vinte e quatro na doca — e a liberação de lançamento precisa que as duas listas batam cápsula por cápsula. Conte o que está de fato lá, reconcilie linha por linha com o manifesto e envie a lista corrigida para Europa antes de o ônibus espacial ser carregado.',
+  'Customs will not clear a pod whose seal certificate has expired. Eight pods run out of certificate next week and the seal supplier quotes ten days for delivery — the order is already five days late. Confirm the sizes against the pod register, place the rush order, and warn Logistics which pods will miss the next shuttle either way.':
+      'A alfândega não libera cápsula com certificado de selo vencido. Oito cápsulas ficam sem certificado na semana que vem, e o fornecedor de selos fala em dez dias de entrega — o pedido já está cinco dias atrasado. Confirme os tamanhos com o registro das cápsulas, faça o pedido urgente e avise a Logística quais cápsulas vão perder o próximo ônibus espacial de qualquer jeito.',
+  'File the seal certificates and the passenger question together. Europa customs reopens Monday, and they process bundled filings faster than loose paperwork. Have the certificate folder, the passenger ruling request, and the manifest copy ready in one envelope so the whole stack clears in a single visit.':
+      'Entregue os certificados dos selos junto com a questão dos passageiros. A alfândega de Europa reabre na segunda, e processos agrupados andam mais rápido que papelada solta. Deixe a pasta de certificados, o pedido de parecer sobre os passageiros e a cópia do manifesto prontos num único envelope, para a pilha inteira passar numa visita só.',
+  'Four sections, one photo, and no more than one fish pun. The colony reads it over breakfast, so keep it short and warm: what happened, what is coming, who hatched, and what the kitchen is planning. The launch update must match what Comms announces — check with them before printing.':
+      'Quatro seções, uma foto e no máximo um trocadilho com peixe. A colônia lê no café da manhã, então seja breve e caloroso: o que aconteceu, o que vem por aí, quem saiu do ovo e o que a cozinha está planejando. As novidades do lançamento precisam bater com o que a Comunicação anuncia — confirme com eles antes de imprimir.',
+  'Thursday lost two volunteers and the chicks noticed immediately. The rota needs two names per shift or the nursery closes early, and early closing means chicks at the launch briefing again. Ask the reserve list first, then post the open shifts on the colony board, and confirm the full week by Friday.':
+      'Quinta perdeu dois voluntários, e os filhotes notaram na hora. A escala precisa de dois nomes por turno, senão a creche fecha mais cedo — e fechar mais cedo significa filhotes no briefing de lançamento de novo. Consulte primeiro a lista de reservas, depois publique os turnos abertos no mural da colônia e confirme a semana completa até sexta.',
+  'The colony voted for the ice documentary. Book the dome. The distributor needs three days of notice for the screening licence, and the dome heater has to be off for two hours before anyone brings blankets. Book the licence, reserve the dome, and put the start time on the colony board.':
+      'A colônia votou no documentário sobre gelo. Reserve a cúpula. A distribuidora precisa de três dias de aviso para a licença de exibição, e o aquecedor da cúpula tem que ficar desligado por duas horas antes de alguém trazer cobertores. Garanta a licença, reserve a cúpula e publique o horário de início no mural da colônia.',
+  'Softer landings first, then a rematch against Bay C. The league stopped after two bruised tails and one very formal complaint. Pile fresh snow on the run-out, set a weight limit for the doubles sled, and only then challenge Bay C — they have been practising.':
+      'Primeiro pousos mais suaves, depois a revanche contra a Baía C. A liga parou depois de duas caudas machucadas e uma reclamação muito formal. Amontoe neve fresca na área de chegada, defina um limite de peso para o trenó duplo e só então desafie a Baía C — eles andam treinando.',
 };

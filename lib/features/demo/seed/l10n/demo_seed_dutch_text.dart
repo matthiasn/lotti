@@ -739,4 +739,115 @@ Voer de voedertest uit, voeg de telemetrieafbeelding toe en vraag daarna toestem
   "Zero-gravity flipper mobility": "Flippermobiliteit in gewichtloosheid",
   "Complete three gentle mobility sessions before the weekly cargo sprint.":
       "Doe drie rustige mobiliteitssessies vóór de wekelijkse vrachtsprint.",
+  // Demo-world expansion: checklist items and long task descriptions.
+  "List every launch-day announcement":
+      "Alle aankondigingen voor lanceerdag op een rij zetten",
+  "Name a speaker for each slot": "Voor elk slot een spreker aanwijzen",
+  "Write the fallback script for a hold":
+      "Reservescript voor een lanceerstop schrijven",
+  "Get sign-off from Flight Direction": "Akkoord van de vluchtleiding vragen",
+  "Pull the morning soundings": "Ochtendsonderingen ophalen",
+  "Compare the three forecast models": "De drie weermodellen vergelijken",
+  "Check the crosswind against the 18-knot limit":
+      "Zijwind controleren tegen de limiet van 18 knopen",
+  "Send the go or no-go call to Flight Direction":
+      "Go of no-go doorgeven aan de vluchtleiding",
+  "Remeasure all twelve flyers": "Alle twaalf vliegers opnieuw opmeten",
+  "Tag the three wide-flipper returns":
+      "De drie retourpakken met wijde flippers markeren",
+  "Book the courier pickup": "Koerier boeken voor het ophalen",
+  "Confirm the replacement delivery date":
+      "Leverdatum van de vervanging bevestigen",
+  "Chart the humidity readings by day":
+      "Luchtvochtigheidswaarden per dag uitzetten",
+  "Wait for the Bay C sensor swap": "Op de sensorwissel in ruim C wachten",
+  "Walk the seam line with the thermal camera":
+      "Naadlijn nalopen met de warmtebeeldcamera",
+  "Report the leak or clear the bay": "Lek melden of het ruim vrijgeven",
+  "Book the resurfacer for an evening slot":
+      "IJsmachine boeken voor een avondslot",
+  "Announce the one-session closure": "Sluiting voor één sessie aankondigen",
+  "Resurface and inspect the ice": "IJs prepareren en keuren",
+  "Post the new ice rules": "Nieuwe ijsregels ophangen",
+  "Recalibrate against the noon reference":
+      "Opnieuw kalibreren op de middagreferentie",
+  "Verify the tracking curve for a full day":
+      "Volgcurve een hele dag controleren",
+  "Log the recovered wattage": "Teruggewonnen vermogen noteren",
+  "Close the storm-damage ticket": "Stormschadeticket sluiten",
+  "Flush the recycler loop": "Kringloop van de recycler doorspoelen",
+  "Clean the filter housing": "Filterhuis schoonmaken",
+  "Swap the pre-filter": "Voorfilter vervangen",
+  "Log the throughput numbers": "Doorstroomcijfers noteren",
+  "Write down the selection criteria": "Selectiecriteria opschrijven",
+  "Collect quotes from three candidates":
+      "Offertes opvragen bij drie kandidaten",
+  "Order sample crates from the best two":
+      "Proefkisten bestellen bij de beste twee",
+  "Put a recommendation to the council": "Aanbeveling voorleggen aan de raad",
+  "Confirm seal sizes against the pod register":
+      "Zegelmaten vergelijken met het capsuleregister",
+  "Place the rush order": "Spoedbestelling plaatsen",
+  "Chase the delivery confirmation": "Achter de leverbevestiging aangaan",
+  "Warn Logistics about the affected pods":
+      "Logistiek waarschuwen voor de getroffen capsules",
+  "Assemble the certificate folder": "Certificatenmap samenstellen",
+  "Draft the passenger ruling request":
+      "Aanvraag over de passagiersvraag opstellen",
+  "Copy the current manifest": "Huidige vrachtlijst kopiëren",
+  "Book the Monday customs slot": "Douaneafspraak voor maandag boeken",
+  "Ask the reserve list for Thursday": "Reservelijst vragen voor donderdag",
+  "Post the open shifts on the colony board":
+      "Open diensten op het kolonieprikbord hangen",
+  "Confirm two names per shift": "Twee namen per dienst bevestigen",
+  "Publish the full week by Friday": "Volledige week vóór vrijdag publiceren",
+  "Request the screening licence": "Vertoningslicentie aanvragen",
+  "Reserve the dome for the evening": "Koepel reserveren voor de avond",
+  "Schedule the heater shutdown": "Uitschakelen van de verwarming inplannen",
+  "Post the start time on the colony board":
+      "Begintijd op het kolonieprikbord zetten",
+  "Pile fresh snow on the run-out": "Verse sneeuw in de uitloop scheppen",
+  "Set the doubles-sled weight limit":
+      "Gewichtslimiet voor de duoslee vaststellen",
+  "Draft the new season schedule": "Nieuw seizoensschema opstellen",
+  "Send the rematch challenge to Bay C":
+      "Revanche-uitdaging naar ruim C sturen",
+  "Agree who announces what on launch day, and in which order. Mission Control wants one voice on the public feed, the colony wants updates in plain penguin, and the sponsors expect their logo mentioned exactly twice. Draft the running order, name a speaker per slot, and get sign-off from Flight Direction before the rehearsal.":
+      "Spreek af wie op lanceerdag wat aankondigt, en in welke volgorde. Mission Control wil één stem op het publieke kanaal, de kolonie wil updates in klare pinguïntaal, en de sponsors verwachten hun logo precies twee keer. Stel het draaiboek op, wijs per slot een spreker aan en vraag vóór de repetitie het akkoord van de vluchtleiding.",
+  "Confirm the crosswind stays under limits for the launch slot. The ice pad tolerates 18 knots across the strip and the forecast has been flirting with 20 all week. Pull the morning soundings, compare the three forecast models, and give Flight Direction a clear go or no-go with a confidence note by 15:00.":
+      "Bevestig dat de zijwind in het lanceerraam onder de limiet blijft. Het ijsplatform verdraagt 18 knopen dwars op de baan, en de voorspelling flirt al de hele week met 20. Haal de ochtendsonderingen op, vergelijk de drie weermodellen en geef de vluchtleiding vóór 15:00 een duidelijke go of no-go met een betrouwbaarheidsnotitie.",
+  "Find every gap in the freezer logs before the sardines ship. Freezer 3 dropped out of range twice last month, and customs wants an unbroken cold-chain record for every pod on the manifest. Export the logs, flag every excursion with its duration, and sign the audit so the shipment can clear.":
+      "Vind elk gat in de vriezerlogs voordat de sardines verscheept worden. Vriezer 3 viel vorige maand twee keer buiten bereik, en de douane wil een ononderbroken koelketenregistratie voor elke capsule op de vrachtlijst. Exporteer de logs, markeer elke afwijking met de duur ervan en teken de audit af zodat de lading vrijkomt.",
+  "Walk the whole launch morning once, at full speed, with the crew. Every handoff gets timed, every call gets spoken out loud, and nobody pauses to explain — that is what the debrief is for. Reserve the pad for three hours and rehearse the abort call until it sounds boring.":
+      "Loop de hele lanceerochtend één keer op volle snelheid door met de ploeg. Elke overdracht wordt geklokt, elk commando wordt hardop uitgesproken, en niemand pauzeert om iets uit te leggen — daar is de debriefing voor. Reserveer het platform voor drie uur en oefen het afbreekcommando tot het saai klinkt.",
+  "Measure every flyer and send the three wide-flipper suits back. The supplier mixed up the flipper gauges, so half the squad is wearing suits that whistle above Mach 0.2. Remeasure all twelve flyers, tag the returns, and confirm the replacement delivery lands before the rehearsal.":
+      "Meet elke vlieger op en stuur de drie pakken met wijde flippers terug. De leverancier heeft de flippermaten verwisseld, dus de halve ploeg draagt pakken die fluiten boven Mach 0,2. Meet alle twaalf vliegers opnieuw op, markeer de retourzendingen en bevestig dat de vervanging vóór de repetitie aankomt.",
+  "Swap all four cartridges in Bay A before the CO2 alarm gets bored. The current set is 12 percent over its rated hours and the alarm has started clearing its throat at night. Vent the bay first, swap A1 through A4 in order, and log the new CO2 baseline so Habitat Engineering can close the maintenance ticket.":
+      "Vervang alle vier de patronen in ruim A voordat het CO2-alarm zich gaat vervelen. De huidige set zit 12 procent boven de voorgeschreven uren, en het alarm begint 's nachts al te kuchen. Ontlucht eerst het ruim, vervang A1 tot en met A4 op volgorde en noteer de nieuwe CO2-nulmeting zodat Habitattechniek het onderhoudsticket kan sluiten.",
+  "Nine points in three days is a leak, not weather. Bay C sits between the ice rink and the nursery, so a hidden leak there ends up in every feather on the station. The wall sensor is being swapped; once it reports again, walk the seam line with the thermal camera and either find the leak or clear the bay.":
+      "Negen punten in drie dagen is een lek, geen weer. Ruim C ligt tussen de ijsbaan en de kuikenopvang, dus een verborgen lek daar eindigt in elke veer op het station. De wandsensor wordt net vervangen; zodra die weer meldt, loop dan de naadlijn na met de warmtebeeldcamera en vind het lek — of geef het ruim vrij.",
+  "The colony rink has more grooves than ice. Book the resurfacer. Tobogganing practice starts again next month and the juniors keep catching their flippers in the ruts. Reserve the resurfacer for a quiet evening, close the rink for one session, and post the new ice rules before reopening.":
+      "De kolonie-ijsbaan heeft meer groeven dan ijs. Boek de ijsmachine. Volgende maand begint de sleetraining weer, en de junioren blijven met hun flippers in de groeven haken. Reserveer de ijsmachine voor een rustige avond, sluit de baan voor één sessie en hang de nieuwe ijsregels op vóór de heropening.",
+  "Four degrees of drift is costing the habitat a third of its power. The tracking motor lost its calibration in the last dust storm and the batteries have dipped below reserve every night since. Recalibrate the tilt against the noon reference, verify the tracking curve over a full day, and log the recovered wattage.":
+      "Vier graden afwijking kost het habitat een derde van zijn stroom. De volgmotor verloor zijn kalibratie in de laatste stofstorm, en de accu's zakken sindsdien elke nacht onder de reserve. Kalibreer de hoek opnieuw op de middagreferentie, controleer de volgcurve over een hele dag en noteer het teruggewonnen vermogen.",
+  "Clean the filter housing and log the throughput afterwards. Routine service, but the last crew skipped the throughput log and Habitat Engineering had to guess the filter age. Do the full sequence this time: flush the loop, clean the housing, swap the pre-filter, and write the numbers down.":
+      "Maak het filterhuis schoon en noteer daarna de doorstroom. Routineonderhoud — maar de vorige ploeg sloeg het doorstroomlog over, en Habitattechniek moest de leeftijd van het filter raden. Deze keer de volledige reeks: spoel de kringloop door, maak het huis schoon, vervang het voorfilter en schrijf de cijfers op.",
+  "Pallet 14 left Europa and never reached the cold ring. The dock scanner shows it entering bay two at 04:12, then nothing — and the squid inside has a five-day cold rating that runs out on Thursday. Trace the scan trail, search both bays, and either find the pallet or file the loss report before the insurance window closes.":
+      "Pallet 14 vertrok van Europa en bereikte de koelring nooit. De dokscanner toont dat hij om 04:12 ruim 2 binnenkwam, daarna niets — en de inktvis erin heeft een koelkeuring van vijf dagen die donderdag afloopt. Volg het scanspoor, doorzoek beide ruimen en vind de pallet — of dien de verliesmelding in voordat het verzekeringsvenster sluit.",
+  "One supplier for the whole colony is one storm away from trouble. Procurement wants a second source signed before the winter contracts renew. Write down the criteria that actually matter — delivery time, cold-chain rating, price per tonne — collect quotes from at least three candidates, order a sample crate from the best two, and put a recommendation in front of the council.":
+      "Eén leverancier voor de hele kolonie is één storm van problemen verwijderd. Inkoop wil een tweede bron onder contract voordat de wintercontracten verlengd worden. Schrijf de criteria op die er echt toe doen — levertijd, koelketenclassificatie, prijs per ton — vraag offertes op bij minstens drie kandidaten, bestel bij de beste twee een proefkist en leg de raad een aanbeveling voor.",
+  "The manifest and the dock disagree by one pod. Find out which. Twenty-three pods on paper, twenty-four on the dock — and launch clearance needs the two lists to match to the pod. Count what is actually standing there, reconcile against the manifest line by line, and send the corrected list to Europa before the shuttle is loaded.":
+      "Vrachtlijst en dok verschillen één capsule. Zoek uit welke. Drieëntwintig capsules op papier, vierentwintig op het dok — en de lanceervrijgave heeft twee lijsten nodig die tot op de capsule kloppen. Tel wat er werkelijk staat, stem regel voor regel af met de vrachtlijst en stuur de gecorrigeerde lijst naar Europa voordat de shuttle geladen wordt.",
+  "Customs will not clear a pod whose seal certificate has expired. Eight pods run out of certificate next week and the seal supplier quotes ten days for delivery — the order is already five days late. Confirm the sizes against the pod register, place the rush order, and warn Logistics which pods will miss the next shuttle either way.":
+      "De douane laat geen capsule door met een verlopen zegelcertificaat. Bij acht capsules verloopt het certificaat volgende week, en de zegelleverancier rekent tien dagen levertijd — de bestelling is al vijf dagen te laat. Controleer de maten tegen het capsuleregister, plaats de spoedbestelling en waarschuw Logistiek welke capsules de volgende shuttle hoe dan ook missen.",
+  "File the seal certificates and the passenger question together. Europa customs reopens Monday, and they process bundled filings faster than loose paperwork. Have the certificate folder, the passenger ruling request, and the manifest copy ready in one envelope so the whole stack clears in a single visit.":
+      "Dien de zegelcertificaten en de passagiersvraag samen in. De douane van Europa gaat maandag weer open, en gebundelde aanvragen verwerkt ze sneller dan losse papieren. Leg de certificatenmap, de aanvraag over de passagiersvraag en de kopie van de vrachtlijst klaar in één envelop, zodat de hele stapel in één bezoek doorkomt.",
+  "Four sections, one photo, and no more than one fish pun. The colony reads it over breakfast, so keep it short and warm: what happened, what is coming, who hatched, and what the kitchen is planning. The launch update must match what Comms announces — check with them before printing.":
+      "Vier secties, één foto en hooguit één viswoordgrap. De kolonie leest hem bij het ontbijt, dus houd het kort en warm: wat er gebeurd is, wat eraan komt, wie er uit het ei is gekropen en wat de keuken van plan is. De lanceerupdate moet kloppen met wat Comms aankondigt — vraag het daar na voordat je drukt.",
+  "Thursday lost two volunteers and the chicks noticed immediately. The rota needs two names per shift or the nursery closes early, and early closing means chicks at the launch briefing again. Ask the reserve list first, then post the open shifts on the colony board, and confirm the full week by Friday.":
+      "Donderdag verloor twee vrijwilligers en de kuikens hadden het meteen door. Het rooster heeft twee namen per dienst nodig, anders sluit de opvang vroeger — en vroeger sluiten betekent weer kuikens bij de lanceerbriefing. Vraag eerst de reservelijst, hang daarna de open diensten op het kolonieprikbord en bevestig de volledige week vóór vrijdag.",
+  "The colony voted for the ice documentary. Book the dome. The distributor needs three days of notice for the screening licence, and the dome heater has to be off for two hours before anyone brings blankets. Book the licence, reserve the dome, and put the start time on the colony board.":
+      "De kolonie stemde voor de ijsdocumentaire. Boek de koepel. De distributeur heeft drie dagen aanlooptijd nodig voor de vertoningslicentie, en de koepelverwarming moet twee uur uit zijn voordat iemand dekens meebrengt. Boek de licentie, reserveer de koepel en zet de begintijd op het kolonieprikbord.",
+  "Softer landings first, then a rematch against Bay C. The league stopped after two bruised tails and one very formal complaint. Pile fresh snow on the run-out, set a weight limit for the doubles sled, and only then challenge Bay C — they have been practising.":
+      "Eerst zachtere landingen, dan een revanche tegen ruim C. De competitie stopte na twee gekneusde staarten en één zeer formele klacht. Schep verse sneeuw in de uitloop, stel een gewichtslimiet in voor de duoslee en daag pas daarna ruim C uit — die hebben geoefend.",
 };
