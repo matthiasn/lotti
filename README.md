@@ -11,9 +11,10 @@ as separate facts. Tasks, planned blocks, tracked time, voice notes, journal
 entries, habits, and health data live in a local database on your own devices,
 looked after by a staff of personal AI assistants: persistent agents that read
 what you record, keep the mess summarised, and propose the next step — while
-every change waits for your approval. Your data is never stored on any server;
-sync is end-to-end encrypted and only ever relays ciphertext between your own
-devices, ephemerally. AI is optional, and when you do set it up, the route
+proposed changes wait for your approval. No server ever sees your data in
+readable form; sync is end-to-end encrypted, and the relay between your devices
+stores and forwards only ciphertext it cannot read. AI is optional, and when
+you do set it up, the route
 Lotti recommends is European infrastructure running open-weight models.
 
 macOS · Linux · Windows · iOS · Android. Flutter and Dart, GPL-3.0, in
@@ -59,9 +60,10 @@ storage layout rather than by careful prompting — see
   </picture>
 </p>
 
-**Your data never touches server-side storage.** Your logbook lives on your
-devices. Sync is end-to-end encrypted and ephemeral, so the relay only ever
-handles ciphertext in passing. No telemetry, and nothing uploaded to Lotti.
+**No server ever sees your data in the clear.** Your logbook lives on your
+devices. Sync is end-to-end encrypted, so the relay you choose stores and
+forwards only ciphertext it cannot read. No telemetry, and nothing uploaded
+to Lotti.
 
 **You choose the brain, and you can see what it cost.** Route each category of
 your life to the compute you are willing to stand behind: a local model for the
@@ -224,8 +226,8 @@ three. They are worth separating, because they fail in different ways.
 
 ### Your logbook is not collected
 
-Nothing you record is ever stored server-side. No telemetry, no analytics, and
-nothing uploaded to Lotti. Entries live in local SQLite on each of your
+Lotti collects nothing. No telemetry, no analytics, and nothing uploaded to
+Lotti. Entries live in local SQLite on each of your
 devices, with
 attachments beside it on the filesystem. That is structural rather than a policy
 commitment: there is nowhere for the data to go, and you can confirm it by
@@ -234,8 +236,8 @@ you configured them: ciphertext to the homeserver you chose, and inference
 requests to the provider you chose.
 
 *The other side of that:* there is no server-side backup and no account
-recovery, because nothing of yours is stored on a server. Sync is the
-redundancy story — but it is
+recovery, because no server ever holds a readable copy of your data. Sync is
+the redundancy story — but it is
 not automatic history. Pairing a device gives it everything written *from then
 on*; your existing settings and back catalogue arrive only when you run *Send
 settings* and *Send message history* from the device that already has them.

@@ -8,9 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 - **The store listing and README now say what Lotti actually is.** Both now
   introduce Lotti as a private logbook with a staff of personal AI assistants
-  — agents that read what you record and propose the next step, while every
-  change waits for your approval — and describe sync by its durable guarantee:
-  your data is never stored on any server.
+  — agents that read what you record and propose the next step, while proposed
+  changes wait for your approval — and describe sync by its durable guarantee:
+  no server ever sees your data in readable form.
 
 ## [1.0.4]
 ### Added

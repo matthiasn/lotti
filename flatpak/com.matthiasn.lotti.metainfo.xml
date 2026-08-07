@@ -7,13 +7,13 @@
   <summary>Private logbook with AI assistants</summary>
   <description>
     <p>
-      Lotti gives you a private logbook and a staff of personal AI assistants to go with it. Record your day the way it actually happens — tasks, tracked time, voice notes, transcriptions, journal entries, habits, and health data — and long-living agents read what you record, keep it summarised, remember the context you would otherwise lose, and propose the next step. Nothing changes without your approval: agents suggest, you decide.
+      Lotti gives you a private logbook and a staff of personal AI assistants to go with it. Record your day the way it actually happens — tasks, tracked time, voice notes, transcriptions, journal entries, habits, and health data — and long-living agents read what you record, keep it summarised, remember the context you would otherwise lose, and propose the next step. Agents suggest, you decide: every proposed change waits for your approval, with one small exception — an initial title or language for an otherwise empty task.
     </p>
     <p>
-      All of it happens on your own devices. Your data is never stored on any server: multi-device sync is end-to-end encrypted and relays only ciphertext, ephemerally, between devices you have verified. There is no telemetry. On capable hardware the AI models run locally too, so your data never has to leave the machine; on lighter hardware, or to save battery, you route inference — per life category — to a cloud provider you choose. Your logbook is an ordinary SQLite file on your own disk, readable without Lotti, so there is nothing to export and nothing to unlock.
+      All of it happens on your own devices. No server ever sees your data in readable form: multi-device sync is end-to-end encrypted, and the homeserver you choose stores and relays only ciphertext, with keys that reach only devices you have verified. There is no telemetry. On capable hardware the AI models run locally too, so your data never has to leave the machine; on lighter hardware, or to save battery, you route inference — per life category — to a cloud provider you choose. Your logbook is ordinary SQLite on your own disk with attachments in ordinary files beside it, readable without Lotti, so there is nothing to export and nothing to unlock.
     </p>
     <p>
-      Under the hood, sync runs over Matrix using Vodozemac (Rust) for Megolm crypto; the homeserver relays only ciphertext between your own devices, and encryption keys reach only devices you have verified.
+      Under the hood, sync runs over Matrix using Vodozemac (Rust) for Megolm crypto; how long encrypted history stays available for catching up new devices depends on the homeserver you run.
     </p>
     <p>Get support and join the Lotti community on Discord via the Contact link.</p>
     <p>What it does:</p>
@@ -42,7 +42,7 @@
   <releases>
     <release version="1.0.5" date="2026-08-07">
       <description>
-        <p>Changed: the store listing and README now say what Lotti actually is. Both introduce Lotti as a private logbook with a staff of personal AI assistants — agents that read what you record and propose the next step, while every change waits for your approval — and describe sync by its durable guarantee: your data is never stored on any server.</p>
+        <p>Changed: the store listing and README now say what Lotti actually is. Both introduce Lotti as a private logbook with a staff of personal AI assistants — agents that read what you record and propose the next step, while proposed changes wait for your approval — and describe sync by its durable guarantee: no server ever sees your data in readable form.</p>
       </description>
     </release>
     <release version="1.0.4" date="2026-08-05">
