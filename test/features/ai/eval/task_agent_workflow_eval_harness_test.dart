@@ -213,6 +213,20 @@ void main() {
         reason: 'the swap completion must still be outstanding',
       );
 
+      // The guard the model actually reads comes from the proposal ledger, not
+      // from getPendingChangeSets. If the seeded set does not reach the ledger
+      // the model is never told, and the scenario would be blaming models for
+      // something the app never showed them.
+      final ledger = await pending.agentRepository.getProposalLedger(
+        pending.agentId,
+        taskId: pending.world.taskId,
+      );
+      expect(
+        ledger.open.map((entry) => entry.toolName),
+        contains(TaskAgentToolNames.setTaskStatus),
+        reason: 'the queued proposal must reach the ledger the prompt renders',
+      );
+
       harness = await TaskAgentWorkflowEvalHarness.start(container: container);
     });
 

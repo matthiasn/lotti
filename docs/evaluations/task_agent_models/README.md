@@ -691,6 +691,27 @@ for no reason.
 This is the first scenario in the suite that discriminates, and it puts the
 dense 27B ahead of every frontier model tested.
 
+### Scenario 3 — `pendingProposal`
+
+The unblocking wake, but a previous wake already queued the status change and
+the user has not answered yet. Completing the swapped-cartridge item is still
+correct; re-proposing the status change asks the user the same question twice.
+
+| Model | Passed |
+| --- | ---: |
+| GLM 5.2 | 0 / 2 |
+| Kimi K3 | 0 / 2 |
+| Qwen3.5 397B | 0 / 2 |
+| Qwen3.6 27B | 0 / 2 |
+| DeepSeek V4 Flash 0731 | 0 / 2 |
+
+Ten runs out of ten re-proposed a change already awaiting the user. The queued
+proposal does reach `getProposalLedger` — the harness test asserts it, so this
+is not the fixture failing to seed. Either the open-proposal guard is not
+reaching the model with enough force, or models do not act on it. Both are ours
+to fix, not the model's, and this is the strongest argument in the suite for
+withholding a tool rather than instructing against its use.
+
 ### The fixture was wrong first
 
 The first `noOp` run failed on all five models, each proposing exactly
