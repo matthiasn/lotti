@@ -12,11 +12,11 @@ from urllib.parse import unquote
 
 import httpx
 import pytest
-
-from shared.matrix import SynapseAdminClient
 from src.core.exceptions import BundleNotFoundException, SynapseUnavailableException
 from src.services.retention_service import RetentionService
 from tests.conftest import ROOM_ID, seed_user, synapse_handler
+
+from shared.matrix import SynapseAdminClient
 
 pytestmark = pytest.mark.anyio
 
@@ -32,9 +32,7 @@ async def _redeemed_user(repository, **overrides):
     return await repository.mark_redeemed(user.bundle_id, datetime.now(timezone.utc))
 
 
-async def test_purge_always_sets_delete_local_events(
-    repository, credentials, tracking_transport
-):
+async def test_purge_always_sets_delete_local_events(repository, credentials, tracking_transport):
     """Sync rooms are non-federated, so every event is local.
 
     Without this flag Synapse reports success and frees nothing.
@@ -65,9 +63,7 @@ async def test_purge_cutoff_matches_the_retention_window(
     assert result["retention_days"] == 30
 
 
-async def test_default_retention_is_thirty_days(
-    repository, credentials, tracking_transport
-):
+async def test_default_retention_is_thirty_days(repository, credentials, tracking_transport):
     transport, _ = tracking_transport
     user = await _redeemed_user(repository)
     service = _service(repository, credentials, transport)
@@ -91,9 +87,7 @@ async def test_purge_records_the_run_for_later_status_polling(
     assert purges[0]["status"] == "active"
 
 
-async def test_refresh_purge_status_persists_completion(
-    repository, credentials, mock_transport
-):
+async def test_refresh_purge_status_persists_completion(repository, credentials, mock_transport):
     user = await _redeemed_user(repository)
     service = _service(repository, credentials, mock_transport)
     await service.purge_room(user.bundle_id)
@@ -105,9 +99,7 @@ async def test_refresh_purge_status_persists_completion(
 
 
 @pytest.mark.parametrize("days", [0, 1, 6, -30])
-async def test_retention_below_the_floor_is_rejected(
-    repository, credentials, mock_transport, days
-):
+async def test_retention_below_the_floor_is_rejected(repository, credentials, mock_transport, days):
     """Too short a window would outrun the backfill amnesty."""
     user = await _redeemed_user(repository)
     service = _service(repository, credentials, mock_transport)
@@ -116,9 +108,7 @@ async def test_retention_below_the_floor_is_rejected(
         await service.purge_room(user.bundle_id, retention_days=days)
 
 
-async def test_rejected_retention_starts_no_purge(
-    repository, credentials, tracking_transport
-):
+async def test_rejected_retention_starts_no_purge(repository, credentials, tracking_transport):
     transport, requests = tracking_transport
     user = await _redeemed_user(repository)
     service = _service(repository, credentials, transport)
@@ -129,9 +119,7 @@ async def test_rejected_retention_starts_no_purge(
     assert not [r for r in requests if "/purge_history/" in str(r.url)]
 
 
-async def test_purging_an_unknown_bundle_raises_not_found(
-    repository, credentials, mock_transport
-):
+async def test_purging_an_unknown_bundle_raises_not_found(repository, credentials, mock_transport):
     service = _service(repository, credentials, mock_transport)
 
     with pytest.raises(BundleNotFoundException):
@@ -227,9 +215,7 @@ async def test_purge_all_validates_retention_before_any_work(
 # -- media reclamation ------------------------------------------------------
 
 
-async def test_purge_deletes_media_and_reports_bytes_freed(
-    repository, credentials, mock_transport
-):
+async def test_purge_deletes_media_and_reports_bytes_freed(repository, credentials, mock_transport):
     """Purging history alone frees almost nothing; media is the disk."""
     user = await _redeemed_user(repository)
     service = _service(repository, credentials, mock_transport)
@@ -250,15 +236,11 @@ async def test_media_delete_uses_the_same_cutoff_as_the_history_purge(
 
     result = await service.purge_room(user.bundle_id, retention_days=30)
 
-    delete = next(
-        r for r in requests if r.method == "DELETE" and "/media" in str(r.url)
-    )
+    delete = next(r for r in requests if r.method == "DELETE" and "/media" in str(r.url))
     assert int(delete.url.params["before_ts"]) == result["purge_up_to_ts"]
 
 
-async def test_include_media_false_leaves_files_alone(
-    repository, credentials, tracking_transport
-):
+async def test_include_media_false_leaves_files_alone(repository, credentials, tracking_transport):
     """History-only mode must not touch the media store."""
     transport, requests = tracking_transport
     user = await _redeemed_user(repository)
@@ -271,9 +253,7 @@ async def test_include_media_false_leaves_files_alone(
     assert not [r for r in requests if r.method == "DELETE"]
 
 
-async def test_media_failure_after_history_purge_reports_partial_success(
-    repository, credentials
-):
+async def test_media_failure_after_history_purge_reports_partial_success(repository, credentials):
     """The operator must learn history went but media did not."""
     user = await _redeemed_user(repository)
 
@@ -346,9 +326,7 @@ async def test_a_pinned_window_still_wins_over_the_sweep_default(
     assert [r["retention_days"] for r in started] == [365]
 
 
-async def test_a_manual_purge_applies_the_users_own_window(
-    repository, credentials, mock_transport
-):
+async def test_a_manual_purge_applies_the_users_own_window(repository, credentials, mock_transport):
     """Manual and scheduled purges must agree, or "purge now" over-deletes.
 
     Falling back to the service default here would take 335 days more history
@@ -389,9 +367,7 @@ async def test_a_user_without_an_override_gets_the_service_default(
 # -- lifetime volume --------------------------------------------------------
 
 
-async def test_a_purge_records_what_it_reclaimed(
-    repository, credentials, mock_transport
-):
+async def test_a_purge_records_what_it_reclaimed(repository, credentials, mock_transport):
     """Once the files are gone this row is the only evidence they existed."""
     user = await _redeemed_user(repository, username="volume_user")
     service = _service(repository, credentials, mock_transport)
@@ -403,9 +379,7 @@ async def test_a_purge_records_what_it_reclaimed(
     assert run["media_deleted"] == result["media_deleted"] > 0
 
 
-async def test_reclaimed_volume_accumulates_across_purges(
-    repository, credentials, mock_transport
-):
+async def test_reclaimed_volume_accumulates_across_purges(repository, credentials, mock_transport):
     """Lifetime is a sum over runs, so a second sweep must add to the first."""
     user = await _redeemed_user(repository, username="repeat_user")
     service = _service(repository, credentials, mock_transport)

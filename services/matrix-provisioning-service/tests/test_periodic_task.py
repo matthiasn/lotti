@@ -10,7 +10,6 @@ from __future__ import annotations
 import asyncio
 
 import pytest
-
 from src.services.periodic_task import PeriodicTask
 
 pytestmark = pytest.mark.anyio

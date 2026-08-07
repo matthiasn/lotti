@@ -11,19 +11,17 @@ from datetime import datetime, timezone
 
 import httpx
 import pytest
-
-from shared.matrix import SynapseAdminClient
 from src.core.models import BundleEventType, BundleStatus
 from src.services.redemption_poller import RedemptionPoller
 from tests.conftest import seed_user, synapse_handler
+
+from shared.matrix import SynapseAdminClient
 
 pytestmark = pytest.mark.anyio
 
 
 def _poller(repository, credentials, transport) -> RedemptionPoller:
-    return RedemptionPoller(
-        repository, SynapseAdminClient(credentials, transport=transport)
-    )
+    return RedemptionPoller(repository, SynapseAdminClient(credentials, transport=transport))
 
 
 def _handler_with_devices(devices: list[dict]):
@@ -35,9 +33,7 @@ def _handler_with_devices(devices: list[dict]):
     return httpx.MockTransport(handler)
 
 
-async def test_last_seen_activity_marks_a_bundle_redeemed(
-    repository, credentials, mock_transport
-):
+async def test_last_seen_activity_marks_a_bundle_redeemed(repository, credentials, mock_transport):
     user = await seed_user(repository)
     poller = _poller(repository, credentials, mock_transport)
 
@@ -46,9 +42,7 @@ async def test_last_seen_activity_marks_a_bundle_redeemed(
     updated = await repository.get(user.bundle_id)
     assert advanced == 1
     assert updated.status is BundleStatus.REDEEMED
-    assert updated.first_login_at == datetime.fromtimestamp(
-        1700000000, tz=timezone.utc
-    )
+    assert updated.first_login_at == datetime.fromtimestamp(1700000000, tz=timezone.utc)
 
 
 async def test_a_device_without_last_seen_is_not_a_redemption(repository, credentials):
@@ -89,9 +83,7 @@ async def test_the_newest_device_timestamp_wins(repository, credentials):
     assert updated.last_seen_at == datetime.fromtimestamp(1700000000, tz=timezone.utc)
 
 
-async def test_polling_is_idempotent_across_sweeps(
-    repository, credentials, mock_transport
-):
+async def test_polling_is_idempotent_across_sweeps(repository, credentials, mock_transport):
     """Only the first sweep counts as an advance; the record must not churn."""
     await seed_user(repository)
     poller = _poller(repository, credentials, mock_transport)
@@ -138,9 +130,7 @@ async def test_a_poll_failure_is_recorded_on_the_record(repository, credentials)
     assert (await repository.get(user.bundle_id)).last_polled_at is not None
 
 
-async def test_rotated_bundles_are_never_polled_again(
-    repository, credentials, tracking_transport
-):
+async def test_rotated_bundles_are_never_polled_again(repository, credentials, tracking_transport):
     """Terminal records must not cost a Synapse round trip on every sweep."""
     transport, requests = tracking_transport
     user = await seed_user(repository)
@@ -164,9 +154,7 @@ async def test_empty_database_short_circuits(repository, credentials, tracking_t
 # -- background loop --------------------------------------------------------
 
 
-async def test_the_loop_keeps_sweeping_until_stopped(
-    repository, credentials, mock_transport
-):
+async def test_the_loop_keeps_sweeping_until_stopped(repository, credentials, mock_transport):
     poller = _poller(repository, credentials, mock_transport)
     poller._interval_seconds = 0
     sweeps, second_sweep = [], asyncio.Event()
@@ -186,9 +174,7 @@ async def test_the_loop_keeps_sweeping_until_stopped(
     assert len(sweeps) >= 2
 
 
-async def test_a_failing_sweep_does_not_kill_the_loop(
-    repository, credentials, mock_transport
-):
+async def test_a_failing_sweep_does_not_kill_the_loop(repository, credentials, mock_transport):
     """One bad sweep must not silently stop redemption detection forever."""
     poller = _poller(repository, credentials, mock_transport)
     poller._interval_seconds = 0

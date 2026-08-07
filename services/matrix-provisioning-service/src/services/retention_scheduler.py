@@ -59,9 +59,7 @@ class RetentionScheduler(PeriodicTask):
         Returns:
             A summary with the number of users purged and bytes reclaimed.
         """
-        results = await self._retention_service.purge_all(
-            include_media=self._include_media
-        )
+        results = await self._retention_service.purge_all(include_media=self._include_media)
         return {
             "purged": len(results),
             "bytes_freed": sum(r["bytes_freed"] for r in results),

@@ -37,4 +37,8 @@ USER appuser
 
 EXPOSE 8003
 
-CMD ["uvicorn", "src.main:app", "--host", "0.0.0.0", "--port", "8003"]
+# Shell form so ${PORT} is expanded at runtime. The exec form would pass the
+# literal string and the container would ignore the documented PORT setting,
+# binding 8003 whatever the deployment asked for. `exec` keeps uvicorn as PID 1
+# so it still receives SIGTERM on shutdown.
+CMD exec uvicorn src.main:app --host 0.0.0.0 --port "${PORT:-8003}"

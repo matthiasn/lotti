@@ -71,14 +71,10 @@ class RedemptionPoller(PeriodicTask):
                 await self._repository.touch_poll(user.bundle_id)
                 continue
 
-            last_seen = datetime.fromtimestamp(
-                activity.last_seen_ts / 1000, tz=timezone.utc
-            )
+            last_seen = datetime.fromtimestamp(activity.last_seen_ts / 1000, tz=timezone.utc)
             updated = await self._repository.mark_redeemed(user.bundle_id, last_seen)
             if user.first_login_at is None and updated.first_login_at is not None:
                 advanced += 1
-                logger.info(
-                    "Bundle %s redeemed by %s", user.bundle_id, user.user_mxid
-                )
+                logger.info("Bundle %s redeemed by %s", user.bundle_id, user.user_mxid)
 
         return advanced

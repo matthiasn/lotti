@@ -16,7 +16,7 @@ invalidates something in the original request.
 
 | Assumption in the brief | What the code actually does |
 |---|---|
-| Bundle is base64 `username:password` | Base64url (no padding) of a **JSON v2 object**: `{v, kind, homeServer, user, password, roomId}` (`provision.py:225-235`). Emitting `username:password` would be rejected by every shipped client. |
+| Bundle is base64 `username:password` | Base64url (no padding) of a **JSON v2 object**: `{v, kind, homeServer, user, password, roomId}` (`services/shared/matrix/bundle.py`). Emitting `username:password` would be rejected by every shipped client. |
 | Password rotation needs building | **Already implemented client-side** in Dart (`provisioning_controller.dart:142,209-223`), driven by `kind: "provisioned"`. |
 | Provisioning creates a user | It also creates an **encrypted, non-federated sync room** and writes three state events. The room ID is part of the bundle. |
 | CLI language unknown | Python 3.10+, `httpx` async, `pytest` + `MockTransport`, 29 existing tests. |
@@ -32,7 +32,7 @@ built around closing that observability gap rather than reimplementing rotation.
 The stack is not a green-field choice: `services/` already contains two FastAPI
 services and a React SPA. This follows them exactly.
 
-```
+```text
 services/
 ├── shared/
 │   ├── auth/                        # existing API-key middleware
@@ -100,7 +100,7 @@ acknowledgement before the bundle disappears.
 
 Rotation already works. What follows is how the server learns about it.
 
-```
+```text
 Admin                Service              Synapse             Lotti client
   │  POST /bundles      │                    │                     │
   ├────────────────────►│  create user ─────►│                     │
@@ -224,7 +224,7 @@ database — but it is a dependency. The 7-day floor keeps the window clear of t
 backfill amnesty period.
 
 **The gotcha that would have made this a silent no-op:** sync rooms are created
-with `m.federate: False` (`provision.py:166`), so every event in them is a
+with `m.federate: False` (`services/shared/matrix/provisioner.py`), so every event in them is a
 *local* event. Synapse's purge API defaults to `delete_local_events: false`,
 under which purging these rooms reports success and frees **nothing**. The admin
 client always sends the flag as true.
@@ -262,20 +262,35 @@ Do not evaluate it further. The comparison below is among the survivors.
 
 ### Comparison
 
+Fees verified **2026-08-07** against the primary sources linked below. Rates
+assume a **German GmbH billing EEA consumer cards**, which is the case at hand;
+UK and international cards cost more (see the Stripe pricing page).
+
 | | **Stripe Managed Payments** (ex-Lemon Squeezy) | **Paddle** | **Stripe (direct)** | **Polar** |
 |---|---|---|---|---|
 | Merchant of record | ✅ Yes | ✅ Yes | ❌ **No — you are** | ✅ Yes |
-| Headline fee | 5% + $0.50 | 5% + $0.50 | 2.9% + $0.30 | ~4% + $0.40 |
+| Headline fee | **3.5% on top of processing** | 5% + $0.50 | — (processing only) | ~4% + $0.40 |
+| Effective, EEA cards | **5.0% + €0.25** | 5% + ~€0.46 | 1.5% + €0.25 | ~4% + ~€0.37 |
 | EU VAT registration | Provider's | Provider's | **Yours** (OSS/IOSS) | Provider's |
 | VAT remittance & liability | Provider | Provider | **You** | Provider |
-| Tax coverage | US, EU, UK, AU + growing | Broadest; B2B reverse charge | Calculation only (Stripe Tax) | Good, narrower |
-| Subscriptions | ✅ | ✅ (most mature) | ✅ | ✅ |
+| Tax coverage | 80+ countries | Broadest; B2B reverse charge | Calculation only (Stripe Tax) | Good, narrower |
+| Subscriptions | ✅ (via Billing) | ✅ (most mature) | ✅ | ✅ |
 | Integration effort | Low | Low–medium | Medium (billing) + **high** (tax ops) | Low |
 | Risk | Stripe-backed | Established, independent | Stripe-backed | Smallest vendor |
 
-Lemon Squeezy was acquired by Stripe in July 2024; its technology is now the
-foundation of **Stripe Managed Payments**, at the same 5% + $0.50, with a
-migration path for existing Lemon Squeezy users.
+Sources: [Managed Payments pricing](https://support.stripe.com/questions/managed-payments-pricing)
+("The Managed Payments fee is in addition to the standard Stripe payment
+processing fees"), [Stripe DE pricing](https://stripe.com/de/pricing) (EEA
+standard cards 1,5 % + 0,25 €), [Managed Payments
+docs](https://docs.stripe.com/payments/managed-payments).
+
+⚠️ **Managed Payments is not priced like Lemon Squeezy was.** Lemon Squeezy was
+acquired by Stripe in July 2024 and its technology underpins Managed Payments,
+but the fee model changed: `5% + $0.50` was Lemon Squeezy's (and remains
+Paddle's) all-in MoR rate, whereas Managed Payments is a **3.5% surcharge added
+to** normal processing. Quoting the old number overstates the percentage and
+understates how much the fixed component matters. Note also that Managed
+Payments does not support Connect, Elements or third-party tax integrations.
 
 ### Recommendation: Stripe Managed Payments, billed annually
 
@@ -283,35 +298,52 @@ migration path for existing Lemon Squeezy users.
 payments from EU consumers. Doing that as your own merchant means OSS
 registration, per-country VAT rates, returns and audit exposure. Stripe direct
 is only cheaper if you value your compliance time at zero — for a community
-server this is the dominant cost, not the 2% fee delta.
+server this is the dominant cost, not the 3.5% surcharge.
 
-**Then bill annually, not monthly.** This matters more than the provider choice:
+**Then bill annually, not monthly.** This still matters more than the provider
+choice, at Stripe Managed Payments' 5.0% + €0.25 on EEA cards:
 
 | Contribution | Monthly billing | Annual billing |
 |---|---|---|
-| €3/mo | €0.65/mo fee → **21.7%** | €2.66/yr → **7.4%** |
-| €5/mo | €0.75/mo → **15.0%** | €3.50/yr → **5.8%** |
+| €3/mo | €0.40/mo → **13.3%** | €2.05/yr → **5.7%** |
+| €5/mo | €0.50/mo → **10.0%** | €3.25/yr → **5.4%** |
 
-The **$0.50 fixed component dominates** at community-contribution amounts.
-Monthly billing at €3 loses over a fifth of every payment to fees. Annual
-billing roughly cuts that by two thirds and reduces failed-payment churn.
-If monthly is a hard requirement, price at €5+ rather than €3.
+The **fixed €0.25 dominates** at community-contribution amounts: it alone is
+8.3% of a €3 payment, and it is charged twelve times a year on monthly billing
+versus once on annual. Annual billing more than halves the effective rate at €3
+and removes eleven failed-payment opportunities per user per year.
 
-Paddle is the reasonable alternative if you later need B2B reverse-charge
-invoicing. Polar is cheaper but the smallest vendor — and Digital River is
-exactly the lesson about vendor solvency risk.
+The correction also changes the *provider* ranking at these amounts: Managed
+Payments' €0.25 fixed component beats Paddle's $0.50, so at €3/month billed
+annually it costs ~5.7% against Paddle's ~6.3%. Paddle remains the reasonable
+alternative if you later need B2B reverse-charge invoicing. Polar is cheaper on
+paper but is the smallest vendor — and Digital River is exactly the lesson about
+vendor solvency risk.
 
 ---
 
 ## 8. Substack integration — feasibility
 
-**Substack has no public API and no webhooks.** That is the whole constraint.
+**Substack's public API deliberately excludes subscriber data.** That is the
+whole constraint — and it is a narrower, more durable statement than "there is
+no API".
+
+A [Developer API](https://substack.com/api-tos) does exist (terms updated
+8 January 2026), but its "Authorized Data" is public creator and publication
+information only: name, profile and publication URLs, social links, bestseller
+status, leaderboard rankings and **total subscriber count**. The terms state it
+"does not include private, restricted, or inferred information" and explicitly
+forbid using it to "derive, infer, or attempt to determine any non-public,
+sensitive, or personal attributes of a creator". Who your paying subscribers are,
+and whether a given one has lapsed, is exactly the data it will not give you.
+
+So a headline count could be read automatically; per-user payment status cannot.
 
 | Approach | Verdict |
 |---|---|
 | Manual CSV export → mark `paying` | ✅ **Viable now.** Subscribers page → ⋯ → Export. Fits the existing manual payment field exactly. |
 | Zapier bridge | ⚠️ Partial. Can trigger on new subscribers; not a reliable source of truth for *lapsed* paid status. |
-| Official API | ❌ Does not exist. |
+| Official API | ⚠️ Exists, but public data only — no subscriber list, no paid status, no webhooks. |
 | Scraping | ❌ Fragile and against terms. |
 
 ⚠️ **A trap worth knowing:** since Substack's August 2025 iOS in-app purchase

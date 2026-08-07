@@ -120,9 +120,7 @@ class SyncBundle:
         except ValueError as exc:
             raise BundleDecodeError(f"Unknown bundle kind {data.get('kind')!r}") from exc
 
-        missing = [
-            key for key in ("homeServer", "user", "password", "roomId") if not data.get(key)
-        ]
+        missing = [key for key in ("homeServer", "user", "password", "roomId") if not data.get(key)]
         if missing:
             raise BundleDecodeError(f"Bundle is missing required field(s): {', '.join(missing)}")
 

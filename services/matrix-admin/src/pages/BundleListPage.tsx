@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { errorMessage } from "../api/client";
 import { listBundles, updateBundle } from "../api/provisioning";
 import {
@@ -25,7 +25,13 @@ export default function BundleListPage() {
   const [error, setError] = useState<string | null>(null);
   const [expanded, setExpanded] = useState<string | null>(null);
 
+  // Bumped for every fetch. Paging or filtering quickly leaves earlier requests
+  // in flight, and without this the slower one lands last and overwrites the
+  // roster with a page the admin already navigated away from.
+  const requestId = useRef(0);
+
   const load = useCallback(async () => {
+    const id = ++requestId.current;
     setError(null);
     try {
       const data = await listBundles({
@@ -33,12 +39,14 @@ export default function BundleListPage() {
         page,
         pageSize: PAGE_SIZE,
       });
+      if (id !== requestId.current) return;
       setUsers(data.users);
       setTotal(data.total);
     } catch (caught) {
+      if (id !== requestId.current) return;
       setError(errorMessage(caught));
     } finally {
-      setLoading(false);
+      if (id === requestId.current) setLoading(false);
     }
   }, [statusFilter, page]);
 
@@ -61,7 +69,7 @@ export default function BundleListPage() {
   async function changePayment(user: ProvisionedUser, next: PaymentStatus) {
     // Optimistic: the roster is the admin's working surface and a round trip
     // per dropdown change makes bulk triage feel broken.
-    const previous = users;
+    const previous = user.payment_status;
     setUsers((current) =>
       current.map((candidate) =>
         candidate.bundle_id === user.bundle_id
@@ -72,7 +80,18 @@ export default function BundleListPage() {
     try {
       await updateBundle(user.bundle_id, { paymentStatus: next });
     } catch (caught) {
-      setUsers(previous);
+      // Revert this row only, and only if it still shows what we set. Restoring
+      // a whole snapshot of the roster would also undo any other change the
+      // admin made while this request was in flight — bulk triage means several
+      // are usually outstanding at once.
+      setUsers((current) =>
+        current.map((candidate) =>
+          candidate.bundle_id === user.bundle_id &&
+          candidate.payment_status === next
+            ? { ...candidate, payment_status: previous }
+            : candidate,
+        ),
+      );
       setError(errorMessage(caught));
     }
   }

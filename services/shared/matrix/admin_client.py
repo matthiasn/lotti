@@ -13,7 +13,6 @@ from dataclasses import dataclass
 import httpx
 
 from .core import (
-    AdminCredentials,
     ProvisioningError,
     SynapseClientBase,
     encode_mxid_for_path,
@@ -173,9 +172,7 @@ class SynapseAdminClient(SynapseClientBase):
         resp.raise_for_status()
         deactivated = bool(resp.json().get("deactivated", False))
 
-        resp = await client.get(
-            f"/_synapse/admin/v2/users/{encoded}/devices", headers=headers
-        )
+        resp = await client.get(f"/_synapse/admin/v2/users/{encoded}/devices", headers=headers)
         resp.raise_for_status()
         devices = resp.json().get("devices", [])
 
@@ -282,9 +279,7 @@ class SynapseAdminClient(SynapseClientBase):
             raise ProvisioningError(f"Synapse did not return a purge_id for room {room_id}")
         return PurgeHandle(purge_id=purge_id, room_id=room_id)
 
-    async def delete_user_media(
-        self, user_mxid: str, before_ts_ms: int
-    ) -> MediaDeletion:
+    async def delete_user_media(self, user_mxid: str, before_ts_ms: int) -> MediaDeletion:
         """Delete media uploaded by a user before a timestamp.
 
         This is what actually reclaims disk. ``purge_history`` removes events
@@ -334,8 +329,7 @@ class SynapseAdminClient(SynapseClientBase):
                 break
         else:
             logger.warning(
-                "Stopped deleting media for %s after %s batches; some files may "
-                "remain",
+                "Stopped deleting media for %s after %s batches; some files may remain",
                 user_mxid,
                 MAX_MEDIA_PAGES,
             )
@@ -347,8 +341,7 @@ class SynapseAdminClient(SynapseClientBase):
         client = self._client()
         headers = await self._auth_headers(client)
         resp = await client.get(
-            f"/_synapse/admin/v1/purge_history_status/"
-            f"{encode_room_id_for_path(purge_id)}",
+            f"/_synapse/admin/v1/purge_history_status/" f"{encode_room_id_for_path(purge_id)}",
             headers=headers,
         )
         resp.raise_for_status()
@@ -369,6 +362,4 @@ class SynapseAdminClient(SynapseClientBase):
             json={"deactivated": True},
         )
         if not resp.is_success:
-            raise ProvisioningError(
-                f"Failed to deactivate {user_mxid} (HTTP {resp.status_code})"
-            )
+            raise ProvisioningError(f"Failed to deactivate {user_mxid} (HTTP {resp.status_code})")

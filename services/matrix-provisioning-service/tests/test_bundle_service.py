@@ -7,10 +7,10 @@ live credential, which is the worst possible outcome.
 
 from __future__ import annotations
 
+import json
+
 import httpx
 import pytest
-
-from shared.matrix import SynapseAdminClient, SynapseProvisioner
 from src.core.exceptions import (
     SynapseUnavailableException,
     UsernameAlreadyProvisionedException,
@@ -23,6 +23,8 @@ from tests.conftest import (
     register_synapse_account,
     synapse_handler,
 )
+
+from shared.matrix import SynapseAdminClient, SynapseProvisioner
 
 pytestmark = pytest.mark.anyio
 
@@ -147,17 +149,20 @@ async def test_persistence_failure_deactivates_the_orphan_account(
     with pytest.raises(RuntimeError, match="disk full"):
         await service.create_bundle(CreateBundleRequest(username="lotti_user"))
 
+    # Matched on the body, not the method and path: creating the account is a
+    # PUT to the same endpoint, so a filter on those alone passes even when no
+    # rollback happens at all.
     deactivations = [
         r
         for r in requests
-        if r.method == "PUT" and "/_synapse/admin/v2/users/" in str(r.url)
+        if r.method == "PUT"
+        and "/_synapse/admin/v2/users/" in str(r.url)
+        and json.loads(r.content).get("deactivated") is True
     ]
     assert deactivations, "expected a rollback deactivation call"
 
 
-async def test_confirm_rotation_marks_the_record_rotated(
-    repository, credentials, mock_transport
-):
+async def test_confirm_rotation_marks_the_record_rotated(repository, credentials, mock_transport):
     service = _service(repository, credentials, mock_transport)
     response = await service.create_bundle(CreateBundleRequest(username="lotti_user"))
 
@@ -181,9 +186,7 @@ async def test_revoke_without_deactivation_leaves_the_account_alone(
     assert requests == []
 
 
-async def test_revoke_with_deactivation_calls_synapse(
-    repository, credentials, tracking_transport
-):
+async def test_revoke_with_deactivation_calls_synapse(repository, credentials, tracking_transport):
     transport, requests = tracking_transport
     service = _service(repository, credentials, transport)
     response = await service.create_bundle(CreateBundleRequest(username="lotti_user"))
@@ -194,15 +197,13 @@ async def test_revoke_with_deactivation_calls_synapse(
     )
 
     assert updated.status is BundleStatus.REVOKED
-    assert "account deactivated" in (await repository.get_events(response.user.bundle_id))[
-        -1
-    ].detail
+    assert (
+        "account deactivated" in (await repository.get_events(response.user.bundle_id))[-1].detail
+    )
     assert any(r.method == "PUT" for r in requests)
 
 
-async def test_revoking_an_unknown_bundle_raises_not_found(
-    repository, credentials, mock_transport
-):
+async def test_revoking_an_unknown_bundle_raises_not_found(repository, credentials, mock_transport):
     from src.core.exceptions import BundleNotFoundException
 
     service = _service(repository, credentials, mock_transport)
@@ -248,9 +249,7 @@ async def test_refuses_to_provision_over_an_account_that_already_exists(
         await service.create_bundle(CreateBundleRequest(username="squatter"))
 
 
-async def test_an_existing_account_is_never_written_to(
-    repository, credentials, tracking_transport
-):
+async def test_an_existing_account_is_never_written_to(repository, credentials, tracking_transport):
     """The point of the guard is that no write reaches the occupied account."""
     transport, requests = tracking_transport
     register_synapse_account(f"@squatter:{SERVER_NAME}")
@@ -263,9 +262,7 @@ async def test_an_existing_account_is_never_written_to(
     assert await repository.find_by_username("squatter") is None
 
 
-async def test_an_inconclusive_existence_check_does_not_provision(
-    repository, credentials
-):
+async def test_an_inconclusive_existence_check_does_not_provision(repository, credentials):
     """A 500 on the lookup must not be read as "the localpart is free"."""
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -281,9 +278,7 @@ async def test_an_inconclusive_existence_check_does_not_provision(
     assert await repository.find_by_username("lotti_user") is None
 
 
-async def test_an_unreachable_homeserver_surfaces_as_a_gateway_error(
-    repository, credentials
-):
+async def test_an_unreachable_homeserver_surfaces_as_a_gateway_error(repository, credentials):
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("connection refused")
 

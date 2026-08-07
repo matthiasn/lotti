@@ -10,19 +10,17 @@ import asyncio
 from datetime import datetime, timezone
 
 import pytest
-
-from shared.matrix import SynapseAdminClient
 from src.services.retention_scheduler import RetentionScheduler
 from src.services.retention_service import RetentionService
 from tests.conftest import seed_user
+
+from shared.matrix import SynapseAdminClient
 
 pytestmark = pytest.mark.anyio
 
 
 def _scheduler(repository, credentials, transport, **kwargs) -> RetentionScheduler:
-    service = RetentionService(
-        repository, SynapseAdminClient(credentials, transport=transport)
-    )
+    service = RetentionService(repository, SynapseAdminClient(credentials, transport=transport))
     return RetentionScheduler(service, startup_delay_seconds=0, **kwargs)
 
 
@@ -62,17 +60,14 @@ async def test_sweep_skips_unredeemed_and_revoked(repository, credentials):
     revoked = await _redeemed(repository, username="revoked_user")
     await repository.revoke(revoked.bundle_id, "under review")
 
-    summary = await _scheduler(
-        repository, credentials, (await _noop_transport())
-    ).sweep_once()
+    summary = await _scheduler(repository, credentials, (await _noop_transport())).sweep_once()
 
     assert summary["purged"] == 0
 
 
 async def _noop_transport():
-    from tests.conftest import synapse_handler
-
     import httpx
+    from tests.conftest import synapse_handler
 
     return httpx.MockTransport(synapse_handler)
 
@@ -112,23 +107,17 @@ async def test_a_user_below_the_floor_is_skipped_not_purged(
     assert not [r for r in requests if "/purge_history/" in str(r.url)]
 
 
-async def test_history_only_mode_deletes_no_media(
-    repository, credentials, tracking_transport
-):
+async def test_history_only_mode_deletes_no_media(repository, credentials, tracking_transport):
     transport, requests = tracking_transport
     await _redeemed(repository)
 
-    summary = await _scheduler(
-        repository, credentials, transport, include_media=False
-    ).sweep_once()
+    summary = await _scheduler(repository, credentials, transport, include_media=False).sweep_once()
 
     assert summary["media_deleted"] == 0
     assert not [r for r in requests if r.method == "DELETE"]
 
 
-async def test_the_loop_survives_a_failing_sweep(
-    repository, credentials, mock_transport
-):
+async def test_the_loop_survives_a_failing_sweep(repository, credentials, mock_transport):
     scheduler = _scheduler(repository, credentials, mock_transport)
     scheduler._interval_seconds = 0
     sweeps, second = [], asyncio.Event()
@@ -148,9 +137,7 @@ async def test_the_loop_survives_a_failing_sweep(
     assert len(sweeps) >= 2
 
 
-async def test_start_is_idempotent_and_stop_is_safe(
-    repository, credentials, mock_transport
-):
+async def test_start_is_idempotent_and_stop_is_safe(repository, credentials, mock_transport):
     scheduler = _scheduler(repository, credentials, mock_transport)
 
     scheduler.start()

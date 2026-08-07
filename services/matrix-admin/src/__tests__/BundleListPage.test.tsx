@@ -268,6 +268,98 @@ describe("BundleListPage", () => {
     );
   });
 
+  it("reverts only the row whose update failed", async () => {
+    // The failing request must be *in flight* while the second change is made:
+    // a snapshot taken before it captures the roster without that change, so
+    // restoring it wholesale silently undoes work the admin already did.
+    listBundles.mockResolvedValue({
+      users: [
+        user(),
+        user({
+          bundle_id: "b-2",
+          username: "other_user",
+          user_mxid: "@other_user:example.com",
+        }),
+      ],
+      total: 2,
+      page: 1,
+      page_size: 50,
+    });
+    let failFirst: () => void = () => {};
+    updateBundle.mockImplementation(
+      (id: string) =>
+        id === "b-1"
+          ? new Promise((_resolve, reject) => {
+              failFirst = () => reject(new Error("database is locked"));
+            })
+          : Promise.resolve(user({ bundle_id: "b-2", payment_status: "paying" })),
+    );
+    const person = userEvent.setup();
+    render(<BundleListPage />);
+    await screen.findByText("lotti_user");
+
+    await person.selectOptions(
+      screen.getByLabelText("Payment status for lotti_user"),
+      "paying",
+    );
+    await person.selectOptions(
+      screen.getByLabelText("Payment status for other_user"),
+      "paying",
+    );
+    failFirst();
+
+    await screen.findByRole("alert");
+    // The failed row rolls back...
+    expect(screen.getByLabelText("Payment status for lotti_user")).toHaveValue(
+      "unknown",
+    );
+    // ...and the change made while it was in flight survives.
+    expect(screen.getByLabelText("Payment status for other_user")).toHaveValue(
+      "paying",
+    );
+  });
+
+  it("ignores a slow response for a page the admin has left", async () => {
+    // Paging then filtering leaves the page-2 request outstanding. Without a
+    // guard it resolves last and replaces a roster already moved on from.
+    const page = (username: string, bundleId: string) => ({
+      users: [user({ bundle_id: bundleId, username })],
+      total: 73,
+      page: 1,
+      page_size: 50,
+    });
+    let releaseStale: () => void = () => {};
+
+    listBundles
+      .mockResolvedValueOnce(page("first_user", "b-1"))
+      .mockImplementationOnce(
+        () =>
+          new Promise((resolve) => {
+            releaseStale = () => resolve(page("stale_user", "b-old"));
+          }),
+      )
+      .mockResolvedValue(page("fresh_user", "b-new"));
+
+    const person = userEvent.setup();
+    render(<BundleListPage />);
+    await screen.findByText("first_user");
+
+    // Request 2 (page 2) is left pending...
+    await person.click(screen.getByRole("button", { name: "Next" }));
+    // ...while request 3 (filter change) resolves.
+    await person.selectOptions(
+      screen.getByLabelText("Filter by status"),
+      "rotated",
+    );
+    await screen.findByText("fresh_user");
+
+    releaseStale();
+    await waitFor(() => expect(listBundles).toHaveBeenCalledTimes(3));
+
+    expect(screen.getByText("fresh_user")).toBeInTheDocument();
+    expect(screen.queryByText("stale_user")).toBeNull();
+  });
+
   it("reports a load failure", async () => {
     listBundles.mockRejectedValue(new Error("service unavailable"));
 

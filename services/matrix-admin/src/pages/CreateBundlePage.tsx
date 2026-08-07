@@ -43,10 +43,18 @@ export default function CreateBundlePage() {
 
       <form onSubmit={handleSubmit}>
         <label htmlFor="username">Username</label>
+        {/* Mirrors USERNAME_PATTERN on the server. The server is still the
+            authority — this only turns a round trip that ends in a 422 into
+            immediate feedback, which matters because a rejected submit here
+            costs an admin the whole form. */}
         <input
           id="username"
           value={username}
           required
+          pattern="[a-z0-9][a-z0-9._\-]{2,63}"
+          minLength={3}
+          maxLength={64}
+          title="Lowercase letters, digits, dot, underscore or hyphen. 3–64 characters, starting with a letter or digit."
           onChange={(event) => setUsername(event.target.value)}
           placeholder="lotti_sync_user42"
           aria-describedby="username-help"

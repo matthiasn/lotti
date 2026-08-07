@@ -68,9 +68,7 @@ class AdminCredentials:
         if not self.homeserver:
             raise ValueError("homeserver is required")
         if not self.admin_token and not (self.admin_user and self.admin_password):
-            raise ValueError(
-                "Provide either admin_token, or both admin_user and admin_password"
-            )
+            raise ValueError("Provide either admin_token, or both admin_user and admin_password")
 
     @property
     def base_url(self) -> str:

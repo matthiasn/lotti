@@ -13,7 +13,12 @@ import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from ..core.constants import DEFAULT_DB_PATH, DEFAULT_EVENT_LIMIT, MAX_PAGE_SIZE
+from ..core.constants import (
+    BUSY_TIMEOUT_SECONDS,
+    DEFAULT_DB_PATH,
+    DEFAULT_EVENT_LIMIT,
+    MAX_PAGE_SIZE,
+)
 from ..core.exceptions import (
     BundleNotFoundException,
     InvalidBundleStateException,
@@ -114,7 +119,16 @@ class ProvisioningRepository:
         self._ensure_db()
 
     def _connect(self) -> sqlite3.Connection:
-        conn = sqlite3.connect(self.db_path)
+        # Three writers share this file — request threads, the redemption poller
+        # and the retention sweep — each opening its own connection. Under the
+        # default rollback journal a write blocks readers outright, and without
+        # a busy timeout a concurrent writer raises "database is locked"
+        # immediately, which surfaces to the admin as a 500. WAL lets readers
+        # continue during a write; the timeout makes writers queue instead of
+        # failing.
+        # `timeout` is sqlite3's busy timeout; setting the PRAGMA as well would
+        # be the same instruction twice.
+        conn = sqlite3.connect(self.db_path, timeout=BUSY_TIMEOUT_SECONDS)
         conn.row_factory = sqlite3.Row
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
@@ -124,9 +138,7 @@ class ProvisioningRepository:
     #: conditionally against the live schema.
     _MIGRATIONS: dict[str, dict[str, str]] = {
         "provisioned_users": {
-            "retention_days": (
-                "ALTER TABLE provisioned_users ADD COLUMN retention_days INTEGER"
-            ),
+            "retention_days": "ALTER TABLE provisioned_users ADD COLUMN retention_days INTEGER",
             "retention_exempt": (
                 "ALTER TABLE provisioned_users "
                 "ADD COLUMN retention_exempt INTEGER NOT NULL DEFAULT 0"
@@ -134,12 +146,10 @@ class ProvisioningRepository:
         },
         "purge_runs": {
             "media_deleted": (
-                "ALTER TABLE purge_runs "
-                "ADD COLUMN media_deleted INTEGER NOT NULL DEFAULT 0"
+                "ALTER TABLE purge_runs ADD COLUMN media_deleted INTEGER NOT NULL DEFAULT 0"
             ),
             "bytes_freed": (
-                "ALTER TABLE purge_runs "
-                "ADD COLUMN bytes_freed INTEGER NOT NULL DEFAULT 0"
+                "ALTER TABLE purge_runs ADD COLUMN bytes_freed INTEGER NOT NULL DEFAULT 0"
             ),
         },
     }
@@ -147,13 +157,16 @@ class ProvisioningRepository:
     def _ensure_db(self) -> None:
         """Create the database file and schema, and apply column migrations."""
         os.makedirs(os.path.dirname(self.db_path) or ".", exist_ok=True)
-        conn = sqlite3.connect(self.db_path)
+        conn = sqlite3.connect(self.db_path, timeout=BUSY_TIMEOUT_SECONDS)
         try:
+            # WAL is a property of the database file, not the connection, so it
+            # is set once here rather than on every connect. It is what lets a
+            # read proceed while the retention sweep is mid-write.
+            conn.execute("PRAGMA journal_mode = WAL")
             conn.executescript(_SCHEMA)
             for table, columns in self._MIGRATIONS.items():
                 existing = {
-                    row[1]
-                    for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
+                    row[1] for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
                 }
                 for column, ddl in columns.items():
                     if column not in existing:
@@ -303,13 +316,16 @@ class ProvisioningRepository:
             # Redemption is only ever an advance from UNUSED. Observing activity
             # on an already-rotated account must not walk the status backwards.
             first_login = _parse(row["first_login_at"]) or last_seen_at or _now()
-            new_status = (
-                BundleStatus.REDEEMED if current is BundleStatus.UNUSED else current
-            )
+            new_status = BundleStatus.REDEEMED if current is BundleStatus.UNUSED else current
 
+            # COALESCE, not a plain write: `last_seen_at` is optional, so a
+            # caller that omits it means "no new observation", not "forget the
+            # one we had". Overwriting with NULL would contradict the docstring
+            # and lose the only record of when the account was last active.
             conn.execute(
                 "UPDATE provisioned_users SET status = ?, first_login_at = ?, "
-                "last_seen_at = ?, last_polled_at = ? WHERE bundle_id = ?",
+                "last_seen_at = COALESCE(?, last_seen_at), last_polled_at = ? "
+                "WHERE bundle_id = ?",
                 (
                     new_status.value,
                     _iso(first_login),
@@ -473,10 +489,7 @@ class ProvisioningRepository:
                     f"{row['retention_days'] or 'default'} → {retention_days}d",
                 )
 
-            if (
-                retention_exempt is not None
-                and int(retention_exempt) != row["retention_exempt"]
-            ):
+            if retention_exempt is not None and int(retention_exempt) != row["retention_exempt"]:
                 conn.execute(
                     "UPDATE provisioned_users SET retention_exempt = ? WHERE bundle_id = ?",
                     (int(retention_exempt), bundle_id),
@@ -525,17 +538,13 @@ class ProvisioningRepository:
                 (_iso(_now()), bundle_id),
             )
             if detail and not self._repeats_last_failure(conn, bundle_id, detail):
-                self._record_event_sync(
-                    conn, bundle_id, BundleEventType.POLL_FAILED, detail
-                )
+                self._record_event_sync(conn, bundle_id, BundleEventType.POLL_FAILED, detail)
             conn.commit()
         finally:
             conn.close()
 
     @staticmethod
-    def _repeats_last_failure(
-        conn: sqlite3.Connection, bundle_id: str, detail: str
-    ) -> bool:
+    def _repeats_last_failure(conn: sqlite3.Connection, bundle_id: str, detail: str) -> bool:
         """Whether this failure is a repeat of the bundle's latest event.
 
         The poller retries every pollable bundle on a fixed interval forever, so
@@ -640,9 +649,7 @@ class ProvisioningRepository:
         payment_status: PaymentStatus | None = None,
     ) -> tuple[list[ProvisionedUser], int]:
         """List records newest first, optionally filtered."""
-        return await asyncio.to_thread(
-            self._list_sync, page, page_size, status, payment_status
-        )
+        return await asyncio.to_thread(self._list_sync, page, page_size, status, payment_status)
 
     def _list_pollable_sync(self, limit: int) -> list[ProvisionedUser]:
         conn = self._connect()
@@ -798,8 +805,7 @@ class ProvisioningRepository:
         conn = self._connect()
         try:
             conn.execute(
-                "UPDATE purge_runs SET media_deleted = ?, bytes_freed = ? "
-                "WHERE purge_id = ?",
+                "UPDATE purge_runs SET media_deleted = ?, bytes_freed = ? WHERE purge_id = ?",
                 (media_deleted, bytes_freed, purge_id),
             )
             conn.commit()

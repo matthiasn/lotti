@@ -11,10 +11,10 @@ from __future__ import annotations
 
 import httpx
 import pytest
+from tests.conftest import register_synapse_account, synapse_handler
 
 from shared.matrix import SynapseAdminClient
 from shared.matrix.admin_client import MEDIA_PAGE_SIZE
-from tests.conftest import register_synapse_account, synapse_handler
 
 pytestmark = pytest.mark.anyio
 
@@ -263,7 +263,10 @@ async def test_a_configured_admin_token_is_used_without_a_login_round_trip(
 
     transport, requests = tracking_transport
     client = SynapseAdminClient(
-        AdminCredentials(homeserver="https://matrix.example.com", admin_token="tok"),
+        AdminCredentials(
+            homeserver="https://matrix.example.com",
+            admin_token="tok",  # noqa: S106 - fixture credential for the mock homeserver
+        ),
         transport=transport,
     )
     register_synapse_account("@lotti_user:example.com")

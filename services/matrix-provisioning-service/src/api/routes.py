@@ -58,9 +58,7 @@ async def create_bundle(request: CreateBundleRequest) -> CreateBundleResponse:
     except UsernameAlreadyProvisionedException as exc:
         raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
     except SynapseUnavailableException as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
 
 @router.get("/bundles", response_model=ProvisionedUserListResponse, tags=["bundles"])
@@ -77,9 +75,7 @@ async def list_bundles(
         status=bundle_status,
         payment_status=payment_status,
     )
-    return ProvisionedUserListResponse(
-        users=users, total=total, page=page, page_size=page_size
-    )
+    return ProvisionedUserListResponse(users=users, total=total, page=page, page_size=page_size)
 
 
 @router.get("/bundles/{bundle_id}", response_model=ProvisionedUser, tags=["bundles"])
@@ -111,9 +107,7 @@ async def update_bundle(bundle_id: str, request: UpdateUserRequest) -> Provision
         ) from exc
 
 
-@router.get(
-    "/bundles/{bundle_id}/events", response_model=list[BundleEvent], tags=["bundles"]
-)
+@router.get("/bundles/{bundle_id}/events", response_model=list[BundleEvent], tags=["bundles"])
 async def get_bundle_events(
     bundle_id: str,
     limit: int = Query(
@@ -154,14 +148,10 @@ async def confirm_rotation(bundle_id: str) -> ProvisionedUser:
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Unknown bundle {bundle_id}"
         ) from exc
     except InvalidBundleStateException as exc:
-        raise HTTPException(
-            status_code=status.HTTP_409_CONFLICT, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_409_CONFLICT, detail=str(exc)) from exc
 
 
-@router.post(
-    "/bundles/{bundle_id}/revoke", response_model=ProvisionedUser, tags=["bundles"]
-)
+@router.post("/bundles/{bundle_id}/revoke", response_model=ProvisionedUser, tags=["bundles"])
 async def revoke_bundle(
     bundle_id: str,
     reason: str = Query("", description="Recorded in the audit trail"),
@@ -179,9 +169,7 @@ async def revoke_bundle(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Unknown bundle {bundle_id}"
         ) from exc
     except SynapseUnavailableException as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
 
 # ---------------------------------------------------------------------------
@@ -190,9 +178,7 @@ async def revoke_bundle(
 
 
 @router.get("/stats", response_model=StatsResponse, tags=["stats"])
-async def get_stats(
-    signup_history_days: int = Query(90, ge=1, le=730)
-) -> StatsResponse:
+async def get_stats(signup_history_days: int = Query(90, ge=1, le=730)) -> StatsResponse:
     """Aggregate counts for the admin dashboard."""
     return await container.get_repository().get_stats(signup_history_days)
 
@@ -257,9 +243,7 @@ async def get_usage(bundle_id: str) -> dict:
 @router.post("/bundles/{bundle_id}/purge", tags=["retention"])
 async def purge_room(
     bundle_id: str,
-    retention_days: int | None = Query(
-        None, description="Override the default retention window"
-    ),
+    retention_days: int | None = Query(None, description="Override the default retention window"),
     include_media: bool = Query(
         True, description="Also delete media files, which is what frees disk"
     ),
@@ -278,13 +262,9 @@ async def purge_room(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Unknown bundle {bundle_id}"
         ) from exc
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     except SynapseUnavailableException as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
 
 
 @router.post("/purges", tags=["retention"])
@@ -296,13 +276,9 @@ async def purge_all(
 ) -> dict:
     """Reclaim storage across every redeemed, non-revoked sync room."""
     try:
-        started = await container.get_retention_service().purge_all(
-            retention_days, include_media
-        )
+        started = await container.get_retention_service().purge_all(retention_days, include_media)
     except ValueError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(exc)) from exc
     return {"started": len(started), "purges": started}
 
 
@@ -318,7 +294,5 @@ async def get_purge_status(purge_id: str) -> dict:
     try:
         current = await container.get_retention_service().refresh_purge_status(purge_id)
     except SynapseUnavailableException as exc:
-        raise HTTPException(
-            status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)
-        ) from exc
+        raise HTTPException(status_code=status.HTTP_502_BAD_GATEWAY, detail=str(exc)) from exc
     return {"purge_id": purge_id, "status": current}

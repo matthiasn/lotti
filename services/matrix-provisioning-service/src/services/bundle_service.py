@@ -79,9 +79,7 @@ class BundleService:
         # CLI, or any ordinary Synapse user, have no row here. The provisioner
         # asks Synapse itself before creating, and raises below.
         if await self._repository.find_by_username(request.username) is not None:
-            raise UsernameAlreadyProvisionedException(
-                f"{request.username} is already provisioned"
-            )
+            raise UsernameAlreadyProvisionedException(f"{request.username} is already provisioned")
 
         try:
             result = await self._provisioner.provision(

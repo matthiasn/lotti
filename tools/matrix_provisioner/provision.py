@@ -102,12 +102,22 @@ async def provision(
     output_file = getattr(args, "output_file", None)
     if output_file:
         try:
-            with open(output_file, "w", encoding="utf-8") as fh:
+            # 0600 from the moment it exists. A plain open() applies the umask,
+            # usually landing on 0644, which leaves a live password readable by
+            # every local account — and on a shared admin box that is the whole
+            # point of writing to a file instead of stdout. O_CREAT does not
+            # change the mode of a file that already exists, so chmod covers the
+            # overwrite case too.
+            fd = os.open(
+                output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600
+            )
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
                 # codeql[py/clear-text-storage-sensitive-data]
                 fh.write(bundle_b64)
+            os.chmod(output_file, 0o600)
         except OSError as exc:
             raise OSError(f"Failed to write bundle to {output_file}: {exc}") from exc
-        log(f"Bundle written to {output_file}")
+        log(f"Bundle written to {output_file} (mode 0600)")
 
     if verbose:
         log("\n--- Decoded (for verification) ---")

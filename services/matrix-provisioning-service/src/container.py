@@ -73,9 +73,7 @@ class Container:
         return SynapseAdminClient(build_admin_credentials())
 
     def _create_bundle_service(self) -> BundleService:
-        return BundleService(
-            self.get_provisioner(), self.get_repository(), self.get_admin_client()
-        )
+        return BundleService(self.get_provisioner(), self.get_repository(), self.get_admin_client())
 
     def _create_redemption_poller(self) -> RedemptionPoller:
         return RedemptionPoller(
@@ -91,9 +89,7 @@ class Container:
         return RetentionService(
             self.get_repository(),
             self.get_admin_client(),
-            default_retention_days=int(
-                os.getenv("RETENTION_DAYS", str(DEFAULT_RETENTION_DAYS))
-            ),
+            default_retention_days=int(os.getenv("RETENTION_DAYS", str(DEFAULT_RETENTION_DAYS))),
         )
 
     def _create_retention_scheduler(self) -> RetentionScheduler:

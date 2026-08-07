@@ -158,9 +158,7 @@ class SynapseProvisioner(SynapseClientBase):
             httpx.HTTPStatusError: If the lookup fails for any other reason —
                 an inconclusive answer must not be read as "free".
         """
-        resp = await client.get(
-            f"/_synapse/admin/v2/users/{encoded_mxid}", headers=admin_headers
-        )
+        resp = await client.get(f"/_synapse/admin/v2/users/{encoded_mxid}", headers=admin_headers)
         if resp.status_code == httpx.codes.NOT_FOUND:
             return
         resp.raise_for_status()
@@ -198,8 +196,7 @@ class SynapseProvisioner(SynapseClientBase):
                 logger.warning(message)
         except httpx.RequestError as exc:
             message = (
-                f"could not deactivate orphan user {user_mxid}: {exc} "
-                f"— needs manual cleanup"
+                f"could not deactivate orphan user {user_mxid}: {exc} " f"— needs manual cleanup"
             )
             self._log(f"Warning: {message}")
             logger.warning(message)

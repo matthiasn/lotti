@@ -29,10 +29,9 @@ _SERVICE_DIR = Path(__file__).resolve().parents[1]
 if str(_SERVICE_DIR) not in sys.path:
     sys.path.insert(0, str(_SERVICE_DIR))
 
-from shared.matrix import AdminCredentials  # noqa: E402
 from src.services.provisioning_repository import ProvisioningRepository  # noqa: E402
 
-pytest_plugins = ["pytest_asyncio"]
+from shared.matrix import AdminCredentials  # noqa: E402
 
 ADMIN_MXID = "@admin:example.com"
 SERVER_NAME = "example.com"
@@ -80,9 +79,7 @@ def synapse_handler(request: httpx.Request) -> httpx.Response:
     path = unquote(request.url.path)
 
     if path == "/_matrix/client/v3/login":
-        return httpx.Response(
-            200, json={"access_token": "admin_tok", "user_id": ADMIN_MXID}
-        )
+        return httpx.Response(200, json={"access_token": "admin_tok", "user_id": ADMIN_MXID})
 
     if path == "/_matrix/client/v3/account/whoami":
         return httpx.Response(200, json={"user_id": ADMIN_MXID})
@@ -173,7 +170,9 @@ def tracking_transport():
 def credentials() -> AdminCredentials:
     """Password-login admin credentials pointed at the mock homeserver."""
     return AdminCredentials(
-        homeserver=HOMESERVER, admin_user="admin", admin_password="secret"
+        homeserver=HOMESERVER,
+        admin_user="admin",
+        admin_password="secret",  # noqa: S106 - fixture credential for the mock homeserver
     )
 
 
@@ -183,9 +182,7 @@ def repository(tmp_path) -> ProvisioningRepository:
     return ProvisioningRepository(str(tmp_path / "provisioning.db"))
 
 
-async def seed_user(
-    repository: ProvisioningRepository, username: str = "lotti_user", **overrides
-):
+async def seed_user(repository: ProvisioningRepository, username: str = "lotti_user", **overrides):
     """Insert a provisioned-user record with sensible defaults.
 
     Also registers the account on the mock homeserver: a stored record always

@@ -76,7 +76,7 @@ def test_decode_accepts_surrounding_whitespace():
 def test_redacted_dict_masks_only_the_password():
     redacted = _bundle().redacted_dict()
 
-    assert redacted["password"] == "<redacted>"
+    assert redacted["password"] == "<redacted>"  # noqa: S105 - test fixture
     assert redacted["user"] == "@lotti_user:example.com"
     assert redacted["roomId"] == "!room:example.com"
 

@@ -8,8 +8,6 @@ from __future__ import annotations
 
 import pytest
 from fastapi.testclient import TestClient
-
-from shared.matrix import SynapseAdminClient, SynapseProvisioner
 from src.container import (
     SERVICE_RETENTION_SERVICE,
     container,
@@ -22,6 +20,8 @@ from src.core.constants import (
 from src.main import app
 from src.services.bundle_service import BundleService
 from src.services.retention_service import RetentionService
+
+from shared.matrix import SynapseAdminClient, SynapseProvisioner
 
 ADMIN_AUTH = {"Authorization": "Bearer test-admin-key"}
 CLIENT_AUTH = {"Authorization": "Bearer test-key"}
@@ -36,12 +36,8 @@ def client(repository, credentials, mock_transport):
     container.reset()
     container.override(SERVICE_PROVISIONING_REPOSITORY, repository)
     container.override(SERVICE_ADMIN_CLIENT, admin_client)
-    container.override(
-        SERVICE_BUNDLE_SERVICE, BundleService(provisioner, repository, admin_client)
-    )
-    container.override(
-        SERVICE_RETENTION_SERVICE, RetentionService(repository, admin_client)
-    )
+    container.override(SERVICE_BUNDLE_SERVICE, BundleService(provisioner, repository, admin_client))
+    container.override(SERVICE_RETENTION_SERVICE, RetentionService(repository, admin_client))
     with TestClient(app) as test_client:
         yield test_client
     container.reset()
@@ -107,17 +103,13 @@ def test_created_bundle_is_a_decodable_v2_payload(client):
 def test_duplicate_username_conflicts(client):
     _create(client)
 
-    response = client.post(
-        "/api/v1/bundles", json={"username": "lotti_user"}, headers=ADMIN_AUTH
-    )
+    response = client.post("/api/v1/bundles", json={"username": "lotti_user"}, headers=ADMIN_AUTH)
 
     assert response.status_code == 409
 
 
 def test_invalid_username_is_a_validation_error(client):
-    response = client.post(
-        "/api/v1/bundles", json={"username": "no"}, headers=ADMIN_AUTH
-    )
+    response = client.post("/api/v1/bundles", json={"username": "no"}, headers=ADMIN_AUTH)
 
     assert response.status_code == 422
 
@@ -157,9 +149,7 @@ def test_events_endpoint_returns_the_audit_trail(client):
 
 
 def test_events_for_an_unknown_bundle_is_404(client):
-    assert (
-        client.get("/api/v1/bundles/nope/events", headers=ADMIN_AUTH).status_code == 404
-    )
+    assert client.get("/api/v1/bundles/nope/events", headers=ADMIN_AUTH).status_code == 404
 
 
 # -- updates ----------------------------------------------------------------
@@ -231,10 +221,7 @@ def test_rotation_callback_on_a_revoked_bundle_conflicts(client):
 
 
 def test_rotation_callback_for_an_unknown_bundle_is_404(client):
-    assert (
-        client.post(_rotated_url("nope"), headers=CLIENT_AUTH).status_code
-        == 404
-    )
+    assert client.post(_rotated_url("nope"), headers=CLIENT_AUTH).status_code == 404
 
 
 # -- revocation -------------------------------------------------------------
@@ -276,9 +263,7 @@ def test_usage_reports_live_synapse_figures(client):
 
 
 def test_usage_for_an_unknown_bundle_is_404(client):
-    assert (
-        client.get("/api/v1/bundles/nope/usage", headers=ADMIN_AUTH).status_code == 404
-    )
+    assert client.get("/api/v1/bundles/nope/usage", headers=ADMIN_AUTH).status_code == 404
 
 
 # -- retention --------------------------------------------------------------
@@ -288,9 +273,7 @@ def test_purge_starts_a_run(client):
     bundle_id = _create(client)["user"]["bundle_id"]
     client.post(_rotated_url(bundle_id), headers=CLIENT_AUTH)
 
-    body = client.post(
-        f"/api/v1/bundles/{bundle_id}/purge", headers=ADMIN_AUTH
-    ).json()
+    body = client.post(f"/api/v1/bundles/{bundle_id}/purge", headers=ADMIN_AUTH).json()
 
     assert body["purge_id"] == "purge_abc"
     assert body["retention_days"] == 30
@@ -307,9 +290,7 @@ def test_purge_below_the_floor_is_a_bad_request(client):
 
 
 def test_purge_for_an_unknown_bundle_is_404(client):
-    assert (
-        client.post("/api/v1/bundles/nope/purge", headers=ADMIN_AUTH).status_code == 404
-    )
+    assert client.post("/api/v1/bundles/nope/purge", headers=ADMIN_AUTH).status_code == 404
 
 
 def test_purge_status_endpoint_reports_completion(client):
@@ -341,7 +322,6 @@ def test_list_purges_is_empty_before_any_run(client):
 def broken_synapse_client(repository, credentials):
     """A client whose homeserver rejects everything after admin login."""
     import httpx
-
     from tests.conftest import synapse_handler
 
     def handler(request: httpx.Request) -> httpx.Response:
@@ -356,12 +336,8 @@ def broken_synapse_client(repository, credentials):
     container.reset()
     container.override(SERVICE_PROVISIONING_REPOSITORY, repository)
     container.override(SERVICE_ADMIN_CLIENT, admin_client)
-    container.override(
-        SERVICE_BUNDLE_SERVICE, BundleService(provisioner, repository, admin_client)
-    )
-    container.override(
-        SERVICE_RETENTION_SERVICE, RetentionService(repository, admin_client)
-    )
+    container.override(SERVICE_BUNDLE_SERVICE, BundleService(provisioner, repository, admin_client))
+    container.override(SERVICE_RETENTION_SERVICE, RetentionService(repository, admin_client))
     with TestClient(app) as test_client:
         yield test_client
     container.reset()
@@ -537,9 +513,7 @@ def test_usage_reports_the_window_that_will_actually_be_applied(client):
 def test_usage_reflects_a_per_user_override(client):
     created = _create(client)
     bundle_id = created["user"]["bundle_id"]
-    client.patch(
-        f"/api/v1/bundles/{bundle_id}", json={"retention_days": 365}, headers=ADMIN_AUTH
-    )
+    client.patch(f"/api/v1/bundles/{bundle_id}", json={"retention_days": 365}, headers=ADMIN_AUTH)
 
     body = client.get(f"/api/v1/bundles/{bundle_id}/usage", headers=ADMIN_AUTH).json()
 
@@ -551,9 +525,7 @@ def test_the_event_trail_honours_its_limit(client):
     created = _create(client)
     bundle_id = created["user"]["bundle_id"]
 
-    response = client.get(
-        f"/api/v1/bundles/{bundle_id}/events?limit=1", headers=ADMIN_AUTH
-    )
+    response = client.get(f"/api/v1/bundles/{bundle_id}/events?limit=1", headers=ADMIN_AUTH)
 
     assert response.status_code == 200
     assert len(response.json()) == 1
@@ -591,12 +563,8 @@ def test_usage_reports_lifetime_volume_across_purges(client):
     body = client.get(f"/api/v1/bundles/{bundle_id}/usage", headers=ADMIN_AUTH).json()
 
     assert body["purged_media_bytes"] > 0
-    assert body["lifetime_media_bytes"] == (
-        body["media_length_bytes"] + body["purged_media_bytes"]
-    )
-    assert body["lifetime_media_count"] == (
-        body["media_count"] + body["purged_media_count"]
-    )
+    assert body["lifetime_media_bytes"] == (body["media_length_bytes"] + body["purged_media_bytes"])
+    assert body["lifetime_media_count"] == (body["media_count"] + body["purged_media_count"])
 
 
 def test_usage_lifetime_equals_current_before_any_purge(client):

@@ -85,8 +85,7 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
 
         if self.valid_admin_keys:
             scope = (
-                "every path except "
-                f"{len(self.client_path_prefixes)} client prefix(es)"
+                "every path except " f"{len(self.client_path_prefixes)} client prefix(es)"
                 if self.admin_by_default
                 else f"{len(self.admin_path_prefixes)} path prefix(es)"
             )
@@ -94,6 +93,19 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
                 f"Admin API key authentication enabled with "
                 f"{len(self.valid_admin_keys)} key(s) for {scope}"
             )
+
+    @staticmethod
+    def _matches_prefix(path: str, prefix: str) -> bool:
+        """Whether ``path`` is ``prefix`` or sits beneath it.
+
+        A bare ``startswith`` would treat ``/api/v1/client-admin`` as being under
+        ``/api/v1/client``, which in admin-by-default mode is a privilege
+        downgrade: a future admin route whose name merely begins with a client
+        prefix would accept a plain API key. Matching on the segment boundary
+        makes the prefix mean a path segment rather than a string.
+        """
+        normalised = prefix.rstrip("/")
+        return path == normalised or path.startswith(f"{normalised}/")
 
     def _is_admin_path(self, path: str) -> bool:
         """Check if the path requires admin authentication.
@@ -105,9 +117,9 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         """
         if self.admin_by_default:
             return not any(
-                path.startswith(prefix) for prefix in self.client_path_prefixes
+                self._matches_prefix(path, prefix) for prefix in self.client_path_prefixes
             )
-        return any(path.startswith(prefix) for prefix in self.admin_path_prefixes)
+        return any(self._matches_prefix(path, prefix) for prefix in self.admin_path_prefixes)
 
     async def dispatch(self, request: Request, call_next: Callable):
         """
@@ -128,7 +140,9 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         auth_header = request.headers.get("Authorization", "")
 
         if not auth_header:
-            logger.warning(f"Authentication failed: Missing Authorization header (path: {request.url.path})")
+            logger.warning(
+                f"Authentication failed: Missing Authorization header (path: {request.url.path})"
+            )
             return _deny(
                 status.HTTP_401_UNAUTHORIZED,
                 "Missing Authorization header",
@@ -138,7 +152,9 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         # Parse Bearer token
         parts = auth_header.split()
         if len(parts) != 2 or parts[0].lower() != "bearer":
-            logger.warning(f"Authentication failed: Invalid Authorization header format (path: {request.url.path})")
+            logger.warning(
+                f"Authentication failed: Invalid Authorization header format (path: {request.url.path})"
+            )
             return _deny(
                 status.HTTP_401_UNAUTHORIZED,
                 "Invalid Authorization header format. Use: Bearer <api_key>",
@@ -150,13 +166,17 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         # Check admin paths first — require admin key
         if self._is_admin_path(request.url.path):
             if not self.valid_admin_keys:
-                logger.error(f"Authentication failed: Admin API keys not configured for admin path (path: {request.url.path})")
+                logger.error(
+                    f"Authentication failed: Admin API keys not configured for admin path (path: {request.url.path})"
+                )
                 return _deny(
                     status.HTTP_503_SERVICE_UNAVAILABLE,
                     "Admin API keys not configured for this endpoint",
                 )
             elif api_key not in self.valid_admin_keys:
-                logger.warning(f"Authentication failed: Admin API key required (path: {request.url.path})")
+                logger.warning(
+                    f"Authentication failed: Admin API key required (path: {request.url.path})"
+                )
                 return _deny(
                     status.HTTP_403_FORBIDDEN,
                     "Admin API key required for this endpoint",
@@ -167,7 +187,9 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
 
         # Check if regular API keys are configured
         if not self.valid_api_keys:
-            logger.error(f"Authentication failed: No API keys configured (path: {request.url.path})")
+            logger.error(
+                f"Authentication failed: No API keys configured (path: {request.url.path})"
+            )
             return _deny(
                 status.HTTP_503_SERVICE_UNAVAILABLE,
                 "Service not configured - no API keys available",

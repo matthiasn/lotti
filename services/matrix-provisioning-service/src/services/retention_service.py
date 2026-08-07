@@ -85,9 +85,7 @@ class RetentionService:
         # Explicitly `is None`, not falsy: a caller passing 0 means "purge
         # everything", which must hit the floor check rather than silently
         # falling back to the default window.
-        resolved = (
-            self._default_retention_days if retention_days is None else retention_days
-        )
+        resolved = self._default_retention_days if retention_days is None else retention_days
         if resolved < MIN_RETENTION_DAYS:
             raise ValueError(
                 f"Retention must be at least {MIN_RETENTION_DAYS} days "
@@ -158,17 +156,13 @@ class RetentionService:
                 f"Purge failed for room {user.room_id}: {exc}"
             ) from exc
 
-        await self._repository.record_purge(
-            handle.purge_id, bundle_id, user.room_id, cutoff_ms
-        )
+        await self._repository.record_purge(handle.purge_id, bundle_id, user.room_id, cutoff_ms)
 
         media_deleted = 0
         bytes_freed = 0
         if include_media:
             try:
-                deletion = await self._admin_client.delete_user_media(
-                    user.user_mxid, cutoff_ms
-                )
+                deletion = await self._admin_client.delete_user_media(user.user_mxid, cutoff_ms)
                 media_deleted = deletion.deleted_count
                 bytes_after = (
                     await self._admin_client.get_media_usage(user.user_mxid)
@@ -186,9 +180,7 @@ class RetentionService:
         # the only surviving evidence that the account ever held them. On a
         # journalling app that media is the data the user created, and nothing
         # can reconstruct the volume after the fact.
-        await self._repository.record_purge_volume(
-            handle.purge_id, media_deleted, bytes_freed
-        )
+        await self._repository.record_purge_volume(handle.purge_id, media_deleted, bytes_freed)
 
         logger.info(
             "Reclaimed for %s: purge %s, %s media file(s), %s bytes (%sd retention)",
@@ -252,9 +244,7 @@ class RetentionService:
             # `is None`, not falsy, for the same reason as _validate_retention:
             # a stored 0 must reach the floor check rather than quietly become
             # the fallback window.
-            window = (
-                fallback_days if user.retention_days is None else user.retention_days
-            )
+            window = fallback_days if user.retention_days is None else user.retention_days
             try:
                 window = self._validate_retention(window)
             except ValueError as exc:
@@ -262,9 +252,7 @@ class RetentionService:
                 skipped += 1
                 continue
             try:
-                started.append(
-                    await self.purge_room(user.bundle_id, window, include_media)
-                )
+                started.append(await self.purge_room(user.bundle_id, window, include_media))
             except SynapseUnavailableException as exc:
                 logger.warning("Skipping purge for %s: %s", user.user_mxid, exc)
                 skipped += 1

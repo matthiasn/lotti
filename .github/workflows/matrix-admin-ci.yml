@@ -55,6 +55,31 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r requirements-test.txt
+          pip install flake8 black isort ruff
+
+      # Same toolchain and settings as tools/matrix_provisioner, so the two
+      # Python trees in this repo are held to one standard.
+      - name: Lint (flake8 + isort + black)
+        working-directory: services
+        run: |
+          flake8 --config .flake8 matrix-provisioning-service/src \
+            matrix-provisioning-service/tests \
+            matrix-provisioning-service/conftest.py shared
+          isort --check-only --settings-path .isort.cfg \
+            matrix-provisioning-service/src matrix-provisioning-service/tests \
+            matrix-provisioning-service/conftest.py shared
+          black --check --line-length=100 matrix-provisioning-service/src \
+            matrix-provisioning-service/tests \
+            matrix-provisioning-service/conftest.py shared
+
+      # Narrow on purpose: Ruff is not this repo's configured linter, so only
+      # the checks flake8 does not cover are enforced — hardcoded credentials
+      # and unsorted `__all__`.
+      - name: Static analysis (ruff security subset)
+        working-directory: services
+        run: |
+          ruff check --select=S105,S106,S107,RUF022 \
+            matrix-provisioning-service/src matrix-provisioning-service/tests shared
 
       - name: Test
         # Covers the shared package too: the service imports it exactly as it

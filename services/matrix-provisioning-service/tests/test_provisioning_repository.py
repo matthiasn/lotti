@@ -10,7 +10,6 @@ import sqlite3
 from datetime import datetime, timedelta, timezone
 
 import pytest
-
 from src.core.exceptions import (
     BundleNotFoundException,
     InvalidBundleStateException,
@@ -158,9 +157,7 @@ async def test_unknown_bundle_raises_not_found(repository):
 async def test_update_records_payment_transition_detail(repository):
     user = await seed_user(repository)
 
-    updated = await repository.update(
-        user.bundle_id, payment_status=PaymentStatus.PAYING
-    )
+    updated = await repository.update(user.bundle_id, payment_status=PaymentStatus.PAYING)
 
     assert updated.payment_status is PaymentStatus.PAYING
     events = await repository.get_events(user.bundle_id)
@@ -388,8 +385,7 @@ async def test_schema_migrates_a_database_created_before_retention_columns(tmp_p
 
     db_path = tmp_path / "legacy.db"
     legacy = sqlite3.connect(db_path)
-    legacy.execute(
-        """
+    legacy.execute("""
         CREATE TABLE provisioned_users (
             bundle_id TEXT PRIMARY KEY, username TEXT NOT NULL,
             user_mxid TEXT NOT NULL, home_server TEXT NOT NULL,
@@ -399,8 +395,7 @@ async def test_schema_migrates_a_database_created_before_retention_columns(tmp_p
             first_login_at TEXT, rotated_at TEXT, revoked_at TEXT,
             last_seen_at TEXT, last_polled_at TEXT, notes TEXT NOT NULL DEFAULT ''
         )
-        """
-    )
+        """)
     legacy.execute(
         "INSERT INTO provisioned_users VALUES "
         "('b1','old','@old:s','h','s','!r',NULL,'unused','unknown','f',"
@@ -572,3 +567,50 @@ async def test_a_migrated_database_is_usable(tmp_path):
     await repository.record_purge_volume("p-1", media_deleted=4, bytes_freed=9000)
 
     assert await repository.purged_totals(user.bundle_id) == (9000, 4)
+
+
+async def test_a_poll_without_a_timestamp_keeps_the_last_seen_one(repository):
+    """`last_seen_at` is optional; omitting it means "no new observation".
+
+    Writing NULL over it would discard the only record of when the account was
+    last active, which the idempotency docstring explicitly promises to keep.
+    """
+    user = await seed_user(repository)
+    seen = datetime(2026, 3, 1, tzinfo=timezone.utc)
+    await repository.mark_redeemed(user.bundle_id, seen)
+
+    updated = await repository.mark_redeemed(user.bundle_id)
+
+    assert updated.last_seen_at == seen
+
+
+async def test_a_newer_timestamp_still_replaces_the_stored_one(repository):
+    user = await seed_user(repository)
+    await repository.mark_redeemed(user.bundle_id, datetime(2026, 3, 1, tzinfo=timezone.utc))
+    later = datetime(2026, 4, 1, tzinfo=timezone.utc)
+
+    updated = await repository.mark_redeemed(user.bundle_id, later)
+
+    assert updated.last_seen_at == later
+
+
+async def test_the_database_runs_in_wal_mode(repository):
+    """Three writers share this file; the default journal blocks readers."""
+    conn = sqlite3.connect(repository.db_path)
+    try:
+        mode = conn.execute("PRAGMA journal_mode").fetchone()[0]
+    finally:
+        conn.close()
+
+    assert mode.lower() == "wal"
+
+
+async def test_connections_wait_for_a_lock_rather_than_failing(repository):
+    """Without a busy timeout a concurrent writer 500s instead of queueing."""
+    conn = repository._connect()
+    try:
+        timeout_ms = conn.execute("PRAGMA busy_timeout").fetchone()[0]
+    finally:
+        conn.close()
+
+    assert timeout_ms >= 1000

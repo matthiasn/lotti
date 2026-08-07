@@ -13,6 +13,12 @@ SERVICE_RETENTION_SCHEDULER = "retention_scheduler"
 # `data/` directory mounted as a volume in Docker.
 DEFAULT_DB_PATH = "data/provisioning.db"
 
+# How long a writer waits for the lock before giving up. Generous because the
+# competing writes are a retention sweep and a polling batch, both of which run
+# unattended: queueing behind one for a few seconds is always better than
+# failing an admin's request with "database is locked".
+BUSY_TIMEOUT_SECONDS = 15.0
+
 # Redemption polling
 DEFAULT_POLL_INTERVAL_SECONDS = 300
 DEFAULT_POLL_BATCH_SIZE = 50

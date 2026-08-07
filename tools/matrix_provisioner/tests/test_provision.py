@@ -2,6 +2,7 @@
 
 import base64
 import json
+import stat
 from urllib.parse import unquote
 
 import httpx
@@ -574,3 +575,27 @@ async def test_an_unreachable_homeserver_during_rollback_is_logged(caplog):
 
     assert "connection reset" in caplog.text
     assert "needs manual cleanup" in caplog.text
+
+
+@pytest.mark.anyio
+async def test_the_bundle_file_is_not_world_readable(mock_transport, tmp_path):
+    """It holds a live password; the default umask would make it 0644."""
+    out = tmp_path / "bundle.txt"
+
+    await provision(make_args(output_file=str(out)), transport=mock_transport)
+
+    assert stat.S_IMODE(out.stat().st_mode) == 0o600
+
+
+@pytest.mark.anyio
+async def test_overwriting_an_existing_bundle_file_tightens_its_mode(
+    mock_transport, tmp_path
+):
+    """O_CREAT leaves an existing file's mode alone, so the chmod matters."""
+    out = tmp_path / "bundle.txt"
+    out.write_text("stale")
+    out.chmod(0o644)
+
+    await provision(make_args(output_file=str(out)), transport=mock_transport)
+
+    assert stat.S_IMODE(out.stat().st_mode) == 0o600

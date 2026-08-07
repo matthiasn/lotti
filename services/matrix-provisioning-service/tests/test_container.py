@@ -7,13 +7,13 @@ environment must never silently win over a configured admin token.
 from __future__ import annotations
 
 import pytest
-
-from shared.matrix import SynapseAdminClient, SynapseProvisioner
 from src.container import Container, build_admin_credentials
 from src.services.bundle_service import BundleService
 from src.services.provisioning_repository import ProvisioningRepository
 from src.services.redemption_poller import RedemptionPoller
 from src.services.retention_service import RetentionService
+
+from shared.matrix import SynapseAdminClient, SynapseProvisioner
 
 
 @pytest.fixture
@@ -33,7 +33,7 @@ def test_token_takes_precedence_over_password(env):
 
     credentials = build_admin_credentials()
 
-    assert credentials.admin_token == "syt_admin_token"
+    assert credentials.admin_token == "syt_admin_token"  # noqa: S105 - test fixture
 
 
 def test_password_login_is_the_fallback(env):
@@ -50,7 +50,7 @@ def test_blank_token_falls_back_rather_than_authenticating_with_empty_string(env
     credentials = build_admin_credentials()
 
     assert credentials.admin_token is None
-    assert credentials.admin_password == "secret"
+    assert credentials.admin_password == "secret"  # noqa: S105 - test fixture
 
 
 def test_missing_credentials_fail_fast(env):
