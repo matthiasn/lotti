@@ -318,9 +318,12 @@ td small {
   font-size: 11px;
 }
 
-/* Status and payment columns hold pills that must not wrap mid-label. */
-td:nth-child(2),
-td:last-child {
+/* Status and payment columns hold pills that must not wrap mid-label.
+   Scoped away from .detail-row, whose single colSpan cell is also a
+   :last-child — nowrap there stopped the panel's prose from wrapping and
+   pushed it out of the card. */
+tr:not(.detail-row) > td:nth-child(2),
+tr:not(.detail-row) > td:last-child {
   white-space: nowrap;
 }
 
@@ -511,6 +514,10 @@ td:last-child {
   padding: 20px 12px;
 }
 
+.storage-panel {
+  min-width: 0;
+}
+
 .storage-panel .stat-grid--compact {
   grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
   gap: 10px;
@@ -537,7 +544,7 @@ td:last-child {
 }
 
 .purge-row input[type="number"] {
-  width: 5.5rem;
+  width: 6rem;
   padding: 6px 10px;
 }
 
@@ -545,6 +552,8 @@ td:last-child {
   margin: 12px 0 0;
   max-width: 62ch;
   line-height: 1.55;
+  white-space: normal;
+  overflow-wrap: anywhere;
 }
 
 .purge-note {
@@ -583,7 +592,9 @@ td:last-child {
 }
 
 .policy-row input[type="number"] {
-  width: 5.5rem;
+  /* Wide enough for the "default" placeholder plus the native spinner, which
+     was clipping it to "defaul". */
+  width: 8rem;
   padding: 6px 10px;
 }
 
