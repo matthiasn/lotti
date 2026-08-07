@@ -10,7 +10,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   introduce Lotti as a private logbook with a staff of personal AI assistants
   — agents that read what you record and propose the next step, while proposed
   changes wait for your approval — and describe sync by its durable guarantee:
-  no server ever sees your data in readable form.
+  no server ever holds your data in readable form.
 
 ## [1.0.4]
 ### Added
