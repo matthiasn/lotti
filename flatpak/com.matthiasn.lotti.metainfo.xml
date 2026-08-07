@@ -4,13 +4,16 @@
   <metadata_license>CC-BY-SA-4.0</metadata_license>
   <project_license>GPL-3.0-only</project_license>
   <name>Lotti</name>
-  <summary>Open-source private logbook with a local agentic layer</summary>
+  <summary>Private logbook with AI assistants</summary>
   <description>
     <p>
-      Lotti is an open-source personal logbook — tasks, time recordings, voice notes, transcriptions, journal entries, habits, and health data — paired with an agentic layer of long-living AI agents that observe, suggest, summarise, and nudge. The agents run on your machine. With a powerful enough device, the model they call can run locally too — meaning your data never has to leave the device at all. On lighter hardware, or when you need to save battery, you keep the same agentic experience and route inference to a cloud provider you choose, on a per-category basis.
+      Lotti gives you a private logbook and a staff of personal AI assistants to go with it. Record your day the way it actually happens — tasks, tracked time, voice notes, transcriptions, journal entries, habits, and health data — and long-living agents read what you record, keep it summarised, remember the context you would otherwise lose, and propose the next step. Nothing changes without your approval: agents suggest, you decide.
     </p>
     <p>
-      No accounts, no telemetry, no cloud storage. End-to-end encrypted multi-device sync runs over Matrix using Vodozemac (Rust) for Megolm crypto; the homeserver you bring relays only ciphertext between your own devices, and encryption keys reach only devices you have verified. Your logbook is an ordinary SQLite file on your own disk, readable without Lotti, so there is nothing to export and nothing to unlock.
+      All of it happens on your own devices. Your data is never stored on any server: multi-device sync is end-to-end encrypted and relays only ciphertext, ephemerally, between devices you have verified. There is no telemetry. On capable hardware the AI models run locally too, so your data never has to leave the machine; on lighter hardware, or to save battery, you route inference — per life category — to a cloud provider you choose. Your logbook is an ordinary SQLite file on your own disk, readable without Lotti, so there is nothing to export and nothing to unlock.
+    </p>
+    <p>
+      Under the hood, sync runs over Matrix using Vodozemac (Rust) for Megolm crypto; the homeserver relays only ciphertext between your own devices, and encryption keys reach only devices you have verified.
     </p>
     <p>Get support and join the Lotti community on Discord via the Contact link.</p>
     <p>What it does:</p>
