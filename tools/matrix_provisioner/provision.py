@@ -108,9 +108,7 @@ async def provision(
             # point of writing to a file instead of stdout. O_CREAT does not
             # change the mode of a file that already exists, so chmod covers the
             # overwrite case too.
-            fd = os.open(
-                output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600
-            )
+            fd = os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
             with os.fdopen(fd, "w", encoding="utf-8") as fh:
                 # codeql[py/clear-text-storage-sensitive-data]
                 fh.write(bundle_b64)

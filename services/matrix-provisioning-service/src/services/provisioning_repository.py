@@ -18,6 +18,7 @@ from ..core.constants import (
     DEFAULT_DB_PATH,
     DEFAULT_EVENT_LIMIT,
     MAX_PAGE_SIZE,
+    PROVISIONING_CLAIM_TTL_SECONDS,
 )
 from ..core.exceptions import (
     BundleNotFoundException,
@@ -96,6 +97,19 @@ CREATE TABLE IF NOT EXISTS purge_runs (
 );
 
 CREATE INDEX IF NOT EXISTS idx_purges_bundle ON purge_runs (bundle_id, started_at);
+
+-- Held for the duration of a provisioning run, and only then. The Synapse
+-- existence check and the account creation are two separate calls, and
+-- `PUT /_synapse/admin/v2/users/{mxid}` is an upsert: without a claim, two
+-- concurrent requests for the same localpart both see 404 and the second
+-- overwrites the account the first just made, handing out a bundle whose
+-- password no longer works. The primary key is the lock — SQLite serialises the
+-- insert, so exactly one caller can hold a name at a time, across processes as
+-- well as within one.
+CREATE TABLE IF NOT EXISTS provisioning_claims (
+    username    TEXT PRIMARY KEY,
+    claimed_at  TEXT NOT NULL
+);
 """
 
 
@@ -573,6 +587,63 @@ class ProvisioningRepository:
         await asyncio.to_thread(self._touch_poll_sync, bundle_id, failure_detail)
 
     # -- reads --------------------------------------------------------------
+
+    def _claim_username_sync(self, username: str, ttl_seconds: float) -> bool:
+        conn = self._connect()
+        try:
+            now = _now()
+            try:
+                conn.execute(
+                    "INSERT INTO provisioning_claims (username, claimed_at) VALUES (?, ?)",
+                    (username, _iso(now)),
+                )
+                conn.commit()
+                return True
+            except sqlite3.IntegrityError:
+                pass
+
+            # Someone holds it. A claim only blocks while it is fresh: a process
+            # killed mid-provision would otherwise lock the name forever, with
+            # no way to release it short of editing the database. The UPDATE is
+            # conditional on the age, so the takeover is itself atomic.
+            cutoff = _iso(now - timedelta(seconds=ttl_seconds))
+            cursor = conn.execute(
+                "UPDATE provisioning_claims SET claimed_at = ? "
+                "WHERE username = ? AND claimed_at < ?",
+                (_iso(now), username, cutoff),
+            )
+            conn.commit()
+            if cursor.rowcount:
+                logger.warning(
+                    "Took over a stale provisioning claim for %s; a previous run "
+                    "may have died partway",
+                    username,
+                )
+            return cursor.rowcount > 0
+        finally:
+            conn.close()
+
+    async def claim_username(
+        self, username: str, ttl_seconds: float = PROVISIONING_CLAIM_TTL_SECONDS
+    ) -> bool:
+        """Try to take the exclusive right to provision ``username``.
+
+        Returns:
+            True if the claim was taken, False if another run holds a fresh one.
+        """
+        return await asyncio.to_thread(self._claim_username_sync, username, ttl_seconds)
+
+    def _release_username_sync(self, username: str) -> None:
+        conn = self._connect()
+        try:
+            conn.execute("DELETE FROM provisioning_claims WHERE username = ?", (username,))
+            conn.commit()
+        finally:
+            conn.close()
+
+    async def release_username(self, username: str) -> None:
+        """Release a provisioning claim. Safe to call when none is held."""
+        await asyncio.to_thread(self._release_username_sync, username)
 
     def _get_sync(self, bundle_id: str) -> ProvisionedUser | None:
         conn = self._connect()

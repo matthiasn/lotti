@@ -614,3 +614,44 @@ async def test_connections_wait_for_a_lock_rather_than_failing(repository):
         conn.close()
 
     assert timeout_ms >= 1000
+
+
+# -- provisioning claims ----------------------------------------------------
+
+
+async def test_a_claim_is_exclusive(repository):
+    assert await repository.claim_username("contested") is True
+    assert await repository.claim_username("contested") is False
+
+
+async def test_releasing_a_claim_frees_the_name(repository):
+    await repository.claim_username("contested")
+
+    await repository.release_username("contested")
+
+    assert await repository.claim_username("contested") is True
+
+
+async def test_releasing_a_name_nobody_holds_is_harmless(repository):
+    await repository.release_username("never_claimed")
+
+
+async def test_claims_on_different_names_do_not_collide(repository):
+    assert await repository.claim_username("one") is True
+    assert await repository.claim_username("two") is True
+
+
+async def test_a_stale_claim_can_be_taken_over(repository):
+    """A process killed mid-provision must not strand the name forever."""
+    await repository.claim_username("abandoned")
+
+    # ttl=0 makes every existing claim older than the cutoff, which is what a
+    # long-dead claim looks like without waiting out a real TTL.
+    assert await repository.claim_username("abandoned", ttl_seconds=0) is True
+
+
+async def test_a_fresh_claim_is_not_taken_over(repository):
+    """The TTL must not be so eager that it defeats the lock it implements."""
+    await repository.claim_username("in_progress")
+
+    assert await repository.claim_username("in_progress", ttl_seconds=300) is False

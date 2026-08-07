@@ -81,6 +81,28 @@ class BundleService:
         if await self._repository.find_by_username(request.username) is not None:
             raise UsernameAlreadyProvisionedException(f"{request.username} is already provisioned")
 
+        # Take the name before touching Synapse. The homeserver existence check
+        # and the account creation are two separate calls, and the creation is
+        # an upsert — so without a claim two concurrent requests for the same
+        # localpart both see "free", and the second resets the account the first
+        # just made, handing its owner a bundle whose password no longer works.
+        if not await self._repository.claim_username(request.username):
+            raise UsernameAlreadyProvisionedException(
+                f"{request.username} is already being provisioned by another request"
+            )
+
+        try:
+            return await self._provision_claimed(request)
+        finally:
+            await self._repository.release_username(request.username)
+
+    async def _provision_claimed(self, request: CreateBundleRequest) -> CreateBundleResponse:
+        """Provision and record an account whose name this run already holds.
+
+        Split out so the claim is released on every exit path, including the
+        orphan-rollback one, without wrapping the whole body in another level of
+        indentation.
+        """
         try:
             result = await self._provisioner.provision(
                 username=request.username,

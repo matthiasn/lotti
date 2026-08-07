@@ -7,6 +7,7 @@ live credential, which is the worst possible outcome.
 
 from __future__ import annotations
 
+import asyncio
 import json
 
 import httpx
@@ -288,3 +289,98 @@ async def test_an_unreachable_homeserver_surfaces_as_a_gateway_error(repository,
         await service.create_bundle(CreateBundleRequest(username="lotti_user"))
 
     assert await repository.find_by_username("lotti_user") is None
+
+
+# -- concurrent provisioning ------------------------------------------------
+
+
+async def test_a_held_claim_stops_a_second_run_before_it_reaches_synapse(
+    repository, credentials, tracking_transport
+):
+    """The whole point of the claim is to refuse *before* any Synapse write.
+
+    The homeserver existence check would also catch an already-created account,
+    but only after the first run's PUT has landed — and `PUT users/{mxid}` is an
+    upsert, so in the window before that it would happily overwrite.
+    """
+    transport, requests = tracking_transport
+    service = _service(repository, credentials, transport)
+    await repository.claim_username("racer")
+
+    with pytest.raises(UsernameAlreadyProvisionedException, match="being provisioned"):
+        await service.create_bundle(CreateBundleRequest(username="racer"))
+
+    assert requests == []
+
+
+async def test_two_concurrent_requests_for_one_name_create_a_single_account(
+    repository, credentials, tracking_transport
+):
+    """End to end: one caller wins, and the loser never touches the homeserver."""
+    transport, requests = tracking_transport
+    service = _service(repository, credentials, transport)
+
+    results = await asyncio.gather(
+        service.create_bundle(CreateBundleRequest(username="racer")),
+        service.create_bundle(CreateBundleRequest(username="racer")),
+        return_exceptions=True,
+    )
+
+    succeeded = [r for r in results if not isinstance(r, Exception)]
+    refused = [r for r in results if isinstance(r, UsernameAlreadyProvisionedException)]
+    assert len(succeeded) == 1
+    assert len(refused) == 1
+
+    # Exactly one existence check: the refused run stopped at the claim rather
+    # than racing to the homeserver and being caught there.
+    checks = [
+        r
+        for r in requests
+        if r.method == "GET"
+        and "/_synapse/admin/v2/users/" in str(r.url)
+        and "/devices" not in str(r.url)
+    ]
+    creations = [
+        r
+        for r in requests
+        if r.method == "PUT"
+        and "/_synapse/admin/v2/users/" in str(r.url)
+        and "password" in json.loads(r.content)
+    ]
+    assert len(checks) == 1
+    assert len(creations) == 1
+
+
+async def test_the_claim_is_released_after_a_successful_run(
+    repository, credentials, mock_transport
+):
+    """A held claim would block every later attempt at that name."""
+    service = _service(repository, credentials, mock_transport)
+    await service.create_bundle(CreateBundleRequest(username="released_user"))
+
+    assert await repository.claim_username("released_user") is True
+
+
+async def test_the_claim_is_released_when_provisioning_fails(repository, credentials):
+    """A failed run must not strand the name until the TTL expires."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/_matrix/client/v3/createRoom":
+            return httpx.Response(500, json={"errcode": "M_UNKNOWN"})
+        return synapse_handler(request)
+
+    service = _service(repository, credentials, httpx.MockTransport(handler))
+
+    with pytest.raises(SynapseUnavailableException):
+        await service.create_bundle(CreateBundleRequest(username="failed_user"))
+
+    assert await repository.claim_username("failed_user") is True
+
+
+async def test_a_claim_does_not_block_a_different_name(repository, credentials, mock_transport):
+    service = _service(repository, credentials, mock_transport)
+    await repository.claim_username("someone_else")
+
+    response = await service.create_bundle(CreateBundleRequest(username="unrelated"))
+
+    assert response.user.username == "unrelated"

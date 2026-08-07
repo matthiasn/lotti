@@ -36,6 +36,15 @@ record here at all. So the shared provisioner asks the homeserver first and
 refuses on a hit, and a lookup that fails for any other reason is treated as
 "unknown", never as "free". Both the web API and the CLI go through it.
 
+That check and the creation are still two separate calls, so the service takes a
+row in `provisioning_claims` for the localpart before touching Synapse at all.
+Without it two concurrent requests for the same name both see "free" and the
+second upserts over the first — leaving the first user holding a bundle whose
+password no longer works. The primary key is the lock, so it holds across
+processes, not just within one. Claims are released on every exit path, and a
+claim older than `PROVISIONING_CLAIM_TTL_SECONDS` (5 minutes) can be taken over,
+so a process killed mid-run does not strand the name.
+
 ## The bundle is shown once and never stored
 
 `POST /bundles` returns the bundle string exactly once. Only a SHA-256

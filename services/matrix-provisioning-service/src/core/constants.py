@@ -43,6 +43,12 @@ MIN_RETENTION_DAYS = 7
 # from having no retention at all.
 MAX_RETENTION_DAYS = 3650
 
+# How long an in-flight provisioning claim blocks another run for the same
+# localpart. Provisioning takes seconds; this is long enough to cover a slow
+# homeserver and short enough that a process killed midway does not strand the
+# name until someone edits the database by hand.
+PROVISIONING_CLAIM_TTL_SECONDS = 300.0
+
 # Pagination
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
