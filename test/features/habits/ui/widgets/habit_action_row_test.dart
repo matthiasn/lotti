@@ -464,7 +464,17 @@ void main() {
 
       await tester.tap(find.byIcon(Icons.add_rounded));
       await tester.pump();
-      await tester.pump(const Duration(milliseconds: 220));
+      // Combine RE-ROLLS its pair from a process-wide seed, so this test —
+      // unlike the FixedSelection ones — cannot know the resolved duration.
+      // The burst only mounts between 12% and 96% of the timeline, and a pair
+      // containing `bubbles` stretches the 1400ms base by 1.4x to 1960ms.
+      // 220ms is 15.7% of 1400ms but only 11.2% of 1960ms, so it fell BELOW
+      // the mount threshold whenever the roll produced bubbles and the lookup
+      // below found no widget. Anything in
+      //   [0.12 * 1960ms, 0.96 * 1400ms] = [235ms, 1344ms]
+      // is inside the window for every pair; 400ms sits comfortably clear of
+      // both ends.
+      await tester.pump(const Duration(milliseconds: 400));
 
       final burst = tester.widget<CompletionBurst>(
         find.byType(CompletionBurst),
