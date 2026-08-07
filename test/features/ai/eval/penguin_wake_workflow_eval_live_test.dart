@@ -38,7 +38,7 @@ import 'support/task_agent_workflow_eval_harness.dart';
 /// real `TaskAgentWorkflow`, and then asserts on rows read back out — proposals
 /// in the change set, the persisted report, the task itself.
 ///
-/// The scenario is built to be failed. Its five traps are described on
+/// The scenario is built to be failed. Its four traps are described on
 /// [seedPenguinWakeWorld]; the assertions below name which one each is
 /// checking, because a bare count tells you a model scored 3/5 without telling
 /// you it was the restraint case it lost.

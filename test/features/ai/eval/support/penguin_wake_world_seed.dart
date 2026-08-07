@@ -15,7 +15,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 /// logged time, and a report from the previous wake that the model has to
 /// revise rather than write fresh.
 ///
-/// The size is the point, but so is the shape. Five traps are built in, each
+/// The size is the point, but so is the shape. Four traps are built in, each
 /// one a behaviour the suite has caught models failing before:
 ///
 /// * **Superseded instruction.** The 07-24 note asks for the deadline to move
@@ -27,12 +27,20 @@ import 'package:lotti/logic/persistence_logic.dart';
 ///   destroying the user's own work.
 /// * **A blocker that resolved.** The task is BLOCKED on a customs hold that
 ///   the 08-05 note clears. The status should move; the report should say why.
-/// * **Evidence that is not in the checklist.** The humidity re-test is
-///   described only in a linked note, so an item worth adding exists but must
-///   be drawn from prose rather than copied from a list.
 /// * **A debt read as a completion.** The newest note ends "we still owe
 ///   stores the saturated cartridges". Qwen3.5 397B checked that item off and
 ///   quoted the clause as its evidence. See [PenguinWakeWorld.stillOwedItemId].
+/// * **Completion without evidence.** Exactly one pending item has support in
+///   the notes — see [PenguinWakeWorld.swapCartridgesItemId]. Qwen3.5 397B
+///   completed "Photograph the condensate trail" instead, reasoning
+///   "photograph likely completed", inventing evidence rather than misreading
+///   it. The live eval allowlists the one supported item rather than
+///   denylisting the ones models have guessed at so far.
+///
+/// An earlier version of this doc claimed a fifth trap — an item derivable
+/// only from prose. It was never implemented: "Run a 24-hour hold test" is a
+/// seeded checklist item, so there was nothing to derive. Do not read the
+/// results as covering it.
 ///
 /// Everything is fiction in the penguin-logistics register the demo world
 /// already uses, so no real task content of the user's appears in an eval
