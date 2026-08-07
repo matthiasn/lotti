@@ -80,7 +80,7 @@ Lotti requests only the permissions it actually uses. What each one captures sta
 - ❌ No sharing with third parties, except the AI providers you configure
 - ❌ No backend servers collecting your data
 
-To be precise about what this does *not* say: two destinations you choose do receive something. The homeserver you configure receives, stores and relays your sync payloads as ciphertext — a transit store rather than an archive: nothing depends on it keeping history, because a device that already holds the data re-sends whatever a peer is missing — and it can see the account and traffic metadata that comes with relaying. The AI providers you configure receive the content of the requests routed to them. Neither is Lotti, and neither gets plaintext it was not given deliberately.
+To be precise about what this does *not* say: two destinations you choose do receive something. The homeserver you configure receives, stores and relays your sync payloads as ciphertext — a transit store rather than an archive: nothing depends on it keeping history, because a device that already holds the data re-sends whatever a peer is missing — and it can see the account and traffic metadata that comes with relaying. Sync never hands anything readable to a server, period. The AI providers you configure do receive the content of the requests you route to them — that is a configuration choice you made, not leakage. Neither destination is Lotti.
 
 Diagnostic logs are local too. *Settings → Advanced → Logging* controls routine diagnostic logging per domain; errors are always recorded regardless of those toggles. Either way the files stay on your device until you choose to share them.
 
