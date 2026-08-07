@@ -18,12 +18,15 @@ from .bundle import (
     BundleKind,
     SyncBundle,
 )
-from .provisioner import (
+from .core import (
     AdminCredentials,
     ProvisioningError,
-    ProvisionResult,
-    SynapseProvisioner,
+    SynapseClientBase,
+    UserAlreadyExistsError,
+    encode_mxid_for_path,
+    encode_room_id_for_path,
 )
+from .provisioner import ProvisionResult, SynapseProvisioner
 
 __all__ = [
     "BUNDLE_SCHEMA_VERSION",
@@ -37,7 +40,11 @@ __all__ = [
     "PurgeStatus",
     "SyncBundle",
     "SynapseAdminClient",
+    "SynapseClientBase",
     "SynapseProvisioner",
     "UserActivity",
+    "UserAlreadyExistsError",
     "UserMediaUsage",
+    "encode_mxid_for_path",
+    "encode_room_id_for_path",
 ]

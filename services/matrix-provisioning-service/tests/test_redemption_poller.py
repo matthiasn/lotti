@@ -168,7 +168,7 @@ async def test_the_loop_keeps_sweeping_until_stopped(
     repository, credentials, mock_transport
 ):
     poller = _poller(repository, credentials, mock_transport)
-    poller._interval = 0
+    poller._interval_seconds = 0
     sweeps, second_sweep = [], asyncio.Event()
 
     async def counting_sweep() -> int:
@@ -191,7 +191,7 @@ async def test_a_failing_sweep_does_not_kill_the_loop(
 ):
     """One bad sweep must not silently stop redemption detection forever."""
     poller = _poller(repository, credentials, mock_transport)
-    poller._interval = 0
+    poller._interval_seconds = 0
     sweeps, second_sweep = [], asyncio.Event()
 
     async def exploding_sweep() -> int:

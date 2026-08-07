@@ -70,6 +70,11 @@ class RetentionService:
         self._admin_client = admin_client
         self._default_retention_days = default_retention_days
 
+    @property
+    def default_retention_days(self) -> int:
+        """The configured window applied to users with no override of their own."""
+        return self._default_retention_days
+
     @staticmethod
     def _cutoff_ms(retention_days: int) -> int:
         """Return the epoch-millisecond cutoff for a retention window."""
@@ -109,7 +114,8 @@ class RetentionService:
 
         Args:
             bundle_id: Which provisioned user to reclaim.
-            retention_days: Override for the default window.
+            retention_days: Explicit window for this run. Omit to apply the
+                user's own policy — their override, or the service default.
             include_media: Set false to trim history only and leave files.
 
         Returns:
@@ -120,11 +126,17 @@ class RetentionService:
             ValueError: If the retention window is below the floor.
             SynapseUnavailableException: If Synapse rejects either operation.
         """
-        resolved_days = self._validate_retention(retention_days)
-
         user = await self._repository.get(bundle_id)
         if user is None:
             raise BundleNotFoundException(bundle_id)
+
+        # Falling back to the *service* default here would make a manual purge
+        # disagree with the scheduled sweep, which resolves the user's own
+        # window first. On a user pinned to 365 days a single "purge now" click
+        # would then delete 335 days more history than their policy allows.
+        resolved_days = self._validate_retention(
+            user.retention_days if retention_days is None else retention_days
+        )
 
         cutoff_ms = self._cutoff_ms(resolved_days)
 
@@ -229,7 +241,12 @@ class RetentionService:
         started: list[dict] = []
         skipped = 0
         for user in await self._repository.list_purgeable():
-            window = user.retention_days or fallback_days
+            # `is None`, not falsy, for the same reason as _validate_retention:
+            # a stored 0 must reach the floor check rather than quietly become
+            # the fallback window.
+            window = (
+                fallback_days if user.retention_days is None else user.retention_days
+            )
             try:
                 window = self._validate_retention(window)
             except ValueError as exc:

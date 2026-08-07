@@ -13,7 +13,7 @@ import sqlite3
 import uuid
 from datetime import datetime, timedelta, timezone
 
-from ..core.constants import DEFAULT_DB_PATH, MAX_PAGE_SIZE
+from ..core.constants import DEFAULT_DB_PATH, DEFAULT_EVENT_LIMIT, MAX_PAGE_SIZE
 from ..core.exceptions import (
     BundleNotFoundException,
     InvalidBundleStateException,
@@ -501,7 +501,7 @@ class ProvisioningRepository:
                 "UPDATE provisioned_users SET last_polled_at = ? WHERE bundle_id = ?",
                 (_iso(_now()), bundle_id),
             )
-            if detail:
+            if detail and not self._repeats_last_failure(conn, bundle_id, detail):
                 self._record_event_sync(
                     conn, bundle_id, BundleEventType.POLL_FAILED, detail
                 )
@@ -509,8 +509,35 @@ class ProvisioningRepository:
         finally:
             conn.close()
 
+    @staticmethod
+    def _repeats_last_failure(
+        conn: sqlite3.Connection, bundle_id: str, detail: str
+    ) -> bool:
+        """Whether this failure is a repeat of the bundle's latest event.
+
+        The poller retries every pollable bundle on a fixed interval forever, so
+        an outage that lasts a weekend would otherwise write ~576 identical rows
+        per bundle per day and bury the real audit trail. Collapsing a run of
+        identical consecutive failures into its first entry keeps the trail
+        readable; ``last_polled_at`` is what says whether it is still failing.
+        """
+        row = conn.execute(
+            "SELECT event_type, detail FROM bundle_events WHERE bundle_id = ? "
+            "ORDER BY id DESC LIMIT 1",
+            (bundle_id,),
+        ).fetchone()
+        return (
+            row is not None
+            and row["event_type"] == BundleEventType.POLL_FAILED.value
+            and (row["detail"] or "") == detail
+        )
+
     async def touch_poll(self, bundle_id: str, failure_detail: str | None = None) -> None:
-        """Record that the poller checked this account, optionally noting a failure."""
+        """Record that the poller checked this account, optionally noting a failure.
+
+        A failure identical to the bundle's most recent event is not recorded
+        again, so a sustained outage leaves one entry rather than one per poll.
+        """
         await asyncio.to_thread(self._touch_poll_sync, bundle_id, failure_detail)
 
     # -- reads --------------------------------------------------------------
@@ -638,12 +665,15 @@ class ProvisioningRepository:
         """
         return await asyncio.to_thread(self._list_purgeable_sync, limit)
 
-    def _events_sync(self, bundle_id: str) -> list[BundleEvent]:
+    def _events_sync(self, bundle_id: str, limit: int) -> list[BundleEvent]:
         conn = self._connect()
         try:
+            # Newest-first in SQL so the limit keeps the *recent* entries, then
+            # reversed for display. Selecting the oldest N would pin the caller
+            # to the creation event forever.
             rows = conn.execute(
-                "SELECT * FROM bundle_events WHERE bundle_id = ? ORDER BY id ASC",
-                (bundle_id,),
+                "SELECT * FROM bundle_events WHERE bundle_id = ? ORDER BY id DESC LIMIT ?",
+                (bundle_id, max(1, limit)),
             ).fetchall()
             return [
                 BundleEvent(
@@ -653,14 +683,21 @@ class ProvisioningRepository:
                     detail=r["detail"] or "",
                     created_at=_parse(r["created_at"]),
                 )
-                for r in rows
+                for r in reversed(rows)
             ]
         finally:
             conn.close()
 
-    async def get_events(self, bundle_id: str) -> list[BundleEvent]:
-        """Return a bundle's audit trail, oldest first."""
-        return await asyncio.to_thread(self._events_sync, bundle_id)
+    async def get_events(
+        self, bundle_id: str, limit: int = DEFAULT_EVENT_LIMIT
+    ) -> list[BundleEvent]:
+        """Return a bundle's most recent audit entries, oldest first.
+
+        Bounded rather than complete: the trail grows unattended (the poller
+        writes to it), so an unlimited read is a response size no caller can
+        predict.
+        """
+        return await asyncio.to_thread(self._events_sync, bundle_id, limit)
 
     def _stats_sync(self, signup_history_days: int) -> StatsResponse:
         conn = self._connect()

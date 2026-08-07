@@ -14,7 +14,6 @@ clients are still tracked.
 
 from __future__ import annotations
 
-import asyncio
 import logging
 from datetime import datetime, timezone
 
@@ -23,12 +22,13 @@ import httpx
 from shared.matrix import ProvisioningError, SynapseAdminClient
 
 from ..core.constants import DEFAULT_POLL_BATCH_SIZE, DEFAULT_POLL_INTERVAL_SECONDS
+from .periodic_task import PeriodicTask
 from .provisioning_repository import ProvisioningRepository
 
 logger = logging.getLogger(__name__)
 
 
-class RedemptionPoller:
+class RedemptionPoller(PeriodicTask):
     """Periodically reconciles stored bundle status against Synapse."""
 
     def __init__(
@@ -39,11 +39,14 @@ class RedemptionPoller:
         interval_seconds: int = DEFAULT_POLL_INTERVAL_SECONDS,
         batch_size: int = DEFAULT_POLL_BATCH_SIZE,
     ) -> None:
+        super().__init__(name="Redemption poller", interval_seconds=interval_seconds)
         self._repository = repository
         self._admin_client = admin_client
-        self._interval = interval_seconds
         self._batch_size = batch_size
-        self._task: asyncio.Task | None = None
+
+    async def run_once(self) -> None:
+        """Run one sweep for the background loop."""
+        await self.poll_once()
 
     async def poll_once(self) -> int:
         """Run a single reconciliation sweep.
@@ -79,32 +82,3 @@ class RedemptionPoller:
                 )
 
         return advanced
-
-    async def _run(self) -> None:
-        while True:
-            try:
-                await self.poll_once()
-            except asyncio.CancelledError:
-                raise
-            except Exception:  # noqa: BLE001 - the loop must survive any sweep
-                logger.exception("Redemption poll sweep failed")
-            await asyncio.sleep(self._interval)
-
-    def start(self) -> None:
-        """Start the background polling loop."""
-        if self._task is not None and not self._task.done():
-            return
-        self._task = asyncio.create_task(self._run())
-        logger.info("Redemption poller started (every %ss)", self._interval)
-
-    async def stop(self) -> None:
-        """Stop the background polling loop and wait for it to unwind."""
-        if self._task is None:
-            return
-        self._task.cancel()
-        try:
-            await self._task
-        except asyncio.CancelledError:
-            pass
-        self._task = None
-        logger.info("Redemption poller stopped")

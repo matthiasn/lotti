@@ -608,3 +608,28 @@ tr:not(.detail-row) > td:last-child {
   color: var(--color-text-tertiary);
   min-width: 8.5rem;
 }
+
+/* Roster pager. The count sits opposite the controls so the footer reads as
+   one line on desktop and stacks on narrow viewports rather than overflowing. */
+.pager {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 16px;
+}
+
+.pager > p {
+  margin: 0;
+}
+
+.pager__controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pager__controls > span {
+  white-space: nowrap;
+}

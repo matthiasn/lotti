@@ -8,6 +8,13 @@
 #   MATRIX_HOMESERVER   e.g. https://matrix.example.com
 #   MATRIX_ADMIN_TOKEN  a long-lived Synapse admin access token (preferred), or
 #   MATRIX_ADMIN_USER + MATRIX_ADMIN_PASSWORD as a fallback
+#   API_KEY             regular client key, e.g. `openssl rand -hex 32`
+#   ADMIN_API_KEY       admin key guarding provisioning, revocation and purging
+#
+# The two keys have no defaults on purpose. A checked-in default is a published
+# credential: this file is public, so anyone who could reach the port would hold
+# the admin key for a service that provisions and deletes real accounts. Compose
+# fails the deploy instead.
 
 services:
   matrix-provisioning-service:
@@ -22,8 +29,8 @@ services:
       - MATRIX_ADMIN_TOKEN=${MATRIX_ADMIN_TOKEN:-}
       - MATRIX_ADMIN_USER=${MATRIX_ADMIN_USER:-}
       - MATRIX_ADMIN_PASSWORD=${MATRIX_ADMIN_PASSWORD:-}
-      - API_KEYS=${API_KEY:-dev-key}
-      - ADMIN_API_KEYS=${ADMIN_API_KEY:-dev-admin-key}
+      - API_KEYS=${API_KEY:?set API_KEY, e.g. openssl rand -hex 32}
+      - ADMIN_API_KEYS=${ADMIN_API_KEY:?set ADMIN_API_KEY, e.g. openssl rand -hex 32}
       - RETENTION_DAYS=${RETENTION_DAYS:-30}
       # The scheduled sweep deletes room history and media. On by default.
       - ENABLE_RETENTION_SWEEP=${ENABLE_RETENTION_SWEEP:-true}
@@ -44,7 +51,11 @@ services:
     build:
       context: ./matrix-admin
       args:
-        VITE_ADMIN_API_KEY: ${ADMIN_API_KEY:-dev-admin-key}
+        # Baked into the JS bundle at build time, so it is readable by anyone
+        # who can load the page. That is inherent to a keyed SPA with no login:
+        # treat the admin UI as trusted-network-only, or put a reverse proxy
+        # with real authentication in front of it.
+        VITE_ADMIN_API_KEY: ${ADMIN_API_KEY:?set ADMIN_API_KEY, e.g. openssl rand -hex 32}
     container_name: matrix-admin-frontend
     ports:
       - "5174:5174"

@@ -121,7 +121,7 @@ def test_poller_reads_its_schedule_from_the_environment(env):
 
     poller = Container().get_redemption_poller()
 
-    assert poller._interval == 42
+    assert poller._interval_seconds == 42
     assert poller._batch_size == 7
 
 

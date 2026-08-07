@@ -33,6 +33,7 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         app,
         exempt_paths: list[str] | None = None,
         admin_path_prefixes: list[str] | None = None,
+        client_path_prefixes: list[str] | None = None,
     ):
         """
         Initialize authentication middleware
@@ -41,10 +42,28 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             app: FastAPI application
             exempt_paths: List of paths that don't require authentication (e.g., /health)
             admin_path_prefixes: List of path prefixes that require an admin API key
+            client_path_prefixes: List of path prefixes reachable with a regular
+                API key. Passing this flips the default for everything else to
+                *admin*, so a route added later is protected unless it is
+                deliberately listed. Prefer it to ``admin_path_prefixes`` on any
+                service whose endpoints are mostly privileged.
+
+        Raises:
+            ValueError: If both prefix lists are given. They express opposite
+                defaults, so a service that sets both has no answer for a path
+                matching neither.
         """
         super().__init__(app)
+        if admin_path_prefixes and client_path_prefixes:
+            raise ValueError(
+                "Pass admin_path_prefixes or client_path_prefixes, not both: they "
+                "set opposite defaults for paths matching neither list"
+            )
         self.exempt_paths = exempt_paths or ["/health", "/docs", "/openapi.json", "/redoc"]
         self.admin_path_prefixes = admin_path_prefixes or []
+        self.client_path_prefixes = client_path_prefixes or []
+        #: When true, a path matching no prefix requires an admin key.
+        self.admin_by_default = bool(client_path_prefixes)
 
         # Load API keys from environment variable
         # Format: API_KEYS=key1,key2,key3
@@ -65,13 +84,29 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
             logger.info(f"API key authentication enabled with {len(self.valid_api_keys)} key(s)")
 
         if self.valid_admin_keys:
+            scope = (
+                "every path except "
+                f"{len(self.client_path_prefixes)} client prefix(es)"
+                if self.admin_by_default
+                else f"{len(self.admin_path_prefixes)} path prefix(es)"
+            )
             logger.info(
-                f"Admin API key authentication enabled with {len(self.valid_admin_keys)} key(s) "
-                f"for {len(self.admin_path_prefixes)} path prefix(es)"
+                f"Admin API key authentication enabled with "
+                f"{len(self.valid_admin_keys)} key(s) for {scope}"
             )
 
     def _is_admin_path(self, path: str) -> bool:
-        """Check if the path requires admin authentication"""
+        """Check if the path requires admin authentication.
+
+        In admin-by-default mode the question is inverted: only paths explicitly
+        listed as client paths escape the admin requirement. That way a route
+        added later is privileged until someone says otherwise, rather than
+        silently reachable with a plain client key.
+        """
+        if self.admin_by_default:
+            return not any(
+                path.startswith(prefix) for prefix in self.client_path_prefixes
+            )
         return any(path.startswith(prefix) for prefix in self.admin_path_prefixes)
 
     async def dispatch(self, request: Request, call_next: Callable):

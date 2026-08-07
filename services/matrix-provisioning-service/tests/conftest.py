@@ -40,18 +40,30 @@ HOMESERVER = "https://matrix.example.com"
 ROOM_ID = "!syncroom:example.com"
 
 # Mutable mock state so a media DELETE is observable by later GETs, which is
-# what lets a test assert that bytes were actually reclaimed.
-_state = {"media_deleted": False, "purges": 0}
+# what lets a test assert that bytes were actually reclaimed. `accounts` models
+# which MXIDs the homeserver already knows: the provisioner refuses to create
+# over an existing account, so "does this user exist" has to be real state
+# rather than a fixed answer.
+_state: dict = {"media_deleted": set(), "purges": 0, "accounts": set()}
+
+
+def register_synapse_account(user_mxid: str) -> None:
+    """Make the mock homeserver report ``user_mxid`` as an existing account."""
+    _state["accounts"].add(user_mxid)
+
+
+def _reset_state() -> None:
+    _state["media_deleted"] = set()
+    _state["purges"] = 0
+    _state["accounts"] = {ADMIN_MXID}
 
 
 @pytest.fixture(autouse=True)
 def reset_mock_synapse_state():
     """Keep mock homeserver state from leaking between tests."""
-    _state["media_deleted"] = False
-    _state["purges"] = 0
+    _reset_state()
     yield
-    _state["media_deleted"] = False
-    _state["purges"] = 0
+    _reset_state()
 
 
 @pytest.fixture
@@ -79,11 +91,20 @@ def synapse_handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(200, json={"access_token": "user_tok"})
 
     if path.startswith("/_synapse/admin/v1/users/") and path.endswith("/media"):
+        # Tracked per user, not globally: a sweep purges several accounts in a
+        # row, and shared state would let one user's deletion mask the next
+        # user's being skipped entirely.
+        mxid = path.rsplit("/", 2)[-2]
         if request.method == "DELETE":
-            _state["media_deleted"] = True
+            # The client deletes in batches until one comes back empty, so a
+            # mock that reported a deletion every time would never terminate —
+            # which is exactly the real endpoint's contract.
+            if mxid in _state["media_deleted"]:
+                return httpx.Response(200, json={"deleted_media": [], "total": 0})
+            _state["media_deleted"].add(mxid)
             return httpx.Response(200, json={"deleted_media": ["mxc://a"], "total": 1})
         # Shrinks once media has been deleted, so bytes_freed is measurable.
-        if _state["media_deleted"]:
+        if mxid in _state["media_deleted"]:
             return httpx.Response(200, json={"total": 1, "media": [{"media_length": 1000}]})
         return httpx.Response(
             200,
@@ -99,6 +120,12 @@ def synapse_handler(request: httpx.Request) -> httpx.Response:
         )
 
     if path.startswith("/_synapse/admin/v2/users/"):
+        mxid = path.rsplit("/", 1)[-1]
+        if request.method == "PUT":
+            _state["accounts"].add(mxid)
+            return httpx.Response(200, json={"deactivated": False})
+        if mxid not in _state["accounts"]:
+            return httpx.Response(404, json={"errcode": "M_NOT_FOUND"})
         return httpx.Response(200, json={"deactivated": False})
 
     if path == "/_matrix/client/v3/createRoom":
@@ -159,7 +186,12 @@ def repository(tmp_path) -> ProvisioningRepository:
 async def seed_user(
     repository: ProvisioningRepository, username: str = "lotti_user", **overrides
 ):
-    """Insert a provisioned-user record with sensible defaults."""
+    """Insert a provisioned-user record with sensible defaults.
+
+    Also registers the account on the mock homeserver: a stored record always
+    corresponds to a real Synapse account, and usage and activity lookups 404
+    without it.
+    """
     payload = {
         "username": username,
         "user_mxid": f"@{username}:{SERVER_NAME}",
@@ -171,4 +203,5 @@ async def seed_user(
         "notes": "",
     }
     payload.update(overrides)
+    register_synapse_account(payload["user_mxid"])
     return await repository.create(**payload)

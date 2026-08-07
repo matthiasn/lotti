@@ -37,7 +37,12 @@ Vite 8 as a supported peer, the same combination `services/dashboard` ships.
 
 | Variable | Default | Description |
 |---|---|---|
-| `VITE_ADMIN_API_KEY` | `dev-admin-key` | Admin key sent as a bearer token |
+| `VITE_ADMIN_API_KEY` | — (required) | Admin key sent as a bearer token |
+
+There is deliberately no default. A checked-in one would be a published
+credential, since this repository is public — so a build without the key sends
+an empty bearer token and every request 401s, which is a failure an operator can
+see. Compose refuses to start without `ADMIN_API_KEY` for the same reason.
 
 ⚠️ **This key is embedded in the built JS bundle** and grants account
 provisioning on your homeserver — the same tradeoff `services/dashboard` makes.

@@ -84,6 +84,41 @@ describe("BundleReveal", () => {
     expect(screen.getByRole("button", { name: "Copied" })).toBeInTheDocument();
   });
 
+  it("says so plainly when the clipboard is unavailable", async () => {
+    const user = userEvent.setup();
+    // What the deployed app actually sees: served over plain HTTP, so the
+    // clipboard API is absent. Silently doing nothing here loses a bundle that
+    // exists nowhere else the moment the admin acknowledges and dismisses.
+    Object.defineProperty(navigator, "clipboard", {
+      value: undefined,
+      configurable: true,
+    });
+    render(<BundleReveal result={RESULT} onDismiss={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Copy bundle" }));
+
+    expect(screen.getByText(/copy it manually/i)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Copied" }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("reports a rejected clipboard write instead of claiming success", async () => {
+    const user = userEvent.setup();
+    Object.defineProperty(navigator, "clipboard", {
+      value: { writeText: vi.fn().mockRejectedValue(new Error("denied")) },
+      configurable: true,
+    });
+    render(<BundleReveal result={RESULT} onDismiss={vi.fn()} />);
+
+    await user.click(screen.getByRole("button", { name: "Copy bundle" }));
+
+    expect(screen.getByText(/denied/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Copied" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("shows the account and room it provisioned", () => {
     render(<BundleReveal result={RESULT} onDismiss={vi.fn()} />);
 

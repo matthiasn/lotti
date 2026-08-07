@@ -327,7 +327,7 @@ system of record.
 
 ## 9. What is built vs. what is not
 
-**Built and tested (143 backend + 17 frontend tests passing):**
+**Built and tested (213 backend + 46 frontend + 33 CLI tests passing):**
 shared provisioning core; bundle codec; SQLite persistence and state machine;
 bundle creation, listing, update, revocation; redemption poller; stats; usage;
 retention/purge; admin SPA with provision, roster and overview pages;
@@ -350,6 +350,17 @@ Docker + compose.
   authenticating as an empty string.
 - MXIDs and room IDs are percent-encoded in every path (inherited from the CLI).
 - The client rotation callback is on the regular API key, not the admin key.
+- Auth is **default-deny by path**: the middleware is configured with the client
+  prefix rather than a list of admin prefixes, so a route added later requires an
+  admin key until someone deliberately opens it.
+- Auth sits *inside* CORS, so preflight `OPTIONS` (sent without an
+  `Authorization` header) is answered rather than 401'd — otherwise
+  `CORS_ALLOWED_ORIGINS` could never work.
+- Provisioning refuses to write over an account that already exists on the
+  homeserver. `PUT /_synapse/admin/v2/users/{mxid}` is an upsert, so without the
+  check a name collision would reset a live user's password.
+- Neither API key has a default anywhere — compose, Dockerfile or SPA. A
+  checked-in default in a public repository is a published credential.
 - ⚠️ **`VITE_ADMIN_API_KEY` is embedded in the SPA bundle**, exactly as
   `services/dashboard` does. It grants account provisioning. This app must sit
   behind a reverse proxy with its own authentication, or move to session-based

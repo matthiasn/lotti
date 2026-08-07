@@ -15,18 +15,17 @@ from .core.constants import (
     DEFAULT_RETENTION_SWEEP_HOURS,
     SERVICE_ADMIN_CLIENT,
     SERVICE_BUNDLE_SERVICE,
+    SERVICE_PROVISIONER,
     SERVICE_PROVISIONING_REPOSITORY,
     SERVICE_REDEMPTION_POLLER,
     SERVICE_RETENTION_SCHEDULER,
+    SERVICE_RETENTION_SERVICE,
 )
 from .services.bundle_service import BundleService
 from .services.provisioning_repository import ProvisioningRepository
 from .services.redemption_poller import RedemptionPoller
 from .services.retention_scheduler import RetentionScheduler
 from .services.retention_service import RetentionService
-
-SERVICE_PROVISIONER = "provisioner"
-SERVICE_RETENTION_SERVICE = "retention_service"
 
 
 def build_admin_credentials() -> AdminCredentials:

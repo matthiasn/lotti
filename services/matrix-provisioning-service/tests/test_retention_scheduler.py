@@ -161,3 +161,25 @@ async def test_start_is_idempotent_and_stop_is_safe(
     await scheduler.stop()
     await scheduler.stop()
     assert scheduler._task is None
+
+
+async def test_the_scheduled_loop_actually_runs_a_sweep(repository, credentials, mock_transport):
+    """The loop body is what makes retention automatic; wiring it wrong is silent."""
+    scheduler = _scheduler(repository, credentials, mock_transport)
+    scheduler._interval_seconds = 0
+    swept = asyncio.Event()
+    summaries = []
+
+    async def recording_sweep() -> dict:
+        summary = {"purged": 1, "bytes_freed": 1500, "media_deleted": 1}
+        summaries.append(summary)
+        swept.set()
+        return summary
+
+    scheduler.sweep_once = recording_sweep
+
+    scheduler.start()
+    await asyncio.wait_for(swept.wait(), timeout=2)
+    await scheduler.stop()
+
+    assert summaries

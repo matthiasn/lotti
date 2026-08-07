@@ -25,6 +25,17 @@ src/
 └── main.py             # Application entry point
 ```
 
+## Provisioning never writes over an existing account
+
+Synapse's `PUT /_synapse/admin/v2/users/{mxid}` is an **upsert**. On a localpart
+that already has an account it resets that account's password and display name,
+locking the real owner's devices out — and the orphan-account rollback would
+then deactivate a live user. Checking our own database is not the same question,
+because accounts created by the CLI (or any ordinary Synapse user) have no
+record here at all. So the shared provisioner asks the homeserver first and
+refuses on a hit, and a lookup that fails for any other reason is treated as
+"unknown", never as "free". Both the web API and the CLI go through it.
+
 ## The bundle is shown once and never stored
 
 `POST /bundles` returns the bundle string exactly once. Only a SHA-256
@@ -86,13 +97,19 @@ password login rather than authenticating with an empty string.
 All paths are prefixed `/api/v1`. Everything requires an **admin** key except
 `/client/*`, which takes a regular key. `/health` is unauthenticated.
 
+That default is enforced, not just documented: the auth middleware is configured
+with the client prefix rather than a list of admin prefixes, so a route added
+later is privileged until someone deliberately opens it. The middleware also
+sits *inside* CORS, so preflight `OPTIONS` requests — which browsers send with
+no `Authorization` header — are answered rather than rejected.
+
 | Method | Path | Purpose |
 |---|---|---|
 | `POST` | `/bundles` | Provision an account; returns the bundle **once** |
 | `GET` | `/bundles` | List records (filter by `status`, `payment_status`) |
 | `GET` | `/bundles/{id}` | Fetch one record |
 | `PATCH` | `/bundles/{id}` | Update payment status and/or notes |
-| `GET` | `/bundles/{id}/events` | Audit trail |
+| `GET` | `/bundles/{id}/events` | Audit trail, most recent `limit` entries (default 200) |
 | `GET` | `/bundles/{id}/usage` | Live device/media figures from Synapse |
 | `POST` | `/bundles/{id}/revoke` | Revoke; optionally deactivate the account |
 | `POST` | `/client/bundles/{id}/rotated` | Client confirms rotation (regular key) |

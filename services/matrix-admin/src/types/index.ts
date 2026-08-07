@@ -65,6 +65,10 @@ export interface Usage {
   media_count: number;
   media_length_bytes: number;
   active_days: number | null;
+  /** The service-wide window, for users with no override of their own. */
+  retention_days_default: number;
+  /** What a purge will actually apply to this user right now. */
+  retention_days_effective: number;
 }
 
 export interface PurgeResult {
@@ -76,12 +80,4 @@ export interface PurgeResult {
   media_deleted: number;
   bytes_freed: number;
   include_media: boolean;
-}
-
-export interface BundleEvent {
-  id: number;
-  bundle_id: string;
-  event_type: string;
-  detail: string;
-  created_at: string;
 }

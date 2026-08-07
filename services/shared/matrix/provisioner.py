@@ -16,13 +16,30 @@ import secrets
 import time
 from dataclasses import dataclass
 from typing import Callable
-from urllib.parse import quote
 
 import httpx
 
 from .bundle import BundleKind, SyncBundle
+from .core import (
+    AdminCredentials,
+    ProvisioningError,
+    SynapseClientBase,
+    UserAlreadyExistsError,
+    encode_mxid_for_path,
+    encode_room_id_for_path,
+)
 
 logger = logging.getLogger(__name__)
+
+__all__ = [
+    "AdminCredentials",
+    "ProvisionResult",
+    "ProvisioningError",
+    "SynapseProvisioner",
+    "UserAlreadyExistsError",
+    "encode_mxid_for_path",
+    "encode_room_id_for_path",
+]
 
 #: Length in bytes of the generated password entropy; token_urlsafe(32) yields
 #: a 43-character string.
@@ -36,57 +53,6 @@ SYNC_ROOM_STATE_TYPE = "m.lotti.sync_room"
 SYNC_ROOM_STATE_VERSION = 1
 
 MEGOLM_ALGORITHM = "m.megolm.v1.aes-sha2"
-
-
-def encode_mxid_for_path(mxid: str) -> str:
-    """URL-encode a Matrix user ID for use in a URL path segment.
-
-    MXIDs can contain characters like ``/`` that are significant in URL paths,
-    so the entire MXID is percent-encoded (with ``safe=""``) before
-    interpolation. This prevents path traversal via crafted localparts.
-    """
-    return quote(mxid, safe="")
-
-
-def encode_room_id_for_path(room_id: str) -> str:
-    """URL-encode a Matrix room ID for use in a URL path segment."""
-    return quote(room_id, safe="")
-
-
-class ProvisioningError(ValueError):
-    """Raised when the homeserver returns a malformed or unusable response.
-
-    Subclasses ``ValueError`` because every case is a bad value coming back from
-    Synapse — a login response without a parseable MXID, a purge without an ID.
-    """
-
-
-@dataclass(frozen=True)
-class AdminCredentials:
-    """How to authenticate against the Synapse admin API.
-
-    A long-lived ``admin_token`` is preferred: it avoids keeping a password at
-    rest and can be revoked independently. When no token is set, the flow falls
-    back to password login, which is what the interactive CLI uses.
-    """
-
-    homeserver: str
-    admin_token: str | None = None
-    admin_user: str | None = None
-    admin_password: str | None = None
-
-    def __post_init__(self) -> None:
-        if not self.homeserver:
-            raise ValueError("homeserver is required")
-        if not self.admin_token and not (self.admin_user and self.admin_password):
-            raise ValueError(
-                "Provide either admin_token, or both admin_user and admin_password"
-            )
-
-    @property
-    def base_url(self) -> str:
-        """The homeserver URL without a trailing slash."""
-        return self.homeserver.rstrip("/")
 
 
 @dataclass(frozen=True)
@@ -104,8 +70,13 @@ class ProvisionResult:
         return self.bundle.encode()
 
 
-class SynapseProvisioner:
-    """Creates Lotti sync accounts and rooms on a Synapse homeserver."""
+class SynapseProvisioner(SynapseClientBase):
+    """Creates Lotti sync accounts and rooms on a Synapse homeserver.
+
+    Unlike the admin client this opens one httpx client per ``provision`` call
+    and closes it again: provisioning is a one-shot flow (the CLI runs it once
+    and exits), so there is no connection reuse to preserve between calls.
+    """
 
     def __init__(
         self,
@@ -115,25 +86,10 @@ class SynapseProvisioner:
         timeout: float = 30.0,
         log: Callable[[str], None] | None = None,
     ) -> None:
-        """Initialise the provisioner.
-
-        Args:
-            credentials: Admin authentication details.
-            transport: Optional HTTP transport, for tests.
-            timeout: Per-request timeout in seconds.
-            log: Optional progress sink. Defaults to module-level logging; the
-                CLI passes a callable that writes to stderr.
-        """
-        self._credentials = credentials
-        self._transport = transport
-        self._timeout = timeout
+        super().__init__(credentials, transport=transport, timeout=timeout, log=log)
+        # Provisioning narrates a multi-step flow an operator wants to see, so
+        # its default sink is louder than the admin client's debug-level one.
         self._log = log or logger.info
-
-    def _client(self) -> httpx.AsyncClient:
-        kwargs: dict = {"base_url": self._credentials.base_url, "timeout": self._timeout}
-        if self._transport is not None:
-            kwargs["transport"] = self._transport
-        return httpx.AsyncClient(**kwargs)
 
     @staticmethod
     def _server_name_from_mxid(mxid: str) -> str:
@@ -182,6 +138,37 @@ class SynapseProvisioner:
         self._log(f"Server name: {server_name}")
         return headers, server_name
 
+    async def _assert_user_absent(
+        self,
+        client: httpx.AsyncClient,
+        admin_headers: dict,
+        user_mxid: str,
+        encoded_mxid: str,
+    ) -> None:
+        """Refuse to provision over an account that already exists.
+
+        ``PUT /_synapse/admin/v2/users/{mxid}`` is an *upsert*, not a create: on
+        an existing MXID it silently resets that account's password and display
+        name, locking the real owner's devices out. Nothing downstream can undo
+        that, and the orphan-account rollback would then deactivate a live user.
+        So the only safe create is one preceded by this check.
+
+        Raises:
+            UserAlreadyExistsError: If Synapse already knows the MXID.
+            httpx.HTTPStatusError: If the lookup fails for any other reason —
+                an inconclusive answer must not be read as "free".
+        """
+        resp = await client.get(
+            f"/_synapse/admin/v2/users/{encoded_mxid}", headers=admin_headers
+        )
+        if resp.status_code == httpx.codes.NOT_FOUND:
+            return
+        resp.raise_for_status()
+        raise UserAlreadyExistsError(
+            f"{user_mxid} already exists on this homeserver. Provisioning over it "
+            f"would reset the live account's password — pick another username."
+        )
+
     async def _deactivate_user(
         self,
         client: httpx.AsyncClient,
@@ -199,12 +186,23 @@ class SynapseProvisioner:
             if resp.is_success:
                 self._log(f"Rolled back: deactivated orphan user {user_mxid}")
             else:
-                self._log(
-                    f"Warning: failed to deactivate orphan user {user_mxid} "
-                    f"(HTTP {resp.status_code})"
+                # A failed rollback leaves a live untracked account behind, so
+                # it goes to the warning log as well as the progress sink — the
+                # sink is stderr for the CLI and INFO for the service, neither
+                # of which an operator greps after the fact.
+                message = (
+                    f"failed to deactivate orphan user {user_mxid} "
+                    f"(HTTP {resp.status_code}) — needs manual cleanup"
                 )
+                self._log(f"Warning: {message}")
+                logger.warning(message)
         except httpx.RequestError as exc:
-            self._log(f"Warning: could not deactivate orphan user {user_mxid}: {exc}")
+            message = (
+                f"could not deactivate orphan user {user_mxid}: {exc} "
+                f"— needs manual cleanup"
+            )
+            self._log(f"Warning: {message}")
+            logger.warning(message)
 
     async def provision(
         self,
@@ -224,11 +222,13 @@ class SynapseProvisioner:
         Raises:
             httpx.HTTPStatusError: If any Synapse call returns an error status.
             ProvisioningError: If Synapse returns a malformed response.
+            UserAlreadyExistsError: If the localpart is already taken on the
+                homeserver.
         """
         if not username:
             raise ValueError("username is required")
 
-        async with self._client() as client:
+        async with self._new_client() as client:
             admin_headers, server_name = await self._authenticate(client)
 
             password = secrets.token_urlsafe(PASSWORD_ENTROPY_BYTES)
@@ -237,6 +237,8 @@ class SynapseProvisioner:
             encoded_mxid = encode_mxid_for_path(user_mxid)
             resolved_display_name = display_name or f"Lotti Sync ({username})"
             room_name = f"Lotti Sync ({username})"
+
+            await self._assert_user_absent(client, admin_headers, user_mxid, encoded_mxid)
 
             self._log(f"Creating user {user_mxid}...")
             resp = await client.put(

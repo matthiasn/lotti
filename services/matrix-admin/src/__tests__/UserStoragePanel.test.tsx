@@ -43,6 +43,8 @@ const USAGE = {
   media_count: 3,
   media_length_bytes: 550_000,
   active_days: 5,
+  retention_days_default: 30,
+  retention_days_effective: 30,
 };
 
 describe("formatBytes", () => {
@@ -154,7 +156,9 @@ describe("UserStoragePanel", () => {
     await person.click(screen.getByRole("checkbox", { name: /Delete media too/ }));
     await person.click(screen.getByRole("button", { name: "Reclaim space" }));
 
-    expect(purgeRoom).toHaveBeenCalledWith("b-1", 30, false);
+    // No override typed, so the server applies its own policy rather than a
+    // number the SPA invented.
+    expect(purgeRoom).toHaveBeenCalledWith("b-1", undefined, false);
     expect(await screen.findByRole("status")).toHaveTextContent("No media deleted");
   });
 
@@ -210,6 +214,81 @@ describe("UserStoragePanel", () => {
     await screen.findByText("537 KiB");
 
     expect(screen.getByLabelText("Retention window for lotti_user")).toBeDisabled();
+  });
+
+  it("defaults the purge window to the server's policy, not a number of its own", async () => {
+    // A hardcoded 30 would delete 60 days more than a RETENTION_DAYS=90 deploy
+    // allows, and the endpoint treats whatever it is sent as an override.
+    getUsage.mockResolvedValue({
+      ...USAGE,
+      retention_days_default: 90,
+      retention_days_effective: 90,
+    });
+    purgeRoom.mockResolvedValue({
+      purge_id: "p",
+      room_id: "!r",
+      bundle_id: "b-1",
+      purge_up_to_ts: 1,
+      retention_days: 90,
+      media_deleted: 1,
+      bytes_freed: 10,
+      include_media: true,
+    });
+    const person = userEvent.setup();
+    render(<UserStoragePanel user={user()} />);
+    await screen.findByText("537 KiB");
+
+    await person.click(screen.getByRole("button", { name: "Reclaim space" }));
+
+    expect(purgeRoom).toHaveBeenCalledWith("b-1", undefined, true);
+  });
+
+  it("shows the window that will actually be applied", async () => {
+    getUsage.mockResolvedValue({
+      ...USAGE,
+      retention_days_default: 90,
+      retention_days_effective: 365,
+    });
+    render(<UserStoragePanel user={user({ retention_days: 365 })} />);
+    await screen.findByText("537 KiB");
+
+    expect(screen.getByLabelText("Keep")).toHaveAttribute(
+      "placeholder",
+      "365",
+    );
+  });
+
+  it("sends an explicit window when the admin types one", async () => {
+    purgeRoom.mockResolvedValue({
+      purge_id: "p",
+      room_id: "!r",
+      bundle_id: "b-1",
+      purge_up_to_ts: 1,
+      retention_days: 14,
+      media_deleted: 1,
+      bytes_freed: 10,
+      include_media: true,
+    });
+    const person = userEvent.setup();
+    render(<UserStoragePanel user={user()} />);
+    await screen.findByText("537 KiB");
+
+    await person.type(screen.getByLabelText("Keep"), "14");
+    await person.click(screen.getByRole("button", { name: "Reclaim space" }));
+
+    expect(purgeRoom).toHaveBeenCalledWith("b-1", 14, true);
+  });
+
+  it("names the service default next to the sweep override field", async () => {
+    getUsage.mockResolvedValue({
+      ...USAGE,
+      retention_days_default: 90,
+      retention_days_effective: 90,
+    });
+    render(<UserStoragePanel user={user()} />);
+    await screen.findByText("537 KiB");
+
+    expect(screen.getByText(/service default \(90d\)/)).toBeInTheDocument();
   });
 
   it("surfaces a usage load failure", async () => {

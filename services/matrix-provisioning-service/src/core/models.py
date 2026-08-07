@@ -7,7 +7,7 @@ from enum import Enum
 
 from pydantic import BaseModel, Field, field_validator
 
-from .constants import USERNAME_PATTERN
+from .constants import MAX_RETENTION_DAYS, MIN_RETENTION_DAYS, USERNAME_PATTERN
 
 
 class BundleStatus(str, Enum):
@@ -117,18 +117,15 @@ class ProvisionedUser(BaseModel):
         None,
         description=(
             "Per-user retention window. None inherits the service default, so "
-            "changing the default moves everyone who has not been pinned."
+            "changing the default moves everyone who has not been pinned. "
+            "Writes are bounded by the service floor and ceiling — an override "
+            "outside them would make the sweep skip the user forever."
         ),
     )
     retention_exempt: bool = Field(
         default=False,
         description="Skip this user entirely in the scheduled retention sweep",
     )
-
-    @property
-    def effective_retention_days(self) -> int | None:
-        """The user's own window, or None to mean 'inherit the default'."""
-        return self.retention_days
 
     @property
     def active_days(self) -> int | None:
@@ -197,7 +194,10 @@ class UpdateUserRequest(BaseModel):
     payment_status: PaymentStatus | None = Field(None, description="New payment status")
     notes: str | None = Field(None, description="Replacement admin notes")
     retention_days: int | None = Field(
-        None, description="Per-user retention window; omit to leave unchanged"
+        None,
+        ge=MIN_RETENTION_DAYS,
+        le=MAX_RETENTION_DAYS,
+        description="Per-user retention window; omit to leave unchanged",
     )
     retention_exempt: bool | None = Field(
         None, description="Exclude this user from the scheduled sweep"

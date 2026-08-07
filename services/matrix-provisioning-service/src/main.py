@@ -64,6 +64,9 @@ async def lifespan(app: FastAPI):
         await poller.stop()
     if scheduler is not None:
         await scheduler.stop()
+    # After the background loops, so nothing is mid-request when the shared
+    # connection pool goes away.
+    await container.get_admin_client().aclose()
     logger.info("Matrix Provisioning Service shutdown complete")
 
 
@@ -80,25 +83,27 @@ app = FastAPI(
 cors_origins_str = os.getenv("CORS_ALLOWED_ORIGINS", "http://localhost:5174")
 cors_origins = [origin.strip() for origin in cors_origins_str.split(",") if origin.strip()]
 
+# Ordering matters, and is the reverse of how it reads: `add_middleware`
+# prepends, so the *last* one added is the outermost. Auth is registered first
+# and CORS second so CORS wraps it — a preflight OPTIONS carries no
+# Authorization header, and with auth on the outside every cross-origin request
+# would 401 at the preflight and CORS_ALLOWED_ORIGINS could never work.
+#
+# Everything under /api/v1 is an admin operation — provisioning accounts,
+# reading the roster, purging history — so admin is the default and only the
+# client callback namespace is exempted. Stated this way round, a route added
+# later is protected unless someone deliberately opens it.
+app.add_middleware(
+    APIKeyAuthMiddleware,
+    client_path_prefixes=["/api/v1/client"],
+)
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=cors_origins,
     allow_credentials=True,
     allow_methods=["GET", "POST", "PATCH", "DELETE"],
     allow_headers=["Content-Type", "Authorization"],
-)
-
-# Everything except the client rotation callback is an admin operation:
-# provisioning accounts, reading the roster and purging history all require an
-# admin key. `/bundles/{id}/rotated` is deliberately left on the regular key so
-# the Lotti client can confirm rotation without holding admin credentials.
-app.add_middleware(
-    APIKeyAuthMiddleware,
-    admin_path_prefixes=[
-        "/api/v1/bundles",
-        "/api/v1/stats",
-        "/api/v1/purges",
-    ],
 )
 
 app.include_router(router, prefix="/api/v1")

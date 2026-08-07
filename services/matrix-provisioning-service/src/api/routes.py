@@ -7,7 +7,12 @@ import logging
 from fastapi import APIRouter, HTTPException, Query, status
 
 from ..container import container
-from ..core.constants import DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE
+from ..core.constants import (
+    DEFAULT_EVENT_LIMIT,
+    DEFAULT_PAGE_SIZE,
+    MAX_EVENT_LIMIT,
+    MAX_PAGE_SIZE,
+)
 from ..core.exceptions import (
     BundleNotFoundException,
     InvalidBundleStateException,
@@ -109,14 +114,22 @@ async def update_bundle(bundle_id: str, request: UpdateUserRequest) -> Provision
 @router.get(
     "/bundles/{bundle_id}/events", response_model=list[BundleEvent], tags=["bundles"]
 )
-async def get_bundle_events(bundle_id: str) -> list[BundleEvent]:
-    """Return a bundle's audit trail, oldest first."""
+async def get_bundle_events(
+    bundle_id: str,
+    limit: int = Query(
+        DEFAULT_EVENT_LIMIT,
+        ge=1,
+        le=MAX_EVENT_LIMIT,
+        description="Most recent entries to return",
+    ),
+) -> list[BundleEvent]:
+    """Return a bundle's most recent audit entries, oldest first."""
     repository = container.get_repository()
     if await repository.get(bundle_id) is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Unknown bundle {bundle_id}"
         )
-    return await repository.get_events(bundle_id)
+    return await repository.get_events(bundle_id, limit)
 
 
 @router.post(
@@ -203,6 +216,11 @@ async def get_usage(bundle_id: str) -> dict:
             detail=f"Could not read usage for {user.user_mxid}: {exc}",
         ) from exc
 
+    # The retention figures ride along so the UI can state the window that will
+    # actually be applied instead of guessing at one. A client-side default
+    # would silently disagree with RETENTION_DAYS and purge more than the
+    # configured policy allows.
+    service_default = container.get_retention_service().default_retention_days
     return {
         "bundle_id": bundle_id,
         "user_mxid": user.user_mxid,
@@ -212,6 +230,10 @@ async def get_usage(bundle_id: str) -> dict:
         "media_count": media.media_count,
         "media_length_bytes": media.media_length_bytes,
         "active_days": user.active_days,
+        "retention_days_default": service_default,
+        "retention_days_effective": (
+            service_default if user.retention_days is None else user.retention_days
+        ),
     }
 
 

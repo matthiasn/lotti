@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta, timezone
+from urllib.parse import unquote
 
 import httpx
 import pytest
@@ -300,6 +301,86 @@ async def test_purge_all_reclaims_media_for_every_eligible_room(
 
     started = await service.purge_all()
 
-    deletes = [r for r in requests if r.method == "DELETE" and "/media" in str(r.url)]
+    # Which accounts were reclaimed, not how many calls it took: media deletion
+    # pages until a batch comes back empty, so the call count is an artefact of
+    # the page size while the set of users covered is the actual contract.
+    deleted_for = {
+        unquote(str(r.url).split("/users/")[1].split("/media")[0])
+        for r in requests
+        if r.method == "DELETE" and "/media" in str(r.url)
+    }
     assert len(started) == 2
-    assert len(deletes) == 2
+    assert deleted_for == {"@one_user:example.com", "@two_user:example.com"}
+
+
+async def test_a_stored_zero_window_is_refused_rather_than_silently_defaulted(
+    repository, credentials, tracking_transport
+):
+    """0 means "purge everything", which must hit the floor, not the default.
+
+    Read as falsy it would fall back to 30 days — the sweep would quietly do
+    something other than what the record says.
+    """
+    transport, requests = tracking_transport
+    await _redeemed_user(repository, username="zero_user")
+    user = await repository.find_by_username("zero_user")
+    await repository.update(user.bundle_id, retention_days=0)
+    service = _service(repository, credentials, transport)
+
+    started = await service.purge_all()
+
+    assert started == []
+    assert [r for r in requests if "purge_history" in str(r.url)] == []
+
+
+async def test_a_pinned_window_still_wins_over_the_sweep_default(
+    repository, credentials, mock_transport
+):
+    await _redeemed_user(repository, username="pinned_user")
+    user = await repository.find_by_username("pinned_user")
+    await repository.update(user.bundle_id, retention_days=365)
+    service = _service(repository, credentials, mock_transport)
+
+    started = await service.purge_all(retention_days=30)
+
+    assert [r["retention_days"] for r in started] == [365]
+
+
+async def test_a_manual_purge_applies_the_users_own_window(
+    repository, credentials, mock_transport
+):
+    """Manual and scheduled purges must agree, or "purge now" over-deletes.
+
+    Falling back to the service default here would take 335 days more history
+    than a user pinned to 365 days is meant to keep.
+    """
+    user = await _redeemed_user(repository, username="pinned_manual")
+    await repository.update(user.bundle_id, retention_days=365)
+    service = _service(repository, credentials, mock_transport)
+
+    result = await service.purge_room(user.bundle_id)
+
+    assert result["retention_days"] == 365
+
+
+async def test_an_explicit_window_still_overrides_the_users_own(
+    repository, credentials, mock_transport
+):
+    user = await _redeemed_user(repository, username="explicit_user")
+    await repository.update(user.bundle_id, retention_days=365)
+    service = _service(repository, credentials, mock_transport)
+
+    result = await service.purge_room(user.bundle_id, retention_days=30)
+
+    assert result["retention_days"] == 30
+
+
+async def test_a_user_without_an_override_gets_the_service_default(
+    repository, credentials, mock_transport
+):
+    user = await _redeemed_user(repository, username="unpinned_user")
+    service = _service(repository, credentials, mock_transport, default_retention_days=45)
+
+    result = await service.purge_room(user.bundle_id)
+
+    assert result["retention_days"] == 45

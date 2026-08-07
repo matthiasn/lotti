@@ -11,6 +11,7 @@ from shared.matrix import (
     ProvisioningError,
     SynapseAdminClient,
     SynapseProvisioner,
+    UserAlreadyExistsError,
 )
 
 from ..core.exceptions import (
@@ -65,12 +66,18 @@ class BundleService:
             The bundle string and the stored record.
 
         Raises:
-            UsernameAlreadyProvisionedException: If the username is taken.
+            UsernameAlreadyProvisionedException: If the username is taken,
+                either in our own records or already on the homeserver.
             SynapseUnavailableException: If the homeserver rejects the request.
         """
         # Fail before touching Synapse when we already know the name is taken,
         # so the common case does not leave an account to roll back. The unique
         # index is still the authority for the concurrent case.
+        #
+        # This checks our own records only, which is not the same question as
+        # "is the localpart free on the homeserver" — accounts created by the
+        # CLI, or any ordinary Synapse user, have no row here. The provisioner
+        # asks Synapse itself before creating, and raises below.
         if await self._repository.find_by_username(request.username) is not None:
             raise UsernameAlreadyProvisionedException(
                 f"{request.username} is already provisioned"
@@ -81,6 +88,11 @@ class BundleService:
                 username=request.username,
                 display_name=request.display_name,
             )
+        except UserAlreadyExistsError as exc:
+            # Ahead of the ProvisioningError branch it inherits from: an
+            # occupied localpart is a 409 the admin can act on, not a
+            # homeserver failure.
+            raise UsernameAlreadyProvisionedException(str(exc)) from exc
         except httpx.HTTPStatusError as exc:
             raise SynapseUnavailableException(
                 f"Synapse rejected provisioning for {request.username}: "

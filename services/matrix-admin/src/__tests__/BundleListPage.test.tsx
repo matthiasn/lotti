@@ -65,7 +65,7 @@ describe("BundleListPage", () => {
     expect(within(first).getByText("Unused")).toBeInTheDocument();
     expect(within(first).getByText("@lotti_user:example.com")).toBeInTheDocument();
     expect(within(second).getByText("Rotated")).toBeInTheDocument();
-    expect(screen.getByText("2 total")).toBeInTheDocument();
+    expect(screen.getByText("1–2 of 2 total")).toBeInTheDocument();
   });
 
   it("shows an empty state when nothing is provisioned", async () => {
@@ -92,6 +92,7 @@ describe("BundleListPage", () => {
     await waitFor(() =>
       expect(listBundles).toHaveBeenLastCalledWith({
         status: "rotated",
+        page: 1,
         pageSize: 50,
       }),
     );
@@ -178,6 +179,92 @@ describe("BundleListPage", () => {
     );
     expect(screen.getByLabelText("Payment status for lotti_user")).toHaveValue(
       "unknown",
+    );
+  });
+
+  it("pages to users beyond the first page", async () => {
+    // Past 50 users the older accounts are simply not in the list, and without
+    // controls there is no way to reach them at all.
+    listBundles.mockResolvedValue({
+      users: [user()],
+      total: 73,
+      page: 1,
+      page_size: 50,
+    });
+    const person = userEvent.setup();
+    render(<BundleListPage />);
+    await screen.findByText("lotti_user");
+
+    await person.click(screen.getByRole("button", { name: "Next" }));
+
+    await waitFor(() =>
+      expect(listBundles).toHaveBeenLastCalledWith({
+        status: "",
+        page: 2,
+        pageSize: 50,
+      }),
+    );
+  });
+
+  it("cannot page back past the first page", async () => {
+    listBundles.mockResolvedValue({
+      users: [user()],
+      total: 73,
+      page: 1,
+      page_size: 50,
+    });
+    render(<BundleListPage />);
+    await screen.findByText("lotti_user");
+
+    expect(screen.getByRole("button", { name: "Previous" })).toBeDisabled();
+  });
+
+  it("hides the controls when everything fits on one page", async () => {
+    listBundles.mockResolvedValue({
+      users: [user()],
+      total: 1,
+      page: 1,
+      page_size: 50,
+    });
+    render(<BundleListPage />);
+    await screen.findByText("lotti_user");
+
+    expect(screen.queryByRole("button", { name: "Next" })).toBeNull();
+    expect(screen.getByText("1–1 of 1 total")).toBeInTheDocument();
+  });
+
+  it("returns to the first page when the filter changes", async () => {
+    // A narrower filter can have fewer pages, so keeping the old page number
+    // would land the admin on an empty list.
+    listBundles.mockResolvedValue({
+      users: [user()],
+      total: 200,
+      page: 1,
+      page_size: 50,
+    });
+    const person = userEvent.setup();
+    render(<BundleListPage />);
+    await screen.findByText("lotti_user");
+    await person.click(screen.getByRole("button", { name: "Next" }));
+    await waitFor(() =>
+      expect(listBundles).toHaveBeenLastCalledWith({
+        status: "",
+        page: 2,
+        pageSize: 50,
+      }),
+    );
+
+    await person.selectOptions(
+      screen.getByLabelText("Filter by status"),
+      "rotated",
+    );
+
+    await waitFor(() =>
+      expect(listBundles).toHaveBeenLastCalledWith({
+        status: "rotated",
+        page: 1,
+        pageSize: 50,
+      }),
     );
   });
 

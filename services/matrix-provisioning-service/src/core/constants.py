@@ -2,9 +2,11 @@
 
 # Service names for dependency injection
 SERVICE_PROVISIONING_REPOSITORY = "provisioning_repository"
+SERVICE_PROVISIONER = "provisioner"
 SERVICE_BUNDLE_SERVICE = "bundle_service"
 SERVICE_ADMIN_CLIENT = "admin_client"
 SERVICE_REDEMPTION_POLLER = "redemption_poller"
+SERVICE_RETENTION_SERVICE = "retention_service"
 SERVICE_RETENTION_SCHEDULER = "retention_scheduler"
 
 # Default SQLite location, mirroring the credits-service convention of a
@@ -30,10 +32,19 @@ RETENTION_SWEEP_STARTUP_DELAY_SECONDS = 300.0
 # Floor chosen to stay clear of the 7-day backfill amnesty, so a gap never ages
 # out of peer repair in the same window that room replay stops covering it.
 MIN_RETENTION_DAYS = 7
+# Ten years. Not a storage policy so much as a typo guard: anything past this is
+# a slipped digit, and a window the sweep can never reach is indistinguishable
+# from having no retention at all.
+MAX_RETENTION_DAYS = 3650
 
 # Pagination
 DEFAULT_PAGE_SIZE = 20
 MAX_PAGE_SIZE = 100
+
+# Audit trail. The poller appends to it on its own schedule, so reads are capped
+# to keep a long-running bundle's response size predictable.
+DEFAULT_EVENT_LIMIT = 200
+MAX_EVENT_LIMIT = 1000
 
 # Synapse localpart rules: lowercase alphanumerics plus ._=-/+ — we deliberately
 # apply a stricter subset so provisioned usernames stay readable and shell-safe.

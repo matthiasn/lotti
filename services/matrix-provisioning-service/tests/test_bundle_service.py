@@ -17,7 +17,12 @@ from src.core.exceptions import (
 )
 from src.core.models import BundleStatus, CreateBundleRequest
 from src.services.bundle_service import BundleService, fingerprint_bundle
-from tests.conftest import ROOM_ID, SERVER_NAME, synapse_handler
+from tests.conftest import (
+    ROOM_ID,
+    SERVER_NAME,
+    register_synapse_account,
+    synapse_handler,
+)
 
 pytestmark = pytest.mark.anyio
 
@@ -226,3 +231,65 @@ async def test_invalid_usernames_are_rejected_by_the_request_model(username):
 async def test_usernames_are_normalised_to_lowercase_and_trimmed():
     """Synapse localparts are case-sensitive, so normalising avoids near-duplicates."""
     assert CreateBundleRequest(username="  LottiUser  ").username == "lottiuser"
+
+
+async def test_refuses_to_provision_over_an_account_that_already_exists(
+    repository, credentials, mock_transport
+):
+    """`PUT /users/{mxid}` is an upsert: pushing through resets a live password.
+
+    The record-level pre-check cannot see this — an account created by the CLI,
+    or any ordinary Synapse user, has no row in our database at all.
+    """
+    register_synapse_account(f"@squatter:{SERVER_NAME}")
+    service = _service(repository, credentials, mock_transport)
+
+    with pytest.raises(UsernameAlreadyProvisionedException, match="already exists"):
+        await service.create_bundle(CreateBundleRequest(username="squatter"))
+
+
+async def test_an_existing_account_is_never_written_to(
+    repository, credentials, tracking_transport
+):
+    """The point of the guard is that no write reaches the occupied account."""
+    transport, requests = tracking_transport
+    register_synapse_account(f"@squatter:{SERVER_NAME}")
+    service = _service(repository, credentials, transport)
+
+    with pytest.raises(UsernameAlreadyProvisionedException):
+        await service.create_bundle(CreateBundleRequest(username="squatter"))
+
+    assert [r for r in requests if r.method == "PUT"] == []
+    assert await repository.find_by_username("squatter") is None
+
+
+async def test_an_inconclusive_existence_check_does_not_provision(
+    repository, credentials
+):
+    """A 500 on the lookup must not be read as "the localpart is free"."""
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "GET" and "/_synapse/admin/v2/users/" in str(request.url):
+            return httpx.Response(500, json={"errcode": "M_UNKNOWN"})
+        return synapse_handler(request)
+
+    service = _service(repository, credentials, httpx.MockTransport(handler))
+
+    with pytest.raises(SynapseUnavailableException):
+        await service.create_bundle(CreateBundleRequest(username="lotti_user"))
+
+    assert await repository.find_by_username("lotti_user") is None
+
+
+async def test_an_unreachable_homeserver_surfaces_as_a_gateway_error(
+    repository, credentials
+):
+    def handler(request: httpx.Request) -> httpx.Response:
+        raise httpx.ConnectError("connection refused")
+
+    service = _service(repository, credentials, httpx.MockTransport(handler))
+
+    with pytest.raises(SynapseUnavailableException, match="Could not reach"):
+        await service.create_bundle(CreateBundleRequest(username="lotti_user"))
+
+    assert await repository.find_by_username("lotti_user") is None

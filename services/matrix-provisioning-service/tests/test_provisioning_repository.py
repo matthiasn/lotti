@@ -413,3 +413,84 @@ async def test_schema_migrates_a_database_created_before_retention_columns(tmp_p
     assert user is not None
     assert user.retention_days is None
     assert user.retention_exempt is False
+
+
+# -- audit trail bounds -----------------------------------------------------
+
+
+async def test_a_sustained_outage_records_one_failure_not_one_per_poll(repository):
+    """The poller retries forever; a row per attempt would bury the real trail."""
+    user = await seed_user(repository)
+
+    for _ in range(50):
+        await repository.touch_poll(user.bundle_id, "homeserver unreachable")
+
+    failures = [
+        e
+        for e in await repository.get_events(user.bundle_id)
+        if e.event_type is BundleEventType.POLL_FAILED
+    ]
+    assert len(failures) == 1
+
+
+async def test_a_different_failure_is_still_recorded(repository):
+    """Collapsing repeats must not hide a new symptom."""
+    user = await seed_user(repository)
+
+    await repository.touch_poll(user.bundle_id, "homeserver unreachable")
+    await repository.touch_poll(user.bundle_id, "homeserver unreachable")
+    await repository.touch_poll(user.bundle_id, "admin token expired")
+
+    details = [
+        e.detail
+        for e in await repository.get_events(user.bundle_id)
+        if e.event_type is BundleEventType.POLL_FAILED
+    ]
+    assert details == ["homeserver unreachable", "admin token expired"]
+
+
+async def test_a_failure_after_recovery_is_recorded_again(repository):
+    """Only *consecutive* identical failures collapse."""
+    user = await seed_user(repository)
+
+    await repository.touch_poll(user.bundle_id, "homeserver unreachable")
+    await repository.mark_redeemed(user.bundle_id)
+    await repository.touch_poll(user.bundle_id, "homeserver unreachable")
+
+    failures = [
+        e
+        for e in await repository.get_events(user.bundle_id)
+        if e.event_type is BundleEventType.POLL_FAILED
+    ]
+    assert len(failures) == 2
+
+
+async def test_a_successful_poll_records_nothing(repository):
+    user = await seed_user(repository)
+    before = len(await repository.get_events(user.bundle_id))
+
+    await repository.touch_poll(user.bundle_id)
+
+    assert len(await repository.get_events(user.bundle_id)) == before
+
+
+async def test_the_event_trail_is_capped_and_keeps_the_newest_entries(repository):
+    """An unbounded read is a response size no caller can predict."""
+    user = await seed_user(repository)
+    for i in range(30):
+        await repository.touch_poll(user.bundle_id, f"failure {i}")
+
+    events = await repository.get_events(user.bundle_id, limit=5)
+
+    assert len(events) == 5
+    assert [e.detail for e in events] == [f"failure {i}" for i in range(25, 30)]
+
+
+async def test_the_capped_trail_is_still_oldest_first(repository):
+    user = await seed_user(repository)
+    for i in range(10):
+        await repository.touch_poll(user.bundle_id, f"failure {i}")
+
+    events = await repository.get_events(user.bundle_id, limit=4)
+
+    assert [e.id for e in events] == sorted(e.id for e in events)

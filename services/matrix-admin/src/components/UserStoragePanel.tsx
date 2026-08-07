@@ -34,7 +34,10 @@ export default function UserStoragePanel({
   const [error, setError] = useState<string | null>(null);
   const [purging, setPurging] = useState(false);
   const [purgeNote, setPurgeNote] = useState<string | null>(null);
-  const [retentionDays, setRetentionDays] = useState(30);
+  // Blank means "whatever the service is configured to apply". A number here is
+  // an explicit override for this one run. A hardcoded default would silently
+  // disagree with RETENTION_DAYS and delete more history than policy allows.
+  const [retentionOverride, setRetentionOverride] = useState("");
   const [includeMedia, setIncludeMedia] = useState(true);
   const [savingPolicy, setSavingPolicy] = useState(false);
 
@@ -78,7 +81,12 @@ export default function UserStoragePanel({
     setError(null);
     setPurgeNote(null);
     try {
-      const result = await purgeRoom(user.bundle_id, retentionDays, includeMedia);
+      const trimmed = retentionOverride.trim();
+      const result = await purgeRoom(
+        user.bundle_id,
+        trimmed === "" ? undefined : Number(trimmed),
+        includeMedia,
+      );
       setPurgeNote(
         result.include_media
           ? `Reclaimed ${formatBytes(result.bytes_freed)} — ${result.media_deleted} media file(s) deleted, history purged older than ${result.retention_days} days.`
@@ -141,7 +149,7 @@ export default function UserStoragePanel({
         />
         <span className="muted">
           {user.retention_days === null
-            ? "days — blank follows the service default"
+            ? `days — blank follows the service default (${usage.retention_days_default}d)`
             : "days — pinned for this user"}
         </span>
         <input
@@ -167,10 +175,13 @@ export default function UserStoragePanel({
           type="number"
           min={7}
           max={3650}
-          value={retentionDays}
-          onChange={(event) => setRetentionDays(Number(event.target.value))}
+          placeholder={String(usage.retention_days_effective)}
+          value={retentionOverride}
+          onChange={(event) => setRetentionOverride(event.target.value)}
         />
-        <span className="muted">days</span>
+        <span className="muted">
+          days{retentionOverride.trim() === "" ? " (this user's policy)" : ""}
+        </span>
         <input
           id={`media-${user.bundle_id}`}
           className="checkbox__box"

@@ -437,3 +437,146 @@ def test_purge_all_rejects_a_retention_below_the_floor(client):
     response = client.post("/api/v1/purges?retention_days=3", headers=ADMIN_AUTH)
 
     assert response.status_code == 400
+
+
+# -- auth defaults ----------------------------------------------------------
+
+
+def test_an_unlisted_api_path_requires_an_admin_key(client):
+    """Auth is default-deny: a route nobody listed must not be client-reachable.
+
+    The bundles/stats/purges prefixes are not an allow-list of what is
+    protected — everything under /api/v1 is, except the client namespace.
+    """
+    response = client.get("/api/v1/does-not-exist-yet", headers=CLIENT_AUTH)
+
+    assert response.status_code == 403
+
+
+def test_the_client_callback_namespace_stays_on_the_regular_key(client):
+    """The Lotti app must never need an admin credential to report a rotation."""
+    created = _create(client)
+
+    response = client.post(_rotated_url(created["user"]["bundle_id"]), headers=CLIENT_AUTH)
+
+    assert response.status_code == 200
+
+
+def test_a_cors_preflight_is_answered_without_credentials(client):
+    """Browsers send OPTIONS with no Authorization header.
+
+    With auth outside CORS this 401s and CORS_ALLOWED_ORIGINS can never work.
+    """
+    response = client.options(
+        "/api/v1/bundles",
+        headers={
+            "Origin": "http://localhost:5174",
+            "Access-Control-Request-Method": "POST",
+            "Access-Control-Request-Headers": "authorization",
+        },
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5174"
+
+
+def test_an_authenticated_cross_origin_request_is_still_allowed(client):
+    response = client.get(
+        "/api/v1/stats",
+        headers={**ADMIN_AUTH, "Origin": "http://localhost:5174"},
+    )
+
+    assert response.status_code == 200
+    assert response.headers["access-control-allow-origin"] == "http://localhost:5174"
+
+
+# -- retention policy bounds ------------------------------------------------
+
+
+@pytest.mark.parametrize("days", [0, 3, 6, 20_000])
+def test_an_out_of_range_retention_override_is_rejected(client, days):
+    """A stored out-of-range window makes every future sweep skip the user."""
+    created = _create(client)
+
+    response = client.patch(
+        f"/api/v1/bundles/{created['user']['bundle_id']}",
+        json={"retention_days": days},
+        headers=ADMIN_AUTH,
+    )
+
+    assert response.status_code == 422
+
+
+def test_an_in_range_retention_override_is_stored(client):
+    created = _create(client)
+
+    response = client.patch(
+        f"/api/v1/bundles/{created['user']['bundle_id']}",
+        json={"retention_days": 90},
+        headers=ADMIN_AUTH,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["retention_days"] == 90
+
+
+# -- usage payload ----------------------------------------------------------
+
+
+def test_usage_reports_the_window_that_will_actually_be_applied(client):
+    """The SPA reads this instead of hardcoding a default that could disagree."""
+    created = _create(client)
+    bundle_id = created["user"]["bundle_id"]
+
+    body = client.get(f"/api/v1/bundles/{bundle_id}/usage", headers=ADMIN_AUTH).json()
+
+    assert body["retention_days_default"] == 30
+    assert body["retention_days_effective"] == 30
+
+
+def test_usage_reflects_a_per_user_override(client):
+    created = _create(client)
+    bundle_id = created["user"]["bundle_id"]
+    client.patch(
+        f"/api/v1/bundles/{bundle_id}", json={"retention_days": 365}, headers=ADMIN_AUTH
+    )
+
+    body = client.get(f"/api/v1/bundles/{bundle_id}/usage", headers=ADMIN_AUTH).json()
+
+    assert body["retention_days_effective"] == 365
+    assert body["retention_days_default"] == 30
+
+
+def test_the_event_trail_honours_its_limit(client):
+    created = _create(client)
+    bundle_id = created["user"]["bundle_id"]
+
+    response = client.get(
+        f"/api/v1/bundles/{bundle_id}/events?limit=1", headers=ADMIN_AUTH
+    )
+
+    assert response.status_code == 200
+    assert len(response.json()) == 1
+
+
+def test_an_oversized_event_limit_is_rejected(client):
+    created = _create(client)
+
+    response = client.get(
+        f"/api/v1/bundles/{created['user']['bundle_id']}/events?limit=99999",
+        headers=ADMIN_AUTH,
+    )
+
+    assert response.status_code == 422
+
+
+def test_the_middleware_refuses_contradictory_prefix_configuration():
+    """The two prefix lists set opposite defaults, so both is not a policy."""
+    from shared.auth import APIKeyAuthMiddleware
+
+    with pytest.raises(ValueError, match="not both"):
+        APIKeyAuthMiddleware(
+            app,
+            admin_path_prefixes=["/api/v1/bundles"],
+            client_path_prefixes=["/api/v1/client"],
+        )

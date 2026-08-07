@@ -1,6 +1,5 @@
 import { provisioningApi } from "./client";
 import type {
-  BundleEvent,
   BundleStatus,
   CreateBundleResponse,
   PaymentStatus,
@@ -68,30 +67,6 @@ export async function updateBundle(
       retention_exempt: input.retentionExempt,
       clear_retention_override: input.clearRetentionOverride ?? false,
     },
-  );
-  return data;
-}
-
-export async function revokeBundle(
-  bundleId: string,
-  options: { reason?: string; deactivateAccount?: boolean } = {},
-): Promise<ProvisionedUser> {
-  const { data } = await provisioningApi.post<ProvisionedUser>(
-    `/bundles/${bundleId}/revoke`,
-    null,
-    {
-      params: {
-        reason: options.reason ?? "",
-        deactivate_account: options.deactivateAccount ?? false,
-      },
-    },
-  );
-  return data;
-}
-
-export async function getBundleEvents(bundleId: string): Promise<BundleEvent[]> {
-  const { data } = await provisioningApi.get<BundleEvent[]>(
-    `/bundles/${bundleId}/events`,
   );
   return data;
 }

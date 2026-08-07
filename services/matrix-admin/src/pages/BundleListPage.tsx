@@ -13,10 +13,13 @@ function formatDate(value: string | null): string {
   return value ? new Date(value).toLocaleDateString() : "—";
 }
 
+const PAGE_SIZE = 50;
+
 /** Roster of provisioned users with inline payment-status editing. */
 export default function BundleListPage() {
   const [users, setUsers] = useState<ProvisionedUser[]>([]);
   const [total, setTotal] = useState(0);
+  const [page, setPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState<BundleStatus | "">("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -25,7 +28,11 @@ export default function BundleListPage() {
   const load = useCallback(async () => {
     setError(null);
     try {
-      const data = await listBundles({ status: statusFilter, pageSize: 50 });
+      const data = await listBundles({
+        status: statusFilter,
+        page,
+        pageSize: PAGE_SIZE,
+      });
       setUsers(data.users);
       setTotal(data.total);
     } catch (caught) {
@@ -33,11 +40,23 @@ export default function BundleListPage() {
     } finally {
       setLoading(false);
     }
-  }, [statusFilter]);
+  }, [statusFilter, page]);
 
   useEffect(() => {
     void load();
   }, [load]);
+
+  // Changing the filter re-slices the whole set, so staying on page 4 would
+  // land on an empty page for a filter with fewer matches.
+  function changeFilter(next: BundleStatus | "") {
+    setStatusFilter(next);
+    setPage(1);
+    setExpanded(null);
+  }
+
+  const pageCount = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const firstOnPage = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const lastOnPage = (page - 1) * PAGE_SIZE + users.length;
 
   async function changePayment(user: ProvisionedUser, next: PaymentStatus) {
     // Optimistic: the roster is the admin's working surface and a round trip
@@ -71,7 +90,7 @@ export default function BundleListPage() {
           id="status-filter"
           value={statusFilter}
           onChange={(event) =>
-            setStatusFilter(event.target.value as BundleStatus | "")
+            changeFilter(event.target.value as BundleStatus | "")
           }
         >
           <option value="">All statuses</option>
@@ -160,7 +179,36 @@ export default function BundleListPage() {
         </table>
       )}
 
-      <p className="muted">{total} total</p>
+      {/* Without these the roster silently stops at the newest page, and older
+          accounts become unreachable from the admin app entirely. */}
+      <div className="pager">
+        <p className="muted">
+          {total === 0
+            ? "0 total"
+            : `${firstOnPage}–${lastOnPage} of ${total} total`}
+        </p>
+        {pageCount > 1 && (
+          <div className="pager__controls">
+            <button
+              type="button"
+              onClick={() => setPage((current) => current - 1)}
+              disabled={page <= 1}
+            >
+              Previous
+            </button>
+            <span className="muted">
+              Page {page} of {pageCount}
+            </span>
+            <button
+              type="button"
+              onClick={() => setPage((current) => current + 1)}
+              disabled={page >= pageCount}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

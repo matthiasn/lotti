@@ -17,11 +17,28 @@ export default function BundleReveal({
   onDismiss: () => void;
 }) {
   const [copied, setCopied] = useState(false);
+  const [copyError, setCopyError] = useState<string | null>(null);
   const [acknowledged, setAcknowledged] = useState(false);
 
   async function copy() {
-    await navigator.clipboard.writeText(result.bundle);
-    setCopied(true);
+    // `navigator.clipboard` is undefined outside a secure context, and this app
+    // is served over plain HTTP on a LAN address. Unhandled, the click would do
+    // nothing at all — and an admin who assumes it worked, acknowledges and
+    // dismisses has lost a bundle that exists nowhere else.
+    try {
+      if (!navigator.clipboard) {
+        throw new Error("The clipboard API needs HTTPS or localhost");
+      }
+      await navigator.clipboard.writeText(result.bundle);
+      setCopied(true);
+      setCopyError(null);
+    } catch (caught) {
+      setCopied(false);
+      setCopyError(
+        `${caught instanceof Error ? caught.message : "Copy failed"}. ` +
+          "Select the bundle text above and copy it manually before continuing.",
+      );
+    }
   }
 
   return (
@@ -71,6 +88,12 @@ export default function BundleReveal({
           Done
         </button>
       </div>
+
+      {copyError && (
+        <p role="alert" className="error-text">
+          {copyError}
+        </p>
+      )}
     </section>
   );
 }

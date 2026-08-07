@@ -9,14 +9,28 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from typing import Callable
-from urllib.parse import quote
 
 import httpx
 
-from .provisioner import AdminCredentials, ProvisioningError, encode_mxid_for_path
+from .core import (
+    AdminCredentials,
+    ProvisioningError,
+    SynapseClientBase,
+    encode_mxid_for_path,
+    encode_room_id_for_path,
+)
 
 logger = logging.getLogger(__name__)
+
+#: Synapse's own page size for the per-user media endpoints. Both the listing
+#: and the delete cap out at this many rows per call regardless of what we ask
+#: for, so the only way to cover a real account is to follow the pages.
+MEDIA_PAGE_SIZE = 100
+
+#: Hard stop on media paging. At the page size above this covers a million
+#: files; past it something is wrong (a homeserver that never advances its
+#: cursor would otherwise loop forever).
+MAX_MEDIA_PAGES = 10_000
 
 
 @dataclass(frozen=True)
@@ -88,28 +102,29 @@ class PurgeStatus:
         return self.status == "active"
 
 
-class SynapseAdminClient:
-    """Queries the Synapse admin API for user activity and usage stats."""
+class SynapseAdminClient(SynapseClientBase):
+    """Queries the Synapse admin API for user activity and usage stats.
 
-    def __init__(
-        self,
-        credentials: AdminCredentials,
-        *,
-        transport: httpx.AsyncBaseTransport | None = None,
-        timeout: float = 30.0,
-        log: Callable[[str], None] | None = None,
-    ) -> None:
-        self._credentials = credentials
-        self._transport = transport
-        self._timeout = timeout
-        self._log = log or logger.debug
-        self._cached_headers: dict | None = None
+    Long-lived: the service holds one instance, and both the redemption poller
+    and the retention sweep call it once per user in a loop. It therefore keeps
+    a single httpx client open so those loops reuse connections rather than
+    completing a fresh TLS handshake per user. Call :meth:`aclose` on shutdown.
+    """
+
+    _cached_headers: dict | None = None
+    _shared_client: httpx.AsyncClient | None = None
 
     def _client(self) -> httpx.AsyncClient:
-        kwargs: dict = {"base_url": self._credentials.base_url, "timeout": self._timeout}
-        if self._transport is not None:
-            kwargs["transport"] = self._transport
-        return httpx.AsyncClient(**kwargs)
+        """Return the shared client, opening it on first use."""
+        if self._shared_client is None or self._shared_client.is_closed:
+            self._shared_client = self._new_client()
+        return self._shared_client
+
+    async def aclose(self) -> None:
+        """Close the shared client. Safe to call more than once."""
+        if self._shared_client is not None and not self._shared_client.is_closed:
+            await self._shared_client.aclose()
+        self._shared_client = None
 
     async def _auth_headers(self, client: httpx.AsyncClient) -> dict:
         """Resolve admin auth headers, preferring a configured token.
@@ -151,18 +166,18 @@ class SynapseAdminClient:
             httpx.HTTPStatusError: If Synapse returns an error status.
         """
         encoded = encode_mxid_for_path(user_mxid)
-        async with self._client() as client:
-            headers = await self._auth_headers(client)
+        client = self._client()
+        headers = await self._auth_headers(client)
 
-            resp = await client.get(f"/_synapse/admin/v2/users/{encoded}", headers=headers)
-            resp.raise_for_status()
-            deactivated = bool(resp.json().get("deactivated", False))
+        resp = await client.get(f"/_synapse/admin/v2/users/{encoded}", headers=headers)
+        resp.raise_for_status()
+        deactivated = bool(resp.json().get("deactivated", False))
 
-            resp = await client.get(
-                f"/_synapse/admin/v2/users/{encoded}/devices", headers=headers
-            )
-            resp.raise_for_status()
-            devices = resp.json().get("devices", [])
+        resp = await client.get(
+            f"/_synapse/admin/v2/users/{encoded}/devices", headers=headers
+        )
+        resp.raise_for_status()
+        devices = resp.json().get("devices", [])
 
         seen = [d.get("last_seen_ts") for d in devices if d.get("last_seen_ts")]
         return UserActivity(
@@ -173,21 +188,53 @@ class SynapseAdminClient:
         )
 
     async def get_media_usage(self, user_mxid: str) -> UserMediaUsage:
-        """Fetch aggregate media count and byte usage for a user."""
+        """Fetch aggregate media count and byte usage for a user.
+
+        Follows Synapse's ``next_token`` pagination to the end. Summing only the
+        first page would under-report the byte total for anyone with more than
+        :data:`MEDIA_PAGE_SIZE` files while still reporting the true file count
+        from ``total`` — and the retention report subtracts these figures, so a
+        truncated total would make a large purge look like it reclaimed nothing.
+        """
         encoded = encode_mxid_for_path(user_mxid)
-        async with self._client() as client:
-            headers = await self._auth_headers(client)
+        client = self._client()
+        headers = await self._auth_headers(client)
+
+        total_bytes = 0
+        seen = 0
+        reported_total: int | None = None
+        params: dict = {"limit": MEDIA_PAGE_SIZE}
+
+        for _ in range(MAX_MEDIA_PAGES):
             resp = await client.get(
-                f"/_synapse/admin/v1/users/{encoded}/media", headers=headers
+                f"/_synapse/admin/v1/users/{encoded}/media",
+                headers=headers,
+                params=params,
             )
             resp.raise_for_status()
             payload = resp.json()
 
-        media = payload.get("media", [])
-        total_bytes = sum(int(item.get("media_length", 0)) for item in media)
+            media = payload.get("media", [])
+            total_bytes += sum(int(item.get("media_length", 0)) for item in media)
+            seen += len(media)
+            if reported_total is None and "total" in payload:
+                reported_total = int(payload["total"])
+
+            next_token = payload.get("next_token")
+            if next_token is None or not media:
+                break
+            params = {"limit": MEDIA_PAGE_SIZE, "from": next_token}
+        else:
+            logger.warning(
+                "Stopped paging media for %s after %s pages; byte total may be "
+                "short of the real figure",
+                user_mxid,
+                MAX_MEDIA_PAGES,
+            )
+
         return UserMediaUsage(
             user_mxid=user_mxid,
-            media_count=int(payload.get("total", len(media))),
+            media_count=seen if reported_total is None else reported_total,
             media_length_bytes=total_bytes,
         )
 
@@ -217,19 +264,19 @@ class SynapseAdminClient:
             httpx.HTTPStatusError: If Synapse rejects the purge request.
             ProvisioningError: If Synapse does not return a purge ID.
         """
-        encoded_room = quote(room_id, safe="")
-        async with self._client() as client:
-            headers = await self._auth_headers(client)
-            resp = await client.post(
-                f"/_synapse/admin/v1/purge_history/{encoded_room}",
-                headers=headers,
-                json={
-                    "delete_local_events": True,
-                    "purge_up_to_ts": purge_up_to_ts_ms,
-                },
-            )
-            resp.raise_for_status()
-            purge_id = resp.json().get("purge_id")
+        encoded_room = encode_room_id_for_path(room_id)
+        client = self._client()
+        headers = await self._auth_headers(client)
+        resp = await client.post(
+            f"/_synapse/admin/v1/purge_history/{encoded_room}",
+            headers=headers,
+            json={
+                "delete_local_events": True,
+                "purge_up_to_ts": purge_up_to_ts_ms,
+            },
+        )
+        resp.raise_for_status()
+        purge_id = resp.json().get("purge_id")
 
         if not purge_id:
             raise ProvisioningError(f"Synapse did not return a purge_id for room {room_id}")
@@ -251,46 +298,61 @@ class SynapseAdminClient:
         can still recover it peer-to-peer through media repair, on the same
         terms as event backfill — any peer still holding the file may answer.
 
+        Synapse deletes at most :data:`MEDIA_PAGE_SIZE` files per call, so this
+        repeats until a call reports nothing left to delete. A single call would
+        cap the reclaim at 100 files however much the account is holding.
+
         Args:
             user_mxid: Owner of the media.
             before_ts_ms: Unix epoch milliseconds; media uploaded strictly
                 before this is deleted.
 
         Returns:
-            How many files were removed.
+            How many files were removed in total.
 
         Raises:
             httpx.HTTPStatusError: If Synapse rejects the request.
         """
         encoded = encode_mxid_for_path(user_mxid)
-        async with self._client() as client:
-            headers = await self._auth_headers(client)
+        client = self._client()
+        headers = await self._auth_headers(client)
+
+        deleted_total = 0
+        for _ in range(MAX_MEDIA_PAGES):
             resp = await client.delete(
                 f"/_synapse/admin/v1/users/{encoded}/media",
                 headers=headers,
-                params={"before_ts": before_ts_ms},
+                params={"before_ts": before_ts_ms, "limit": MEDIA_PAGE_SIZE},
             )
             resp.raise_for_status()
             payload = resp.json()
 
-        deleted = payload.get("deleted_media") or []
-        return MediaDeletion(
-            user_mxid=user_mxid,
-            deleted_count=int(payload.get("total", len(deleted))),
-        )
+            deleted = payload.get("deleted_media") or []
+            batch = int(payload.get("total", len(deleted)))
+            deleted_total += batch
+            if batch == 0:
+                break
+        else:
+            logger.warning(
+                "Stopped deleting media for %s after %s batches; some files may "
+                "remain",
+                user_mxid,
+                MAX_MEDIA_PAGES,
+            )
+
+        return MediaDeletion(user_mxid=user_mxid, deleted_count=deleted_total)
 
     async def get_purge_status(self, purge_id: str) -> PurgeStatus:
         """Poll the status of a previously started purge."""
-        async with self._client() as client:
-            headers = await self._auth_headers(client)
-            resp = await client.get(
-                f"/_synapse/admin/v1/purge_history_status/{quote(purge_id, safe='')}",
-                headers=headers,
-            )
-            resp.raise_for_status()
-            status = resp.json().get("status", "unknown")
-
-        return PurgeStatus(purge_id=purge_id, status=status)
+        client = self._client()
+        headers = await self._auth_headers(client)
+        resp = await client.get(
+            f"/_synapse/admin/v1/purge_history_status/"
+            f"{encode_room_id_for_path(purge_id)}",
+            headers=headers,
+        )
+        resp.raise_for_status()
+        return PurgeStatus(purge_id=purge_id, status=resp.json().get("status", "unknown"))
 
     async def deactivate_user(self, user_mxid: str) -> None:
         """Deactivate a user account.
@@ -299,14 +361,14 @@ class SynapseAdminClient:
             ProvisioningError: If Synapse rejects the deactivation.
         """
         encoded = encode_mxid_for_path(user_mxid)
-        async with self._client() as client:
-            headers = await self._auth_headers(client)
-            resp = await client.put(
-                f"/_synapse/admin/v2/users/{encoded}",
-                headers=headers,
-                json={"deactivated": True},
+        client = self._client()
+        headers = await self._auth_headers(client)
+        resp = await client.put(
+            f"/_synapse/admin/v2/users/{encoded}",
+            headers=headers,
+            json={"deactivated": True},
+        )
+        if not resp.is_success:
+            raise ProvisioningError(
+                f"Failed to deactivate {user_mxid} (HTTP {resp.status_code})"
             )
-            if not resp.is_success:
-                raise ProvisioningError(
-                    f"Failed to deactivate {user_mxid} (HTTP {resp.status_code})"
-                )
