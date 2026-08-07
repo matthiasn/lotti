@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 // Registry of tool names and definitions available to agents.
 
 import 'package:lotti/features/agents/tools/evolution_tool_definitions.dart';
@@ -34,6 +36,60 @@ class AgentToolDefinition {
 
   /// Whether this tool should be exposed to the LLM right now.
   final bool enabled;
+}
+
+/// Tool names models reach for that differ only in their verb prefix.
+///
+/// The registry mixes `set_task_*` (title, language, status) with
+/// `update_task_*` (estimate, due date, priority), and a model that generalises
+/// from one to the other invents a name that does not exist. DeepSeek V4 Flash
+/// 0731 did this in both directions during the 2026-08-07 evaluation —
+/// `set_task_estimate` and `update_task_status` — and did not recover when told
+/// the tool was unknown, so the user's requested change was silently lost while
+/// the report claimed it had been applied.
+///
+/// Accepting the near-miss costs nothing and turns a dropped mutation into a
+/// correct one. Renaming the tools for consistency would be the deeper fix.
+const Map<String, String> taskAgentToolAliases = {
+  'set_task_estimate': TaskAgentToolNames.updateTaskEstimate,
+  'set_task_due_date': TaskAgentToolNames.updateTaskDueDate,
+  'set_task_priority': TaskAgentToolNames.updateTaskPriority,
+  'update_task_status': TaskAgentToolNames.setTaskStatus,
+  'update_task_title': TaskAgentToolNames.setTaskTitle,
+  'update_task_language': TaskAgentToolNames.setTaskLanguage,
+};
+
+/// Resolves [toolName] through [taskAgentToolAliases], or returns it unchanged.
+String resolveTaskAgentToolAlias(String toolName) =>
+    taskAgentToolAliases[toolName] ?? toolName;
+
+/// Decodes arguments a model sent as a JSON string instead of a structure.
+///
+/// Small models routinely double-encode collection arguments — Qwen3.6 35B A3B
+/// sent `{"items": "[{\"id\": …, \"isChecked\": true}]"}` with entirely correct
+/// contents, including `reason` fields citing the log evidence, and the handler
+/// rejected it on `items is! List`. Correct work should not be discarded over
+/// its encoding.
+///
+/// Only strings that parse to a list or map are converted; anything else is
+/// passed through untouched so genuine string arguments keep their type.
+Map<String, dynamic> decodeStringifiedJsonArguments(Map<String, dynamic> args) {
+  Map<String, dynamic>? decoded;
+  for (final entry in args.entries) {
+    final value = entry.value;
+    if (value is! String) continue;
+    final trimmed = value.trim();
+    if (!trimmed.startsWith('[') && !trimmed.startsWith('{')) continue;
+    try {
+      final parsed = jsonDecode(trimmed);
+      if (parsed is List || parsed is Map) {
+        (decoded ??= Map<String, dynamic>.of(args))[entry.key] = parsed;
+      }
+    } on FormatException {
+      // Leave malformed JSON alone; the handler reports the type mismatch.
+    }
+  }
+  return decoded ?? args;
 }
 
 /// Tool name constants used by the task agent.

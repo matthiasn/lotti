@@ -6,6 +6,18 @@
       "package": "brace-expansion",
       "reason": "Vulnerable range is <= 5.0.7, so every published version except 5.0.8 is flagged, and nothing in the tree depends on 5.0.8 yet. Reached only via @docusaurus/core -> serve-handler -> minimatch@3 -> brace-expansion@1.1.16. No fix is reachable: 1.x has no backport (tops out at 1.1.16), `npm audit fix --force` churns 357 packages and leaves the same 22 findings, and an override to ^5.0.8 breaks minimatch@3 at runtime because 5.x exports a named `expand` instead of a callable default. serve-handler backs `docusaurus serve` (local preview); the deployed artifact is a static site that never runs it.",
       "expires": "2026-10-01"
+    },
+    {
+      "id": "GHSA-w3rx-r6r6-pgpr",
+      "package": "image-size",
+      "reason": "Infinite loop in the ICNS parser. The vulnerable range is <= 2.0.2, which is every published version, so no dependency change reaches a fix and npm reports fixAvailable: false for @docusaurus/core itself. Reached only via @docusaurus/mdx-loader, which calls image-size at build time to read the dimensions of the manual's own committed images — the parser never sees third-party or user-supplied input, and the deployed artifact is a static site that does not run it. Drop this entry once image-size publishes a patched release and Docusaurus picks it up.",
+      "expires": "2026-10-01"
+    },
+    {
+      "id": "GHSA-5p2g-fcmc-qvqq",
+      "package": "image-size",
+      "reason": "Infinite loops in the JXL and HEIF parsers, in the same image-size dependency and with the same <= 2.0.2 range as GHSA-w3rx-r6r6-pgpr, so it is unfixable and unreachable for the same reasons: build-time only, over images committed to this repository, in a build that emits a static site. The manual ships no JXL or HEIF assets at all. Drop this entry with the other image-size entry once a patched release exists.",
+      "expires": "2026-10-01"
     }
   ]
 }

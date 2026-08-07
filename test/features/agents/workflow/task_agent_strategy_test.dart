@@ -2565,6 +2565,81 @@ void main() {
         expect(csBuilder.items[2].humanSummary, 'Add: "Write tests"');
       });
 
+      test('queues an aliased deferred tool instead of applying it', () async {
+        // DeepSeek V4 Flash 0731 called `update_task_title` for
+        // `set_task_title`. Resolving the alias only inside the dispatcher is
+        // not enough: the raw name misses AgentToolRegistry.deferredTools, so
+        // the call falls through to the executor and changes the title the
+        // user never confirmed. The alias must be a synonym, not a second,
+        // autonomous spelling.
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-alias',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'update_task_title',
+              arguments: jsonEncode({'title': 'Renamed by alias'}),
+            ),
+          ),
+        ];
+
+        await deferredStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        verifyNever(
+          () => mockExecutor.execute(
+            toolName: any(named: 'toolName'),
+            args: any(named: 'args'),
+            targetEntityId: any(named: 'targetEntityId'),
+            resolveCategoryId: any(named: 'resolveCategoryId'),
+            executeHandler: any(named: 'executeHandler'),
+            readVectorClock: any(named: 'readVectorClock'),
+          ),
+        );
+
+        expect(csBuilder.items, hasLength(1));
+        // Queued under the canonical name, so the confirmation path applies
+        // the same tool it would for the correctly-named call.
+        expect(csBuilder.items.first.toolName, 'set_task_title');
+        expect(
+          csBuilder.items.first.humanSummary,
+          contains('Renamed by alias'),
+        );
+      });
+
+      test('explodes a batch tool whose array arrived as a string', () async {
+        // Qwen3.6 35B A3B double-encoded every collection argument. The
+        // exploder reads `args['items']` before the dispatcher ever sees the
+        // call, and a string fails `array is! List`, so all three correct
+        // items were dropped without ever reaching a proposal.
+        final toolCalls = [
+          ChatCompletionMessageToolCall(
+            id: 'call-stringified',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: 'add_multiple_checklist_items',
+              arguments: jsonEncode({
+                'items': jsonEncode([
+                  {'title': 'Design mockup'},
+                  {'title': 'Implement API'},
+                ]),
+              }),
+            ),
+          ),
+        ];
+
+        await deferredStrategy.processToolCalls(
+          toolCalls: toolCalls,
+          manager: mockManager,
+        );
+
+        expect(csBuilder.items, hasLength(2));
+        expect(csBuilder.items[0].humanSummary, 'Add: "Design mockup"');
+        expect(csBuilder.items[1].humanSummary, 'Add: "Implement API"');
+      });
+
       test('mixes deferred and immediate tools in one call', () async {
         when(
           () => mockExecutor.execute(

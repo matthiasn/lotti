@@ -241,15 +241,15 @@ class TaskAgentStrategy extends ConversationStrategy {
     final stagedBeforeTurn = changeSetBuilder?.proposedFingerprints ?? const {};
 
     for (final call in toolCalls) {
-      final toolName = call.function.name;
+      final rawToolName = call.function.name;
 
-      Map<String, dynamic> args;
+      Map<String, dynamic> parsedArgs;
       try {
-        args = parseToolArguments(call.function.arguments);
+        parsedArgs = parseToolArguments(call.function.arguments);
       } catch (e) {
         final rawBytes = utf8.encode(call.function.arguments).length;
         developer.log(
-          'Failed to parse tool call arguments for $toolName '
+          'Failed to parse tool call arguments for $rawToolName '
           '(rawBytes=$rawBytes, errorType=${e.runtimeType})',
           name: 'TaskAgentStrategy',
         );
@@ -258,11 +258,30 @@ class TaskAgentStrategy extends ConversationStrategy {
             'Detail: ${e.runtimeType}';
         manager.addToolResponse(toolCallId: call.id, response: errorMsg);
         await _recordToolResultMessage(
-          toolName: toolName,
+          toolName: rawToolName,
           errorMessage: errorMsg,
         );
         continue;
       }
+
+      // Normalise the near-miss tool name and any double-encoded collection
+      // argument here, at the single entry point, rather than in the
+      // dispatcher alone. Every decision below keys off these two values —
+      // deferred routing, single-use bookkeeping, batch explosion, the
+      // proposal queued for the user — and an alias that reaches them
+      // unresolved is not merely dropped: it misses
+      // [AgentToolRegistry.deferredTools], falls through to the executor, and
+      // applies a change the user never confirmed. Normalising once here is
+      // what makes the alias a true synonym rather than a second, autonomous
+      // spelling of a confirmable tool.
+      final toolName = resolveTaskAgentToolAlias(rawToolName);
+      if (toolName != rawToolName) {
+        developer.log(
+          'Resolved tool alias $rawToolName -> $toolName',
+          name: 'TaskAgentStrategy',
+        );
+      }
+      final args = decodeStringifiedJsonArguments(parsedArgs);
 
       final argsBytes = utf8.encode(jsonEncode(args)).length;
       developer.log(

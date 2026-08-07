@@ -75,7 +75,34 @@ enum LocalTaskAgentEvalPromptVariant {
   qualityFocused,
   conciseReport,
   evidenceSynthesis,
+
+  /// Small-model probe: a short prompt and a reduced tool surface.
+  ///
+  /// The production prompt is ~21k characters, 42% of it prose about tool
+  /// etiquette, and advertises ~20 tools — against a task context of under a
+  /// thousand characters. Large models absorb that; the open question is
+  /// whether it is what stops small ones from being useful. This variant keeps
+  /// the same scenarios and checks and changes only the payload.
+  lean,
 }
+
+/// Tools the lean variant advertises.
+///
+/// Deliberately not derived from each scenario's expectations — that would
+/// hand the model the answer. This is the subset a task agent needs on almost
+/// every wake, with labels, language, linking, splitting, time entries and
+/// attention requests removed.
+const Set<String> leanTaskAgentToolNames = {
+  TaskAgentToolNames.setTaskTitle,
+  TaskAgentToolNames.setTaskStatus,
+  TaskAgentToolNames.updateTaskEstimate,
+  TaskAgentToolNames.updateTaskDueDate,
+  TaskAgentToolNames.updateTaskPriority,
+  TaskAgentToolNames.addMultipleChecklistItems,
+  TaskAgentToolNames.updateChecklistItems,
+  TaskAgentToolNames.updateReport,
+  TaskAgentToolNames.recordObservations,
+};
 
 enum LocalTaskAgentEvalExecutionMode {
   singlePass,
@@ -604,9 +631,16 @@ int parseLocalTaskAgentEvalTimeoutMinutes(
   return minutes;
 }
 
-/// Whether [toolName] is a tool the task agent actually exposes.
+/// Whether [toolName] is a tool the task agent actually dispatches.
+///
+/// Resolved through the alias map first, because the app does: a call to
+/// `set_task_estimate` reaches `update_task_estimate` and applies. Answering
+/// "unknown" here for a name the app honours would fail a model for work it
+/// actually completes. A name that survives resolution unchanged and is still
+/// outside the registry — a genuine fabrication like `delete_everything` — is
+/// unknown here exactly as it is there.
 bool isKnownTaskAgentToolName(String toolName) =>
-    _knownTaskAgentToolNames.contains(toolName);
+    _knownTaskAgentToolNames.contains(resolveTaskAgentToolAlias(toolName));
 
 /// The tool response the eval harness returns for a call.
 ///
@@ -632,7 +666,11 @@ List<ChatCompletionTool> buildLocalTaskAgentEvalTools({
 }) {
   return AgentToolRegistry.taskAgentTools
       .where((definition) {
-        return definition.enabled;
+        if (!definition.enabled) return false;
+        if (promptVariant == LocalTaskAgentEvalPromptVariant.lean) {
+          return leanTaskAgentToolNames.contains(definition.name);
+        }
+        return true;
       })
       .map((definition) {
         final optimizeReport =
@@ -1121,6 +1159,48 @@ LocalTaskAgentEvalScenario _latestDeadlineWinsScenario(
   );
 }
 
+/// Compact system prompt for [LocalTaskAgentEvalPromptVariant.lean].
+///
+/// Keeps every rule a correct wake actually depends on — end with a report or
+/// nothing, do not invent facts, do not undo the user's work, do not narrate
+/// your own process, write in the task's language — and drops the
+/// tool-etiquette prose that the dispatcher already enforces by rejecting the
+/// calls. The production prompt's ban on restating visible metadata is among
+/// what goes; the measurements in `docs/evaluations/task_agent_models` were
+/// taken against exactly this text, so it is documented as it stands rather
+/// than amended after the fact.
+const String _leanSystemPrompt = '''
+You are a Task Agent that maintains one task's summary report.
+
+A wake ends in exactly one of two ways: if something report-worthy changed,
+finish with a single `update_report` call carrying `oneLiner`, `tldr` and
+`content`; if nothing changed, finish with a short plain-text note and no
+tool call.
+
+Apply the changes the task context asks for, and only those. Do not change a
+field whose current value already matches, and never undo work the user has
+marked done.
+
+Every statement must be supported by the task context. Do not describe your own
+analysis, tool calls, or checklist maintenance as progress. Do not report work
+the user explicitly deferred as active or planned.
+
+Write in the task's `languageCode`.
+
+### `oneLiner`
+One short line naming the current state. No emoji.
+
+### `tldr`
+Two or three sentences on what matters now, without repeating the one-liner.
+
+### `content`
+A compact current-state report in the task's language. No title. Include only
+sections that carry real information, chosen from `## Progress` for completed
+outcomes, `## Next actions` for concrete pending work, `## Blockers` for active
+blockers, and `## Links` for real URLs from the context. Omit empty sections
+and internal IDs.
+''';
+
 /// The evaluation system prompt for [variant], for suites defined in their own
 /// files (see `penguin_task_agent_eval_scenarios.dart`).
 String buildLocalTaskAgentEvalSystemPrompt(
@@ -1138,6 +1218,11 @@ String _buildEvalSystemPrompt(
   String? modelId,
   String? reportDirective,
 }) {
+  if (variant == LocalTaskAgentEvalPromptVariant.lean) {
+    return reportDirective == null
+        ? _leanSystemPrompt
+        : '$_leanSystemPrompt\n\n## Report Directive\n\n$reportDirective';
+  }
   final version =
       AgentDomainEntity.agentTemplateVersion(
             id: 'melious-task-agent-eval-${variant.name}',
@@ -1187,6 +1272,7 @@ String _evalVariantDirective(LocalTaskAgentEvalPromptVariant variant) {
     LocalTaskAgentEvalPromptVariant.compactModel => _compactModelDirective,
     LocalTaskAgentEvalPromptVariant.qualityFocused => _qualityFocusedDirective,
     LocalTaskAgentEvalPromptVariant.conciseReport => '',
+    LocalTaskAgentEvalPromptVariant.lean => '',
     LocalTaskAgentEvalPromptVariant.evidenceSynthesis => '',
   };
 }
@@ -1772,23 +1858,59 @@ double? parseLocalTaskAgentEvalTemperature(
 
 enum LocalTaskAgentEvalToolCallPhase { main, reportPass }
 
+/// A tool call as the model emitted it, normalised the way the app normalises
+/// it before anything acts on it.
+///
+/// [name] is the resolved tool name and [jsonObjectArguments] decodes
+/// double-encoded collections, because `TaskAgentStrategy.processToolCalls`
+/// applies `resolveTaskAgentToolAlias` and `decodeStringifiedJsonArguments` to
+/// every call before deferred routing, batch explosion or execution sees it.
+/// Scoring the raw values instead would fail a model for a call the app
+/// completes — the mirror image of the defect that had this harness confirming
+/// fabricated tool names, and one that lands hardest on exactly the small
+/// models the recovery was written for.
+///
+/// [rawName] keeps what the model actually sent, so a run can report how often
+/// a model needed recovering rather than hiding it inside the score.
 class LocalTaskAgentEvalToolCall {
-  const LocalTaskAgentEvalToolCall({
-    required this.name,
+  LocalTaskAgentEvalToolCall({
+    required String name,
     required this.argumentsJson,
     this.phase = LocalTaskAgentEvalToolCallPhase.main,
-  });
+  }) : rawName = name,
+       name = resolveTaskAgentToolAlias(name);
 
+  /// The resolved tool name — what the app would actually dispatch.
   final String name;
+
+  /// The tool name exactly as the model emitted it.
+  final String rawName;
+
   final String argumentsJson;
   final LocalTaskAgentEvalToolCallPhase phase;
+
+  /// Whether the model reached for a near-miss name the app accepts anyway.
+  bool get recoveredAlias => name != rawName;
 
   Map<String, dynamic>? get jsonObjectArguments {
     try {
       final decoded = jsonDecode(argumentsJson);
-      return decoded is Map<String, dynamic> ? decoded : null;
+      return decoded is Map<String, dynamic>
+          ? decodeStringifiedJsonArguments(decoded)
+          : null;
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Whether a collection argument arrived double-encoded as a JSON string.
+  bool get recoveredStringifiedArguments {
+    try {
+      final decoded = jsonDecode(argumentsJson);
+      if (decoded is! Map<String, dynamic>) return false;
+      return !identical(decodeStringifiedJsonArguments(decoded), decoded);
+    } catch (_) {
+      return false;
     }
   }
 
@@ -1803,8 +1925,10 @@ class LocalTaskAgentEvalToolCall {
   Map<String, Object?> toJson() {
     return {
       'name': name,
+      if (recoveredAlias) 'rawName': rawName,
       'argumentsJson': argumentsJson,
       'argumentsJsonValid': hasJsonObjectArguments,
+      if (recoveredStringifiedArguments) 'recoveredStringifiedArguments': true,
       'phase': phase.name,
     };
   }
@@ -2544,18 +2668,20 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
       _toolCalls.add(recorded);
 
       final args = recorded.jsonObjectArguments;
-      // Mirror TaskToolDispatcher: an unregistered name is an error the model
-      // can recover from, not a success. Confirming a fabricated tool made the
-      // harness measure something the app never does — DeepSeek V4 Flash 0731
-      // invented both `set_task_estimate` and `update_task_status` and was
-      // told each one worked.
-      final isKnownTool = isKnownTaskAgentToolName(call.function.name);
+      // Mirror TaskToolDispatcher in both directions. An unregistered name is
+      // an error the model can recover from, not a success — confirming a
+      // fabricated tool made the harness measure something the app never does.
+      // But a near-miss the app resolves must be answered the way the app
+      // answers it, so `recorded.name` (resolved) drives this, not the raw
+      // name: telling a model its accepted call was unknown is the same defect
+      // pointing the other way.
+      final isKnownTool = isKnownTaskAgentToolName(recorded.name);
       final response = localTaskAgentEvalToolResponse(
-        toolName: call.function.name,
+        toolName: recorded.name,
         hasValidJsonArguments: args != null,
       );
       if (isKnownTool &&
-          call.function.name == TaskAgentToolNames.updateReport &&
+          recorded.name == TaskAgentToolNames.updateReport &&
           args != null &&
           _hasNonEmptyString(args, 'oneLiner') &&
           _hasNonEmptyString(args, 'tldr') &&
