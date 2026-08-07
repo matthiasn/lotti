@@ -219,3 +219,6 @@ logs/
 .dolt/
 .beads-credential-key
 .beads/proxieddb/
+
+# Task-agent eval run artifacts (local, regenerated per run)
+eval_artifacts/

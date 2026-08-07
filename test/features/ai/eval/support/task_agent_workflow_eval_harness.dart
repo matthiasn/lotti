@@ -203,6 +203,21 @@ class TaskAgentWorkflowEvalHarness {
   AiInputRepository get aiInputRepository =>
       container.read(aiInputRepositoryProvider);
 
+  /// The seeded agent, read back from the agent database.
+  ///
+  /// Read rather than kept from the seed, so a run works from the same row the
+  /// app would load — if `upsertEntity` ever stopped persisting the identity,
+  /// this fails here instead of surfacing as an unexplained wake failure.
+  Future<AgentIdentityEntity> loadAgentIdentity() async {
+    final entity = await agentRepository.getEntity(agentId);
+    if (entity is! AgentIdentityEntity) {
+      throw StateError(
+        'Seeded agent $agentId did not read back as an identity: $entity',
+      );
+    }
+    return entity;
+  }
+
   /// The task context exactly as the app would assemble it for this wake.
   Future<String?> buildTaskContextJson() =>
       aiInputRepository.buildTaskDetailsJson(id: world.taskId);
