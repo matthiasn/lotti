@@ -550,7 +550,9 @@ tr:not(.detail-row) > td:last-child {
 
 .purge-caveat {
   margin: 12px 0 0;
-  max-width: 62ch;
+  /* Full panel width, matching the stat grid and control rows above. A 62ch
+     reading measure left the right half of the panel empty and read as a
+     layout bug rather than as typography. */
   line-height: 1.55;
   white-space: normal;
   overflow-wrap: anywhere;
