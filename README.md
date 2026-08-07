@@ -437,7 +437,7 @@ emoji-font packages, is in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Status
 
-Currently 0.9.x, working toward 1.0. The application is in active daily use and
+Currently 1.0.x. The application is in active daily use and
 the agentic layer is real, working, and shipping. Development happens in the
 open, and the [changelog](CHANGELOG.md) is the honest version of what changed.
 
