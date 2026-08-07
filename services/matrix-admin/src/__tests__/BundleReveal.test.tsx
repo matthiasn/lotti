@@ -24,6 +24,8 @@ const RESULT: CreateBundleResponse = {
     last_seen_at: null,
     last_polled_at: null,
     notes: "",
+    retention_days: null,
+    retention_exempt: false,
   },
 };
 

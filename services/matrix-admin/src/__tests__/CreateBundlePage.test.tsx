@@ -23,6 +23,8 @@ const RESPONSE = {
     last_seen_at: null,
     last_polled_at: null,
     notes: "",
+    retention_days: null,
+    retention_exempt: false,
     home_server: "https://matrix.example.com",
     server_name: "example.com",
     display_name: null,

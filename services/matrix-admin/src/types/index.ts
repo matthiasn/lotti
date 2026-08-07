@@ -24,6 +24,9 @@ export interface ProvisionedUser {
   last_seen_at: string | null;
   last_polled_at: string | null;
   notes: string;
+  /** null = follow the service default. */
+  retention_days: number | null;
+  retention_exempt: boolean;
 }
 
 export interface CreateBundleResponse {
@@ -50,6 +53,29 @@ export interface Stats {
   unknown_payment: number;
   complimentary: number;
   signups_by_day: Record<string, number>;
+}
+
+/** Live figures read from the Synapse admin API, not from our database. */
+export interface Usage {
+  bundle_id: string;
+  user_mxid: string;
+  device_count: number;
+  last_seen_ts: number | null;
+  deactivated: boolean;
+  media_count: number;
+  media_length_bytes: number;
+  active_days: number | null;
+}
+
+export interface PurgeResult {
+  purge_id: string;
+  room_id: string;
+  bundle_id: string;
+  purge_up_to_ts: number;
+  retention_days: number;
+  media_deleted: number;
+  bytes_freed: number;
+  include_media: boolean;
 }
 
 export interface BundleEvent {
