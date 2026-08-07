@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 import '../../../helpers/fallbacks.dart';
 import 'support/penguin_wake_scenarios.dart';
@@ -174,6 +175,44 @@ void main() {
       );
 
       // Re-seed the default world so tearDown has a live harness to dispose.
+      harness = await TaskAgentWorkflowEvalHarness.start(container: container);
+    });
+
+    test('the pending-proposal scenario queues a real change set', () async {
+      final pendingContainer = ProviderContainer();
+      addTearDown(pendingContainer.dispose);
+      await harness.dispose();
+      final pending = await TaskAgentWorkflowEvalHarness.start(
+        container: pendingContainer,
+        scenario: PenguinWakeScenarioId.pendingProposal,
+      );
+      addTearDown(pending.dispose);
+
+      final changeSets = await pending.agentRepository.getPendingChangeSets(
+        pending.agentId,
+        taskId: pending.world.taskId,
+      );
+      final queued = changeSets.expand((set) => set.items).toList();
+
+      expect(
+        queued.map((item) => item.toolName),
+        [TaskAgentToolNames.setTaskStatus],
+        reason: 'exactly the status change is queued, nothing else',
+      );
+      expect(
+        pending.scenario.forbiddenToolNames,
+        contains(TaskAgentToolNames.setTaskStatus),
+        reason: 'the queued tool is the one a correct wake must not repeat',
+      );
+      // The other half must remain genuinely open, or "propose nothing" would
+      // be a correct wake and the scenario could not tell restraint from
+      // laziness.
+      expect(
+        pending.world.pendingItemIds,
+        contains(pending.world.swapCartridgesItemId),
+        reason: 'the swap completion must still be outstanding',
+      );
+
       harness = await TaskAgentWorkflowEvalHarness.start(container: container);
     });
 

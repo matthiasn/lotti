@@ -190,7 +190,7 @@ void main() {
         agentIdentity: await harness.loadAgentIdentity(),
         runKey: 'run-penguin-wake-eval',
         triggerTokens: {harness.world.taskId},
-        threadId: 'thread-penguin-wake-eval',
+        threadId: harness.threadId,
       );
       stopwatch.stop();
 
@@ -271,7 +271,34 @@ void main() {
               'have stood. $where',
         );
       }
+      // ---- Proposals already awaiting the user --------------------------
+      // Re-proposing a queued change puts the same decision in front of the
+      // user twice. The pending list is in the context precisely so the agent
+      // can see it, so this measures whether the model reads it.
+      for (final forbidden in scenario.forbiddenToolNames) {
+        expect(
+          proposedTools,
+          isNot(contains(forbidden)),
+          reason:
+              'DUPLICATE PROPOSAL: $forbidden is already queued and awaiting '
+              'the user. ${scenario.summary} $where',
+        );
+      }
+
       if (!scenario.expectsProposals) {
+        return;
+      }
+      if (scenario.id == PenguinWakeScenarioId.pendingProposal) {
+        // The half it should still do: the swap is reported done and is not
+        // queued, so a model that proposes nothing at all is being lazy rather
+        // than restrained, and that must not read as a pass.
+        expect(
+          proposedTools,
+          isNotEmpty,
+          reason:
+              'the swapped-cartridge completion is still outstanding and not '
+              'queued, so a correct wake still proposes it. $where',
+        );
         return;
       }
 

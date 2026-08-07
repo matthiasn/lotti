@@ -1,6 +1,11 @@
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+
+import 'penguin_wake_world_seed.dart';
 
 /// The wake scenarios the penguin world can be posed in.
 ///
@@ -40,6 +45,7 @@ class PenguinWakeScenario {
     required this.summary,
     required this.expectsProposals,
     required this.expectsReport,
+    this.forbiddenToolNames = const {},
   });
 
   final PenguinWakeScenarioId id;
@@ -52,6 +58,14 @@ class PenguinWakeScenario {
 
   /// Whether a correct wake writes or revises a report.
   final bool expectsReport;
+
+  /// Tools a correct wake must not call, even though it may call others.
+  ///
+  /// The pending-proposal guard needs this: completing the swapped-cartridge
+  /// item is still correct, while re-proposing the status change that is
+  /// already queued is not. A blanket "propose nothing" would fail a model for
+  /// the half of the wake it got right.
+  final Set<String> forbiddenToolNames;
 
   static const _byId = <PenguinWakeScenarioId, PenguinWakeScenario>{
     PenguinWakeScenarioId.requalification: PenguinWakeScenario(
@@ -73,10 +87,11 @@ class PenguinWakeScenario {
     PenguinWakeScenarioId.pendingProposal: PenguinWakeScenario(
       id: PenguinWakeScenarioId.pendingProposal,
       summary:
-          'The status change is already queued for the user: do not queue it '
-          'a second time.',
-      expectsProposals: false,
+          'The status change is already queued and awaiting the user: do not '
+          'queue it a second time.',
+      expectsProposals: true,
       expectsReport: true,
+      forbiddenToolNames: {TaskAgentToolNames.setTaskStatus},
     ),
   };
 
@@ -179,3 +194,42 @@ const String penguinWakeNoOpNote =
     'Rang Ross Station again about the customs hold. Still no movement and no '
     'date from them. Nothing else to report — the bay is holding on the '
     'borrowed cartridges and the gasket reseat is still looking like the fix.';
+
+/// Seeds a change set that is already queued and awaiting the user.
+///
+/// The wake is the unblocking one, so a model will want to move the task off
+/// BLOCKED — but a previous wake already proposed exactly that and the user has
+/// not answered yet. Proposing it again puts the same decision in front of them
+/// twice, which is why the context carries pending proposals at all.
+///
+/// Only the status change is queued. Completing the swapped-cartridge item is
+/// still outstanding and still correct, so the scenario distinguishes a model
+/// that reads the pending list from one that simply does less.
+Future<void> seedPenguinWakePendingProposal({
+  required AgentSyncService syncService,
+  required String agentId,
+  required String threadId,
+  DateTime? createdAt,
+}) async {
+  final at = createdAt ?? DateTime.utc(2026, 8, 5, 8, 20);
+
+  await syncService.upsertEntity(
+    AgentDomainEntity.changeSet(
+      id: 'penguin-wake-pending-change-set',
+      agentId: agentId,
+      taskId: penguinWakeTaskId,
+      threadId: threadId,
+      runKey: 'run-penguin-wake-previous',
+      status: ChangeSetStatus.pending,
+      createdAt: at,
+      vectorClock: null,
+      items: const [
+        ChangeItem(
+          toolName: TaskAgentToolNames.setTaskStatus,
+          args: {'status': 'IN PROGRESS'},
+          humanSummary: 'Set status to IN PROGRESS',
+        ),
+      ],
+    ),
+  );
+}

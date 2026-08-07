@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
@@ -71,6 +72,7 @@ class TaskAgentWorkflowEvalHarness {
     required this.container,
     required this.world,
     required this.agentId,
+    required this.threadId,
     required this.scenario,
   });
 
@@ -83,6 +85,7 @@ class TaskAgentWorkflowEvalHarness {
   final ProviderContainer container;
   final PenguinWakeWorld world;
   final String agentId;
+  final String threadId;
   final PenguinWakeScenario scenario;
 
   /// Builds the harness, seeds the wake world, and leaves everything ready for
@@ -94,6 +97,7 @@ class TaskAgentWorkflowEvalHarness {
     required ProviderContainer container,
     String agentId = 'agent-penguin-wake-eval',
     PenguinWakeScenarioId scenario = PenguinWakeScenarioId.requalification,
+    String threadId = 'thread-penguin-wake-eval',
     void Function()? additionalGetItSetup,
   }) async {
     setFakeDocumentsPath();
@@ -208,6 +212,26 @@ class TaskAgentWorkflowEvalHarness {
       );
     }
 
+    if (scenario == PenguinWakeScenarioId.pendingProposal) {
+      await seedPenguinWakePendingProposal(
+        syncService: syncService,
+        agentId: agentId,
+        threadId: threadId,
+      );
+      // Assert the queue rather than trust it: if the proposal is not actually
+      // pending, the model has nothing to be restrained about and the scenario
+      // silently degrades into the ordinary unblocking wake.
+      final pending = await agentRepository.getPendingChangeSets(
+        agentId,
+        taskId: penguinWakeTaskId,
+      );
+      expect(
+        pending.expand((changeSet) => changeSet.items).map((i) => i.toolName),
+        contains(TaskAgentToolNames.setTaskStatus),
+        reason: 'the status proposal must be queued before the wake runs',
+      );
+    }
+
     return TaskAgentWorkflowEvalHarness._(
       journalDb: journalDb,
       settingsDb: settingsDb,
@@ -218,6 +242,7 @@ class TaskAgentWorkflowEvalHarness {
       container: container,
       world: world,
       agentId: agentId,
+      threadId: threadId,
       scenario: PenguinWakeScenario.of(scenario),
     );
   }
