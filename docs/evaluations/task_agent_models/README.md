@@ -431,7 +431,7 @@ a task context of **under 900 characters**, and is offered **20 tools**:
 
 `LocalTaskAgentEvalPromptVariant.lean` keeps every rule a correct wake depends
 on — end with a report or nothing, stay grounded in the context, do not undo
-the user's work, do not narrate metadata or process, write in the task's
+the user's work, do not narrate your own process, write in the task's
 language — and drops the tool-etiquette prose, most of which teaches the model
 to avoid calls `TaskToolDispatcher` already rejects with an error. It also
 advertises nine tools rather than twenty, chosen as what a wake generally

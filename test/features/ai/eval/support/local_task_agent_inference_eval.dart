@@ -1155,9 +1155,13 @@ LocalTaskAgentEvalScenario _latestDeadlineWinsScenario(
 /// Compact system prompt for [LocalTaskAgentEvalPromptVariant.lean].
 ///
 /// Keeps every rule a correct wake actually depends on — end with a report or
-/// nothing, do not invent facts, do not undo the user's work, do not restate
-/// visible metadata — and drops the tool-etiquette prose that the dispatcher
-/// already enforces by rejecting the calls.
+/// nothing, do not invent facts, do not undo the user's work, do not narrate
+/// your own process, write in the task's language — and drops the
+/// tool-etiquette prose that the dispatcher already enforces by rejecting the
+/// calls. The production prompt's ban on restating visible metadata is among
+/// what goes; the measurements in `docs/evaluations/task_agent_models` were
+/// taken against exactly this text, so it is documented as it stands rather
+/// than amended after the fact.
 const String _leanSystemPrompt = '''
 You are a Task Agent that maintains one task's summary report.
 

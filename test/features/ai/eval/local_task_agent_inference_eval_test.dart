@@ -734,6 +734,12 @@ void main() {
 
       expect(production.systemPrompt.length, greaterThan(15000));
       expect(lean.systemPrompt.length, lessThan(3000));
+      // The bounds above are independent, so on their own they would admit a
+      // fivefold gap. Compare the two directly to hold the test to its name.
+      expect(
+        production.systemPrompt.length,
+        greaterThan(lean.systemPrompt.length * 10),
+      );
     });
 
     test('advertises the core tools only', () {

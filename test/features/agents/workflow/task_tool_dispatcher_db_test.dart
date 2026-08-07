@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/checklist_item_data.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
@@ -230,6 +231,14 @@ void main() {
         result.output,
         isNot(contains('Unknown tool')),
         reason: 'The alias must route to set_task_status',
+      );
+      // Routing to the handler is not the point — the status actually moving
+      // is. Read the task back rather than trusting the dispatch result.
+      final stored = await journalDb.journalEntityById(task.meta.id);
+      expect(
+        (stored! as Task).data.status,
+        isA<TaskBlocked>(),
+        reason: 'The aliased call must persist the requested status',
       );
     });
 

@@ -5,6 +5,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.5]
+### Fixed
+- **Task agents no longer lose a change because a smaller model spelled the
+  call slightly wrong.** Two near-misses were common enough to cost real work:
+  a model reaching for `update_task_status` when the tool is `set_task_status`,
+  and a model sending a list of checklist updates as text rather than as a
+  list. Both were discarded, and because the agent had been told the call
+  succeeded, its report could describe a change that was never made. The right
+  tool is now recognised under either spelling and the list is read either way,
+  so the change reaches your proposals for confirmation as it always should
+  have — a corrected call is still a proposal, never something applied behind
+  your back.
+
 ### Changed
 - **Demo tasks now explain themselves.** Every task in the penguin demo world
   carries a full description of what the work actually is — why the air
