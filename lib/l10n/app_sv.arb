@@ -4692,8 +4692,6 @@
   "surveyValueAnd": "och",
   "surveyValueBetween": "Måste vara mitt emellan",
   "surveyYesButton": "Ja",
-  "syncActivityInboxLabel": "Inkorg",
-  "syncActivityOutboxLabel": "Utbox",
   "syncAddDeviceAction": "Lägg till enhet",
   "syncAddDeviceConnected": "Den nya enheten har anslutit – slutför emoji-verifieringen innan du skickar.",
   "syncAddDeviceCopyCode": "Kopiera parkopplingskod",
@@ -4869,6 +4867,24 @@
     "placeholders": {
       "value": {
         "type": "String"
+      }
+    }
+  },
+  "syncQueueIncomingSemanticLabel": "Inkorg: {count}",
+  "@syncQueueIncomingSemanticLabel": {
+    "description": "Screen-reader label for the incoming sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncQueueOutgoingSemanticLabel": "Utkorg: {count}",
+  "@syncQueueOutgoingSemanticLabel": {
+    "description": "Screen-reader label for the outgoing sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.",
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   },

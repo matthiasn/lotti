@@ -10568,12 +10568,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get surveyYesButton => 'Da';
 
   @override
-  String get syncActivityInboxLabel => 'Intrare';
-
-  @override
-  String get syncActivityOutboxLabel => 'Ieșire';
-
-  @override
   String get syncAddDeviceAction => 'Adăugați dispozitiv';
 
   @override
@@ -11013,6 +11007,16 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String syncQueueCountThousands(String value) {
     return '${value}K';
+  }
+
+  @override
+  String syncQueueIncomingSemanticLabel(int count) {
+    return 'Intrare: $count';
+  }
+
+  @override
+  String syncQueueOutgoingSemanticLabel(int count) {
+    return 'Ieșire: $count';
   }
 
   @override

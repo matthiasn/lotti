@@ -207,8 +207,10 @@ allows, until everything fits and the More slot disappears.
 ## The Settings row and its counts
 
 The desktop sidebar is user-resizable between 200 px and 500 px, and Settings is
-the one row that carries a trailing widget: `OutboxTrailingBadge`, up to two
-sync-queue pills. That makes it the only row where a *label*, a *glyph* and a
+the one row that carries a trailing widget: `SyncQueueCounts`, up to two
+sync-queue counts — quiet low-emphasis text, not chips; see
+[the neutral badge tone](../features/design_system/component-contracts.md#status-without-an-alert-the-neutral-badge-tone)
+for why they carry no shell. That makes it the only row where a *label*, a *glyph* and a
 *number* compete for the same width, and the rail's 200 px minimum is not wide
 enough for all three at once. Which one gives is therefore a decision, not an
 accident:
@@ -223,7 +225,7 @@ accident:
    exact through 999, one decimal below 10K, whole thousands above. An unbounded
    integer is what made the row unresolvable in the first place.
 4. **Only when the counts alone exceed the row** — six-figure queues in both
-   directions at 200 px — does the trailing slot clamp, and then both pills
+   directions at 200 px — does the trailing slot clamp, and then both counts
    shorten together rather than one winning the row.
 
 Steps 3 and 4 are what keep a `RenderFlex` overflow off the rail: a `Row` hands

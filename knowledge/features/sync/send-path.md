@@ -348,7 +348,7 @@ Manual actions write straight to `SyncDatabase`.
 # Directional queue badges
 
 The Settings destination carries compact queue depth rather than a separate
-sidebar status row. `OutboxTrailingBadge` reads
+sidebar status row. `SyncQueueCounts` reads
 `outboxPendingCountProvider` for the outgoing `↑ count` pill and reuses
 `inboundQueueDepthProvider` for the incoming `↓ count` pill. Both use the
 neutral outlined badge tone because queued work is normal operation, and each

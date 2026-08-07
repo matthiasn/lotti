@@ -10374,12 +10374,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get surveyYesButton => 'Ja';
 
   @override
-  String get syncActivityInboxLabel => 'Indbakke';
-
-  @override
-  String get syncActivityOutboxLabel => 'Udboks';
-
-  @override
   String get syncAddDeviceAction => 'Tilføj enhed';
 
   @override
@@ -10807,6 +10801,16 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String syncQueueCountThousands(String value) {
     return '${value}K';
+  }
+
+  @override
+  String syncQueueIncomingSemanticLabel(int count) {
+    return 'Indbakke: $count';
+  }
+
+  @override
+  String syncQueueOutgoingSemanticLabel(int count) {
+    return 'Udboks: $count';
   }
 
   @override

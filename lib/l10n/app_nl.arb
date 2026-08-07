@@ -4691,8 +4691,6 @@
   "surveyValueAnd": "en",
   "surveyValueBetween": "Moet tussen",
   "surveyYesButton": "Ja.",
-  "syncActivityInboxLabel": "Postvak IN",
-  "syncActivityOutboxLabel": "Postvak UIT",
   "syncAddDeviceAction": "Apparaat toevoegen",
   "syncAddDeviceConnected": "Het nieuwe apparaat is toegevoegd — rond de emoji-verificatie af voordat je verstuurt.",
   "syncAddDeviceCopyCode": "Koppelcode kopiëren",
@@ -4868,6 +4866,24 @@
     "placeholders": {
       "value": {
         "type": "String"
+      }
+    }
+  },
+  "syncQueueIncomingSemanticLabel": "Postvak IN: {count}",
+  "@syncQueueIncomingSemanticLabel": {
+    "description": "Screen-reader label for the incoming sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncQueueOutgoingSemanticLabel": "Postvak UIT: {count}",
+  "@syncQueueOutgoingSemanticLabel": {
+    "description": "Screen-reader label for the outgoing sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.",
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   },

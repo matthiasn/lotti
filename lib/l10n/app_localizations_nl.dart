@@ -10400,12 +10400,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get surveyYesButton => 'Ja.';
 
   @override
-  String get syncActivityInboxLabel => 'Postvak IN';
-
-  @override
-  String get syncActivityOutboxLabel => 'Postvak UIT';
-
-  @override
   String get syncAddDeviceAction => 'Apparaat toevoegen';
 
   @override
@@ -10839,6 +10833,16 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String syncQueueCountThousands(String value) {
     return '${value}K';
+  }
+
+  @override
+  String syncQueueIncomingSemanticLabel(int count) {
+    return 'Postvak IN: $count';
+  }
+
+  @override
+  String syncQueueOutgoingSemanticLabel(int count) {
+    return 'Postvak UIT: $count';
   }
 
   @override

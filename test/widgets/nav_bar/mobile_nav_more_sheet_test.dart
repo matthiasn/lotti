@@ -3,7 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/design_system/theme/design_system_theme.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
+import 'package:lotti/features/settings/ui/pages/outbox/sync_queue_counts.dart';
 import 'package:lotti/features/sync/state/outbox_state_controller.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:lotti/widgets/misc/contact_support_row.dart';
@@ -280,7 +280,7 @@ void main() {
     ) async {
       // `_MoreSheetRow` renders `item.trailing` as an *inflexible* child of
       // its Row, which hands it unbounded horizontal constraints — while
-      // `OutboxTrailingBadge` lays its two pills out with `Flexible`. This
+      // `SyncQueueCounts` lays its two counts out with `Flexible`. This
       // pins the combination end to end with the real widget rather than a
       // stand-in, because a stand-in is exactly what would not catch it.
       await pumpAndOpenSheet(
@@ -298,15 +298,17 @@ void main() {
           MobileNavMoreSheetItem(
             label: 'Settings',
             icon: const Icon(Icons.settings_rounded),
-            trailing: const OutboxTrailingBadge(),
+            trailing: const SyncQueueCounts(),
             onSelected: () {},
           ),
         ],
       );
 
       expect(tester.takeException(), isNull);
-      expect(find.text('↓ 18K'), findsOneWidget);
-      expect(find.text('↑ 12'), findsOneWidget);
+      // The gap is a narrow no-break space (U+202F), not a word space — see
+      // `syncQueueArrowGap`.
+      expect(find.text('↓\u202F18K'), findsOneWidget);
+      expect(find.text('↑\u202F12'), findsOneWidget);
     });
   });
 }
