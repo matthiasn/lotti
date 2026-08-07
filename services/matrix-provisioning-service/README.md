@@ -67,7 +67,10 @@ Redemption is detected two ways:
 | `API_KEYS` | Yes | — | Comma-separated client keys (rotation callback) |
 | `ADMIN_API_KEYS` | Yes | — | Comma-separated admin keys (everything else) |
 | `DB_PATH` | No | `data/provisioning.db` | SQLite location |
-| `RETENTION_DAYS` | No | `30` | Default purge window (floor: 7) |
+| `RETENTION_DAYS` | No | `30` | Default retention window (floor: 7) |
+| `ENABLE_RETENTION_SWEEP` | No | `true` | **Scheduled purge, ON by default** — deletes data |
+| `RETENTION_SWEEP_HOURS` | No | `24` | Interval between sweeps |
+| `RETENTION_SWEEP_MEDIA` | No | `true` | Delete media in the sweep; false trims history only |
 | `POLL_INTERVAL_SECONDS` | No | `300` | Redemption poll interval |
 | `POLL_BATCH_SIZE` | No | `50` | Accounts checked per sweep |
 | `ENABLE_REDEMPTION_POLLING` | No | `true` | Disable for tests or a read-only replica |
@@ -100,15 +103,40 @@ All paths are prefixed `/api/v1`. Everything requires an **admin** key except
 
 ## Retention
 
-Purging is safe here because a device that missed events can still recover — but
-the ordering matters. A reconnecting device walks the **room timeline first**;
-only counters still missing after that walk escalate to peer-to-peer backfill.
-The retention window is therefore the bound on how long a device can be offline
-and still resynchronise from the room alone.
+⚠️ **The scheduled sweep is ON by default and deletes data.** After the first
+run, every redeemed, non-exempt user is trimmed to the retention window. Set
+`ENABLE_RETENTION_SWEEP=false` to disable it, or exempt individual users. The
+first sweep is delayed 5 minutes after startup so a bad deploy can be stopped.
+
+Reclaiming disk needs **two** operations, because Synapse stores them
+separately:
+
+- `purge_history` removes room **events** from the database.
+- Deleting the user's **media** removes the uploaded files.
+
+Media is the bulk on a journalling app, so history-only runs free very little.
+Both run by default.
 
 Sync rooms are non-federated, so every event in them is *local*. The purge always
 sends `delete_local_events: true` — without it Synapse reports success and frees
 nothing.
+
+Purging is safe because a device that missed data can still recover, but the
+ordering matters. A reconnecting device walks the **room timeline first**; only
+counters still missing after that walk escalate to peer-to-peer backfill, and
+missing media is repaired by a broadcast any peer holding the blob may answer.
+The retention window is therefore the bound on how long a device can be offline
+and still resynchronise from the server alone.
+
+### Per-user overrides
+
+| Field | Meaning |
+|---|---|
+| `retention_days` | Window for this user; `null` follows the service default |
+| `retention_exempt` | Skip this user in the scheduled sweep entirely |
+
+Set both through `PATCH /bundles/{id}`. Clearing an override needs
+`clear_retention_override: true`, because `null` already means "unchanged".
 
 ## Development
 

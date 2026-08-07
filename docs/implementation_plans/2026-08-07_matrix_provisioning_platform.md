@@ -189,7 +189,26 @@ rather than silently omitting.
 
 ## 6. Retention and purging (30 days)
 
-Implemented, per your instruction, with a floor of 7 days.
+Implemented with a floor of 7 days, a **scheduled sweep that is on by default**,
+and per-user overrides.
+
+**Reclaiming disk needs two operations.** `purge_history` removes events from the
+database; the uploaded files live in Synapse's separate media store and survive
+it. On a journalling app the files are the bulk, so an events-only purge frees
+almost nothing. Both run by default, and the API reports `bytes_freed` measured
+before and after rather than a file count.
+
+Media is recoverable on the same terms as events: a missing blob triggers a
+broadcast repair request that any peer still holding the file may answer.
+
+**Per-user control:** `retention_days` (null follows the service default) and
+`retention_exempt` (skip the sweep entirely), both on `provisioned_users` with a
+migration for existing databases.
+
+⚠️ **The sweep is on by default**, so the first run after deploy trims every
+redeemed, non-exempt user to the window. Guardrails: the 7-day floor applies to
+every resolved window, the first sweep is delayed 5 minutes after startup, and
+startup logs a warning. `ENABLE_RETENTION_SWEEP=false` disables it.
 
 **Why 30 days is a real choice, not a free one.** A reconnecting device catches
 up by walking the *room timeline* first — `BridgeCoordinator`'s anchored forward

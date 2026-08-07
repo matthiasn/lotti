@@ -25,6 +25,10 @@ services:
       - API_KEYS=${API_KEY:-dev-key}
       - ADMIN_API_KEYS=${ADMIN_API_KEY:-dev-admin-key}
       - RETENTION_DAYS=${RETENTION_DAYS:-30}
+      # The scheduled sweep deletes room history and media. On by default.
+      - ENABLE_RETENTION_SWEEP=${ENABLE_RETENTION_SWEEP:-true}
+      - RETENTION_SWEEP_HOURS=${RETENTION_SWEEP_HOURS:-24}
+      - RETENTION_SWEEP_MEDIA=${RETENTION_SWEEP_MEDIA:-true}
       - POLL_INTERVAL_SECONDS=${POLL_INTERVAL_SECONDS:-300}
       - ENABLE_REDEMPTION_POLLING=${ENABLE_REDEMPTION_POLLING:-true}
       - LOG_LEVEL=INFO
