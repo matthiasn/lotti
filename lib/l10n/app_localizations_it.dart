@@ -10514,12 +10514,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get surveyYesButton => 'Sì.';
 
   @override
-  String get syncActivityInboxLabel => 'Posta in arrivo';
-
-  @override
-  String get syncActivityOutboxLabel => 'Posta in uscita';
-
-  @override
   String get syncAddDeviceAction => 'Aggiungi dispositivo';
 
   @override
@@ -10956,6 +10950,16 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String syncQueueCountThousands(String value) {
     return '${value}K';
+  }
+
+  @override
+  String syncQueueIncomingSemanticLabel(int count) {
+    return 'Posta in arrivo: $count';
+  }
+
+  @override
+  String syncQueueOutgoingSemanticLabel(int count) {
+    return 'Posta in uscita: $count';
   }
 
   @override

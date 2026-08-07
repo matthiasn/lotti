@@ -48,3 +48,47 @@ String _mantissa(double value) {
   final text = value < 10 ? value.toStringAsFixed(1) : value.toStringAsFixed(0);
   return text.endsWith('.0') ? text.substring(0, text.length - 2) : text;
 }
+
+/// Which way a queued item is travelling.
+enum SyncQueueDirection {
+  /// Waiting to be applied from other devices.
+  incoming('↓'),
+
+  /// Waiting to be sent to other devices.
+  outgoing('↑');
+
+  const SyncQueueDirection(this.arrow);
+
+  /// The glyph identifying this direction to the reader.
+  final String arrow;
+}
+
+/// Narrow no-break space (U+202F), between an arrow and its count.
+///
+/// A word space is too wide here: the arrow is a modifier on the number, not a
+/// separate word, and at caption size an ordinary gap makes each count read as
+/// two things rather than one. This is a typographic space rather than a
+/// spacing token because it must scale with the glyphs it separates — a fixed
+/// gap tuned at the default text size is proportionally far tighter once the
+/// user raises the system text scale, which is exactly when legibility matters
+/// most. No-break rather than a plain thin space so the arrow cannot be parted
+/// from its digits if a consumer ever renders this without `maxLines: 1` —
+/// today's only one does pin it, so that property is insurance, not the
+/// reason.
+const syncQueueArrowGap = ' ';
+
+/// The visible label for one direction's queue depth: arrow, narrow
+/// no-break space, compacted count.
+///
+/// Composed here rather than at the call site so the entire visible string has
+/// one definition to test and one place to change. The exact figure belongs in
+/// the accessible label instead — see [formatSyncQueueCount] for why the
+/// visible form is bounded at all.
+String formatSyncQueueLabel(
+  SyncQueueDirection direction,
+  int count,
+  AppLocalizations messages,
+) {
+  return '${direction.arrow}$syncQueueArrowGap'
+      '${formatSyncQueueCount(count, messages)}';
+}

@@ -4691,8 +4691,6 @@
   "surveyValueAnd": "e",
   "surveyValueBetween": "Deve estar entre",
   "surveyYesButton": "Sim",
-  "syncActivityInboxLabel": "Caixa de entrada",
-  "syncActivityOutboxLabel": "Caixa de saída",
   "syncAddDeviceAction": "Adicionar dispositivo",
   "syncAddDeviceConnected": "O novo dispositivo entrou — conclui a verificação por emojis antes de enviar.",
   "syncAddDeviceCopyCode": "Copiar código de emparelhamento",
@@ -4868,6 +4866,24 @@
     "placeholders": {
       "value": {
         "type": "String"
+      }
+    }
+  },
+  "syncQueueIncomingSemanticLabel": "Caixa de entrada: {count}",
+  "@syncQueueIncomingSemanticLabel": {
+    "description": "Screen-reader label for the incoming sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncQueueOutgoingSemanticLabel": "Caixa de saída: {count}",
+  "@syncQueueOutgoingSemanticLabel": {
+    "description": "Screen-reader label for the outgoing sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.",
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   },

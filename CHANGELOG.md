@@ -78,6 +78,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   precise number still announced to screen readers. The divider between
   Settings and the contact buttons has been removed on both the desktop
   sidebar and the phone's More sheet.
+- **Those same sync counts now read as ambient status rather than as alerts.**
+  Each was boxed in an outline, which gave routine queued work the weight of
+  something needing attention next to the Settings label. The outline is gone,
+  the digits sit at a lower emphasis than the label beside them, and each
+  arrow now sits directly against its number instead of a word apart.
 - **Demo image downloads now show live progress.** The demo banner reports the
   completed image count while its R2 catalog hydrates in the background,
   without delaying entry into the workspace.

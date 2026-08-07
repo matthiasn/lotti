@@ -109,7 +109,7 @@ void main() {
     test('keeps every catalog inside the row width budget', () async {
       // The suffix is translatable, so a future translation is where the
       // width guarantee would quietly break — a catalog switching to "Tsd."
-      // widens the pill and takes the space back from the Settings label.
+      // widens the count and takes the space back from the Settings label.
       // Five characters is the budget the sidebar row was measured against.
       for (final locale in AppLocalizations.supportedLocales) {
         final localized = await AppLocalizations.delegate.load(locale);
@@ -128,7 +128,7 @@ void main() {
   });
 
   group('formatSyncQueueCount width bound', () {
-    // The formatter exists to keep the pills from taking the Settings label's
+    // The formatter exists to keep the counts from taking the Settings label's
     // width. That guarantee is a property of the output length, so assert it
     // directly rather than trusting the examples above to be representative.
     test('never exceeds five characters across the plausible range', () {
@@ -174,6 +174,100 @@ void main() {
           reason: '$count formatted to $formatted, which decreased',
         );
         previous = value;
+      }
+    });
+  });
+
+  group('SyncQueueDirection', () {
+    test('each direction carries the arrow that identifies it', () {
+      expect(SyncQueueDirection.incoming.arrow, '↓');
+      expect(SyncQueueDirection.outgoing.arrow, '↑');
+    });
+
+    test('the two directions are distinguishable to the reader', () {
+      // The arrow is the only thing telling incoming from outgoing — the
+      // counts themselves are interchangeable digits.
+      expect(
+        SyncQueueDirection.incoming.arrow,
+        isNot(SyncQueueDirection.outgoing.arrow),
+      );
+    });
+  });
+
+  group('syncQueueArrowGap', () {
+    test('is the narrow no-break space, not an ordinary word space', () {
+      // The whole point of the character: a word space made the arrow read as
+      // a separate token from its number. Pinned by codepoint because the two
+      // are visually near-identical in a diff, so an accidental revert to
+      // U+0020 would otherwise pass every other assertion here.
+      expect(syncQueueArrowGap, ' ');
+      expect(syncQueueArrowGap, isNot(' '));
+    });
+
+    test('is a single character, so it cannot smuggle in extra width', () {
+      expect(syncQueueArrowGap.length, 1);
+    });
+  });
+
+  group('formatSyncQueueLabel', () {
+    test(
+      'composes arrow, narrow no-break space and count for each direction',
+      () {
+        expect(
+          formatSyncQueueLabel(SyncQueueDirection.incoming, 3, messages),
+          '↓ 3',
+        );
+        expect(
+          formatSyncQueueLabel(SyncQueueDirection.outgoing, 4, messages),
+          '↑ 4',
+        );
+      },
+    );
+
+    test('separates the arrow from the count with nothing wider', () {
+      // Guards the actual regression this change makes possible: someone
+      // reinstating '↓ $count' at the call site would still render, just with
+      // the loose gap the design moved away from.
+      final label = formatSyncQueueLabel(
+        SyncQueueDirection.incoming,
+        18342,
+        messages,
+      );
+      expect(label, isNot(contains(' ')));
+      expect(label.substring(1, 2), syncQueueArrowGap);
+    });
+
+    test('carries the compacted count, not the raw figure', () {
+      expect(
+        formatSyncQueueLabel(SyncQueueDirection.incoming, 18342, messages),
+        endsWith('18K'),
+      );
+      expect(
+        formatSyncQueueLabel(SyncQueueDirection.outgoing, 1204, messages),
+        endsWith('1.2K'),
+      );
+    });
+
+    test('stays within the row budget the arrow and gap add to', () {
+      // Five characters for the count, plus the arrow and the narrow no-break space.
+      for (final count in [0, 999, 1000, 18342, 999500, 1234567]) {
+        for (final direction in SyncQueueDirection.values) {
+          final label = formatSyncQueueLabel(direction, count, messages);
+          expect(
+            label.length,
+            lessThanOrEqualTo(7),
+            reason: '$direction $count formatted to "$label"',
+          );
+        }
+      }
+    });
+
+    test('keeps the arrow first, so direction is read before magnitude', () {
+      for (final direction in SyncQueueDirection.values) {
+        expect(
+          formatSyncQueueLabel(direction, 42, messages),
+          startsWith(direction.arrow),
+        );
       }
     });
   });

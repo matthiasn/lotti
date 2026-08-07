@@ -4140,8 +4140,6 @@
   "surveyValueAnd": "și",
   "surveyValueBetween": "Trebuie să fie între",
   "surveyYesButton": "Da",
-  "syncActivityInboxLabel": "Intrare",
-  "syncActivityOutboxLabel": "Ieșire",
   "syncAddDeviceAction": "Adăugați dispozitiv",
   "syncAddDeviceConnected": "Noul dispozitiv s-a alăturat — finalizați verificarea cu emoji înainte de a trimite.",
   "syncAddDeviceCopyCode": "Copiați codul de asociere",
@@ -4317,6 +4315,24 @@
     "placeholders": {
       "value": {
         "type": "String"
+      }
+    }
+  },
+  "syncQueueIncomingSemanticLabel": "Intrare: {count}",
+  "@syncQueueIncomingSemanticLabel": {
+    "description": "Screen-reader label for the incoming sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncQueueOutgoingSemanticLabel": "Ieșire: {count}",
+  "@syncQueueOutgoingSemanticLabel": {
+    "description": "Screen-reader label for the outgoing sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.",
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   },

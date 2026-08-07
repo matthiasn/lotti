@@ -4692,8 +4692,6 @@
   "surveyValueAnd": "e",
   "surveyValueBetween": "Dev'essere tra",
   "surveyYesButton": "Sì.",
-  "syncActivityInboxLabel": "Posta in arrivo",
-  "syncActivityOutboxLabel": "Posta in uscita",
   "syncAddDeviceAction": "Aggiungi dispositivo",
   "syncAddDeviceConnected": "Il nuovo dispositivo si è unito: completa la verifica con emoji prima di inviare.",
   "syncAddDeviceCopyCode": "Copia codice di abbinamento",
@@ -4869,6 +4867,24 @@
     "placeholders": {
       "value": {
         "type": "String"
+      }
+    }
+  },
+  "syncQueueIncomingSemanticLabel": "Posta in arrivo: {count}",
+  "@syncQueueIncomingSemanticLabel": {
+    "description": "Screen-reader label for the incoming sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "syncQueueOutgoingSemanticLabel": "Posta in uscita: {count}",
+  "@syncQueueOutgoingSemanticLabel": {
+    "description": "Screen-reader label for the outgoing sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.",
+    "placeholders": {
+      "count": {
+        "type": "int"
       }
     }
   },

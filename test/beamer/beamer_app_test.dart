@@ -35,7 +35,7 @@ import 'package:lotti/features/profiles/service/profile_switch_chrome.dart';
 import 'package:lotti/features/settings/state/manual_language_controller.dart';
 import 'package:lotti/features/settings/state/zoom_controller.dart';
 import 'package:lotti/features/settings/ui/pages/outbox/outbox_badge.dart';
-import 'package:lotti/features/settings/ui/pages/outbox/outbox_trailing_badge.dart';
+import 'package:lotti/features/settings/ui/pages/outbox/sync_queue_counts.dart';
 import 'package:lotti/features/speech/state/recorder_controller.dart';
 import 'package:lotti/features/speech/state/recorder_state.dart';
 import 'package:lotti/features/speech/ui/widgets/recording/audio_recording_indicator.dart';
@@ -754,7 +754,7 @@ void main() {
 
         // Sheet rows use the desktop-style trailing slot for the Settings
         // outbox count instead of cramming the badge over the gear icon.
-        expect(find.byType(OutboxTrailingBadge), findsOneWidget);
+        expect(find.byType(SyncQueueCounts), findsOneWidget);
         expect(find.byType(OutboxBadgeIcon), findsNothing);
 
         await tester.pumpWidget(const SizedBox.shrink());

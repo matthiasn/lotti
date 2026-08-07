@@ -10501,12 +10501,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get surveyYesButton => 'Ano';
 
   @override
-  String get syncActivityInboxLabel => 'Příchozí';
-
-  @override
-  String get syncActivityOutboxLabel => 'Odchozí';
-
-  @override
   String get syncAddDeviceAction => 'Přidat zařízení';
 
   @override
@@ -10941,6 +10935,16 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String syncQueueCountThousands(String value) {
     return '${value}K';
+  }
+
+  @override
+  String syncQueueIncomingSemanticLabel(int count) {
+    return 'Příchozí: $count';
+  }
+
+  @override
+  String syncQueueOutgoingSemanticLabel(int count) {
+    return 'Odchozí: $count';
   }
 
   @override

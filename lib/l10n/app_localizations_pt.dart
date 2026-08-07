@@ -10471,12 +10471,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get surveyYesButton => 'Sim';
 
   @override
-  String get syncActivityInboxLabel => 'Caixa de entrada';
-
-  @override
-  String get syncActivityOutboxLabel => 'Caixa de saída';
-
-  @override
   String get syncAddDeviceAction => 'Adicionar dispositivo';
 
   @override
@@ -10911,6 +10905,16 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String syncQueueCountThousands(String value) {
     return '${value}K';
+  }
+
+  @override
+  String syncQueueIncomingSemanticLabel(int count) {
+    return 'Caixa de entrada: $count';
+  }
+
+  @override
+  String syncQueueOutgoingSemanticLabel(int count) {
+    return 'Caixa de saída: $count';
   }
 
   @override

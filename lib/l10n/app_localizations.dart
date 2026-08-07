@@ -17715,18 +17715,6 @@ abstract class AppLocalizations {
   /// **'Yes'**
   String get surveyYesButton;
 
-  /// No description provided for @syncActivityInboxLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Inbox'**
-  String get syncActivityInboxLabel;
-
-  /// No description provided for @syncActivityOutboxLabel.
-  ///
-  /// In en, this message translates to:
-  /// **'Outbox'**
-  String get syncActivityOutboxLabel;
-
   /// No description provided for @syncAddDeviceAction.
   ///
   /// In en, this message translates to:
@@ -18398,6 +18386,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{value}K'**
   String syncQueueCountThousands(String value);
+
+  /// Screen-reader label for the incoming sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.
+  ///
+  /// In en, this message translates to:
+  /// **'Inbox: {count}'**
+  String syncQueueIncomingSemanticLabel(int count);
+
+  /// Screen-reader label for the outgoing sync queue count beside Settings. Carries the exact, uncompacted figure, so it is never subject to the visible form's width budget. Translate the punctuation and word order to what the language uses — this string is only ever spoken.
+  ///
+  /// In en, this message translates to:
+  /// **'Outbox: {count}'**
+  String syncQueueOutgoingSemanticLabel(int count);
 
   /// Body of the re-authentication sheet (dialog on desktop) shown when removing a device failed because the stored sync password is out of date.
   ///

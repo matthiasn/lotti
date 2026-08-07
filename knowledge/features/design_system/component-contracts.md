@@ -269,19 +269,34 @@ yet") cannot borrow the *identity* grammar of the secondary outlined chip or
 an alert tone it has not earned; the sync device roster's "This device" and
 keyless "Unverified" chips are the canonical pair that must not match.
 
-`OutboxTrailingBadge` applies that same grammar beside Settings with up to two
-outlined neutral pills. `↓ count` identifies incoming work from
-`inboundQueueDepthProvider`; `↑ count` identifies outgoing work from
+**A queue depth is not a status, and no longer dresses as one.**
+`SyncQueueCounts` once used this tone as two outlined neutral pills; it now
+renders plain `typography.styles.others.caption` text at
+`colors.text.lowEmphasis`, with no shell at all. `↓ count` identifies incoming
+work from `inboundQueueDepthProvider`; `↑ count` identifies outgoing work from
 `outboxPendingCountProvider`. Each direction disappears independently at zero,
-and the whole trailing group disappears while sync is disabled. Pending work is
-routine sync state, not an error, so neither fill nor danger tone belongs there.
+and the whole trailing group disappears while sync is disabled.
 
-**Both pills are counts, and both are shaped as counts.** `.outlined` carries
-word labels too ("Unverified", "This device"), so digit shaping is opt-in via
-`numeric: true` rather than inherited from the shape — see
-[the sidebar's Settings row](../../architecture/navigation.md#the-settings-row-and-its-counts)
+The distinction the badge shape carries is *"there is a state here worth
+naming"* — "Unverified", "This device". A sync queue names nothing: it is
+ambient, self-resolving, and not actionable, so an outline gave it a boundary
+and a claim on attention it had not earned beside the row's actual navigation.
+What survived the shell is the part that was never decoration:
+
+- **The counts are shaped as counts** — `numericBadgeFontFeatures` directly,
+  rather than the badge's `numeric: true` opt-in — so a 9 → 10 → 99 transition
+  does not re-width the row on every sync tick.
+- **The arrow binds to its digits** with `syncQueueArrowGap`, a narrow no-break
+  space. It is typographic rather than a spacing token deliberately: it scales
+  with the glyphs, where a fixed gap tuned at 1.0× reads proportionally tighter
+  as the user raises the text scale.
+- **The two directions are separated by `spacing.step3`**, wider than the gap
+  inside either. With the outlines gone that space is the only thing keeping
+  the pair from reading as one run of glyphs.
+
+See [the sidebar's Settings row](../../architecture/navigation.md#the-settings-row-and-its-counts)
 for why the width these two occupy is a property of the row rather than of the
-badge.
+counts.
 
 # Inline callouts
 
