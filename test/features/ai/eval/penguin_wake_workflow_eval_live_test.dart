@@ -27,6 +27,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import 'support/penguin_wake_scenarios.dart';
 import 'support/penguin_wake_world_seed.dart';
 import 'support/task_agent_workflow_eval_harness.dart';
 
@@ -66,6 +67,9 @@ void main() {
 
       final modelId =
           Platform.environment['PENGUIN_WAKE_EVAL_MODEL'] ?? 'glm-5.2';
+      final scenario = PenguinWakeScenario.fromName(
+        Platform.environment['PENGUIN_WAKE_EVAL_SCENARIO'],
+      );
       final baseUrl =
           Platform.environment['PENGUIN_WAKE_EVAL_BASE_URL'] ??
           Platform.environment['MELIOUS_BASE_URL'] ??
@@ -80,6 +84,7 @@ void main() {
 
       final harness = await TaskAgentWorkflowEvalHarness.start(
         container: container,
+        scenario: scenario.id,
       );
       addTearDown(harness.dispose);
 
@@ -226,6 +231,7 @@ void main() {
       ].join('\n').toLowerCase();
 
       final artifact = await _writeArtifact(
+        scenario: scenario,
         modelId: modelId,
         latencyMs: stopwatch.elapsedMilliseconds,
         contextChars: contextJson!.length,
@@ -239,6 +245,35 @@ void main() {
       final where = 'See $artifact.';
 
       expect(result.success, isTrue, reason: '${result.error}. $where');
+
+      // ---- Scenarios where the correct wake does nothing ----------------
+      // The restraint scenarios share one shape: the prior report is already
+      // accurate, so any proposal at all is invented work. Asserting on the
+      // whole set rather than on individual traps is what makes it a real
+      // test — "found something to do" is the failure, whatever it was.
+      if (!scenario.expectsProposals) {
+        expect(
+          proposedTools,
+          isEmpty,
+          reason:
+              'INVENTED WORK: ${scenario.summary} Proposed anyway: '
+              '$proposedTools with ${jsonEncode(proposedArgs)}. $where',
+        );
+      }
+      if (!scenario.expectsReport) {
+        // A no-op wake ends with a short plain-text note and no update_report,
+        // so the stored report must still be the one the previous wake left.
+        expect(
+          agentReport?.oneLiner,
+          penguinWakePriorReportOneLiner,
+          reason:
+              'REPORT CHURN: nothing changed, so the previous report should '
+              'have stood. $where',
+        );
+      }
+      if (!scenario.expectsProposals) {
+        return;
+      }
 
       // ---- Trap 1: the superseded deadline ------------------------------
       // An older note asks for 2026-08-14; the newest says the date holds.
@@ -350,6 +385,7 @@ void main() {
 /// re-run. A model that fails the restraint trap is only interesting if you
 /// can see what it proposed instead.
 Future<String> _writeArtifact({
+  required PenguinWakeScenario scenario,
   required String modelId,
   required int latencyMs,
   required int contextChars,
@@ -368,14 +404,19 @@ Future<String> _writeArtifact({
   // has to be part of the path. Without it three parallel glm-5.2 samples all
   // write the same file and two of the three results are silently lost —
   // leaving a run that looks complete and is not.
+  final safeScenario = scenario.id.name;
   final safeModel = modelId.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_');
   final label = Platform.environment['PENGUIN_WAKE_EVAL_RUN_LABEL'];
   final safeLabel = label == null
       ? ''
       : '_${label.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_')}';
-  final file = File('${directory.path}/penguin_wake_$safeModel$safeLabel.json');
+  final file = File(
+    '${directory.path}/${safeScenario}_$safeModel$safeLabel.json',
+  );
   await file.writeAsString(
     const JsonEncoder.withIndent('  ').convert({
+      'scenario': scenario.id.name,
+      'scenarioSummary': scenario.summary,
       'model': modelId,
       'latencyMs': latencyMs,
       'contextChars': contextChars,

@@ -36,6 +36,7 @@ import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/template_factories.dart';
+import 'penguin_wake_scenarios.dart';
 import 'penguin_wake_world_seed.dart';
 
 /// The task-agent workflow standing on real databases instead of mocks.
@@ -70,6 +71,7 @@ class TaskAgentWorkflowEvalHarness {
     required this.container,
     required this.world,
     required this.agentId,
+    required this.scenario,
   });
 
   final JournalDb journalDb;
@@ -81,6 +83,7 @@ class TaskAgentWorkflowEvalHarness {
   final ProviderContainer container;
   final PenguinWakeWorld world;
   final String agentId;
+  final PenguinWakeScenario scenario;
 
   /// Builds the harness, seeds the wake world, and leaves everything ready for
   /// a [TaskAgentWorkflow] to run against it.
@@ -90,6 +93,7 @@ class TaskAgentWorkflowEvalHarness {
   static Future<TaskAgentWorkflowEvalHarness> start({
     required ProviderContainer container,
     String agentId = 'agent-penguin-wake-eval',
+    PenguinWakeScenarioId scenario = PenguinWakeScenarioId.requalification,
     void Function()? additionalGetItSetup,
   }) async {
     setFakeDocumentsPath();
@@ -161,9 +165,18 @@ class TaskAgentWorkflowEvalHarness {
       syncService: syncService,
     );
 
+    // The no-op wake is the world *before* the unblock: customs is still
+    // holding and the closing note reports no new fact, so the prior report
+    // remains accurate and a correct wake has nothing to do.
+    final isNoOp = scenario == PenguinWakeScenarioId.noOp;
     final world = await seedPenguinWakeWorld(
       persistenceLogic: getIt<PersistenceLogic>(),
       checklistRepository: ChecklistRepository(),
+      customsCleared: !isNoOp,
+      finalNote: isNoOp ? penguinWakeNoOpNote : null,
+      // The 07-24 extension request was granted in an earlier wake, so no
+      // outstanding ask remains for the model to act on.
+      dueDate: isNoOp ? penguinWakeExtendedDueDate : null,
     );
 
     // The seed is worth checking rather than assuming: a task without a
@@ -186,6 +199,15 @@ class TaskAgentWorkflowEvalHarness {
       categoryId: world.categoryId,
     );
 
+    // Every scenario but the original is a follow-up wake, which is the common
+    // case in the app and the one the synthetic scenarios never covered.
+    if (scenario != PenguinWakeScenarioId.requalification) {
+      await seedPenguinWakePriorReport(
+        syncService: syncService,
+        agentId: agentId,
+      );
+    }
+
     return TaskAgentWorkflowEvalHarness._(
       journalDb: journalDb,
       settingsDb: settingsDb,
@@ -196,6 +218,7 @@ class TaskAgentWorkflowEvalHarness {
       container: container,
       world: world,
       agentId: agentId,
+      scenario: PenguinWakeScenario.of(scenario),
     );
   }
 

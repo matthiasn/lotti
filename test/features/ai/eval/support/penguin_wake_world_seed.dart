@@ -107,12 +107,24 @@ const String penguinWakeCategoryId = 'penguin-wake-eval-category';
 /// most recent note says it holds, so a correct wake leaves it alone.
 final DateTime penguinWakeDueDate = DateTime.utc(2026, 8, 7);
 
+/// The deadline for scenarios where the 07-24 extension request was granted.
+///
+/// The no-op wake needs this. Leaving the due date at [penguinWakeDueDate]
+/// while the 07-24 note still asks for an extension leaves one genuinely
+/// outstanding request in the context — and on 2026-08-08 all five models
+/// found it and proposed exactly this date, which was them reading correctly
+/// and the fixture being wrong. A wake is only a no-op if nothing is pending.
+final DateTime penguinWakeExtendedDueDate = DateTime.utc(2026, 8, 14);
+
 /// Seeds the task, its three checklists, its linked notes and its time records
 /// into the databases behind [persistenceLogic] and [checklistRepository].
 Future<PenguinWakeWorld> seedPenguinWakeWorld({
   required PersistenceLogic persistenceLogic,
   required ChecklistRepository checklistRepository,
   DateTime? now,
+  bool customsCleared = true,
+  String? finalNote,
+  DateTime? dueDate,
 }) async {
   final createdAt = now ?? DateTime.utc(2026, 8, 5, 8, 30);
 
@@ -137,7 +149,7 @@ Future<PenguinWakeWorld> seedPenguinWakeWorld({
       title: 'Re-qualify the Bay C cold chain after the humidity spike',
       dateFrom: DateTime.utc(2026, 7, 18, 9),
       dateTo: createdAt,
-      due: penguinWakeDueDate,
+      due: dueDate ?? penguinWakeDueDate,
       estimate: const Duration(hours: 9),
       languageCode: 'en',
     ),
@@ -175,29 +187,31 @@ Future<PenguinWakeWorld> seedPenguinWakeWorld({
   final remediation = await checklistRepository.createChecklist(
     taskId: penguinWakeTaskId,
     title: 'Remediation',
-    items: const [
-      ChecklistItemData(
+    items: [
+      const ChecklistItemData(
         title: 'Order replacement desiccant cartridges',
         isChecked: true,
         linkedChecklists: [],
       ),
       ChecklistItemData(
         title: 'Clear the cartridges through Ross Station customs',
-        // Cleared on 08-05, per the most recent note.
-        isChecked: true,
-        linkedChecklists: [],
+        // Cleared on 08-05 in the unblocking scenario. In the no-op wake the
+        // hold is still on, which is what makes the prior report accurate and
+        // leaves the model with genuinely nothing to do.
+        isChecked: customsCleared,
+        linkedChecklists: const [],
       ),
-      ChecklistItemData(
+      const ChecklistItemData(
         title: penguinWakeSwapItemTitle,
         isChecked: false,
         linkedChecklists: [],
       ),
-      ChecklistItemData(
+      const ChecklistItemData(
         title: penguinWakeStillOwedItemTitle,
         isChecked: false,
         linkedChecklists: [],
       ),
-      ChecklistItemData(
+      const ChecklistItemData(
         title: 'Reseat the door gasket on the Bay C airlock',
         // Reseated by the user on 08-02, per that note.
         isChecked: true,
@@ -244,8 +258,17 @@ Future<PenguinWakeWorld> seedPenguinWakeWorld({
     ...requalification.createdItems,
   ];
 
+  final notes = [
+    ..._linkedNotes.take(_linkedNotes.length - 1),
+    _Note(
+      _linkedNotes.last.id,
+      _linkedNotes.last.at,
+      finalNote ?? _linkedNotes.last.text,
+    ),
+  ];
+
   final noteIds = <String>[];
-  for (final note in _linkedNotes) {
+  for (final note in notes) {
     final entry = JournalEntry(
       meta: Metadata(
         id: note.id,

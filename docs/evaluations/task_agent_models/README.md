@@ -633,3 +633,72 @@ therefore uses Qwen for thinking and retains Mistral as a selectable task-agent
 executor and as the profile's multimodal vision model. Full generated outputs,
 the manifest, and the direct review are archived privately under
 `2026-07-12_production-routing-8d34a3088-full-r4`.
+
+## 2026-08-08: the real-wake suite
+
+Every result above was produced against a hand-written context. The harness
+declared the task as a JSON blob — `_taskDetailsJson` carried an empty checklist
+and a single log line restating the description — so the suite never measured
+what the app actually asks a model to read.
+
+`penguin_wake_workflow_eval_live_test.dart` runs the real `TaskAgentWorkflow`
+over real in-memory databases and asserts on rows read back out: pending
+proposals, the persisted report, the task itself. `AiInputRepository` assembles
+the context exactly as the app does. The seeded wake carries fourteen checklist
+items across three lists, six weeks of linked notes, logged time, a blocked
+status, a due date and an estimate, and measures **9,004 characters** against
+the 921–2,207 the synthetic scenarios carried.
+
+### Scenario 1 — `requalification`
+
+Unblocked overnight. Complete the one item the notes support, clear the blocked
+status, and leave alone a deadline an older note asks to move and a newer one
+keeps.
+
+| Model | Passed | Failure seen |
+| --- | ---: | --- |
+| Kimi K3 | 3 / 3 | — |
+| Qwen3.6 27B | 3 / 3 | — |
+| DeepSeek V4 Flash 0731 | 3 / 3 | — |
+| GLM 5.2 | 2 / 3 | left the task blocked after the note clearing it |
+| Qwen3.5 397B | 2 / 3 | completed an item with no supporting evidence |
+| Qwen3.6 35B A3B | 1 / 3 | provider rejected the request as malformed (×2) |
+
+Run-to-run variance is large: GLM and 397B each passed and failed the identical
+input across sessions. **Do not rank models on this scenario.** It separates
+broken from working, not good from better.
+
+### Scenario 2 — `noOp`
+
+Nothing report-worthy changed. The prior report is accurate, no request is
+outstanding, and the newest note adds no fact. A correct wake proposes nothing
+and finishes with a short plain-text note, leaving the report standing.
+
+| Model | Passed | Failure seen |
+| --- | ---: | --- |
+| Qwen3.6 27B | 3 / 3 | — |
+| GLM 5.2 | 1 / 3 | rewrote an accurate report |
+| Kimi K3 | 0 / 3 | rewrote an accurate report |
+| Qwen3.5 397B | 0 / 3 | rewrote an accurate report |
+| DeepSeek V4 Flash 0731 | 0 / 3 | rewrote an accurate report |
+
+No model proposed a data change, so the restraint failure is narrow and
+specific: four of five cannot leave a correct report alone. Their rewrites were
+paraphrases — every one of the five produced a one-liner saying "blocked on Ross
+Station customs". In the app that is a task summary that changes under the user
+for no reason.
+
+This is the first scenario in the suite that discriminates, and it puts the
+dense 27B ahead of every frontier model tested.
+
+### The fixture was wrong first
+
+The first `noOp` run failed on all five models, each proposing exactly
+`update_task_due_date: 2026-08-14`. They were right. The variant had dropped the
+note that supersedes the 07-24 extension request while leaving the due date
+unmoved, so one genuine unfulfilled request remained in the context. The models
+found it; the fixture was corrected to grant the extension in the prior wake.
+
+Worth recording as method: a scenario every model fails deserves the same
+suspicion as one every model passes. Read what they proposed before believing
+the score.

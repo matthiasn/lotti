@@ -2,9 +2,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 
 import '../../../helpers/fallbacks.dart';
+import 'support/penguin_wake_scenarios.dart';
 import 'support/penguin_wake_world_seed.dart';
 import 'support/task_agent_workflow_eval_harness.dart';
 
@@ -114,6 +116,65 @@ void main() {
         contains('still holds'),
         reason: 'the instruction overriding it must be visible',
       );
+    });
+
+    test('the no-op scenario seeds a wake with nothing to do', () async {
+      // Built separately: the default harness in setUp is the unblocking
+      // scenario, and the no-op world has to be the state before it.
+      final noOpContainer = ProviderContainer();
+      addTearDown(noOpContainer.dispose);
+      await harness.dispose();
+      final noOp = await TaskAgentWorkflowEvalHarness.start(
+        container: noOpContainer,
+        scenario: PenguinWakeScenarioId.noOp,
+      );
+      addTearDown(noOp.dispose);
+
+      final json = (await noOp.buildTaskContextJson())!;
+
+      // The prior report must reach the model, or the wake reads as a first
+      // wake and writing a report becomes correct rather than churn.
+      final priorReport = await noOp.agentRepository.getLatestReport(
+        noOp.agentId,
+        AgentReportScopes.current,
+      );
+      expect(
+        priorReport?.oneLiner,
+        penguinWakePriorReportOneLiner,
+        reason: 'the no-op wake must be a follow-up, not a first wake',
+      );
+
+      // Customs must still be holding, or the world contradicts that report
+      // and the model is right to act.
+      expect(
+        json,
+        contains('Still no movement'),
+        reason: 'the closing note must be the one that reports nothing new',
+      );
+      expect(
+        json,
+        isNot(contains('cleared customs this morning')),
+        reason: 'the unblocking instruction must not leak into the no-op wake',
+      );
+      expect(
+        noOp.scenario.expectsProposals,
+        isFalse,
+        reason: 'a correct no-op wake proposes nothing',
+      );
+
+      // The 07-24 extension request must already be satisfied. While it was
+      // not, every model correctly proposed moving the date to Aug 14 — the
+      // fixture, not the models, was wrong.
+      final noOpTask =
+          await noOp.journalDb.journalEntityById(noOp.world.taskId) as Task?;
+      expect(
+        noOpTask?.data.due,
+        penguinWakeExtendedDueDate,
+        reason: 'no request may remain outstanding in a no-op wake',
+      );
+
+      // Re-seed the default world so tearDown has a live harness to dispose.
+      harness = await TaskAgentWorkflowEvalHarness.start(container: container);
     });
 
     test(
