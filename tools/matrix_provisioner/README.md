@@ -4,6 +4,18 @@ Admin CLI tool that creates a Matrix user account and sync room on a Synapse
 homeserver, then outputs a Base64url-encoded (no padding) provisioning bundle
 for import into the Lotti desktop client.
 
+> **The provisioning flow lives in `services/shared/matrix`.** This module is the
+> command-line front end — argument parsing, credential resolution, stderr
+> progress and file output. The same core backs
+> `services/matrix-provisioning-service`, so the CLI and the web app cannot
+> drift apart. `provision.py` adds `services/` to `sys.path` at import time so it
+> still runs standalone from its own virtualenv.
+>
+> **Bundles created here are not tracked** by the provisioning service — this
+> tool writes to a file and talks to Synapse directly. Use the web UI for
+> anything that should appear in the admin roster; keep this as the break-glass
+> path for when the service is unavailable.
+
 ## Prerequisites
 
 - Python 3.10+
