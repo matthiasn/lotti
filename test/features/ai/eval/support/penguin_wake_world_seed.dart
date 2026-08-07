@@ -15,7 +15,7 @@ import 'package:lotti/logic/persistence_logic.dart';
 /// logged time, and a report from the previous wake that the model has to
 /// revise rather than write fresh.
 ///
-/// The size is the point, but so is the shape. Four traps are built in, each
+/// The size is the point, but so is the shape. Five traps are built in, each
 /// one a behaviour the suite has caught models failing before:
 ///
 /// * **Superseded instruction.** The 07-24 note asks for the deadline to move
@@ -30,6 +30,9 @@ import 'package:lotti/logic/persistence_logic.dart';
 /// * **Evidence that is not in the checklist.** The humidity re-test is
 ///   described only in a linked note, so an item worth adding exists but must
 ///   be drawn from prose rather than copied from a list.
+/// * **A debt read as a completion.** The newest note ends "we still owe
+///   stores the saturated cartridges". Qwen3.5 397B checked that item off and
+///   quoted the clause as its evidence. See [PenguinWakeWorld.stillOwedItemId].
 ///
 /// Everything is fiction in the penguin-logistics register the demo world
 /// already uses, so no real task content of the user's appears in an eval
@@ -41,6 +44,7 @@ class PenguinWakeWorld {
     required this.checkedItemIds,
     required this.pendingItemIds,
     required this.noteIds,
+    required this.itemTitles,
   });
 
   final String taskId;
@@ -53,7 +57,40 @@ class PenguinWakeWorld {
   final List<String> pendingItemIds;
 
   final List<String> noteIds;
+
+  /// Checklist item id to title, so an artifact reads as prose rather than as
+  /// a column of UUIDs and a failure names the item it is about.
+  final Map<String, String> itemTitles;
+
+  /// The one pending item the newest note actually supports completing.
+  ///
+  /// "I swapped the Bay C cartridges myself before the shift ended" is the
+  /// only completion evidence in the whole wake. Everything else pending is
+  /// either explicitly outstanding or unmentioned, which makes this the
+  /// allowlist a correct run is measured against.
+  String get swapCartridgesItemId => itemTitles.entries
+      .firstWhere((entry) => entry.value == penguinWakeSwapItemTitle)
+      .key;
+
+  /// The item the newest note says is still outstanding.
+  ///
+  /// The instruction ends "we still owe stores the saturated cartridges".
+  /// Qwen3.5 397B checked this item off on 2026-08-08 and quoted that exact
+  /// clause as its evidence, reading a statement of debt as a statement of
+  /// completion. Negation blindness is the failure this world exists to catch,
+  /// so the item gets a name of its own rather than living in
+  /// [pendingItemIds] where an assertion would have to guess at it.
+  String get stillOwedItemId => itemTitles.entries
+      .firstWhere((entry) => entry.value == penguinWakeStillOwedItemTitle)
+      .key;
 }
+
+/// Title of the item the most recent note leaves explicitly outstanding.
+const String penguinWakeStillOwedItemTitle =
+    'Return the saturated cartridges to stores';
+
+/// Title of the one item the most recent note reports as done.
+const String penguinWakeSwapItemTitle = 'Swap the Bay C cartridges';
 
 const String penguinWakeTaskId = 'penguin-wake-eval-task';
 const String penguinWakeCategoryId = 'penguin-wake-eval-category';
@@ -143,12 +180,12 @@ Future<PenguinWakeWorld> seedPenguinWakeWorld({
         linkedChecklists: [],
       ),
       ChecklistItemData(
-        title: 'Swap the Bay C cartridges',
+        title: penguinWakeSwapItemTitle,
         isChecked: false,
         linkedChecklists: [],
       ),
       ChecklistItemData(
-        title: 'Return the saturated cartridges to stores',
+        title: penguinWakeStillOwedItemTitle,
         isChecked: false,
         linkedChecklists: [],
       ),
@@ -253,6 +290,7 @@ Future<PenguinWakeWorld> seedPenguinWakeWorld({
         if (!item.isChecked) item.id,
     ],
     noteIds: noteIds,
+    itemTitles: {for (final item in created) item.id: item.title},
   );
 }
 

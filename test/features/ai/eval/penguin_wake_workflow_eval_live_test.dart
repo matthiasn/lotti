@@ -38,7 +38,7 @@ import 'support/task_agent_workflow_eval_harness.dart';
 /// real `TaskAgentWorkflow`, and then asserts on rows read back out — proposals
 /// in the change set, the persisted report, the task itself.
 ///
-/// The scenario is built to be failed. Its four traps are described on
+/// The scenario is built to be failed. Its five traps are described on
 /// [seedPenguinWakeWorld]; the assertions below name which one each is
 /// checking, because a bare count tells you a model scored 3/5 without telling
 /// you it was the restraint case it lost.
@@ -203,6 +203,15 @@ void main() {
           proposedArgs.add(item.args);
         }
       }
+      // Resolve ids to titles so the artifact reads as prose. A column of
+      // UUIDs makes a wrong proposal invisible on inspection.
+      final proposedItemTitles = [
+        for (final args in proposedArgs)
+          if (args['id'] case final String id)
+            harness.world.itemTitles[id]
+          else
+            null,
+      ];
       final storedTask =
           await harness.journalDb.journalEntityById(harness.world.taskId)
               as Task?;
@@ -224,6 +233,7 @@ void main() {
         error: result.error,
         proposedTools: proposedTools,
         proposedArgs: proposedArgs,
+        proposedItemTitles: proposedItemTitles,
         reportText: reportText,
       );
       final where = 'See $artifact.';
@@ -259,6 +269,36 @@ void main() {
               'already completed. $where',
         );
       }
+
+      // ---- Trap 4: only supported completions ---------------------------
+      // Exactly one pending item has evidence behind it: the newest note says
+      // "I swapped the Bay C cartridges myself". Every other pending item is
+      // either explicitly still outstanding ("we still owe stores the
+      // saturated cartridges") or simply unmentioned.
+      //
+      // Naming the allowed item is what makes this hold. An earlier version
+      // only forbade the still-owed item, and Qwen3.5 397B walked straight
+      // past it by completing "Photograph the condensate trail" instead, with
+      // the reason "photograph likely completed" — inventing evidence rather
+      // than misreading it. A denylist has to anticipate the fabrication; an
+      // allowlist does not.
+      final wronglyCompleted = <String>[
+        for (final (index, args) in proposedArgs.indexed)
+          if (args['isChecked'] == true)
+            if (args['id'] case final String id)
+              if (id != harness.world.swapCartridgesItemId)
+                // ignore: no_adjacent_strings_in_list
+                '${proposedItemTitles[index] ?? id}'
+                    ' (reason: ${args['reason'] ?? 'none given'})',
+      ];
+      expect(
+        wronglyCompleted,
+        isEmpty,
+        reason:
+            'UNSUPPORTED COMPLETION: the notes support completing only '
+            '"$penguinWakeSwapItemTitle". Also proposed: '
+            '${wronglyCompleted.join('; ')}. $where',
+      );
 
       // ---- Trap 3: the blocker the newest note resolves -----------------
       expect(
@@ -317,14 +357,23 @@ Future<String> _writeArtifact({
   required String? error,
   required List<String> proposedTools,
   required List<Map<String, dynamic>> proposedArgs,
+  required List<String?> proposedItemTitles,
   required String reportText,
 }) async {
   final directory = Directory('eval_artifacts');
   if (!directory.existsSync()) {
     directory.createSync(recursive: true);
   }
+  // Samples of one model run concurrently as separate processes, so the label
+  // has to be part of the path. Without it three parallel glm-5.2 samples all
+  // write the same file and two of the three results are silently lost —
+  // leaving a run that looks complete and is not.
   final safeModel = modelId.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_');
-  final file = File('${directory.path}/penguin_wake_$safeModel.json');
+  final label = Platform.environment['PENGUIN_WAKE_EVAL_RUN_LABEL'];
+  final safeLabel = label == null
+      ? ''
+      : '_${label.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_')}';
+  final file = File('${directory.path}/penguin_wake_$safeModel$safeLabel.json');
   await file.writeAsString(
     const JsonEncoder.withIndent('  ').convert({
       'model': modelId,
@@ -334,6 +383,7 @@ Future<String> _writeArtifact({
       'error': error,
       'proposedTools': proposedTools,
       'proposedArgs': proposedArgs,
+      'proposedItemTitles': proposedItemTitles,
       'reportText': reportText,
     }),
   );
