@@ -20,6 +20,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   retry on the next startup.
 
 ### Fixed
+- **The knowledge graph is easier to read.** Node labels no longer print under
+  the toolbar or behind the legend, and the view now frames a task's
+  neighbourhood into the space the floating controls actually leave free
+  instead of a fixed guess, so linked nodes stop hiding behind the legend and
+  minimap. Every direct neighbour keeps its name at any zoom level, so the
+  next step in a walk can be read before tapping it. Photo collections of two
+  or three images fill their circle instead of showing black wedges, and the
+  photo count now matches the images previewed inside it. Checklist and
+  AI-source links are drawn with their own dot patterns, so every relationship
+  type is distinguishable without relying on colour. The linked-entries list
+  shows a "More below" control while the list continues past the panel edge,
+  and its fade no longer makes a scrollable section look disabled.
 - **The penguin demo is easier to read and explore.** Its persistent banner is
   shorter, more prominent, and themed blue, with the exit action aligned in
   the same row; the exit sheet buttons align inline when space permits and

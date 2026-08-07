@@ -11981,6 +11981,12 @@ abstract class AppLocalizations {
   /// **'LINKED · {count}'**
   String knowledgeGraphLinkedSection(int count);
 
+  /// No description provided for @knowledgeGraphMoreBelow.
+  ///
+  /// In en, this message translates to:
+  /// **'More below'**
+  String get knowledgeGraphMoreBelow;
+
   /// No description provided for @knowledgeGraphMoreLinks.
   ///
   /// In en, this message translates to:

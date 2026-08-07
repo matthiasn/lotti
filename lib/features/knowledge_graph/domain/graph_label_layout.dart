@@ -111,32 +111,167 @@ Map<String, GraphLabelPlacement> solveGraphLabelLayout({
       break;
     }
 
-    if (choice == null && candidate.required) {
-      final anchor = previousAnchor ?? GraphLabelAnchor.bottom;
-      final raw = _rectFor(candidate, anchor, gap);
-      final maxLeft = viewport.right - raw.width;
-      final maxTop = viewport.bottom - raw.height;
-      final rect = Rect.fromLTWH(
-        maxLeft <= viewport.left
-            ? viewport.left
-            : raw.left.clamp(viewport.left, maxLeft),
-        maxTop <= viewport.top
-            ? viewport.top
-            : raw.top.clamp(viewport.top, maxTop),
-        raw.width,
-        raw.height,
-      );
-      choice = GraphLabelPlacement(
-        id: candidate.id,
-        rect: rect,
-        anchor: anchor,
-        nodeCenter: candidate.center,
-      );
-    }
+    // A required label that found no clean anchor degrades gracefully: take
+    // the least-overlapping anchor that still clears the viewport AND the
+    // reserved chrome, rather than being dropped (which leaves the node
+    // anonymous) or hard-clamped onto the chrome (which is what put callout
+    // fragments under the toolbar).
+    choice ??= candidate.required
+        ? _bestEffortPlacement(
+            candidate: candidate,
+            anchors: anchors,
+            viewport: viewport,
+            nodeObstacles: nodeObstacles,
+            reservedRects: reservedRects,
+            placed: placed,
+            gap: gap,
+          )
+        : null;
 
     if (choice != null) placed[candidate.id] = choice;
   }
   return placed;
+}
+
+/// Least-bad placement for a [candidate] whose anchors all collide.
+///
+/// Scores every anchor by the area it would overlap (node bodies weigh more
+/// than other labels, since covering a node hides the thing being named) and
+/// keeps the cheapest one. Anchors that leave the viewport or touch reserved
+/// chrome are never eligible; when none is, the label is nudged back inside
+/// the viewport and away from the reserved rects instead.
+GraphLabelPlacement? _bestEffortPlacement({
+  required GraphLabelCandidate candidate,
+  required List<GraphLabelAnchor> anchors,
+  required Rect viewport,
+  required Map<String, Rect> nodeObstacles,
+  required List<Rect> reservedRects,
+  required Map<String, GraphLabelPlacement> placed,
+  required double gap,
+}) {
+  GraphLabelAnchor? bestAnchor;
+  Rect? bestRect;
+  var bestPenalty = double.infinity;
+
+  for (final anchor in anchors) {
+    final rect = _rectFor(candidate, anchor, gap);
+    if (!viewport.contains(rect.topLeft) ||
+        !viewport.contains(rect.bottomRight) ||
+        reservedRects.any(rect.overlaps)) {
+      continue;
+    }
+    var penalty = 0.0;
+    for (final entry in nodeObstacles.entries) {
+      if (entry.key == candidate.id) continue;
+      penalty += _overlapArea(rect, entry.value) * 2;
+    }
+    for (final item in placed.values) {
+      penalty += _overlapArea(rect, item.rect);
+    }
+    if (penalty < bestPenalty) {
+      bestPenalty = penalty;
+      bestAnchor = anchor;
+      bestRect = rect;
+    }
+  }
+
+  if (bestAnchor != null && bestRect != null) {
+    return GraphLabelPlacement(
+      id: candidate.id,
+      rect: bestRect,
+      anchor: bestAnchor,
+      nodeCenter: candidate.center,
+    );
+  }
+
+  // Nothing fits cleanly: clamp into the viewport, then push clear of any
+  // reserved rect it still lands on.
+  final anchor = anchors.first;
+  final raw = _rectFor(candidate, anchor, gap);
+  final maxLeft = viewport.right - raw.width;
+  final maxTop = viewport.bottom - raw.height;
+  var rect = Rect.fromLTWH(
+    maxLeft <= viewport.left
+        ? viewport.left
+        : raw.left.clamp(viewport.left, maxLeft),
+    maxTop <= viewport.top ? viewport.top : raw.top.clamp(viewport.top, maxTop),
+    raw.width,
+    raw.height,
+  );
+  rect = _pushOutOfReserved(rect, reservedRects, viewport);
+  return GraphLabelPlacement(
+    id: candidate.id,
+    rect: rect,
+    anchor: anchor,
+    nodeCenter: candidate.center,
+  );
+}
+
+/// Slides [rect] off any reserved rect it overlaps, along whichever axis costs
+/// the least travel, keeping it inside [viewport]. Returns the original rect
+/// when no escape keeps it in the viewport (a viewport smaller than its own
+/// chrome), so the label still renders rather than vanishing.
+Rect _pushOutOfReserved(Rect rect, List<Rect> reserved, Rect viewport) {
+  bool insideViewport(Rect option) =>
+      viewport.contains(option.topLeft) &&
+      viewport.contains(option.bottomRight);
+  bool clearsEverything(Rect option) =>
+      !reserved.any(option.overlaps) && insideViewport(option);
+
+  if (clearsEverything(rect)) return rect;
+
+  // Escape moves are measured against EVERY reserved rect, not just the one
+  // currently hit. Reserved rects routinely overlap — the legend and minimap
+  // are inflated by the same padding that separates them — so chasing the
+  // locally shortest move off one of them can drop the label straight onto
+  // its neighbour, and the two can trade it back and forth until the pass
+  // budget runs out, leaving it under a control.
+  final options = <Rect>[];
+  for (final chrome in reserved) {
+    options.addAll([
+      rect.translate(chrome.left - rect.right, 0),
+      rect.translate(chrome.right - rect.left, 0),
+      rect.translate(0, chrome.top - rect.bottom),
+      rect.translate(0, chrome.bottom - rect.top),
+    ]);
+  }
+
+  Rect? best;
+  var bestTravel = double.infinity;
+  for (final option in options) {
+    if (!clearsEverything(option)) continue;
+    final travel = (option.center - rect.center).distance;
+    if (travel < bestTravel) {
+      bestTravel = travel;
+      best = option;
+    }
+  }
+  if (best != null) return best;
+
+  // Nothing clears everything: take the option overlapping the least reserved
+  // area, so a label that cannot fully escape still sits mostly clear rather
+  // than centred on a control. Travel breaks ties, keeping it near its anchor.
+  Rect? fallback;
+  var fallbackPenalty = double.infinity;
+  for (final option in options) {
+    if (!insideViewport(option)) continue;
+    var penalty = 0.0;
+    for (final chrome in reserved) {
+      penalty += _overlapArea(option, chrome);
+    }
+    penalty += (option.center - rect.center).distance / 1e6;
+    if (penalty < fallbackPenalty) {
+      fallbackPenalty = penalty;
+      fallback = option;
+    }
+  }
+  return fallback ?? rect;
+}
+
+double _overlapArea(Rect a, Rect b) {
+  final intersection = a.intersect(b);
+  if (intersection.isEmpty) return 0;
+  return intersection.width * intersection.height;
 }
 
 Rect _rectFor(

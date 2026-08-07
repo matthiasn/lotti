@@ -7003,6 +7003,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get knowledgeGraphMoreBelow => 'Níže je toho víc';
+
+  @override
   String get knowledgeGraphMoreLinks => 'Další propojení';
 
   @override

@@ -158,6 +158,32 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     debugLabel: 'knowledge-graph-canvas',
   );
 
+  // Floating chrome is measured rather than estimated: the label solver must
+  // know exactly which pixels are already spoken for (guessing let callouts
+  // slide under the toolbar), and the camera framing must keep the focus
+  // neighborhood clear of the legend/minimap column (a fixed 104px guess left
+  // nodes hidden behind a legend more than twice that tall).
+  final GlobalKey _canvasKey = GlobalKey(debugLabel: 'knowledge-graph-canvas');
+  final GlobalKey _toolbarKey = GlobalKey(
+    debugLabel: 'knowledge-graph-toolbar',
+  );
+  final GlobalKey _legendKey = GlobalKey(debugLabel: 'knowledge-graph-legend');
+  final GlobalKey _minimapKey = GlobalKey(
+    debugLabel: 'knowledge-graph-minimap',
+  );
+  final GlobalKey _titleKey = GlobalKey(debugLabel: 'knowledge-graph-title');
+
+  Rect? _toolbarRect;
+  Rect? _legendRect;
+  Rect? _minimapRect;
+  Rect? _titleRect;
+
+  /// Whether the user has taken the camera over (gesture, walk, recenter).
+  /// Until then the opening framing is re-derived when chrome measurements
+  /// land, so the first paint's estimate is corrected in the next frame
+  /// instead of leaving the graph framed under its own chrome.
+  bool _userAdjustedCamera = false;
+
   late Map<String, int> _hops;
 
   /// Whether the focused entry's full-details side panel is open (overlaying
@@ -559,40 +585,167 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   /// clamped to a comfortable range.
   double _inspectorWidth(double width) => (width * 0.30).clamp(320.0, 400.0);
 
+  /// Measures the floating chrome (toolbar, title card, legend, minimap) in the
+  /// canvas's own coordinate space after a frame, and re-frames the opening
+  /// camera once real sizes are known. Only writes state when a rect actually
+  /// moved, so repeated post-frame passes converge instead of looping.
+  void _measureChrome() {
+    if (!mounted) return;
+    final canvasObject = _canvasKey.currentContext?.findRenderObject();
+    if (canvasObject is! RenderBox || !canvasObject.hasSize) return;
+    final pad = _visualSpec == null ? 8.0 : context.designTokens.spacing.step3;
+
+    Rect? rectOf(GlobalKey key) {
+      final object = key.currentContext?.findRenderObject();
+      if (object is! RenderBox || !object.hasSize) return null;
+      final origin = canvasObject.globalToLocal(
+        object.localToGlobal(
+          Offset.zero,
+        ),
+      );
+      return (origin & object.size).inflate(pad);
+    }
+
+    final toolbar = rectOf(_toolbarKey);
+    final legend = rectOf(_legendKey);
+    final minimap = rectOf(_minimapKey);
+    final title = rectOf(_titleKey);
+
+    bool changed(Rect? a, Rect? b) {
+      if (a == null || b == null) return a != b;
+      return (a.left - b.left).abs() > 0.5 ||
+          (a.top - b.top).abs() > 0.5 ||
+          (a.right - b.right).abs() > 0.5 ||
+          (a.bottom - b.bottom).abs() > 0.5;
+    }
+
+    if (!changed(toolbar, _toolbarRect) &&
+        !changed(legend, _legendRect) &&
+        !changed(minimap, _minimapRect) &&
+        !changed(title, _titleRect)) {
+      return;
+    }
+
+    setState(() {
+      _toolbarRect = toolbar;
+      _legendRect = legend;
+      _minimapRect = minimap;
+      _titleRect = title;
+      if (!_userAdjustedCamera && _initialized && !_lastSize.isEmpty) {
+        final (scale, pan) = _framedTransform(_lastSize, _focusId);
+        _scale = scale;
+        _pan = pan;
+      }
+    });
+  }
+
+  /// Rects the label solver must treat as occupied, and the camera must frame
+  /// around. Falls back to the historical estimates only for the first frame,
+  /// before the chrome has been measured.
+  List<Rect> _chromeRects(Size size) => <Rect>[
+    ?_toolbarRect,
+    ?_titleRect,
+    ?_legendRect,
+    ?_minimapRect,
+  ];
+
+  /// Insets the framing keeps clear of floating chrome.
+  ({double top, double bottom, double right}) _chromeReserve(Size size) {
+    const fallbackMargin = 60.0;
+    var top = widget.showTitle ? 84.0 : fallbackMargin;
+    if (_toolbarRect != null) {
+      top = math.max(fallbackMargin, _toolbarRect!.bottom);
+    }
+    if (_titleRect != null) {
+      top = math.max(top, _titleRect!.bottom);
+    }
+
+    var bottom = widget.showLegend ? 104.0 : fallbackMargin;
+    final bottomEdges = <double>[
+      if (_legendRect != null) _legendRect!.top,
+      if (_minimapRect != null) _minimapRect!.top,
+    ];
+    if (bottomEdges.isNotEmpty) {
+      bottom = math.max(
+        fallbackMargin,
+        size.height - bottomEdges.reduce(math.min),
+      );
+    }
+
+    // The inspector's footprint is derived from its own width rule, not a
+    // guess, so it needs no measurement.
+    final right = _inspectorVisible(size)
+        ? _inspectorWidth(size.width) + 32
+        : 0.0;
+    return (top: top, bottom: bottom, right: right);
+  }
+
   /// Transform that frames [focusId]'s 2-hop neighborhood in [size].
   (double, Offset) _framedTransform(Size size, String focusId) {
     final hops = _bfs(focusId);
-    final region = _displayScenario.nodes
-        .where((n) => (hops[n.id] ?? 99) <= 2)
-        .map((n) => _layout.positions[n.id])
-        .whereType<Offset>()
+    final regionNodes = _displayScenario.nodes
+        .where(
+          (n) => (hops[n.id] ?? 99) <= 2 && _layout.positions[n.id] != null,
+        )
         .toList();
     final focusPos = _layout.positions[focusId] ?? Offset.zero;
-    if (region.isEmpty) return (1, Offset(size.width / 2, size.height / 2));
+    if (regionNodes.isEmpty) {
+      return (1, Offset(size.width / 2, size.height / 2));
+    }
 
     var minX = double.infinity;
     var minY = double.infinity;
     var maxX = double.negativeInfinity;
     var maxY = double.negativeInfinity;
-    for (final p in region) {
+    for (final node in regionNodes) {
+      final p = _layout.positions[node.id]!;
       minX = math.min(minX, p.dx);
       minY = math.min(minY, p.dy);
       maxX = math.max(maxX, p.dx);
       maxY = math.max(maxY, p.dy);
     }
-    final bw = math.max(maxX - minX, 1);
-    final bh = math.max(maxY - minY, 1);
     const margin = 60;
-    final topReserve = widget.showTitle ? 84 : margin;
-    final bottomReserve = widget.showLegend ? 104 : margin;
-    // Reserve the inspector's footprint on the right (panel width + insets) so
-    // the focus frames in the visible area rather than centred under the panel.
-    final rightReserve = _inspectorVisible(size)
-        ? _inspectorWidth(size.width) + 32
-        : 0.0;
+    // Measured chrome (see [_chromeReserve]) — the focus neighborhood frames
+    // into what is actually visible, instead of into a fixed guess that let
+    // the legend/minimap column cover real nodes.
+    final reserve = _chromeReserve(size);
+    final topReserve = reserve.top;
+    final bottomReserve = reserve.bottom;
+    final rightReserve = reserve.right;
     final availW = math.max(size.width - margin * 2 - rightReserve, 80);
     final availH = math.max(size.height - topReserve - bottomReserve, 80);
-    final scale = math.min(availW / bw, availH / bh).clamp(0.45, 1.5);
+
+    // Nodes are CIRCLES, not points: framing their centres lets a body — up
+    // to twice the ordinary diameter for media-backed nodes — hang past the
+    // reserved edge and sit behind the toolbar or legend. Radius is a
+    // screen-space function of the very scale being solved for, so take one
+    // refinement pass: fit centres, measure the widest body at that scale,
+    // convert it back to world units and refit with the bounds inflated.
+    // `nodeRadiusFor` clamps its zoom factor, so one pass converges.
+    double solveScale(double worldPad) {
+      final bw = math.max(maxX - minX + worldPad * 2, 1);
+      final bh = math.max(maxY - minY + worldPad * 2, 1);
+      return math.min(availW / bw, availH / bh).clamp(0.45, 1.5);
+    }
+
+    final firstPass = solveScale(0);
+    var widestBody = 0.0;
+    for (final node in regionNodes) {
+      widestBody = math.max(
+        widestBody,
+        KnowledgeGraphPainter.nodeRadiusFor(
+          node: node,
+          scenario: _displayScenario,
+          degrees: _degrees,
+          focusId: focusId,
+          hops: hops,
+          scale: firstPass,
+          visualSpec: _visualSpec,
+        ),
+      );
+    }
+    final scale = solveScale(widestBody / firstPass);
+
     // Center the focus a touch above middle so its neighbors fan below.
     final cx = (minX + maxX) / 2;
     final cy = (minY + maxY) / 2 * 0.4 + focusPos.dy * 0.6;
@@ -603,6 +756,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
 
   void _walkTo(String id) {
     if (id == _focusId) return;
+    _userAdjustedCamera = true;
     final fromId = _focusId;
     _viewport.walkTo(id);
     _previousFocusId = fromId;
@@ -658,6 +812,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   }
 
   void _applyFocusChange(String fromId) {
+    _userAdjustedCamera = true;
     _previousFocusId = fromId;
     _walkPath = _path(fromId, _focusId);
     _rebuildLocalGraph();
@@ -690,6 +845,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   }
 
   void _recenter() {
+    _userAdjustedCamera = true;
     _focusWorld = _layout.positions[_focusId] ?? Offset.zero;
     final (ts, tp) = _framedTransform(_lastSize, _focusId);
     _fromScale = _scale;
@@ -859,6 +1015,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   }
 
   void _onScaleStart(ScaleStartDetails d) {
+    _userAdjustedCamera = true;
     _cam.stop();
     _fromScale = _scale;
     _fromPan = _pan;
@@ -1027,6 +1184,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                 null => node.label,
               },
           };
+          final measuredChrome = _chromeRects(size);
           final reservedLabelRects = <Rect>[
             if (inspectorVisible)
               Rect.fromLTWH(
@@ -1037,21 +1195,31 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                 _inspectorWidth(size.width) + tokens.spacing.step5 * 2,
                 size.height,
               ),
-            Rect.fromLTWH(
-              0,
-              size.height -
-                  visualSpec.minimapHeight -
-                  tokens.spacing.step5 * 2 -
-                  (widget.showLegend ? visualSpec.minimapHeight : 0),
-              math.max(
-                    visualSpec.minimapWidth,
-                    visualSpec.legendMaxWidth,
-                  ) +
-                  tokens.spacing.step5 * 2,
-              visualSpec.minimapHeight * (widget.showLegend ? 2 : 1) +
-                  tokens.spacing.step5 * 2,
-            ),
+            // Real toolbar / title / legend / minimap rects once measured. The
+            // estimate below only covers the very first frame: it assumed the
+            // legend was exactly one minimap tall and ignored the toolbar
+            // entirely, which is why callouts printed under the mode chips.
+            ...measuredChrome,
+            if (measuredChrome.isEmpty)
+              Rect.fromLTWH(
+                0,
+                size.height -
+                    visualSpec.minimapHeight -
+                    tokens.spacing.step5 * 2 -
+                    (widget.showLegend ? visualSpec.minimapHeight : 0),
+                math.max(
+                      visualSpec.minimapWidth,
+                      visualSpec.legendMaxWidth,
+                    ) +
+                    tokens.spacing.step5 * 2,
+                visualSpec.minimapHeight * (widget.showLegend ? 2 : 1) +
+                    tokens.spacing.step5 * 2,
+              ),
           ];
+          // Chrome sizes are content-dependent (the legend wraps, the toolbar
+          // reflows), so re-measure after every frame; [_measureChrome] no-ops
+          // unless something actually moved.
+          WidgetsBinding.instance.addPostFrameCallback((_) => _measureChrome());
           if (!_initialized && size.isFinite && !size.isEmpty) {
             final (s, p) = _framedTransform(size, _focusId);
             _scale = s;
@@ -1064,6 +1232,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
           return Material(
             type: MaterialType.transparency,
             child: Stack(
+              key: _canvasKey,
               children: [
                 if (_viewport.value.mode == GraphViewMode.graph)
                   Positioned.fill(
@@ -1131,6 +1300,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                   child: Align(
                     alignment: AlignmentDirectional.topStart,
                     child: GraphWorkspaceToolbar(
+                      key: _toolbarKey,
                       state: _viewport.value,
                       scenario: _scenario,
                       categoryNames: widget.categoryNames,
@@ -1146,6 +1316,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                     top:
                         topInset + tokens.spacing.step13 + tokens.spacing.step8,
                     child: Column(
+                      key: _titleKey,
                       crossAxisAlignment: CrossAxisAlignment.start,
                       mainAxisSize: MainAxisSize.min,
                       children: [
@@ -1227,10 +1398,15 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                     // it stays clear of the right-hand panel instead of spanning
                     // the full width under it.
                     child: ConstrainedBox(
+                      key: _legendKey,
                       constraints: BoxConstraints(
                         maxWidth: visualSpec.legendMaxWidth,
                       ),
                       child: _LegendBar(
+                        // Stable finder for tests asserting the legend's
+                        // footprint is reserved (the measuring GlobalKey sits
+                        // on the ConstrainedBox above and is private).
+                        key: const ValueKey('knowledge-graph-legend'),
                         scenario: _displayScenario,
                         style: style,
                         categoryNames: widget.categoryNames,
@@ -1243,6 +1419,7 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
                     left: tokens.spacing.step5,
                     bottom: tokens.spacing.step5,
                     child: TopologyMiniMap(
+                      key: _minimapKey,
                       scenario: _scenario,
                       layout: _topologyLayout,
                       focusId: _focusId,
@@ -1366,6 +1543,7 @@ class _LegendBar extends StatelessWidget {
     required this.style,
     required this.categoryNames,
     required this.tokens,
+    super.key,
   });
 
   final GraphScenario scenario;

@@ -6924,6 +6924,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get knowledgeGraphMoreBelow => 'Mere nedenfor';
+
+  @override
   String get knowledgeGraphMoreLinks => 'Flere links';
 
   @override

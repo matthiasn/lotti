@@ -149,8 +149,11 @@ GraphProjection buildLocalGraphProjection({
   final directImages = direct
       .where((neighbor) => neighbor.node.type == GraphNodeType.imageEntry)
       .toList();
+  // The collection previews exactly the entries it collapses — its own linked
+  // photos. The focus's cover art is the focus's, not a member: including it
+  // made the mosaic show more tiles than the "Photo · N" count promised, and
+  // the surplus tile pushed the layout into a grid with an empty (black) cell.
   final mediaPaths = <String>{
-    if (focus.coverImagePath case final path? when path.isNotEmpty) path,
     ...directImages.map((item) => item.node.imagePath).nonNulls,
   }.toList(growable: false);
   final mediaId = graphAggregateId(

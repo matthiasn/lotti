@@ -2883,6 +2883,7 @@
   "knowledgeGraphLast7Days": "Ultimele 7 zile",
   "knowledgeGraphLast90Days": "Ultimele 90 de zile",
   "knowledgeGraphLinkedSection": "LEGATE · {count}",
+  "knowledgeGraphMoreBelow": "Mai jos sunt mai multe",
   "knowledgeGraphMoreLinks": "Mai multe legături",
   "knowledgeGraphNodeCount": "{count, plural, =1{1 nod} few{{count} noduri} other{{count} de noduri}}",
   "knowledgeGraphNodeTypeAiSummary": "Rezumat AI",

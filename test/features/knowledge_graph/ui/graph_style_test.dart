@@ -369,21 +369,56 @@ void main() {
         expect(v.directional, isFalse);
       });
 
-      test('checklist is a thin solid low-emphasis tie', () {
+      test('checklist is a thin dotted low-emphasis tie', () {
         final v = style.edgeVisual(RelStyle.checklist);
         expect(v.color, tokens.colors.text.lowEmphasis);
         expect(v.width, 1.5);
-        expect(v.dash, isNull);
+        // Dotted, not solid: tone alone made it indistinguishable from a
+        // note/log tie in greyscale or at low contrast.
+        expect(v.dash, const [2, 3.5]);
         expect(v.directional, isFalse);
       });
 
-      test('provenance uses the info color, dashed and directional', () {
+      test('provenance uses the info color, sparse-dotted and directional', () {
         final v = style.edgeVisual(RelStyle.provenance);
         expect(v.color, tokens.colors.alert.info.defaultColor);
         expect(v.width, 1.9);
-        expect(v.dash, const [7, 5]);
+        expect(v.dash, const [1.5, 7]);
         expect(v.directional, isTrue);
       });
+
+      test(
+        'every relation class is separable by stroke shape alone, without '
+        'relying on its colour',
+        () {
+          // Low-vision and greyscale users navigate by relation. Two classes
+          // that differ only in hue or tone are one class to them.
+          String signature(RelStyle relStyle) {
+            final v = style.edgeVisual(relStyle);
+            final dash = v.dash == null
+                ? 'solid'
+                : v.dash!.map((d) => d.toStringAsFixed(1)).join('/');
+            // Width is a real, colour-free channel too, but only when the
+            // difference is visible — quantize to 0.5px steps.
+            final width = (v.width * 2).round() / 2;
+            return '$dash@$width';
+          }
+
+          final signatures = <String, List<RelStyle>>{};
+          for (final relStyle in RelStyle.values) {
+            signatures.putIfAbsent(signature(relStyle), () => []).add(relStyle);
+          }
+          final collisions = signatures.entries
+              .where((entry) => entry.value.length > 1)
+              .map((entry) => '${entry.key}: ${entry.value}')
+              .toList();
+          expect(
+            collisions,
+            isEmpty,
+            reason: 'relation classes sharing a colour-free signature',
+          );
+        },
+      );
 
       test('evaluation uses the remove color, dotted and directional', () {
         final v = style.edgeVisual(RelStyle.evaluation);

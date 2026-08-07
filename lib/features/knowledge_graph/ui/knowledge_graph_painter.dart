@@ -30,6 +30,40 @@ import 'package:lotti/features/knowledge_graph/ui/graph_motion_controller.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_style.dart';
 import 'package:lotti/features/knowledge_graph/ui/graph_visual_spec.dart';
 
+/// Whether a node's label must survive crowding (pure; unit-tested).
+///
+/// The focus and the selection say where the user is standing; the focus's
+/// direct neighbours are the choices the walk offers next, so a user must be
+/// able to read them before committing to a step. Those three are placed even
+/// when the solver has to fall back to a degraded anchor. Everything further
+/// out is context and may be dropped when space runs out.
+bool graphLabelIsRequired({
+  required bool isFocus,
+  required bool isSelected,
+  required int hop,
+}) => isFocus || isSelected || hop == 1;
+
+/// Whether a label is dropped for legibility when zoomed out (pure;
+/// unit-tested).
+///
+/// Semantic zoom thins out peripheral, low-degree nodes so the canvas stays
+/// readable — but never the focus, the selection, aggregates (whose label
+/// carries their exact count), or the direct neighbours the walk depends on.
+bool graphLabelCulledAtScale({
+  required double scale,
+  required bool isFocus,
+  required bool isSelected,
+  required bool isAggregate,
+  required int hop,
+  required int degree,
+}) =>
+    scale < 0.55 &&
+    !isFocus &&
+    !isSelected &&
+    !isAggregate &&
+    hop > 1 &&
+    degree < 2;
+
 class KnowledgeGraphPainter extends CustomPainter {
   KnowledgeGraphPainter({
     required this.scenario,
@@ -506,35 +540,55 @@ class KnowledgeGraphPainter extends CustomPainter {
     }
   }
 
+  /// Cell rects that tile [rect] exactly for [count] images (1–4).
+  ///
+  /// The layout is chosen per count so every cell is filled: a fixed
+  /// four-quadrant grid left the unused quadrants painted with the background
+  /// colour, which rendered as black wedges inside the circle and read as a
+  /// broken image rather than a photo collection.
+  static List<Rect> mediaMosaicCells(Rect rect, int count) {
+    final halfWidth = rect.width / 2;
+    final halfHeight = rect.height / 2;
+    final midX = rect.center.dx;
+    final midY = rect.center.dy;
+    switch (count) {
+      case <= 1:
+        return [rect];
+      case 2:
+        // Vertical split: two portrait halves read better inside a circle than
+        // a letterboxed stack.
+        return [
+          Rect.fromLTWH(rect.left, rect.top, halfWidth, rect.height),
+          Rect.fromLTWH(midX, rect.top, halfWidth, rect.height),
+        ];
+      case 3:
+        // One full-height hero plus a stacked pair.
+        return [
+          Rect.fromLTWH(rect.left, rect.top, halfWidth, rect.height),
+          Rect.fromLTWH(midX, rect.top, halfWidth, halfHeight),
+          Rect.fromLTWH(midX, midY, halfWidth, halfHeight),
+        ];
+      default:
+        return [
+          Rect.fromLTWH(rect.left, rect.top, halfWidth, halfHeight),
+          Rect.fromLTWH(midX, rect.top, halfWidth, halfHeight),
+          Rect.fromLTWH(rect.left, midY, halfWidth, halfHeight),
+          Rect.fromLTWH(midX, midY, halfWidth, halfHeight),
+        ];
+    }
+  }
+
   void _paintMediaMosaic(Canvas canvas, Rect rect, List<ui.Image> mosaic) {
-    final cells = mosaic.length == 1
-        ? [rect]
-        : [
-            Rect.fromLTWH(rect.left, rect.top, rect.width / 2, rect.height / 2),
-            Rect.fromLTWH(
-              rect.center.dx,
-              rect.top,
-              rect.width / 2,
-              rect.height / 2,
-            ),
-            Rect.fromLTWH(
-              rect.left,
-              rect.center.dy,
-              rect.width / 2,
-              rect.height / 2,
-            ),
-            Rect.fromLTWH(
-              rect.center.dx,
-              rect.center.dy,
-              rect.width / 2,
-              rect.height / 2,
-            ),
-          ];
+    final cells = mediaMosaicCells(rect, mosaic.length);
     canvas
       ..save()
       ..clipPath(Path()..addOval(rect))
       ..drawRect(rect, Paint()..color = style.background);
-    for (var index = 0; index < mosaic.length; index++) {
+    for (
+      var index = 0;
+      index < mosaic.length && index < cells.length;
+      index++
+    ) {
       final image = mosaic[index];
       final cell = cells[index];
       canvas.drawImageRect(
@@ -612,11 +666,14 @@ class KnowledgeGraphPainter extends CustomPainter {
       final isFocus = node.id == focusId;
       final isSelected = node.id == selectedId;
       if (!isFocus && (hops[node.id] ?? 99) > labelMaxHop) continue;
-      if (scale < 0.55 &&
-          !isFocus &&
-          !isSelected &&
-          !node.isAggregate &&
-          (degrees[node.id] ?? 0) < 2) {
+      if (graphLabelCulledAtScale(
+        scale: scale,
+        isFocus: isFocus,
+        isSelected: isSelected,
+        isAggregate: node.isAggregate,
+        hop: hops[node.id] ?? 99,
+        degree: degrees[node.id] ?? 0,
+      )) {
         continue;
       }
       final center = _screen(node.id);
@@ -670,7 +727,11 @@ class KnowledgeGraphPainter extends CustomPainter {
                   ? 500
                   : 100) +
               (degrees[node.id] ?? 0),
-          required: isFocus || isSelected,
+          required: graphLabelIsRequired(
+            isFocus: isFocus,
+            isSelected: isSelected,
+            hop: hops[node.id] ?? 99,
+          ),
         ),
       );
     }

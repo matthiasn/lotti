@@ -403,6 +403,7 @@ void main() {
       VoidCallback? onRecenter,
       VoidCallback? onOpen,
       double panelWidth = 360,
+      double panelHeight = 860,
     }) async {
       tester.view
         ..physicalSize = const Size(420, 900)
@@ -415,7 +416,7 @@ void main() {
           Center(
             child: SizedBox(
               width: panelWidth,
-              height: 860,
+              height: panelHeight,
               // The timeline rows use InkWell, which needs a Material ancestor;
               // the panel itself is a frosted DecoratedBox with no Material.
               child: Material(
@@ -757,6 +758,121 @@ void main() {
         expect(viewer.heroTag, 'knowledge-graph-media-hero-${paths[1]}');
       },
     );
+
+    group('overflow affordance', () {
+      List<GraphNode> manyNeighbors() => [
+        for (var i = 0; i < 12; i++)
+          node(
+            id: 'nb-$i',
+            type: GraphNodeType.textEntry,
+            label: 'Linked entry number $i',
+            createdAt: created.subtract(Duration(days: i)),
+          ),
+      ];
+
+      testWidgets(
+        'a list that continues below the fold offers a way to reach the rest',
+        (tester) async {
+          // Regression: the LINKED eyebrow counted entries the panel appeared
+          // not to have — the list scrolled, but the only hint was a fade that
+          // read as a dimmed/disabled section.
+          await pumpPanel(
+            tester,
+            node: node(),
+            neighbors: manyNeighbors(),
+            panelHeight: 320,
+          );
+          await tester.pump();
+
+          expect(find.text('More below'), findsOneWidget);
+
+          // The affordance takes the user to the end of the list, where it
+          // then has nothing left to announce.
+          await tester.tap(find.text('More below'));
+          await tester.pumpAndSettle();
+
+          expect(find.text('More below'), findsNothing);
+          expect(find.text('Linked entry number 11'), findsOneWidget);
+        },
+      );
+
+      testWidgets(
+        'the reserved bottom strip alone never triggers the affordance',
+        (tester) async {
+          // Regression: the panel reserves a bottom strip for the fade and
+          // the pill. That padding inflates the scroll extent by itself, so a
+          // panel whose real content fits was still reporting overflow and
+          // offering to scroll the user to blank space.
+          //
+          // These heights sit in the band where the scrollable reports a
+          // POSITIVE maxScrollExtent that is entirely the reserved strip —
+          // exactly the case the old `maxScrollExtent > 0` check got wrong.
+          for (final height in <double>[412, 404, 396]) {
+            await pumpPanel(
+              tester,
+              node: node(),
+              neighbors: [
+                for (var i = 0; i < 3; i++)
+                  node(
+                    id: 'nb-$i',
+                    type: GraphNodeType.textEntry,
+                    label: 'Linked entry $i',
+                  ),
+              ],
+              panelHeight: height,
+            );
+            await tester.pump();
+
+            final scrollable = tester
+                .widgetList<SingleChildScrollView>(
+                  find.descendant(
+                    of: find.byType(NodeInspectorPanel),
+                    matching: find.byType(SingleChildScrollView),
+                  ),
+                )
+                .first;
+            final extent = scrollable.controller!.position.maxScrollExtent;
+            final reserved = tokens.spacing.sectionGap;
+
+            // Guard the guard: if this stops being the interesting band the
+            // test would silently stop proving anything.
+            expect(
+              extent,
+              inExclusiveRange(0, reserved + 0.01),
+              reason:
+                  'height $height no longer isolates padding-only overflow '
+                  '(extent $extent vs reserved $reserved)',
+            );
+            expect(
+              find.text('More below'),
+              findsNothing,
+              reason:
+                  'height $height: offered to scroll to blank reserved space',
+            );
+          }
+        },
+      );
+
+      testWidgets(
+        'a list that fits shows no overflow affordance at all',
+        (tester) async {
+          await pumpPanel(
+            tester,
+            node: node(),
+            neighbors: [
+              node(
+                id: 'only',
+                type: GraphNodeType.textEntry,
+                label: 'The one linked entry',
+              ),
+            ],
+          );
+          await tester.pump();
+
+          expect(find.text('More below'), findsNothing);
+        },
+      );
+    });
 
     testWidgets('renders a LINKED · N section with a timeline row per '
         'neighbor', (tester) async {

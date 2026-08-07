@@ -633,7 +633,7 @@ void main() {
       expectPaintsCleanly(painter);
     });
 
-    testWidgets('fills unused mosaic cells inside the circular node body', (
+    testWidgets('leaves no empty mosaic cell inside the circular node body', (
       tester,
     ) async {
       late final List<ui.Image> thumbnails;
@@ -690,12 +690,140 @@ void main() {
       });
       addTearDown(rendered.dispose);
 
-      const unusedBottomCellPixel = (216 * 400 + 200) * 4;
-      final red = pixels.getUint8(unusedBottomCellPixel);
-      final green = pixels.getUint8(unusedBottomCellPixel + 1);
-      final blue = pixels.getUint8(unusedBottomCellPixel + 2);
-      expect(red, greaterThan(green + 100));
-      expect(red, greaterThan(blue + 100));
+      // Regression: two images used to be laid into a fixed four-quadrant
+      // grid, leaving the unused quadrants painted with the canvas background
+      // — black wedges inside the node that read as a corrupt image. Sample
+      // well inside the circle, above AND below its horizontal midline: every
+      // sample must come from one of the two thumbnails, never the background.
+      bool isBackground(int x, int y) {
+        final offset = (y * 400 + x) * 4;
+        final red = pixels.getUint8(offset);
+        final green = pixels.getUint8(offset + 1);
+        final blue = pixels.getUint8(offset + 2);
+        return red > green + 100 && red > blue + 100;
+      }
+
+      const samples = <(int, int)>[
+        (188, 188),
+        (212, 188),
+        (188, 212),
+        (212, 212),
+        (200, 216),
+      ];
+      final backgroundSamples = [
+        for (final (x, y) in samples)
+          if (isBackground(x, y)) '($x,$y)',
+      ];
+      expect(
+        backgroundSamples,
+        isEmpty,
+        reason: 'mosaic cells showing the canvas background (black wedges)',
+      );
+    });
+
+    test('mosaic cells tile the node body exactly for every photo count', () {
+      const body = Rect.fromLTWH(0, 0, 100, 100);
+      for (var count = 1; count <= 4; count++) {
+        final cells = KnowledgeGraphPainter.mediaMosaicCells(body, count);
+        expect(cells, hasLength(count), reason: 'one cell per photo ($count)');
+
+        // No cell escapes the body, none overlaps another, and together they
+        // cover it completely — the three properties that make an empty
+        // (background-coloured) wedge impossible.
+        var covered = 0.0;
+        for (var i = 0; i < cells.length; i++) {
+          // Edge-inclusive containment: cells are expected to sit flush with
+          // the body's edges, which Rect.contains treats as outside.
+          expect(cells[i].left, greaterThanOrEqualTo(body.left));
+          expect(cells[i].top, greaterThanOrEqualTo(body.top));
+          expect(cells[i].right, lessThanOrEqualTo(body.right));
+          expect(cells[i].bottom, lessThanOrEqualTo(body.bottom));
+          covered += cells[i].width * cells[i].height;
+          for (var j = i + 1; j < cells.length; j++) {
+            final overlap = cells[i].intersect(cells[j]);
+            expect(
+              overlap.isEmpty || overlap.width <= 0 || overlap.height <= 0,
+              isTrue,
+              reason: 'cells $i and $j overlap for count $count',
+            );
+          }
+        }
+        expect(
+          covered,
+          moreOrLessEquals(body.width * body.height, epsilon: 0.001),
+          reason: 'cells leave uncovered area for count $count',
+        );
+      }
+    });
+
+    test('mosaic never returns more cells than the body can show', () {
+      // Defensive: the painter takes at most four images, but a caller that
+      // passes more must not index past the cell list.
+      const body = Rect.fromLTWH(0, 0, 80, 80);
+      expect(KnowledgeGraphPainter.mediaMosaicCells(body, 9), hasLength(4));
+      expect(KnowledgeGraphPainter.mediaMosaicCells(body, 0), [body]);
+    });
+  });
+
+  group('label necessity rules', () {
+    test('names the focus, the selection and every direct neighbour', () {
+      // Regression: only the focus and selection were required, so a direct
+      // neighbour whose anchors were all taken lost its label entirely and the
+      // canvas offered unnamed circles as the next step.
+      expect(
+        graphLabelIsRequired(isFocus: false, isSelected: false, hop: 1),
+        isTrue,
+        reason: 'direct neighbours must stay named',
+      );
+      expect(
+        graphLabelIsRequired(isFocus: true, isSelected: false, hop: 0),
+        isTrue,
+      );
+      expect(
+        graphLabelIsRequired(isFocus: false, isSelected: true, hop: 3),
+        isTrue,
+      );
+      // Second hop and beyond stays optional — that is what keeps a dense
+      // canvas readable.
+      expect(
+        graphLabelIsRequired(isFocus: false, isSelected: false, hop: 2),
+        isFalse,
+      );
+      expect(
+        graphLabelIsRequired(isFocus: false, isSelected: false, hop: 99),
+        isFalse,
+      );
+    });
+
+    test('zoomed-out culling never removes a direct neighbour label', () {
+      bool culled({
+        double scale = 0.4,
+        bool isFocus = false,
+        bool isSelected = false,
+        bool isAggregate = false,
+        int hop = 2,
+        int degree = 1,
+      }) => graphLabelCulledAtScale(
+        scale: scale,
+        isFocus: isFocus,
+        isSelected: isSelected,
+        isAggregate: isAggregate,
+        hop: hop,
+        degree: degree,
+      );
+
+      // Peripheral, low-degree, zoomed out → culled (unchanged behaviour).
+      expect(culled(), isTrue);
+      // Same node one hop from the focus → kept.
+      expect(culled(hop: 1), isFalse);
+      // Protected roles stay named at any zoom.
+      expect(culled(isFocus: true), isFalse);
+      expect(culled(isSelected: true), isFalse);
+      expect(culled(isAggregate: true), isFalse);
+      // Hubs survive on degree alone.
+      expect(culled(degree: 2), isFalse);
+      // Zoomed in, nothing is culled.
+      expect(culled(scale: 1), isFalse);
     });
   });
 

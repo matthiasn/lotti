@@ -94,7 +94,8 @@ void main() {
       (node) => node.aggregateKind == GraphAggregateKind.photos,
     );
     expect(media.aggregateCount, 2);
-    expect(media.mediaPaths, ['/cover.jpg', '/one.jpg', '/two.jpg']);
+    expect(media.mediaPaths, ['/one.jpg', '/two.jpg']);
+    expect(media.mediaPaths.length, media.aggregateCount);
     expect(
       collapsed.scenario.nodes.map((node) => node.id),
       isNot(contains('one')),
@@ -289,8 +290,16 @@ void main() {
       (node) => node.type == GraphNodeType.mediaCollection,
     );
     expect(media.memberIds, ['recent']);
-    expect(media.mediaPaths, ['/cover.jpg', '/recent.jpg']);
+    // The preview shows exactly what the collection collapses. The focus's own
+    // cover art is not one of its members, and counting it in would have made
+    // the mosaic show more tiles than the "Photo · N" label promises.
+    expect(media.mediaPaths, ['/recent.jpg']);
     expect(media.aggregateCount, 1);
+    expect(
+      media.mediaPaths.length,
+      media.aggregateCount,
+      reason: 'preview tiles and the displayed count come from one collection',
+    );
   });
 
   test('orders defensive synthetic node types after ordinary entries', () {

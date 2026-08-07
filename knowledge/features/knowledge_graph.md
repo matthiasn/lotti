@@ -5,7 +5,7 @@ description: "A local-first, walkable knowledge graph with a topology minimap, r
 resource: ../../lib/features/knowledge_graph
 tags: [knowledge-graph, visualization, navigation]
 status: draft
-generated: { by: claude-code/fable-5, at: 2026-08-06T12:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-06T16:45:00Z }
 stale_after: 2027-03-08
 sources:
   - id: src
@@ -76,6 +76,18 @@ image entries, and media collections render at twice the ordinary node diameter
 so their imagery acts as a useful landmark. The same radius calculation drives
 edge clipping, label clearance, hit testing, and semantics.
 
+A media collection's circular body is tiled by `mediaMosaicCells`, whose layout
+depends on the photo count (one full, two halves, a hero plus a stacked pair,
+or quadrants), so no cell is ever left unpainted. The collection previews
+exactly the entries it collapses — the focus's own cover art is not one of its
+members — which keeps the tile count equal to the "Photo · N" label.
+
+Relation classes are separable without colour: containment and note/log are
+solid at different weights, linked-task is long-dashed, evaluation short-dashed,
+checklist dotted, and provenance sparse-dotted. A test asserts no two classes
+share a colour-free signature, since a greyscale or low-contrast reader
+navigates by relation.
+
 `knowledge_graph_view.dart` reads each image's encoded dimensions before
 decoding it. It preserves the source aspect ratio and bounds the longest decoded
 side to the visual spec's maximum media-node extent multiplied by the device
@@ -106,6 +118,26 @@ private one that dies with its state.
 using deterministic priority and collision avoidance. Focus, selection,
 aggregates, direct neighbours, and second-hop context descend in priority;
 non-essential labels cull at low semantic zoom.
+
+Three rules keep the canvas readable and honest:
+
+- **Required labels.** The focus, the selection and every direct neighbour are
+  named at any zoom (`graphLabelIsRequired`), because those are the choices the
+  walk offers next; the semantic-zoom cull (`graphLabelCulledAtScale`) applies
+  from the second hop outward. A required label that finds no free anchor takes
+  the least-obstructed one rather than being dropped.
+- **Chrome is an obstacle, not a guess.** `knowledge_graph_view.dart` measures
+  the toolbar, title card, legend and minimap after each frame (`_measureChrome`)
+  and feeds those rects to the solver, so no callout can be placed under them.
+  A required label that still has nowhere to go is pushed clear of the reserved
+  rects instead of being clamped onto them.
+- **The same rects drive the camera.** `_chromeReserve` frames the focus
+  neighbourhood into the space that is actually visible. The previous fixed
+  reserves (84px top, 104px bottom) were far smaller than the real legend and
+  minimap column, so the framing ran the neighbourhood into it. Until the first
+  measurement lands, the historical constants are used and the opening framing
+  is re-derived once real sizes are known — unless the user has already moved
+  the camera.
 
 The toolbar changes local density and hop depth, and filters by relationship,
 node type, category, recency, and task status. Arrow keys move the selection in
@@ -147,6 +179,13 @@ ids, and report agent ids, so task media and AI context refresh with the graph.
 The inspector renders a cover-first horizontal media carousel only when media
 exists, keeps the full title visible, and collapses the longer AI brief by
 default. Its linked-entry timeline remains another way to walk the graph.
+
+The timeline scrolls, so the panel says so: the bottom fade and a "More below"
+control appear only while content actually continues past the edge, and the
+control scrolls to the end. Overflow state follows the scroll controller rather
+than the build, because scrolling alone does not rebuild the panel. A fade that
+was always on read as a dimmed section, which is why the "LINKED · N" count
+looked larger than the list it sat above.
 
 **It ships, ungated on desktop.** Both task-detail app bars —
 `TaskCompactAppBar` and `TaskExpandableAppBar` — render a desktop-only hub-icon
