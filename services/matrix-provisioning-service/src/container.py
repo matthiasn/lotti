@@ -12,14 +12,17 @@ from .core.constants import (
     DEFAULT_POLL_BATCH_SIZE,
     DEFAULT_POLL_INTERVAL_SECONDS,
     DEFAULT_RETENTION_DAYS,
+    DEFAULT_RETENTION_SWEEP_HOURS,
     SERVICE_ADMIN_CLIENT,
     SERVICE_BUNDLE_SERVICE,
     SERVICE_PROVISIONING_REPOSITORY,
     SERVICE_REDEMPTION_POLLER,
+    SERVICE_RETENTION_SCHEDULER,
 )
 from .services.bundle_service import BundleService
 from .services.provisioning_repository import ProvisioningRepository
 from .services.redemption_poller import RedemptionPoller
+from .services.retention_scheduler import RetentionScheduler
 from .services.retention_service import RetentionService
 
 SERVICE_PROVISIONER = "provisioner"
@@ -59,6 +62,7 @@ class Container:
         self._factories[SERVICE_BUNDLE_SERVICE] = self._create_bundle_service
         self._factories[SERVICE_REDEMPTION_POLLER] = self._create_redemption_poller
         self._factories[SERVICE_RETENTION_SERVICE] = self._create_retention_service
+        self._factories[SERVICE_RETENTION_SCHEDULER] = self._create_retention_scheduler
 
     def _create_repository(self) -> ProvisioningRepository:
         return ProvisioningRepository(os.getenv("DB_PATH", DEFAULT_DB_PATH))
@@ -91,6 +95,16 @@ class Container:
             default_retention_days=int(
                 os.getenv("RETENTION_DAYS", str(DEFAULT_RETENTION_DAYS))
             ),
+        )
+
+    def _create_retention_scheduler(self) -> RetentionScheduler:
+        return RetentionScheduler(
+            self.get_retention_service(),
+            interval_hours=float(
+                os.getenv("RETENTION_SWEEP_HOURS", str(DEFAULT_RETENTION_SWEEP_HOURS))
+            ),
+            include_media=os.getenv("RETENTION_SWEEP_MEDIA", "true").lower()
+            in ("1", "true", "yes"),
         )
 
     def get(self, service_name: str) -> Any:
@@ -132,6 +146,10 @@ class Container:
     def get_retention_service(self) -> RetentionService:
         """Get the retention service"""
         return cast(RetentionService, self.get(SERVICE_RETENTION_SERVICE))
+
+    def get_retention_scheduler(self) -> RetentionScheduler:
+        """Get the retention sweep scheduler"""
+        return cast(RetentionScheduler, self.get(SERVICE_RETENTION_SCHEDULER))
 
 
 # Global container instance

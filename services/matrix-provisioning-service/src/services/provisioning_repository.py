@@ -48,7 +48,9 @@ CREATE TABLE IF NOT EXISTS provisioned_users (
     revoked_at          TEXT,
     last_seen_at        TEXT,
     last_polled_at      TEXT,
-    notes               TEXT NOT NULL DEFAULT ''
+    notes               TEXT NOT NULL DEFAULT '',
+    retention_days      INTEGER,
+    retention_exempt    INTEGER NOT NULL DEFAULT 0
 );
 
 -- One account per username per homeserver. Synapse would reject a duplicate
@@ -110,12 +112,30 @@ class ProvisioningRepository:
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
+    #: Columns added after the first release, with the DDL to add them. SQLite
+    #: has no "ADD COLUMN IF NOT EXISTS", so they are applied conditionally.
+    _MIGRATIONS = {
+        "retention_days": "ALTER TABLE provisioned_users ADD COLUMN retention_days INTEGER",
+        "retention_exempt": (
+            "ALTER TABLE provisioned_users "
+            "ADD COLUMN retention_exempt INTEGER NOT NULL DEFAULT 0"
+        ),
+    }
+
     def _ensure_db(self) -> None:
-        """Create the database file and schema if they do not exist."""
+        """Create the database file and schema, and apply column migrations."""
         os.makedirs(os.path.dirname(self.db_path) or ".", exist_ok=True)
         conn = sqlite3.connect(self.db_path)
         try:
             conn.executescript(_SCHEMA)
+            existing = {
+                row[1]
+                for row in conn.execute("PRAGMA table_info(provisioned_users)").fetchall()
+            }
+            for column, ddl in self._MIGRATIONS.items():
+                if column not in existing:
+                    conn.execute(ddl)
+                    logger.info("Migrated provisioned_users: added %s", column)
             conn.commit()
         finally:
             conn.close()
@@ -140,6 +160,8 @@ class ProvisioningRepository:
             last_seen_at=_parse(row["last_seen_at"]),
             last_polled_at=_parse(row["last_polled_at"]),
             notes=row["notes"] or "",
+            retention_days=row["retention_days"],
+            retention_exempt=bool(row["retention_exempt"]),
         )
 
     # -- writes -------------------------------------------------------------
@@ -372,6 +394,9 @@ class ProvisioningRepository:
         bundle_id: str,
         payment_status: PaymentStatus | None,
         notes: str | None,
+        retention_days: int | None,
+        retention_exempt: bool | None,
+        clear_retention_override: bool,
     ) -> ProvisionedUser:
         conn = self._connect()
         try:
@@ -400,6 +425,46 @@ class ProvisioningRepository:
                 )
                 self._record_event_sync(conn, bundle_id, BundleEventType.NOTE_UPDATED)
 
+            # `None` already means "unchanged", so clearing an override needs
+            # its own explicit flag rather than a magic value.
+            if clear_retention_override and row["retention_days"] is not None:
+                conn.execute(
+                    "UPDATE provisioned_users SET retention_days = NULL WHERE bundle_id = ?",
+                    (bundle_id,),
+                )
+                self._record_event_sync(
+                    conn,
+                    bundle_id,
+                    BundleEventType.RETENTION_CHANGED,
+                    f"{row['retention_days']}d → service default",
+                )
+            elif retention_days is not None and retention_days != row["retention_days"]:
+                conn.execute(
+                    "UPDATE provisioned_users SET retention_days = ? WHERE bundle_id = ?",
+                    (retention_days, bundle_id),
+                )
+                self._record_event_sync(
+                    conn,
+                    bundle_id,
+                    BundleEventType.RETENTION_CHANGED,
+                    f"{row['retention_days'] or 'default'} → {retention_days}d",
+                )
+
+            if (
+                retention_exempt is not None
+                and int(retention_exempt) != row["retention_exempt"]
+            ):
+                conn.execute(
+                    "UPDATE provisioned_users SET retention_exempt = ? WHERE bundle_id = ?",
+                    (int(retention_exempt), bundle_id),
+                )
+                self._record_event_sync(
+                    conn,
+                    bundle_id,
+                    BundleEventType.RETENTION_CHANGED,
+                    "exempted from sweep" if retention_exempt else "included in sweep",
+                )
+
             conn.commit()
             row = conn.execute(
                 "SELECT * FROM provisioned_users WHERE bundle_id = ?", (bundle_id,)
@@ -414,9 +479,20 @@ class ProvisioningRepository:
         *,
         payment_status: PaymentStatus | None = None,
         notes: str | None = None,
+        retention_days: int | None = None,
+        retention_exempt: bool | None = None,
+        clear_retention_override: bool = False,
     ) -> ProvisionedUser:
         """Update the manually maintained fields, recording an audit event."""
-        return await asyncio.to_thread(self._update_sync, bundle_id, payment_status, notes)
+        return await asyncio.to_thread(
+            self._update_sync,
+            bundle_id,
+            payment_status,
+            notes,
+            retention_days,
+            retention_exempt,
+            clear_retention_override,
+        )
 
     def _touch_poll_sync(self, bundle_id: str, detail: str | None) -> None:
         conn = self._connect()
@@ -536,6 +612,31 @@ class ProvisioningRepository:
         Rotated and revoked bundles are terminal, so they are never polled again.
         """
         return await asyncio.to_thread(self._list_pollable_sync, limit)
+
+    def _list_purgeable_sync(self, limit: int) -> list[ProvisionedUser]:
+        conn = self._connect()
+        try:
+            rows = conn.execute(
+                "SELECT * FROM provisioned_users "
+                "WHERE first_login_at IS NOT NULL "
+                "  AND revoked_at IS NULL "
+                "  AND retention_exempt = 0 "
+                "ORDER BY created_at ASC LIMIT ?",
+                (limit,),
+            ).fetchall()
+            return [self._row_to_user(r) for r in rows]
+        finally:
+            conn.close()
+
+    async def list_purgeable(self, limit: int = 500) -> list[ProvisionedUser]:
+        """Return users the retention sweep should process.
+
+        Filters in SQL rather than in Python so the sweep does not page the
+        whole roster to discard most of it: an unredeemed room holds nothing,
+        a revoked one may be under investigation, and an exempt user has been
+        deliberately pinned.
+        """
+        return await asyncio.to_thread(self._list_purgeable_sync, limit)
 
     def _events_sync(self, bundle_id: str) -> list[BundleEvent]:
         conn = self._connect()

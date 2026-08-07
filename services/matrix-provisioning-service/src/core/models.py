@@ -59,6 +59,8 @@ class BundleEventType(str, Enum):
     ROTATED = "rotated"
     REVOKED = "revoked"
     PAYMENT_STATUS_CHANGED = "payment_status_changed"
+    RETENTION_CHANGED = "retention_changed"
+    PURGED = "purged"
     NOTE_UPDATED = "note_updated"
     POLL_FAILED = "poll_failed"
 
@@ -110,6 +112,23 @@ class ProvisionedUser(BaseModel):
     )
 
     notes: str = Field(default="", description="Free-form admin notes")
+
+    retention_days: int | None = Field(
+        None,
+        description=(
+            "Per-user retention window. None inherits the service default, so "
+            "changing the default moves everyone who has not been pinned."
+        ),
+    )
+    retention_exempt: bool = Field(
+        default=False,
+        description="Skip this user entirely in the scheduled retention sweep",
+    )
+
+    @property
+    def effective_retention_days(self) -> int | None:
+        """The user's own window, or None to mean 'inherit the default'."""
+        return self.retention_days
 
     @property
     def active_days(self) -> int | None:
@@ -177,6 +196,19 @@ class UpdateUserRequest(BaseModel):
 
     payment_status: PaymentStatus | None = Field(None, description="New payment status")
     notes: str | None = Field(None, description="Replacement admin notes")
+    retention_days: int | None = Field(
+        None, description="Per-user retention window; omit to leave unchanged"
+    )
+    retention_exempt: bool | None = Field(
+        None, description="Exclude this user from the scheduled sweep"
+    )
+    clear_retention_override: bool = Field(
+        default=False,
+        description=(
+            "Reset retention_days to None so the user follows the service "
+            "default again. Needed because None already means 'unchanged'."
+        ),
+    )
 
 
 class ProvisionedUserListResponse(BaseModel):

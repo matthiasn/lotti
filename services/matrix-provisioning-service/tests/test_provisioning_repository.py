@@ -305,3 +305,111 @@ async def test_active_purge_has_no_completion_timestamp(repository):
 async def test_is_terminal_matches_the_documented_state_machine(status, terminal):
     """The poller relies on this to decide what it may stop checking."""
     assert status.is_terminal is terminal
+
+
+# -- retention overrides ----------------------------------------------------
+
+
+async def test_retention_defaults_to_inheriting_the_service_window(repository):
+    user = await seed_user(repository)
+
+    assert user.retention_days is None
+    assert user.retention_exempt is False
+
+
+async def test_setting_a_retention_override_records_the_transition(repository):
+    user = await seed_user(repository)
+
+    updated = await repository.update(user.bundle_id, retention_days=365)
+
+    assert updated.retention_days == 365
+    events = await repository.get_events(user.bundle_id)
+    assert events[-1].event_type is BundleEventType.RETENTION_CHANGED
+    assert events[-1].detail == "default → 365d"
+
+
+async def test_clearing_the_override_returns_the_user_to_the_default(repository):
+    """`None` means 'unchanged', so clearing needs its own explicit flag."""
+    user = await seed_user(repository)
+    await repository.update(user.bundle_id, retention_days=365)
+
+    updated = await repository.update(user.bundle_id, clear_retention_override=True)
+
+    assert updated.retention_days is None
+    events = await repository.get_events(user.bundle_id)
+    assert "service default" in events[-1].detail
+
+
+async def test_omitting_retention_days_leaves_an_existing_override_alone(repository):
+    user = await seed_user(repository)
+    await repository.update(user.bundle_id, retention_days=365)
+
+    updated = await repository.update(user.bundle_id, notes="unrelated edit")
+
+    assert updated.retention_days == 365
+
+
+async def test_exempting_a_user_is_recorded(repository):
+    user = await seed_user(repository)
+
+    updated = await repository.update(user.bundle_id, retention_exempt=True)
+
+    assert updated.retention_exempt is True
+    events = await repository.get_events(user.bundle_id)
+    assert events[-1].detail == "exempted from sweep"
+
+
+async def test_list_purgeable_excludes_exempt_unredeemed_and_revoked(repository):
+    eligible = await seed_user(repository, username="eligible_user")
+    await repository.mark_redeemed(eligible.bundle_id, datetime.now(timezone.utc))
+
+    exempt = await seed_user(repository, username="exempt_user")
+    await repository.mark_redeemed(exempt.bundle_id, datetime.now(timezone.utc))
+    await repository.update(exempt.bundle_id, retention_exempt=True)
+
+    await seed_user(repository, username="unredeemed_user")
+
+    revoked = await seed_user(repository, username="revoked_user")
+    await repository.mark_redeemed(revoked.bundle_id, datetime.now(timezone.utc))
+    await repository.revoke(revoked.bundle_id)
+
+    purgeable = {u.bundle_id for u in await repository.list_purgeable()}
+
+    assert purgeable == {eligible.bundle_id}
+
+
+async def test_schema_migrates_a_database_created_before_retention_columns(tmp_path):
+    """An existing deployment must not need a manual ALTER TABLE."""
+    import sqlite3
+
+    from src.services.provisioning_repository import ProvisioningRepository
+
+    db_path = tmp_path / "legacy.db"
+    legacy = sqlite3.connect(db_path)
+    legacy.execute(
+        """
+        CREATE TABLE provisioned_users (
+            bundle_id TEXT PRIMARY KEY, username TEXT NOT NULL,
+            user_mxid TEXT NOT NULL, home_server TEXT NOT NULL,
+            server_name TEXT NOT NULL, room_id TEXT NOT NULL, display_name TEXT,
+            status TEXT NOT NULL, payment_status TEXT NOT NULL,
+            bundle_fingerprint TEXT NOT NULL, created_at TEXT NOT NULL,
+            first_login_at TEXT, rotated_at TEXT, revoked_at TEXT,
+            last_seen_at TEXT, last_polled_at TEXT, notes TEXT NOT NULL DEFAULT ''
+        )
+        """
+    )
+    legacy.execute(
+        "INSERT INTO provisioned_users VALUES "
+        "('b1','old','@old:s','h','s','!r',NULL,'unused','unknown','f',"
+        "'2026-01-01T00:00:00+00:00',NULL,NULL,NULL,NULL,NULL,'')"
+    )
+    legacy.commit()
+    legacy.close()
+
+    repository = ProvisioningRepository(str(db_path))
+    user = await repository.get("b1")
+
+    assert user is not None
+    assert user.retention_days is None
+    assert user.retention_exempt is False

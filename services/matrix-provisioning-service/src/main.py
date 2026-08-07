@@ -20,8 +20,8 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 
-def _polling_enabled() -> bool:
-    return os.getenv("ENABLE_REDEMPTION_POLLING", "true").lower() in ("1", "true", "yes")
+def _enabled(name: str, default: str = "true") -> bool:
+    return os.getenv(name, default).lower() in ("1", "true", "yes")
 
 
 @asynccontextmanager
@@ -34,11 +34,26 @@ async def lifespan(app: FastAPI):
     container.get_repository()
 
     poller = None
-    if _polling_enabled():
+    if _enabled("ENABLE_REDEMPTION_POLLING"):
         poller = container.get_redemption_poller()
         poller.start()
     else:
         logger.info("Redemption polling disabled by configuration")
+
+    # On by default and destructive, so it is logged loudly enough that an
+    # operator reading startup output cannot miss that data will be deleted.
+    scheduler = None
+    if _enabled("ENABLE_RETENTION_SWEEP"):
+        scheduler = container.get_retention_scheduler()
+        scheduler.start()
+        logger.warning(
+            "Retention sweep is ENABLED — room history and media older than the "
+            "retention window will be deleted on a schedule. Set "
+            "ENABLE_RETENTION_SWEEP=false to disable, or mark individual users "
+            "retention_exempt."
+        )
+    else:
+        logger.info("Retention sweep disabled by configuration")
 
     logger.info("Matrix Provisioning Service started successfully")
 
@@ -47,6 +62,8 @@ async def lifespan(app: FastAPI):
     logger.info("Shutting down Matrix Provisioning Service...")
     if poller is not None:
         await poller.stop()
+    if scheduler is not None:
+        await scheduler.stop()
     logger.info("Matrix Provisioning Service shutdown complete")
 
 
