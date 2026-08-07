@@ -40,6 +40,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.5" date="2026-08-07">
+      <description>
+        <p>Changed: the store listing and README now say what Lotti actually is. Both introduce Lotti as a private logbook with a staff of personal AI assistants — agents that read what you record and propose the next step, while every change waits for your approval — and describe sync by its durable guarantee: your data is never stored on any server.</p>
+      </description>
+    </release>
     <release version="1.0.4" date="2026-08-05">
       <description>
         <p>Fixed: Lotti opens on Tasks, and the demo no longer leaves traces in your own journal's navigation. Starting the app — or switching between the demo world and your own — now always lands on the Tasks tab. Each tab also returns to its own starting point, so leaving the demo while a demo entry was open no longer leaves that tab pointing at an entry that only existed in the demo.</p>

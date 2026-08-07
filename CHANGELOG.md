@@ -4,6 +4,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.5]
+### Changed
+- **The store listing and README now say what Lotti actually is.** Both now
+  introduce Lotti as a private logbook with a staff of personal AI assistants
+  — agents that read what you record and propose the next step, while every
+  change waits for your approval — and describe sync by its durable guarantee:
+  your data is never stored on any server.
+
 ## [1.0.4]
 ### Added
 - **Knowledge-graph photos now open full screen.** Tapping an image in the
