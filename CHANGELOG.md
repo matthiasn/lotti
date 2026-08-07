@@ -6,6 +6,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.5]
 ### Changed
+- **Demo tasks now explain themselves.** Every task in the penguin demo world
+  carries a full description of what the work actually is — why the air
+  scrubbers are overdue, what the missing squid pallet's cold rating means,
+  what the customs filing has to contain — instead of a single line. The
+  thirteen tasks that shared four generic runbooks now have checklists drawn
+  from their own work, so opening any task in the demo shows something worth
+  reading. All of it is translated into every supported language.
 - **The store listing and README now say what Lotti actually is.** Both now
   introduce Lotti as a private logbook with a staff of personal AI assistants
   — agents that read what you record and propose the next step, while proposed

@@ -769,4 +769,118 @@ Rulați testul distribuitorului, atașați imaginea de telemetrie, apoi solicita
   'Complete three gentle mobility sessions before the weekly cargo sprint.':
       'Finalizați trei sesiuni ușoare de mobilitate înaintea sprintului '
       'logistic săptămânal.',
+  // Demo-world expansion: checklist items and full task descriptions.
+  'List every launch-day announcement':
+      'Enumerați toate anunțurile din ziua lansării',
+  'Name a speaker for each slot': 'Desemnați o voce pentru fiecare interval',
+  'Write the fallback script for a hold':
+      'Scrieți scenariul de rezervă pentru o amânare',
+  'Get sign-off from Flight Direction': 'Obțineți aprobarea Direcției de zbor',
+  'Pull the morning soundings': 'Extrageți sondajele de dimineață',
+  'Compare the three forecast models': 'Comparați cele trei modele meteo',
+  'Check the crosswind against the 18-knot limit':
+      'Verificați vântul lateral față de limita de 18 noduri',
+  'Send the go or no-go call to Flight Direction':
+      'Transmiteți Direcției de zbor decizia de lansare sau amânare',
+  'Remeasure all twelve flyers':
+      'Măsurați din nou toți cei doisprezece zburători',
+  'Tag the three wide-flipper returns':
+      'Etichetați cele trei retururi cu aripioare largi',
+  'Book the courier pickup': 'Programați ridicarea prin curier',
+  'Confirm the replacement delivery date':
+      'Confirmați data de livrare a înlocuirii',
+  'Chart the humidity readings by day':
+      'Reprezentați grafic valorile umidității pe zile',
+  'Wait for the Bay C sensor swap':
+      'Așteptați schimbarea senzorului din cala C',
+  'Walk the seam line with the thermal camera':
+      'Parcurgeți linia de îmbinare cu camera termică',
+  'Report the leak or clear the bay':
+      'Raportați scurgerea sau declarați cala în regulă',
+  'Book the resurfacer for an evening slot':
+      'Rezervați mașina de gheață pentru un interval de seară',
+  'Announce the one-session closure': 'Anunțați închiderea pentru o sesiune',
+  'Resurface and inspect the ice': 'Refaceți și inspectați gheața',
+  'Post the new ice rules': 'Afișați noile reguli ale gheții',
+  'Recalibrate against the noon reference':
+      'Recalibrați după reperul de la amiază',
+  'Verify the tracking curve for a full day':
+      'Verificați curba de urmărire pe o zi întreagă',
+  'Log the recovered wattage': 'Notați puterea recuperată',
+  'Close the storm-damage ticket': 'Închideți tichetul pentru daunele furtunii',
+  'Flush the recycler loop': 'Spălați circuitul reciclatorului',
+  'Clean the filter housing': 'Curățați carcasa filtrului',
+  'Swap the pre-filter': 'Schimbați prefiltrul',
+  'Log the throughput numbers': 'Notați valorile debitului',
+  'Write down the selection criteria': 'Scrieți criteriile de selecție',
+  'Collect quotes from three candidates': 'Adunați oferte de la trei candidați',
+  'Order sample crates from the best two':
+      'Comandați lăzi de probă de la cei mai buni doi',
+  'Put a recommendation to the council': 'Prezentați consiliului o recomandare',
+  'Confirm seal sizes against the pod register':
+      'Confirmați dimensiunile etanșărilor după registrul modulelor',
+  'Place the rush order': 'Plasați comanda urgentă',
+  'Chase the delivery confirmation': 'Insistați pentru confirmarea livrării',
+  'Warn Logistics about the affected pods':
+      'Avertizați Logistica despre modulele afectate',
+  'Assemble the certificate folder': 'Alcătuiți dosarul certificatelor',
+  'Draft the passenger ruling request':
+      'Redactați cererea privind întrebarea despre pasageri',
+  'Copy the current manifest': 'Copiați manifestul actual',
+  'Book the Monday customs slot': 'Rezervați programarea de luni la vamă',
+  'Ask the reserve list for Thursday': 'Întrebați lista de rezervă pentru joi',
+  'Post the open shifts on the colony board':
+      'Afișați turele libere la avizierul coloniei',
+  'Confirm two names per shift': 'Confirmați două nume pentru fiecare tură',
+  'Publish the full week by Friday': 'Publicați săptămâna completă până vineri',
+  'Request the screening licence': 'Solicitați licența de proiecție',
+  'Reserve the dome for the evening': 'Rezervați cupola pentru seară',
+  'Schedule the heater shutdown': 'Programați oprirea încălzitorului',
+  'Post the start time on the colony board':
+      'Afișați ora de început la avizierul coloniei',
+  'Pile fresh snow on the run-out':
+      'Adunați zăpadă proaspătă în zona de oprire',
+  'Set the doubles-sled weight limit':
+      'Stabiliți limita de greutate pentru sania dublă',
+  'Draft the new season schedule': 'Redactați programul noului sezon',
+  'Send the rematch challenge to Bay C':
+      'Trimiteți calei C provocarea la revanșă',
+  'Agree who announces what on launch day, and in which order. Mission Control wants one voice on the public feed, the colony wants updates in plain penguin, and the sponsors expect their logo mentioned exactly twice. Draft the running order, name a speaker per slot, and get sign-off from Flight Direction before the rehearsal.':
+      'Stabiliți cine anunță ce în ziua lansării — și în ce ordine. Controlul misiunii vrea o singură voce pe canalul public, colonia vrea vești pe limba clară a pinguinilor, iar sponsorii se așteaptă ca logoul lor să fie menționat exact de două ori. Redactați ordinea intervențiilor, desemnați o voce pentru fiecare interval și obțineți aprobarea Direcției de zbor înainte de repetiție.',
+  'Confirm the crosswind stays under limits for the launch slot. The ice pad tolerates 18 knots across the strip and the forecast has been flirting with 20 all week. Pull the morning soundings, compare the three forecast models, and give Flight Direction a clear go or no-go with a confidence note by 15:00.':
+      'Confirmați că vântul lateral rămâne sub limită în fereastra de lansare. Pista de gheață tolerează 18 noduri perpendicular pe bandă, iar prognoza cochetează toată săptămâna cu 20. Extrageți sondajele de dimineață, comparați cele trei modele meteo și dați Direcției de zbor, până la 15:00, o decizie clară de lansare sau amânare, însoțită de o notă de încredere.',
+  'Find every gap in the freezer logs before the sardines ship. Freezer 3 dropped out of range twice last month, and customs wants an unbroken cold-chain record for every pod on the manifest. Export the logs, flag every excursion with its duration, and sign the audit so the shipment can clear.':
+      'Găsiți fiecare lacună din jurnalele congelatoarelor înainte de expedierea sardinelor. Congelatorul 3 a ieșit de două ori din intervalul admis luna trecută, iar vama cere un istoric neîntrerupt al lanțului frigorific pentru fiecare modul de pe manifest. Exportați jurnalele, marcați fiecare abatere împreună cu durata ei și semnați auditul, ca transportul să poată fi vămuit.',
+  'Walk the whole launch morning once, at full speed, with the crew. Every handoff gets timed, every call gets spoken out loud, and nobody pauses to explain — that is what the debrief is for. Reserve the pad for three hours and rehearse the abort call until it sounds boring.':
+      'Parcurgeți o dată toată dimineața lansării, în timp real, cu echipajul. Fiecare predare este cronometrată, fiecare comandă este rostită cu voce tare și nimeni nu se oprește să explice — pentru asta există debriefarea. Rezervați pista pentru trei ore și repetați comanda de abandon până sună plictisitor.',
+  'Measure every flyer and send the three wide-flipper suits back. The supplier mixed up the flipper gauges, so half the squad is wearing suits that whistle above Mach 0.2. Remeasure all twelve flyers, tag the returns, and confirm the replacement delivery lands before the rehearsal.':
+      'Măsurați fiecare zburător și trimiteți înapoi cele trei costume cu aripioare largi. Furnizorul a încurcat măsurile aripioarelor, așa că jumătate din echipă poartă costume care șuieră peste Mach 0,2. Măsurați din nou toți cei doisprezece zburători, etichetați retururile și confirmați că înlocuirea sosește înainte de repetiție.',
+  'Swap all four cartridges in Bay A before the CO2 alarm gets bored. The current set is 12 percent over its rated hours and the alarm has started clearing its throat at night. Vent the bay first, swap A1 through A4 in order, and log the new CO2 baseline so Habitat Engineering can close the maintenance ticket.':
+      'Schimbați toate cele patru cartușe din cala A înainte să se plictisească alarma CO2. Setul actual este cu 12 la sută peste orele nominale, iar alarma a început să își dreagă glasul noaptea. Aerisiți mai întâi cala, schimbați A1–A4 în ordine și notați noua valoare de referință CO2, ca Ingineria habitatului să poată închide tichetul de mentenanță.',
+  'Nine points in three days is a leak, not weather. Bay C sits between the ice rink and the nursery, so a hidden leak there ends up in every feather on the station. The wall sensor is being swapped; once it reports again, walk the seam line with the thermal camera and either find the leak or clear the bay.':
+      'Nouă puncte în trei zile înseamnă o scurgere, nu vremea. Cala C se află între patinoar și creșă, așa că o scurgere ascunsă acolo ajunge în fiecare pană de pe stație. Senzorul de perete este în curs de schimbare; imediat ce raportează din nou, parcurgeți linia de îmbinare cu camera termică și fie găsiți scurgerea, fie declarați cala în regulă.',
+  'The colony rink has more grooves than ice. Book the resurfacer. Tobogganing practice starts again next month and the juniors keep catching their flippers in the ruts. Reserve the resurfacer for a quiet evening, close the rink for one session, and post the new ice rules before reopening.':
+      'Patinoarul coloniei are mai multe șanțuri decât gheață. Rezervați mașina de gheață. Antrenamentele de sanie reîncep luna viitoare, iar juniorii își tot prind aripioarele în șanțuri. Rezervați mașina de gheață pentru o seară liniștită, închideți patinoarul pentru o sesiune și afișați noile reguli ale gheții înainte de redeschidere.',
+  'Four degrees of drift is costing the habitat a third of its power. The tracking motor lost its calibration in the last dust storm and the batteries have dipped below reserve every night since. Recalibrate the tilt against the noon reference, verify the tracking curve over a full day, and log the recovered wattage.':
+      'Patru grade de abatere costă habitatul o treime din energie. Motorul de urmărire și-a pierdut calibrarea în ultima furtună de praf, iar bateriile au coborât de atunci în fiecare noapte sub rezervă. Recalibrați înclinarea după reperul de la amiază, verificați curba de urmărire pe o zi întreagă și notați puterea recuperată.',
+  'Clean the filter housing and log the throughput afterwards. Routine service, but the last crew skipped the throughput log and Habitat Engineering had to guess the filter age. Do the full sequence this time: flush the loop, clean the housing, swap the pre-filter, and write the numbers down.':
+      'Curățați carcasa filtrului și notați apoi debitul. Întreținere de rutină — dar echipa precedentă a sărit peste jurnalul debitului, iar Ingineria habitatului a trebuit să ghicească vârsta filtrului. De data aceasta faceți secvența completă: spălați circuitul, curățați carcasa, schimbați prefiltrul și scrieți valorile.',
+  'Pallet 14 left Europa and never reached the cold ring. The dock scanner shows it entering bay two at 04:12, then nothing — and the squid inside has a five-day cold rating that runs out on Thursday. Trace the scan trail, search both bays, and either find the pallet or file the loss report before the insurance window closes.':
+      'Paletul 14 a plecat de pe Europa și nu a ajuns niciodată la inelul frigorific. Scanerul de la doc îl arată intrând în cala doi la 04:12, apoi nimic — iar calmarul din interior are o limită de răcire de cinci zile, care expiră joi. Urmăriți traseul scanărilor, căutați în ambele cale și fie găsiți paletul, fie depuneți raportul de pierdere înainte să se închidă fereastra de asigurare.',
+  'One supplier for the whole colony is one storm away from trouble. Procurement wants a second source signed before the winter contracts renew. Write down the criteria that actually matter — delivery time, cold-chain rating, price per tonne — collect quotes from at least three candidates, order a sample crate from the best two, and put a recommendation in front of the council.':
+      'Un singur furnizor pentru toată colonia este la o furtună distanță de probleme. Achizițiile vor o a doua sursă sub contract înainte de reînnoirea contractelor de iarnă. Scrieți criteriile care contează cu adevărat — timpul de livrare, calificativul lanțului frigorific, prețul pe tonă —, adunați oferte de la cel puțin trei candidați, comandați o ladă de probă de la cei mai buni doi și prezentați consiliului o recomandare.',
+  'The manifest and the dock disagree by one pod. Find out which. Twenty-three pods on paper, twenty-four on the dock — and launch clearance needs the two lists to match to the pod. Count what is actually standing there, reconcile against the manifest line by line, and send the corrected list to Europa before the shuttle is loaded.':
+      'Manifestul și docul diferă cu un modul. Aflați care. Douăzeci și trei de module pe hârtie, douăzeci și patru la doc — iar autorizația de lansare cere ca cele două liste să se potrivească până la ultimul modul. Numărați ce se află efectiv acolo, reconciliați rând cu rând cu manifestul și trimiteți lista corectată pe Europa înainte de încărcarea navetei.',
+  'Customs will not clear a pod whose seal certificate has expired. Eight pods run out of certificate next week and the seal supplier quotes ten days for delivery — the order is already five days late. Confirm the sizes against the pod register, place the rush order, and warn Logistics which pods will miss the next shuttle either way.':
+      'Vama nu eliberează un modul cu certificatul de etanșare expirat. La opt module certificatul expiră săptămâna viitoare, iar furnizorul de etanșări anunță zece zile pentru livrare — comanda este deja întârziată cu cinci zile. Confirmați dimensiunile după registrul modulelor, plasați comanda urgentă și avertizați Logistica ce module vor pierde oricum naveta următoare.',
+  'File the seal certificates and the passenger question together. Europa customs reopens Monday, and they process bundled filings faster than loose paperwork. Have the certificate folder, the passenger ruling request, and the manifest copy ready in one envelope so the whole stack clears in a single visit.':
+      'Depuneți împreună certificatele de etanșare și întrebarea despre pasageri. Vama de pe Europa se redeschide luni, iar dosarele grupate sunt procesate mai repede decât hârtiile disparate. Pregătiți dosarul certificatelor, cererea privind întrebarea despre pasageri și copia manifestului într-un singur plic, ca tot teancul să treacă dintr-o singură vizită.',
+  'Four sections, one photo, and no more than one fish pun. The colony reads it over breakfast, so keep it short and warm: what happened, what is coming, who hatched, and what the kitchen is planning. The launch update must match what Comms announces — check with them before printing.':
+      'Patru secțiuni, o fotografie și cel mult o glumă cu pești. Colonia îl citește la micul dejun, așa că păstrați-l scurt și cald: ce s-a întâmplat, ce urmează, cine a ieșit din ou și ce plănuiește bucătăria. Noutățile despre lansare trebuie să se potrivească cu ce anunță Comms — verificați cu ei înainte de tipărire.',
+  'Thursday lost two volunteers and the chicks noticed immediately. The rota needs two names per shift or the nursery closes early, and early closing means chicks at the launch briefing again. Ask the reserve list first, then post the open shifts on the colony board, and confirm the full week by Friday.':
+      'Joi au lipsit doi voluntari, iar puii au observat imediat. Graficul are nevoie de două nume pentru fiecare tură, altfel creșa se închide mai devreme — iar închiderea devreme înseamnă din nou pui la informarea de lansare. Întrebați mai întâi lista de rezervă, apoi afișați turele libere la avizierul coloniei și confirmați săptămâna completă până vineri.',
+  'The colony voted for the ice documentary. Book the dome. The distributor needs three days of notice for the screening licence, and the dome heater has to be off for two hours before anyone brings blankets. Book the licence, reserve the dome, and put the start time on the colony board.':
+      'Colonia a votat documentarul despre gheață. Rezervați cupola. Distribuitorul are nevoie de un preaviz de trei zile pentru licența de proiecție, iar încălzitorul cupolei trebuie oprit cu două ore înainte ca cineva să aducă pături. Obțineți licența, rezervați cupola și afișați ora de început la avizierul coloniei.',
+  'Softer landings first, then a rematch against Bay C. The league stopped after two bruised tails and one very formal complaint. Pile fresh snow on the run-out, set a weight limit for the doubles sled, and only then challenge Bay C — they have been practising.':
+      'Întâi aterizări mai blânde, apoi revanșa cu cala C. Liga s-a oprit după două cozi învinețite și o plângere foarte oficială. Adunați zăpadă proaspătă în zona de oprire, stabiliți o limită de greutate pentru sania dublă și abia apoi provocați cala C — ei au tot exersat.',
 };

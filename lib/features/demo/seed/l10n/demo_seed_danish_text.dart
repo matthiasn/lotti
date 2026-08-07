@@ -718,4 +718,109 @@ const _copy = <String, String>{
   "Zero-gravity flipper mobility": "Luffemobilitet i vægtløshed",
   "Complete three gentle mobility sessions before the weekly cargo sprint.":
       "Gennemfør tre rolige mobilitetspas før ugens fragtsprint.",
+  // Demo-world expansion: launch-prep checklist items and task descriptions.
+  "List every launch-day announcement":
+      "Oplist alle udmeldinger på opsendelsesdagen",
+  "Name a speaker for each slot": "Udpeg en stemme til hvert slot",
+  "Write the fallback script for a hold":
+      "Skriv reservedrejebogen til en affyringspause",
+  "Get sign-off from Flight Direction": "Indhent godkendelse fra flyveledelsen",
+  "Pull the morning soundings": "Hent morgensonderingerne",
+  "Compare the three forecast models": "Sammenlign de tre vejrmodeller",
+  "Check the crosswind against the 18-knot limit":
+      "Tjek sidevinden mod grænsen på 18 knob",
+  "Send the go or no-go call to Flight Direction":
+      "Meld go eller no-go til flyveledelsen",
+  "Remeasure all twelve flyers": "Mål alle tolv flyvere igen",
+  "Tag the three wide-flipper returns":
+      "Mærk de tre returdragter med brede luffer",
+  "Book the courier pickup": "Book kurérafhentningen",
+  "Confirm the replacement delivery date":
+      "Bekræft erstatningens leveringsdato",
+  "Chart the humidity readings by day": "Optegn fugtmålingerne dag for dag",
+  "Wait for the Bay C sensor swap": "Vent på sensorskiftet i rum C",
+  "Walk the seam line with the thermal camera":
+      "Gå sømlinjen efter med varmekameraet",
+  "Report the leak or clear the bay": "Meld lækagen eller frigiv rummet",
+  "Book the resurfacer for an evening slot": "Book ismaskinen til en aftentid",
+  "Announce the one-session closure": "Varsl lukningen i én session",
+  "Resurface and inspect the ice": "Læg ny is, og efterse den",
+  "Post the new ice rules": "Hæng de nye isregler op",
+  "Recalibrate against the noon reference": "Rekalibrer mod middagsreferencen",
+  "Verify the tracking curve for a full day":
+      "Kontrollér følgekurven en hel dag",
+  "Log the recovered wattage": "Notér den genvundne effekt",
+  "Close the storm-damage ticket": "Luk stormskadesagen",
+  "Flush the recycler loop": "Skyl genbrugsanlæggets kredsløb",
+  "Clean the filter housing": "Rens filterhuset",
+  "Swap the pre-filter": "Skift forfilteret",
+  "Log the throughput numbers": "Notér gennemstrømningstallene",
+  "Write down the selection criteria": "Skriv udvælgelseskriterierne ned",
+  "Collect quotes from three candidates": "Indhent tilbud fra tre kandidater",
+  "Order sample crates from the best two":
+      "Bestil prøvekasser hos de to bedste",
+  "Put a recommendation to the council": "Fremlæg en anbefaling for rådet",
+  "Confirm seal sizes against the pod register":
+      "Bekræft pakningsstørrelserne mod kapselregistret",
+  "Place the rush order": "Afgiv hasteordren",
+  "Chase the delivery confirmation": "Ryk for leveringsbekræftelsen",
+  "Warn Logistics about the affected pods":
+      "Advar logistikken om de berørte kapsler",
+  "Assemble the certificate folder": "Saml certifikatmappen",
+  "Draft the passenger ruling request":
+      "Lav udkast til anmodningen om passagerspørgsmålet",
+  "Copy the current manifest": "Kopiér den aktuelle fragtliste",
+  "Book the Monday customs slot": "Book toldtiden mandag",
+  "Ask the reserve list for Thursday": "Spørg reservelisten om torsdagsvagten",
+  "Post the open shifts on the colony board":
+      "Hæng de ledige vagter op på koloniens opslagstavle",
+  "Confirm two names per shift": "Bekræft to navne pr. vagt",
+  "Publish the full week by Friday": "Hæng hele ugeplanen op senest fredag",
+  "Request the screening licence": "Anmod om visningslicensen",
+  "Reserve the dome for the evening": "Reservér kuplen til aftenen",
+  "Schedule the heater shutdown": "Planlæg slukningen af varmen",
+  "Post the start time on the colony board":
+      "Skriv starttidspunktet på koloniens opslagstavle",
+  "Pile fresh snow on the run-out": "Skovl frisk sne i opløbet",
+  "Set the doubles-sled weight limit": "Fastsæt vægtgrænsen for dobbeltkælken",
+  "Draft the new season schedule": "Lav udkast til den nye sæsonplan",
+  "Send the rematch challenge to Bay C": "Send omkampsudfordringen til rum C",
+  "Agree who announces what on launch day, and in which order. Mission Control wants one voice on the public feed, the colony wants updates in plain penguin, and the sponsors expect their logo mentioned exactly twice. Draft the running order, name a speaker per slot, and get sign-off from Flight Direction before the rehearsal.":
+      "Bliv enige om, hvem der melder hvad ud på opsendelsesdagen — og i hvilken rækkefølge. Mission Control vil have én stemme på den offentlige kanal, kolonien vil have opdateringer på klart pingvinsk, og sponsorerne forventer deres logo nævnt præcis to gange. Lav udkast til programrækkefølgen, udpeg en stemme til hvert slot, og indhent godkendelse fra flyveledelsen før generalprøven.",
+  "Confirm the crosswind stays under limits for the launch slot. The ice pad tolerates 18 knots across the strip and the forecast has been flirting with 20 all week. Pull the morning soundings, compare the three forecast models, and give Flight Direction a clear go or no-go with a confidence note by 15:00.":
+      "Bekræft, at sidevinden holder sig under grænsen i opsendelsesvinduet. Isrampen tåler 18 knob på tværs af banen, og prognosen har flirtet med 20 hele ugen. Hent morgensonderingerne, sammenlign de tre vejrmodeller, og giv flyveledelsen et klart go eller no-go med en konfidensnote senest kl. 15:00.",
+  "Find every gap in the freezer logs before the sardines ship. Freezer 3 dropped out of range twice last month, and customs wants an unbroken cold-chain record for every pod on the manifest. Export the logs, flag every excursion with its duration, and sign the audit so the shipment can clear.":
+      "Find hvert eneste hul i fryserloggene, før sardinerne sendes af sted. Fryser 3 røg uden for sit måleområde to gange i sidste måned, og tolden vil have en ubrudt kølekædedokumentation for hver kapsel på fragtlisten. Eksportér loggene, markér hver afvigelse med dens varighed, og godkend gennemgangen, så forsendelsen kan frigives.",
+  "Walk the whole launch morning once, at full speed, with the crew. Every handoff gets timed, every call gets spoken out loud, and nobody pauses to explain — that is what the debrief is for. Reserve the pad for three hours and rehearse the abort call until it sounds boring.":
+      "Gå hele opsendelsesmorgenen igennem én gang, i fuldt tempo, med holdet. Der tages tid på hver overdragelse, hvert kald siges højt, og ingen stopper op for at forklare — det er det, debriefingen er til. Reservér rampen i tre timer, og øv afbrydelseskaldet, indtil det lyder kedeligt.",
+  "Measure every flyer and send the three wide-flipper suits back. The supplier mixed up the flipper gauges, so half the squad is wearing suits that whistle above Mach 0.2. Remeasure all twelve flyers, tag the returns, and confirm the replacement delivery lands before the rehearsal.":
+      "Mål hver flyver, og send de tre dragter med brede luffer retur. Leverandøren byttede rundt på luffemålene, så halvdelen af eskadrillen går i dragter, der fløjter over Mach 0,2. Mål alle tolv flyvere igen, mærk returneringerne, og bekræft, at erstatningen lander før generalprøven.",
+  "Swap all four cartridges in Bay A before the CO2 alarm gets bored. The current set is 12 percent over its rated hours and the alarm has started clearing its throat at night. Vent the bay first, swap A1 through A4 in order, and log the new CO2 baseline so Habitat Engineering can close the maintenance ticket.":
+      "Skift alle fire patroner i rum A, før CO2-alarmen keder sig. Det nuværende sæt er 12 procent over sine normerede timer, og alarmen er begyndt at rømme sig om natten. Udluft rummet først, skift A1 til A4 i rækkefølge, og notér den nye CO2-udgangsværdi, så habitatteknikken kan lukke vedligeholdelsessagen.",
+  "Nine points in three days is a leak, not weather. Bay C sits between the ice rink and the nursery, so a hidden leak there ends up in every feather on the station. The wall sensor is being swapped; once it reports again, walk the seam line with the thermal camera and either find the leak or clear the bay.":
+      "Ni point på tre dage er en lækage, ikke vejr. Rum C ligger mellem skøjtebanen og ungepasningen, så en skjult lækage dér ender i hver eneste fjer på stationen. Vægsensoren er ved at blive skiftet — så snart den melder igen, skal I gå sømlinjen efter med varmekameraet og enten finde lækagen eller frigive rummet.",
+  "The colony rink has more grooves than ice. Book the resurfacer. Tobogganing practice starts again next month and the juniors keep catching their flippers in the ruts. Reserve the resurfacer for a quiet evening, close the rink for one session, and post the new ice rules before reopening.":
+      "Koloniens bane har flere riller end is. Book ismaskinen. Kælketræningen starter igen næste måned, og juniorerne bliver ved med at hænge fast med lufferne i rillerne. Reservér ismaskinen til en stille aften, luk banen i én session, og hæng de nye isregler op før genåbningen.",
+  "Four degrees of drift is costing the habitat a third of its power. The tracking motor lost its calibration in the last dust storm and the batteries have dipped below reserve every night since. Recalibrate the tilt against the noon reference, verify the tracking curve over a full day, and log the recovered wattage.":
+      "Fire graders afvigelse koster habitatet en tredjedel af strømmen. Følgemotoren mistede sin kalibrering i den seneste støvstorm, og batterierne er siden røget under reserven hver nat. Rekalibrer hældningen mod middagsreferencen, kontrollér følgekurven over en hel dag, og notér den genvundne effekt.",
+  "Clean the filter housing and log the throughput afterwards. Routine service, but the last crew skipped the throughput log and Habitat Engineering had to guess the filter age. Do the full sequence this time: flush the loop, clean the housing, swap the pre-filter, and write the numbers down.":
+      "Rens filterhuset, og notér gennemstrømningen bagefter. Rutineservice — men det sidste hold sprang gennemstrømningsloggen over, og habitatteknikken måtte gætte filterets alder. Tag hele sekvensen denne gang: skyl kredsløbet, rens huset, skift forfilteret, og skriv tallene ned.",
+  "Pallet 14 left Europa and never reached the cold ring. The dock scanner shows it entering bay two at 04:12, then nothing — and the squid inside has a five-day cold rating that runs out on Thursday. Trace the scan trail, search both bays, and either find the pallet or file the loss report before the insurance window closes.":
+      "Palle 14 forlod Europa og nåede aldrig køleringen. Dokscanneren viser den på vej ind i rum to kl. 04:12, derefter ingenting — og blæksprutten indeni har en kølegodkendelse på fem dage, der udløber torsdag. Følg scanningssporet, gennemsøg begge rum, og find pallen — eller indsend tabsanmeldelsen, før forsikringsvinduet lukker.",
+  "One supplier for the whole colony is one storm away from trouble. Procurement wants a second source signed before the winter contracts renew. Write down the criteria that actually matter — delivery time, cold-chain rating, price per tonne — collect quotes from at least three candidates, order a sample crate from the best two, and put a recommendation in front of the council.":
+      "Én leverandør til hele kolonien er én storm fra ballade. Indkøb vil have en ekstra kilde på kontrakt, før vinterkontrakterne fornys. Skriv de kriterier ned, der faktisk betyder noget — leveringstid, kølekædevurdering, pris pr. ton — indhent tilbud fra mindst tre kandidater, bestil en prøvekasse hos de to bedste, og fremlæg en anbefaling for rådet.",
+  "The manifest and the dock disagree by one pod. Find out which. Twenty-three pods on paper, twenty-four on the dock — and launch clearance needs the two lists to match to the pod. Count what is actually standing there, reconcile against the manifest line by line, and send the corrected list to Europa before the shuttle is loaded.":
+      "Fragtlisten og dokken er uenige om én kapsel. Find ud af hvilken. Treogtyve kapsler på papiret, fireogtyve på dokken — og opsendelsestilladelsen kræver to lister, der stemmer ned til den enkelte kapsel. Tæl, hvad der faktisk står der, afstem linje for linje mod fragtlisten, og send den rettede liste til Europa, før shuttlen lastes.",
+  "Customs will not clear a pod whose seal certificate has expired. Eight pods run out of certificate next week and the seal supplier quotes ten days for delivery — the order is already five days late. Confirm the sizes against the pod register, place the rush order, and warn Logistics which pods will miss the next shuttle either way.":
+      "Tolden frigiver ikke en kapsel, hvis pakningscertifikat er udløbet. Otte kapslers certifikater udløber i næste uge, og pakningsleverandøren melder ti dages leveringstid — bestillingen er allerede fem dage forsinket. Bekræft størrelserne mod kapselregistret, afgiv hasteordren, og advar logistikken om, hvilke kapsler der under alle omstændigheder misser næste shuttle.",
+  "File the seal certificates and the passenger question together. Europa customs reopens Monday, and they process bundled filings faster than loose paperwork. Have the certificate folder, the passenger ruling request, and the manifest copy ready in one envelope so the whole stack clears in a single visit.":
+      "Indsend pakningscertifikaterne og passagerspørgsmålet samlet. Tolden på Europa åbner igen mandag, og de behandler samlede indsendelser hurtigere end løse papirer. Hav certifikatmappen, anmodningen om passagerspørgsmålet og kopien af fragtlisten klar i én kuvert, så hele stakken går igennem ved ét besøg.",
+  "Four sections, one photo, and no more than one fish pun. The colony reads it over breakfast, so keep it short and warm: what happened, what is coming, who hatched, and what the kitchen is planning. The launch update must match what Comms announces — check with them before printing.":
+      "Fire afsnit, ét foto og højst ét fiskeordspil. Kolonien læser det over morgenmaden, så hold det kort og varmt: hvad der er sket, hvad der kommer, hvem der er klækket, og hvad køkkenet planlægger. Nyt om opsendelsen skal stemme med det, Comms melder ud — tjek med dem, før der trykkes.",
+  "Thursday lost two volunteers and the chicks noticed immediately. The rota needs two names per shift or the nursery closes early, and early closing means chicks at the launch briefing again. Ask the reserve list first, then post the open shifts on the colony board, and confirm the full week by Friday.":
+      "Torsdagsvagten mistede to frivillige, og ungerne opdagede det med det samme. Vagtplanen kræver to navne pr. vagt, ellers lukker ungepasningen tidligt — og tidlig lukning betyder unger til opsendelsesbriefingen igen. Spørg reservelisten først, hæng derefter de ledige vagter op på koloniens opslagstavle, og bekræft hele ugen senest fredag.",
+  "The colony voted for the ice documentary. Book the dome. The distributor needs three days of notice for the screening licence, and the dome heater has to be off for two hours before anyone brings blankets. Book the licence, reserve the dome, and put the start time on the colony board.":
+      "Kolonien stemte for is-dokumentaren. Book kuplen. Distributøren skal have tre dages varsel til visningslicensen, og varmen i kuplen skal være slukket to timer, før nogen kommer med tæpper. Book licensen, reservér kuplen, og skriv starttidspunktet på koloniens opslagstavle.",
+  "Softer landings first, then a rematch against Bay C. The league stopped after two bruised tails and one very formal complaint. Pile fresh snow on the run-out, set a weight limit for the doubles sled, and only then challenge Bay C — they have been practising.":
+      "Først blødere landinger, så en omkamp mod rum C. Ligaen stoppede efter to forslåede haler og én meget formel klage. Skovl frisk sne i opløbet, fastsæt en vægtgrænse for dobbeltkælken, og udfordr først derefter rum C — de har trænet.",
 };
