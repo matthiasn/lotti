@@ -410,6 +410,62 @@ Retaining GLM 5.2 as the high-end thinking model is supported by this run.
 Nothing here re-opens the shipped Qwen/Mistral routing, which these scenarios
 did not exercise.
 
+### Does the payload hold models back?
+
+A 27B dense model ought to be able to help with a task, and on-device
+assistants of that size are shipping. So the suite was used to ask whether the
+request we send is what stops small models being useful.
+
+The task agent receives about **21,000 characters of system prompt** to act on
+a task context of **under 900 characters**, and is offered **20 tools**:
+
+| Component | Chars | Share |
+| --- | ---: | ---: |
+| Tool Usage Guidelines | 8,880 | 42% |
+| Report scaffold | 3,739 | 18% |
+| Report directive | 3,684 | 18% |
+| Suggestion Hygiene | 2,237 | 11% |
+| Scaffold core | 1,628 | 8% |
+| General directive | 1,508 | 7% |
+| Soul and voice | ~500 | 2% |
+
+`LocalTaskAgentEvalPromptVariant.lean` keeps every rule a correct wake depends
+on — end with a report or nothing, stay grounded in the context, do not undo
+the user's work, do not narrate metadata or process, write in the task's
+language — and drops the tool-etiquette prose, most of which teaches the model
+to avoid calls `TaskToolDispatcher` already rejects with an error. It also
+advertises nine tools rather than twenty, chosen as what a wake generally
+needs rather than what each scenario expects, so no scenario is handed its own
+answer. The result is 1,216 characters and 9 tools.
+
+Both variants, one sample per scenario at temperature 0:
+
+| Model | Production payload | Lean payload |
+| --- | ---: | ---: |
+| Qwen3.6 27B (dense) | 10 / 14 | **13 / 14** |
+| Qwen3.6 35B A3B (~3B active) | 8 / 14 | 8 / 14 |
+
+**Two different bottlenecks.** The dense model gains three scenarios from the
+payload alone, reaching 13/14 — ahead of DeepSeek V4 Flash 0731 and one
+scenario behind GLM 5.2. Capacity was not its limit; headroom was.
+
+The mixture-of-experts model gains nothing, and four of its six failures are
+`argumentMismatch`: it selects the right tool and fills the arguments wrong.
+Shrinking the prompt cannot fix that, because argument precision is a capability
+floor rather than an attention budget. If on-device ever becomes a target, that
+is the wall, and it argues for narrower tools with simpler schemas rather than
+shorter prose.
+
+The lean variant changes prompt size, tool count and report contract together,
+so it does not isolate which one carries the gain. Given the earlier
+`conciseReport` result, both the tool-etiquette bulk and the report contract
+plausibly contribute.
+
+This measures scenario pass rates, not whether a model is pleasant to work with
+over weeks. Maintainers report small models being poor in daily use while this
+suite scores them near GLM, so the gap between the two remains the suite's main
+blind spot.
+
 ### Caveats
 
 One sample per scenario on a backend that is not deterministic even at
