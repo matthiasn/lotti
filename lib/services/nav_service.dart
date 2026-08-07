@@ -26,6 +26,7 @@ class NavService {
   }) {
     _journalDb = journalDb ?? getIt<JournalDb>();
     _settingsDb = settingsDb ?? getIt<SettingsDb>();
+    resetTabsToRoots();
 
     _navigationFlagsSub =
         Rx.combineLatest5<
@@ -147,6 +148,29 @@ class NavService {
   final BeamerDelegate tasksDelegate = tasksBeamerDelegate;
   final BeamerDelegate calendarDelegate = calendarBeamerDelegate;
   final BeamerDelegate settingsDelegate = settingsBeamerDelegate;
+
+  /// Sends every tab back to its root path and selects Tasks.
+  ///
+  /// The per-tab [BeamerDelegate]s are top-level finals, so they OUTLIVE
+  /// `getIt.reset()` — a profile switch replaces this service, the databases
+  /// and the whole widget tree, but not them. Without this, a tab kept the
+  /// route it held in the previous world: exit the demo after opening a
+  /// logbook entry and the Logbook tab still pointed at that demo entry's id,
+  /// which does not exist in the real journal. It also left the app on
+  /// whichever tab the previous world ended on, rather than the Tasks landing
+  /// this app defaults to.
+  ///
+  /// Called from the constructor, so it runs once per service generation —
+  /// which is exactly once per world, on cold start and on every switch.
+  void resetTabsToRoots() {
+    for (final spec in _tabSpecs) {
+      // Unconditionally, including disabled tabs: a flag can be turned back
+      // on later, and a stale route must not be waiting behind it.
+      spec.delegate.beamToReplacementNamed(spec.rootPath);
+    }
+    currentPath = _enabledTabSpecs.first.rootPath;
+    index = 0;
+  }
 
   bool get isHabitsPageEnabled => _isHabitsPageEnabled;
   bool get isDashboardsPageEnabled => _isDashboardsPageEnabled;

@@ -890,5 +890,71 @@ void main() {
         },
       );
     });
+
+    group('landing tab per service generation', () {
+      // Every tab's BeamerDelegate is a top-level final, so it survives
+      // `getIt.reset()` — a profile switch replaces this service, the
+      // databases and the widget tree, but not them.
+      NavService buildGeneration() => NavService(
+        journalDb: mockJournalDb,
+        settingsDb: settingsDb,
+      );
+
+      test(
+        "a new generation lands on Tasks and forgets the previous world's "
+        'routes',
+        () async {
+          // The user walks into the Logbook and opens an entry, then leaves
+          // the app sitting there — e.g. inside the demo world.
+          final previousWorld = buildGeneration()
+            ..beamToNamed('/journal/demo-entry-id');
+          expect(
+            previousWorld.currentPath,
+            '/journal/demo-entry-id',
+          );
+          expect(
+            previousWorld.index,
+            previousWorld.journalIndex,
+          );
+          await previousWorld.dispose();
+
+          // Switching profiles bootstraps a fresh service generation.
+          final nextWorld = buildGeneration();
+          addTearDown(nextWorld.dispose);
+
+          expect(
+            nextWorld.index,
+            0,
+            reason: 'a new world must land on the Tasks tab',
+          );
+          expect(nextWorld.currentPath, '/tasks');
+          expect(
+            nextWorld.journalDelegate.configuration.uri.path,
+            '/journal',
+            reason:
+                'the Logbook tab still pointed at an entry id from the world '
+                'the user just left',
+          );
+          expect(nextWorld.tasksDelegate.configuration.uri.path, '/tasks');
+        },
+      );
+
+      test('every tab root is restored, including disabled ones', () async {
+        final previousWorld = buildGeneration();
+        // Events is disabled in this harness; its delegate can still be
+        // carrying a route from a world where the flag was on.
+        previousWorld.eventsDelegate.beamToReplacementNamed('/events/stale-id');
+        await previousWorld.dispose();
+
+        final nextWorld = buildGeneration();
+        addTearDown(nextWorld.dispose);
+
+        expect(
+          nextWorld.eventsDelegate.configuration.uri.path,
+          '/events',
+          reason: 'a disabled tab kept a stale route behind its flag',
+        );
+      });
+    });
   });
 }

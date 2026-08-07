@@ -32,6 +32,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   type is distinguishable without relying on colour. The linked-entries list
   shows a "More below" control while the list continues past the panel edge,
   and its fade no longer makes a scrollable section look disabled.
+- **Lotti opens on Tasks, and the demo no longer leaves traces in your own
+  journal's navigation.** Starting the app — or switching between the demo
+  world and your own — now always lands on the Tasks tab. Each tab also
+  returns to its own starting point, so leaving the demo while a demo entry
+  was open no longer leaves that tab pointing at an entry that only existed
+  in the demo.
 - **The penguin demo is easier to read and explore.** Its persistent banner is
   shorter, more prominent, and themed blue, with the exit action aligned in
   the same row; the exit sheet buttons align inline when space permits and
