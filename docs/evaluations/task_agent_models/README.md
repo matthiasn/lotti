@@ -75,6 +75,23 @@ The two additional held-out constraint scenarios are:
 - `active_deployment_constraint`: keep deployment pending and its active
   external constraint visible.
 
+### Demo-world scenario
+
+`LOCAL_TASK_AGENT_EVAL_PENGUIN_LANGUAGES=1` replaces the suite with
+`penguin_scrubber_production`, which is built from the shipped demo world
+(`lib/features/demo/seed/demo_world.dart`) rather than from fixtures written
+for the eval. The wake context carries the air-scrubber task's enriched
+description, its full four-item checklist with real completion state, and a
+log entry reporting one item done and a deadline move. It therefore measures
+the model against the same material a user meets on their first run: complete
+exactly one checklist item, move the due date, leave the pending cartridge
+return untouched, and keep internal IDs out of the report.
+
+The suite is English-only. The demo world carries reviewed copy in all eleven
+supported languages, so a localized suite is possible — but the wake
+instruction has to come from that translated demo content, not from
+translations authored in the eval directory.
+
 The default run uses the `production` prompt only. `compactModel` adds an
 explicit extract, mutate, verify, and report sequence. `qualityFocused` adds a
 strict report-quality gate that forbids tool-log achievements, H1 titles, empty
@@ -101,7 +118,9 @@ Set `LOTTI_MELIOUS_ENV_FILE` or `MELIOUS_API_KEY` for another environment. Use
 `LOCAL_TASK_AGENT_EVAL_STRICT=1` only when a known-good matrix should gate.
 Set `LOCAL_TASK_AGENT_EVAL_EXECUTION_MODE=twoPass` to reproduce the rejected
 two-pass orchestration experiment described below. The default is
-`singlePass`.
+`singlePass`. A full matrix can exceed the test's ten-minute default budget —
+raise it with `LOCAL_TASK_AGENT_EVAL_TIMEOUT_MINUTES`, since a run that trips
+the timeout writes no artifacts at all.
 
 Set `LOCAL_TASK_AGENT_EVAL_EVOLVED_DIRECTIVES=1` to replace the default suite
 with seven synthetic evolved-report cases. They exercise decision-memo,
@@ -254,6 +273,145 @@ These numbers are directional rather than release thresholds. They are based on
 one deterministic sample per case and synthetic replay data. Repeated runs and
 sanitized real task histories are still required before changing the default
 model.
+
+## Findings from 2026-08-07
+
+DeepSeek V4 Flash 0731 was screened as a candidate task-agent executor against
+GLM 5.2 and Kimi K3. One sample per scenario at temperature 0, the production
+prompt, `singlePass`, model judge disabled; each scenario ran as its own
+invocation so a stall costs one case rather than the matrix.
+
+The first run scored GLM 10/14, Kimi 9/14 and DeepSeek 7/14. Investigating the
+failures found nine defects in the suite itself, all of which penalised correct
+behaviour; they are listed below and are fixed. Re-measured afterwards:
+
+| Model | Passing scenarios | Before the suite fixes |
+| --- | ---: | ---: |
+| GLM 5.2 | 14 / 14 | 10 / 14 |
+| Kimi K3 | 14 / 14 | 9 / 14 |
+| DeepSeek V4 Flash 0731 | 10 / 14 | 7 / 14 |
+
+Two of the three candidates now pass every scenario. Treat the earlier column
+as a measurement of the suite, not of the models.
+
+Latency separates them further: on the clean matrix GLM completed the suite in
+38 s with a 5.9 s worst case and Kimi in 159 s with an 18.9 s worst case, while
+DeepSeek needed 760 s and stalled for 360 s on one scenario. Those stalls are
+intermittent — the same scenario later finished in 7.5 s — so they are not a
+stable model property and may be provider congestion.
+
+**DeepSeek V4 Flash 0731 is not viable for task-agent work**, and its four
+remaining failures survived every suite correction.
+
+It invents tool names. On `metadata_explicit` it called `set_task_estimate`,
+which does not exist, with `{"estimate": "2.5"}` where the real
+`update_task_estimate` takes integer minutes — three times in five
+observations. On `progress_update` it called `update_task_status`, where the
+real name is `set_task_status`. It guesses the prefix in both directions,
+which the registry invites by mixing `set_task_title`, `set_task_language` and
+`set_task_status` with `update_task_estimate`, `update_task_due_date` and
+`update_task_priority`. GLM and Kimi absorb that inconsistency; DeepSeek does
+not.
+
+Critically, it does not recover. Once the harness began returning the
+dispatcher's real `Unknown tool` error, DeepSeek received it, did not retry
+with the correct name, and published a report describing the task as
+configured while the user's requested estimate was never set.
+
+It also mutates what nobody asked for: `update_task_priority` twice on
+`progress_update`, and on `latest_deadline_wins` only `record_observations`
+and `update_report`, never setting the due date the scenario requires. Its
+fourth failure, `no_op_background_refresh`, was an `inferenceFailed` after
+195 s — infrastructure rather than judgement.
+
+### The suite's own defects
+
+Seven checks were penalising correct behaviour. They are listed here because
+each one silently lowered every model's score, and two of them contradicted
+directives the same prompt gives the agent.
+
+1. **Forbidden terms ignored negation.** "The fix is *not yet* validated"
+   scored identically to a claim that it was validated. All three models
+   failed `user_completed_item_resurfaced` for this alone. Terms a correct
+   report may name in order to rule out now live in `forbiddenReportClaims`,
+   matched only in affirmative context, with a negation window on both sides —
+   English negates before the claim, German after.
+2. **`spanish_mixed_context` banned a correct status change**, described
+   below.
+3. **`metadata_explicit` required the report to echo "P1"** while the report
+   directive forbids narrating metadata changes. The mutation is already
+   asserted through `expectedToolCalls`.
+4. **`implicit_workflow_plan` demanded the literal verb "implement"**, which
+   passed only because an earlier fixture happened to contain
+   "implementation"; "fix the seeding so empty profiles are no longer
+   selectable" is the same step.
+5. **`deferred_scope_filter` forbade "underway"** on a task whose status is
+   `IN PROGRESS` and whose log calls the certificate work active. The word was
+   accurate.
+6. **The harness confirmed fabricated tools.** `processToolCalls` answered
+   every call with "Eval harness accepted <name>", including names that do not
+   exist, where `TaskToolDispatcher` returns an error the model can recover
+   from. The harness now mirrors the dispatcher.
+7. **`HttpOverrides.global` was never cleared**, so the test binding failed
+   every request with a synthetic HTTP 400 in under 100 ms and scored 0%. A
+   run that trips the test timeout also discarded all artifacts; the timeout is
+   now configurable and runs are executed per scenario.
+
+`spanish_mixed_context` is a broken expectation, not a model failure. All three
+models produced the identical sequence — `add_multiple_checklist_items`,
+`set_task_status`, `update_report` — at 100% content quality, and all three
+failed only because `set_task_status` is absent from `allowedExtraToolNames`.
+The task's log says *"Seguimos bloqueados porque el proveedor no ha enviado las
+credenciales"* while its status still reads `IN PROGRESS`, so marking it
+blocked with a grounded reason is correct behaviour. Correcting this scenario
+raises every model by one: GLM 11, Kimi 10, DeepSeek 8.
+
+`user_completed_item_resurfaced` failed for all three models, and
+`deferred_scope_filter` for two of three, both on report content. The report
+directive never states that an idea the user explicitly deferred must stay out
+of the public report — `deferred` appears in `seeded_directive_content.dart`
+only in reference to deferred *tools* and the deferred-proposal mechanism —
+yet the suite asserts `forbiddenReportTerms: ['newsletter']` against exactly
+that unwritten rule. Kimi passes `messy_german_transcript`, so the rule is
+inferable, but a rule only the strongest model infers belongs in the contract.
+
+### What the failures taught us about the suite
+
+Every one of the nine defects has the same root cause: **substring matching
+standing in for semantic judgement.** It cannot see negation, cannot see
+paraphrase, and fails precisely when a model expresses the right thing in
+unexpected words — which capable models do more often, not less. Two checks
+also contradicted directives the same system prompt issues, so a model was
+penalised for obeying its instructions.
+
+The practical rule for new scenarios: assert mutations through
+`expectedToolCalls`, where the contract is exact, and keep report assertions
+to facts that must appear rather than phrasings that must match. Use
+`forbiddenReportClaims` for anything a correct report may legitimately mention
+in order to rule out, and reserve `forbiddenReportTerms` for strings that must
+never appear at all, such as internal identifiers.
+
+### Recommended changes
+
+- Normalise the task-field tool names onto one prefix. This is now evidence-
+  backed rather than speculative: DeepSeek fabricated names in both directions,
+  and the registry's mixed `set_*`/`update_*` scheme is what invites it.
+- Leave the report directive alone. The deferred-scope rule looked like a
+  prompt gap when three models failed those scenarios, but all three pass them
+  once the checks stop matching negated mentions. There is no prompt change to
+  make here.
+
+Retaining GLM 5.2 as the high-end thinking model is supported by this run.
+Nothing here re-opens the shipped Qwen/Mistral routing, which these scenarios
+did not exercise.
+
+### Caveats
+
+One sample per scenario on a backend that is not deterministic even at
+temperature 0. Run-to-run variance is real and was observed repeatedly: a
+fabricated tool call, a 305 s stall, and two of Kimi's failures all failed to
+reproduce on a second sample. Treat single-scenario differences as noise and
+only repeated, inspected failures as signal.
 
 ## Findings from 2026-07-12
 
