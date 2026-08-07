@@ -67,6 +67,15 @@ class TaskToolDispatcher {
       name: 'TaskToolDispatcher',
     );
 
+    final resolvedName = resolveTaskAgentToolAlias(toolName);
+    if (resolvedName != toolName) {
+      developer.log(
+        'Resolved tool alias $toolName -> $resolvedName',
+        name: 'TaskToolDispatcher',
+      );
+    }
+    final normalizedArgs = decodeStringifiedJsonArguments(args);
+
     // Deliberately reload the task from the database on every tool call.
     // This guarantees each handler sees the committed state left by the
     // previous handler (e.g. a title change is visible to the next tool).
@@ -81,87 +90,112 @@ class TaskToolDispatcher {
       );
     }
 
-    switch (toolName) {
+    switch (resolvedName) {
       case TaskAgentToolNames.setTaskTitle:
-        return handleSetTaskTitle(taskEntity, args, taskId);
+        return handleSetTaskTitle(taskEntity, normalizedArgs, taskId);
 
       case TaskAgentToolNames.updateTaskEstimate:
-        return handleProcessToolCall(taskEntity, toolName, args, taskId);
+        return handleProcessToolCall(
+          taskEntity,
+          resolvedName,
+          normalizedArgs,
+          taskId,
+        );
 
       case TaskAgentToolNames.updateTaskDueDate:
-        return handleProcessToolCall(taskEntity, toolName, args, taskId);
+        return handleProcessToolCall(
+          taskEntity,
+          resolvedName,
+          normalizedArgs,
+          taskId,
+        );
 
       case TaskAgentToolNames.updateTaskPriority:
-        return handleProcessToolCall(taskEntity, toolName, args, taskId);
+        return handleProcessToolCall(
+          taskEntity,
+          resolvedName,
+          normalizedArgs,
+          taskId,
+        );
 
       case TaskAgentToolNames.addChecklistItem:
         return handleBatchChecklist(
           taskEntity,
           TaskAgentToolNames.addMultipleChecklistItems,
           {
-            'items': [args],
+            'items': [normalizedArgs],
           },
           taskId,
         );
 
       case TaskAgentToolNames.addMultipleChecklistItems:
-        return handleBatchChecklist(taskEntity, toolName, args, taskId);
+        return handleBatchChecklist(
+          taskEntity,
+          resolvedName,
+          normalizedArgs,
+          taskId,
+        );
 
       case TaskAgentToolNames.updateChecklistItem:
         return handleChecklistUpdate(
           taskEntity,
           TaskAgentToolNames.updateChecklistItems,
           {
-            'items': [args],
+            'items': [normalizedArgs],
           },
           taskId,
         );
 
       case TaskAgentToolNames.updateChecklistItems:
-        return handleChecklistUpdate(taskEntity, toolName, args, taskId);
+        return handleChecklistUpdate(
+          taskEntity,
+          resolvedName,
+          normalizedArgs,
+          taskId,
+        );
 
       case TaskAgentToolNames.assignTaskLabel:
         return handleAssignLabels(
           taskEntity,
           {
-            'labels': [args],
+            'labels': [normalizedArgs],
           },
           taskId,
         );
 
       case TaskAgentToolNames.assignTaskLabels:
-        return handleAssignLabels(taskEntity, args, taskId);
+        return handleAssignLabels(taskEntity, normalizedArgs, taskId);
 
       case TaskAgentToolNames.setTaskLanguage:
-        return handleSetLanguage(taskEntity, args, taskId);
+        return handleSetLanguage(taskEntity, normalizedArgs, taskId);
 
       case TaskAgentToolNames.setTaskStatus:
-        return handleSetStatus(taskEntity, args, taskId);
+        return handleSetStatus(taskEntity, normalizedArgs, taskId);
 
       case TaskAgentToolNames.createFollowUpTask:
-        return handleCreateFollowUpTask(args, taskId);
+        return handleCreateFollowUpTask(normalizedArgs, taskId);
 
       case TaskAgentToolNames.migrateChecklistItem:
       case TaskAgentToolNames.migrateChecklistItems:
-        return handleMigrateChecklistItem(args, taskId);
+        return handleMigrateChecklistItem(normalizedArgs, taskId);
 
       case TaskAgentToolNames.linkTask:
-        return handleLinkTask(args, taskId);
+        return handleLinkTask(normalizedArgs, taskId);
 
       case TaskAgentToolNames.createTimeEntry:
-        return handleCreateTimeEntry(args, taskId);
+        return handleCreateTimeEntry(normalizedArgs, taskId);
 
       case TaskAgentToolNames.updateTimeEntry:
-        return handleUpdateTimeEntry(args, taskId);
+        return handleUpdateTimeEntry(normalizedArgs, taskId);
 
       case TaskAgentToolNames.updateRunningTimer:
-        return handleUpdateRunningTimer(args, taskId);
+        return handleUpdateRunningTimer(normalizedArgs, taskId);
 
       case TaskAgentToolNames.requestAttention:
-        return handleRequestAttention(taskEntity, args);
+        return handleRequestAttention(taskEntity, normalizedArgs);
 
       case TaskAgentToolNames.resolveAttentionRequest:
-        return handleResolveAttentionRequest(taskEntity, args);
+        return handleResolveAttentionRequest(taskEntity, normalizedArgs);
 
       default:
         return ToolExecutionResult(
