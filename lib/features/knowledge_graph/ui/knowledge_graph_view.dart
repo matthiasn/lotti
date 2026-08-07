@@ -683,26 +683,27 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
   /// Transform that frames [focusId]'s 2-hop neighborhood in [size].
   (double, Offset) _framedTransform(Size size, String focusId) {
     final hops = _bfs(focusId);
-    final region = _displayScenario.nodes
-        .where((n) => (hops[n.id] ?? 99) <= 2)
-        .map((n) => _layout.positions[n.id])
-        .whereType<Offset>()
+    final regionNodes = _displayScenario.nodes
+        .where(
+          (n) => (hops[n.id] ?? 99) <= 2 && _layout.positions[n.id] != null,
+        )
         .toList();
     final focusPos = _layout.positions[focusId] ?? Offset.zero;
-    if (region.isEmpty) return (1, Offset(size.width / 2, size.height / 2));
+    if (regionNodes.isEmpty) {
+      return (1, Offset(size.width / 2, size.height / 2));
+    }
 
     var minX = double.infinity;
     var minY = double.infinity;
     var maxX = double.negativeInfinity;
     var maxY = double.negativeInfinity;
-    for (final p in region) {
+    for (final node in regionNodes) {
+      final p = _layout.positions[node.id]!;
       minX = math.min(minX, p.dx);
       minY = math.min(minY, p.dy);
       maxX = math.max(maxX, p.dx);
       maxY = math.max(maxY, p.dy);
     }
-    final bw = math.max(maxX - minX, 1);
-    final bh = math.max(maxY - minY, 1);
     const margin = 60;
     // Measured chrome (see [_chromeReserve]) — the focus neighborhood frames
     // into what is actually visible, instead of into a fixed guess that let
@@ -713,7 +714,38 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     final rightReserve = reserve.right;
     final availW = math.max(size.width - margin * 2 - rightReserve, 80);
     final availH = math.max(size.height - topReserve - bottomReserve, 80);
-    final scale = math.min(availW / bw, availH / bh).clamp(0.45, 1.5);
+
+    // Nodes are CIRCLES, not points: framing their centres lets a body — up
+    // to twice the ordinary diameter for media-backed nodes — hang past the
+    // reserved edge and sit behind the toolbar or legend. Radius is a
+    // screen-space function of the very scale being solved for, so take one
+    // refinement pass: fit centres, measure the widest body at that scale,
+    // convert it back to world units and refit with the bounds inflated.
+    // `nodeRadiusFor` clamps its zoom factor, so one pass converges.
+    double solveScale(double worldPad) {
+      final bw = math.max(maxX - minX + worldPad * 2, 1);
+      final bh = math.max(maxY - minY + worldPad * 2, 1);
+      return math.min(availW / bw, availH / bh).clamp(0.45, 1.5);
+    }
+
+    final firstPass = solveScale(0);
+    var widestBody = 0.0;
+    for (final node in regionNodes) {
+      widestBody = math.max(
+        widestBody,
+        KnowledgeGraphPainter.nodeRadiusFor(
+          node: node,
+          scenario: _displayScenario,
+          degrees: _degrees,
+          focusId: focusId,
+          hops: hops,
+          scale: firstPass,
+          visualSpec: _visualSpec,
+        ),
+      );
+    }
+    final scale = solveScale(widestBody / firstPass);
+
     // Center the focus a touch above middle so its neighbors fan below.
     final cx = (minX + maxX) / 2;
     final cy = (minY + maxY) / 2 * 0.4 + focusPos.dy * 0.6;

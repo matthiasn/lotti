@@ -288,11 +288,22 @@ class _InspectorContentState extends State<_InspectorContent> {
     super.dispose();
   }
 
+  /// Bottom padding held for the fade + overflow pill. It inflates the scroll
+  /// extent on its own, so it must be discounted when asking whether real
+  /// CONTENT continues below — otherwise a panel whose entries fit exactly
+  /// would advertise "more below" and scroll to blank space.
+  double _reservedStrip(BuildContext context) =>
+      context.designTokens.spacing.sectionGap;
+
   void _syncOverflow() {
-    if (!_scroll.hasClients) return;
+    if (!_scroll.hasClients || !mounted) return;
     final position = _scroll.position;
-    final more = position.maxScrollExtent - position.pixels > 1;
-    if (more != _hasMoreBelow && mounted) {
+    // Content ends `reserved` above the scrollable's end; anything beyond the
+    // viewport bottom after discounting it is genuine content.
+    final contentBelow =
+        position.maxScrollExtent - _reservedStrip(context) - position.pixels;
+    final more = contentBelow > 1;
+    if (more != _hasMoreBelow) {
       setState(() => _hasMoreBelow = more);
     }
   }
@@ -321,206 +332,225 @@ class _InspectorContentState extends State<_InspectorContent> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         Expanded(
-          child: Stack(
-            children: [
-              SingleChildScrollView(
-                controller: _scroll,
-                // The bottom strip belongs to the fade + overflow pill, so
-                // reserve it unconditionally: content scrolls clear of them
-                // instead of being covered, and the reserve never changes as
-                // the affordance appears or disappears.
-                padding: EdgeInsets.fromLTRB(
-                  tokens.spacing.cardPadding,
-                  tokens.spacing.cardPadding,
-                  tokens.spacing.cardPadding,
-                  tokens.spacing.cardPadding + tokens.spacing.sectionGap,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    // Reserve only the compact navigation row; entries with no
-                    // media no longer pay for an empty decorative hero.
-                    SizedBox(
-                      height: TapTargets.minimum + tokens.spacing.step2,
-                    ),
-                    _Kicker(
-                      node: node,
-                      label:
-                          '${typeLabel(context.messages, node.type)} · ${widget.categoryLabel}',
-                      cat: widget.cat,
-                      tokens: tokens,
-                    ),
-                    SizedBox(height: tokens.spacing.step4),
-                    // Full title — never truncated; this is the node's identity.
-                    Text(
-                      node.label,
-                      style: tokens.typography.styles.heading.heading2.copyWith(
-                        color: tokens.colors.text.highEmphasis,
+          // Content DIMENSIONS change without a scroll event and without
+          // rebuilding this widget — expanding the SUMMARY animates the
+          // extent over several frames via AnimatedSize. A controller
+          // listener only sees offset activity, so the metrics notification
+          // is what keeps the affordance honest across that animation.
+          child: NotificationListener<ScrollMetricsNotification>(
+            onNotification: (_) {
+              WidgetsBinding.instance.addPostFrameCallback(
+                (_) => _syncOverflow(),
+              );
+              return false;
+            },
+            child: Stack(
+              children: [
+                SingleChildScrollView(
+                  controller: _scroll,
+                  // The bottom strip belongs to the fade + overflow pill, so
+                  // reserve it unconditionally: content scrolls clear of them
+                  // instead of being covered, and the reserve never changes as
+                  // the affordance appears or disappears.
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spacing.cardPadding,
+                    tokens.spacing.cardPadding,
+                    tokens.spacing.cardPadding,
+                    tokens.spacing.cardPadding + tokens.spacing.sectionGap,
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      // Reserve only the compact navigation row; entries with no
+                      // media no longer pay for an empty decorative hero.
+                      SizedBox(
+                        height: TapTargets.minimum + tokens.spacing.step2,
                       ),
-                    ),
-                    // One-liner deck — the assigned agent's tagline (or the
-                    // first line of a summary), sat right under the title.
-                    if (summary.deck != null) ...[
-                      SizedBox(height: tokens.spacing.step3),
-                      Text(
-                        summary.deck!,
-                        style: tokens.typography.styles.body.bodyLarge.copyWith(
-                          color: tokens.colors.text.highEmphasis,
-                        ),
-                      ),
-                    ],
-                    if (media.isNotEmpty) ...[
-                      SizedBox(height: tokens.spacing.sectionGap),
-                      _MediaCarousel(
-                        paths: media,
-                        coverPath: node.coverImagePath,
-                        coverCropX: node.coverImageCropX,
-                        tokens: tokens,
+                      _Kicker(
+                        node: node,
+                        label:
+                            '${typeLabel(context.messages, node.type)} · ${widget.categoryLabel}',
                         cat: widget.cat,
+                        tokens: tokens,
                       ),
-                    ],
-                    if (summary.body != null) ...[
-                      SizedBox(height: tokens.spacing.sectionGap),
-                      DesignSystemSectionCard(
-                        padding: EdgeInsets.zero,
-                        child: Semantics(
-                          button: true,
-                          expanded: _summaryExpanded,
-                          label: context.messages.knowledgeGraphSummarySection,
-                          child: InkWell(
-                            onTap: () => setState(
-                              () => _summaryExpanded = !_summaryExpanded,
+                      SizedBox(height: tokens.spacing.step4),
+                      // Full title — never truncated; this is the node's identity.
+                      Text(
+                        node.label,
+                        style: tokens.typography.styles.heading.heading2
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
                             ),
-                            child: Padding(
-                              padding: EdgeInsets.all(tokens.spacing.step4),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Row(
-                                    children: [
-                                      Icon(
-                                        Icons.auto_awesome_rounded,
-                                        size: IconSizes.s,
-                                        color: widget.cat,
-                                      ),
-                                      SizedBox(width: tokens.spacing.step2),
-                                      Expanded(
-                                        child: Text(
-                                          context
-                                              .messages
-                                              .knowledgeGraphSummarySection,
-                                          style: tokens
-                                              .typography
-                                              .styles
-                                              .others
-                                              .overline
-                                              .copyWith(color: widget.cat),
-                                        ),
-                                      ),
-                                      AnimatedRotation(
-                                        turns: _summaryExpanded ? 0.5 : 0,
-                                        duration: kThemeAnimationDuration,
-                                        child: Icon(
-                                          Icons.expand_more_rounded,
+                      ),
+                      // One-liner deck — the assigned agent's tagline (or the
+                      // first line of a summary), sat right under the title.
+                      if (summary.deck != null) ...[
+                        SizedBox(height: tokens.spacing.step3),
+                        Text(
+                          summary.deck!,
+                          style: tokens.typography.styles.body.bodyLarge
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                        ),
+                      ],
+                      if (media.isNotEmpty) ...[
+                        SizedBox(height: tokens.spacing.sectionGap),
+                        _MediaCarousel(
+                          paths: media,
+                          coverPath: node.coverImagePath,
+                          coverCropX: node.coverImageCropX,
+                          tokens: tokens,
+                          cat: widget.cat,
+                        ),
+                      ],
+                      if (summary.body != null) ...[
+                        SizedBox(height: tokens.spacing.sectionGap),
+                        DesignSystemSectionCard(
+                          padding: EdgeInsets.zero,
+                          child: Semantics(
+                            button: true,
+                            expanded: _summaryExpanded,
+                            label:
+                                context.messages.knowledgeGraphSummarySection,
+                            child: InkWell(
+                              onTap: () => setState(
+                                () => _summaryExpanded = !_summaryExpanded,
+                              ),
+                              child: Padding(
+                                padding: EdgeInsets.all(tokens.spacing.step4),
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        Icon(
+                                          Icons.auto_awesome_rounded,
                                           size: IconSizes.s,
-                                          color:
-                                              tokens.colors.text.mediumEmphasis,
+                                          color: widget.cat,
                                         ),
-                                      ),
-                                    ],
-                                  ),
-                                  AnimatedSize(
-                                    duration: kThemeAnimationDuration,
-                                    alignment: Alignment.topCenter,
-                                    child: _summaryExpanded
-                                        ? Padding(
-                                            padding: EdgeInsets.only(
-                                              top: tokens.spacing.step3,
-                                            ),
-                                            child: Text(
-                                              summary.body!,
-                                              style: tokens
-                                                  .typography
-                                                  .styles
-                                                  .body
-                                                  .bodySmall
-                                                  .copyWith(
-                                                    color: tokens
-                                                        .colors
-                                                        .text
-                                                        .mediumEmphasis,
-                                                    height: 1.5,
-                                                  ),
-                                            ),
-                                          )
-                                        : const SizedBox.shrink(),
-                                  ),
-                                ],
+                                        SizedBox(width: tokens.spacing.step2),
+                                        Expanded(
+                                          child: Text(
+                                            context
+                                                .messages
+                                                .knowledgeGraphSummarySection,
+                                            style: tokens
+                                                .typography
+                                                .styles
+                                                .others
+                                                .overline
+                                                .copyWith(color: widget.cat),
+                                          ),
+                                        ),
+                                        AnimatedRotation(
+                                          turns: _summaryExpanded ? 0.5 : 0,
+                                          duration: kThemeAnimationDuration,
+                                          child: Icon(
+                                            Icons.expand_more_rounded,
+                                            size: IconSizes.s,
+                                            color: tokens
+                                                .colors
+                                                .text
+                                                .mediumEmphasis,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    AnimatedSize(
+                                      duration: kThemeAnimationDuration,
+                                      alignment: Alignment.topCenter,
+                                      child: _summaryExpanded
+                                          ? Padding(
+                                              padding: EdgeInsets.only(
+                                                top: tokens.spacing.step3,
+                                              ),
+                                              child: Text(
+                                                summary.body!,
+                                                style: tokens
+                                                    .typography
+                                                    .styles
+                                                    .body
+                                                    .bodySmall
+                                                    .copyWith(
+                                                      color: tokens
+                                                          .colors
+                                                          .text
+                                                          .mediumEmphasis,
+                                                      height: 1.5,
+                                                    ),
+                                              ),
+                                            )
+                                          : const SizedBox.shrink(),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
                         ),
-                      ),
-                    ],
-                    if (widget.neighbors.isNotEmpty) ...[
-                      SizedBox(height: tokens.spacing.sectionGap),
-                      _SectionLabel(
-                        label: context.messages.knowledgeGraphLinkedSection(
-                          widget.neighbors.length,
-                        ),
-                        cat: widget.cat,
-                        tokens: tokens,
-                      ),
-                      SizedBox(height: tokens.spacing.step2),
-                      for (final n in widget.neighbors)
-                        _TimelineItem(
-                          node: n,
-                          ageLabel: relativeAge(
-                            context.messages,
-                            widget.now.difference(n.createdAt),
+                      ],
+                      if (widget.neighbors.isNotEmpty) ...[
+                        SizedBox(height: tokens.spacing.sectionGap),
+                        _SectionLabel(
+                          label: context.messages.knowledgeGraphLinkedSection(
+                            widget.neighbors.length,
                           ),
-                          color: widget.style
-                              .edgeVisual(relStyleForNeighborType(n.type))
-                              .color,
+                          cat: widget.cat,
                           tokens: tokens,
-                          onTap: widget.onNeighborTap == null
-                              ? null
-                              : () => widget.onNeighborTap!(n.id),
                         ),
+                        SizedBox(height: tokens.spacing.step2),
+                        for (final n in widget.neighbors)
+                          _TimelineItem(
+                            node: n,
+                            ageLabel: relativeAge(
+                              context.messages,
+                              widget.now.difference(n.createdAt),
+                            ),
+                            color: widget.style
+                                .edgeVisual(relStyleForNeighborType(n.type))
+                                .color,
+                            tokens: tokens,
+                            onTap: widget.onNeighborTap == null
+                                ? null
+                                : () => widget.onNeighborTap!(n.id),
+                          ),
+                      ],
                     ],
-                  ],
+                  ),
                 ),
-              ),
-              // Bottom fade — shown only while content actually continues
-              // below, dissolving the next row into the surface instead of
-              // cutting it. At the end of the list it disappears, so the fade
-              // never reads as a permanently dimmed (disabled) section.
-              if (_hasMoreBelow)
-                Positioned(
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  height: tokens.spacing.sectionGap,
-                  child: IgnorePointer(
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        gradient: LinearGradient(
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter,
-                          colors: [
-                            tokens.colors.background.level01.withValues(
-                              alpha: 0,
-                            ),
-                            tokens.colors.background.level01.withValues(
-                              alpha: 0.82,
-                            ),
-                          ],
+                // Bottom fade — shown only while content actually continues
+                // below, dissolving the next row into the surface instead of
+                // cutting it. At the end of the list it disappears, so the fade
+                // never reads as a permanently dimmed (disabled) section.
+                if (_hasMoreBelow)
+                  Positioned(
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    height: tokens.spacing.sectionGap,
+                    child: IgnorePointer(
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                            colors: [
+                              tokens.colors.background.level01.withValues(
+                                alpha: 0,
+                              ),
+                              tokens.colors.background.level01.withValues(
+                                alpha: 0.82,
+                              ),
+                            ],
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-            ],
+              ],
+            ),
           ),
         ),
         // Explicit "there is more" control: the count in the LINKED eyebrow
@@ -569,6 +599,9 @@ class _MoreBelowButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: label,
+      // The visible Text and the InkWell would otherwise each contribute their
+      // own node, announcing the control twice.
+      excludeSemantics: true,
       child: Material(
         color: tokens.colors.background.level02,
         borderRadius: BorderRadius.circular(tokens.radii.badgesPills),

@@ -223,6 +223,53 @@ void main() {
       },
     );
 
+    test(
+      'a required label escapes OVERLAPPING reserved rects instead of '
+      'bouncing between them',
+      () {
+        // Regression: the push considered one reserved rect at a time and
+        // took the locally shortest move, so with rects that overlap — which
+        // the legend and minimap do, both inflated by the padding that
+        // separates them — a label could be pushed off one and straight onto
+        // the other, and the two traded it back and forth until the pass
+        // budget ran out, leaving it under a control.
+        const viewport = Rect.fromLTWH(0, 0, 400, 400);
+        // An L of two overlapping rects in the bottom-left, mirroring the
+        // legend sitting above an overlapping minimap.
+        const legend = Rect.fromLTWH(0, 250, 240, 90);
+        const minimap = Rect.fromLTWH(0, 300, 200, 100);
+        const candidate = GraphLabelCandidate(
+          id: 'focus',
+          center: Offset(110, 300),
+          nodeRadius: 16,
+          labelSize: Size(150, 26),
+          priority: 1000,
+          required: true,
+        );
+
+        final result = solveGraphLabelLayout(
+          candidates: const [candidate],
+          viewport: viewport,
+          nodeObstacles: const {},
+          reservedRects: const [legend, minimap],
+        );
+
+        final placement = result['focus'];
+        expect(placement, isNotNull);
+        expect(
+          placement!.rect.overlaps(legend),
+          isFalse,
+          reason: 'label left sitting on the legend',
+        );
+        expect(
+          placement.rect.overlaps(minimap),
+          isFalse,
+          reason: 'label left sitting on the minimap',
+        );
+        expect(viewport.containsRect(placement.rect), isTrue);
+      },
+    );
+
     test('reserved rects still never displace a non-required label', () {
       // Optional labels are dropped rather than relocated — culling keeps the
       // canvas readable when space runs out.

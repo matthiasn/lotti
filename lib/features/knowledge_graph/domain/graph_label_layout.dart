@@ -212,44 +212,60 @@ GraphLabelPlacement? _bestEffortPlacement({
 /// when no escape keeps it in the viewport (a viewport smaller than its own
 /// chrome), so the label still renders rather than vanishing.
 Rect _pushOutOfReserved(Rect rect, List<Rect> reserved, Rect viewport) {
-  var current = rect;
-  for (var pass = 0; pass < reserved.length + 1; pass++) {
-    Rect? hit;
-    for (final candidate in reserved) {
-      if (current.overlaps(candidate)) {
-        hit = candidate;
-        break;
-      }
-    }
-    if (hit == null) return current;
-    final candidates =
-        <Rect>[
-          current.translate(hit.left - current.right, 0),
-          current.translate(hit.right - current.left, 0),
-          current.translate(0, hit.top - current.bottom),
-          current.translate(0, hit.bottom - current.top),
-        ].where(
-          (option) =>
-              viewport.contains(option.topLeft) &&
-              viewport.contains(option.bottomRight),
-        );
-    // No escape from THIS rect keeps the label in the viewport. Return what we
-    // have rather than the original: earlier passes may already have cleared
-    // other reserved rects, and discarding that progress would put the label
-    // back onto chrome it had escaped.
-    if (candidates.isEmpty) return current;
-    var best = candidates.first;
-    var bestTravel = double.infinity;
-    for (final option in candidates) {
-      final travel = (option.center - rect.center).distance;
-      if (travel < bestTravel) {
-        bestTravel = travel;
-        best = option;
-      }
-    }
-    current = best;
+  bool insideViewport(Rect option) =>
+      viewport.contains(option.topLeft) &&
+      viewport.contains(option.bottomRight);
+  bool clearsEverything(Rect option) =>
+      !reserved.any(option.overlaps) && insideViewport(option);
+
+  if (clearsEverything(rect)) return rect;
+
+  // Escape moves are measured against EVERY reserved rect, not just the one
+  // currently hit. Reserved rects routinely overlap — the legend and minimap
+  // are inflated by the same padding that separates them — so chasing the
+  // locally shortest move off one of them can drop the label straight onto
+  // its neighbour, and the two can trade it back and forth until the pass
+  // budget runs out, leaving it under a control.
+  final options = <Rect>[];
+  for (final chrome in reserved) {
+    options.addAll([
+      rect.translate(chrome.left - rect.right, 0),
+      rect.translate(chrome.right - rect.left, 0),
+      rect.translate(0, chrome.top - rect.bottom),
+      rect.translate(0, chrome.bottom - rect.top),
+    ]);
   }
-  return current;
+
+  Rect? best;
+  var bestTravel = double.infinity;
+  for (final option in options) {
+    if (!clearsEverything(option)) continue;
+    final travel = (option.center - rect.center).distance;
+    if (travel < bestTravel) {
+      bestTravel = travel;
+      best = option;
+    }
+  }
+  if (best != null) return best;
+
+  // Nothing clears everything: take the option overlapping the least reserved
+  // area, so a label that cannot fully escape still sits mostly clear rather
+  // than centred on a control. Travel breaks ties, keeping it near its anchor.
+  Rect? fallback;
+  var fallbackPenalty = double.infinity;
+  for (final option in options) {
+    if (!insideViewport(option)) continue;
+    var penalty = 0.0;
+    for (final chrome in reserved) {
+      penalty += _overlapArea(option, chrome);
+    }
+    penalty += (option.center - rect.center).distance / 1e6;
+    if (penalty < fallbackPenalty) {
+      fallbackPenalty = penalty;
+      fallback = option;
+    }
+  }
+  return fallback ?? rect;
 }
 
 double _overlapArea(Rect a, Rect b) {
