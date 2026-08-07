@@ -27,17 +27,20 @@ _SERVICES_DIR = Path(__file__).resolve().parents[2] / "services"
 if str(_SERVICES_DIR) not in sys.path:
     sys.path.insert(0, str(_SERVICES_DIR))
 
-from shared.matrix import (  # noqa: E402  - import follows the sys.path bootstrap
-    AdminCredentials,
-    ProvisioningError,
-    SynapseProvisioner,
-)
-from shared.matrix.provisioner import (  # noqa: E402
-    encode_mxid_for_path as _encode_mxid_for_path,
-)
-from shared.matrix.provisioner import (  # noqa: E402
-    encode_room_id_for_path as _encode_room_id_for_path,
-)
+# These follow the sys.path bootstrap above, hence the E402 suppressions. The
+# modules are imported whole and the names bound below, because isort wraps at
+# 79 columns while black reflows at 100 — a combined import of the three names
+# is long enough that the two tools would rewrite each other forever.
+from shared import matrix as _matrix  # noqa: E402
+from shared.matrix import provisioner as _provisioner  # noqa: E402
+
+AdminCredentials = _matrix.AdminCredentials
+ProvisioningError = _matrix.ProvisioningError
+SynapseProvisioner = _matrix.SynapseProvisioner
+
+# Kept under their original private names for backwards compatibility.
+_encode_mxid_for_path = _provisioner.encode_mxid_for_path
+_encode_room_id_for_path = _provisioner.encode_room_id_for_path
 
 __all__ = [
     "ProvisioningError",
