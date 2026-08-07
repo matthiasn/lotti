@@ -1,19 +1,13 @@
 import { useCallback, useEffect, useState } from "react";
 import { errorMessage } from "../api/client";
 import { listBundles, updateBundle } from "../api/provisioning";
-import { BundleStatusBadge, PaymentStatusBadge } from "../components/StatusBadge";
-import type {
-  BundleStatus,
-  PaymentStatus,
-  ProvisionedUser,
-} from "../types";
-
-const PAYMENT_OPTIONS: PaymentStatus[] = [
-  "unknown",
-  "paying",
-  "non_paying",
-  "complimentary",
-];
+import {
+  BUNDLE_LABELS,
+  BundleStatusBadge,
+  PaymentStatusSelect,
+} from "../components/StatusBadge";
+import UserStoragePanel from "../components/UserStoragePanel";
+import type { BundleStatus, PaymentStatus, ProvisionedUser } from "../types";
 
 function formatDate(value: string | null): string {
   return value ? new Date(value).toLocaleDateString() : "—";
@@ -26,6 +20,7 @@ export default function BundleListPage() {
   const [statusFilter, setStatusFilter] = useState<BundleStatus | "">("");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setError(null);
@@ -80,10 +75,11 @@ export default function BundleListPage() {
           }
         >
           <option value="">All statuses</option>
-          <option value="unused">Unused</option>
-          <option value="redeemed">Redeemed</option>
-          <option value="rotated">Rotated</option>
-          <option value="revoked">Revoked</option>
+          {(Object.keys(BUNDLE_LABELS) as BundleStatus[]).map((option) => (
+            <option key={option} value={option}>
+              {BUNDLE_LABELS[option]}
+            </option>
+          ))}
         </select>
       </div>
 
@@ -104,10 +100,11 @@ export default function BundleListPage() {
               <th scope="col">Created</th>
               <th scope="col">First login</th>
               <th scope="col">Payment</th>
+              <th scope="col">Storage</th>
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
+            {users.flatMap((user) => [
               <tr key={user.bundle_id}>
                 <td>
                   <div>{user.username}</div>
@@ -119,29 +116,46 @@ export default function BundleListPage() {
                 <td>{formatDate(user.created_at)}</td>
                 <td>{formatDate(user.first_login_at)}</td>
                 <td>
-                  <PaymentStatusBadge status={user.payment_status} />
-                  <label
-                    htmlFor={`payment-${user.bundle_id}`}
-                    className="visually-hidden"
-                  >
-                    Payment status for {user.username}
-                  </label>
-                  <select
-                    id={`payment-${user.bundle_id}`}
-                    value={user.payment_status}
-                    onChange={(event) =>
-                      changePayment(user, event.target.value as PaymentStatus)
+                  <PaymentStatusSelect
+                    status={user.payment_status}
+                    label={`Payment status for ${user.username}`}
+                    onChange={(next) => changePayment(user, next)}
+                  />
+                </td>
+                <td>
+                  <button
+                    type="button"
+                    className="link-button"
+                    aria-expanded={expanded === user.bundle_id}
+                    onClick={() =>
+                      setExpanded(
+                        expanded === user.bundle_id ? null : user.bundle_id,
+                      )
                     }
                   >
-                    {PAYMENT_OPTIONS.map((option) => (
-                      <option key={option} value={option}>
-                        {option}
-                      </option>
-                    ))}
-                  </select>
+                    {expanded === user.bundle_id ? "Hide" : "Storage"}
+                  </button>
                 </td>
-              </tr>
-            ))}
+              </tr>,
+              expanded === user.bundle_id ? (
+                <tr key={`${user.bundle_id}-detail`} className="detail-row">
+                  <td colSpan={6}>
+                    <UserStoragePanel
+                      user={user}
+                      onUserChange={(updated) =>
+                        setUsers((current) =>
+                          current.map((candidate) =>
+                            candidate.bundle_id === updated.bundle_id
+                              ? updated
+                              : candidate,
+                          ),
+                        )
+                      }
+                    />
+                  </td>
+                </tr>
+              ) : null,
+            ])}
           </tbody>
         </table>
       )}

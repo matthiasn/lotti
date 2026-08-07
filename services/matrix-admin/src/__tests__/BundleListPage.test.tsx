@@ -27,6 +27,8 @@ function user(overrides: Partial<ProvisionedUser> = {}): ProvisionedUser {
     last_seen_at: null,
     last_polled_at: null,
     notes: "",
+    retention_days: null,
+    retention_exempt: false,
     ...overrides,
   };
 }
@@ -113,8 +115,45 @@ describe("BundleListPage", () => {
     );
 
     expect(updateBundle).toHaveBeenCalledWith("b-1", { paymentStatus: "paying" });
-    const row = screen.getByRole("row", { name: /lotti_user/ });
-    expect(within(row).getByText("Paying")).toBeInTheDocument();
+    expect(screen.getByLabelText("Payment status for lotti_user")).toHaveValue(
+      "paying",
+    );
+  });
+
+  it("labels payment options in prose, not raw enum values", async () => {
+    listBundles.mockResolvedValue({
+      users: [user()],
+      total: 1,
+      page: 1,
+      page_size: 50,
+    });
+    render(<BundleListPage />);
+    await screen.findByText("lotti_user");
+
+    const select = screen.getByLabelText("Payment status for lotti_user");
+    const labels = within(select)
+      .getAllByRole("option")
+      .map((option) => option.textContent);
+
+    expect(labels).toEqual(["Unknown", "Paying", "Not paying", "Complimentary"]);
+    expect(labels).not.toContain("non_paying");
+  });
+
+  it("shows the current payment status as the selected value", async () => {
+    listBundles.mockResolvedValue({
+      users: [user({ payment_status: "complimentary" })],
+      total: 1,
+      page: 1,
+      page_size: 50,
+    });
+    render(<BundleListPage />);
+    await screen.findByText("lotti_user");
+
+    // The pill *is* the control, so the status has to read off its value
+    // rather than off a separate badge.
+    expect(screen.getByLabelText("Payment status for lotti_user")).toHaveValue(
+      "complimentary",
+    );
   });
 
   it("rolls the row back and reports the error when the update fails", async () => {
@@ -137,8 +176,9 @@ describe("BundleListPage", () => {
     expect(await screen.findByRole("alert")).toHaveTextContent(
       "database is locked",
     );
-    const row = screen.getByRole("row", { name: /lotti_user/ });
-    expect(within(row).getByText("Unknown")).toBeInTheDocument();
+    expect(screen.getByLabelText("Payment status for lotti_user")).toHaveValue(
+      "unknown",
+    );
   });
 
   it("reports a load failure", async () => {
