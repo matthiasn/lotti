@@ -39,6 +39,7 @@
   <releases>
     <release version="1.0.4" date="2026-08-05">
       <description>
+        <p>Fixed: Lotti opens on Tasks, and the demo no longer leaves traces in your own journal's navigation. Starting the app — or switching between the demo world and your own — now always lands on the Tasks tab. Each tab also returns to its own starting point, so leaving the demo while a demo entry was open no longer leaves that tab pointing at an entry that only existed in the demo.</p>
         <p>Added: knowledge-graph photos now open full screen. Tapping an image in the graph inspector's photo carousel opens the shared full-screen viewer with zoom, rotation and download, and — new for collections — chevron buttons and the left/right arrow keys move through all of the entry's photos, with a position counter showing where you are.</p>
         <p>Fixed: the penguin demo banner is shorter, more prominent, and blue-themed, with its exit action aligned inline. The exit sheet buttons align inline when space permits and wrap safely when needed, seeded tasks have task-specific four-step checklists, and edits to seeded rows are preserved across seed updates.</p>
         <p>Changed: demo image downloads now show live progress. The demo banner reports the completed image count while its R2 catalog hydrates in the background, without delaying entry into the workspace.</p>
