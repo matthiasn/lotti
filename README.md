@@ -8,10 +8,14 @@
 
 Lotti records what you meant to do and what actually happened, and keeps them
 as separate facts. Tasks, planned blocks, tracked time, voice notes, journal
-entries, habits, and health data live in a local database on your own devices.
-There is no Lotti account and no Lotti server. AI is optional, and when
-you do set it up, the route Lotti recommends is European infrastructure running
-open-weight models. Nothing reaches your history without your approval.
+entries, habits, and health data live in a local database on your own devices,
+looked after by a staff of personal AI assistants: persistent agents that read
+what you record, keep the mess summarised, and propose the next step — while
+proposed changes wait for your approval. No server ever holds your data in
+readable form; sync is end-to-end encrypted, and the relay between your
+devices holds only ciphertext — not forever. AI is optional, and when you do
+set it up, the route
+Lotti recommends is European infrastructure running open-weight models.
 
 macOS · Linux · Windows · iOS · Android. Flutter and Dart, GPL-3.0, in
 development since 2016.
@@ -56,9 +60,11 @@ storage layout rather than by careful prompting — see
   </picture>
 </p>
 
-**There is no Lotti server.** Your logbook lives on your devices. Sync is
-self-hosted and end-to-end encrypted, so the relay only ever handles
-ciphertext. No account, no telemetry, and nothing uploaded to Lotti.
+**No server ever holds your data in readable form.** Your logbook lives on
+your devices. Sync is end-to-end encrypted: the relay you choose holds only
+ciphertext, not forever, and nothing depends on it keeping anything — a new
+device catches up because your other devices re-send history, not because a
+server archived it. No telemetry, and nothing uploaded to Lotti.
 
 **You choose the brain, and you can see what it cost.** Route each category of
 your life to the compute you are willing to stand behind: a local model for the
@@ -221,8 +227,9 @@ three. They are worth separating, because they fail in different ways.
 
 ### Your logbook is not collected
 
-There is no Lotti server. No account, no telemetry, no analytics, and nothing
-uploaded to Lotti. Entries live in local SQLite on each of your devices, with
+Lotti collects nothing. No telemetry, no analytics, and nothing uploaded to
+Lotti. Entries live in local SQLite on each of your
+devices, with
 attachments beside it on the filesystem. That is structural rather than a policy
 commitment: there is nowhere for the data to go, and you can confirm it by
 reading the source or watching the traffic. Two things do leave, both because
@@ -230,7 +237,8 @@ you configured them: ciphertext to the homeserver you chose, and inference
 requests to the provider you chose.
 
 *The other side of that:* there is no server-side backup and no account
-recovery, because there is no account. Sync is the redundancy story — but it is
+recovery, because no server holds a readable or lasting copy of your data.
+Sync is the redundancy story — but it is
 not automatic history. Pairing a device gives it everything written *from then
 on*; your existing settings and back catalogue arrive only when you run *Send
 settings* and *Send message history* from the device that already has them.
@@ -432,7 +440,7 @@ emoji-font packages, is in [docs/DEVELOPMENT.md](docs/DEVELOPMENT.md).
 
 ## Status
 
-Currently 0.9.x, working toward 1.0. The application is in active daily use and
+The application is in active daily use and
 the agentic layer is real, working, and shipping. Development happens in the
 open, and the [changelog](CHANGELOG.md) is the honest version of what changed.
 
