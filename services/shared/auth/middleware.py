@@ -6,10 +6,23 @@ import logging
 import os
 from typing import Callable
 
-from fastapi import Request, HTTPException, status
+from fastapi import Request, status
 from starlette.middleware.base import BaseHTTPMiddleware
+from starlette.responses import JSONResponse
 
 logger = logging.getLogger(__name__)
+
+
+def _deny(status_code: int, detail: str, *, challenge: bool = False) -> JSONResponse:
+    """Build an auth failure response.
+
+    Middleware must *return* this rather than raise ``HTTPException``: a
+    ``BaseHTTPMiddleware`` runs above Starlette's ``ExceptionMiddleware``, so a
+    raised ``HTTPException`` is never translated into its status code and
+    surfaces as a 500 instead.
+    """
+    headers = {"WWW-Authenticate": "Bearer"} if challenge else None
+    return JSONResponse(status_code=status_code, content={"detail": detail}, headers=headers)
 
 
 class APIKeyAuthMiddleware(BaseHTTPMiddleware):
@@ -81,20 +94,20 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
 
         if not auth_header:
             logger.warning(f"Authentication failed: Missing Authorization header (path: {request.url.path})")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Missing Authorization header",
-                headers={"WWW-Authenticate": "Bearer"},
+            return _deny(
+                status.HTTP_401_UNAUTHORIZED,
+                "Missing Authorization header",
+                challenge=True,
             )
 
         # Parse Bearer token
         parts = auth_header.split()
         if len(parts) != 2 or parts[0].lower() != "bearer":
             logger.warning(f"Authentication failed: Invalid Authorization header format (path: {request.url.path})")
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid Authorization header format. Use: Bearer <api_key>",
-                headers={"WWW-Authenticate": "Bearer"},
+            return _deny(
+                status.HTTP_401_UNAUTHORIZED,
+                "Invalid Authorization header format. Use: Bearer <api_key>",
+                challenge=True,
             )
 
         api_key = parts[1]
@@ -103,15 +116,15 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         if self._is_admin_path(request.url.path):
             if not self.valid_admin_keys:
                 logger.error(f"Authentication failed: Admin API keys not configured for admin path (path: {request.url.path})")
-                raise HTTPException(
-                    status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                    detail="Admin API keys not configured for this endpoint",
+                return _deny(
+                    status.HTTP_503_SERVICE_UNAVAILABLE,
+                    "Admin API keys not configured for this endpoint",
                 )
             elif api_key not in self.valid_admin_keys:
                 logger.warning(f"Authentication failed: Admin API key required (path: {request.url.path})")
-                raise HTTPException(
-                    status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Admin API key required for this endpoint",
+                return _deny(
+                    status.HTTP_403_FORBIDDEN,
+                    "Admin API key required for this endpoint",
                 )
 
             logger.debug(f"Admin authentication successful for {request.url.path}")
@@ -120,18 +133,15 @@ class APIKeyAuthMiddleware(BaseHTTPMiddleware):
         # Check if regular API keys are configured
         if not self.valid_api_keys:
             logger.error(f"Authentication failed: No API keys configured (path: {request.url.path})")
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail="Service not configured - no API keys available",
+            return _deny(
+                status.HTTP_503_SERVICE_UNAVAILABLE,
+                "Service not configured - no API keys available",
             )
 
         # Validate regular API key (admin keys are not accepted for non-admin paths)
         if api_key not in self.valid_api_keys:
             logger.warning(f"Authentication failed: Invalid API key (path: {request.url.path})")
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Invalid API key",
-            )
+            return _deny(status.HTTP_403_FORBIDDEN, "Invalid API key")
 
         # API key is valid, proceed with request
         logger.debug(f"Authentication successful for {request.url.path}")
