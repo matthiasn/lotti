@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/services/domain_logging.dart';
 
@@ -28,7 +28,7 @@ class _HandledCheckSequence {
 /// last report) are fast-forwarded to the next future time slot without
 /// executing, avoiding unnecessary LLM calls after prolonged app absence.
 /// Non-project agents (e.g., improver agents) are always enqueued.
-class ScheduledWakeManager {
+class ScheduledWakeManager with AgentErrorLogging {
   ScheduledWakeManager({
     required this._repository,
     required this._orchestrator,
@@ -46,7 +46,11 @@ class ScheduledWakeManager {
   final AgentRepository _repository;
   final WakeOrchestrator _orchestrator;
   final AgentSyncService _syncService;
+  @override
   final DomainLogger? domainLogger;
+
+  @override
+  LogDomain get errorLogDomain => LogDomain.agentRuntime;
   final void Function(String agentId)? onPersistedStateChanged;
 
   final Duration checkInterval;
@@ -263,7 +267,7 @@ class ScheduledWakeManager {
           );
           enqueued++;
         } catch (e, s) {
-          _logError(
+          logError(
             'failed to process ${DomainLogger.sanitizeId(state.agentId)}',
             error: e,
             stackTrace: s,
@@ -286,7 +290,7 @@ class ScheduledWakeManager {
         );
       }
     } catch (e, s) {
-      _logError('error checking scheduled wakes', error: e, stackTrace: s);
+      logError('error checking scheduled wakes', error: e, stackTrace: s);
     }
   }
 
@@ -296,7 +300,7 @@ class ScheduledWakeManager {
     try {
       await before();
     } catch (e, s) {
-      _logError(
+      logError(
         'pre-check repair failed; continuing with the due-record pass',
         error: e,
         stackTrace: s,
@@ -401,7 +405,7 @@ class ScheduledWakeManager {
         onPersistedStateChanged?.call(record.agentId);
         enqueued++;
       } catch (e, s) {
-        _logError(
+        logError(
           'failed to fire scheduled-wake record '
           '${DomainLogger.sanitizeId(record.id)}',
           error: e,
@@ -609,23 +613,5 @@ class ScheduledWakeManager {
 
   void _log(String message) {
     domainLogger?.log(LogDomain.agentRuntime, message, subDomain: 'schedule');
-  }
-
-  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    if (domainLogger != null) {
-      domainLogger!.error(
-        LogDomain.agentRuntime,
-        error ?? message,
-        message: error != null ? message : null,
-        stackTrace: stackTrace,
-      );
-    } else {
-      developer.log(
-        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
-        name: 'ScheduledWakeManager',
-        error: error?.runtimeType,
-        stackTrace: stackTrace,
-      );
-    }
   }
 }

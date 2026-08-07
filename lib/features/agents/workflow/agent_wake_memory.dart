@@ -83,8 +83,10 @@ class AgentWakeMemory {
     if (domainLogger != null) {
       domainLogger!.error(logDomain, error, message: message);
     } else {
-      // Fallback so failures never vanish silently (same convention as the
-      // workflows' _logError helpers).
+      // Fallback so failures never vanish silently — the same convention the
+      // AgentErrorLogging mixin applies. Kept separate rather than folded into
+      // it: this helper drops a message with no error and carries no stack
+      // trace, so adopting the mixin would change what compaction reports.
       developer.log(
         '$message (errorType=${error.runtimeType})',
         name: 'AgentWakeMemory',

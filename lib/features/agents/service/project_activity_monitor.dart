@@ -1,11 +1,11 @@
 import 'dart:async';
-import 'dart:developer' as developer;
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -17,7 +17,7 @@ import 'package:lotti/services/domain_logging.dart';
 /// whether an affected project has a provisioned project agent, and persists a
 /// pending activity marker on the agent state. The scheduled 06:00 wake later
 /// decides whether to spend tokens on a fresh report.
-class ProjectActivityMonitor {
+class ProjectActivityMonitor with AgentErrorLogging {
   ProjectActivityMonitor({
     required this._notifications,
     required this._agentRepository,
@@ -31,7 +31,11 @@ class ProjectActivityMonitor {
   final AgentRepository _agentRepository;
   final ProjectRepository _projectRepository;
   final AgentSyncService _syncService;
+  @override
   final DomainLogger? domainLogger;
+
+  @override
+  LogDomain get errorLogDomain => LogDomain.agentRuntime;
   final Clock _clock;
 
   StreamSubscription<Set<String>>? _subscription;
@@ -42,24 +46,6 @@ class ProjectActivityMonitor {
       message,
       subDomain: subDomain,
     );
-  }
-
-  void _logError(String message, {Object? error, StackTrace? stackTrace}) {
-    if (domainLogger != null) {
-      domainLogger!.error(
-        LogDomain.agentRuntime,
-        error ?? message,
-        message: error != null ? message : null,
-        stackTrace: stackTrace,
-      );
-    } else {
-      developer.log(
-        '$message${error != null ? ' (errorType=${error.runtimeType})' : ''}',
-        name: 'ProjectActivityMonitor',
-        error: error?.runtimeType,
-        stackTrace: stackTrace,
-      );
-    }
   }
 
   /// Start tracking local project activity.
@@ -126,7 +112,7 @@ class ProjectActivityMonitor {
         subDomain: 'activity',
       );
     } catch (error, stackTrace) {
-      _logError(
+      logError(
         'failed to mark project activity for '
         '${DomainLogger.sanitizeId(projectId)}',
         error: error,

@@ -67,7 +67,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             linkedEntities: linked,
           );
         } catch (e) {
-          _logError('failed to fetch image AI responses for capture', error: e);
+          logError('failed to fetch image AI responses for capture', error: e);
         }
         captureSucceeded = await memory.capture(
           agentId: agentId,
@@ -85,7 +85,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       } catch (e) {
         // Source rendering failed (the capture call itself absorbs its own
         // errors inside [AgentWakeMemory.capture]).
-        _logError('failed to capture wake inputs', error: e);
+        logError('failed to capture wake inputs', error: e);
       }
     }
 
@@ -307,7 +307,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         ),
       );
     } catch (e) {
-      _logError('failed to persist system prompt', error: e);
+      logError('failed to persist system prompt', error: e);
       // Non-fatal: continue with execution even if audit fails.
     }
     try {
@@ -348,7 +348,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         ),
       );
     } catch (e) {
-      _logError('failed to persist user message', error: e);
+      logError('failed to persist user message', error: e);
       // Non-fatal: continue with execution even if audit fails.
     }
 
@@ -549,7 +549,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           soulVersionId: templateCtx.soulVersion?.id,
         );
       } catch (e) {
-        _logError('failed to record template provenance', error: e);
+        logError('failed to record template provenance', error: e);
         // Non-fatal: the wake can proceed without provenance tracking.
       }
 
@@ -723,7 +723,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
               toolName: '${TaskAgentReportEditor.auditToolPrefix}_failed',
               errorMessage: editResult.error.runtimeType.toString(),
             );
-            _logError(
+            logError(
               'report editor failed; preserving executor report',
               error: editResult.error,
               stackTrace: editResult.stackTrace,
@@ -760,7 +760,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             toolName: '${TaskAgentReportEditor.auditToolPrefix}_failed',
             errorMessage: e.runtimeType.toString(),
           );
-          _logError(
+          logError(
             'report editor failed; preserving executor report',
             error: e,
             stackTrace: s,
@@ -866,7 +866,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         mutatedEntries: executor.mutatedEntries,
       );
     } catch (e, s) {
-      _logError('wake failed', error: e, stackTrace: s);
+      logError('wake failed', error: e, stackTrace: s);
 
       // Suggestions flushed mid-wake are already committed and stay visible;
       // `WakeOutputWriter` never ran, so nothing else will raise their inbox
@@ -890,7 +890,7 @@ extension TaskAgentExecute on TaskAgentWorkflow {
           ),
         );
       } catch (stateError, s) {
-        _logError(
+        logError(
           'failed to update failure count',
           error: stateError,
           stackTrace: s,

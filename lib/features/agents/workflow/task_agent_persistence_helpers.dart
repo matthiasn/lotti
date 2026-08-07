@@ -38,7 +38,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
         ),
       );
     } catch (e, s) {
-      _logError('failed to persist token usage', error: e, stackTrace: s);
+      logError('failed to persist token usage', error: e, stackTrace: s);
     }
   }
 
@@ -83,7 +83,7 @@ extension TaskAgentPersistenceHelpers on TaskAgentWorkflow {
         await store.deleteEntityEmbeddings(previousReportId);
       }
     } catch (e, s) {
-      _logError('failed to embed agent report', error: e, stackTrace: s);
+      logError('failed to embed agent report', error: e, stackTrace: s);
     }
   }
 }

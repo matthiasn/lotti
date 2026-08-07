@@ -257,6 +257,75 @@ void main() {
       );
 
       test(
+        'a failed stale-watermark write is contained and reported',
+        () async {
+          // The watermark is a hint that the report has drifted, not the report
+          // itself. A failed write must not escape into the notification
+          // listener that triggered it — that stream drives every subscription,
+          // so an error there would stop content gating for all agents.
+          final signalAt = DateTime(2026, 7, 16, 9, 30);
+          final state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: DateTime(2026, 7, 16, 9),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+
+          final logger = MockDomainLogger();
+          when(
+            () => logger.error(
+              any<LogDomain>(),
+              any<Object>(),
+              message: any<String?>(named: 'message'),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).thenAnswer((_) {});
+
+          orchestrator =
+              WakeOrchestrator(
+                  repository: mockRepository,
+                  queue: queue,
+                  runner: runner,
+                  syncEntityWriter: (_) async =>
+                      throw StateError('watermark write failed'),
+                  domainLogger: logger,
+                )
+                ..disableAutomaticUpdatesRuntime('agent-1')
+                ..addSubscription(makeSub());
+          final controller = StreamController<Set<String>>.broadcast();
+
+          await withClock(Clock.fixed(signalAt), () async {
+            await orchestrator.start(controller.stream);
+            controller.add({'entity-1'});
+            await pumpEventQueue();
+          });
+
+          // Reported under the runtime domain, naming the agent by sanitized id
+          // so the diagnostic is actionable without leaking content.
+          verify(
+            () => logger.error(
+              LogDomain.agentRuntime,
+              any<Object>(),
+              message: any<String?>(
+                named: 'message',
+                that: contains('failed to persist stale report watermark'),
+              ),
+              stackTrace: any<StackTrace?>(named: 'stackTrace'),
+            ),
+          ).called(1);
+          // The wake path stayed unaffected.
+          expect(queue.isEmpty, isTrue);
+          await controller.close();
+        },
+      );
+
+      test(
         'requestContentWake marks the report stale without queueing '
         'inference when automatic updates are off',
         () async {
