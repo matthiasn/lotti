@@ -58,8 +58,10 @@ void main() {
       expect(byName[TaskAgentToolNames.updateTaskDueDate], {
         'dueDate': '2026-08-20',
       });
-      // The requested deadline has to actually differ from the seeded one,
-      // or the mutation check would pass without the model doing anything.
+      // The requested deadline has to actually differ from the seeded one, or
+      // the mutation check would pass without the model doing anything. A null
+      // due date would satisfy isNot() while proving nothing, so require one.
+      expect(scenario.currentDueDate, isNotNull);
       expect(scenario.currentDueDate, isNot('2026-08-20'));
     });
 

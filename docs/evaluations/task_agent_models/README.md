@@ -377,12 +377,17 @@ inferable, but a rule only the strongest model infers belongs in the contract.
 
 ### What the failures taught us about the suite
 
-Every one of the nine defects has the same root cause: **substring matching
-standing in for semantic judgement.** It cannot see negation, cannot see
-paraphrase, and fails precisely when a model expresses the right thing in
-unexpected words — which capable models do more often, not less. Two checks
-also contradicted directives the same system prompt issues, so a model was
-penalised for obeying its instructions.
+Five of the nine defects share one root cause: **substring matching standing in
+for semantic judgement.** It cannot see negation, cannot see paraphrase, and
+fails precisely when a model expresses the right thing in unexpected words —
+which capable models do more often, not less.
+
+The other four have separate causes worth naming, because they will not be
+caught by better matching. Two are scenario contracts that contradicted
+directives the same system prompt issues, so a model was penalised for obeying
+its instructions. One is harness fidelity: the runner accepted tools the
+dispatcher rejects. Two are test infrastructure: leaked `HttpOverrides` and a
+timeout that discarded results.
 
 The practical rule for new scenarios: assert mutations through
 `expectedToolCalls`, where the contract is exact, and keep report assertions

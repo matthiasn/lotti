@@ -584,6 +584,26 @@ final Set<String> _knownTaskAgentToolNames = {
   for (final definition in AgentToolRegistry.taskAgentTools) definition.name,
 };
 
+/// Minutes allowed for a live run, from `LOCAL_TASK_AGENT_EVAL_TIMEOUT_MINUTES`.
+///
+/// Rejects non-positive values rather than falling back: a `0` would expire the
+/// run instantly and look like a stalled provider rather than a bad setting.
+int parseLocalTaskAgentEvalTimeoutMinutes(
+  String? value, {
+  int defaultMinutes = 10,
+}) {
+  final trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) return defaultMinutes;
+  final minutes = int.tryParse(trimmed);
+  if (minutes == null || minutes <= 0) {
+    throw FormatException(
+      'LOCAL_TASK_AGENT_EVAL_TIMEOUT_MINUTES must be a positive integer, '
+      'got "$value".',
+    );
+  }
+  return minutes;
+}
+
 /// Whether [toolName] is a tool the task agent actually exposes.
 bool isKnownTaskAgentToolName(String toolName) =>
     _knownTaskAgentToolNames.contains(toolName);
@@ -2668,15 +2688,30 @@ bool _containsAnyTerm(String normalizedText, List<String> terms) {
 /// blacklist scores correct behaviour as a violation. Every candidate model
 /// failed that scenario for this reason alone.
 const _claimNegationCues = [
-  // English
-  'not', "n't", 'no ', 'never', 'cannot', 'without', 'before', 'until',
-  'unless', 'pending', 'remains', 'still', 'yet',
-  // German
-  'nicht', 'kein', 'ohne', 'bevor', 'noch', 'zurückgestellt', 'zurückgestellt',
-  'ausstehend', 'offen',
-  // Spanish
-  'sin ', 'antes', 'aún', 'todavía', 'pendiente',
+  // English negation and deferral.
+  'not', 'no', 'never', 'cannot', "can't", "won't", "isn't", "doesn't",
+  "didn't", 'without', 'before', 'until', 'unless', 'pending', 'remains',
+  'remain', 'still', 'yet', 'future', 'later', 'deferred', 'excluded',
+  // German.
+  'nicht', 'kein', 'keine', 'keinen', 'ohne', 'bevor', 'noch', 'erst',
+  'zurückgestellt', 'zurückgestellte', 'ausstehend', 'offen', 'später',
+  'künftig',
+  // Spanish.
+  'sin', 'antes', 'aún', 'todavía', 'pendiente', 'futuro', 'más',
 ];
+
+/// Matches any cue as a whole word.
+///
+/// Substring matching is far too lenient here: "not" appears inside "notes",
+/// "another" and "notice", so a report claiming "another dashboard was
+/// delivered" would be excused as negated. Unicode-aware letter boundaries
+/// keep "zurückgestellt" and "aún" matchable while closing that hole.
+final RegExp _claimNegationPattern = RegExp(
+  r'(?<![\p{L}])(?:'
+  '${_claimNegationCues.map(RegExp.escape).join('|')}'
+  r')(?![\p{L}])',
+  unicode: true,
+);
 
 /// How much text around a match is inspected for a negation cue.
 ///
@@ -2686,6 +2721,13 @@ const _claimNegationCues = [
 /// clause, narrow enough that a negation in a neighbouring sentence does not
 /// excuse a genuine overclaim.
 const _claimNegationWindow = 60;
+
+/// Whether [claim] is asserted in [text], ignoring occurrences that are negated.
+///
+/// Exposed so the negation rules can be tested directly rather than only
+/// through a scenario's aggregate score.
+bool containsAffirmativeReportClaim(String text, String claim) =>
+    _containsAffirmativeClaim(text.toLowerCase(), claim);
 
 /// Whether [claim] appears in [normalizedText] as an affirmative assertion.
 ///
@@ -2706,7 +2748,7 @@ bool _containsAffirmativeClaim(String normalizedText, String claim) {
     final context =
         '${normalizedText.substring(start, index)} '
         '${normalizedText.substring(end, stop)}';
-    if (!_claimNegationCues.any(context.contains)) return true;
+    if (!_claimNegationPattern.hasMatch(context)) return true;
     index = normalizedText.indexOf(needle, end);
   }
   return false;

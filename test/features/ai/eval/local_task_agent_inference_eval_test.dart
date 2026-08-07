@@ -946,12 +946,43 @@ void main() {
       );
     });
 
-    test('an overclaim about untouched work fails regardless of negation', () {
-      // "underway" stays in forbiddenReportTerms because no negation makes it
-      // acceptable to describe a rotation that has not started.
+    test('a cue inside an unrelated word does not excuse a claim', () {
+      // "notes" contains "not" and "another" contains "not", so substring cue
+      // matching excused genuine overclaims. Whole-word matching closes that.
+      expect(
+        containsAffirmativeReportClaim(
+          'another dashboard was delivered to the admins',
+          'dashboard',
+        ),
+        isTrue,
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'the dashboard mentioned in notes is a future project',
+          'dashboard',
+        ),
+        isFalse,
+        reason: '"future" rules it out; "notes" alone must not',
+      );
+      expect(
+        containsAffirmativeReportClaim(
+          'the fix is not yet validated',
+          'validated',
+        ),
+        isFalse,
+      );
+      expect(
+        containsAffirmativeReportClaim('the fix is validated', 'validated'),
+        isTrue,
+      );
+    });
+
+    test('a deferred-scope report that claims the dashboard fails', () {
+      // Targets the scenario's own forbidden claim rather than a term it no
+      // longer bans: "underway" is accurate for this IN PROGRESS task.
       final result = resultFor(
         'deferred_scope_filter',
-        '{"oneLiner":"Certificate rotation","tldr":"Three certificate steps remain.","content":"The production signing certificate rotation is underway. No dashboard work is included."}',
+        '{"oneLiner":"Certificate rotation","tldr":"Security sent the replacement certificate and Priya granted staging access.","content":"The webhook deliveries verify after the rotation. The administrator analytics dashboard was delivered alongside it."}',
       );
       expect(
         result.passedQualityCheckCount,

@@ -145,12 +145,9 @@ void main() {
     // Override with LOCAL_TASK_AGENT_EVAL_TIMEOUT_MINUTES for longer runs.
     timeout: Timeout(
       Duration(
-        minutes:
-            int.tryParse(
-              Platform.environment['LOCAL_TASK_AGENT_EVAL_TIMEOUT_MINUTES'] ??
-                  '',
-            ) ??
-            10,
+        minutes: parseLocalTaskAgentEvalTimeoutMinutes(
+          Platform.environment['LOCAL_TASK_AGENT_EVAL_TIMEOUT_MINUTES'],
+        ),
       ),
     ),
   );
