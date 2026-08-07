@@ -4,6 +4,7 @@ import 'dart:io';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -17,6 +18,7 @@ import 'package:lotti/features/agents/service/feedback_extraction_service.dart';
 import 'package:lotti/features/agents/service/improver_agent_service.dart';
 import 'package:lotti/features/agents/service/project_activity_monitor.dart';
 import 'package:lotti/features/agents/service/soul_document_service.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/agent_wiring.dart';
 import 'package:lotti/features/agents/state/agent_workflow_providers.dart';
 import 'package:lotti/features/agents/state/project_agent_providers.dart';
@@ -31,8 +33,6 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/state/ai_runtime_settings_controller.dart';
 import 'package:lotti/features/ai/util/profile_seeding_service.dart';
 import 'package:lotti/features/ai/util/seed_tombstone_migration.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
-import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/sync/matrix/sync_event_processor.dart';
 import 'package:lotti/get_it.dart';
@@ -354,29 +354,24 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
     // fire once per cold start and once per hourly tick thereafter. The digest
     // bootstrap can arm a record for an already-past slot when a run was
     // interrupted, which only fires promptly if it exists before the scan.
-    // Read lazily: the day-agent service is not needed to build the manager,
-    // only to run a pass.
+    // Read lazily: the contributors are not needed to build the manager, only
+    // to run a pass. Each contributor contains its own optional failures; what
+    // escapes is logged here rather than aborting the scan, because a repair
+    // that cannot run must not also stop the wakes that are already due.
     beforeCheck: () async {
-      final dayAgents = ref.read(dayAgentServiceProvider);
-      try {
-        await dayAgents.retirePastDayAgents();
-      } catch (e, s) {
-        domainLogger.error(
-          LogDomain.agentRuntime,
-          e,
-          message: 'failed to retire past day agents before wake scan',
-          stackTrace: s,
-        );
-      }
-      try {
-        await dayAgents.ensureCoordinatorDigestWake();
-      } catch (e, s) {
-        domainLogger.error(
-          LogDomain.agentRuntime,
-          e,
-          message: 'failed to repair coordinator digest before wake scan',
-          stackTrace: s,
-        );
+      for (final maintenance in ref.read(agentRuntimeMaintenanceProvider)) {
+        try {
+          await maintenance.beforeWakeScan();
+        } catch (e, s) {
+          domainLogger.error(
+            LogDomain.agentRuntime,
+            e,
+            message:
+                'failed pre-scan maintenance for '
+                '${maintenance.runtimeType} before wake scan',
+            stackTrace: s,
+          );
+        }
       }
     },
   );
@@ -582,9 +577,14 @@ Future<void> agentInitialization(Ref ref) async {
   // of one full error per persisted agent, then remains a provider failure so
   // Riverpod refresh/retry can rerun the idempotent restoration pass.
   try {
-    await Future.wait([
+    // Contributors sit where day restoration used to, between task and project.
+    // `Future.wait` builds its futures in list order and all three passes call
+    // `restorePendingWake` on the one shared orchestrator, so the position is
+    // observable — and this refactor has no reason to move it.
+    await Future.wait<void>([
       taskAgentService.restoreSubscriptions(),
-      ref.read(dayAgentServiceProvider).restoreSubscriptions(),
+      for (final maintenance in ref.read(agentRuntimeMaintenanceProvider))
+        maintenance.restoreSubscriptions(),
       ref.read(projectAgentServiceProvider).restoreSubscriptions(),
     ]);
   } catch (error, stackTrace) {

@@ -142,6 +142,8 @@ dependency_overrides:
   rxdart: ^0.28.0
 
 dev_dependencies:
+  # Parses Dart directives in test/architecture/feature_import_direction_test.dart.
+  analyzer: ^10.2.0
   arb_utils: ^0.11.0
   archive: ^4.0.7
   build_runner: ^2.5.4

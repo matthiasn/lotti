@@ -9,8 +9,14 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
+import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     hide aiConfigRepositoryProvider;
+import 'package:lotti/features/daily_os_next/agents/prompt/day_prompt_log_wraps.dart';
+import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_providers.dart';
+import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
@@ -216,6 +222,15 @@ Future<ProfileContext> bootstrapProfileServices(
 /// the Matrix stack is never constructed there, and an accidental resolution
 /// should fail loudly (UnimplementedError) instead of silently no-opping —
 /// every sync surface is expected to gate on [syncFeatureAvailableProvider].
+///
+/// This is also where the agent runtime learns about the agent *kinds* other
+/// features own (`agentWakeRunnersProvider` and friends). `features/agents`
+/// cannot import those features without recreating the dependency cycle
+/// between them, so the composition root — the one place allowed to see both
+/// sides — supplies them. A kind whose override is missing here is simply
+/// absent at runtime: its wakes fall through to the task-agent default and its
+/// prompt records reconstruct unsectioned, so
+/// `test/app_bootstrap_test.dart` pins these registrations.
 List<Override> buildProviderOverrides(ProfileContext context) {
   return [
     profileContextProvider.overrideWithValue(context),
@@ -227,5 +242,18 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
     outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),
     aiConfigRepositoryProvider.overrideWithValue(getIt<AiConfigRepository>()),
+    // Daily OS plugs its day agent into the shared runtime.
+    agentWakeRunnersProvider.overrideWith(
+      (ref) => ref.watch(dayAgentWakeRunnersProvider),
+    ),
+    agentRuntimeMaintenanceProvider.overrideWith(
+      (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
+    ),
+    promptLogWrapRenderersProvider.overrideWithValue(
+      dayPromptLogWrapRenderers,
+    ),
+    dailyOsSetupSheetLauncherProvider.overrideWithValue(
+      DailyOsInferenceSetupSheet.show,
+    ),
   ];
 }

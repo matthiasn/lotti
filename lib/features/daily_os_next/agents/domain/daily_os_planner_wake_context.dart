@@ -1,4 +1,4 @@
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 
 /// Explicit day-workspace context for one Daily OS planner wake (ADR 0022).
 ///

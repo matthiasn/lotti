@@ -192,7 +192,9 @@ class HabitsController extends Notifier<HabitsState> {
         .where((item) => !completedToday.contains(item.id))
         .sorted(habitSorter);
 
-    final openNow = openHabits.where((item) => showHabit(item, now: now)).toList();
+    final openNow = openHabits
+        .where((item) => showHabit(item, now: now))
+        .toList();
     final pendingLater = openHabits
         .where((item) => !showHabit(item, now: now))
         .toList();

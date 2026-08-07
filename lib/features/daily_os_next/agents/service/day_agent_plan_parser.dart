@@ -1,9 +1,9 @@
+import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_plan.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_capture_service.dart'
     show DayAgentCaptureException;
 import 'package:uuid/uuid.dart';

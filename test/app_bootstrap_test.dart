@@ -3,12 +3,21 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/app_bootstrap.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
+import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
+import 'package:lotti/features/agents/workflow/prompt_record.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
+import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
+import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
@@ -27,6 +36,8 @@ import 'package:path/path.dart' as p;
 
 import 'helpers/db_settle.dart';
 import 'helpers/entity_factories.dart';
+import 'mocks/mocks.dart';
+import 'widget_test_utils.dart';
 
 /// Recursive snapshot of a directory subtree: relative path -> file length.
 /// [exclude] prunes subtrees (e.g. the guest worlds container).
@@ -173,8 +184,9 @@ void main() {
         expect(getIt<OutboxService>(), isA<InertOutboxService>());
 
         // The provider bridge omits matrixServiceProvider in guest mode:
-        // 7 overrides instead of the real profile's 8.
-        expect(buildProviderOverrides(context), hasLength(7));
+        // 11 overrides instead of the real profile's 12. Which providers those
+        // are is asserted in the 'agent runtime registrations' group below.
+        expect(buildProviderOverrides(context), hasLength(11));
 
         // A representative write lands in the guest world only.
         final task = TestTaskFactory.create(id: 'guest-task-1');
@@ -235,8 +247,8 @@ void main() {
         File(p.join(osRoot.path, 'matrix', 'lotti_sync.db')).existsSync(),
         isTrue,
       );
-      // ...and the bridge carries all 8 overrides including Matrix.
-      expect(buildProviderOverrides(context), hasLength(8));
+      // ...and the bridge carries the Matrix override too.
+      expect(buildProviderOverrides(context), hasLength(12));
 
       // The startup node-profile broadcast reaches the outbox: real sync
       // wiring, end to end, without any network.
@@ -388,5 +400,132 @@ void main() {
         expect(await getIt<VectorClockService>().getHost(), crashHost);
       },
     );
+  });
+
+  /// The agent-runtime half of [buildProviderOverrides].
+  ///
+  /// The registries in `agent_runtime_registry.dart` default to empty so
+  /// `features/agents` need not import the features that own each agent kind.
+  /// That makes this bridge load-bearing in a way nothing else catches: a
+  /// dropped override is not a compile error, and not a test failure anywhere
+  /// near the code it breaks — day wakes would quietly fall through to the
+  /// task-agent default, day prompt records would reconstruct unsectioned, and
+  /// the Daily OS setup row would render permanently disabled.
+  ///
+  /// These live here, beside the rest of `app_bootstrap.dart`'s coverage, so a
+  /// change to the override list runs them by mirrored path.
+  group('agent runtime registrations', () {
+    // buildProviderOverrides resolves its getIt singletons eagerly, so the
+    // bridge's own dependencies must exist before it can be built at all. The
+    // outer setUp has already reset getIt.
+    setUp(() async {
+      await setUpTestGetIt(
+        additionalSetup: () {
+          getIt
+            ..registerSingleton<Maintenance>(MockMaintenance())
+            ..registerSingleton<SyncDatabase>(MockSyncDatabase())
+            ..registerSingleton<OutboxService>(MockOutboxService())
+            ..registerSingleton<AiConfigRepository>(MockAiConfigRepository())
+            ..registerSingleton<MatrixService>(MockMatrixService());
+        },
+      );
+    });
+
+    // Resets getIt before the outer tearDown runs, so its `settlePendingDbWork`
+    // probe skips the mock JournalDb registered here — that probe expects a real
+    // drift connection and a mock cannot answer it.
+    tearDown(tearDownTestGetIt);
+
+    /// A real (non-guest) profile context — the superset of overrides.
+    ProfileContext realContext() => ProfileContext.forProfile(
+      profile: Profile.realDefault(),
+      root: Directory.systemTemp,
+    );
+
+    /// A container wired exactly as the app's root ProviderScope is, with the
+    /// day-agent service stubbed.
+    ///
+    /// That leaf is stubbed rather than built because these tests assert *which
+    /// providers the bridge wires together*, not what the day agent does — and
+    /// constructing the real service would pull in the whole agent database.
+    ProviderContainer containerFor(ProfileContext context) {
+      final container = ProviderContainer(
+        overrides: [
+          ...buildProviderOverrides(context),
+          dayAgentServiceProvider.overrideWithValue(MockDayAgentService()),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('registers the day_agent wake runner', () {
+      // Without this the shared wake executor finds no runner for the kind and
+      // silently runs a day agent through the task-agent workflow.
+      final runners = containerFor(
+        realContext(),
+      ).read(agentWakeRunnersProvider);
+
+      expect(runners.keys, contains(AgentKinds.dayAgent));
+      expect(runners[AgentKinds.dayAgent], isNotNull);
+    });
+
+    test('registers Daily OS runtime maintenance', () {
+      // Without this no day agent is ever retired and the coordinator digest is
+      // never repaired, so an overdue wake re-fires on every tick.
+      final maintenance = containerFor(
+        realContext(),
+      ).read(agentRuntimeMaintenanceProvider);
+
+      expect(maintenance, hasLength(1));
+      expect(maintenance.single, isA<DailyOsRuntimeMaintenance>());
+    });
+
+    test('registers both day prompt-log wrap renderers', () {
+      // Without these, reconstructing a day wake's prompt for the history UI
+      // loses its `<day_log>` framing (or its legacy JSON line) and splices the
+      // log in verbatim instead.
+      final renderers = containerFor(
+        realContext(),
+      ).read(promptLogWrapRenderersProvider);
+
+      expect(renderers.keys, <String>{
+        promptRecordWrapDayLogSection,
+        promptRecordWrapDayLogJsonLine,
+      });
+    });
+
+    test('registers the Daily OS setup-sheet launcher', () {
+      // Null here disables the "current setup" row on every day agent.
+      expect(
+        containerFor(realContext()).read(dailyOsSetupSheetLauncherProvider),
+        isNotNull,
+      );
+    });
+
+    test('registers all four in a guest profile too', () {
+      // Guest worlds drop the Matrix override but run the same agent runtime,
+      // so the registrations must not be gated on sync capability.
+      final container = containerFor(
+        ProfileContext.forProfile(
+          profile: Profile(
+            id: 'guest-test',
+            type: ProfileType.guest,
+            name: 'Demo',
+            dirName: 'guest-test',
+            createdAt: DateTime.utc(2026),
+          ),
+          root: Directory.systemTemp,
+        ),
+      );
+
+      expect(
+        container.read(agentWakeRunnersProvider).keys,
+        contains(AgentKinds.dayAgent),
+      );
+      expect(container.read(agentRuntimeMaintenanceProvider), hasLength(1));
+      expect(container.read(promptLogWrapRenderersProvider), hasLength(2));
+      expect(container.read(dailyOsSetupSheetLauncherProvider), isNotNull);
+    });
   });
 }

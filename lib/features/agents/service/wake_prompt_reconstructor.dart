@@ -1,16 +1,14 @@
-import 'dart:convert';
-
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/projection/capture_events.dart';
 import 'package:lotti/features/agents/projection/decision_events.dart';
 import 'package:lotti/features/agents/projection/input_events.dart';
 import 'package:lotti/features/agents/sync/agent_log_compactor.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
-import 'package:lotti/features/daily_os_next/agents/prompt/day_agent_prompt_sections.dart';
-import 'package:lotti/features/daily_os_next/agents/workflow/day_capture_events.dart';
 import 'package:lotti/services/domain_logging.dart';
 
 /// Reconstructs a wake's full prompt from a v2 prompt record (ADR 0020):
@@ -29,13 +27,25 @@ import 'package:lotti/services/domain_logging.dart';
 /// semantically auditable rather than forensically byte-exact.
 class WakePromptReconstructor {
   /// Creates the reconstructor over the agent log.
-  WakePromptReconstructor({required this.syncService, this.domainLogger});
+  ///
+  /// [wrapRenderers] carries the per-wrap-kind splices contributed by the
+  /// features that own those payload formats (see
+  /// [promptLogWrapRenderersProvider]). Defaults to empty, which reconstructs
+  /// every record with [renderPlainPromptLogWrap].
+  WakePromptReconstructor({
+    required this.syncService,
+    this.domainLogger,
+    this.wrapRenderers = const <String, PromptLogWrapRenderer>{},
+  });
 
   /// Repository access (reads only).
   final AgentSyncService syncService;
 
   /// Optional structured logger.
   final DomainLogger? domainLogger;
+
+  /// Per-wrap-kind splices contributed by the owning features.
+  final Map<String, PromptLogWrapRenderer> wrapRenderers;
 
   AgentRepository get _repository => syncService.repository;
 
@@ -78,19 +88,27 @@ class WakePromptReconstructor {
       until: record.until,
     );
 
-    return switch (record.wrap) {
-      // Current day-agent payload: re-render the log inside its tagged section,
-      // neutralizing forged boundaries exactly as the live wake did.
-      promptRecordWrapDayLogSection =>
-        '${record.head}$dayLogSectionOpenMarker'
-            '${neutralizePromptTags(log)}'
-            '$dayLogSectionCloseMarker${record.tail}',
-      // Legacy day-agent payload (pre tagged-plaintext conversion): re-encode
-      // the log as the `"dayLog"` JSON field line so old records still render.
-      promptRecordWrapDayLogJsonLine =>
-        '${record.head}  "dayLog": ${jsonEncode(log)},\n${record.tail}',
-      _ => record.head + log + record.tail,
-    };
+    // The splice is the owning feature's payload format, resolved through the
+    // renderer registry so this service stays free of any one agent kind's
+    // prompt structure.
+    final renderer = wrapRenderers[record.wrap];
+    if (renderer == null) {
+      if (record.wrap != promptRecordWrapPlain) {
+        domainLogger?.error(
+          LogDomain.agentWorkflow,
+          StateError('no prompt log wrap renderer for "${record.wrap}"'),
+          message:
+              'prompt reconstruction: unrenderable wrap kind, '
+              'splicing verbatim',
+        );
+      }
+      return renderPlainPromptLogWrap(
+        head: record.head,
+        log: log,
+        tail: record.tail,
+      );
+    }
+    return renderer(head: record.head, log: log, tail: record.tail);
   }
 
   Future<List<InputEvent>> _decisionEvents(String agentId) async {

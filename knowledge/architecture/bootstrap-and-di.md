@@ -5,7 +5,7 @@ description: How the app starts, which singletons GetIt owns, and why registrati
 resource: ../../lib/get_it.dart
 tags: [architecture, startup, dependency-injection, get-it, riverpod]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-01T16:29:35Z }
+generated: { by: claude-code/opus-5, at: 2026-08-06T15:25:00Z }
 stale_after: 2027-01-11
 sources:
   - id: main
@@ -49,6 +49,19 @@ carries a generation-keyed `ValueKey` so that an in-app profile switch (see
 and rebinds every provider against the freshly registered generation. In
 guest worlds `matrixServiceProvider` is deliberately left unoverridden — the
 Matrix stack does not exist there, and accidental resolution fails loudly.
+
+It carries a second, different kind of override. Beyond bridging getIt
+singletons, `buildProviderOverrides()` is where features that own an *agent
+kind* register it with the shared agent runtime — wake runners, runtime
+maintenance hooks, prompt-log wrap renderers and the Daily OS setup-sheet
+launcher. Those registries live in `features/agents` and default to empty
+precisely so that feature need not import the features that fill them; the
+composition root is the only place permitted to see both sides. See
+[agent kinds](../features/agents/overview.md#how-an-owning-feature-plugs-a-kind-in).
+Unlike a missing getIt bridge, a missing registration here fails **silently** —
+an unregistered kind falls through to the task-agent workflow — so the
+registrations are pinned by
+`test/app_bootstrap_test.dart` (the `agent runtime registrations` group).
 
 ```dart
 ProviderScope(

@@ -4,7 +4,7 @@
 // 2026-07-22_day_agent_directive_status_protocol.md.
 
 import 'package:collection/collection.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_plan_models.dart';
+import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:meta/meta.dart';
 
 /// Where a directive commitment originates (ADR 0032 §2).

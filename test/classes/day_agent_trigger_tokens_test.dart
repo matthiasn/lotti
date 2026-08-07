@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_trigger_tokens.dart';
+import 'package:lotti/classes/day_agent_trigger_tokens.dart';
 
 void main() {
   group('token round-trips', () {

@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/daily_os_next/agents/domain/day_agent_identity.dart';
+import 'package:lotti/classes/day_agent_identity.dart';
 
 void main() {
   group('perDayAgentId', () {
