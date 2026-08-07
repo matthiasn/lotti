@@ -631,9 +631,16 @@ int parseLocalTaskAgentEvalTimeoutMinutes(
   return minutes;
 }
 
-/// Whether [toolName] is a tool the task agent actually exposes.
+/// Whether [toolName] is a tool the task agent actually dispatches.
+///
+/// Resolved through the alias map first, because the app does: a call to
+/// `set_task_estimate` reaches `update_task_estimate` and applies. Answering
+/// "unknown" here for a name the app honours would fail a model for work it
+/// actually completes. A name that survives resolution unchanged and is still
+/// outside the registry — a genuine fabrication like `delete_everything` — is
+/// unknown here exactly as it is there.
 bool isKnownTaskAgentToolName(String toolName) =>
-    _knownTaskAgentToolNames.contains(toolName);
+    _knownTaskAgentToolNames.contains(resolveTaskAgentToolAlias(toolName));
 
 /// The tool response the eval harness returns for a call.
 ///
@@ -1851,23 +1858,59 @@ double? parseLocalTaskAgentEvalTemperature(
 
 enum LocalTaskAgentEvalToolCallPhase { main, reportPass }
 
+/// A tool call as the model emitted it, normalised the way the app normalises
+/// it before anything acts on it.
+///
+/// [name] is the resolved tool name and [jsonObjectArguments] decodes
+/// double-encoded collections, because `TaskAgentStrategy.processToolCalls`
+/// applies `resolveTaskAgentToolAlias` and `decodeStringifiedJsonArguments` to
+/// every call before deferred routing, batch explosion or execution sees it.
+/// Scoring the raw values instead would fail a model for a call the app
+/// completes — the mirror image of the defect that had this harness confirming
+/// fabricated tool names, and one that lands hardest on exactly the small
+/// models the recovery was written for.
+///
+/// [rawName] keeps what the model actually sent, so a run can report how often
+/// a model needed recovering rather than hiding it inside the score.
 class LocalTaskAgentEvalToolCall {
-  const LocalTaskAgentEvalToolCall({
-    required this.name,
+  LocalTaskAgentEvalToolCall({
+    required String name,
     required this.argumentsJson,
     this.phase = LocalTaskAgentEvalToolCallPhase.main,
-  });
+  }) : rawName = name,
+       name = resolveTaskAgentToolAlias(name);
 
+  /// The resolved tool name — what the app would actually dispatch.
   final String name;
+
+  /// The tool name exactly as the model emitted it.
+  final String rawName;
+
   final String argumentsJson;
   final LocalTaskAgentEvalToolCallPhase phase;
+
+  /// Whether the model reached for a near-miss name the app accepts anyway.
+  bool get recoveredAlias => name != rawName;
 
   Map<String, dynamic>? get jsonObjectArguments {
     try {
       final decoded = jsonDecode(argumentsJson);
-      return decoded is Map<String, dynamic> ? decoded : null;
+      return decoded is Map<String, dynamic>
+          ? decodeStringifiedJsonArguments(decoded)
+          : null;
     } catch (_) {
       return null;
+    }
+  }
+
+  /// Whether a collection argument arrived double-encoded as a JSON string.
+  bool get recoveredStringifiedArguments {
+    try {
+      final decoded = jsonDecode(argumentsJson);
+      if (decoded is! Map<String, dynamic>) return false;
+      return !identical(decodeStringifiedJsonArguments(decoded), decoded);
+    } catch (_) {
+      return false;
     }
   }
 
@@ -1882,8 +1925,10 @@ class LocalTaskAgentEvalToolCall {
   Map<String, Object?> toJson() {
     return {
       'name': name,
+      if (recoveredAlias) 'rawName': rawName,
       'argumentsJson': argumentsJson,
       'argumentsJsonValid': hasJsonObjectArguments,
+      if (recoveredStringifiedArguments) 'recoveredStringifiedArguments': true,
       'phase': phase.name,
     };
   }
@@ -2623,18 +2668,20 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
       _toolCalls.add(recorded);
 
       final args = recorded.jsonObjectArguments;
-      // Mirror TaskToolDispatcher: an unregistered name is an error the model
-      // can recover from, not a success. Confirming a fabricated tool made the
-      // harness measure something the app never does — DeepSeek V4 Flash 0731
-      // invented both `set_task_estimate` and `update_task_status` and was
-      // told each one worked.
-      final isKnownTool = isKnownTaskAgentToolName(call.function.name);
+      // Mirror TaskToolDispatcher in both directions. An unregistered name is
+      // an error the model can recover from, not a success — confirming a
+      // fabricated tool made the harness measure something the app never does.
+      // But a near-miss the app resolves must be answered the way the app
+      // answers it, so `recorded.name` (resolved) drives this, not the raw
+      // name: telling a model its accepted call was unknown is the same defect
+      // pointing the other way.
+      final isKnownTool = isKnownTaskAgentToolName(recorded.name);
       final response = localTaskAgentEvalToolResponse(
-        toolName: call.function.name,
+        toolName: recorded.name,
         hasValidJsonArguments: args != null,
       );
       if (isKnownTool &&
-          call.function.name == TaskAgentToolNames.updateReport &&
+          recorded.name == TaskAgentToolNames.updateReport &&
           args != null &&
           _hasNonEmptyString(args, 'oneLiner') &&
           _hasNonEmptyString(args, 'tldr') &&

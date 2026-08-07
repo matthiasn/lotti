@@ -165,7 +165,7 @@ void main() {
   test(
     'report editor material state keeps values and removes tool handles',
     () {
-      final state = buildLocalTaskAgentEvalMaterialTaskState(const [
+      final state = buildLocalTaskAgentEvalMaterialTaskState([
         LocalTaskAgentEvalToolCall(
           name: TaskAgentToolNames.setTaskTitle,
           argumentsJson: '{"title":"Launch beta"}',
@@ -213,18 +213,18 @@ void main() {
         'newChecklistItems': ['Ask Ben', 'Review beta', 'Ship beta'],
       });
       expect(jsonEncode(state), isNot(contains('private-id')));
-      expect(buildLocalTaskAgentEvalMaterialTaskState(const []), isEmpty);
+      expect(buildLocalTaskAgentEvalMaterialTaskState([]), isEmpty);
     },
   );
 
   test('eval contracts serialize report and markdown details', () {
     final scenario = defaultLocalTaskAgentWakeScenario();
-    const nestedToolCall = LocalTaskAgentEvalToolCall(
+    final nestedToolCall = LocalTaskAgentEvalToolCall(
       name: TaskAgentToolNames.setTaskTitle,
       argumentsJson:
           '{"title":"Validate efficient task-agent model","nested":{"items":[1,{"ok":true}]}}',
     );
-    const invalidToolCall = LocalTaskAgentEvalToolCall(
+    final invalidToolCall = LocalTaskAgentEvalToolCall(
       name: TaskAgentToolNames.updateTaskEstimate,
       argumentsJson: '[]',
     );
@@ -238,7 +238,7 @@ void main() {
       thoughtsTokens: 12,
       cachedInputTokens: 34,
       finalContent: 'The model stopped before writing a valid report.',
-      toolCalls: const [nestedToolCall, invalidToolCall],
+      toolCalls: [nestedToolCall, invalidToolCall],
       failureCategory: LocalTaskAgentEvalFailureCategory.invalidToolArguments,
     );
     final report = LocalTaskAgentEvalReport(
@@ -704,7 +704,7 @@ void main() {
       scenario: scenario,
       provider: provider,
       latencyMs: 10,
-      toolCalls: const [
+      toolCalls: [
         LocalTaskAgentEvalToolCall(
           name: TaskAgentToolNames.addMultipleChecklistItems,
           argumentsJson:
@@ -783,10 +783,10 @@ void main() {
 
   group('tool responses match the production dispatcher', () {
     test('a fabricated tool name is answered with an error, not success', () {
-      // Both names were invented by DeepSeek V4 Flash 0731 on 2026-08-07; the
-      // real tools are update_task_estimate and set_task_status. The harness
-      // used to reply "accepted", so the model never learned it had guessed.
-      for (final fabricated in ['set_task_estimate', 'update_task_status']) {
+      // A name that is not a near-miss of anything real: the app has no way to
+      // route it, so neither does the harness. Confirming it would make the
+      // harness measure something the app never does.
+      for (final fabricated in ['delete_everything', 'archive_task']) {
         expect(isKnownTaskAgentToolName(fabricated), isFalse);
         final response = localTaskAgentEvalToolResponse(
           toolName: fabricated,
@@ -795,6 +795,75 @@ void main() {
         expect(response, contains('Unknown tool: $fabricated'));
         expect(response, isNot(contains('accepted')));
       }
+    });
+
+    test('a near-miss the app resolves is accepted here too', () {
+      // DeepSeek V4 Flash 0731 invented both of these on 2026-08-07. They are
+      // now aliases the app resolves and applies, so answering "unknown" would
+      // fail a model for a call that actually completes — the same defect as
+      // confirming a fabrication, pointing the other way.
+      for (final alias in ['set_task_estimate', 'update_task_status']) {
+        expect(isKnownTaskAgentToolName(alias), isTrue);
+        expect(
+          localTaskAgentEvalToolResponse(
+            toolName: alias,
+            hasValidJsonArguments: true,
+          ),
+          isNot(contains('Unknown tool')),
+        );
+      }
+    });
+
+    test('a recovered call is scored under its resolved name', () {
+      final call = LocalTaskAgentEvalToolCall(
+        name: 'update_task_status',
+        argumentsJson: jsonEncode({'status': 'BLOCKED'}),
+      );
+
+      // Expectation matching keys off `name`, so the scenario expecting
+      // set_task_status matches without knowing the model spelled it wrong.
+      expect(call.name, TaskAgentToolNames.setTaskStatus);
+      expect(call.rawName, 'update_task_status');
+      expect(call.recoveredAlias, isTrue);
+      // The recovery stays visible in the artifact rather than vanishing.
+      expect(call.toJson()['rawName'], 'update_task_status');
+    });
+
+    test('a double-encoded collection argument matches after decoding', () {
+      // Qwen3.6 35B A3B sent exactly this shape, with correct contents.
+      final call = LocalTaskAgentEvalToolCall(
+        name: TaskAgentToolNames.updateChecklistItems,
+        argumentsJson: jsonEncode({
+          'items': jsonEncode([
+            {'id': 'item-1', 'isChecked': true},
+          ]),
+        }),
+      );
+
+      expect(call.recoveredStringifiedArguments, isTrue);
+      expect(
+        call.containsExpectedArguments({
+          'items': [
+            {'id': 'item-1', 'isChecked': true},
+          ],
+        }),
+        isTrue,
+        reason: 'The app applies this call, so the harness must score it',
+      );
+      expect(call.toJson()['recoveredStringifiedArguments'], isTrue);
+    });
+
+    test('a genuine string argument is left alone', () {
+      final call = LocalTaskAgentEvalToolCall(
+        name: TaskAgentToolNames.setTaskTitle,
+        argumentsJson: jsonEncode({'title': 'Restock the squid pallet'}),
+      );
+
+      expect(call.recoveredStringifiedArguments, isFalse);
+      expect(
+        call.containsExpectedArguments({'title': 'Restock the squid pallet'}),
+        isTrue,
+      );
     });
 
     test('the real counterparts are recognised', () {
@@ -860,7 +929,7 @@ void main() {
         scenario: scenario,
         provider: provider,
         latencyMs: 10,
-        toolCalls: const [
+        toolCalls: [
           LocalTaskAgentEvalToolCall(
             name: TaskAgentToolNames.updateReport,
             argumentsJson:
@@ -892,7 +961,7 @@ void main() {
         scenario: scenario,
         provider: provider,
         latencyMs: 10,
-        toolCalls: const [
+        toolCalls: [
           LocalTaskAgentEvalToolCall(
             name: TaskAgentToolNames.addMultipleChecklistItems,
             argumentsJson:
@@ -919,7 +988,7 @@ void main() {
         scenario: scenario,
         provider: provider,
         latencyMs: 10,
-        toolCalls: const [
+        toolCalls: [
           LocalTaskAgentEvalToolCall(
             name: TaskAgentToolNames.addMultipleChecklistItems,
             argumentsJson:
@@ -965,7 +1034,7 @@ void main() {
 
     // The German scenario also scores checklist arguments, so a report-only
     // fixture would fail for reasons unrelated to negation handling.
-    const germanChecklist = [
+    final germanChecklist = [
       LocalTaskAgentEvalToolCall(
         name: TaskAgentToolNames.addMultipleChecklistItems,
         argumentsJson:
@@ -1079,7 +1148,7 @@ void main() {
       scenario: scenario,
       provider: provider,
       latencyMs: 10,
-      toolCalls: const [
+      toolCalls: [
         LocalTaskAgentEvalToolCall(
           name: TaskAgentToolNames.addMultipleChecklistItems,
           argumentsJson:
@@ -1124,7 +1193,7 @@ void main() {
       scenario: scenario,
       provider: provider,
       latencyMs: 10,
-      toolCalls: const [
+      toolCalls: [
         LocalTaskAgentEvalToolCall(
           name: TaskAgentToolNames.addMultipleChecklistItems,
           argumentsJson:
