@@ -200,7 +200,8 @@ async def get_stats(
 @router.get("/bundles/{bundle_id}/usage", tags=["stats"])
 async def get_usage(bundle_id: str) -> dict:
     """Fetch live per-user activity and media usage from the Synapse admin API."""
-    user = await container.get_repository().get(bundle_id)
+    repository = container.get_repository()
+    user = await repository.get(bundle_id)
     if user is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=f"Unknown bundle {bundle_id}"
@@ -221,6 +222,13 @@ async def get_usage(bundle_id: str) -> dict:
     # would silently disagree with RETENTION_DAYS and purge more than the
     # configured policy allows.
     service_default = container.get_retention_service().default_retention_days
+
+    # `media_length_bytes` is what the homeserver holds *now*, which drops to
+    # near zero after a sweep. Adding back what previous purges reclaimed gives
+    # the volume the account has produced over its life — otherwise a two-year
+    # heavy user reads as lighter than someone who joined last week.
+    purged_bytes, purged_files = await repository.purged_totals(bundle_id)
+
     return {
         "bundle_id": bundle_id,
         "user_mxid": user.user_mxid,
@@ -229,6 +237,10 @@ async def get_usage(bundle_id: str) -> dict:
         "deactivated": activity.deactivated,
         "media_count": media.media_count,
         "media_length_bytes": media.media_length_bytes,
+        "purged_media_bytes": purged_bytes,
+        "purged_media_count": purged_files,
+        "lifetime_media_bytes": media.media_length_bytes + purged_bytes,
+        "lifetime_media_count": media.media_count + purged_files,
         "active_days": user.active_days,
         "retention_days_default": service_default,
         "retention_days_effective": (

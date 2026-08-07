@@ -580,3 +580,31 @@ def test_the_middleware_refuses_contradictory_prefix_configuration():
             admin_path_prefixes=["/api/v1/bundles"],
             client_path_prefixes=["/api/v1/client"],
         )
+
+
+def test_usage_reports_lifetime_volume_across_purges(client):
+    """After a sweep the live figure is near zero; lifetime is the real measure."""
+    created = _create(client)
+    bundle_id = created["user"]["bundle_id"]
+    client.post(f"/api/v1/bundles/{bundle_id}/purge", headers=ADMIN_AUTH)
+
+    body = client.get(f"/api/v1/bundles/{bundle_id}/usage", headers=ADMIN_AUTH).json()
+
+    assert body["purged_media_bytes"] > 0
+    assert body["lifetime_media_bytes"] == (
+        body["media_length_bytes"] + body["purged_media_bytes"]
+    )
+    assert body["lifetime_media_count"] == (
+        body["media_count"] + body["purged_media_count"]
+    )
+
+
+def test_usage_lifetime_equals_current_before_any_purge(client):
+    created = _create(client)
+
+    body = client.get(
+        f"/api/v1/bundles/{created['user']['bundle_id']}/usage", headers=ADMIN_AUTH
+    ).json()
+
+    assert body["purged_media_bytes"] == 0
+    assert body["lifetime_media_bytes"] == body["media_length_bytes"]

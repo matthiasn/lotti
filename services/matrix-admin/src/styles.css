@@ -493,6 +493,15 @@ tr:not(.detail-row) > td:last-child {
   margin-top: 4px;
 }
 
+/* Sits under a figure to say where it came from — sentence case, so it reads
+   as a note rather than as a second label. */
+.stat__hint {
+  font-size: 11px;
+  color: var(--color-text-tertiary);
+  margin-top: 4px;
+  line-height: 1.35;
+}
+
 /* ---------- Utilities ---------- */
 
 .visually-hidden {

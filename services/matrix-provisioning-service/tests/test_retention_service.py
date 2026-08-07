@@ -384,3 +384,70 @@ async def test_a_user_without_an_override_gets_the_service_default(
     result = await service.purge_room(user.bundle_id)
 
     assert result["retention_days"] == 45
+
+
+# -- lifetime volume --------------------------------------------------------
+
+
+async def test_a_purge_records_what_it_reclaimed(
+    repository, credentials, mock_transport
+):
+    """Once the files are gone this row is the only evidence they existed."""
+    user = await _redeemed_user(repository, username="volume_user")
+    service = _service(repository, credentials, mock_transport)
+
+    result = await service.purge_room(user.bundle_id)
+
+    run = (await repository.list_purges(user.bundle_id))[0]
+    assert run["bytes_freed"] == result["bytes_freed"] > 0
+    assert run["media_deleted"] == result["media_deleted"] > 0
+
+
+async def test_reclaimed_volume_accumulates_across_purges(
+    repository, credentials, mock_transport
+):
+    """Lifetime is a sum over runs, so a second sweep must add to the first."""
+    user = await _redeemed_user(repository, username="repeat_user")
+    service = _service(repository, credentials, mock_transport)
+
+    first = await service.purge_room(user.bundle_id)
+    second = await service.purge_room(user.bundle_id)
+
+    total_bytes, total_files = await repository.purged_totals(user.bundle_id)
+    assert total_bytes == first["bytes_freed"] + second["bytes_freed"]
+    assert total_files == first["media_deleted"] + second["media_deleted"]
+
+
+async def test_a_history_only_purge_records_no_reclaimed_volume(
+    repository, credentials, mock_transport
+):
+    """Nothing was freed, so nothing may be added to the lifetime total."""
+    user = await _redeemed_user(repository, username="history_only_user")
+    service = _service(repository, credentials, mock_transport)
+
+    await service.purge_room(user.bundle_id, include_media=False)
+
+    assert await repository.purged_totals(user.bundle_id) == (0, 0)
+
+
+async def test_a_user_who_was_never_purged_has_a_zero_total(repository):
+    user = await seed_user(repository, username="untouched_user")
+
+    assert await repository.purged_totals(user.bundle_id) == (0, 0)
+
+
+async def test_a_failed_media_deletion_records_no_volume(repository, credentials):
+    """A partial failure must not book bytes that were never actually freed."""
+    user = await _redeemed_user(repository, username="failed_media_user")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if request.method == "DELETE" and "/media" in str(request.url):
+            return httpx.Response(500, json={"errcode": "M_UNKNOWN"})
+        return synapse_handler(request)
+
+    service = _service(repository, credentials, httpx.MockTransport(handler))
+
+    with pytest.raises(SynapseUnavailableException):
+        await service.purge_room(user.bundle_id)
+
+    assert await repository.purged_totals(user.bundle_id) == (0, 0)

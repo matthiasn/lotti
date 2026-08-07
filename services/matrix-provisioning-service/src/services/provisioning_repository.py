@@ -72,6 +72,11 @@ CREATE TABLE IF NOT EXISTS bundle_events (
 
 CREATE INDEX IF NOT EXISTS idx_events_bundle ON bundle_events (bundle_id, id);
 
+-- `media_deleted` and `bytes_freed` are what makes a purge more than an event:
+-- once media is gone the live figures no longer show that the account ever held
+-- it, and on a journalling app the media *is* the data the user created. These
+-- rows are the only surviving record of that volume, and they cannot be
+-- reconstructed after the fact.
 CREATE TABLE IF NOT EXISTS purge_runs (
     purge_id        TEXT PRIMARY KEY,
     bundle_id       TEXT NOT NULL,
@@ -80,6 +85,8 @@ CREATE TABLE IF NOT EXISTS purge_runs (
     status          TEXT NOT NULL,
     started_at      TEXT NOT NULL,
     completed_at    TEXT,
+    media_deleted   INTEGER NOT NULL DEFAULT 0,
+    bytes_freed     INTEGER NOT NULL DEFAULT 0,
     FOREIGN KEY (bundle_id) REFERENCES provisioned_users (bundle_id) ON DELETE CASCADE
 );
 
@@ -112,14 +119,29 @@ class ProvisioningRepository:
         conn.execute("PRAGMA foreign_keys = ON")
         return conn
 
-    #: Columns added after the first release, with the DDL to add them. SQLite
-    #: has no "ADD COLUMN IF NOT EXISTS", so they are applied conditionally.
-    _MIGRATIONS = {
-        "retention_days": "ALTER TABLE provisioned_users ADD COLUMN retention_days INTEGER",
-        "retention_exempt": (
-            "ALTER TABLE provisioned_users "
-            "ADD COLUMN retention_exempt INTEGER NOT NULL DEFAULT 0"
-        ),
+    #: Columns added after the first release, keyed by table, with the DDL to
+    #: add them. SQLite has no "ADD COLUMN IF NOT EXISTS", so they are applied
+    #: conditionally against the live schema.
+    _MIGRATIONS: dict[str, dict[str, str]] = {
+        "provisioned_users": {
+            "retention_days": (
+                "ALTER TABLE provisioned_users ADD COLUMN retention_days INTEGER"
+            ),
+            "retention_exempt": (
+                "ALTER TABLE provisioned_users "
+                "ADD COLUMN retention_exempt INTEGER NOT NULL DEFAULT 0"
+            ),
+        },
+        "purge_runs": {
+            "media_deleted": (
+                "ALTER TABLE purge_runs "
+                "ADD COLUMN media_deleted INTEGER NOT NULL DEFAULT 0"
+            ),
+            "bytes_freed": (
+                "ALTER TABLE purge_runs "
+                "ADD COLUMN bytes_freed INTEGER NOT NULL DEFAULT 0"
+            ),
+        },
     }
 
     def _ensure_db(self) -> None:
@@ -128,14 +150,15 @@ class ProvisioningRepository:
         conn = sqlite3.connect(self.db_path)
         try:
             conn.executescript(_SCHEMA)
-            existing = {
-                row[1]
-                for row in conn.execute("PRAGMA table_info(provisioned_users)").fetchall()
-            }
-            for column, ddl in self._MIGRATIONS.items():
-                if column not in existing:
-                    conn.execute(ddl)
-                    logger.info("Migrated provisioned_users: added %s", column)
+            for table, columns in self._MIGRATIONS.items():
+                existing = {
+                    row[1]
+                    for row in conn.execute(f"PRAGMA table_info({table})").fetchall()
+                }
+                for column, ddl in columns.items():
+                    if column not in existing:
+                        conn.execute(ddl)
+                        logger.info("Migrated %s: added %s", table, column)
             conn.commit()
         finally:
             conn.close()
@@ -768,6 +791,55 @@ class ProvisioningRepository:
         await asyncio.to_thread(
             self._record_purge_sync, purge_id, bundle_id, room_id, purge_up_to_ts
         )
+
+    def _record_purge_volume_sync(
+        self, purge_id: str, media_deleted: int, bytes_freed: int
+    ) -> None:
+        conn = self._connect()
+        try:
+            conn.execute(
+                "UPDATE purge_runs SET media_deleted = ?, bytes_freed = ? "
+                "WHERE purge_id = ?",
+                (media_deleted, bytes_freed, purge_id),
+            )
+            conn.commit()
+        finally:
+            conn.close()
+
+    async def record_purge_volume(
+        self, purge_id: str, media_deleted: int, bytes_freed: int
+    ) -> None:
+        """Record how much a purge actually reclaimed.
+
+        Written after the media deletion rather than with the run itself,
+        because the figure is only known once the files are gone and the usage
+        has been re-read.
+        """
+        await asyncio.to_thread(
+            self._record_purge_volume_sync, purge_id, media_deleted, bytes_freed
+        )
+
+    def _purged_totals_sync(self, bundle_id: str) -> tuple[int, int]:
+        conn = self._connect()
+        try:
+            row = conn.execute(
+                "SELECT COALESCE(SUM(bytes_freed), 0) AS b, "
+                "COALESCE(SUM(media_deleted), 0) AS n "
+                "FROM purge_runs WHERE bundle_id = ?",
+                (bundle_id,),
+            ).fetchone()
+            return int(row["b"]), int(row["n"])
+        finally:
+            conn.close()
+
+    async def purged_totals(self, bundle_id: str) -> tuple[int, int]:
+        """Return ``(bytes_freed, media_deleted)`` across every purge of a bundle.
+
+        Summed from the purge runs rather than kept as a counter on the user
+        row, so the total cannot drift out of step with the history it is
+        derived from.
+        """
+        return await asyncio.to_thread(self._purged_totals_sync, bundle_id)
 
     def _update_purge_sync(self, purge_id: str, status: str) -> None:
         conn = self._connect()

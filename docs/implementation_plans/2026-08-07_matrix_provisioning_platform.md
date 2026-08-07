@@ -327,7 +327,7 @@ system of record.
 
 ## 9. What is built vs. what is not
 
-**Built and tested (213 backend + 46 frontend + 33 CLI tests passing):**
+**Built and tested (225 backend + 48 frontend + 33 CLI tests passing):**
 shared provisioning core; bundle codec; SQLite persistence and state machine;
 bundle creation, listing, update, revocation; redemption poller; stats; usage;
 retention/purge; admin SPA with provision, roster and overview pages;
@@ -338,6 +338,11 @@ Docker + compose.
 - **Client rotation callback wiring.** The server route exists but is
   unaddressable (see §4); no client calls it. Documented only.
 - Per-user message counts — needs a Synapse room walk or DB access.
+- A usage *curve* over time. Lifetime volume is tracked as a running total
+  (current media + everything past purges reclaimed, summed from `purge_runs`),
+  which answers "how much has this user produced" but not "how fast". A growth
+  curve needs periodic sampling into its own table; the redemption poller cannot
+  supply it because it stops visiting an account once the bundle is `rotated`.
 - Substack CSV import; payment provider integration.
 - Self-service portal (Phase 4); session-based admin auth.
 

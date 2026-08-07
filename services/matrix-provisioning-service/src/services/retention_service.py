@@ -182,6 +182,14 @@ class RetentionService:
                     f"failed for {user.user_mxid}: {exc}"
                 ) from exc
 
+        # The live figures shrink the moment the files are gone, so this row is
+        # the only surviving evidence that the account ever held them. On a
+        # journalling app that media is the data the user created, and nothing
+        # can reconstruct the volume after the fact.
+        await self._repository.record_purge_volume(
+            handle.purge_id, media_deleted, bytes_freed
+        )
+
         logger.info(
             "Reclaimed for %s: purge %s, %s media file(s), %s bytes (%sd retention)",
             user.user_mxid,

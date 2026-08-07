@@ -64,6 +64,12 @@ export interface Usage {
   deactivated: boolean;
   media_count: number;
   media_length_bytes: number;
+  /** Reclaimed by past purges — gone from the homeserver, kept as a record. */
+  purged_media_bytes: number;
+  purged_media_count: number;
+  /** Current + purged: what the account has produced over its life. */
+  lifetime_media_bytes: number;
+  lifetime_media_count: number;
   active_days: number | null;
   /** The service-wide window, for users with no override of their own. */
   retention_days_default: number;

@@ -6,6 +6,7 @@ provisioning-tracking feature rests on.
 
 from __future__ import annotations
 
+import sqlite3
 from datetime import datetime, timedelta, timezone
 
 import pytest
@@ -16,6 +17,7 @@ from src.core.exceptions import (
     UsernameAlreadyProvisionedException,
 )
 from src.core.models import BundleEventType, BundleStatus, PaymentStatus
+from src.services.provisioning_repository import ProvisioningRepository
 from tests.conftest import seed_user
 
 pytestmark = pytest.mark.anyio
@@ -494,3 +496,79 @@ async def test_the_capped_trail_is_still_oldest_first(repository):
     events = await repository.get_events(user.bundle_id, limit=4)
 
     assert [e.id for e in events] == sorted(e.id for e in events)
+
+
+#: The schema as it shipped before retention and purge-volume tracking. Kept
+#: verbatim rather than derived from the live one, so this test still describes
+#: a real old database once the current schema moves on again.
+_LEGACY_SCHEMA = """
+CREATE TABLE provisioned_users (
+    bundle_id           TEXT PRIMARY KEY,
+    username            TEXT NOT NULL,
+    user_mxid           TEXT NOT NULL,
+    home_server         TEXT NOT NULL,
+    server_name         TEXT NOT NULL,
+    room_id             TEXT NOT NULL,
+    display_name        TEXT,
+    status              TEXT NOT NULL,
+    payment_status      TEXT NOT NULL,
+    bundle_fingerprint  TEXT NOT NULL,
+    created_at          TEXT NOT NULL,
+    first_login_at      TEXT,
+    rotated_at          TEXT,
+    revoked_at          TEXT,
+    last_seen_at        TEXT,
+    last_polled_at      TEXT,
+    notes               TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE purge_runs (
+    purge_id        TEXT PRIMARY KEY,
+    bundle_id       TEXT NOT NULL,
+    room_id         TEXT NOT NULL,
+    purge_up_to_ts  INTEGER NOT NULL,
+    status          TEXT NOT NULL,
+    started_at      TEXT NOT NULL,
+    completed_at    TEXT
+);
+"""
+
+
+async def test_an_older_database_gains_every_added_column(tmp_path):
+    """Opening a pre-migration database must upgrade it, not crash on startup.
+
+    Covers both tables: the migration mechanism now spans more than one, and a
+    per-table `PRAGMA table_info` that only ever looked at `provisioned_users`
+    would silently skip the purge columns.
+    """
+    db = tmp_path / "legacy.db"
+    conn = sqlite3.connect(str(db))
+    conn.executescript(_LEGACY_SCHEMA)
+    conn.commit()
+    conn.close()
+
+    ProvisioningRepository(str(db))
+
+    conn = sqlite3.connect(str(db))
+    try:
+        users = {r[1] for r in conn.execute("PRAGMA table_info(provisioned_users)")}
+        purges = {r[1] for r in conn.execute("PRAGMA table_info(purge_runs)")}
+    finally:
+        conn.close()
+    assert {"retention_days", "retention_exempt"} <= users
+    assert {"media_deleted", "bytes_freed"} <= purges
+
+
+async def test_a_migrated_database_is_usable(tmp_path):
+    """Migration is only a success if the new columns actually work."""
+    db = tmp_path / "legacy.db"
+    conn = sqlite3.connect(str(db))
+    conn.executescript(_LEGACY_SCHEMA)
+    conn.commit()
+    conn.close()
+
+    repository = ProvisioningRepository(str(db))
+    user = await seed_user(repository, username="migrated_user")
+    await repository.record_purge("p-1", user.bundle_id, "!r:example.com", 1)
+    await repository.record_purge_volume("p-1", media_deleted=4, bytes_freed=9000)
+
+    assert await repository.purged_totals(user.bundle_id) == (9000, 4)

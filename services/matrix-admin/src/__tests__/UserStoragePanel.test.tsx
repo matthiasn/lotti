@@ -45,6 +45,10 @@ const USAGE = {
   active_days: 5,
   retention_days_default: 30,
   retention_days_effective: 30,
+  purged_media_bytes: 200_000,
+  purged_media_count: 1,
+  lifetime_media_bytes: 750_000,
+  lifetime_media_count: 4,
 };
 
 describe("formatBytes", () => {
@@ -289,6 +293,38 @@ describe("UserStoragePanel", () => {
     await screen.findByText("537 KiB");
 
     expect(screen.getByText(/service default \(90d\)/)).toBeInTheDocument();
+  });
+
+  it("counts purged media towards a lifetime total", async () => {
+    // After a sweep the live figure is near zero. Without the purged bytes a
+    // two-year heavy user reads as lighter than someone who joined last week.
+    getUsage.mockResolvedValue({
+      ...USAGE,
+      media_count: 1,
+      media_length_bytes: 90_000,
+      purged_media_bytes: 12_000_000,
+      purged_media_count: 240,
+      lifetime_media_bytes: 12_090_000,
+      lifetime_media_count: 241,
+    });
+    render(<UserStoragePanel user={user()} />);
+
+    expect(await screen.findByText("88 KiB")).toBeInTheDocument();
+    expect(screen.getByText("12 MiB")).toBeInTheDocument();
+    expect(screen.getByText(/11 MiB purged in 240 file\(s\)/)).toBeInTheDocument();
+  });
+
+  it("says plainly when nothing has been purged yet", async () => {
+    getUsage.mockResolvedValue({
+      ...USAGE,
+      purged_media_bytes: 0,
+      purged_media_count: 0,
+      lifetime_media_bytes: 550_000,
+      lifetime_media_count: 3,
+    });
+    render(<UserStoragePanel user={user()} />);
+
+    expect(await screen.findByText("nothing purged yet")).toBeInTheDocument();
   });
 
   it("surfaces a usage load failure", async () => {

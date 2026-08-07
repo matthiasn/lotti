@@ -145,6 +145,35 @@ missing media is repaired by a broadcast any peer holding the blob may answer.
 The retention window is therefore the bound on how long a device can be offline
 and still resynchronise from the server alone.
 
+A manual purge with no explicit window applies the **user's own** policy, the
+same one the sweep would use. Falling back to the service default here would let
+one "purge now" click delete far more than a pinned user is meant to keep.
+
+### Purging destroys the record of what a user produced
+
+Media *is* the data on a journalling app, so once a sweep runs the live figures
+no longer show that the account ever held it — a two-year heavy user reads as
+lighter than someone who joined last week. Each purge therefore records what it
+actually reclaimed (`media_deleted`, `bytes_freed` on `purge_runs`), and
+`/bundles/{id}/usage` reports:
+
+| Field | Meaning |
+|---|---|
+| `media_length_bytes` | What the homeserver holds **now** |
+| `purged_media_bytes` | Reclaimed by past purges, summed over the runs |
+| `lifetime_media_bytes` | The two added together |
+
+Summed from the runs rather than kept as a counter, so the total cannot drift
+from the history it comes from. Two limits worth knowing: it counts bytes *at
+rest on the server*, not what a device holds, and it only sees deletions this
+service performed — media removed out of band is invisible to it. This figure is
+also not reconstructible after the fact, which is why it is recorded at purge
+time rather than derived later.
+
+For a growth *curve* rather than a running total you would need periodic
+sampling; the redemption poller cannot supply it, because it stops visiting an
+account once the bundle is `rotated`.
+
 ### Per-user overrides
 
 | Field | Meaning |

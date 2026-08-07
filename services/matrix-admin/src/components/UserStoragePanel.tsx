@@ -113,8 +113,20 @@ export default function UserStoragePanel({
 
   return (
     <div className="storage-panel">
+      {/* "Media" is what the homeserver holds right now, which a sweep drives
+          to near zero. "Lifetime" adds back what past purges reclaimed, so a
+          long-standing heavy user does not read as lighter than a newcomer. */}
       <div className="stat-grid stat-grid--compact">
-        <Figure label="Media" value={formatBytes(usage.media_length_bytes)} />
+        <Figure label="Media now" value={formatBytes(usage.media_length_bytes)} />
+        <Figure
+          label="Lifetime"
+          value={formatBytes(usage.lifetime_media_bytes)}
+          hint={
+            usage.purged_media_bytes > 0
+              ? `${formatBytes(usage.purged_media_bytes)} purged in ${usage.purged_media_count} file(s)`
+              : "nothing purged yet"
+          }
+        />
         <Figure label="Files" value={String(usage.media_count)} />
         <Figure label="Devices" value={String(usage.device_count)} />
         <Figure
@@ -230,11 +242,20 @@ export default function UserStoragePanel({
   );
 }
 
-function Figure({ label, value }: { label: string; value: string }) {
+function Figure({
+  label,
+  value,
+  hint,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+}) {
   return (
     <div className="stat">
       <div className="stat__value">{value}</div>
       <div className="stat__label">{label}</div>
+      {hint && <div className="stat__hint">{hint}</div>}
     </div>
   );
 }
