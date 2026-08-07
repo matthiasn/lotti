@@ -576,10 +576,16 @@ void main() {
         (scenario) => scenario.id.startsWith('active_deployment_constraint'),
       );
 
+      // The deferred dashboard may be named to rule it out, so it is a claim
+      // rather than a banned string; overclaiming status stays absolute.
       expect(
-        deferred.forbiddenReportTerms,
+        deferred.forbiddenReportClaims,
         containsAll(['dashboard', 'analytics']),
       );
+      // "underway" is accurate for this IN PROGRESS task, so it must not be
+      // forbidden in any form.
+      expect(deferred.forbiddenReportTerms, isNot(contains('underway')));
+      expect(deferred.forbiddenReportClaims, isNot(contains('underway')));
       expect(deferred.userMessage, contains('as checklist items'));
       expect(
         deferred.requiredToolArgumentTermGroups[TaskAgentToolNames
@@ -697,6 +703,261 @@ void main() {
     expect(result.passedQualityCheckCount, 11);
     expect(result.qualityScore, 1);
     expect(result.reportToolCall?.name, TaskAgentToolNames.updateReport);
+  });
+
+  group('tool responses match the production dispatcher', () {
+    test('a fabricated tool name is answered with an error, not success', () {
+      // Both names were invented by DeepSeek V4 Flash 0731 on 2026-08-07; the
+      // real tools are update_task_estimate and set_task_status. The harness
+      // used to reply "accepted", so the model never learned it had guessed.
+      for (final fabricated in ['set_task_estimate', 'update_task_status']) {
+        expect(isKnownTaskAgentToolName(fabricated), isFalse);
+        final response = localTaskAgentEvalToolResponse(
+          toolName: fabricated,
+          hasValidJsonArguments: true,
+        );
+        expect(response, contains('Unknown tool: $fabricated'));
+        expect(response, isNot(contains('accepted')));
+      }
+    });
+
+    test('the real counterparts are recognised', () {
+      for (final real in [
+        TaskAgentToolNames.updateTaskEstimate,
+        TaskAgentToolNames.setTaskStatus,
+        TaskAgentToolNames.updateReport,
+      ]) {
+        expect(isKnownTaskAgentToolName(real), isTrue);
+        expect(
+          localTaskAgentEvalToolResponse(
+            toolName: real,
+            hasValidJsonArguments: true,
+          ),
+          'Eval harness accepted $real.',
+        );
+      }
+    });
+
+    test('invalid arguments to a real tool still report bad JSON', () {
+      expect(
+        localTaskAgentEvalToolResponse(
+          toolName: TaskAgentToolNames.updateReport,
+          hasValidJsonArguments: false,
+        ),
+        contains('invalid JSON'),
+      );
+    });
+  });
+
+  group('checks agree with the shipped report contract', () {
+    test('adding the investigation the context asks for is allowed', () {
+      // Verbatim from the 2026-08-08 Kimi K3 run. The QA note says
+      // "Investigation is needed; no root cause yet", so creating that item is
+      // the requested behaviour; only undoing the user's checkmark is banned.
+      final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+        (scenario) => scenario.id.startsWith('user_completed_item_resurfaced'),
+      );
+      expect(
+        scenario.allowedExtraToolNames,
+        contains(TaskAgentToolNames.addMultipleChecklistItems),
+      );
+      expect(
+        scenario.forbiddenToolNames,
+        contains(TaskAgentToolNames.updateChecklistItems),
+      );
+      expect(
+        scenario.expectedToolCalls,
+        isEmpty,
+        reason: 'The investigation item is permitted, never required',
+      );
+    });
+
+    test('a report may omit the priority it correctly set', () {
+      // Verbatim shape from the 2026-08-07 Kimi K3 run: every metadata
+      // mutation was correct, and the report omitted "P1" because the report
+      // directive forbids narrating metadata changes.
+      final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+        (scenario) => scenario.id.startsWith('metadata_explicit'),
+      );
+      final result = LocalTaskAgentEvalCaseResult(
+        profile: profile,
+        scenario: scenario,
+        provider: provider,
+        latencyMs: 10,
+        toolCalls: const [
+          LocalTaskAgentEvalToolCall(
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson:
+                '{"oneLiner":"App-shaped eval of candidate model due July 4","tldr":"The candidate task-agent model needs a real app-shaped eval before it can be trusted; the reference model already passes.","content":"Due 2026-07-04 with a 150 minute estimate. Compare the candidate against the reference model."}',
+          ),
+        ],
+        failureCategory: LocalTaskAgentEvalFailureCategory.none,
+      );
+
+      expect(
+        scenario.requiredReportTermGroups.any(
+          (group) => group.contains('p1'),
+        ),
+        isFalse,
+        reason: 'Echoing the priority contradicts the report directive',
+      );
+      expect(result.passedQualityCheckCount, result.qualityCheckCount);
+    });
+
+    test('checklist wording may say "empty inference profiles"', () {
+      // Verbatim from the 2026-08-08 Kimi K3 run. All six actions were
+      // correct; the check demanded the substring "empty profile" and
+      // "empty inference profiles" does not contain it.
+      final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+        (scenario) => scenario.id.startsWith('implicit_workflow_plan'),
+      );
+      final result = LocalTaskAgentEvalCaseResult(
+        profile: profile,
+        scenario: scenario,
+        provider: provider,
+        latencyMs: 10,
+        toolCalls: const [
+          LocalTaskAgentEvalToolCall(
+            name: TaskAgentToolNames.addMultipleChecklistItems,
+            argumentsJson:
+                '{"items":[{"title":"Implement fix so empty inference profiles are no longer selectable"},{"title":"Create pull request"},{"title":"Address Gemini review comments"},{"title":"Address code review comments"},{"title":"Merge the pull request"},{"title":"Create a release on all platforms"}]}',
+          ),
+          LocalTaskAgentEvalToolCall(
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson:
+                '{"oneLiner":"Fix profile seeding, then PR through release","tldr":"Profile seeding is fixed, then a pull request, both reviews, merge and release follow.","content":"Profile seeding fix first, then the pull request, the reviews, the merge, and the release."}',
+          ),
+        ],
+        failureCategory: LocalTaskAgentEvalFailureCategory.none,
+      );
+
+      expect(result.passedQualityCheckCount, result.qualityCheckCount);
+    });
+
+    test('checklist wording may name the fix instead of "implement"', () {
+      final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+        (scenario) => scenario.id.startsWith('implicit_workflow_plan'),
+      );
+      final result = LocalTaskAgentEvalCaseResult(
+        profile: profile,
+        scenario: scenario,
+        provider: provider,
+        latencyMs: 10,
+        toolCalls: const [
+          LocalTaskAgentEvalToolCall(
+            name: TaskAgentToolNames.addMultipleChecklistItems,
+            argumentsJson:
+                '{"items":[{"title":"Fix inference profile seeding so empty profiles are no longer selectable"},{"title":"Create a pull request"},{"title":"Address Gemini review comments"},{"title":"Address code review comments"},{"title":"Merge the pull request"},{"title":"Create a release on all platforms"}]}',
+          ),
+          LocalTaskAgentEvalToolCall(
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson:
+                '{"oneLiner":"Fix profile seeding, then PR through release","tldr":"Profile seeding is cleaned up, then a pull request, both reviews, merge and release follow.","content":"Profile seeding fix first, then the pull request, the reviews, the merge, and the release."}',
+          ),
+        ],
+        failureCategory: LocalTaskAgentEvalFailureCategory.none,
+      );
+
+      expect(result.passedQualityCheckCount, result.qualityCheckCount);
+    });
+  });
+
+  group('negation-aware forbidden claims', () {
+    LocalTaskAgentEvalCaseResult resultFor(
+      String scenarioPrefix,
+      String report, {
+      List<LocalTaskAgentEvalToolCall> extraToolCalls = const [],
+    }) {
+      final scenario = defaultMeliousTaskAgentEvalScenarios().firstWhere(
+        (scenario) => scenario.id.startsWith(scenarioPrefix),
+      );
+      return LocalTaskAgentEvalCaseResult(
+        profile: profile,
+        scenario: scenario,
+        provider: provider,
+        latencyMs: 10,
+        toolCalls: [
+          ...extraToolCalls,
+          LocalTaskAgentEvalToolCall(
+            name: TaskAgentToolNames.updateReport,
+            argumentsJson: report,
+          ),
+        ],
+        failureCategory: LocalTaskAgentEvalFailureCategory.none,
+      );
+    }
+
+    // The German scenario also scores checklist arguments, so a report-only
+    // fixture would fail for reasons unrelated to negation handling.
+    const germanChecklist = [
+      LocalTaskAgentEvalToolCall(
+        name: TaskAgentToolNames.addMultipleChecklistItems,
+        argumentsJson:
+            '{"items":[{"title":"Export reparieren"},{"title":"Testdaten von Sam anfordern"},{"title":"Regressionstest ergaenzen"}]}',
+      ),
+    ];
+
+    // Verbatim from the 2026-08-07 run: every candidate model failed this
+    // scenario solely because it said the fix was NOT validated.
+    const negatedReports = [
+      r'{"oneLiner":"Sync risk returned","tldr":"Duplicate sync events reappeared after reconnecting two devices.","content":"## Blockers\\nThe recurrence means the fix is not yet validated. Until the root cause is found the sync risk stays open, so investigation is needed."}',
+      r'{"oneLiner":"Sync duplicates resurfaced","tldr":"Duplicate sync events reappeared once after reconnecting.","content":"## Blockers\\nInvestigation is needed before the fix can be considered validated. The risk remains open."}',
+      r'{"oneLiner":"Sync duplicates recurred","tldr":"Duplicate sync events reappeared after a reconnect.","content":"## Blockers\\nThere is no root cause yet, so the fix cannot be considered validated. Investigation is needed."}',
+    ];
+
+    for (final (index, report) in negatedReports.indexed) {
+      test('negated completion wording passes (sample ${index + 1})', () {
+        final result = resultFor('user_completed_item_resurfaced', report);
+        expect(
+          result.passedQualityCheckCount,
+          result.qualityCheckCount,
+          reason: 'A report stating the fix is not validated is correct here',
+        );
+      });
+    }
+
+    test('an affirmative completion claim still fails', () {
+      final result = resultFor(
+        'user_completed_item_resurfaced',
+        r'{"oneLiner":"Sync fix done","tldr":"Duplicate sync events reappeared but the fix is validated.","content":"## Progress\nThe fix is validated and the sync risk is closed."}',
+      );
+      expect(
+        result.passedQualityCheckCount,
+        lessThan(result.qualityCheckCount),
+      );
+    });
+
+    test('deferred scope may be named to rule it out, not to claim it', () {
+      final ruledOut = resultFor(
+        'messy_german_transcript',
+        '{"oneLiner":"Export und Regressionstest","tldr":"Export, Testdaten von Sam und Regressionstest sind erfasst.","content":"Die Newsletter-Idee wurde explizit zurückgestellt und ist nicht Teil der Arbeit."}',
+        extraToolCalls: germanChecklist,
+      );
+      expect(ruledOut.passedQualityCheckCount, ruledOut.qualityCheckCount);
+
+      final claimed = resultFor(
+        'messy_german_transcript',
+        '{"oneLiner":"Export und Newsletter","tldr":"Export, Testdaten von Sam und Regressionstest laufen.","content":"Der Newsletter wird als nächster Schritt vorbereitet."}',
+        extraToolCalls: germanChecklist,
+      );
+      expect(
+        claimed.passedQualityCheckCount,
+        lessThan(claimed.qualityCheckCount),
+      );
+    });
+
+    test('an overclaim about untouched work fails regardless of negation', () {
+      // "underway" stays in forbiddenReportTerms because no negation makes it
+      // acceptable to describe a rotation that has not started.
+      final result = resultFor(
+        'deferred_scope_filter',
+        '{"oneLiner":"Certificate rotation","tldr":"Three certificate steps remain.","content":"The production signing certificate rotation is underway. No dashboard work is included."}',
+      );
+      expect(
+        result.passedQualityCheckCount,
+        lessThan(result.qualityCheckCount),
+      );
+    });
   });
 
   test('implicit plan scoring accepts outcome-equivalent checklist wording', () {

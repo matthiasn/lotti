@@ -12,11 +12,17 @@ import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 
 import 'support/local_task_agent_inference_eval.dart';
+import 'support/penguin_task_agent_eval_scenarios.dart';
 
 void main() {
   test(
     'writes a local task-agent inference report',
     () async {
+      // The test binding installs a mock HttpOverrides whose client instantly
+      // fails every request with HTTP 400 — clear it so the eval can reach a
+      // real provider.
+      HttpOverrides.global = null;
+
       final container = ProviderContainer();
       addTearDown(container.dispose);
       final conversationSubscription = container.listen(
@@ -58,14 +64,18 @@ void main() {
       final useEvolvedDirectiveSuite =
           Platform.environment['LOCAL_TASK_AGENT_EVAL_EVOLVED_DIRECTIVES'] ==
           '1';
+      final usePenguinSuite =
+          Platform.environment['LOCAL_TASK_AGENT_EVAL_PENGUIN_LANGUAGES'] ==
+          '1';
+      final variants = requestedVariants.isEmpty
+          ? const [LocalTaskAgentEvalPromptVariant.production]
+          : requestedVariants;
       final defaultScenarios = isMeliousMatrix
-          ? useEvolvedDirectiveSuite
+          ? usePenguinSuite
+                ? penguinTaskAgentEvalScenarios(variants: variants)
+                : useEvolvedDirectiveSuite
                 ? evolvedReportDirectiveTaskAgentEvalScenarios()
-                : defaultMeliousTaskAgentEvalScenarios(
-                    variants: requestedVariants.isEmpty
-                        ? const [LocalTaskAgentEvalPromptVariant.production]
-                        : requestedVariants,
-                  )
+                : defaultMeliousTaskAgentEvalScenarios(variants: variants)
           : [defaultLocalTaskAgentWakeScenario()];
       final scenarios = selectLocalTaskAgentEvalScenarios(
         defaultScenarios,
@@ -130,7 +140,19 @@ void main() {
     skip: Platform.environment['LOTTI_LOCAL_TASK_AGENT_EVAL_LIVE'] == '1'
         ? null
         : 'Set LOTTI_LOCAL_TASK_AGENT_EVAL_LIVE=1 to run local oMLX inference.',
-    timeout: const Timeout(Duration(minutes: 10)),
+    // A full matrix is profiles x scenarios x prompt variants, and single
+    // cases have been observed stalling for minutes behind provider queues.
+    // Override with LOCAL_TASK_AGENT_EVAL_TIMEOUT_MINUTES for longer runs.
+    timeout: Timeout(
+      Duration(
+        minutes:
+            int.tryParse(
+              Platform.environment['LOCAL_TASK_AGENT_EVAL_TIMEOUT_MINUTES'] ??
+                  '',
+            ) ??
+            10,
+      ),
+    ),
   );
 }
 
