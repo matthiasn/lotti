@@ -202,6 +202,7 @@ class LocalTaskAgentEvalScenario {
     this.currentPriority,
     this.requiredReportTermGroups = const [],
     this.forbiddenReportTerms = const [],
+    this.forbiddenReportClaims = const [],
     this.requiredToolArgumentTermGroups = const {},
     this.forbiddenToolNames = const {},
     this.forbiddenToolArgumentTerms = const {},
@@ -233,6 +234,15 @@ class LocalTaskAgentEvalScenario {
   /// Terms that must never appear in the user-visible report payload.
   final List<String> forbiddenReportTerms;
 
+  /// Claims the report must not assert, but may name in order to negate.
+  ///
+  /// Use this for anything a correct report legitimately mentions while ruling
+  /// it out — unfinished validation, explicitly deferred scope. Reserve
+  /// [forbiddenReportTerms] for strings that must not appear at all, such as
+  /// internal identifiers, and for overclaims like "underway" that no negation
+  /// makes acceptable.
+  final List<String> forbiddenReportClaims;
+
   /// Semantic term groups required in a specific tool's arguments.
   final Map<String, List<List<String>>> requiredToolArgumentTermGroups;
 
@@ -260,6 +270,7 @@ class LocalTaskAgentEvalScenario {
       'currentPriority': currentPriority,
       'requiredReportTermGroups': requiredReportTermGroups,
       'forbiddenReportTerms': forbiddenReportTerms,
+      'forbiddenReportClaims': forbiddenReportClaims,
       'requiredToolArgumentTermGroups': requiredToolArgumentTermGroups,
       'forbiddenToolNames': forbiddenToolNames.toList()..sort(),
       'forbiddenToolArgumentTerms': forbiddenToolArgumentTerms,
@@ -322,8 +333,14 @@ LocalTaskAgentEvalScenario _implicitWorkflowPlanScenario(
     ],
     requiredToolArgumentTermGroups: const {
       TaskAgentToolNames.addMultipleChecklistItems: [
-        ['profile seeding', 'empty profile'],
-        ['implement'],
+        // "empty inference profiles are no longer selectable" says the same
+        // thing as "empty profile"; the item has to be about the profiles,
+        // not phrased a particular way.
+        ['profile seeding', 'empty profile', 'inference profile'],
+        // "Fix the seeding so empty profiles are no longer selectable" is the
+        // implementation step; demanding the literal verb passed only because
+        // an earlier fixture happened to say "implementation".
+        ['implement', 'fix', 'clean up'],
         ['pull request', 'pr'],
         ['gemini'],
         ['code review'],
@@ -456,6 +473,7 @@ LocalTaskAgentEvalScenario _withEvolvedReportDirective(
       ...source.forbiddenReportTerms,
       ...forbiddenDirectiveTerms,
     ],
+    forbiddenReportClaims: source.forbiddenReportClaims,
     requiredToolArgumentTermGroups: source.requiredToolArgumentTermGroups,
     forbiddenToolNames: source.forbiddenToolNames,
     forbiddenToolArgumentTerms: source.forbiddenToolArgumentTerms,
@@ -555,6 +573,58 @@ LocalTaskAgentEvalProfile parseLocalTaskAgentEvalProfile(String value) {
     providerModelId: model,
     modelClass: name,
   );
+}
+
+/// Every tool name the task agent actually exposes.
+///
+/// The harness answers anything outside this set the way the production
+/// dispatcher does, so a model that guesses a name gets the same chance to
+/// correct itself here as it would in the app.
+final Set<String> _knownTaskAgentToolNames = {
+  for (final definition in AgentToolRegistry.taskAgentTools) definition.name,
+};
+
+/// Minutes allowed for a live run, from `LOCAL_TASK_AGENT_EVAL_TIMEOUT_MINUTES`.
+///
+/// Rejects non-positive values rather than falling back: a `0` would expire the
+/// run instantly and look like a stalled provider rather than a bad setting.
+int parseLocalTaskAgentEvalTimeoutMinutes(
+  String? value, {
+  int defaultMinutes = 10,
+}) {
+  final trimmed = value?.trim();
+  if (trimmed == null || trimmed.isEmpty) return defaultMinutes;
+  final minutes = int.tryParse(trimmed);
+  if (minutes == null || minutes <= 0) {
+    throw FormatException(
+      'LOCAL_TASK_AGENT_EVAL_TIMEOUT_MINUTES must be a positive integer, '
+      'got "$value".',
+    );
+  }
+  return minutes;
+}
+
+/// Whether [toolName] is a tool the task agent actually exposes.
+bool isKnownTaskAgentToolName(String toolName) =>
+    _knownTaskAgentToolNames.contains(toolName);
+
+/// The tool response the eval harness returns for a call.
+///
+/// Unknown names produce the production dispatcher's error rather than a
+/// success, so a model that guesses a tool name can recover here exactly as it
+/// would in the app.
+String localTaskAgentEvalToolResponse({
+  required String toolName,
+  required bool hasValidJsonArguments,
+}) {
+  if (!isKnownTaskAgentToolName(toolName)) {
+    return 'Unknown tool: $toolName. '
+        'Tool $toolName is not registered for the Task Agent.';
+  }
+  if (!hasValidJsonArguments) {
+    return 'Eval harness rejected invalid JSON arguments.';
+  }
+  return 'Eval harness accepted $toolName.';
 }
 
 List<ChatCompletionTool> buildLocalTaskAgentEvalTools({
@@ -667,9 +737,12 @@ LocalTaskAgentEvalScenario _metadataScenario(
     userMessage: base.userMessage,
     expectedToolCalls: base.expectedToolCalls,
     promptVariant: variant,
+    // The priority mutation is asserted through expectedToolCalls. Requiring
+    // the prose to echo "P1" as well contradicts the report directive, which
+    // forbids narrating metadata changes, and cost a model that set the
+    // priority correctly.
     requiredReportTermGroups: const [
       ['candidate', 'task-agent'],
-      ['p1'],
       ['2026-07-04', 'july 4'],
       ['150', '2.5', 'two and a half'],
       ['reference'],
@@ -843,7 +916,10 @@ LocalTaskAgentEvalScenario _messyGermanTranscriptScenario(
       ['testdaten'],
       ['regression'],
     ],
-    forbiddenReportTerms: const ['newsletter'],
+    // The newsletter must not become work, but a report may name it to record
+    // that the user deferred it ("Newsletter-Idee wurde zurückgestellt"). The
+    // checklist ban below stays absolute.
+    forbiddenReportClaims: const ['newsletter'],
     requiredToolArgumentTermGroups: const {
       TaskAgentToolNames.addMultipleChecklistItems: [
         ['export'],
@@ -878,12 +954,11 @@ LocalTaskAgentEvalScenario _deferredScopeScenario(
       ['staging'],
       ['webhook'],
     ],
-    forbiddenReportTerms: [
-      'dashboard',
-      'analytics',
-      'underway',
-      'awaiting',
-    ],
+    // The task is IN PROGRESS and its log calls the certificate work active,
+    // so "underway" describes it accurately and was wrong to forbid. What the
+    // scenario actually tests is that the deferred dashboard stays out, and
+    // that no unevidenced waiting is claimed.
+    forbiddenReportClaims: ['dashboard', 'analytics', 'awaiting'],
     requiredToolArgumentTermGroups: const {
       TaskAgentToolNames.addMultipleChecklistItems: [
         ['certificate'],
@@ -936,7 +1011,16 @@ LocalTaskAgentEvalScenario _userCompletedItemScenario(
     systemPrompt: _buildEvalSystemPrompt(variant),
     userMessage: _userCompletedItemUserMessage,
     expectedToolCalls: const [],
+    // The invariant is that the user's checked item survives, which is what
+    // updateChecklistItems would violate. Adding a new investigation item is
+    // the context's own request — "Investigation is needed; no root cause
+    // yet" — so it must not count against the model.
     forbiddenToolNames: const {TaskAgentToolNames.updateChecklistItems},
+    allowedExtraToolNames: const {
+      TaskAgentToolNames.updateReport,
+      TaskAgentToolNames.recordObservations,
+      TaskAgentToolNames.addMultipleChecklistItems,
+    },
     isFirstWake: false,
     promptVariant: variant,
     requiredReportTermGroups: const [
@@ -944,15 +1028,10 @@ LocalTaskAgentEvalScenario _userCompletedItemScenario(
       ['reappeared', 'resurfaced', 'again', 'recurrence', 'recurred'],
       ['blocked', 'blocker', 'risk', 'root cause', 'investigat'],
     ],
-    forbiddenReportTerms: [
-      'item-sync-fix',
-      'deployed',
-      'verified',
-      'validated',
-      'implemented',
-      'applied',
-      'underway',
-    ],
+    forbiddenReportTerms: ['item-sync-fix', 'deployed', 'implemented'],
+    // A correct report says the fix is *not* validated, so these may appear
+    // under negation but must never be asserted.
+    forbiddenReportClaims: ['verified', 'validated', 'applied', 'underway'],
   );
 }
 
@@ -968,6 +1047,14 @@ LocalTaskAgentEvalScenario _spanishMixedContextScenario(
         name: TaskAgentToolNames.addMultipleChecklistItems,
       ),
     ],
+    // The user wrote "seguimos bloqueados" over a task still marked IN
+    // PROGRESS, so recording the blocker is correct, not scope creep. Every
+    // candidate model made this call and the scenario failed all of them.
+    allowedExtraToolNames: const {
+      TaskAgentToolNames.updateReport,
+      TaskAgentToolNames.recordObservations,
+      TaskAgentToolNames.setTaskStatus,
+    },
     languageCode: 'es',
     promptVariant: variant,
     requiredReportTermGroups: const [
@@ -1033,6 +1120,18 @@ LocalTaskAgentEvalScenario _latestDeadlineWinsScenario(
     ],
   );
 }
+
+/// The evaluation system prompt for [variant], for suites defined in their own
+/// files (see `penguin_task_agent_eval_scenarios.dart`).
+String buildLocalTaskAgentEvalSystemPrompt(
+  LocalTaskAgentEvalPromptVariant variant, {
+  String? modelId,
+  String? reportDirective,
+}) => _buildEvalSystemPrompt(
+  variant,
+  modelId: modelId,
+  reportDirective: reportDirective,
+);
 
 String _buildEvalSystemPrompt(
   LocalTaskAgentEvalPromptVariant variant, {
@@ -1760,6 +1859,7 @@ class LocalTaskAgentEvalCaseResult {
   int get qualityCheckCount =>
       scenario.requiredReportTermGroups.length +
       scenario.forbiddenReportTerms.length +
+      scenario.forbiddenReportClaims.length +
       scenario.forbiddenToolNames.length +
       scenario.requiredToolArgumentTermGroups.values.fold<int>(
         0,
@@ -1778,6 +1878,9 @@ class LocalTaskAgentEvalCaseResult {
         .length;
     passed += scenario.forbiddenReportTerms
         .where((term) => !normalizedReport.contains(term.toLowerCase()))
+        .length;
+    passed += scenario.forbiddenReportClaims
+        .where((claim) => !_containsAffirmativeClaim(normalizedReport, claim))
         .length;
     passed += scenario.forbiddenToolNames
         .where((name) => toolCalls.every((call) => call.name != name))
@@ -2441,10 +2544,18 @@ class _LocalTaskAgentEvalStrategy extends ConversationStrategy {
       _toolCalls.add(recorded);
 
       final args = recorded.jsonObjectArguments;
-      final response = args == null
-          ? 'Eval harness rejected invalid JSON arguments.'
-          : 'Eval harness accepted ${call.function.name}.';
-      if (call.function.name == TaskAgentToolNames.updateReport &&
+      // Mirror TaskToolDispatcher: an unregistered name is an error the model
+      // can recover from, not a success. Confirming a fabricated tool made the
+      // harness measure something the app never does — DeepSeek V4 Flash 0731
+      // invented both `set_task_estimate` and `update_task_status` and was
+      // told each one worked.
+      final isKnownTool = isKnownTaskAgentToolName(call.function.name);
+      final response = localTaskAgentEvalToolResponse(
+        toolName: call.function.name,
+        hasValidJsonArguments: args != null,
+      );
+      if (isKnownTool &&
+          call.function.name == TaskAgentToolNames.updateReport &&
           args != null &&
           _hasNonEmptyString(args, 'oneLiner') &&
           _hasNonEmptyString(args, 'tldr') &&
@@ -2567,6 +2678,80 @@ LocalTaskAgentEvalFailureCategory _classifyResult({
 
 bool _containsAnyTerm(String normalizedText, List<String> terms) {
   return terms.any((term) => normalizedText.contains(term.toLowerCase()));
+}
+
+/// Negation cues that turn a claim into its opposite, in the languages the
+/// scenario suite actually uses.
+///
+/// A report saying "the fix is not yet validated" is doing exactly what the
+/// `user_completed_item_resurfaced` scenario asks for, so a bare substring
+/// blacklist scores correct behaviour as a violation. Every candidate model
+/// failed that scenario for this reason alone.
+const _claimNegationCues = [
+  // English negation and deferral.
+  'not', 'no', 'never', 'cannot', "can't", "won't", "isn't", "doesn't",
+  "didn't", 'without', 'before', 'until', 'unless', 'pending', 'remains',
+  'remain', 'still', 'yet', 'future', 'later', 'deferred', 'excluded',
+  // German.
+  'nicht', 'kein', 'keine', 'keinen', 'ohne', 'bevor', 'noch', 'erst',
+  'zurückgestellt', 'zurückgestellte', 'ausstehend', 'offen', 'später',
+  'künftig',
+  // Spanish.
+  'sin', 'antes', 'aún', 'todavía', 'pendiente', 'futuro', 'más',
+];
+
+/// Matches any cue as a whole word.
+///
+/// Substring matching is far too lenient here: "not" appears inside "notes",
+/// "another" and "notice", so a report claiming "another dashboard was
+/// delivered" would be excused as negated. Unicode-aware letter boundaries
+/// keep "zurückgestellt" and "aún" matchable while closing that hole.
+final RegExp _claimNegationPattern = RegExp(
+  r'(?<![\p{L}])(?:'
+  '${_claimNegationCues.map(RegExp.escape).join('|')}'
+  r')(?![\p{L}])',
+  unicode: true,
+);
+
+/// How much text around a match is inspected for a negation cue.
+///
+/// The cue can land on either side: English tends to precede the claim ("the
+/// fix cannot be considered validated") while German routinely follows it
+/// ("die Newsletter-Idee wurde explizit zurückgestellt"). Wide enough for a
+/// clause, narrow enough that a negation in a neighbouring sentence does not
+/// excuse a genuine overclaim.
+const _claimNegationWindow = 60;
+
+/// Whether [claim] is asserted in [text], ignoring occurrences that are negated.
+///
+/// Exposed so the negation rules can be tested directly rather than only
+/// through a scenario's aggregate score.
+bool containsAffirmativeReportClaim(String text, String claim) =>
+    _containsAffirmativeClaim(text.toLowerCase(), claim);
+
+/// Whether [claim] appears in [normalizedText] as an affirmative assertion.
+///
+/// Returns false when every occurrence sits inside a negation window, which is
+/// how a report may name deferred or unfinished work in order to rule it out.
+bool _containsAffirmativeClaim(String normalizedText, String claim) {
+  final needle = claim.toLowerCase();
+  var index = normalizedText.indexOf(needle);
+  while (index != -1) {
+    final end = index + needle.length;
+    final start = index < _claimNegationWindow
+        ? 0
+        : index - _claimNegationWindow;
+    final stop = end + _claimNegationWindow >= normalizedText.length
+        ? normalizedText.length
+        : end + _claimNegationWindow;
+    // Skip the claim itself so a cue inside it cannot excuse the claim.
+    final context =
+        '${normalizedText.substring(start, index)} '
+        '${normalizedText.substring(end, stop)}';
+    if (!_claimNegationPattern.hasMatch(context)) return true;
+    index = normalizedText.indexOf(needle, end);
+  }
+  return false;
 }
 
 LocalTaskAgentEvalToolCall? _latestReportCall(
