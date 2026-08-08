@@ -22,12 +22,18 @@ abstract final class TaskAgentPromptBuilder {
     required SoulDocumentVersionEntity? soulVersion,
     String? modelId,
   }) {
-    final trimmedGeneralDirective = version.generalDirective.trim();
+    final trimmedGeneralDirective = effectiveGeneralDirective(version);
     final trimmedReportDirective = effectiveReportDirective(
       version: version,
       modelId: modelId,
     );
-    final trimmedLegacyDirective = version.directives.trim();
+    // The legacy blob is a fallback for versions predating the split fields, so
+    // it is keyed on the *stored* general directive being absent. Keying it on
+    // the effective one would surface the blob for every stock template, whose
+    // stored directive is the seeded constitution rather than nothing.
+    final trimmedLegacyDirective = version.generalDirective.trim().isEmpty
+        ? version.directives.trim()
+        : '';
 
     if (TaskAgentEvidenceSynthesis.usesCompactScaffold(modelId)) {
       return _buildCompactEvidencePrompt(
@@ -69,16 +75,16 @@ abstract final class TaskAgentPromptBuilder {
       }
     } else {
       // No soul: legacy combined heading.
-      final effectiveGeneralDirective = trimmedGeneralDirective.isNotEmpty
+      final withLegacyFallback = trimmedGeneralDirective.isNotEmpty
           ? trimmedGeneralDirective
           : trimmedLegacyDirective;
-      if (effectiveGeneralDirective.isNotEmpty) {
+      if (withLegacyFallback.isNotEmpty) {
         buf
           ..writeln()
           ..writeln()
           ..writeln('## Your Personality & Directives')
           ..writeln()
-          ..write(effectiveGeneralDirective);
+          ..write(withLegacyFallback);
       }
     }
 
@@ -102,6 +108,33 @@ abstract final class TaskAgentPromptBuilder {
     return configuredReportDirective.isEmpty ||
         configuredReportDirective == taskAgentReportDirective.trim();
   }
+
+  /// Whether [version] carries Lotti's seeded general directive rather than
+  /// template-specific guidance.
+  ///
+  /// The seeded text restates rules the scaffold already asserts — user
+  /// sovereignty, tool discipline, input handling — so rendering both spends
+  /// payload on a second, *editable* wording of a code-owned rule. The same
+  /// exact-match **compatibility sentinel** as
+  /// [usesBuiltInReportContract] applies: templates seeded on earlier versions
+  /// store the constant byte-for-byte and are recognised by it, so the constant
+  /// must stay stable even though it is no longer rendered.
+  static bool usesBuiltInGeneralDirective(AgentTemplateVersionEntity version) {
+    final configured = version.generalDirective.trim();
+    return configured.isEmpty || configured == taskAgentGeneralDirective.trim();
+  }
+
+  /// The general directive this wake actually receives.
+  ///
+  /// Empty for a stock template: the constitution in the scaffold is the whole
+  /// operational contract, and there is nothing template-specific to add. An
+  /// evolved or hand-written directive is returned verbatim and rendered after
+  /// the scaffold, so it can add to the constitution but never replaces it.
+  static String effectiveGeneralDirective(
+    AgentTemplateVersionEntity version,
+  ) => usesBuiltInGeneralDirective(version)
+      ? ''
+      : version.generalDirective.trim();
 
   /// Resolves the report directive that is authoritative for this wake.
   ///
@@ -133,8 +166,7 @@ abstract final class TaskAgentPromptBuilder {
 
     if (soulVersion != null) {
       _appendSoulPersonality(buf, soulVersion);
-      if (generalDirective.isNotEmpty &&
-          generalDirective != taskAgentGeneralDirective.trim()) {
+      if (generalDirective.isNotEmpty) {
         buf
           ..writeln()
           ..writeln()
@@ -143,17 +175,16 @@ abstract final class TaskAgentPromptBuilder {
           ..write(generalDirective);
       }
     } else {
-      final effectiveGeneralDirective = generalDirective.isNotEmpty
+      final withLegacyFallback = generalDirective.isNotEmpty
           ? generalDirective
           : legacyDirective;
-      if (effectiveGeneralDirective.isNotEmpty &&
-          effectiveGeneralDirective != taskAgentGeneralDirective.trim()) {
+      if (withLegacyFallback.isNotEmpty) {
         buf
           ..writeln()
           ..writeln()
           ..writeln('## Your Personality & Directives')
           ..writeln()
-          ..write(effectiveGeneralDirective);
+          ..write(withLegacyFallback);
       }
     }
 
@@ -465,6 +496,11 @@ linked task's own agent does not push updates to you.
 - **Status**: never set a status the task already has. "IN PROGRESS" when time
   is being logged, "BLOCKED" or "ON HOLD" only with a stated reason. DONE and
   REJECTED are user-only. Never infer a status from assumption.
+- **Priority and due date**: a value the user set is sovereign. Change it only
+  when the user asks, or when dated evidence newer than their change makes it
+  clearly wrong — and say which evidence in your reasoning. When you disagree
+  and have no such evidence, surface the discrepancy in the report or an
+  observation and leave the field alone.
 - **Language**: write the report and TLDR in the task's `languageCode`. If it
   is null, detect it and call `set_task_language`; if it is already set, do not.
 - **Checklist sovereignty**: items record who last toggled them and when.
@@ -528,6 +564,13 @@ The `## Open Proposal Guard` lists your open suggestions and their fingerprints.
    near-identical.
 3. **Do not re-propose rejected or retracted items** unless the context has
    materially changed; when you do, justify it in the report.
+
+## Input Handling
+
+User input arrives imperfect: rough audio transcripts, typos, shorthand, half
+sentences. Infer the intent and act on it without complaint. When the intent is
+genuinely ambiguous, ask rather than assume — and never treat a garbled input as
+authority for a mutation you would not otherwise make.
 
 ## Important
 

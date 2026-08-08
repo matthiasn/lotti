@@ -32,6 +32,10 @@ sources:
     resource: ../../../docs/adr/0006-change-set-deferred-tool-confirmation.md
     title: ADR 0006 — Change set deferred tool confirmation
     last_modified: 2026-02-28
+  - id: adr-0052
+    resource: ../../../docs/adr/0052-agent-directive-constitution.md
+    title: ADR 0052 — An agent's constitution is code, not an evolvable directive
+    last_modified: 2026-08-08
 ---
 
 # Creation
@@ -309,6 +313,14 @@ Common changes across the path:
   `propose_directives` takes a complete rewrite rather than a delta, so a
   session shown the seeded text would rewrite a contract that was never in
   effect and have it adopted wholesale.
+- The **general** directive follows the same rule via
+  `effectiveGeneralDirective`: the seeded `taskAgentGeneralDirective` resolves to
+  empty because the scaffold's constitution already asserts user sovereignty,
+  tool discipline, the no-op rules, checklist sovereignty, priority/due-date
+  sovereignty and input handling. Only an evolved or hand-written directive is
+  rendered, and it is appended after the constitution — it adds, never replaces
+  (ADR 0052). Both scaffolds behave identically here; the compact one already
+  did.
 - The compact contract treats a concrete, committed multi-step plan as checklist
   intent even without the words "create a checklist"; it does **not** treat
   speculation or a description of current state as authority.

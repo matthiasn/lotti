@@ -304,6 +304,135 @@ Use the task language and omit empty sections.
     });
   });
 
+  group('the constitution is code-owned', () {
+    // The rules an agent must never lose — user sovereignty, tool discipline,
+    // input handling — belong to the scaffold, not to the evolvable
+    // `generalDirective`. See docs/adr/0052-agent-directive-constitution.md.
+    // Each assertion names a rule that used to live only in the seeded
+    // directive, which one evolution session could paraphrase away.
+    const codeOwnedRules = <String>[
+      'Checklist sovereignty', // user-checked items keep their state
+      'a value the user set is sovereign', // priority and due date
+      'the user wins — make no call at all', // no-op rule
+      'Never change an existing title', // title
+      'DONE and\n  REJECTED are user-only', // status
+      '## Input Handling', // rough transcripts, ask rather than assume
+      '**Past decisions**', // proposal-ledger discipline
+    ];
+
+    test('identifies only an empty and the seeded general directive as built '
+        'in', () {
+      for (final scenario in [
+        (directive: '', expected: true),
+        (directive: taskAgentGeneralDirective, expected: true),
+        (directive: '  $taskAgentGeneralDirective  ', expected: true),
+        (directive: 'Escalate contractual blockers.', expected: false),
+      ]) {
+        final version = makeTestTemplateVersion(
+          generalDirective: scenario.directive,
+        );
+        expect(
+          TaskAgentPromptBuilder.usesBuiltInGeneralDirective(version),
+          scenario.expected,
+          reason: scenario.directive,
+        );
+        expect(
+          TaskAgentPromptBuilder.effectiveGeneralDirective(version),
+          scenario.expected ? '' : scenario.directive.trim(),
+          reason: scenario.directive,
+        );
+      }
+    });
+
+    test('a stock template gets the rules from the scaffold, not a second '
+        'editable copy', () {
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: makeTestTemplateVersion(
+          generalDirective: taskAgentGeneralDirective,
+          reportDirective: taskAgentReportDirective,
+        ),
+        soulVersion: null,
+      );
+
+      for (final rule in codeOwnedRules) {
+        expect(prompt, contains(rule), reason: rule);
+      }
+      // The seeded wording is not rendered on top of it: two wordings of one
+      // rule cost payload and can disagree once one of them is evolved.
+      expect(
+        prompt,
+        isNot(contains('User input is direct evidence of user intent.')),
+        reason: 'the seeded restatement must not be rendered as well',
+      );
+      expect(prompt, isNot(contains('## Your Personality & Directives')));
+    });
+
+    test('an evolved directive that drops the rules cannot remove them', () {
+      // The failure this design prevents: `propose_directives` takes a whole
+      // rewrite, so a session that paraphrases and omits a bullet used to
+      // delete a sovereignty guarantee outright.
+      const evolved = '''
+## Voice
+
+Lead with the decision. Keep it to three sentences.''';
+
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: makeTestTemplateVersion(generalDirective: evolved),
+        soulVersion: null,
+      );
+
+      for (final rule in codeOwnedRules) {
+        expect(prompt, contains(rule), reason: rule);
+      }
+      // The evolved text is still honoured — it adds, it does not replace.
+      expect(prompt, contains('Lead with the decision.'));
+      expect(
+        prompt.indexOf('Lead with the decision.'),
+        greaterThan(prompt.indexOf('## Input Handling')),
+        reason: 'template guidance is appended after the constitution',
+      );
+    });
+
+    test('the measured compact prompt is unchanged for a stock template', () {
+      // The compact scaffold already suppressed the seeded directive and
+      // carries its own constitution; the numbers behind it were measured on
+      // that exact text. A stock template must therefore produce the scaffold
+      // plus the evidence protocol and nothing else.
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: makeTestTemplateVersion(
+          generalDirective: taskAgentGeneralDirective,
+          reportDirective: taskAgentReportDirective,
+        ),
+        soulVersion: null,
+        modelId: 'qwen3.5-122b-a10b',
+      );
+
+      expect(
+        prompt,
+        startsWith(TaskAgentPromptBuilder.taskAgentCompactScaffold),
+      );
+      expect(prompt, isNot(contains('## Your Personality & Directives')));
+      expect(prompt, isNot(contains('## Your Operational Directives')));
+      expect(prompt, contains('User actions are sovereign.'));
+    });
+
+    test('a stock template never surfaces its legacy persona blob', () {
+      // Seeded templates carry both a `directives` blurb and the seeded
+      // general directive. Suppressing the latter must not promote the former:
+      // the legacy fallback is for versions that predate the split fields.
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: makeTestTemplateVersion(
+          directives: 'You are Laura, a diligent task management agent.',
+          generalDirective: taskAgentGeneralDirective,
+        ),
+        soulVersion: null,
+      );
+
+      expect(prompt, isNot(contains('You are Laura')));
+      expect(prompt, contains('## Input Handling'));
+    });
+  });
+
   group('the seeded report directive is never rendered', () {
     // The constant reads like the live rule and contradicts it. On 2026-08-08
     // it was mistaken for production behaviour and a correct evaluation result
