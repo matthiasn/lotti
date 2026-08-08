@@ -668,45 +668,43 @@ Run-to-run variance is large: GLM and 397B each passed and failed the identical
 input across sessions. **Do not rank models on this scenario.** It separates
 broken from working, not good from better.
 
-### Scenario 2 — `noOp` (results retracted)
+### Scenario 2 — `noOp`
 
-Nothing report-worthy changed. The scenario asserted that a correct wake
-proposes no data changes **and leaves the stored report untouched**, and
-reported that four of five models rewrote an accurate report — presented as the
-suite's headline defect.
+Nothing materially changed. A correct wake proposes no data changes and does not
+republish the report.
 
-**The second half of that assertion contradicted the shipped directive and the
-results are retracted.** `taskAgentReportDirective` says:
+That rule is real and is what production sends. `TaskAgentPromptBuilder`
+substitutes `TaskAgentEvidenceSynthesis.reportDirective` for every stock agent:
 
-> You MUST call `update_report` exactly once at the end of every wake […] This
-> is non-negotiable. Do not end your turn with a plain text message […] If
-> nothing new needs saying, reuse the previous report's `content` and refresh
-> `oneLiner` / `tldr` as appropriate — but still call the tool.
+> When no report exists yet or the report materially changed, call
+> `update_report` exactly once as the final action. **Otherwise finish with a
+> brief plain-text note and do not republish unchanged content.**
 
-The models that rewrote the report were obeying the app. Qwen3.6 27B, which
-"passed" 3/3 and was held up as best-in-class restraint, was violating it. The
-"finish with a short plain-text note" rule the scenario encoded exists only in
-`_leanSystemPrompt`, an eval fixture, and was never production behaviour.
+| Model | Passed |
+| --- | ---: |
+| Qwen3.6 27B | 3 / 3 |
+| GLM 5.2 | 1 / 3 |
+| Kimi K3 | 0 / 3 |
+| Qwen3.5 397B | 0 / 3 |
+| DeepSeek V4 Flash 0731 | 0 / 3 |
 
-Two defects compounded to hide this:
+No model proposed a data change, so the failure is narrow: four of five
+republish an unchanged report. Their rewrites are paraphrases — all five
+produced a one-liner saying "blocked on Ross Station customs".
 
-1. **The eval ran without the shipped prompt.** `buildEvalTemplate` called
-   `makeTestTemplateVersion` without directives, which defaults to
-   `directives: 'You are a helpful agent.'` and empty `generalDirective` /
-   `reportDirective`. All 5,190 characters of the shipped task-agent directive
-   were absent from every run, including the rule the scenario was testing.
-   A harness test now asserts both directives reach the model.
-2. **The assertion was written from memory of the prompt rather than the
-   prompt.** The rule was never checked against
-   `seeded_directive_content.dart`.
+**Caveat on these numbers.** The runs were made with the template's
+`generalDirective` empty (1,509 characters absent). The *report* contract was
+present — an empty directive still counts as built-in and is substituted — so
+the rule under test reached the model. The result is very likely sound but one
+variable differed from production, and it should be re-run with the full prompt
+before being cited as final.
 
-The scenario now tests what the directive actually asks: propose no data
-changes, still call `update_report`, and do not invent progress — the report
-must not claim the customs hold cleared, or that cartridges were swapped, when
-nothing in the wake supports it. **No results are published for it yet.**
-
-The half that was always valid: no model proposed a data change in this
-scenario, under either tool surface.
+**These results were once retracted in error.** The retraction was based on
+reading the seeded `taskAgentReportDirective` constant, which says the opposite
+("You MUST call `update_report` … do not end your turn with a plain text
+message") and is **never sent to a stock agent** — both an empty and a stock
+directive are replaced by the evidence-synthesis version. A test now asserts the
+built prompt, not the constant. Verify prompt rules against a built prompt.
 
 ### Scenario 3 — `pendingProposal` (withdrawn, not a result)
 
@@ -757,17 +755,17 @@ for this reason; ad-hoc parallel loops must do the same.
 ### Narrowing the tool surface (results retracted)
 
 `narrowToolSurface` was measured against `noOp` and reported as no better than
-noise. Both sides of that comparison are void:
-
-* The scenario's assertion contradicted the shipped directive (above).
-* The staged exposure **never ran**. `ConversationRepository` passed
+noise. That comparison is void because the staged exposure **never ran**: `ConversationRepository` passed
   `manager.turnCount` to `toolsForTurn`, and that counts user messages with this
   turn's already logged — so the first request arrived as index 1, not 0.
-  `TaskAgentStagedToolExposure` treats only 0 as the opening turn, so it
-  restored the full list immediately. The flag-on runs exercised the
-  precondition gates alone.
+`ConversationRepository` passed `manager.turnCount` to `toolsForTurn`, and that
+counts user messages with this turn's already logged — so the first request
+arrived as index 1, not 0. `TaskAgentStagedToolExposure` treats only 0 as the
+opening turn, so it restored the full list immediately. The flag-on runs
+exercised the precondition gates alone.
 
-Both are fixed and covered by tests. The flag stays off and unmeasured.
+Fixed and covered by a test that fails on the off-by-one. The flag stays off and
+unmeasured.
 
 ### The fixture was wrong first
 

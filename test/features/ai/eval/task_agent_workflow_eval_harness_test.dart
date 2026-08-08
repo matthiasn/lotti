@@ -5,6 +5,7 @@ import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/seeded_directive_content.dart';
+import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -229,6 +230,34 @@ void main() {
       );
 
       harness = await TaskAgentWorkflowEvalHarness.start(container: container);
+    });
+
+    test('the built prompt carries the live no-op rule', () {
+      // Assert against a BUILT prompt, never a seeded constant. The seeded
+      // `taskAgentReportDirective` says "You MUST call update_report ... do not
+      // end your turn with a plain text message", and is never sent: both an
+      // empty and a stock directive count as built-in, so
+      // `effectiveReportDirective` substitutes
+      // TaskAgentEvidenceSynthesis.reportDirective instead. Reading the
+      // constant as the rule caused a valid noOp result to be retracted in
+      // error. If the substitution ever changes, this fails here rather than
+      // silently inverting a scenario.
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: buildEvalTemplate(profileId: 'p').version,
+        soulVersion: null,
+        modelId: 'glm-5.2',
+      );
+
+      expect(
+        prompt,
+        contains('do not republish unchanged content'),
+        reason: 'the no-op rule the scenario tests must be in the real prompt',
+      );
+      expect(
+        prompt,
+        isNot(contains('MANDATORY FINAL TOOL CALL')),
+        reason: 'the seeded directive is superseded and must not reach a wake',
+      );
     });
 
     test('the eval template carries the shipped directives', () {

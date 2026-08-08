@@ -294,13 +294,17 @@ void main() {
         );
       }
       if (scenario.id == PenguinWakeScenarioId.noOp) {
-        // The shipped directive mandates update_report on every wake, so not
-        // calling it is the violation — not calling it "again".
+        // The live contract is TaskAgentEvidenceSynthesis.reportDirective,
+        // which `effectiveReportDirective` substitutes for every stock agent:
+        // "Otherwise finish with a brief plain-text note and do not republish
+        // unchanged content." The seeded `taskAgentReportDirective` constant
+        // says the opposite and is never sent — do not read it as the rule.
         expect(
-          calledTools,
-          contains(TaskAgentToolNames.updateReport),
+          agentReport?.oneLiner,
+          penguinWakePriorReportOneLiner,
           reason:
-              'the report directive requires update_report every wake. $where',
+              'REPUBLISHED: nothing materially changed, so the previous '
+              'report should have stood. $where',
         );
         // The failure worth catching: inventing progress with no news to
         // support it. Nothing cleared the customs hold in this wake.

@@ -27,16 +27,20 @@ enum PenguinWakeScenarioId {
   /// A prior report already describes the state accurately and the newest note
   /// adds no fact that changes it, so a correct wake proposes no data changes.
   ///
-  /// It still calls `update_report`. An earlier version of this scenario
-  /// asserted the opposite — that the stored report must be untouched — which
-  /// contradicted the shipped report directive: "You MUST call `update_report`
-  /// exactly once at the end of every wake... Do not end your turn with a
-  /// plain text message... If nothing new needs saying, reuse the previous
-  /// report's `content` and refresh `oneLiner` / `tldr` as appropriate — but
-  /// still call the tool." Models that rewrote the report were obeying the app;
-  /// the scenario was measuring a rule that exists only in an eval fixture.
+  /// It also publishes no report. The live contract is
+  /// `TaskAgentEvidenceSynthesis.reportDirective`, which
+  /// `TaskAgentPromptBuilder.effectiveReportDirective` substitutes for every
+  /// stock agent: "Otherwise finish with a brief plain-text note and do not
+  /// republish unchanged content."
   ///
-  /// What is worth catching is fabrication: a wake with no news inventing
+  /// The seeded `taskAgentReportDirective` constant says the opposite — "You
+  /// MUST call `update_report` ... do not end your turn with a plain text
+  /// message" — and is **never sent to a stock agent**, because both an empty
+  /// and a stock directive count as built-in and are replaced. Reading that
+  /// constant as the rule once caused this scenario's results to be retracted
+  /// in error. Verify against a built prompt, not a seeded constant.
+  ///
+  /// Fabrication is checked alongside: a wake with no news must not invent
   /// progress it cannot support.
   noOp,
 
@@ -89,10 +93,10 @@ class PenguinWakeScenario {
     PenguinWakeScenarioId.noOp: PenguinWakeScenario(
       id: PenguinWakeScenarioId.noOp,
       summary:
-          'Nothing changed since the last report: propose no data changes, '
-          'still publish a report, and do not invent progress.',
+          'Nothing materially changed: propose no data changes, do not '
+          'republish the report, and do not invent progress.',
       expectsProposals: false,
-      expectsReport: true,
+      expectsReport: false,
     ),
     PenguinWakeScenarioId.pendingProposal: PenguinWakeScenario(
       id: PenguinWakeScenarioId.pendingProposal,
