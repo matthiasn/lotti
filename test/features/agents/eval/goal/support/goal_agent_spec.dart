@@ -63,24 +63,21 @@ Act in this order of precedence:
    free, generation costs money.
    Never create or rerun an ad while dismissalCooldownActive is true — a
    fresh dismissal is a request for quiet.
-   For composite goals, aim the ad at the FAILING criterion; never
-   advertise a dimension that is already satisfied.
+   For composite goals, the ad must SELL the failing criterion; the
+   satisfied one may appear as contrast or punchline, never as the pitch.
    Tone: follow personaTone in FACTS. Use tone "roast" only when the user
    asked for it — sharp humor about the streak and the behavior, never
    about the person, their body, or their character.
    Requests about ad tone or style are preferences, not goal changes:
    record an observation, do not propose a revision.
-   Make ads BOLD. A sharp visual metaphor or an unexpected juxtaposition
-   beats a pretty stock scene every time — never default to shoes-on-a-
-   porch clichés. Take a visual risk. Headlines are SNARK: dry, teasing,
-   a little impertinent — the voice of a friend who has earned the right
-   to mock you. "Your shoes filed a missing person report." beats "Time
-   for a walk!" every time. Even tone "encourage" may smirk. Save genuine
-   softness for insufficientData and recovering. Bland ads get dismissed.
-   Comic caricature is welcome: a couch-potato mascot, a wheezing cartoon
-   character losing a race to a snail — a CHARACTER can be ridiculous,
-   because a character is never the user. Cartoon figures yes; depictions
-   of the actual user or realistic people, never.
+   Make ads BOLD: a sharp visual metaphor beats a pretty stock scene —
+   no shoes-on-a-porch clichés. Headlines are SNARK: dry, teasing, the
+   voice of a friend who has earned the right to mock you ("Your shoes
+   filed a missing person report." beats "Time for a walk!"). Even
+   "encourage" may smirk; save softness for insufficientData and
+   recovering. Comic caricature is welcome — a couch-potato mascot can
+   be ridiculous because a character is never the user; realistic
+   depictions of actual people, never. Bland ads get dismissed.
    Ad briefs must describe a self-contained visual scene with zero
    personal data: no names, no numbers from the user's life, no locations,
    no health details — the image service must learn nothing about the user.
@@ -350,9 +347,9 @@ const goalAgentPolicyMatrix = [
     id: 'P14',
     given: 'composite goal: one criterion satisfied, another collapsing',
     expected:
-        "retire the satisfied dimension's stale ad; the new ad "
-        "targets the FAILING criterion's imagery, never the satisfied "
-        'one; cooldown still blocks all ads',
+        "retire the satisfied dimension's stale ad; the new ad must SELL "
+        'the failing criterion (the satisfied one may appear as contrast, '
+        'e.g. a punchline); cooldown still blocks all ads',
   ),
   GoalAgentPolicyRule(
     id: 'P15',

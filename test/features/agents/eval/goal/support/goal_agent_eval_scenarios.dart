@@ -629,12 +629,12 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
         ['walk', 'stride', 'trail', 'path', 'steps', 'hike', 'boardwalk'],
       ],
     },
+    // Only the leakage inventory is banned. The satisfied dimension MAY
+    // appear as contrast (the flexing couch-potato joke); what makes the
+    // ad correct is the required walking/movement pitch above, not the
+    // absence of gym props.
     forbiddenToolArgumentTerms: const {
-      GoalAgentToolNames.createGoalAd: [
-        ...signePrivateStrings,
-        // Never advertise the satisfied dimension.
-        'gym', 'dumbbell', 'barbell', 'kettlebell', 'weights', 'treadmill',
-      ],
+      GoalAgentToolNames.createGoalAd: signePrivateStrings,
     },
   ),
   GoalAgentEvalScenario(
