@@ -99,6 +99,22 @@ Useful knobs:
 | `GOAL_AGENT_EVAL_PROVIDER_TYPE` | `melious` | provider type (`gemini`, `omlx`, … lose billing) |
 | `GOAL_AGENT_EVAL_STRICT` | off | `1` fails the test on any scenario failure |
 
+**Image stage** (optional): render every passing `create_goal_ad` brief
+through Nano Banana Pro so the visuals can be judged next to the scorecard.
+The outbound prompt is composed from the three visual brief fields only
+plus a fixed style contract (`goal_ad_image_probe.dart` — the executable
+ADR 0056 boundary); the headline/altText/tone stay in a `.txt` sidecar for
+human review. Costs cents per image; needs a Gemini key:
+
+```bash
+LOTTI_GOAL_AGENT_EVAL_LIVE=1 MELIOUS_API_KEY=... \
+GOAL_AGENT_EVAL_IMAGES=1 GEMINI_API_KEY=... \
+GOAL_AGENT_EVAL_SCENARIOS=ad_create_off_track,tone_roast_ad \
+fvm flutter test test/features/agents/eval/goal/goal_agent_eval_live_test.dart \
+  --tags eval-live
+# → eval_artifacts/images/<scenario>_<model>.png (+ .txt sidecar)
+```
+
 Merging artifacts by hand:
 
 ```bash

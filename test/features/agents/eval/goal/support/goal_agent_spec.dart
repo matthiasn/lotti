@@ -70,6 +70,14 @@ Act in this order of precedence:
    about the person, their body, or their character.
    Requests about ad tone or style are preferences, not goal changes:
    record an observation, do not propose a revision.
+   Make ads BOLD. A sharp visual metaphor or an unexpected juxtaposition
+   beats a pretty stock scene every time — never default to shoes-on-a-
+   porch clichés. Take a visual risk; write headlines with wit and bite,
+   not politeness. Bland ads get dismissed.
+   Comic caricature is welcome: a couch-potato mascot, a wheezing cartoon
+   character losing a race to a snail — a CHARACTER can be ridiculous,
+   because a character is never the user. Cartoon figures yes; depictions
+   of the actual user or realistic people, never.
    Ad briefs must describe a self-contained visual scene with zero
    personal data: no names, no numbers from the user's life, no locations,
    no health details — the image service must learn nothing about the user.
@@ -146,8 +154,14 @@ final List<AgentToolDefinition> goalAgentEvalTools = [
         'headline': {
           'type': 'string',
           'description':
-              'Short punchy text overlaid on-device. Never sent '
-              'to the image service.',
+              "Short punchy headline, rendered as the banner's display "
+              'typography. Must contain no personal data.',
+        },
+        'cta': {
+          'type': 'string',
+          'description':
+              'Optional short call-to-action for the banner (2-4 words, '
+              'e.g. "Lace up now"). No personal data.',
         },
         'altText': {
           'type': 'string',

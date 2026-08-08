@@ -1,6 +1,7 @@
 @Tags(['eval-live'])
 library;
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -14,8 +15,10 @@ import 'package:lotti/get_it.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../ai_consumption/test_utils.dart';
+import 'support/goal_ad_image_probe.dart';
 import 'support/goal_agent_eval_runner.dart';
 import 'support/goal_agent_eval_scenarios.dart';
+import 'support/goal_agent_spec.dart';
 
 /// Live goal-agent inference eval.
 ///
@@ -128,6 +131,61 @@ void main() {
           '$tempDir/lotti-goal-agent-eval.md';
       _write(jsonPath, report.toPrettyJson());
       _write(markdownPath, report.toMarkdown());
+
+      // Optional image stage: render passing ad briefs through Nano Banana
+      // Pro so the visuals can be judged by a human. The composed prompt is
+      // built exclusively from the three visual brief fields (ADR 0056) —
+      // see goal_ad_image_probe.dart.
+      final geminiKey = Platform.environment['GEMINI_API_KEY'] ?? '';
+      if (Platform.environment['GOAL_AGENT_EVAL_IMAGES'] == '1' &&
+          geminiKey.isNotEmpty) {
+        final geminiProvider = AiConfigInferenceProvider(
+          id: 'goal-agent-eval-gemini',
+          name: 'Goal Agent Eval Images (gemini)',
+          baseUrl:
+              ProviderConfig.defaultBaseUrls[InferenceProviderType.gemini]!,
+          apiKey: geminiKey,
+          inferenceProviderType: InferenceProviderType.gemini,
+          createdAt: DateTime(2026, 8, 8),
+        );
+        final imageDir =
+            Platform.environment['GOAL_AGENT_EVAL_IMAGE_DIR'] ??
+            'eval_artifacts/images';
+        final cloudRepository = container.read(
+          cloudInferenceRepositoryProvider,
+        );
+        for (final result in report.results) {
+          if (!result.passed) continue;
+          for (final call in result.toolCalls) {
+            if (call.name != GoalAgentToolNames.createGoalAd) continue;
+            final args = call.jsonObjectArguments;
+            final sceneConcept = args?['sceneConcept'];
+            if (sceneConcept is! String || sceneConcept.trim().isEmpty) {
+              continue;
+            }
+            final path = await generateGoalAdImage(
+              repository: cloudRepository,
+              geminiProvider: geminiProvider,
+              sceneConcept: sceneConcept,
+              headline: args?['headline'] as String?,
+              cta: args?['cta'] as String?,
+              mood: args?['mood'] as String?,
+              stylePreset: args?['stylePreset'] as String?,
+              outputPath: '$imageDir/${result.scenario.id}_${result.modelId}',
+            );
+            // Headline stays on-device: pair it with the image in a
+            // sidecar so a human can judge the composed ad.
+            File('$path.txt').writeAsStringSync(
+              jsonEncode({
+                'headline': args?['headline'],
+                'altText': args?['altText'],
+                'tone': args?['tone'],
+              }),
+            );
+            stdout.writeln('ad image: $path');
+          }
+        }
+      }
 
       expect(report.results, isNotEmpty);
       expect(File(jsonPath).existsSync(), isTrue);

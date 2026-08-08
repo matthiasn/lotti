@@ -76,10 +76,14 @@ routing to be tempted by.
    also weights the rating library (a five-star ad seen once means less than a four-star ad
    that earned its rating over many impressions).
 
-8. **All copy is composited on-device.** The generated image contains no readable text (brief
-   contract, ADR 0056); `headline`/`caption` are overlaid by the UI from entity fields. This
-   keeps personal/goal wording out of the image provider, makes past ads render correctly in the
-   conversation history forever, and keeps text accessible (semantics labels) and theme-aware.
+8. **The ad is a designed banner — headline and CTA render IN the image.** (Revised same day:
+   text-free images read too tame; a real ad has type.) The composed prompt instructs a
+   polished advertising-banner layout and passes the model-authored `headline` and optional
+   `cta` verbatim as the only sanctioned text — both are leakage-checked tool arguments, so no
+   personal data rides along (ADR 0056 holds: the boundary is *which fields* travel, and these
+   two carry no user data by construction). All *other* readable text, digits, logos and
+   watermarks stay banned. `headline`/`altText` remain stored on the entity regardless, so
+   history rendering, semantics labels and any future theming never depend on pixels.
 
 9. **Past ads are part of the conversation history.** Ads render inline (compact card + status
    badge) in the goal chat's timeline projection, permanently — the scrollable history of all
