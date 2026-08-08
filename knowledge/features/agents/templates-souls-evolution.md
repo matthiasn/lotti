@@ -28,6 +28,14 @@ sources:
     resource: ../../../docs/adr/0012-recursive-self-improvement-depth-policy.md
     title: ADR 0012 — Recursive self-improvement depth policy
     last_modified: 2026-03-01
+  - id: adr-0052
+    resource: ../../../docs/adr/0052-agent-directive-constitution.md
+    title: ADR 0052 — An agent's constitution is code, not an evolvable directive
+    last_modified: 2026-08-08
+  - id: prompt-builder
+    resource: ../../../lib/features/agents/workflow/task_agent_prompt_builder.dart
+    title: TaskAgentPromptBuilder — scaffold constants and effective directives
+    last_modified: 2026-08-08
 ---
 
 # Two axes: skills and personality
@@ -38,6 +46,22 @@ The feature separates **what an agent does** from **who it is**:
 |---|------|--------------|
 | **Template** | Operational directives — skills | Template row + version rows + head pointer |
 | **Soul** | `voiceDirective`, `toneBounds`, `coachingStyle`, `antiSycophancyPolicy` | Soul row + version rows + head pointer |
+
+Neither axis is the whole prompt. A third, **unversioned and unrewritable**
+layer sits above both: the constitution in `TaskAgentPromptBuilder`'s scaffold
+constants — role, wake-finishing contract, tool authority boundaries, user
+sovereignty, no-op rules, checklist sovereignty, input handling. Evolution
+cannot reach it, it changes only when the app ships, and a template directive is
+rendered *after* it, so a directive adds to the constitution and never replaces
+it (ADR 0052).
+
+That is why a stock task-agent template contributes **nothing** to its own
+prompt: `TaskAgentPromptBuilder.effectiveGeneralDirective` resolves the seeded
+`taskAgentGeneralDirective` to empty, because the scaffold already states those
+rules and two wordings of one rule — one of them editable — is a drift risk paid
+for on every wake. The seeded constant is kept byte-for-byte stable as the
+compatibility sentinel that recognises templates seeded on earlier versions, the
+same arrangement as `taskAgentReportDirective`.
 
 ```mermaid
 erDiagram
@@ -110,6 +134,16 @@ stateDiagram-v2
 ```
 
 **Only one active evolution session per template** at a time.
+
+**A proposal is a whole rewrite, so the session must be shown what is in
+effect.** `propose_directives` carries complete `general_directive` and
+`report_directive` strings and approval writes them verbatim, so whatever the
+context builder displays is the baseline that gets adopted. For task agents
+`EvolutionContextBuilder` therefore renders the *effective* directives rather
+than the stored ones: the substituted report contract, and — for a stock
+template — an explicit "adds nothing on top of the built-in constitution" note
+instead of the seeded text the agent never receives. Silence there would invite a
+proposal that restates code-owned rules.
 
 The UI splits into two surfaces: `EvolutionReviewPage` (a history-first ritual
 home with a pending-session card, compact metrics and persisted history) and

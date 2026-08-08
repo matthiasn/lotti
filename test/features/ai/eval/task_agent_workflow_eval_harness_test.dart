@@ -250,6 +250,18 @@ void main() {
         contains('do not republish unchanged content'),
         reason: 'the no-op rule the scenario tests must be in the real prompt',
       );
+      // The eval fleet runs on the common scaffold, and since ADR 0052 the
+      // restraint rules come from that scaffold rather than from the seeded
+      // general directive. Pin them here: a suite that measures models against
+      // a prompt missing them is measuring the wrong thing.
+      for (final rule in const [
+        'Checklist sovereignty',
+        'a value the user set is sovereign',
+        'the user wins — make no call at all',
+        '## Input Handling',
+      ]) {
+        expect(prompt, contains(rule), reason: rule);
+      }
       expect(
         prompt,
         isNot(contains('MANDATORY FINAL TOOL CALL')),

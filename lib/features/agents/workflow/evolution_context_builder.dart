@@ -226,24 +226,34 @@ again. The conversation should always be driving toward an approved proposal.
     // Present directives — use split fields when available, fall back to
     // the legacy single field.
     //
-    // Task agents get the *effective* report directive rather than the stored
-    // one. For a stock template the stored value is `taskAgentReportDirective`,
-    // which `TaskAgentPromptBuilder` always substitutes and the agent therefore
-    // never receives — and the two contradict each other, the seeded text
-    // demanding `update_report` on every wake where the substituted one asks
-    // for a plain-text note when nothing changed. Showing the stored text here
-    // had this session rewriting a directive that was never in effect, and
-    // `propose_directives` takes a complete rewrite rather than a delta, so the
-    // wrong baseline would be adopted wholesale.
-    final generalDirective = currentVersion.generalDirective.trim();
+    // Task agents get the *effective* directives rather than the stored ones,
+    // because for a stock template neither stored value is what the agent
+    // receives (ADR 0052). The report field holds `taskAgentReportDirective`,
+    // which `TaskAgentPromptBuilder` always substitutes — and the two
+    // contradict each other, the seeded text demanding `update_report` on every
+    // wake where the substituted one asks for a plain-text note when nothing
+    // changed. The general field holds the seeded constitution, which the
+    // scaffold now states instead. Showing a stored text here had this session
+    // rewriting a directive that was never in effect, and `propose_directives`
+    // takes a complete rewrite rather than a delta, so the wrong baseline would
+    // be adopted wholesale.
+    final storedGeneralDirective = currentVersion.generalDirective.trim();
     final storedReportDirective = currentVersion.reportDirective.trim();
+    final isTaskAgent = template.kind == AgentTemplateKind.taskAgent;
+    // Same rule as the report directive: show what the agent receives. A stock
+    // task-agent template stores the seeded general directive, which the prompt
+    // builder no longer renders because the scaffold's constitution already
+    // states those rules — so an empty effective directive means "this template
+    // adds nothing on top of the constitution", not "the agent has no rules".
+    final generalDirective = isTaskAgent
+        ? TaskAgentPromptBuilder.effectiveGeneralDirective(currentVersion)
+        : storedGeneralDirective;
     // Whether this template uses the split fields at all is decided by what is
     // stored, so a legacy template with neither still falls back to its single
     // `directives` field below.
     final hasNewDirectives =
-        generalDirective.isNotEmpty || storedReportDirective.isNotEmpty;
-    final reportDirective =
-        template.kind == AgentTemplateKind.taskAgent && hasNewDirectives
+        storedGeneralDirective.isNotEmpty || storedReportDirective.isNotEmpty;
+    final reportDirective = isTaskAgent && hasNewDirectives
         ? TaskAgentPromptBuilder.effectiveReportDirective(
             version: currentVersion,
           ).trim()
@@ -256,6 +266,23 @@ again. The conversation should always be driving toward an approved proposal.
             '## Current General Directive (v${currentVersion.version})',
           )
           ..writeln(generalDirective)
+          ..writeln();
+      } else if (isTaskAgent) {
+        // Say so explicitly. Silence here reads as "no operational rules",
+        // which invites a proposal that restates the constitution — text the
+        // agent already receives from the scaffold and cannot be edited away.
+        buf
+          ..writeln(
+            '## Current General Directive (v${currentVersion.version})',
+          )
+          ..writeln(
+            'None. This template adds nothing on top of the built-in task-agent '
+            'constitution, which is code-owned: user sovereignty, tool '
+            'discipline, no-op rules, checklist sovereignty and input handling '
+            'are always in force and cannot be changed from here. Propose a '
+            'general directive only for guidance that ADDS to those rules, and '
+            'never restate them.',
+          )
           ..writeln();
       }
       if (reportDirective.isNotEmpty) {

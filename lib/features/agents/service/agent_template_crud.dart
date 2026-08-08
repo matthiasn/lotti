@@ -140,12 +140,19 @@ class AgentTemplateCrud {
           templateId,
         );
         if (activeVersion != null) {
+          // The directives are copied verbatim, so their author is unchanged —
+          // a model swap does not write a directive. Preserving it keeps the
+          // provenance the prompt builder reads (ADR 0052) intact across a
+          // config change; stamping a new author here made a seeded template
+          // look customised and an evolved one look system-authored. The
+          // config change itself stays visible in the version history through
+          // the modelId/profileId difference from the version it supersedes.
           await createVersion(
             templateId: templateId,
             directives: activeVersion.directives,
             generalDirective: activeVersion.generalDirective,
             reportDirective: activeVersion.reportDirective,
-            authoredBy: 'system:config_change',
+            authoredBy: activeVersion.authoredBy,
           );
         }
       }

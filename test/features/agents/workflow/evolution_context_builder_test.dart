@@ -469,4 +469,93 @@ void main() {
       );
     });
   });
+
+  group('general directive shown to the evolution session', () {
+    test('a stock task agent is told the constitution is code-owned', () {
+      final ctx = builder.build(
+        template: makeTestTemplate(displayName: 'Laura'),
+        currentVersion: makeTestTemplateVersion(
+          id: 'v1',
+          generalDirective: taskAgentGeneralDirective,
+          reportDirective: taskAgentReportDirective,
+        ),
+        recentVersions: const [],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+      );
+
+      // Not the seeded body: the prompt builder no longer renders it, so a
+      // session shown that text would rewrite rules the agent never received.
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('User input is direct evidence of user intent.')),
+      );
+      // And not silence either — silence invites a proposal that restates the
+      // constitution the scaffold already carries.
+      expect(
+        ctx.initialUserMessage,
+        contains('adds nothing on top of the built-in task-agent'),
+      );
+      expect(ctx.initialUserMessage, contains('never restate them'));
+    });
+
+    test('an evolved directive is shown verbatim', () {
+      final ctx = builder.build(
+        template: makeTestTemplate(displayName: 'Laura'),
+        currentVersion: makeTestTemplateVersion(
+          id: 'v2',
+          generalDirective: 'Escalate contractual blockers within one wake.',
+          reportDirective: taskAgentReportDirective,
+        ),
+        recentVersions: const [],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains('Escalate contractual blockers within one wake.'),
+      );
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('adds nothing on top of the built-in task-agent')),
+      );
+    });
+
+    test('a non-task template still shows its stored general directive', () {
+      // The substitution is a task-agent rule; a project-agent session must
+      // keep seeing exactly what its own prompt builder renders.
+      final ctx = builder.build(
+        template: makeTestTemplate(
+          displayName: 'Max',
+          kind: AgentTemplateKind.projectAgent,
+        ),
+        currentVersion: makeTestTemplateVersion(
+          id: 'v1',
+          generalDirective: projectAgentGeneralDirective,
+        ),
+        recentVersions: const [],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains(projectAgentGeneralDirective.trim().split('\n').first),
+      );
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('adds nothing on top of the built-in task-agent')),
+      );
+    });
+  });
 }
