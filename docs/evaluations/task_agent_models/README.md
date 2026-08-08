@@ -737,6 +737,38 @@ user-visible defect. It is a reason to withhold the tool, not evidence of harm.
 `scripts/penguin_wake_eval_matrix.sh` warms the build once before fanning out
 for this reason; ad-hoc parallel loops must do the same.
 
+### Narrowing the tool surface does not fix report churn
+
+`narrowToolSurface` gates tools on what the wake knows and withholds
+`update_report` from the opening turn, so a wake has to do its work before it
+can report. The hope was that a model with nothing to do would finish the first
+turn with a plain-text note instead of rewriting the report.
+
+Measured on `noOp`, three samples per model:
+
+| Model | Flag off | Flag on |
+| --- | ---: | ---: |
+| GLM 5.2 | 1 / 3 | 0 / 3 |
+| Kimi K3 | 0 / 3 | 0 / 3 |
+| Qwen3.5 397B | 0 / 3 | 0 / 3 |
+| Qwen3.6 27B | 2 / 3 | 3 / 3 |
+| DeepSeek V4 Flash 0731 | 0 / 3 | 1 / 3 |
+| **Total** | **3 / 15** | **4 / 15** |
+
+Within noise. Withholding the tool for one turn does not produce restraint — the
+model waits and publishes on the next turn instead. A single earlier sample
+showed GLM flipping to a pass, which is exactly the kind of n=1 signal this
+table exists to refuse.
+
+`requalification` showed no regression across GLM, Kimi and 27B at one sample
+each, so the narrower surface does not appear to cost the wake real work. That
+is the weaker claim and needs more samples before it can be relied on.
+
+The flag stays off. What survives on its own merits is the per-turn tool hook
+(`ConversationStrategy.toolsForTurn`) and the precondition gates, which remove
+hallucination invitations — offering `update_running_timer` with no timer
+running gives a model no real id to pass — rather than buying restraint.
+
 ### The fixture was wrong first
 
 The first `noOp` run failed on all five models, each proposing exactly

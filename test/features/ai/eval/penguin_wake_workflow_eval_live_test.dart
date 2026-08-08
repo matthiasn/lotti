@@ -182,6 +182,10 @@ void main() {
         ),
         syncService: harness.syncService,
         templateService: templateService,
+        // PENGUIN_WAKE_EVAL_NARROW_TOOLS=1 runs the same scenario with the
+        // gated, staged tool surface so the two can be compared directly.
+        narrowToolSurface:
+            Platform.environment['PENGUIN_WAKE_EVAL_NARROW_TOOLS'] == '1',
         domainLogger: DomainLogger(loggingService: LoggingService())
           ..enabledDomains.add(LogDomain.agentWorkflow),
       );
@@ -475,6 +479,8 @@ Future<String> _writeArtifact({
       'scenario': scenario.id.name,
       'scenarioSummary': scenario.summary,
       'model': modelId,
+      'narrowToolSurface':
+          Platform.environment['PENGUIN_WAKE_EVAL_NARROW_TOOLS'] == '1',
       'latencyMs': latencyMs,
       'contextChars': contextChars,
       'success': success,

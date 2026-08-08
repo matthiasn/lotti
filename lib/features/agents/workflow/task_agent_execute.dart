@@ -426,7 +426,25 @@ extension TaskAgentExecute on TaskAgentWorkflow {
             changeSetNotificationService?.syncAfterAgentRetraction,
       );
 
+      // Only compute the gating facts when the flag is on: each is a real
+      // query, and a wake that will advertise everything anyway should not pay
+      // for the answers.
+      final wakeFacts = narrowToolSurface
+          ? await _resolveWakeFacts(
+              taskId: taskId,
+              ledger: ledger,
+              attentionClaims: taskAttentionContext.claims,
+            )
+          : TaskAgentWakeFacts.permissive;
+      final tools = _contextBuilder.buildToolDefinitions(facts: wakeFacts);
+
       final strategy = TaskAgentStrategy(
+        // Withhold `update_report` from the opening turn so the wake does the
+        // work before it reports on it. Null when the flag is off, which
+        // leaves one fixed tool list for the conversation as before.
+        stagedToolExposure: narrowToolSurface
+            ? TaskAgentStagedToolExposure(allTools: tools)
+            : null,
         executor: executor,
         syncService: syncService,
         agentId: agentId,
@@ -530,7 +548,6 @@ extension TaskAgentExecute on TaskAgentWorkflow {
         },
       );
 
-      final tools = _buildToolDefinitions();
       final inferenceRepo = CloudInferenceWrapper(
         cloudRepository: this.cloudInferenceRepository,
         geminiThinkingMode: resolvedProfile.thinkingModel?.geminiThinkingMode,
@@ -902,5 +919,45 @@ extension TaskAgentExecute on TaskAgentWorkflow {
       // 12. Clean up in-memory conversation to prevent resource leaks.
       conversationRepository.deleteConversation(conversationId);
     }
+  }
+
+  /// The facts that decide which tools this wake advertises.
+  ///
+  /// Each is a question the app can answer itself. `hasNewerContentThanReport`
+  /// is deliberately left permissive: a note that arrived saying nothing new is
+  /// still newer than the report, and materiality is not something timestamps
+  /// can judge, so gating `update_report` on it would withhold the tool from
+  /// wakes that genuinely need it.
+  Future<TaskAgentWakeFacts> _resolveWakeFacts({
+    required String taskId,
+    required ProposalLedger ledger,
+    required List<AttentionRequestEntity> attentionClaims,
+  }) async {
+    final entity = await journalDb.journalEntityById(taskId);
+    final task = entity is Task ? entity : null;
+
+    final timeService = getIt<TimeService>();
+    final runningEntry = timeService.getCurrent();
+    final runningId = runningEntry?.meta.id;
+    // Scoped to THIS task: a timer belonging to another task reaches the prompt
+    // only as an opaque range, so there is no id for the agent to update.
+    final timerIsForThisTask =
+        runningEntry is JournalEntry && timeService.linkedFrom?.id == taskId;
+
+    final linked = await journalDb.getLinkedEntities(taskId);
+    final hasEditableTimeEntries = linked.whereType<JournalEntry>().any(
+      (entry) => entry.meta.id != runningId,
+    );
+
+    final labelDefinitions = await journalDb.getAllLabelDefinitions();
+
+    return TaskAgentWakeFacts(
+      hasChecklistItems: task?.data.checklistIds?.isNotEmpty ?? true,
+      hasRunningTimerForTask: timerIsForThisTask,
+      hasTimeRecords: hasEditableTimeEntries,
+      hasLabelDefinitions: labelDefinitions.isNotEmpty,
+      hasOpenProposals: ledger.open.isNotEmpty,
+      hasActiveAttentionClaims: attentionClaims.isNotEmpty,
+    );
   }
 }
