@@ -494,6 +494,84 @@ Lead with the decision. Keep it to three sentences.''';
       );
     });
 
+    test('a template directive is labelled as additive, not final', () {
+      // Concatenation alone says nothing about precedence, and the template
+      // text lands last — the position a model reads as the final word. Both
+      // scaffolds must say which side wins.
+      for (final modelId in <String?>[null, 'qwen3.5-122b-a10b']) {
+        final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+          version: makeTestTemplateVersion(
+            generalDirective: 'Escalate contractual blockers within one wake.',
+          ),
+          soulVersion: null,
+          modelId: modelId,
+        );
+
+        expect(
+          prompt,
+          contains(TaskAgentPromptBuilder.templateDirectivePrecedence),
+          reason: 'modelId: $modelId',
+        );
+        expect(
+          prompt.indexOf(
+            TaskAgentPromptBuilder.templateDirectivePrecedence,
+          ),
+          lessThan(prompt.indexOf('Escalate contractual blockers')),
+          reason: 'the statement must precede the directive it governs',
+        );
+      }
+    });
+
+    test('a custom report directive is scoped to shape, not to timing', () {
+      // The evolved directives in the wild descend from the seeded text that
+      // demanded `update_report` every wake. Without this, such a directive
+      // reads as licence to republish an unchanged report.
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: makeTestTemplateVersion(
+          reportDirective: 'Lead the report with a risk callout.',
+        ),
+        soulVersion: null,
+      );
+
+      expect(
+        prompt,
+        contains(TaskAgentPromptBuilder.reportDirectivePrecedence),
+      );
+      expect(
+        prompt.indexOf(TaskAgentPromptBuilder.reportDirectivePrecedence),
+        lessThan(prompt.indexOf('Lead the report with a risk callout.')),
+      );
+    });
+
+    test('a stock prompt gains neither statement', () {
+      // Both are emitted only where a template actually contributes text, so
+      // the shipped prompt — and every measured eval prompt built from it — is
+      // byte-identical to what it was.
+      for (final modelId in <String?>[null, 'qwen3.5-122b-a10b']) {
+        final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+          version: makeTestTemplateVersion(
+            generalDirective: taskAgentGeneralDirective,
+            reportDirective: taskAgentReportDirective,
+          ),
+          soulVersion: null,
+          modelId: modelId,
+        );
+
+        expect(
+          prompt,
+          isNot(
+            contains(TaskAgentPromptBuilder.templateDirectivePrecedence),
+          ),
+          reason: 'modelId: $modelId',
+        );
+        expect(
+          prompt,
+          isNot(contains(TaskAgentPromptBuilder.reportDirectivePrecedence)),
+          reason: 'the substituted contract does not override itself',
+        );
+      }
+    });
+
     test('a stock template never surfaces its legacy persona blob', () {
       // Seeded templates carry both a `directives` blurb and the seeded
       // general directive. Suppressing the latter must not promote the former:

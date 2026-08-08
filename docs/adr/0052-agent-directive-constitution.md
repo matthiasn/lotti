@@ -181,12 +181,59 @@ still pay for a second wording until their next evolution session. The
 slightly; net payload for a stock template still falls, because the seeded
 directive it replaces was longer than both.
 
-**What it does not fix.** Nothing stops an evolved directive from *contradicting*
-the constitution in prose. Ordering (constitution first, template guidance last)
-and the fact that only the constitution is code-owned are the mitigations; a
-contradiction is still a bad proposal that the user can reject and roll back.
-Making contradiction structurally impossible would mean constraining what a
-directive may say, which is a larger change than this.
+**Precedence is stated, and it favours the user — with one narrow exception.**
+Ordering alone was the wrong mitigation: the template directive is appended
+*last*, the position a model reads as the final word, so a contradiction
+resolved by accident. But the fix is not "the scaffold wins" either, which was
+this ADR's first instinct and is wrong. Nearly everything in the scaffold is
+**default behaviour** — when to set an estimate, how a report is shaped, which
+observation category to use, how terse to be — describing what the agent does
+when no instruction covers the case. Changing a default is not a conflict to
+resolve; it is the reason the evolvable layer exists, and a blanket precedence
+rule would have a model discard a legitimate customisation the moment it brushed
+against any scaffold line.
+
+So the statement now says the template's instruction takes precedence, and names
+the two things that are not preferences at all and therefore stand regardless:
+
+* **No fabrication.** No wording makes an invented id or an unearned claim valid.
+* **The agent does not undo the user's own actions on its own judgement.** A
+  directive may lift this only by saying when to act on the user's behalf —
+  that is the user deciding, not the agent.
+
+An instruction that cannot be carried out safely produces the closest thing that
+can, plus an observation naming the gap, so a quietly impossible directive
+surfaces instead of being dropped.
+
+**An override declares what it overrides.** A directive that departs from a
+default is expected to name it and give the reason — *"Default: X. Here: Y,
+because Z."* — and a declared override is followed exactly. The wake holds both
+texts, so a stated departure gives the model the baseline *and* the argument for
+leaving it, instead of two paragraphs that disagree. An undeclared contradiction
+is still followed — user rules win, and every directive written before this
+convention contains undeclared departures — but it is recorded as an observation,
+which is what carries it into the next evolution session to be stated properly.
+The evolution prompt asks for the same declaration when a proposal is written.
+
+A *customised* report directive gets a narrower statement: it governs the
+report's shape and voice, not whether to publish at all. That one exists because
+evolved report directives in the wild descend from the seeded text that demanded
+`update_report` on every wake, and would otherwise read as licence to republish
+an unchanged report. This is a scoping rule rather than an exception to
+user primacy: wanting a report on every wake is a legitimate preference, it is
+simply a *behaviour* change, so it belongs in the general directive as a declared
+override — which the evolution prompt says explicitly.
+
+All of these are emitted only where a template actually contributes text, so a
+stock prompt — and every measured eval prompt built from one — is byte-for-byte
+what it was.
+
+**What it still does not fix.** Nothing checks a proposal before it is stored, so
+a directive can still be vague, contradictory or undeclared; the prompt only
+decides what a wake does with it afterwards. Structural enforcement would mean
+constraining what a directive may say — plausibly a typed override (which default,
+what replaces it, why) rather than prose, which is a larger change and belongs
+with the standing-rules work.
 
 **What an existing install gets**, by what its active template version holds:
 
