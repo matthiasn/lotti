@@ -19,6 +19,7 @@ Map<String, dynamic> _case({
   bool passed = true,
   String failureCategory = 'none',
   double? credits,
+  double? energyWh,
   List<String> toolNames = const [],
   String? errorMessage,
 }) => {
@@ -27,6 +28,7 @@ Map<String, dynamic> _case({
   'passed': passed,
   'failureCategory': failureCategory,
   'credits': credits,
+  'energyWh': energyWh,
   'toolCalls': [
     for (final name in toolNames) {'name': name, 'argumentsJson': '{}'},
   ],
@@ -43,11 +45,13 @@ void main() {
             modelId: 'glm-5.2',
             scenarioId: 'gp_noop',
             credits: 0.001,
+            energyWh: 0.3,
           ),
           _case(
             modelId: 'glm-5.2',
             scenarioId: 'gp_on_track',
             credits: 0.003,
+            energyWh: 0.6,
           ),
         ],
       ),
@@ -78,6 +82,8 @@ void main() {
     expect(report, contains('0.1800'));
     // Qwen reported no billing — never rendered as zero.
     expect(report, contains('not reported'));
+    // Energy: 0.9 Wh over 2 cases × 3 wakes × 30 days = 40.5 Wh/month.
+    expect(report, contains('| 0.90 | 40.5 |'));
 
     // Matrix cells per scenario.
     expect(report, contains('| gp_noop | 1/1 | 1/1 |'));

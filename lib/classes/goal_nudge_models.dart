@@ -26,23 +26,32 @@ enum GoalNudgeStatus {
   failed,
 }
 
-/// The typed visual brief — the ONLY payload an image request may be
-/// composed from (ADR 0056: the boundary is this field allowlist).
+/// Animation presets a banner may use — a fixed, code-owned catalog
+/// (ADR 0058). The model *selects*, code *implements*: presets use
+/// design-system tokens, respect reduced motion, and fall back to their
+/// plain form where fragment shaders are unavailable (Linux).
+enum GoalBannerAnimation { steady, typewriter, pulse, wave, marquee, glitch }
+
+/// Accent (background/color) presets from the design system — the visual
+/// energy behind the copy, without a single generated pixel.
+enum GoalBannerAccent { calm, ember, tide, neon, aurora }
+
+/// The typed banner brief — everything a goal ad IS (ADR 0058).
 ///
-/// Every field is model-authored tool output that passes the leakage lint
-/// and evals before it gets here. [headline] and [cta] render in the image
-/// as banner typography (ADR 0055 Decision 8); [altText] is entity-side
-/// only (semantics label, history rendering) and is never sent.
+/// The model authors the copy and picks presentation presets; the app
+/// renders it procedurally. No image provider exists in this channel.
+/// Copy fields are the only model text that reaches a surface verbatim,
+/// so they are what the leakage lint and evals police (the ADR 0056
+/// principle, retargeted at text).
 @freezed
 abstract class GoalNudgeBrief with _$GoalNudgeBrief {
   const factory GoalNudgeBrief({
-    required String sceneConcept,
     required String headline,
-    required String altText,
     required GoalNudgeTone tone,
+    required GoalBannerAnimation animation,
+    @Default(GoalBannerAccent.calm) GoalBannerAccent accent,
+    String? tagline,
     String? cta,
-    String? mood,
-    String? stylePreset,
   }) = _GoalNudgeBrief;
 
   factory GoalNudgeBrief.fromJson(Map<String, dynamic> json) =>

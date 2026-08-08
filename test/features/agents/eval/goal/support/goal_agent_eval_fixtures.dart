@@ -373,15 +373,15 @@ Map<String, Object?> activeAdEntry({
   'markedStale': markedStale,
 };
 
-/// A reusable top-rated ad offered by the FACTS for `rerun_goal_ad`.
+/// A reusable top-rated banner offered by the FACTS for `rerun_goal_ad`.
 Map<String, Object?> reusableAdEntry({
   required String adId,
-  required String sceneSummary,
+  required String bannerSummary,
   required double meanRating,
   required int timesRun,
 }) => {
   'adId': adId,
-  'sceneSummary': sceneSummary,
+  'bannerSummary': bannerSummary,
   'meanRating': meanRating,
   'timesRun': timesRun,
 };

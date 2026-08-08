@@ -2089,12 +2089,12 @@ void main() {
 
   group('AgentDbConversions — goal entity roundtrips', () {
     const brief = GoalNudgeBrief(
-      sceneConcept: 'Retro travel poster of a glacier trail at dawn.',
       headline: 'The trail is lapping you.',
-      altText: 'Poster of a glacier trail at dawn.',
       tone: GoalNudgeTone.roast,
+      animation: GoalBannerAnimation.typewriter,
+      accent: GoalBannerAccent.tide,
+      tagline: 'It has been patient long enough.',
       cta: 'Lace up',
-      stylePreset: 'bold flat poster',
     );
 
     test('goalSpecVersion: subtype is the version status; immutable rows '
@@ -2205,7 +2205,6 @@ void main() {
         createdAt: createdAt,
         updatedAt: updatedAt,
         vectorClock: null,
-        imageEntryId: 'journal-image-1',
         runKey: 'wake-run-1',
         threadId: 'thread-1',
         triggerProgressId: goalProgressId('goal-agent-1', '2026-W32'),

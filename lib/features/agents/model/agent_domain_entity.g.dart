@@ -1874,7 +1874,6 @@ GoalNudgeEntity _$GoalNudgeEntityFromJson(Map<String, dynamic> json) =>
       vectorClock: json['vectorClock'] == null
           ? null
           : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
-      imageEntryId: json['imageEntryId'] as String?,
       runKey: json['runKey'] as String?,
       threadId: json['threadId'] as String?,
       triggerProgressId: json['triggerProgressId'] as String?,
@@ -1928,7 +1927,6 @@ Map<String, dynamic> _$GoalNudgeEntityToJson(GoalNudgeEntity instance) =>
       'createdAt': instance.createdAt.toIso8601String(),
       'updatedAt': instance.updatedAt.toIso8601String(),
       'vectorClock': instance.vectorClock,
-      'imageEntryId': instance.imageEntryId,
       'runKey': instance.runKey,
       'threadId': instance.threadId,
       'triggerProgressId': instance.triggerProgressId,

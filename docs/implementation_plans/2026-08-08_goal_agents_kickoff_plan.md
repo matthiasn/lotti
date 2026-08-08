@@ -542,7 +542,14 @@ wake latency bounds (≤1h, documented), lease-race duplicate
    `totalVisibleMs`/`impressionCount`/`firstShownAt`/`lastShownAt` accumulated on the goalNudge
    row from banner visibility sessions; visible-time-to-action is the denominator for
    effectiveness metrics and weights the rating library.
-6. Previously settled: banner-only (no push; ADR 0055 records it as revisitable); Nano Banana Pro
+6. **REVERSAL (USER, post-merge 2026-08-08, ADR 0058): no generative imagery.**
+   Ads are procedural text banners — model-authored copy over code-owned
+   animation/accent presets. The Nano Banana pipeline the eval proved end-to-end
+   is removed (the proof made the energy cost visible, which was the point);
+   ADR 0056 goes dormant as the boundary any future image feature re-enters
+   through. Per-agent ENERGY (Wh/goal-month from AiConsumptionEvent.energyKwh)
+   joins credits as a first-class reported figure.
+7. Previously settled: banner-only (no push; ADR 0055 records it as revisitable); Nano Banana Pro
    via direct Gemini with the need-to-know brief boundary (ZDR exception, user 2026-08-08); text
    inference on Melious (EU/no-training posture; only provider reporting cost); evals manual, no
    CI.

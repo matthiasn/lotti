@@ -15,7 +15,7 @@ T _$identity<T>(T value) => value;
 /// @nodoc
 mixin _$GoalNudgeBrief {
 
- String get sceneConcept; String get headline; String get altText; GoalNudgeTone get tone; String? get cta; String? get mood; String? get stylePreset;
+ String get headline; GoalNudgeTone get tone; GoalBannerAnimation get animation; GoalBannerAccent get accent; String? get tagline; String? get cta;
 /// Create a copy of GoalNudgeBrief
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -28,16 +28,16 @@ $GoalNudgeBriefCopyWith<GoalNudgeBrief> get copyWith => _$GoalNudgeBriefCopyWith
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalNudgeBrief&&(identical(other.sceneConcept, sceneConcept) || other.sceneConcept == sceneConcept)&&(identical(other.headline, headline) || other.headline == headline)&&(identical(other.altText, altText) || other.altText == altText)&&(identical(other.tone, tone) || other.tone == tone)&&(identical(other.cta, cta) || other.cta == cta)&&(identical(other.mood, mood) || other.mood == mood)&&(identical(other.stylePreset, stylePreset) || other.stylePreset == stylePreset));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalNudgeBrief&&(identical(other.headline, headline) || other.headline == headline)&&(identical(other.tone, tone) || other.tone == tone)&&(identical(other.animation, animation) || other.animation == animation)&&(identical(other.accent, accent) || other.accent == accent)&&(identical(other.tagline, tagline) || other.tagline == tagline)&&(identical(other.cta, cta) || other.cta == cta));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sceneConcept,headline,altText,tone,cta,mood,stylePreset);
+int get hashCode => Object.hash(runtimeType,headline,tone,animation,accent,tagline,cta);
 
 @override
 String toString() {
-  return 'GoalNudgeBrief(sceneConcept: $sceneConcept, headline: $headline, altText: $altText, tone: $tone, cta: $cta, mood: $mood, stylePreset: $stylePreset)';
+  return 'GoalNudgeBrief(headline: $headline, tone: $tone, animation: $animation, accent: $accent, tagline: $tagline, cta: $cta)';
 }
 
 
@@ -48,7 +48,7 @@ abstract mixin class $GoalNudgeBriefCopyWith<$Res>  {
   factory $GoalNudgeBriefCopyWith(GoalNudgeBrief value, $Res Function(GoalNudgeBrief) _then) = _$GoalNudgeBriefCopyWithImpl;
 @useResult
 $Res call({
- String sceneConcept, String headline, String altText, GoalNudgeTone tone, String? cta, String? mood, String? stylePreset
+ String headline, GoalNudgeTone tone, GoalBannerAnimation animation, GoalBannerAccent accent, String? tagline, String? cta
 });
 
 
@@ -65,15 +65,14 @@ class _$GoalNudgeBriefCopyWithImpl<$Res>
 
 /// Create a copy of GoalNudgeBrief
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? sceneConcept = null,Object? headline = null,Object? altText = null,Object? tone = null,Object? cta = freezed,Object? mood = freezed,Object? stylePreset = freezed,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? headline = null,Object? tone = null,Object? animation = null,Object? accent = null,Object? tagline = freezed,Object? cta = freezed,}) {
   return _then(_self.copyWith(
-sceneConcept: null == sceneConcept ? _self.sceneConcept : sceneConcept // ignore: cast_nullable_to_non_nullable
-as String,headline: null == headline ? _self.headline : headline // ignore: cast_nullable_to_non_nullable
-as String,altText: null == altText ? _self.altText : altText // ignore: cast_nullable_to_non_nullable
+headline: null == headline ? _self.headline : headline // ignore: cast_nullable_to_non_nullable
 as String,tone: null == tone ? _self.tone : tone // ignore: cast_nullable_to_non_nullable
-as GoalNudgeTone,cta: freezed == cta ? _self.cta : cta // ignore: cast_nullable_to_non_nullable
-as String?,mood: freezed == mood ? _self.mood : mood // ignore: cast_nullable_to_non_nullable
-as String?,stylePreset: freezed == stylePreset ? _self.stylePreset : stylePreset // ignore: cast_nullable_to_non_nullable
+as GoalNudgeTone,animation: null == animation ? _self.animation : animation // ignore: cast_nullable_to_non_nullable
+as GoalBannerAnimation,accent: null == accent ? _self.accent : accent // ignore: cast_nullable_to_non_nullable
+as GoalBannerAccent,tagline: freezed == tagline ? _self.tagline : tagline // ignore: cast_nullable_to_non_nullable
+as String?,cta: freezed == cta ? _self.cta : cta // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }
@@ -159,10 +158,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String sceneConcept,  String headline,  String altText,  GoalNudgeTone tone,  String? cta,  String? mood,  String? stylePreset)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String headline,  GoalNudgeTone tone,  GoalBannerAnimation animation,  GoalBannerAccent accent,  String? tagline,  String? cta)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GoalNudgeBrief() when $default != null:
-return $default(_that.sceneConcept,_that.headline,_that.altText,_that.tone,_that.cta,_that.mood,_that.stylePreset);case _:
+return $default(_that.headline,_that.tone,_that.animation,_that.accent,_that.tagline,_that.cta);case _:
   return orElse();
 
 }
@@ -180,10 +179,10 @@ return $default(_that.sceneConcept,_that.headline,_that.altText,_that.tone,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String sceneConcept,  String headline,  String altText,  GoalNudgeTone tone,  String? cta,  String? mood,  String? stylePreset)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String headline,  GoalNudgeTone tone,  GoalBannerAnimation animation,  GoalBannerAccent accent,  String? tagline,  String? cta)  $default,) {final _that = this;
 switch (_that) {
 case _GoalNudgeBrief():
-return $default(_that.sceneConcept,_that.headline,_that.altText,_that.tone,_that.cta,_that.mood,_that.stylePreset);case _:
+return $default(_that.headline,_that.tone,_that.animation,_that.accent,_that.tagline,_that.cta);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -200,10 +199,10 @@ return $default(_that.sceneConcept,_that.headline,_that.altText,_that.tone,_that
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String sceneConcept,  String headline,  String altText,  GoalNudgeTone tone,  String? cta,  String? mood,  String? stylePreset)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String headline,  GoalNudgeTone tone,  GoalBannerAnimation animation,  GoalBannerAccent accent,  String? tagline,  String? cta)?  $default,) {final _that = this;
 switch (_that) {
 case _GoalNudgeBrief() when $default != null:
-return $default(_that.sceneConcept,_that.headline,_that.altText,_that.tone,_that.cta,_that.mood,_that.stylePreset);case _:
+return $default(_that.headline,_that.tone,_that.animation,_that.accent,_that.tagline,_that.cta);case _:
   return null;
 
 }
@@ -215,16 +214,15 @@ return $default(_that.sceneConcept,_that.headline,_that.altText,_that.tone,_that
 @JsonSerializable()
 
 class _GoalNudgeBrief implements GoalNudgeBrief {
-  const _GoalNudgeBrief({required this.sceneConcept, required this.headline, required this.altText, required this.tone, this.cta, this.mood, this.stylePreset});
+  const _GoalNudgeBrief({required this.headline, required this.tone, required this.animation, this.accent = GoalBannerAccent.calm, this.tagline, this.cta});
   factory _GoalNudgeBrief.fromJson(Map<String, dynamic> json) => _$GoalNudgeBriefFromJson(json);
 
-@override final  String sceneConcept;
 @override final  String headline;
-@override final  String altText;
 @override final  GoalNudgeTone tone;
+@override final  GoalBannerAnimation animation;
+@override@JsonKey() final  GoalBannerAccent accent;
+@override final  String? tagline;
 @override final  String? cta;
-@override final  String? mood;
-@override final  String? stylePreset;
 
 /// Create a copy of GoalNudgeBrief
 /// with the given fields replaced by the non-null parameter values.
@@ -239,16 +237,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalNudgeBrief&&(identical(other.sceneConcept, sceneConcept) || other.sceneConcept == sceneConcept)&&(identical(other.headline, headline) || other.headline == headline)&&(identical(other.altText, altText) || other.altText == altText)&&(identical(other.tone, tone) || other.tone == tone)&&(identical(other.cta, cta) || other.cta == cta)&&(identical(other.mood, mood) || other.mood == mood)&&(identical(other.stylePreset, stylePreset) || other.stylePreset == stylePreset));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalNudgeBrief&&(identical(other.headline, headline) || other.headline == headline)&&(identical(other.tone, tone) || other.tone == tone)&&(identical(other.animation, animation) || other.animation == animation)&&(identical(other.accent, accent) || other.accent == accent)&&(identical(other.tagline, tagline) || other.tagline == tagline)&&(identical(other.cta, cta) || other.cta == cta));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,sceneConcept,headline,altText,tone,cta,mood,stylePreset);
+int get hashCode => Object.hash(runtimeType,headline,tone,animation,accent,tagline,cta);
 
 @override
 String toString() {
-  return 'GoalNudgeBrief(sceneConcept: $sceneConcept, headline: $headline, altText: $altText, tone: $tone, cta: $cta, mood: $mood, stylePreset: $stylePreset)';
+  return 'GoalNudgeBrief(headline: $headline, tone: $tone, animation: $animation, accent: $accent, tagline: $tagline, cta: $cta)';
 }
 
 
@@ -259,7 +257,7 @@ abstract mixin class _$GoalNudgeBriefCopyWith<$Res> implements $GoalNudgeBriefCo
   factory _$GoalNudgeBriefCopyWith(_GoalNudgeBrief value, $Res Function(_GoalNudgeBrief) _then) = __$GoalNudgeBriefCopyWithImpl;
 @override @useResult
 $Res call({
- String sceneConcept, String headline, String altText, GoalNudgeTone tone, String? cta, String? mood, String? stylePreset
+ String headline, GoalNudgeTone tone, GoalBannerAnimation animation, GoalBannerAccent accent, String? tagline, String? cta
 });
 
 
@@ -276,15 +274,14 @@ class __$GoalNudgeBriefCopyWithImpl<$Res>
 
 /// Create a copy of GoalNudgeBrief
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? sceneConcept = null,Object? headline = null,Object? altText = null,Object? tone = null,Object? cta = freezed,Object? mood = freezed,Object? stylePreset = freezed,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? headline = null,Object? tone = null,Object? animation = null,Object? accent = null,Object? tagline = freezed,Object? cta = freezed,}) {
   return _then(_GoalNudgeBrief(
-sceneConcept: null == sceneConcept ? _self.sceneConcept : sceneConcept // ignore: cast_nullable_to_non_nullable
-as String,headline: null == headline ? _self.headline : headline // ignore: cast_nullable_to_non_nullable
-as String,altText: null == altText ? _self.altText : altText // ignore: cast_nullable_to_non_nullable
+headline: null == headline ? _self.headline : headline // ignore: cast_nullable_to_non_nullable
 as String,tone: null == tone ? _self.tone : tone // ignore: cast_nullable_to_non_nullable
-as GoalNudgeTone,cta: freezed == cta ? _self.cta : cta // ignore: cast_nullable_to_non_nullable
-as String?,mood: freezed == mood ? _self.mood : mood // ignore: cast_nullable_to_non_nullable
-as String?,stylePreset: freezed == stylePreset ? _self.stylePreset : stylePreset // ignore: cast_nullable_to_non_nullable
+as GoalNudgeTone,animation: null == animation ? _self.animation : animation // ignore: cast_nullable_to_non_nullable
+as GoalBannerAnimation,accent: null == accent ? _self.accent : accent // ignore: cast_nullable_to_non_nullable
+as GoalBannerAccent,tagline: freezed == tagline ? _self.tagline : tagline // ignore: cast_nullable_to_non_nullable
+as String?,cta: freezed == cta ? _self.cta : cta // ignore: cast_nullable_to_non_nullable
 as String?,
   ));
 }

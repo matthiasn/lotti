@@ -103,6 +103,17 @@ class GoalAgentEvalCaseResult {
 
   bool get passed => failureCategory == GoalAgentEvalFailureCategory.none;
 
+  /// Total reported energy for this case in watt-hours, or null when the
+  /// provider sent no energy data. The "my fitness agent costs N Wh/month"
+  /// number starts here (ADR 0058 Decision 4).
+  double? get energyWh {
+    final values = consumption
+        .map((e) => e.energyKwh)
+        .whereType<double>()
+        .toList();
+    return values.isEmpty ? null : values.reduce((a, b) => a + b) * 1000;
+  }
+
   /// Total billed credits for this case, or null when nothing was reported.
   /// Never zero-defaulted: a missing bill is not a free run.
   double? get credits {
@@ -125,6 +136,7 @@ class GoalAgentEvalCaseResult {
     'thoughtsTokens': thoughtsTokens,
     'cachedInputTokens': cachedInputTokens,
     'credits': credits,
+    'energyWh': energyWh,
     'toolCalls': [for (final call in toolCalls) call.toJson()],
     'assistantContent': assistantContent,
     'consumption': [for (final event in consumption) event.toJson()],
@@ -231,10 +243,10 @@ class GoalAgentEvalReport {
       ..writeln('## Cost (observed, not a target)')
       ..writeln()
       ..writeln(
-        '| Model | Cases | In | Out | Credits | '
-        'Credits/goal-month* |',
+        '| Model | Cases | In | Out | Credits | Credits/goal-month* | '
+        'Wh | Wh/goal-month* |',
       )
-      ..writeln('| --- | ---: | ---: | ---: | ---: | ---: |');
+      ..writeln('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
     for (final modelId in modelIds) {
       final cases = results.where((r) => r.modelId == modelId).toList();
       final inTokens = cases.fold<int>(
@@ -255,10 +267,22 @@ class GoalAgentEvalReport {
       final perGoalMonth = credits == null || cases.isEmpty
           ? null
           : credits / cases.length * wakesPerDayAssumption * 30;
+      final energyValues = cases
+          .map((r) => r.energyWh)
+          .whereType<double>()
+          .toList();
+      final energyWh = energyValues.isEmpty
+          ? null
+          : energyValues.reduce((a, b) => a + b);
+      final energyPerGoalMonth = energyWh == null || cases.isEmpty
+          ? null
+          : energyWh / cases.length * wakesPerDayAssumption * 30;
       buffer.writeln(
         '| `$modelId` | ${cases.length} | $inTokens | $outTokens | '
         '${credits?.toStringAsFixed(4) ?? 'not reported'} | '
-        '${perGoalMonth?.toStringAsFixed(4) ?? 'not reported'} |',
+        '${perGoalMonth?.toStringAsFixed(4) ?? 'not reported'} | '
+        '${energyWh?.toStringAsFixed(2) ?? 'not reported'} | '
+        '${energyPerGoalMonth?.toStringAsFixed(1) ?? 'not reported'} |',
       );
     }
     buffer

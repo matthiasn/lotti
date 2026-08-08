@@ -949,11 +949,10 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// The row is append-only in spirit: [status] moves through the lifecycle
   /// (including the reuse re-entry `retired → active`), while [ratings] and
   /// the visibility counters accumulate across runs — the labeled library
-  /// that personalizes future ads and detects wear-out. [brief] is the only
-  /// material an image request may be composed from (ADR 0056);
-  /// [briefDigest] is the near-duplicate dedupe key. [imageEntryId] points
-  /// at the generated `JournalImage`, so cross-device display rides on
-  /// existing media sync.
+  /// that personalizes future ads and detects wear-out. [brief] is all the
+  /// banner there is: copy plus procedural presentation presets, rendered
+  /// by the app with zero generation cost (ADR 0058). [briefDigest] is the
+  /// near-duplicate dedupe key over the copy.
   const factory AgentDomainEntity.goalNudge({
     required String id,
     required String agentId,
@@ -963,7 +962,6 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required DateTime createdAt,
     required DateTime updatedAt,
     required VectorClock? vectorClock,
-    String? imageEntryId,
 
     /// Wake provenance (the DayPlanEntity precedent).
     String? runKey,

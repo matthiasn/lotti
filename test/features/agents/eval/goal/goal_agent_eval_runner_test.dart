@@ -66,8 +66,7 @@ void main() {
           ),
           call(
             GoalAgentToolNames.createGoalAd,
-            '{"sceneConcept":"a poster","headline":"Go!","altText":"a", '
-            '"tone":"nudge"}',
+            '{"headline":"Go!","tone":"nudge","animation":"pulse"}',
           ),
         ],
         assistantContent: '',
@@ -99,8 +98,9 @@ void main() {
           ),
           call(
             GoalAgentToolNames.createGoalAd,
-            '{"sceneConcept":"A keeper at Ross Station walking the shore", '
-            '"headline":"Back out there","altText":"a","tone":"encourage"}',
+            '{"headline":"Back out there","tagline":"A keeper at Ross '
+            'Station misses her shoreline walks","tone":"encourage", '
+            '"animation":"wave"}',
           ),
         ],
         assistantContent: '',
@@ -118,10 +118,9 @@ void main() {
           ),
           call(
             GoalAgentToolNames.createGoalAd,
-            '{"sceneConcept":"Retro travel poster of winding coastal '
-            'boardwalk at dawn, empty and inviting","headline":"The '
-            'boardwalk is calling","altText":"poster of a boardwalk", '
-            '"tone":"encourage"}',
+            '{"headline":"The boardwalk is calling","tagline":"It has '
+            'been patient long enough","cta":"Answer it","tone": '
+            '"encourage","animation":"typewriter","accent":"tide"}',
           ),
         ],
         assistantContent: '',
@@ -171,8 +170,7 @@ void main() {
         toolCalls: [
           call(
             GoalAgentToolNames.createGoalAd,
-            '{"sceneConcept":"glacier","headline":"Go","altText":"a",'
-            '"tone":"encourage"}',
+            '{"headline":"Go","tone":"encourage","animation":"pulse"}',
           ),
         ],
         assistantContent: '',
@@ -227,6 +225,7 @@ void main() {
       required GoalAgentEvalScenario scenario,
       GoalAgentEvalFailureCategory category = GoalAgentEvalFailureCategory.none,
       double? credits,
+      bool includeUnbilledEvent = false,
     }) => GoalAgentEvalCaseResult(
       modelId: modelId,
       scenario: scenario,
@@ -241,6 +240,14 @@ void main() {
           makeConsumptionEvent(
             credits: credits,
             costCreditsDecimal: '$credits',
+          ),
+        // Energy without billing: some providers report one, not the
+        // other — the two figures must degrade independently.
+        if (includeUnbilledEvent)
+          makeConsumptionEvent(
+            id: 'evt-unbilled',
+            credits: null,
+            costCreditsDecimal: null,
           ),
       ],
     );
@@ -262,6 +269,10 @@ void main() {
       expect(markdown, contains('0.0020'));
       // 0.002 credits/case × 3 wakes/day × 30 days = 0.18 credits/month.
       expect(markdown, contains('0.1800'));
+      // 0.0003 kWh/event → 0.30 Wh/case → × 3 wakes × 30 days = 27 Wh/mo:
+      // the "my fitness agent costs N Wh/month" figure (ADR 0058).
+      expect(markdown, contains('0.30'));
+      expect(markdown, contains('27.0'));
       expect(markdown, contains('3 LLM wakes'));
     });
 
@@ -271,11 +282,21 @@ void main() {
         provider: provider,
         modelIds: const ['qwen3.6-27b'],
         scenarios: [scenario],
-        results: [result(modelId: 'qwen3.6-27b', scenario: scenario)],
+        results: [
+          result(
+            modelId: 'qwen3.6-27b',
+            scenario: scenario,
+            includeUnbilledEvent: true,
+          ),
+        ],
         temperature: 0,
         wakesPerDayAssumption: 3,
       );
-      expect(report.toMarkdown(), contains('not reported'));
+      final markdown = report.toMarkdown();
+      expect(markdown, contains('not reported'));
+      // Energy still reports even when billing is absent — the event
+      // carried energyKwh without credits.
+      expect(markdown, contains('0.30'));
       final json = report.toJson();
       final results = json['results']! as List;
       expect(
@@ -293,6 +314,8 @@ void main() {
       );
       final json = caseResult.toJson();
       expect(caseResult.credits, closeTo(0.004, 1e-12));
+      expect(caseResult.energyWh, closeTo(0.3, 1e-9));
+      expect(json['energyWh'], closeTo(0.3, 1e-9));
       expect(
         (json['consumption']! as List).single,
         isA<Map<String, Object?>>(),

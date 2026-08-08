@@ -561,9 +561,9 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       reusableTopRatedAds: [
         reusableAdEntry(
           adId: 'ad-glacier-01',
-          sceneSummary:
-              'Retro travel poster of a glacier trail at dawn, '
-              'bold flat colours.',
+          bannerSummary:
+              '"The glacier trail is still there. You are not." '
+              '— typewriter over tide accent.',
           meanRating: 5,
           timesRun: 2,
         ),
@@ -625,8 +625,8 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
     ],
     requiredToolArgumentTermGroups: const {
       GoalAgentToolNames.createGoalAd: [
-        // The failing dimension is steps: the scene must sell movement.
-        ['walk', 'stride', 'trail', 'path', 'steps', 'hike', 'boardwalk'],
+        // The failing dimension is steps: the copy must sell movement.
+        ['walk', 'stride', 'trail', 'path', 'step', 'hike', 'move', 'lace'],
       ],
     },
     // Only the leakage inventory is banned. The satisfied dimension MAY
@@ -700,9 +700,9 @@ final goalAgentEvalScenarios = <GoalAgentEvalScenario>[
       reusableTopRatedAds: [
         reusableAdEntry(
           adId: 'ad-glacier-01',
-          sceneSummary:
-              'Retro travel poster of a glacier trail at dawn — '
-              'a walking scene, fits the failing steps dimension.',
+          bannerSummary:
+              '"The glacier trail is still there. You are not." '
+              '— sells the failing steps dimension.',
           meanRating: 5,
           timesRun: 2,
         ),

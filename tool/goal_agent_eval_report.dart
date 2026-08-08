@@ -66,9 +66,9 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
         (scenarioId == null || r['scenarioId'] == scenarioId),
   );
 
-  double? creditsOf(Iterable<Map<String, dynamic>> cases) {
+  double? sumOf(Iterable<Map<String, dynamic>> cases, String key) {
     final values = cases
-        .map((r) => r['credits'])
+        .map((r) => r[key])
         .whereType<num>()
         .map((v) => v.toDouble())
         .toList();
@@ -87,9 +87,9 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
     ..writeln()
     ..writeln(
       '| Model | Cases | Pass | Pass rate | Credits | '
-      'Credits/goal-month* |',
+      'Credits/goal-month* | Wh | Wh/goal-month* |',
     )
-    ..writeln('| --- | ---: | ---: | ---: | ---: | ---: |');
+    ..writeln('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
 
   final ranked = [...modelIds]
     ..sort((a, b) {
@@ -104,17 +104,23 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
   for (final modelId in ranked) {
     final cases = casesFor(modelId).toList();
     final passedCount = cases.where((r) => r['passed'] == true).length;
-    final credits = creditsOf(cases);
+    final credits = sumOf(cases, 'credits');
     final perGoalMonth = credits == null || cases.isEmpty
         ? null
         : credits / cases.length * wakesPerDay * 30;
+    final energyWh = sumOf(cases, 'energyWh');
+    final energyPerGoalMonth = energyWh == null || cases.isEmpty
+        ? null
+        : energyWh / cases.length * wakesPerDay * 30;
     final rate = cases.isEmpty
         ? '—'
         : (passedCount / cases.length).toStringAsFixed(2);
     buffer.writeln(
       '| `$modelId` | ${cases.length} | $passedCount | $rate | '
       '${credits?.toStringAsFixed(4) ?? 'not reported'} | '
-      '${perGoalMonth?.toStringAsFixed(4) ?? 'not reported'} |',
+      '${perGoalMonth?.toStringAsFixed(4) ?? 'not reported'} | '
+      '${energyWh?.toStringAsFixed(2) ?? 'not reported'} | '
+      '${energyPerGoalMonth?.toStringAsFixed(1) ?? 'not reported'} |',
     );
   }
 
@@ -158,12 +164,13 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
   buffer
     ..writeln()
     ..writeln(
-      '*Credits/goal-month extrapolates mean credits per case × '
+      '*Per-goal-month figures extrapolate the per-case mean × '
       '$wakesPerDay LLM wakes/day × 30 days. The wakes/day figure is a '
       'printed assumption, not a measurement; deterministic Phase A ticks '
-      'cost nothing. All cost figures are observations for monitoring — '
-      'never targets or caps. "not reported" means the provider returned '
-      'no billing data, not that the run was free.',
+      'and procedural banner rendering (ADR 0058) cost nothing. All '
+      'figures are observations for monitoring — never targets or caps. '
+      '"not reported" means the provider returned no data, not that the '
+      'run was free.',
     );
   return buffer.toString();
 }
