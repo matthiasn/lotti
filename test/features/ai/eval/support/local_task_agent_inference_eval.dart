@@ -75,34 +75,7 @@ enum LocalTaskAgentEvalPromptVariant {
   qualityFocused,
   conciseReport,
   evidenceSynthesis,
-
-  /// Small-model probe: a short prompt and a reduced tool surface.
-  ///
-  /// The production prompt is ~21k characters, 42% of it prose about tool
-  /// etiquette, and advertises ~20 tools — against a task context of under a
-  /// thousand characters. Large models absorb that; the open question is
-  /// whether it is what stops small ones from being useful. This variant keeps
-  /// the same scenarios and checks and changes only the payload.
-  lean,
 }
-
-/// Tools the lean variant advertises.
-///
-/// Deliberately not derived from each scenario's expectations — that would
-/// hand the model the answer. This is the subset a task agent needs on almost
-/// every wake, with labels, language, linking, splitting, time entries and
-/// attention requests removed.
-const Set<String> leanTaskAgentToolNames = {
-  TaskAgentToolNames.setTaskTitle,
-  TaskAgentToolNames.setTaskStatus,
-  TaskAgentToolNames.updateTaskEstimate,
-  TaskAgentToolNames.updateTaskDueDate,
-  TaskAgentToolNames.updateTaskPriority,
-  TaskAgentToolNames.addMultipleChecklistItems,
-  TaskAgentToolNames.updateChecklistItems,
-  TaskAgentToolNames.updateReport,
-  TaskAgentToolNames.recordObservations,
-};
 
 enum LocalTaskAgentEvalExecutionMode {
   singlePass,
@@ -667,9 +640,6 @@ List<ChatCompletionTool> buildLocalTaskAgentEvalTools({
   return AgentToolRegistry.taskAgentTools
       .where((definition) {
         if (!definition.enabled) return false;
-        if (promptVariant == LocalTaskAgentEvalPromptVariant.lean) {
-          return leanTaskAgentToolNames.contains(definition.name);
-        }
         return true;
       })
       .map((definition) {
@@ -1159,48 +1129,6 @@ LocalTaskAgentEvalScenario _latestDeadlineWinsScenario(
   );
 }
 
-/// Compact system prompt for [LocalTaskAgentEvalPromptVariant.lean].
-///
-/// Keeps every rule a correct wake actually depends on — end with a report or
-/// nothing, do not invent facts, do not undo the user's work, do not narrate
-/// your own process, write in the task's language — and drops the
-/// tool-etiquette prose that the dispatcher already enforces by rejecting the
-/// calls. The production prompt's ban on restating visible metadata is among
-/// what goes; the measurements in `docs/evaluations/task_agent_models` were
-/// taken against exactly this text, so it is documented as it stands rather
-/// than amended after the fact.
-const String _leanSystemPrompt = '''
-You are a Task Agent that maintains one task's summary report.
-
-A wake ends in exactly one of two ways: if something report-worthy changed,
-finish with a single `update_report` call carrying `oneLiner`, `tldr` and
-`content`; if nothing changed, finish with a short plain-text note and no
-tool call.
-
-Apply the changes the task context asks for, and only those. Do not change a
-field whose current value already matches, and never undo work the user has
-marked done.
-
-Every statement must be supported by the task context. Do not describe your own
-analysis, tool calls, or checklist maintenance as progress. Do not report work
-the user explicitly deferred as active or planned.
-
-Write in the task's `languageCode`.
-
-### `oneLiner`
-One short line naming the current state. No emoji.
-
-### `tldr`
-Two or three sentences on what matters now, without repeating the one-liner.
-
-### `content`
-A compact current-state report in the task's language. No title. Include only
-sections that carry real information, chosen from `## Progress` for completed
-outcomes, `## Next actions` for concrete pending work, `## Blockers` for active
-blockers, and `## Links` for real URLs from the context. Omit empty sections
-and internal IDs.
-''';
-
 /// The evaluation system prompt for [variant], for suites defined in their own
 /// files (see `penguin_task_agent_eval_scenarios.dart`).
 String buildLocalTaskAgentEvalSystemPrompt(
@@ -1218,11 +1146,6 @@ String _buildEvalSystemPrompt(
   String? modelId,
   String? reportDirective,
 }) {
-  if (variant == LocalTaskAgentEvalPromptVariant.lean) {
-    return reportDirective == null
-        ? _leanSystemPrompt
-        : '$_leanSystemPrompt\n\n## Report Directive\n\n$reportDirective';
-  }
   final version =
       AgentDomainEntity.agentTemplateVersion(
             id: 'melious-task-agent-eval-${variant.name}',
@@ -1272,7 +1195,6 @@ String _evalVariantDirective(LocalTaskAgentEvalPromptVariant variant) {
     LocalTaskAgentEvalPromptVariant.compactModel => _compactModelDirective,
     LocalTaskAgentEvalPromptVariant.qualityFocused => _qualityFocusedDirective,
     LocalTaskAgentEvalPromptVariant.conciseReport => '',
-    LocalTaskAgentEvalPromptVariant.lean => '',
     LocalTaskAgentEvalPromptVariant.evidenceSynthesis => '',
   };
 }

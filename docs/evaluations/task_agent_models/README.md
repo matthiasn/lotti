@@ -671,8 +671,20 @@ Three samples per model:
 | Kimi K3 | 3 / 3 | — |
 | Qwen3.5 397B | 3 / 3 | — |
 | Qwen3.6 27B | 3 / 3 | — |
-| GLM 5.2 | 2 / 3 | left the task blocked after the note clearing it |
-| DeepSeek V4 Flash 0731 | 2 / 3 | third run was a five-minute provider timeout |
+| DeepSeek V4 Flash 0731 | 3 / 3 | — |
+| GLM 5.2 | 2 / 3 | ran out of turns before proposing the status change |
+
+DeepSeek's first attempt at a third sample was lost to a five-minute provider
+timeout; re-run, it passes, so it is 5/5 across completed runs.
+
+GLM's one failure is a turn-budget problem rather than a reasoning one. Both its
+runs call `set_task_language` twice — the task genuinely has no language, so the
+first call is correct and the second is rejected by the single-use guard — and
+both also call `record_observations`. In the passing run `set_task_status` still
+fits; in the failing one it does not, and the report it publishes says so
+outright: *"the task is still marked blocked despite the log saying
+'unblocked.'"* It saw the blocker resolve and ran out of turns before proposing
+it. Its two checklist completions were the two supported ones in both runs.
 
 Read it narrowly. One scenario, three samples, and four of five models are at or
 near the ceiling — it separates broken from working, not good from better. The
