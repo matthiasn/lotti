@@ -3,6 +3,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/seeded_directives.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/util/text_utils.dart';
+import 'package:lotti/features/agents/workflow/task_agent_prompt_builder.dart';
 
 /// Assembled context for an evolution session, ready to feed the LLM.
 class EvolutionContext {
@@ -224,10 +225,29 @@ again. The conversation should always be driving toward an approved proposal.
 
     // Present directives — use split fields when available, fall back to
     // the legacy single field.
+    //
+    // Task agents get the *effective* report directive rather than the stored
+    // one. For a stock template the stored value is `taskAgentReportDirective`,
+    // which `TaskAgentPromptBuilder` always substitutes and the agent therefore
+    // never receives — and the two contradict each other, the seeded text
+    // demanding `update_report` on every wake where the substituted one asks
+    // for a plain-text note when nothing changed. Showing the stored text here
+    // had this session rewriting a directive that was never in effect, and
+    // `propose_directives` takes a complete rewrite rather than a delta, so the
+    // wrong baseline would be adopted wholesale.
     final generalDirective = currentVersion.generalDirective.trim();
-    final reportDirective = currentVersion.reportDirective.trim();
+    final storedReportDirective = currentVersion.reportDirective.trim();
+    // Whether this template uses the split fields at all is decided by what is
+    // stored, so a legacy template with neither still falls back to its single
+    // `directives` field below.
     final hasNewDirectives =
-        generalDirective.isNotEmpty || reportDirective.isNotEmpty;
+        generalDirective.isNotEmpty || storedReportDirective.isNotEmpty;
+    final reportDirective =
+        template.kind == AgentTemplateKind.taskAgent && hasNewDirectives
+        ? TaskAgentPromptBuilder.effectiveReportDirective(
+            version: currentVersion,
+          ).trim()
+        : storedReportDirective;
 
     if (hasNewDirectives) {
       if (generalDirective.isNotEmpty) {

@@ -303,6 +303,12 @@ Common changes across the path:
 - `TaskAgentPromptBuilder` replaces **only** the seeded/default report directive
   with the evaluated compact directive and appends the evidence-synthesis
   protocol. An explicitly customized template directive remains authoritative.
+  Because that substitution means the stored text is never what the agent
+  received, `EvolutionContextBuilder` shows a task agent's evolution session the
+  **effective** directive via `TaskAgentPromptBuilder.effectiveReportDirective`.
+  `propose_directives` takes a complete rewrite rather than a delta, so a
+  session shown the seeded text would rewrite a contract that was never in
+  effect and have it adopted wholesale.
 - The compact contract treats a concrete, committed multi-step plan as checklist
   intent even without the words "create a checklist"; it does **not** treat
   speculation or a description of current state as authority.
