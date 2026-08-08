@@ -691,26 +691,51 @@ for no reason.
 This is the first scenario in the suite that discriminates, and it puts the
 dense 27B ahead of every frontier model tested.
 
-### Scenario 3 — `pendingProposal`
+### Scenario 3 — `pendingProposal` (withdrawn, not a result)
 
-The unblocking wake, but a previous wake already queued the status change and
-the user has not answered yet. Completing the swapped-cartridge item is still
-correct; re-proposing the status change asks the user the same question twice.
+This scenario was written to catch a model re-proposing a change already queued
+and awaiting the user. It reported ten failures out of ten across five models.
+**That number was wrong and is retracted.** It was measurement error twice over:
 
-| Model | Passed |
-| --- | ---: |
-| GLM 5.2 | 0 / 2 |
-| Kimi K3 | 0 / 2 |
-| Qwen3.5 397B | 0 / 2 |
-| Qwen3.6 27B | 0 / 2 |
-| DeepSeek V4 Flash 0731 | 0 / 2 |
+1. The proposals were read from `getPendingChangeSets` after the wake, which
+   still contains the change set the fixture seeded. Every run counted the
+   fixture's own item as a model proposal. Filtering by the wake's run key
+   removed that.
+2. The number did not move after the filter, because `ChangeSetBuilder.build`
+   **consolidates** pre-wake pending sets into the set the wake creates and
+   retires the originals. The seeded item is therefore carried into the wake's
+   own change set legitimately, and an identical model proposal would have been
+   dropped by `deduplicateItems` before it was ever persisted.
 
-Ten runs out of ten re-proposed a change already awaiting the user. The queued
-proposal does reach `getProposalLedger` — the harness test asserts it, so this
-is not the fixture failing to seed. Either the open-proposal guard is not
-reaching the model with enough force, or models do not act on it. Both are ours
-to fix, not the model's, and this is the strongest argument in the suite for
-withholding a tool rather than instructing against its use.
+The second point is the substantive one: **the app already prevents duplicate
+proposals structurally**, through dedup against still-open items plus
+consolidation. There was never a behaviour here for models to fail.
+
+It also means the persisted change set cannot answer the question. Whether a
+model *called* a redundant tool is only visible in its tool calls, not in what
+survived the builder. The scenario now reads the action messages the wake
+records — each carries `metadata.toolName` and `metadata.runKey` — which is the
+model's actual behaviour rather than the builder's output.
+
+On that instrument the scenario does discriminate:
+
+| Model | Called `set_task_status` again |
+| --- | --- |
+| Kimi K3 | no |
+| Qwen3.6 27B | yes |
+| Qwen3.5 397B | yes |
+| DeepSeek V4 Flash 0731 | yes |
+| GLM 5.2 | inconclusive (build race, see below) |
+
+Read it narrowly. Because dedup and consolidation already absorb the duplicate,
+the user never sees it twice — so this measures wasted turns and payload, not a
+user-visible defect. It is a reason to withhold the tool, not evidence of harm.
+
+**Runner note.** Concurrent `flutter test` processes contend on
+`build/unit_test_assets`, which surfaces as `PathNotFoundException` on
+`NativeAssetsManifest.json` and is not a model failure.
+`scripts/penguin_wake_eval_matrix.sh` warms the build once before fanning out
+for this reason; ad-hoc parallel loops must do the same.
 
 ### The fixture was wrong first
 

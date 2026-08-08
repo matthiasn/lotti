@@ -8,6 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
@@ -185,10 +186,11 @@ void main() {
           ..enabledDomains.add(LogDomain.agentWorkflow),
       );
 
+      const runKey = 'run-penguin-wake-eval';
       final stopwatch = Stopwatch()..start();
       final result = await workflow.execute(
         agentIdentity: await harness.loadAgentIdentity(),
-        runKey: 'run-penguin-wake-eval',
+        runKey: runKey,
         triggerTokens: {harness.world.taskId},
         threadId: harness.threadId,
       );
@@ -200,9 +202,14 @@ void main() {
         harness.agentId,
         taskId: harness.world.taskId,
       );
+      // Only what THIS wake proposed. A scenario may seed a change set that is
+      // already pending, and those items stay in the pending query — counting
+      // them made every model look like it re-proposed a queued change when
+      // the entry was the fixture's own. The run key is the discriminator.
       final proposedTools = <String>[];
       final proposedArgs = <Map<String, dynamic>>[];
       for (final changeSet in proposals) {
+        if (changeSet.runKey != runKey) continue;
         for (final item in changeSet.items) {
           proposedTools.add(item.toolName);
           proposedArgs.add(item.args);
@@ -216,6 +223,25 @@ void main() {
             harness.world.itemTitles[id]
           else
             null,
+      ];
+      // What the model actually CALLED, as opposed to what survived the
+      // builder. `ChangeSetBuilder` dedups an identical proposal against a
+      // still-open one and consolidates pre-wake sets into this wake's, so the
+      // persisted change set cannot answer "did it propose this again". The
+      // action log can: the strategy records every tool call with its run key.
+      final actionMessages = await harness.agentRepository.getMessagesByKind(
+        harness.agentId,
+        AgentMessageKind.action,
+      );
+      final calledTools = [
+        for (final message in actionMessages)
+          if (message.metadata.runKey == runKey)
+            if (message.metadata.toolName case final String name) name,
+      ];
+
+      final changeSetRunKeys = [
+        for (final changeSet in proposals)
+          '${changeSet.runKey}:${changeSet.items.map((i) => i.toolName).join(",")}',
       ];
       final storedTask =
           await harness.journalDb.journalEntityById(harness.world.taskId)
@@ -240,6 +266,8 @@ void main() {
         proposedTools: proposedTools,
         proposedArgs: proposedArgs,
         proposedItemTitles: proposedItemTitles,
+        changeSetRunKeys: changeSetRunKeys,
+        calledTools: calledTools,
         reportText: reportText,
       );
       final where = 'See $artifact.';
@@ -277,7 +305,7 @@ void main() {
       // can see it, so this measures whether the model reads it.
       for (final forbidden in scenario.forbiddenToolNames) {
         expect(
-          proposedTools,
+          calledTools,
           isNot(contains(forbidden)),
           reason:
               'DUPLICATE PROPOSAL: $forbidden is already queued and awaiting '
@@ -421,6 +449,8 @@ Future<String> _writeArtifact({
   required List<String> proposedTools,
   required List<Map<String, dynamic>> proposedArgs,
   required List<String?> proposedItemTitles,
+  required List<String> changeSetRunKeys,
+  required List<String> calledTools,
   required String reportText,
 }) async {
   final directory = Directory('eval_artifacts');
@@ -452,6 +482,8 @@ Future<String> _writeArtifact({
       'proposedTools': proposedTools,
       'proposedArgs': proposedArgs,
       'proposedItemTitles': proposedItemTitles,
+      'changeSetRunKeys': changeSetRunKeys,
+      'calledTools': calledTools,
       'reportText': reportText,
     }),
   );
