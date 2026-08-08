@@ -331,6 +331,20 @@ Common changes across the path:
   rendered, and it is appended after the constitution — it adds, never replaces
   (ADR 0052). Both scaffolds behave identically here; the compact one already
   did.
+- **Precedence is stated in the prompt, and the template's instruction wins.**
+  `TaskAgentPromptBuilder.templateDirectivePrecedence` precedes a template's own
+  directive: the scaffold is *default behaviour* for cases no instruction covers,
+  and a directive that changes a default is the feature, not a conflict. Only
+  two things stand regardless, because they are not preferences — no fabrication,
+  and the agent never undoes the user's own actions on its own judgement (a
+  directive may lift that only by saying when to act on the user's behalf). An
+  override is expected to **declare** what it replaces and why; an undeclared
+  contradiction is still followed but recorded as an observation, which is what
+  carries it into the next evolution session. A *customised* report directive
+  additionally gets `reportDirectivePrecedence`, scoping it to the report's shape
+  and voice rather than to whether a report is published at all. Neither
+  statement appears for a stock template, so the shipped prompt is unchanged
+  (ADR 0052).
 - The compact contract treats a concrete, committed multi-step plan as checklist
   intent even without the words "create a checklist"; it does **not** treat
   speculation or a description of current state as authority.

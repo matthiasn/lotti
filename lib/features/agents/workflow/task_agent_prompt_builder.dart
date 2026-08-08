@@ -38,6 +38,7 @@ abstract final class TaskAgentPromptBuilder {
 
     if (TaskAgentEvidenceSynthesis.usesCompactScaffold(modelId)) {
       return _buildCompactEvidencePrompt(
+        version: version,
         generalDirective: trimmedGeneralDirective,
         legacyDirective: trimmedLegacyDirective,
         reportDirective: trimmedReportDirective,
@@ -53,8 +54,9 @@ abstract final class TaskAgentPromptBuilder {
         ..writeln()
         ..writeln()
         ..writeln('## Report Directive')
-        ..writeln()
-        ..write(trimmedReportDirective);
+        ..writeln();
+      _appendReportDirectivePrecedence(buf, version);
+      buf.write(trimmedReportDirective);
     } else {
       buf.write(taskAgentScaffoldReport);
     }
@@ -72,6 +74,8 @@ abstract final class TaskAgentPromptBuilder {
           ..writeln()
           ..writeln('## Your Operational Directives')
           ..writeln()
+          ..writeln(templateDirectivePrecedence)
+          ..writeln()
           ..write(trimmedGeneralDirective);
       }
     } else {
@@ -84,6 +88,8 @@ abstract final class TaskAgentPromptBuilder {
           ..writeln()
           ..writeln()
           ..writeln('## Your Personality & Directives')
+          ..writeln()
+          ..writeln(templateDirectivePrecedence)
           ..writeln()
           ..write(withLegacyFallback);
       }
@@ -166,6 +172,7 @@ abstract final class TaskAgentPromptBuilder {
   }
 
   static String _buildCompactEvidencePrompt({
+    required AgentTemplateVersionEntity version,
     required String generalDirective,
     required String legacyDirective,
     required String reportDirective,
@@ -182,6 +189,8 @@ abstract final class TaskAgentPromptBuilder {
           ..writeln()
           ..writeln('## Your Operational Directives')
           ..writeln()
+          ..writeln(templateDirectivePrecedence)
+          ..writeln()
           ..write(generalDirective);
       }
     } else {
@@ -194,6 +203,8 @@ abstract final class TaskAgentPromptBuilder {
           ..writeln()
           ..writeln('## Your Personality & Directives')
           ..writeln()
+          ..writeln(templateDirectivePrecedence)
+          ..writeln()
           ..write(withLegacyFallback);
       }
     }
@@ -203,12 +214,92 @@ abstract final class TaskAgentPromptBuilder {
         ..writeln()
         ..writeln()
         ..writeln('## Report Directive')
-        ..writeln()
-        ..write(reportDirective);
+        ..writeln();
+      _appendReportDirectivePrecedence(buf, version);
+      buf.write(reportDirective);
     }
 
     buf.write(TaskAgentEvidenceSynthesis.systemDirectiveForModel(modelId));
     return buf.toString();
+  }
+
+  /// Names the rules a template's own directive cannot relax, and concedes
+  /// everything else.
+  ///
+  /// Emitted only when a template actually contributes a directive, so a stock
+  /// prompt is byte-identical to what it was without this. It exists because
+  /// concatenation alone says nothing about precedence, and the template text
+  /// lands *last* — the position a model tends to treat as the final word.
+  ///
+  /// Deliberately **not** "the scaffold always wins" (ADR 0052). Nearly
+  /// everything in the scaffold is *default behaviour* — when to set an
+  /// estimate, how to shape a report, which observation category to use, how
+  /// terse to be — describing what the agent does when no instruction covers
+  /// the case. A directive that changes one is not a conflict to resolve; it is
+  /// the reason the evolvable layer exists. A blanket precedence rule would
+  /// have a model drop a legitimate customisation the moment it brushed against
+  /// any scaffold line.
+  ///
+  /// What genuinely cannot be instructed away is not the scaffold but the two
+  /// things that are not preferences: fabrication, which no instruction can
+  /// make valid, and the agent overriding the user on its *own* judgement —
+  /// which a directive may lift only by telling it when to act on the user's
+  /// behalf, since that is the user deciding rather than the agent.
+  ///
+  /// An override is expected to **declare** what it replaces, so the wake reads
+  /// a stated departure rather than two texts that disagree. An undeclared
+  /// contradiction is still followed — user rules win, and every directive
+  /// written before this convention existed contains undeclared departures — but
+  /// it is recorded, so the next evolution session can state it properly
+  /// instead of the ambiguity persisting forever.
+  ///
+  /// The escape hatch matters as much as the rule: an instruction that cannot
+  /// be carried out safely produces the closest thing that can, plus an
+  /// observation naming the gap — so a directive that is quietly impossible
+  /// surfaces to the user instead of being silently dropped.
+  static const templateDirectivePrecedence =
+      "What follows is this template's own instruction. It takes precedence "
+      'over the default behaviour above, which describes what to do when no '
+      'instruction covers the case. An override should name the default it '
+      'replaces and why — "Default: X. Here: Y, because Z." — and a declared '
+      'override is followed exactly. If it contradicts a default without '
+      'saying so, follow the instruction anyway and record the undeclared '
+      'conflict with `record_observations` so it can be stated properly. Two '
+      'limits are not preferences and stand regardless: never fabricate — no '
+      'instruction makes an invented id or an unearned claim valid — and never '
+      "undo the user's own actions on your own judgement, though an "
+      'instruction may tell you when to act on their behalf. If an instruction '
+      'cannot be carried out safely, do the closest thing that can and record '
+      'the gap.';
+
+  /// The same statement for a customised report directive, scoped to what a
+  /// report directive legitimately governs.
+  ///
+  /// Presentation is the template's to decide; *whether to publish at all* is
+  /// not. Without this, an evolved directive carried over from the seeded text
+  /// — which demanded `update_report` on every wake — reads as licence to
+  /// republish an unchanged report, which is the exact behaviour the `noOp`
+  /// scenario measures.
+  static const reportDirectivePrecedence =
+      'This directive governs the shape and voice of the report only. It does '
+      'not change when to publish one: a wake with nothing material to add '
+      'still ends with a brief plain-text note rather than republishing '
+      'unchanged content.';
+
+  /// Writes [reportDirectivePrecedence] only ahead of a *customised* report
+  /// directive.
+  ///
+  /// A stock template renders the substituted model-tuned contract here, which
+  /// is code-owned — telling it that it does not override itself would be
+  /// noise, and would change a measured prompt.
+  static void _appendReportDirectivePrecedence(
+    StringBuffer buf,
+    AgentTemplateVersionEntity version,
+  ) {
+    if (usesBuiltInReportContract(version)) return;
+    buf
+      ..writeln(reportDirectivePrecedence)
+      ..writeln();
   }
 
   /// Appends soul personality fields to the prompt buffer.

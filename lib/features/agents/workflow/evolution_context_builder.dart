@@ -260,29 +260,20 @@ again. The conversation should always be driving toward an approved proposal.
         : storedReportDirective;
 
     if (hasNewDirectives) {
+      // Every task-agent session is told the constitution exists, whether or
+      // not this template adds to it. Stating it only when the template adds
+      // nothing was the wrong half: a session looking at an evolved directive
+      // is the one most likely to restate a code-owned rule, or to write
+      // something that contradicts one.
+      if (isTaskAgent) {
+        _writeConstitutionNotice(buf, addsNothing: generalDirective.isEmpty);
+      }
       if (generalDirective.isNotEmpty) {
         buf
           ..writeln(
             '## Current General Directive (v${currentVersion.version})',
           )
           ..writeln(generalDirective)
-          ..writeln();
-      } else if (isTaskAgent) {
-        // Say so explicitly. Silence here reads as "no operational rules",
-        // which invites a proposal that restates the constitution — text the
-        // agent already receives from the scaffold and cannot be edited away.
-        buf
-          ..writeln(
-            '## Current General Directive (v${currentVersion.version})',
-          )
-          ..writeln(
-            'None. This template adds nothing on top of the built-in task-agent '
-            'constitution, which is code-owned: user sovereignty, tool '
-            'discipline, no-op rules, checklist sovereignty and input handling '
-            'are always in force and cannot be changed from here. Propose a '
-            'general directive only for guidance that ADDS to those rules, and '
-            'never restate them.',
-          )
           ..writeln();
       }
       if (reportDirective.isNotEmpty) {
@@ -367,6 +358,68 @@ again. The conversation should always be driving toward an approved proposal.
     );
 
     return buf.toString();
+  }
+
+  /// Tells the session which rules it is not writing.
+  ///
+  /// [addsNothing] distinguishes the two shapes a task-agent template can have:
+  /// a stock one whose whole contract is the built-in prompt, and an evolved one
+  /// whose directive sits on top of it. Both sessions need the same briefing,
+  /// and the evolved one needs it more — it is the session most likely to
+  /// restate a built-in rule or to depart from one without saying so.
+  ///
+  /// The framing is deliberately permissive (ADR 0052): the built-in prompt is
+  /// *default behaviour* a directive may change, not a wall. Only fabrication
+  /// and the agent's unilateral override of the user are held back, because
+  /// neither is a preference. What the session is asked for is a **declared**
+  /// override — the wake follows a stated departure exactly, where an
+  /// unexplained contradiction only earns an observation.
+  static void _writeConstitutionNotice(
+    StringBuffer buf, {
+    required bool addsNothing,
+  }) {
+    buf
+      ..writeln('## What The Wake Already Carries')
+      ..writeln(
+        'Every wake receives a code-owned prompt you are not writing here: how '
+        'the agent reads a task, the tools it may call, when to publish a '
+        'report, which observation category to use, how terse to be. Treat all '
+        'of it as DEFAULT behaviour — what the agent does when no instruction '
+        'from this template covers the case. A directive that changes a '
+        'default is not a conflict; it is what this field is for, and the '
+        "template's instruction wins.",
+      )
+      ..writeln()
+      ..writeln(
+        'Two limits are not preferences and a directive cannot lift them: the '
+        'agent may not fabricate — no wording makes an invented id or an '
+        "unearned claim valid — and it may not undo the user's own actions on "
+        'its own judgement, though a directive may tell it when to act on the '
+        "user's behalf, since that is the user deciding rather than the agent. "
+        'Everything else is open if it is stated clearly and can actually be '
+        'carried out.',
+      )
+      ..writeln()
+      ..writeln(
+        'DECLARE every override. Name the default you are replacing and the '
+        'reason — "Default: X. Here: Y, because Z." The wake receives the '
+        'defaults as well as your directive, so a declared override is '
+        'followed exactly, while an unexplained contradiction makes the agent '
+        'record a conflict instead of acting cleanly. Restating a default '
+        'without changing it is dead weight; drop it. Put behaviour changes in '
+        'the general directive — including a change to WHEN a report is '
+        'published, which the report directive does not govern; that one only '
+        "shapes the report's structure and voice.",
+      )
+      ..writeln()
+      ..writeln(
+        addsNothing
+            ? 'This template currently adds nothing on top of that.'
+            : 'The directive below is what this template adds on top of that. '
+                  'Anything in it that merely restates a built-in rule is dead '
+                  'weight and can be dropped.',
+      )
+      ..writeln();
   }
 
   static void _writeSeedChangelog(

@@ -497,9 +497,33 @@ void main() {
       // constitution the scaffold already carries.
       expect(
         ctx.initialUserMessage,
-        contains('adds nothing on top of the built-in task-agent'),
+        contains('## What The Wake Already Carries'),
       );
-      expect(ctx.initialUserMessage, contains('never restate them'));
+      expect(
+        ctx.initialUserMessage,
+        contains('This template currently adds nothing on top of that.'),
+      );
+      // The built-in text is framed as DEFAULT behaviour a directive may
+      // change, not as a wall: user rules win where they are sensible.
+      expect(
+        ctx.initialUserMessage,
+        contains('Treat all of it as DEFAULT behaviour'),
+      );
+      expect(
+        ctx.initialUserMessage,
+        contains("template's instruction wins"),
+      );
+      // Only the two non-preferences are held back.
+      expect(
+        ctx.initialUserMessage,
+        contains('Two limits are not preferences'),
+      );
+      // And an override has to say what it overrides.
+      expect(ctx.initialUserMessage, contains('DECLARE every override'));
+      expect(
+        ctx.initialUserMessage,
+        contains('Default: X. Here: Y, because Z.'),
+      );
     });
 
     test('an evolved directive is shown verbatim', () {
@@ -522,9 +546,19 @@ void main() {
         ctx.initialUserMessage,
         contains('Escalate contractual blockers within one wake.'),
       );
+      // The constitution notice reaches an evolved template too — that session
+      // is the one most likely to restate or contradict a code-owned rule.
       expect(
         ctx.initialUserMessage,
-        isNot(contains('adds nothing on top of the built-in task-agent')),
+        contains('## What The Wake Already Carries'),
+      );
+      expect(
+        ctx.initialUserMessage,
+        contains('is what this template adds on top'),
+      );
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('currently adds nothing on top')),
       );
     });
 
@@ -554,7 +588,7 @@ void main() {
       );
       expect(
         ctx.initialUserMessage,
-        isNot(contains('adds nothing on top of the built-in task-agent')),
+        isNot(contains('## What The Wake Already Carries')),
       );
     });
   });

@@ -140,10 +140,18 @@ effect.** `propose_directives` carries complete `general_directive` and
 `report_directive` strings and approval writes them verbatim, so whatever the
 context builder displays is the baseline that gets adopted. For task agents
 `EvolutionContextBuilder` therefore renders the *effective* directives rather
-than the stored ones: the substituted report contract, and — for a stock
-template — an explicit "adds nothing on top of the built-in constitution" note
-instead of the seeded text the agent never receives. Silence there would invite a
-proposal that restates code-owned rules.
+than the stored ones — the substituted report contract, and nothing at all where
+a stock template's seeded directive used to appear.
+
+Every task-agent session also gets a `## What The Wake Already Carries` block,
+whether or not the template adds anything: the built-in prompt is framed as
+**default behaviour the directive may change**, with only two limits that are not
+preferences (no fabrication; the agent never undoes the user's own actions on its
+own judgement). It asks the session to **declare** each override — *"Default: X.
+Here: Y, because Z."* — because the wake receives both texts, and a declared
+departure is followed exactly where an unexplained contradiction makes the agent
+record a conflict instead. Without that block a session looking at an evolved
+directive has no idea a code-owned layer exists, and restates or contradicts it.
 
 The UI splits into two surfaces: `EvolutionReviewPage` (a history-first ritual
 home with a pending-session card, compact metrics and persisted history) and
