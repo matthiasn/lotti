@@ -102,6 +102,11 @@ routing to be tempted by.
   ratings (Decision 7) add a labeled signal on top of the behavioral one.
 - The rating library shifts image spend downward over time: the more history a goal accumulates,
   the more often a wake can re-run a proven ad instead of paying for a new generation.
+- **Cold-start blandness is expected and acceptable.** A fresh goal agent produces generic
+  (if snarky) ads because it knows nothing about this user's taste yet — that is the design,
+  not a defect to be prompt-engineered away. Personality comes from the feedback loop
+  (per-run ratings, dismissal latency, visible time, recorded tone preferences), which is
+  where investment belongs; the prompt only sets the floor.
 
 ## Non-Goals
 
