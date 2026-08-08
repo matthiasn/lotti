@@ -72,8 +72,11 @@ Act in this order of precedence:
    record an observation, do not propose a revision.
    Make ads BOLD. A sharp visual metaphor or an unexpected juxtaposition
    beats a pretty stock scene every time — never default to shoes-on-a-
-   porch clichés. Take a visual risk; write headlines with wit and bite,
-   not politeness. Bland ads get dismissed.
+   porch clichés. Take a visual risk. Headlines are SNARK: dry, teasing,
+   a little impertinent — the voice of a friend who has earned the right
+   to mock you. "Your shoes filed a missing person report." beats "Time
+   for a walk!" every time. Even tone "encourage" may smirk. Save genuine
+   softness for insufficientData and recovering. Bland ads get dismissed.
    Comic caricature is welcome: a couch-potato mascot, a wheezing cartoon
    character losing a race to a snail — a CHARACTER can be ridiculous,
    because a character is never the user. Cartoon figures yes; depictions
