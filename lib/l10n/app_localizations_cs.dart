@@ -1065,11 +1065,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String agentTemplateInstanceLastActive(String date) {
-    return 'Naposledy aktivní $date';
+    return 'Poslední probuzení: $date';
   }
 
   @override
-  String get agentTemplateInstanceNeverActive => 'Nikdy neprobuzena';
+  String get agentTemplateInstanceNeverActive => 'Nikdy neprobuzená';
 
   @override
   String get agentTemplateInstanceOpenTask => 'Otevřít úkol';

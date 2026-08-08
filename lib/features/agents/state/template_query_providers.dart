@@ -181,7 +181,10 @@ Future<List<InstanceTokenBreakdown>> templateInstanceTokenBreakdown(
     final agentRecords = byAgent[agent.agentId] ?? [];
     final summaries = aggregateByModel(agentRecords);
     return InstanceTokenBreakdown(
-      agentId: agent.id,
+      // `agentId`, not `id`: the records above are grouped by `agentId`, so
+      // labelling the result with the entity id conflates two identifiers that
+      // are equal today and need not be.
+      agentId: agent.agentId,
       displayName: agent.displayName,
       lifecycle: agent.lifecycle,
       summaries: summaries,
@@ -224,6 +227,7 @@ Future<List<TemplateInstanceOverview>> templateInstanceOverview(
     for (final breakdown in breakdowns)
       breakdown.agentId: breakdown.totalTokens,
   };
+  // Keyed on `agentId` throughout — see the breakdown provider above.
 
   final rows = agents.map((agent) {
     final state = states[agent.currentStateId]?.mapOrNull(
@@ -236,7 +240,7 @@ Future<List<TemplateInstanceOverview>> templateInstanceOverview(
       createdAt: agent.createdAt,
       lastWakeAt: state?.lastWakeAt,
       taskId: state?.slots.activeTaskId,
-      totalTokens: tokensByAgent[agent.id] ?? 0,
+      totalTokens: tokensByAgent[agent.agentId] ?? 0,
     );
   }).toList();
 

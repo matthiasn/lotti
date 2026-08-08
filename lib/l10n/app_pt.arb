@@ -516,12 +516,12 @@
   "@agentTemplateInstanceBreakdownHeading": {
     "description": "Heading for the per-instance breakdown section in agent template stats."
   },
-  "agentTemplateInstanceLastActive": "Última atividade {date}",
+  "agentTemplateInstanceLastActive": "Último despertar: {date}",
   "agentTemplateInstanceNeverActive": "Nunca acordada",
   "agentTemplateInstanceOpenTask": "Abrir tarefa",
   "agentTemplateInstancesEmpty": "Ainda não há instâncias.",
   "agentTemplateInstancesHeading": "Instâncias",
-  "agentTemplateInstanceStarted": "Iniciada {date}",
+  "agentTemplateInstanceStarted": "Iniciada em {date}",
   "agentTemplateKindDayAgent": "Agente diurno",
   "@agentTemplateKindDayAgent": {
     "description": "Display name for the Daily OS day-agent template kind."

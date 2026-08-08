@@ -1081,6 +1081,52 @@ void main() {
       },
     );
 
+    test(
+      'attributes tokens when the entity id differs from the agent id',
+      () async {
+        // `AgentIdentityEntity` carries both, and the token records are grouped
+        // by `agentId`. Keying the join on `id` anywhere in the chain silently
+        // reports 0 tokens for every instance the day the two diverge.
+        when(
+          () => templateService.getAgentsForTemplate(templateId),
+        ).thenAnswer(
+          (_) async => [
+            makeTestIdentity(
+              id: 'entity-row-1',
+              agentId: 'agent-1',
+              currentStateId: 'state-1',
+              createdAt: now,
+            ),
+          ],
+        );
+        when(() => repository.getEntitiesByIds(any())).thenAnswer(
+          (_) async => {
+            'state-1': makeTestState(id: 'state-1', agentId: 'agent-1'),
+          },
+        );
+        when(
+          () => repository.getTokenUsageForTemplate(templateId),
+        ).thenAnswer(
+          (_) async => [
+            makeTestWakeTokenUsage(
+              id: 'usage-1',
+              agentId: 'agent-1',
+              inputTokens: 900,
+              outputTokens: 100,
+              thoughtsTokens: 0,
+            ),
+          ],
+        );
+
+        final rows = await container.read(
+          templateInstanceOverviewProvider(templateId).future,
+        );
+
+        expect(rows.single.agentId, 'agent-1');
+        expect(rows.single.totalTokens, 1000);
+      },
+    );
+
     test('returns nothing, and reads nothing, without instances', () async {
       when(
         () => templateService.getAgentsForTemplate(templateId),

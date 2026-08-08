@@ -1068,7 +1068,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String agentTemplateInstanceLastActive(String date) {
-    return 'Última atividade $date';
+    return 'Último despertar: $date';
   }
 
   @override
@@ -1085,7 +1085,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String agentTemplateInstanceStarted(String date) {
-    return 'Iniciada $date';
+    return 'Iniciada em $date';
   }
 
   @override

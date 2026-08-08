@@ -4,9 +4,14 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/template_instance_overview.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
+import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
 import 'package:lotti/features/agents/ui/template_instances_section.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 const _templateId = 'template-001';
@@ -51,6 +56,30 @@ Widget _buildSubject({
 }
 
 void main() {
+  late MockNavService nav;
+  late RecordingBeamerDelegate delegate;
+
+  setUp(() {
+    nav = MockNavService();
+    delegate = RecordingBeamerDelegate();
+    when(() => nav.index).thenReturn(0);
+    when(() => nav.settingsIndex).thenReturn(5);
+    when(() => nav.setIndex(any())).thenReturn(null);
+    when(() => nav.settingsDelegate).thenReturn(delegate);
+    when(() => nav.persistNamedRoute(any())).thenAnswer((_) async {});
+    when(() => nav.beamToNamed(any())).thenReturn(null);
+    if (getIt.isRegistered<NavService>()) {
+      getIt.unregister<NavService>();
+    }
+    getIt.registerSingleton<NavService>(nav);
+  });
+
+  tearDown(() {
+    if (getIt.isRegistered<NavService>()) {
+      getIt.unregister<NavService>();
+    }
+  });
+
   group('TemplateInstancesSliver', () {
     testWidgets('names each instance by its task, not by the agent', (
       tester,
@@ -157,6 +186,96 @@ void main() {
           .length;
       expect(built, lessThan(50), reason: 'built $built of 500 rows');
       expect(built, greaterThan(0));
+    });
+
+    testWidgets('opens the agent internals when the row is tapped', (
+      tester,
+    ) async {
+      // The row is the way into "why did this agent do that" — state,
+      // conversation log, reports.
+      await tester.pumpWidget(_buildSubject(instances: [_instance()]));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(TemplateInstanceRow));
+      await tester.pump();
+
+      verify(() => nav.setIndex(5)).called(1);
+      expect(
+        delegate.beamed,
+        contains('/settings/agents/instances/agent-001'),
+      );
+    });
+
+    testWidgets('opens the task from the trailing button', (tester) async {
+      await tester.pumpWidget(_buildSubject(instances: [_instance()]));
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.open_in_new_rounded));
+      await tester.pump();
+
+      verify(() => nav.beamToNamed('/tasks/task-001')).called(1);
+    });
+
+    testWidgets('shows the token total, and nothing for an unused instance', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _buildSubject(
+          instances: [
+            _instance(totalTokens: 12345),
+            _instance(agentId: 'agent-002', taskId: null),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('12,345'), findsOneWidget);
+    });
+
+    testWidgets('renders a pill for every lifecycle', (tester) async {
+      // The switch has an arm per lifecycle; a missing one is a wrong colour
+      // on a row the user reads as status.
+      await tester.pumpWidget(
+        _buildSubject(
+          instances: [
+            for (final lifecycle in AgentLifecycle.values)
+              _instance(
+                agentId: 'agent-${lifecycle.name}',
+                lifecycle: lifecycle,
+              ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(TemplateInstancesSliver));
+      for (final lifecycle in AgentLifecycle.values) {
+        expect(
+          find.text(agentLifecycleLabel(context.messages, lifecycle)),
+          findsOneWidget,
+          reason: lifecycle.name,
+        );
+      }
+    });
+
+    testWidgets('surfaces a load failure instead of an empty list', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          const CustomScrollView(
+            slivers: [TemplateInstancesSliver(templateId: _templateId)],
+          ),
+          overrides: [
+            templateInstanceOverviewProvider.overrideWith(
+              (ref, id) async => throw StateError('agent db unavailable'),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('agent db unavailable'), findsOneWidget);
     });
 
     testWidgets('says when a template has no instances at all', (tester) async {

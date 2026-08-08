@@ -1072,7 +1072,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String agentTemplateInstanceLastActive(String date) {
-    return 'Zuletzt aktiv $date';
+    return 'Zuletzt aufgewacht: $date';
   }
 
   @override
@@ -1089,7 +1089,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String agentTemplateInstanceStarted(String date) {
-    return 'Gestartet $date';
+    return 'Gestartet am $date';
   }
 
   @override

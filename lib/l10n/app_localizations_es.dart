@@ -1069,11 +1069,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String agentTemplateInstanceLastActive(String date) {
-    return 'Última actividad $date';
+    return 'Última activación: $date';
   }
 
   @override
-  String get agentTemplateInstanceNeverActive => 'Nunca despertada';
+  String get agentTemplateInstanceNeverActive => 'Nunca se ha activado';
 
   @override
   String get agentTemplateInstanceOpenTask => 'Abrir tarea';
@@ -1086,7 +1086,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String agentTemplateInstanceStarted(String date) {
-    return 'Iniciada $date';
+    return 'Iniciada el $date';
   }
 
   @override

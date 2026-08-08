@@ -517,12 +517,12 @@
   "@agentTemplateInstanceBreakdownHeading": {
     "description": "Heading for the per-instance breakdown section in agent template stats."
   },
-  "agentTemplateInstanceLastActive": "Sidst aktiv {date}",
+  "agentTemplateInstanceLastActive": "Sidst vågen: {date}",
   "agentTemplateInstanceNeverActive": "Aldrig vækket",
   "agentTemplateInstanceOpenTask": "Åbn opgave",
   "agentTemplateInstancesEmpty": "Ingen instanser endnu.",
   "agentTemplateInstancesHeading": "Instanser",
-  "agentTemplateInstanceStarted": "Startet {date}",
+  "agentTemplateInstanceStarted": "Startet den {date}",
   "agentTemplateKindDayAgent": "Dagagent",
   "@agentTemplateKindDayAgent": {
     "description": "Display name for the Daily OS day-agent template kind."

@@ -1067,7 +1067,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String agentTemplateInstanceLastActive(String date) {
-    return 'Senast aktiv $date';
+    return 'Senast vaken: $date';
   }
 
   @override
@@ -1084,7 +1084,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String agentTemplateInstanceStarted(String date) {
-    return 'Startad $date';
+    return 'Startad den $date';
   }
 
   @override
