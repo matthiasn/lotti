@@ -43,16 +43,21 @@ void main() {
       }
     });
 
-    test('cross-field contradictions fail construction', () {
-      // Skipped-with-rating and unskipped-without-rating both violate the
-      // invariant; the converters cannot see across fields, the assert can.
+    test('cross-field contradictions are named by the boundary helper', () {
+      // Converters cannot see across fields; the decode gate in
+      // AgentDbConversions calls this helper and refuses the payload.
       expect(
-        () => GoalNudgeRating.fromJson(json(skipped: true)),
-        throwsA(isA<AssertionError>()),
+        goalNudgeRatingJsonIssues(json(skipped: true)).single,
+        contains('must not carry a rating'),
       );
       expect(
-        () => GoalNudgeRating.fromJson(json(rating: null)),
-        throwsA(isA<AssertionError>()),
+        goalNudgeRatingJsonIssues(json(rating: null)).single,
+        contains('must carry its rating'),
+      );
+      expect(goalNudgeRatingJsonIssues(json()), isEmpty);
+      expect(
+        goalNudgeRatingJsonIssues(json(rating: null, skipped: true)),
+        isEmpty,
       );
     });
 
@@ -64,17 +69,6 @@ void main() {
           reason: 'activation $bad',
         );
       }
-    });
-
-    test('construction asserts the same contract', () {
-      expect(
-        () => GoalNudgeRating(
-          activation: 1,
-          rating: 9,
-          ratedAt: DateTime.utc(2026, 8, 8),
-        ),
-        throwsAssertionError,
-      );
     });
   });
 

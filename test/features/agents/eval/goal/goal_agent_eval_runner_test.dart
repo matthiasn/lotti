@@ -321,9 +321,13 @@ void main() {
         wakesPerDayAssumption: 3,
       );
       final markdown = report.toMarkdown();
-      // 0.3 Wh over ONE reported case × 90 = 27.0 — not 13.5.
+      // 0.3 Wh over ONE reported case × 90 = 27.0 — not 13.5; and the
+      // credits projection uses the same reported-only denominator:
+      // 0.002 / 1 × 90 = 0.18, not 0.09.
       expect(markdown, contains('27.0'));
       expect(markdown, isNot(contains('13.5')));
+      expect(markdown, contains('0.1800'));
+      expect(markdown, isNot(contains('0.0900')));
       expect(markdown, contains('divide by cases that actually reported'));
     });
 

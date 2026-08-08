@@ -492,7 +492,7 @@ return $default(_that.activation,_that.ratedAt,_that.rating,_that.skipped);case 
 @JsonSerializable()
 
 class _GoalNudgeRating implements GoalNudgeRating {
-  const _GoalNudgeRating({@JsonKey(fromJson: _decodeActivation) required this.activation, required this.ratedAt, @JsonKey(fromJson: _decodeRating) this.rating, this.skipped = false}): assert(skipped ? rating == null : rating != null && rating >= 1 && rating <= 5, 'a rating is 1..5, present exactly when the prompt was not skipped');
+  const _GoalNudgeRating({@JsonKey(fromJson: _decodeActivation) required this.activation, required this.ratedAt, @JsonKey(fromJson: _decodeRating) this.rating, this.skipped = false});
   factory _GoalNudgeRating.fromJson(Map<String, dynamic> json) => _$GoalNudgeRatingFromJson(json);
 
 /// Which run of this ad the outcome belongs to (1-based).

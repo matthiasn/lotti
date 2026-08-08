@@ -68,10 +68,6 @@ abstract class GoalNudgeBrief with _$GoalNudgeBrief {
 /// suppressing the next run.
 @freezed
 abstract class GoalNudgeRating with _$GoalNudgeRating {
-  @Assert(
-    'skipped ? rating == null : rating != null && rating >= 1 && rating <= 5',
-    'a rating is 1..5, present exactly when the prompt was not skipped',
-  )
   const factory GoalNudgeRating({
     /// Which run of this ad the outcome belongs to (1-based).
     @JsonKey(fromJson: _decodeActivation) required int activation,
@@ -98,4 +94,21 @@ int? _decodeRating(Object? raw) {
 int _decodeActivation(Object? raw) {
   if (raw is num && raw % 1 == 0 && raw >= 1) return raw.toInt();
   throw FormatException('activation must be a 1-based integer: $raw');
+}
+
+/// Cross-field issues in a raw rating payload — what the per-field
+/// converters cannot see. Constructor assertions are deliberately NOT the
+/// boundary (they vanish in release builds); the decode gate in
+/// `AgentDbConversions.fromSerialized` calls this and refuses the payload
+/// with a [FormatException], and write paths validate at the service layer.
+List<String> goalNudgeRatingJsonIssues(Map<String, dynamic> json) {
+  final skipped = json['skipped'] == true;
+  final rating = json['rating'];
+  if (skipped && rating != null) {
+    return const ['a skipped outcome must not carry a rating'];
+  }
+  if (!skipped && rating == null) {
+    return const ['an unskipped outcome must carry its rating'];
+  }
+  return const [];
 }

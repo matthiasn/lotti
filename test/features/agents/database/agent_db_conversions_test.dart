@@ -2305,6 +2305,35 @@ void main() {
       expect(valid, isA<GoalSpecVersionEntity>());
     });
 
+    test('fromSerialized refuses contradictory rating outcomes', () {
+      final companion = AgentDbConversions.toEntityCompanion(
+        AgentDomainEntity.goalNudge(
+          id: 'nudge-2',
+          agentId: 'goal-agent-1',
+          status: GoalNudgeStatus.active,
+          brief: brief,
+          briefDigest: 'digest-2',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+      );
+      final json =
+          jsonDecode(companion.serialized.value) as Map<String, dynamic>;
+      json['ratings'] = [
+        {
+          'activation': 1,
+          'ratedAt': '2026-08-08T10:00:00.000',
+          'rating': 4,
+          'skipped': true,
+        },
+      ];
+      expect(
+        () => AgentDbConversions.fromSerialized(jsonEncode(json)),
+        throwsFormatException,
+      );
+    });
+
     test('an unknown-variant peer payload still decodes as unknown', () {
       // fallbackUnion guard for the new type strings: a build without the
       // goal variants would map them to AgentUnknownEntity, not throw.

@@ -400,7 +400,15 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
     final accent = args['accent'];
     final validAccent =
         accent == null || goalBannerAccentNames.contains(accent);
-    if (!validHeadline || !validTone || !validAnimation || !validAccent) {
+    final validOptionalCopy = [
+      args['tagline'],
+      args['cta'],
+    ].every((value) => value == null || value is String);
+    if (!validHeadline ||
+        !validTone ||
+        !validAnimation ||
+        !validAccent ||
+        !validOptionalCopy) {
       return GoalAgentEvalFailureCategory.invalidToolArguments;
     }
   }
