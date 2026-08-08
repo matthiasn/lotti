@@ -1,7 +1,7 @@
 import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/entity_definitions.dart';
-import 'package:lotti/features/goals/model/goal_enums.dart';
-import 'package:lotti/features/goals/model/goal_window.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
 
 part 'goal_criterion.freezed.dart';
 part 'goal_criterion.g.dart';

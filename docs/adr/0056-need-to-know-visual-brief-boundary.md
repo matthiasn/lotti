@@ -1,6 +1,9 @@
 # ADR 0056: The Need-to-Know Visual Brief Boundary
 
-- Status: Proposed
+- Status: Proposed (dormant — ADR 0058 removed generative imagery from the ad
+  channel the same day; this boundary is the door any future image feature
+  must re-enter through, and its principle — third parties receive only a
+  typed, leakage-checked allowlist — now applies to the banner copy fields)
 - Date: 2026-08-08
 
 ## Context

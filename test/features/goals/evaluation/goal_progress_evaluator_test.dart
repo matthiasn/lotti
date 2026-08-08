@@ -1,9 +1,9 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
-import 'package:lotti/features/goals/model/goal_criterion.dart';
-import 'package:lotti/features/goals/model/goal_enums.dart';
-import 'package:lotti/features/goals/model/goal_window.dart';
 
 void main() {
   const evaluator = GoalProgressEvaluator();

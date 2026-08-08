@@ -76,7 +76,9 @@ routing to be tempted by.
    also weights the rating library (a five-star ad seen once means less than a four-star ad
    that earned its rating over many impressions).
 
-8. **The ad is a designed banner — headline and CTA render IN the image.** (Revised same day:
+8. *[Superseded by ADR 0058 — ads are procedural text banners; no image is
+   generated. Original decision preserved below as the point-in-time record.]*
+   **The ad is a designed banner — headline and CTA render IN the image.** (Revised same day:
    text-free images read too tame; a real ad has type.) The composed prompt instructs a
    polished advertising-banner layout and passes the model-authored `headline` and optional
    `cta` verbatim as the only sanctioned text — both are leakage-checked tool arguments, so no
@@ -121,3 +123,4 @@ routing to be tempted by.
 - [ADR 0053: Goal-Driven Agents — Per-Goal Durable Producers](./0053-goal-driven-agents-per-goal-producers.md)
 - [ADR 0054: Deterministic-First Two-Tier Wakes](./0054-deterministic-first-two-tier-wakes.md)
 - [ADR 0056: The Need-to-Know Visual Brief Boundary](./0056-need-to-know-visual-brief-boundary.md)
+- [ADR 0058: Procedural Text Banners — No Generative Imagery](./0058-procedural-text-banners-no-generative-imagery.md) — supersedes Decision 8

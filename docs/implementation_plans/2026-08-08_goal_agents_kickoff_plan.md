@@ -542,7 +542,18 @@ wake latency bounds (≤1h, documented), lease-race duplicate
    `totalVisibleMs`/`impressionCount`/`firstShownAt`/`lastShownAt` accumulated on the goalNudge
    row from banner visibility sessions; visible-time-to-action is the denominator for
    effectiveness metrics and weights the rating library.
-6. Previously settled: banner-only (no push; ADR 0055 records it as revisitable); Nano Banana Pro
+6. **REVERSAL (USER, post-merge 2026-08-08, ADR 0058): no generative imagery.**
+   Ads are procedural text banners — model-authored copy over code-owned
+   animation/accent presets. The Nano Banana pipeline the eval proved end-to-end
+   is removed (the proof made the energy cost visible, which was the point);
+   only ADR 0056's image-transport path is retired — its need-to-know
+   allowlist rule stays ACTIVE for the model-authored banner copy
+   (headline/tagline/cta remain leakage-linted and leakage-evaled), and it
+   is the boundary any future image feature re-enters through. Per-agent ENERGY (Wh/goal-month from AiConsumptionEvent.energyKwh)
+   joins credits as a first-class reported figure.
+7. Previously settled *(items struck through were superseded by ADR 0058 the
+   same day — no image provider, no verification pass)*: banner-only (no push;
+   ADR 0055 records it as revisitable); Nano Banana Pro
    via direct Gemini with the need-to-know brief boundary (ZDR exception, user 2026-08-08); text
    inference on Melious (EU/no-training posture; only provider reporting cost); evals manual, no
    CI.
@@ -552,7 +563,7 @@ kimi-k3 qwen3.5-122b-a10b qwen3.6-27b` (+`qwen3.5-397b-a17b` optional ceiling pr
 judge OFF for bring-up; wakes/day extrapolation default 3 (printed assumption); gh_gym_pace policy
 cell = slightlyOff; banner placement v1 = Daily OS day page nudge stack + habits tab (app-shell
 band documented as escalation only); carousel = manual swipe + dots; ad lifetime 72h or
-goal-satisfying completion; brief-match verification ON (one cheap vision call, one retry);
+goal-satisfying completion; ~~brief-match verification ON~~ (moot under ADR 0058 — nothing to verify);
 agent-proposed spec revisions ALWAYS user-gated (no auto-accept tier); default persona soul
 "gently humorous, never shaming" with toneBounds; goal chat = await-whole-turn v1.
 

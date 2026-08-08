@@ -209,7 +209,7 @@ return $default(_that.checklistItemId,_that.reason,_that.confidence);case _:
 
 class _ChecklistCompletionSuggestion implements ChecklistCompletionSuggestion {
   const _ChecklistCompletionSuggestion({required this.checklistItemId, required this.reason, @JsonKey(unknownEnumValue: ChecklistCompletionConfidence.low) required this.confidence});
-
+  
 
 @override final  String checklistItemId;
 @override final  String reason;

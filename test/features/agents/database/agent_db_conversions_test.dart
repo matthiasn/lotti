@@ -5,6 +5,11 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/goal_progress_models.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/database/agent_db_conversions.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -2080,5 +2085,281 @@ void main() {
         }
       },
     );
+  });
+
+  group('AgentDbConversions — goal entity roundtrips', () {
+    const brief = GoalNudgeBrief(
+      headline: 'The trail is lapping you.',
+      tone: GoalNudgeTone.roast,
+      animation: GoalBannerAnimation.typewriter,
+      accent: GoalBannerAccent.tide,
+      tagline: 'It has been patient long enough.',
+      cta: 'Lace up',
+    );
+
+    test('goalSpecVersion: subtype is the version status; immutable rows '
+        'reuse createdAt', () {
+      final entity = AgentDomainEntity.goalSpecVersion(
+        id: 'goal-spec-v1',
+        agentId: 'goal-agent-1',
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Daily steps',
+        statement: 'Average 10,000 steps a day over a rolling week.',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 10000,
+        ),
+        createdAt: createdAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+      expect(companion.type, const Value(AgentEntityTypes.goalSpecVersion));
+      expect(companion.subtype, const Value<String?>('active'));
+      expect(companion.createdAt, Value(createdAt));
+      expect(companion.updatedAt, Value(createdAt));
+      expect(
+        AgentDbConversions.fromSerialized(companion.serialized.value),
+        entity,
+      );
+    });
+
+    test('goalSpecHead: deterministic id helper, createdAt falls back to '
+        'updatedAt', () {
+      expect(goalSpecHeadId('goal-agent-1'), 'goal_spec_head:goal-agent-1');
+      final entity = AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId('goal-agent-1'),
+        agentId: 'goal-agent-1',
+        versionId: 'goal-spec-v1',
+        updatedAt: updatedAt,
+        vectorClock: null,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+      expect(companion.type, const Value(AgentEntityTypes.goalSpecHead));
+      expect(companion.subtype, const Value<String?>.absent());
+      expect(companion.createdAt, Value(updatedAt));
+      expect(
+        AgentDbConversions.fromSerialized(companion.serialized.value),
+        entity,
+      );
+    });
+
+    test('goalProgress: register id is deterministic per (agent, period) '
+        'and subtype is the track status', () {
+      expect(
+        goalProgressId('goal-agent-1', '2026-W32'),
+        'goal_progress:goal-agent-1:2026-W32',
+      );
+      // Two devices computing the same period MUST produce the same id —
+      // that identity is what turns concurrent writes into convergence.
+      expect(
+        goalProgressId('goal-agent-1', '2026-W32'),
+        goalProgressId('goal-agent-1', '2026-W32'),
+      );
+      final entity = AgentDomainEntity.goalProgress(
+        id: goalProgressId('goal-agent-1', '2026-W32'),
+        agentId: 'goal-agent-1',
+        periodKey: '2026-W32',
+        trackStatus: GoalTrackStatus.recovering,
+        attainment: 0.8586,
+        dataCoverage: 1,
+        satisfied: false,
+        specVersionId: 'goal-spec-v1',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+        criterionResults: const [
+          GoalCriterionProgress(
+            criterionId: 'steps',
+            actual: 8585.7,
+            target: 10000,
+            ratio: 0.8586,
+            satisfied: false,
+            sampleCount: 7,
+          ),
+        ],
+        shortTermAttainment: 1,
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+      expect(companion.type, const Value(AgentEntityTypes.goalProgress));
+      expect(companion.subtype, const Value<String?>('recovering'));
+      final decoded =
+          AgentDbConversions.fromSerialized(companion.serialized.value)
+              as GoalProgressEntity;
+      expect(decoded, entity);
+      expect(decoded.criterionResults.single.sampleCount, 7);
+    });
+
+    test('goalNudge: subtype is the lifecycle status, threadId column is '
+        'populated, ratings history survives the roundtrip', () {
+      final entity = AgentDomainEntity.goalNudge(
+        id: 'nudge-1',
+        agentId: 'goal-agent-1',
+        status: GoalNudgeStatus.active,
+        brief: brief,
+        briefDigest: 'digest-1',
+        createdAt: createdAt,
+        updatedAt: updatedAt,
+        vectorClock: null,
+        runKey: 'wake-run-1',
+        threadId: 'thread-1',
+        triggerProgressId: goalProgressId('goal-agent-1', '2026-W32'),
+        staleAt: updatedAt,
+        activatedAt: updatedAt,
+        activationCount: 2,
+        ratings: [
+          GoalNudgeRating(activation: 1, rating: 5, ratedAt: createdAt),
+          GoalNudgeRating(activation: 2, rating: 2, ratedAt: updatedAt),
+        ],
+        totalVisibleMs: const GCounter({'host-a': 30000, 'host-b': 12000}),
+        impressionCount: const GCounter({'host-a': 2, 'host-b': 1}),
+        provenance: const {'animation': 'typewriter'},
+      );
+      final companion = AgentDbConversions.toEntityCompanion(entity);
+      expect(companion.type, const Value(AgentEntityTypes.goalNudge));
+      expect(companion.subtype, const Value<String?>('active'));
+      expect(companion.threadId, const Value<String?>('thread-1'));
+      final decoded =
+          AgentDbConversions.fromSerialized(companion.serialized.value)
+              as GoalNudgeEntity;
+      expect(decoded, entity);
+      // The wear-out trajectory: both rating events, in order.
+      expect(decoded.ratings.map((r) => r.rating), [5, 2]);
+      expect(decoded.brief.tone, GoalNudgeTone.roast);
+      // Per-host counters survive the roundtrip; .value is the total.
+      expect(decoded.totalVisibleMs.value, 42000);
+      expect(decoded.impressionCount.value, 3);
+      expect(decoded.activationCount, 2);
+    });
+
+    test('fromSerialized rejects poison goal-spec payloads at the gate', () {
+      Map<String, Object?> specJson(Object? criteria) => {
+        'runtimeType': 'goalSpecVersion',
+        'id': 'goal-spec-v1',
+        'agentId': 'goal-agent-1',
+        'version': 1,
+        'status': 'active',
+        'authoredBy': 'user',
+        'title': 'Steps',
+        'statement': 'Average 10,000 steps a day.',
+        'criteria': criteria,
+        'createdAt': '2026-08-08T00:00:00.000',
+        'vectorClock': null,
+      };
+
+      // Fractional count: caught in the RAW json, before the generated
+      // decoder can truncate 1.9 into a plausible-looking 1.
+      expect(
+        () => AgentDbConversions.fromSerialized(
+          jsonEncode(
+            specJson({
+              'runtimeType': 'habit',
+              'criterionId': 'c',
+              'habitId': 'h',
+              'window': {'runtimeType': 'calendarWeek'},
+              'targetCount': 1.9,
+            }),
+          ),
+        ),
+        throwsFormatException,
+      );
+
+      // Structurally invalid tree: decodes fine, must still be refused.
+      expect(
+        () => AgentDbConversions.fromSerialized(
+          jsonEncode(
+            specJson({
+              'runtimeType': 'allOf',
+              'criterionId': 'c',
+              'criteria': <Object?>[],
+            }),
+          ),
+        ),
+        throwsFormatException,
+      );
+
+      // Fractional version: a revision id must never be truncated into
+      // impersonating another revision.
+      final fractionalVersion = specJson({
+        'runtimeType': 'habit',
+        'criterionId': 'c',
+        'habitId': 'h',
+        'window': {'runtimeType': 'calendarWeek'},
+        'targetCount': 3,
+      })..['version'] = 1.9;
+      expect(
+        () => AgentDbConversions.fromSerialized(
+          jsonEncode(fractionalVersion),
+        ),
+        throwsFormatException,
+      );
+
+      // No criteria tree at all.
+      expect(
+        () => AgentDbConversions.fromSerialized(
+          jsonEncode(specJson(null)),
+        ),
+        throwsFormatException,
+      );
+
+      // And the valid form still round-trips through the same gate.
+      final valid = AgentDbConversions.fromSerialized(
+        jsonEncode(
+          specJson({
+            'runtimeType': 'habit',
+            'criterionId': 'c',
+            'habitId': 'h',
+            'window': {'runtimeType': 'calendarWeek'},
+            'targetCount': 3,
+          }),
+        ),
+      );
+      expect(valid, isA<GoalSpecVersionEntity>());
+    });
+
+    test('fromSerialized refuses contradictory rating outcomes', () {
+      final companion = AgentDbConversions.toEntityCompanion(
+        AgentDomainEntity.goalNudge(
+          id: 'nudge-2',
+          agentId: 'goal-agent-1',
+          status: GoalNudgeStatus.active,
+          brief: brief,
+          briefDigest: 'digest-2',
+          createdAt: createdAt,
+          updatedAt: updatedAt,
+          vectorClock: null,
+        ),
+      );
+      final json =
+          jsonDecode(companion.serialized.value) as Map<String, dynamic>;
+      json['ratings'] = [
+        {
+          'activation': 1,
+          'ratedAt': '2026-08-08T10:00:00.000',
+          'rating': 4,
+          'skipped': true,
+        },
+      ];
+      expect(
+        () => AgentDbConversions.fromSerialized(jsonEncode(json)),
+        throwsFormatException,
+      );
+    });
+
+    test('an unknown-variant peer payload still decodes as unknown', () {
+      // fallbackUnion guard for the new type strings: a build without the
+      // goal variants would map them to AgentUnknownEntity, not throw.
+      final decoded = AgentDomainEntity.fromJson(const {
+        'runtimeType': 'someFutureGoalThing',
+        'id': 'x-1',
+        'agentId': 'goal-agent-1',
+        'createdAt': '2026-08-08T00:00:00.000',
+      });
+      expect(decoded, isA<AgentUnknownEntity>());
+    });
   });
 }

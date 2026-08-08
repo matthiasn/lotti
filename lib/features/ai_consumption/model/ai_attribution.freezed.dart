@@ -912,7 +912,7 @@ as int,
 @override
 @pragma('vm:prefer-inline')
 $AiActorSnapshotCopyWith<$Res> get initiator {
-
+  
   return $AiActorSnapshotCopyWith<$Res>(_self.initiator, (value) {
     return _then(_self.copyWith(initiator: value));
   });
@@ -1420,7 +1420,7 @@ return $default(_that.id,_that.workType,_that.initiator,_that.trigger,_that.star
 
 class _AiAttributionSession implements AiAttributionSession {
   const _AiAttributionSession({required this.id, required this.workType, required this.initiator, required this.trigger, required this.startedAt, final  List<AiArtifactReference> intendedOutputs = const <AiArtifactReference>[], this.parentAttributionId, this.taskId, this.categoryId}): _intendedOutputs = intendedOutputs;
-
+  
 
 @override final  String id;
 @override final  AiWorkType workType;

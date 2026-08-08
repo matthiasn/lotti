@@ -7,14 +7,22 @@ zero inference cost — whether the user is on track.
 This feature is landing in phases (see the ADR cluster below). What exists
 today:
 
-- `model/` — `GoalCriterion`, the criteria tree a goal's success is defined
-  in (metric thresholds with windows and aggregations, habit quotas,
-  composites), plus `GoalWindow` (date-only period math) and the shared
-  enums. `GoalCriterion.fromAutoCompleteRule` imports an existing habit
-  rule as a goal seed.
+- The **vocabulary lives in `lib/classes/`** (`goal_criterion.dart`,
+  `goal_window.dart`, `goal_enums.dart`, `goal_nudge_models.dart`,
+  `goal_progress_models.dart`) — the shared-vocabulary rule that lets the
+  agent entity union embed these types without `features/agents` depending
+  on a feature (the `day_plan.dart` precedent).
+  `GoalCriterion.fromAutoCompleteRule` imports an existing habit rule as a
+  goal seed.
 - `evaluation/` — `GoalProgressEvaluator`, a pure fold over a
   `GoalSignalWindow` of daily aggregates, and `GoalTrackPolicy`, which turns
   attainment, pace, grace, and data coverage into a `GoalTrackStatus`.
+- `GoalSpecValidator` (in `lib/classes/goal_spec_validator.dart`, beside
+  the vocabulary it validates) — the decode-boundary gate, invoked from
+  `AgentDomainEntity.fromJson` so every path (Matrix sync, storage reads)
+  passes it: raw-JSON checks (fractional counts a decode would silently
+  truncate) plus structural checks (empty composites, unsatisfiable
+  quotas, blank identifiers, duplicate criterion ids).
 
 Nothing here touches the database, the network, or the agent runtime: the
 evaluator is the Phase A of the two-tier wake design (ADR 0054) and is
@@ -22,7 +30,10 @@ consumed today by its unit tests and by the goal-agent evaluation harness
 (`test/features/agents/eval/goal/`), which cross-checks its fixture
 arithmetic against this evaluator.
 
-The runtime (agent kind, wake wiring, entities), the banner surface, and the
+The persistence entities exist (`goalSpecVersion`/`goalSpecHead`/
+`goalProgress`/`goalNudge` variants on `AgentDomainEntity`, with
+`GoalSpecValidator` gating decode). The runtime (agent kind, wake wiring),
+the banner surface (procedural text banners, ADR 0058), and the
 conversation UI follow in later increments; the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.
 
@@ -31,6 +42,7 @@ Decisions: ADRs
 [0054](../../../docs/adr/0054-deterministic-first-two-tier-wakes.md),
 [0055](../../../docs/adr/0055-banner-nudge-attention-channel.md),
 [0056](../../../docs/adr/0056-need-to-know-visual-brief-boundary.md),
-[0057](../../../docs/adr/0057-decade-scale-agent-memory.md).
+[0057](../../../docs/adr/0057-decade-scale-agent-memory.md),
+[0058](../../../docs/adr/0058-procedural-text-banners-no-generative-imagery.md).
 A `knowledge/` concept will be added when the runtime ships and there is
 running behavior to document.

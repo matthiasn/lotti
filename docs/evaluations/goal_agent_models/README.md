@@ -52,10 +52,15 @@ Cost is a first-class output, captured per case from day one:
 - The live test registers `AiInteractionCaptureTestBench`, and the runner
   attributes every turn to a per-case wake-run key, so Melious billing
   (`credits`) lands in each case artifact.
-- Reports show credits per model and the **credits/goal-month
-  extrapolation** (mean credits/case × wakes/day × 30). The wakes/day figure
-  (default 3) is a printed assumption, not a measurement — deterministic
-  Phase A ticks cost €0 by design (ADR 0054).
+- Reports show credits AND energy per model with **per-goal-month
+  extrapolations** (mean per case × wakes/day × 30) — "my fitness agent
+  costs N Wh per month" is a first-class answer (ADR 0058). Wh here is
+  the provider-reported energy of the AI inference itself
+  (`AiConsumptionEvent.energyKwh`), not total device energy. The wakes/day
+  figure (default 3) is a printed assumption, not a measurement —
+  deterministic Phase A ticks and banner *rendering* cost €0 and no
+  inference energy by design (ADR 0054/0058); the Phase B turn that
+  authors banner copy is what the reported figures measure.
 - All cost figures are **observations for monitoring, never targets or
   caps** (session decision 2026-08-08). "not reported" means the provider
   sent no billing data; it is never rendered as zero.
@@ -99,22 +104,11 @@ Useful knobs:
 | `GOAL_AGENT_EVAL_PROVIDER_TYPE` | `melious` | provider type (`gemini`, `omlx`, … lose billing) |
 | `GOAL_AGENT_EVAL_STRICT` | off | `1` fails the test on any scenario failure |
 
-**Image stage** (optional): render every passing `create_goal_ad` brief
-through Nano Banana Pro so the visuals can be judged next to the scorecard.
-The outbound prompt is composed only from the leakage-checked brief
-fields (scene, mood, style, plus the model-authored headline/CTA rendered
-as banner typography per ADR 0055 Decision 8) and a fixed style contract (`goal_ad_image_probe.dart` — the executable
-ADR 0056 boundary); the headline/altText/tone stay in a `.txt` sidecar for
-human review. Costs cents per image; needs a Gemini key:
-
-```bash
-LOTTI_GOAL_AGENT_EVAL_LIVE=1 MELIOUS_API_KEY=... \
-GOAL_AGENT_EVAL_IMAGES=1 GEMINI_API_KEY=... \
-GOAL_AGENT_EVAL_SCENARIOS=ad_create_off_track,tone_roast_ad \
-fvm flutter test test/features/agents/eval/goal/goal_agent_eval_live_test.dart \
-  --tags eval-live
-# → eval_artifacts/images/<scenario>_<model>.png (+ .txt sidecar)
-```
+**Banners are procedural text** (ADR 0058): `create_goal_ad` authors copy
+(headline/tagline/cta) and selects animation + accent presets from the
+code-owned catalogs — no image provider exists in the channel, so beyond
+the Phase B text turn that authors the copy there is no separate image
+inference or generation. The leakage evals police the copy fields.
 
 Merging artifacts by hand:
 

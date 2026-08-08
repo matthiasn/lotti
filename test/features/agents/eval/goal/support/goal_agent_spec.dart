@@ -8,8 +8,9 @@
 /// the single source of truth — scenarios reference rows by id.
 library;
 
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/goals/model/goal_enums.dart';
 
 /// Tool names of the goal-agent surface, `<verb>_goal_<noun>` throughout —
 /// uniform naming so models cannot "generalise" a wrong prefix (the
@@ -47,21 +48,21 @@ status, and never invent values for data gaps — when the status is
 insufficientData, say the data is missing; do not guess and do not chide.
 
 Act in this order of precedence:
-1. Unanswered user message: answer it first, in plain text. When asked what
-   the goal is, restate goal and criteria exactly as given in the FACTS.
+1. Unanswered user message: answer it first, in plain text. When asked,
+   restate goal and criteria exactly as given in the FACTS.
 2. Goal-change requests: restate the current goal, then call
    propose_goal_revision exactly once with the requested change. A vague
    musing is not a request — ask one clarifying question instead. Never
    change the goal any other way.
 3. Ad bookkeeping: if FACTS mark an active ad stale (back on pace, quota
    completed, recovering), call retire_goal_ad. When no fresh active ad
-   exists, an ad is REQUIRED in exactly two situations:
+   exists, an ad is REQUIRED in two cases:
    (a) trackStatus is offTrack — always run an ad, no further condition;
    (b) trackStatus is atRisk AND trendWorsening3PlusDays is true — use
    tone "nudge".
    If FACTS offer a fitting top-rated previous ad (reusableTopRated),
-   call rerun_goal_ad with its adId instead of create_goal_ad — reuse is
-   free, generation costs money.
+   call rerun_goal_ad with its adId instead of create_goal_ad — proven
+   copy beats new copy.
    Never create or rerun an ad while dismissalCooldownActive is true — a
    fresh dismissal is a request for quiet.
    For composite goals, the ad must SELL the failing criterion; the
@@ -71,32 +72,43 @@ Act in this order of precedence:
    about the person, their body, or their character.
    Requests about ad tone or style are preferences, not goal changes:
    record an observation, do not propose a revision.
-   Make ads BOLD: a sharp visual metaphor beats a pretty stock scene —
-   no shoes-on-a-porch clichés. Headlines are SNARK: dry, teasing, the
-   voice of a friend who has earned the right to mock you ("Your shoes
-   filed a missing person report." beats "Time for a walk!"). Even
-   "encourage" may smirk; save softness for insufficientData and
-   recovering. Comic caricature is welcome — a couch-potato mascot can
-   be ridiculous because a character is never the user; realistic
-   depictions of actual people, never. Bland ads get dismissed.
-   Ad briefs must describe a self-contained visual scene with zero
-   personal data: no names, no numbers from the user's life, no locations,
-   no health details — the image service must learn nothing about the user.
+   Copy is SNARK: dry, teasing, a little impertinent — the voice of a
+   friend who has earned the right to mock you. "Your shoes filed a
+   missing person report." beats "Time for a walk!" every time. A sharp
+   verbal image beats a slogan; mock a stand-in ("your inner couch
+   potato is winning"), never the user, their body, or their character.
+   Even "encourage" may smirk; save softness for insufficientData and
+   recovering. Bland copy gets dismissed.
+   Ads are TEXT BANNERS the app renders: write headline (optional
+   tagline, cta) and pick animation and accent presets from the fixed
+   catalog; no images exist. Copy must contain zero personal data: no
+   names, no user-life numbers, no locations, no health details.
 4. Status reporting: when FACTS say the track status or period changed
    materially, call update_goal_report using the status from the FACTS.
 5. Nothing material changed: call no tools and write nothing.
 
 Use record_goal_observation only for durable, novel facts worth remembering
-for years — never as a progress log.
+for years — not a progress log.
 ''';
 
 /// The six tools of the draft surface.
 ///
-/// `create_goal_ad` carries the TYPED brief fields of `GoalNudgeBrief`
-/// (ADR 0056): the brief is the ONLY payload the image request may ever see,
-/// so its schema already excludes anything personal. `headline` is entity
-/// data composited on-device (ADR 0055) — it never travels to the image
-/// provider, but the agent authors it here.
+/// `create_goal_ad` carries the TYPED fields of `GoalNudgeBrief`
+/// (ADR 0058): model-authored banner copy plus preset selections from the
+/// code-owned catalogs. Copy fields are the only model text a surface
+/// renders verbatim, so they are what the leakage evals police.
+/// Banner presentation catalogs — the code-owned presets of ADR 0058,
+/// derived from the real enums so the contract cannot drift.
+final List<String> goalNudgeToneNames = [
+  for (final value in GoalNudgeTone.values) value.name,
+];
+final List<String> goalBannerAnimationNames = [
+  for (final value in GoalBannerAnimation.values) value.name,
+];
+final List<String> goalBannerAccentNames = [
+  for (final value in GoalBannerAccent.values) value.name,
+];
+
 final List<AgentToolDefinition> goalAgentEvalTools = [
   AgentToolDefinition(
     name: GoalAgentToolNames.updateGoalReport,
@@ -127,56 +139,50 @@ final List<AgentToolDefinition> goalAgentEvalTools = [
       'required': ['status', 'oneLiner', 'tldr'],
     },
   ),
-  const AgentToolDefinition(
+  AgentToolDefinition(
     name: GoalAgentToolNames.createGoalAd,
     description:
-        'Commission a new motivational ad image. The brief must be '
-        'a self-contained visual scene containing no personal data '
-        'whatsoever — it is the only text the image service receives.',
+        'Create a new text-banner ad. You write the copy and pick '
+        'presentation presets; the app renders the banner procedurally — '
+        'no image is ever generated (ADR 0058).',
     parameters: {
       'type': 'object',
       'properties': {
-        'sceneConcept': {
-          'type': 'string',
-          'description':
-              'The visual scene, self-contained, no readable '
-              'text in the image, no personal data.',
-        },
-        'mood': {
-          'type': 'string',
-          'description': 'Emotional register of the image.',
-        },
-        'stylePreset': {
-          'type': 'string',
-          'description':
-              'Art style hint (e.g. bold flat poster, retro '
-              'travel ad).',
-        },
         'headline': {
           'type': 'string',
           'description':
-              "Short punchy headline, rendered as the banner's display "
-              'typography. Must contain no personal data.',
+              'Short punchy headline — the banner IS this text. '
+              'No personal data.',
+        },
+        'tagline': {
+          'type': 'string',
+          'description': 'Optional supporting line under the headline.',
         },
         'cta': {
           'type': 'string',
           'description':
-              'Optional short call-to-action for the banner (2-4 words, '
-              'e.g. "Lace up now"). No personal data.',
-        },
-        'altText': {
-          'type': 'string',
-          'description': 'Accessibility description of the intended image.',
+              'Optional short call-to-action (2-4 words, e.g. "Lace up '
+              'now"). No personal data.',
         },
         'tone': {
           'type': 'string',
-          'enum': ['encourage', 'nudge', 'celebrate', 'roast'],
+          'enum': goalNudgeToneNames,
           'description':
               'roast only when the user requested it: sharp '
               'humor about the streak, never about the person.',
         },
+        'animation': {
+          'type': 'string',
+          'enum': goalBannerAnimationNames,
+          'description': 'Text animation preset from the fixed catalog.',
+        },
+        'accent': {
+          'type': 'string',
+          'enum': goalBannerAccentNames,
+          'description': 'Background accent preset from the fixed catalog.',
+        },
       },
-      'required': ['sceneConcept', 'headline', 'altText', 'tone'],
+      'required': ['headline', 'tone', 'animation'],
     },
   ),
   const AgentToolDefinition(

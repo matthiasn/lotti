@@ -224,7 +224,7 @@ return $default(_that.sentiment,_that.category,_that.source,_that.detail,_that.a
 
 class _ClassifiedFeedbackItem implements ClassifiedFeedbackItem {
   const _ClassifiedFeedbackItem({required this.sentiment, required this.category, required this.source, required this.detail, required this.agentId, this.sourceEntityId, this.confidence, @JsonKey(unknownEnumValue: JsonKey.nullForUndefinedEnumValue) this.observationPriority});
-
+  
 
 @override final  FeedbackSentiment sentiment;
 @override final  FeedbackCategory category;
@@ -510,7 +510,7 @@ return $default(_that.items,_that.windowStart,_that.windowEnd,_that.totalObserva
 
 class _ClassifiedFeedback implements ClassifiedFeedback {
   const _ClassifiedFeedback({required final  List<ClassifiedFeedbackItem> items, required this.windowStart, required this.windowEnd, required this.totalObservationsScanned, required this.totalDecisionsScanned}): _items = items;
-
+  
 
  final  List<ClassifiedFeedbackItem> _items;
 @override List<ClassifiedFeedbackItem> get items {

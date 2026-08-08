@@ -1,5 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lotti/features/goals/model/goal_window.dart';
+import 'package:lotti/classes/goal_window.dart';
 
 void main() {
   DateTime d(int year, int month, int day) => DateTime.utc(year, month, day);

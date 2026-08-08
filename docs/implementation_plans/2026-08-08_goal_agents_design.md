@@ -97,60 +97,32 @@ The FACTS block rendered into the prompt is exactly the shape the eval
 fixtures author (`buildStepsFacts`/`buildGymFacts`) — the eval is the
 contract; the runtime renders the same JSON from real registers.
 
-## 2. Ad pipeline
+## 2. Ad creation (procedural — ADR 0058)
 
 ```text
 Phase B decides (create_goal_ad | rerun_goal_ad)
-  → goalNudge DRAFT row carrying ONLY the typed GoalNudgeBrief
-  → GoalAdPipeline consumes drafts
-      create: GenerateImageService → Nano Banana Pro (direct Gemini)
-              → brief-match verification (one cheap vision call, ≤1 retry)
-              → importGeneratedImageBytes → JournalImage → status ready→active
-      rerun:  re-activate existing row + image, fresh staleAt — zero image cost
+  → goalNudge row: copy (headline/tagline/cta, tone) + animation/accent
+    presets from the code-owned catalogs
+  → status ready→active immediately after the tool call — no separate
+    image request, verification round-trip or wait; the only inference
+    spent is the Phase B text turn that authored the copy
   → activeGoalNudgesProvider (reactive) → banner surfaces
 ```
 
-- **Privacy boundary at the handler** (ADR 0056): the outbound image
-  prompt is built exclusively from the typed brief fields
-  (`sceneConcept`, `mood`, `stylePreset`) plus a fixed style contract
-  (16:9, centre-safe, no readable text — the Flux cover-art skill
-  contract). The handler has **no repository access** in its
-  prompt-construction path; that is enforced by constructor shape, not
-  review. Reference images (persona consistency) must carry non-null
-  `aiAttribution` — user photos are structurally excluded. The leakage
-  eval (`ad_leakage_pressure`) checks the model side; a unit test on the
-  prompt builder checks the code side.
-- **`GenerateImageService` extraction**: lift
-  `skill_inference_runner.dart:884-965` (generateImage → attribution →
-  `importGeneratedImageBytes(linkedId: null)`) into a service both the
-  skill runner and the goal pipeline call. Needs an agent-origin
-  `AiWorkAttribution` variant so image spend lands on the goal's
-  `agentId` (per-goal cost rollups come free via
-  `AiWorkType.imageGeneration`).
-- **Verification**: one flash-class vision call returning
-  `{matchesBrief, mismatches[]}`; one regeneration with corrections; then
-  typed failure (`status: failed` + observation), never publish a wrong
-  banner. Flag-gated, default ON. Outcome recorded in the nudge's
-  `provenance` map.
-- **Headline/caption composited on-device** (ADR 0055): text never
-  travels to the image provider, past ads render forever in history, and
-  copy stays accessible and theme-aware.
-
-### goalNudge lifecycle
-
-`draft → ready → active → dismissed | retired | expired | superseded |
-failed`, with **reuse re-entry** `retired → active` (fresh `staleAt`, same
-row, full history kept). Fields beyond the brief: `briefDigest` (dedupe),
-`runKey`/`threadId` provenance, `imageEntryId`, `staleAt`,
-`triggerProgressId`, `reasonSummary`, `headline`/`caption`,
-**`ratings: [{rating, ratedAt}]`** (append per run — the trajectory
-detects wear-out), **`totalVisibleMs`, `impressionCount`,
-`firstShownAt`/`lastShownAt`** (visibility sessions reported by the banner
-widget; LWW-merged per device, summed for display).
-
-Respect mechanics (quality, not budget): `briefDigest` dedupe against the
-trailing week; 24 h post-dismissal cool-down per goal. **No spending
-caps** — see §6.
+- **No generative imagery** (ADR 0058): no image provider, no
+  `GenerateImageService`, no verification pass. Re-running a top-rated
+  banner and creating a new one are both zero-cost; the rating library
+  optimizes for *taste*, not spend.
+- **Leakage discipline retargeted at copy** (the ADR 0056 principle): the
+  handler lints headline/tagline/cta against digit+unit patterns, goal
+  title terms and the private-strings inventory, and rejects rather than
+  sanitizes; the eval leakage scenarios assert the same on the model side.
+- **Presets are code**: `GoalBannerAnimation` (steady, typewriter, pulse,
+  wave, marquee, glitch) and `GoalBannerAccent` (calm, ember, tide, neon,
+  aurora) map to implementations owned by the banner widgets — design-
+  system tokens only, reduced-motion respected, fragment-shader variants
+  gated off on Linux (virtio-GPU freeze precedent) with plain-animation
+  fallbacks.
 
 ## 3. Banner presentation
 
@@ -162,10 +134,10 @@ all catalogs; generated ad copy is content, not localized):
   (after `KnowledgeNudge`, `day_page.dart:411-428`) and the habits tab
   (after `HabitsSummaryCard`). The app-shell structural band
   (`DemoModeScaffold` pattern) stays a documented escalation, not built.
-- **`GoalAdCard`** — `EventCoverImage` ingredients (cover fit, scrim,
-  gradient fallback, `FileWatcherMixin` for late-synced image bytes),
-  on-device headline overlay, persona attribution line, 44 px dismiss X,
-  tap → goal chat. Dismiss and tap are never one gesture.
+- **`GoalAdCard`** — animated typography over the accent treatment
+  (CustomPainter/implicit animations; shader accents where available),
+  persona attribution line, 44 px dismiss X, tap → goal chat. Dismiss and
+  tap are never one gesture.
   The card **reports visibility sessions** (visible ≥50% → session start;
   hidden/disposed → session end, accumulated onto the nudge row).
 - **`GoalAdCarousel`** — first carousel primitive: `PageView` + dots,
@@ -221,8 +193,9 @@ Session decision (2026-08-08): **no hard spending caps anywhere.**
 - Every Phase B turn and every image generation already lands as an
   `AiConsumptionEvent{agentId, wakeRunKey, credits, tokens, …}` — per-goal
   rollups are a `consumption_repository` query away.
-- Goal detail UI surfaces per-goal spend (text + image, `formatCredits`
-  EUR presentation).
+- Goal detail UI surfaces per-goal spend AND energy (`formatCredits` EUR
+  presentation; `energyKwh` summed to Wh/month) — "this coach costs
+  ~N Wh/month" is a headline figure, not a buried stat (ADR 0058).
 - Evals report credits/case and credits/goal-month as **observed
   estimates** with the wakes/day assumption printed (see the evaluations
   README). Predictions to validate, not budgets: Phase B ~4/wk ≈
@@ -236,8 +209,7 @@ Session decision (2026-08-08): **no hard spending caps anywhere.**
 ## 7. Component inventory
 
 New (`lib/features/goals/`): `model/` + `evaluation/` (shipped),
-`service/goal_agent_service.dart`, `service/goal_ad_pipeline.dart`,
-`service/generate_image_service.dart` (extraction),
+`service/goal_agent_service.dart`, `service/goal_banner_service.dart` (nudge row lifecycle; no generation),
 `state/` (active-nudges, per-goal spend, goal list providers),
 `workflow/goal_agent_workflow.dart` + `goal_wake_facts.dart` +
 `goal_tool_dispatcher.dart`, `sync/goal_signal_sync_dispatcher.dart`,

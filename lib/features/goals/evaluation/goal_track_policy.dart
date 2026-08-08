@@ -1,5 +1,5 @@
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
-import 'package:lotti/features/goals/model/goal_enums.dart';
 
 /// Deterministic derivation of [GoalTrackStatus] from evaluator output.
 ///

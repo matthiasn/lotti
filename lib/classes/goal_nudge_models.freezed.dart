@@ -1,0 +1,568 @@
+// GENERATED CODE - DO NOT MODIFY BY HAND
+// coverage:ignore-file
+// ignore_for_file: type=lint
+// ignore_for_file: unused_element, deprecated_member_use, deprecated_member_use_from_same_package, use_function_type_syntax_for_parameters, unnecessary_const, avoid_init_to_null, invalid_override_different_default_values_named, prefer_expression_function_bodies, annotate_overrides, invalid_annotation_target, unnecessary_question_mark
+
+part of 'goal_nudge_models.dart';
+
+// **************************************************************************
+// FreezedGenerator
+// **************************************************************************
+
+// dart format off
+T _$identity<T>(T value) => value;
+
+/// @nodoc
+mixin _$GoalNudgeBrief {
+
+ String get headline; GoalNudgeTone get tone; GoalBannerAnimation get animation; GoalBannerAccent get accent; String? get tagline; String? get cta;
+/// Create a copy of GoalNudgeBrief
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalNudgeBriefCopyWith<GoalNudgeBrief> get copyWith => _$GoalNudgeBriefCopyWithImpl<GoalNudgeBrief>(this as GoalNudgeBrief, _$identity);
+
+  /// Serializes this GoalNudgeBrief to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalNudgeBrief&&(identical(other.headline, headline) || other.headline == headline)&&(identical(other.tone, tone) || other.tone == tone)&&(identical(other.animation, animation) || other.animation == animation)&&(identical(other.accent, accent) || other.accent == accent)&&(identical(other.tagline, tagline) || other.tagline == tagline)&&(identical(other.cta, cta) || other.cta == cta));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,headline,tone,animation,accent,tagline,cta);
+
+@override
+String toString() {
+  return 'GoalNudgeBrief(headline: $headline, tone: $tone, animation: $animation, accent: $accent, tagline: $tagline, cta: $cta)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalNudgeBriefCopyWith<$Res>  {
+  factory $GoalNudgeBriefCopyWith(GoalNudgeBrief value, $Res Function(GoalNudgeBrief) _then) = _$GoalNudgeBriefCopyWithImpl;
+@useResult
+$Res call({
+ String headline, GoalNudgeTone tone, GoalBannerAnimation animation, GoalBannerAccent accent, String? tagline, String? cta
+});
+
+
+
+
+}
+/// @nodoc
+class _$GoalNudgeBriefCopyWithImpl<$Res>
+    implements $GoalNudgeBriefCopyWith<$Res> {
+  _$GoalNudgeBriefCopyWithImpl(this._self, this._then);
+
+  final GoalNudgeBrief _self;
+  final $Res Function(GoalNudgeBrief) _then;
+
+/// Create a copy of GoalNudgeBrief
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? headline = null,Object? tone = null,Object? animation = null,Object? accent = null,Object? tagline = freezed,Object? cta = freezed,}) {
+  return _then(_self.copyWith(
+headline: null == headline ? _self.headline : headline // ignore: cast_nullable_to_non_nullable
+as String,tone: null == tone ? _self.tone : tone // ignore: cast_nullable_to_non_nullable
+as GoalNudgeTone,animation: null == animation ? _self.animation : animation // ignore: cast_nullable_to_non_nullable
+as GoalBannerAnimation,accent: null == accent ? _self.accent : accent // ignore: cast_nullable_to_non_nullable
+as GoalBannerAccent,tagline: freezed == tagline ? _self.tagline : tagline // ignore: cast_nullable_to_non_nullable
+as String?,cta: freezed == cta ? _self.cta : cta // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [GoalNudgeBrief].
+extension GoalNudgeBriefPatterns on GoalNudgeBrief {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalNudgeBrief value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalNudgeBrief() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalNudgeBrief value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalNudgeBrief():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalNudgeBrief value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalNudgeBrief() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( String headline,  GoalNudgeTone tone,  GoalBannerAnimation animation,  GoalBannerAccent accent,  String? tagline,  String? cta)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalNudgeBrief() when $default != null:
+return $default(_that.headline,_that.tone,_that.animation,_that.accent,_that.tagline,_that.cta);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( String headline,  GoalNudgeTone tone,  GoalBannerAnimation animation,  GoalBannerAccent accent,  String? tagline,  String? cta)  $default,) {final _that = this;
+switch (_that) {
+case _GoalNudgeBrief():
+return $default(_that.headline,_that.tone,_that.animation,_that.accent,_that.tagline,_that.cta);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( String headline,  GoalNudgeTone tone,  GoalBannerAnimation animation,  GoalBannerAccent accent,  String? tagline,  String? cta)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalNudgeBrief() when $default != null:
+return $default(_that.headline,_that.tone,_that.animation,_that.accent,_that.tagline,_that.cta);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalNudgeBrief implements GoalNudgeBrief {
+  const _GoalNudgeBrief({required this.headline, required this.tone, required this.animation, this.accent = GoalBannerAccent.calm, this.tagline, this.cta});
+  factory _GoalNudgeBrief.fromJson(Map<String, dynamic> json) => _$GoalNudgeBriefFromJson(json);
+
+@override final  String headline;
+@override final  GoalNudgeTone tone;
+@override final  GoalBannerAnimation animation;
+@override@JsonKey() final  GoalBannerAccent accent;
+@override final  String? tagline;
+@override final  String? cta;
+
+/// Create a copy of GoalNudgeBrief
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalNudgeBriefCopyWith<_GoalNudgeBrief> get copyWith => __$GoalNudgeBriefCopyWithImpl<_GoalNudgeBrief>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalNudgeBriefToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalNudgeBrief&&(identical(other.headline, headline) || other.headline == headline)&&(identical(other.tone, tone) || other.tone == tone)&&(identical(other.animation, animation) || other.animation == animation)&&(identical(other.accent, accent) || other.accent == accent)&&(identical(other.tagline, tagline) || other.tagline == tagline)&&(identical(other.cta, cta) || other.cta == cta));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,headline,tone,animation,accent,tagline,cta);
+
+@override
+String toString() {
+  return 'GoalNudgeBrief(headline: $headline, tone: $tone, animation: $animation, accent: $accent, tagline: $tagline, cta: $cta)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalNudgeBriefCopyWith<$Res> implements $GoalNudgeBriefCopyWith<$Res> {
+  factory _$GoalNudgeBriefCopyWith(_GoalNudgeBrief value, $Res Function(_GoalNudgeBrief) _then) = __$GoalNudgeBriefCopyWithImpl;
+@override @useResult
+$Res call({
+ String headline, GoalNudgeTone tone, GoalBannerAnimation animation, GoalBannerAccent accent, String? tagline, String? cta
+});
+
+
+
+
+}
+/// @nodoc
+class __$GoalNudgeBriefCopyWithImpl<$Res>
+    implements _$GoalNudgeBriefCopyWith<$Res> {
+  __$GoalNudgeBriefCopyWithImpl(this._self, this._then);
+
+  final _GoalNudgeBrief _self;
+  final $Res Function(_GoalNudgeBrief) _then;
+
+/// Create a copy of GoalNudgeBrief
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? headline = null,Object? tone = null,Object? animation = null,Object? accent = null,Object? tagline = freezed,Object? cta = freezed,}) {
+  return _then(_GoalNudgeBrief(
+headline: null == headline ? _self.headline : headline // ignore: cast_nullable_to_non_nullable
+as String,tone: null == tone ? _self.tone : tone // ignore: cast_nullable_to_non_nullable
+as GoalNudgeTone,animation: null == animation ? _self.animation : animation // ignore: cast_nullable_to_non_nullable
+as GoalBannerAnimation,accent: null == accent ? _self.accent : accent // ignore: cast_nullable_to_non_nullable
+as GoalBannerAccent,tagline: freezed == tagline ? _self.tagline : tagline // ignore: cast_nullable_to_non_nullable
+as String?,cta: freezed == cta ? _self.cta : cta // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+
+}
+
+
+/// @nodoc
+mixin _$GoalNudgeRating {
+
+/// Which run of this ad the outcome belongs to (1-based).
+@JsonKey(fromJson: _decodeActivation) int get activation; DateTime get ratedAt;/// 1 (useless) .. 5 (loved it); null iff [skipped].
+@JsonKey(fromJson: _decodeRating) int? get rating; bool get skipped;
+/// Create a copy of GoalNudgeRating
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalNudgeRatingCopyWith<GoalNudgeRating> get copyWith => _$GoalNudgeRatingCopyWithImpl<GoalNudgeRating>(this as GoalNudgeRating, _$identity);
+
+  /// Serializes this GoalNudgeRating to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalNudgeRating&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.ratedAt, ratedAt) || other.ratedAt == ratedAt)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.skipped, skipped) || other.skipped == skipped));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,activation,ratedAt,rating,skipped);
+
+@override
+String toString() {
+  return 'GoalNudgeRating(activation: $activation, ratedAt: $ratedAt, rating: $rating, skipped: $skipped)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalNudgeRatingCopyWith<$Res>  {
+  factory $GoalNudgeRatingCopyWith(GoalNudgeRating value, $Res Function(GoalNudgeRating) _then) = _$GoalNudgeRatingCopyWithImpl;
+@useResult
+$Res call({
+@JsonKey(fromJson: _decodeActivation) int activation, DateTime ratedAt,@JsonKey(fromJson: _decodeRating) int? rating, bool skipped
+});
+
+
+
+
+}
+/// @nodoc
+class _$GoalNudgeRatingCopyWithImpl<$Res>
+    implements $GoalNudgeRatingCopyWith<$Res> {
+  _$GoalNudgeRatingCopyWithImpl(this._self, this._then);
+
+  final GoalNudgeRating _self;
+  final $Res Function(GoalNudgeRating) _then;
+
+/// Create a copy of GoalNudgeRating
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? activation = null,Object? ratedAt = null,Object? rating = freezed,Object? skipped = null,}) {
+  return _then(_self.copyWith(
+activation: null == activation ? _self.activation : activation // ignore: cast_nullable_to_non_nullable
+as int,ratedAt: null == ratedAt ? _self.ratedAt : ratedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,rating: freezed == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as int?,skipped: null == skipped ? _self.skipped : skipped // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [GoalNudgeRating].
+extension GoalNudgeRatingPatterns on GoalNudgeRating {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalNudgeRating value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalNudgeRating() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalNudgeRating value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalNudgeRating():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalNudgeRating value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalNudgeRating() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _decodeActivation)  int activation,  DateTime ratedAt, @JsonKey(fromJson: _decodeRating)  int? rating,  bool skipped)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalNudgeRating() when $default != null:
+return $default(_that.activation,_that.ratedAt,_that.rating,_that.skipped);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _decodeActivation)  int activation,  DateTime ratedAt, @JsonKey(fromJson: _decodeRating)  int? rating,  bool skipped)  $default,) {final _that = this;
+switch (_that) {
+case _GoalNudgeRating():
+return $default(_that.activation,_that.ratedAt,_that.rating,_that.skipped);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: _decodeActivation)  int activation,  DateTime ratedAt, @JsonKey(fromJson: _decodeRating)  int? rating,  bool skipped)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalNudgeRating() when $default != null:
+return $default(_that.activation,_that.ratedAt,_that.rating,_that.skipped);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalNudgeRating implements GoalNudgeRating {
+  const _GoalNudgeRating({@JsonKey(fromJson: _decodeActivation) required this.activation, required this.ratedAt, @JsonKey(fromJson: _decodeRating) this.rating, this.skipped = false});
+  factory _GoalNudgeRating.fromJson(Map<String, dynamic> json) => _$GoalNudgeRatingFromJson(json);
+
+/// Which run of this ad the outcome belongs to (1-based).
+@override@JsonKey(fromJson: _decodeActivation) final  int activation;
+@override final  DateTime ratedAt;
+/// 1 (useless) .. 5 (loved it); null iff [skipped].
+@override@JsonKey(fromJson: _decodeRating) final  int? rating;
+@override@JsonKey() final  bool skipped;
+
+/// Create a copy of GoalNudgeRating
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalNudgeRatingCopyWith<_GoalNudgeRating> get copyWith => __$GoalNudgeRatingCopyWithImpl<_GoalNudgeRating>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalNudgeRatingToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalNudgeRating&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.ratedAt, ratedAt) || other.ratedAt == ratedAt)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.skipped, skipped) || other.skipped == skipped));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,activation,ratedAt,rating,skipped);
+
+@override
+String toString() {
+  return 'GoalNudgeRating(activation: $activation, ratedAt: $ratedAt, rating: $rating, skipped: $skipped)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalNudgeRatingCopyWith<$Res> implements $GoalNudgeRatingCopyWith<$Res> {
+  factory _$GoalNudgeRatingCopyWith(_GoalNudgeRating value, $Res Function(_GoalNudgeRating) _then) = __$GoalNudgeRatingCopyWithImpl;
+@override @useResult
+$Res call({
+@JsonKey(fromJson: _decodeActivation) int activation, DateTime ratedAt,@JsonKey(fromJson: _decodeRating) int? rating, bool skipped
+});
+
+
+
+
+}
+/// @nodoc
+class __$GoalNudgeRatingCopyWithImpl<$Res>
+    implements _$GoalNudgeRatingCopyWith<$Res> {
+  __$GoalNudgeRatingCopyWithImpl(this._self, this._then);
+
+  final _GoalNudgeRating _self;
+  final $Res Function(_GoalNudgeRating) _then;
+
+/// Create a copy of GoalNudgeRating
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? activation = null,Object? ratedAt = null,Object? rating = freezed,Object? skipped = null,}) {
+  return _then(_GoalNudgeRating(
+activation: null == activation ? _self.activation : activation // ignore: cast_nullable_to_non_nullable
+as int,ratedAt: null == ratedAt ? _self.ratedAt : ratedAt // ignore: cast_nullable_to_non_nullable
+as DateTime,rating: freezed == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as int?,skipped: null == skipped ? _self.skipped : skipped // ignore: cast_nullable_to_non_nullable
+as bool,
+  ));
+}
+
+
+}
+
+// dart format on

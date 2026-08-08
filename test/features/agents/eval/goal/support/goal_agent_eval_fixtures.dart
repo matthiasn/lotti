@@ -11,7 +11,7 @@ library;
 
 import 'dart:convert';
 
-import 'package:lotti/features/goals/model/goal_enums.dart';
+import 'package:lotti/classes/goal_enums.dart';
 
 /// Reference "today" for every scenario: Saturday 2026-08-08.
 final goalEvalReference = DateTime.utc(2026, 8, 8);
@@ -373,15 +373,15 @@ Map<String, Object?> activeAdEntry({
   'markedStale': markedStale,
 };
 
-/// A reusable top-rated ad offered by the FACTS for `rerun_goal_ad`.
+/// A reusable top-rated banner offered by the FACTS for `rerun_goal_ad`.
 Map<String, Object?> reusableAdEntry({
   required String adId,
-  required String sceneSummary,
+  required String bannerSummary,
   required double meanRating,
   required int timesRun,
 }) => {
   'adId': adId,
-  'sceneSummary': sceneSummary,
+  'bannerSummary': bannerSummary,
   'meanRating': meanRating,
   'timesRun': timesRun,
 };

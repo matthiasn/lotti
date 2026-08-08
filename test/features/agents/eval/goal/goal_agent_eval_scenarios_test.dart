@@ -1,10 +1,10 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
-import 'package:lotti/features/goals/model/goal_criterion.dart';
-import 'package:lotti/features/goals/model/goal_enums.dart';
-import 'package:lotti/features/goals/model/goal_window.dart';
 
 import 'support/goal_agent_eval_fixtures.dart';
 import 'support/goal_agent_eval_scenarios.dart';

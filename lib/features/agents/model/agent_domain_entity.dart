@@ -2,6 +2,11 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/goal_progress_models.dart';
+import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
@@ -860,6 +865,149 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? deletedAt,
   }) = SoulDocumentHeadEntity;
 
+  /// Immutable version of a goal's spec (ADR 0053 Decision 2).
+  ///
+  /// The goal is versioned structured state, not prose: [statement] is the
+  /// sentence the agent can always *speak*, [criteria] is the machine-
+  /// evaluable tree the deterministic tier folds. Versions are never edited;
+  /// a revision writes a new version (via ChangeSet approval when
+  /// agent-proposed — there is no auto-accept tier) and moves the head.
+  /// [agentId] is the goal agent; one agent IS one goal.
+  const factory AgentDomainEntity.goalSpecVersion({
+    required String id,
+    required String agentId,
+    required int version,
+    required GoalSpecVersionStatus status,
+    required String authoredBy,
+    required String title,
+
+    /// The speakable form: "Average 10,000 steps a day over a rolling week."
+    required String statement,
+    required GoalCriterion criteria,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+
+    /// Conversation that produced an agent-proposed revision.
+    String? sourceSessionId,
+
+    /// Parent version for diff rendering in the revision ChangeSet.
+    String? diffFromVersionId,
+    DateTime? startDate,
+
+    /// Optional deadline; when passed, the track policy resolves to
+    /// achieved/offTrack instead of granting grace.
+    DateTime? targetDate,
+    String? rationale,
+    DateTime? deletedAt,
+  }) = GoalSpecVersionEntity;
+
+  /// Mutable head pointer for the active goal spec version.
+  ///
+  /// Deterministic id `goal_spec_head:<agentId>` (`goalSpecHeadId`), LWW.
+  /// "State your current goal" is a head→version read — zero inference.
+  const factory AgentDomainEntity.goalSpecHead({
+    required String id,
+    required String agentId,
+    required String versionId,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = GoalSpecHeadEntity;
+
+  /// Deterministic attainment register for one goal period (ADR 0053
+  /// Decision 4).
+  ///
+  /// Keyed `goal_progress:<agentId>:<periodKey>` (`goalProgressId`) and
+  /// recomputed from source, never accumulated — the `weekRollup`
+  /// convergence pattern: N devices computing the same period write the
+  /// same row. [trackStatus] is derived by `GoalTrackPolicy`, never by a
+  /// model, and is mirrored into the row's `subtype` for indexed scans.
+  /// [specVersionId] pins which goal definition the numbers were computed
+  /// against, so charts stay honest across revisions. Retention-exempt:
+  /// this register IS the quantitative history.
+  const factory AgentDomainEntity.goalProgress({
+    required String id,
+    required String agentId,
+    required String periodKey,
+    required GoalTrackStatus trackStatus,
+    required double attainment,
+    required double dataCoverage,
+    required bool satisfied,
+    required String specVersionId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    @Default(<GoalCriterionProgress>[])
+    List<GoalCriterionProgress> criterionResults,
+    bool? paceFeasible,
+    double? shortTermAttainment,
+    DateTime? deletedAt,
+  }) = GoalProgressEntity;
+
+  /// A goal ad — one banner nudge, its brief, and its whole life
+  /// (ADR 0055).
+  ///
+  /// The row is append-only in spirit: [status] moves through the lifecycle
+  /// (including the reuse re-entry `retired → active`), while [ratings] and
+  /// the visibility counters accumulate across runs — the labeled library
+  /// that personalizes future ads and detects wear-out. [brief] is all the
+  /// banner there is: copy plus procedural presentation presets, rendered
+  /// by the app with zero generation cost (ADR 0058). [briefDigest] is the
+  /// near-duplicate dedupe key over the copy.
+  const factory AgentDomainEntity.goalNudge({
+    required String id,
+    required String agentId,
+    required GoalNudgeStatus status,
+    required GoalNudgeBrief brief,
+    required String briefDigest,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+
+    /// Wake provenance (the DayPlanEntity precedent).
+    String? runKey,
+    String? threadId,
+
+    /// The `goalProgress` row that justified this ad.
+    String? triggerProgressId,
+    String? reasonSummary,
+
+    /// How long this ad may claim to be current; goal-relevant events pull
+    /// it forward (staleness is a contract, not a hope).
+    DateTime? staleAt,
+    DateTime? activatedAt,
+    DateTime? dismissedAt,
+    DateTime? retiredAt,
+    DateTime? expiredAt,
+
+    /// How many times this ad has been activated (1-based; a reuse
+    /// re-entry increments it). Rating prompts key off this: one outcome
+    /// per activation in the ratings history.
+    @Default(1) int activationCount,
+
+    /// Rating-prompt outcomes, one per rated-or-skipped activation
+    /// (append-only; never overwritten).
+    @Default(<GoalNudgeRating>[]) List<GoalNudgeRating> ratings,
+
+    /// Accumulated visible milliseconds, per host — grow-only counters so
+    /// concurrent exposure on two devices can merge by element-wise max
+    /// instead of losing one side to whole-row LWW (`.value` is the total).
+    /// The concurrent-merge rule itself lands with the first producer
+    /// (PR 5), before anything writes these rows.
+    @Default(GCounter.empty())
+    @JsonKey(name: 'totalVisibleMsByHost')
+    GCounter totalVisibleMs,
+    @Default(GCounter.empty())
+    @JsonKey(name: 'impressionCountByHost')
+    GCounter impressionCount,
+    DateTime? firstShownAt,
+    DateTime? lastShownAt,
+
+    /// Pipeline outcomes (verification verdict, generator model, …).
+    @Default(<String, String>{}) Map<String, String> provenance,
+    DateTime? deletedAt,
+  }) = GoalNudgeEntity;
+
   /// Fallback for forward compatibility.
   const factory AgentDomainEntity.unknown({
     required String id,
@@ -877,8 +1025,64 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// mutating the caller's map. A malformed id is not guessed or echoed in the
   /// diagnostic: sync can classify the fixed [FormatException] as permanent
   /// and avoid retrying a poison payload.
-  factory AgentDomainEntity.fromJson(Map<String, dynamic> json) =>
-      _$AgentDomainEntityFromJson(_repairLegacyWeekRollup(json));
+  /// Every decode path — Matrix sync (inline and attachment payloads),
+  /// storage reads via `AgentDbConversions.fromSerialized`, tests — funnels
+  /// through this factory, so goal-payload validation lives HERE and not in
+  /// any single caller: raw checks before the generated decoder can
+  /// truncate what it does not understand, structural checks after. A
+  /// fixed [FormatException] lets sync classify the payload as permanently
+  /// poisonous rather than retrying it.
+  factory AgentDomainEntity.fromJson(Map<String, dynamic> json) {
+    final repaired = _repairLegacyWeekRollup(json);
+    _validateGoalSpecJson(repaired);
+    _validateGoalNudgeJson(repaired);
+    final entity = _$AgentDomainEntityFromJson(repaired);
+    if (entity is GoalSpecVersionEntity) {
+      final issues = GoalSpecValidator.criterionIssues(entity.criteria);
+      if (issues.isNotEmpty) {
+        throw FormatException('Invalid goal criteria: ${issues.join('; ')}');
+      }
+    }
+    return entity;
+  }
+}
+
+/// Raw-JSON goal-spec validation BEFORE the generated decoder runs:
+/// json_serializable truncates fractional numbers with `.toInt()`, so a
+/// malformed `targetCount: 1.9` or `version: 1.9` must be rejected while
+/// still visible.
+void _validateGoalSpecJson(Map<String, dynamic> json) {
+  if (json['runtimeType'] != 'goalSpecVersion') return;
+  final version = json['version'];
+  if (version is! num || version % 1 != 0 || version < 1) {
+    throw FormatException(
+      'goalSpecVersion.version must be a positive integer, was $version',
+    );
+  }
+  final criteria = json['criteria'];
+  if (criteria is! Map<String, dynamic>) {
+    throw const FormatException('goalSpecVersion has no criteria tree');
+  }
+  final issues = GoalSpecValidator.criterionJsonIssues(criteria);
+  if (issues.isNotEmpty) {
+    throw FormatException('Invalid goal criteria: ${issues.join('; ')}');
+  }
+}
+
+/// Cross-field rating validation the per-field converters cannot do.
+void _validateGoalNudgeJson(Map<String, dynamic> json) {
+  if (json['runtimeType'] != 'goalNudge') return;
+  final ratings = json['ratings'];
+  if (ratings is! List) return;
+  for (final entry in ratings) {
+    if (entry is! Map<String, dynamic>) continue;
+    final issues = goalNudgeRatingJsonIssues(entry);
+    if (issues.isNotEmpty) {
+      throw FormatException(
+        'Invalid goal nudge rating: ${issues.join('; ')}',
+      );
+    }
+  }
 }
 
 // Both register generations. The `_v2` ids this build writes always carry

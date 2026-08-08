@@ -52,6 +52,10 @@ class AgentDbConversions {
       soulDocument: (e) => e.deletedAt,
       soulDocumentVersion: (e) => e.deletedAt,
       soulDocumentHead: (e) => e.deletedAt,
+      goalSpecVersion: (e) => e.deletedAt,
+      goalSpecHead: (e) => e.deletedAt,
+      goalProgress: (e) => e.deletedAt,
+      goalNudge: (e) => e.deletedAt,
       unknown: (e) => e.deletedAt,
     );
 
@@ -60,6 +64,7 @@ class AgentDbConversions {
       agentReport: (r) => r.threadId,
       changeSet: (c) => c.threadId,
       wakeTokenUsage: (e) => e.threadId,
+      goalNudge: (e) => e.threadId,
     );
 
     final json = entity.toJson();
@@ -123,6 +128,9 @@ class AgentDbConversions {
     final json = jsonDecode(serialized) as Map<String, dynamic>;
     _migrateReportContent(json);
     _migrateGCounters(json);
+    // Goal-payload validation happens inside AgentDomainEntity.fromJson —
+    // the chokepoint every decode path shares, including Matrix sync's
+    // direct decodes that never pass through this method.
     return AgentDomainEntity.fromJson(json);
   }
 
@@ -264,6 +272,10 @@ class AgentDbConversions {
       soulDocument: (_) => AgentEntityTypes.soulDocument,
       soulDocumentVersion: (_) => AgentEntityTypes.soulDocumentVersion,
       soulDocumentHead: (_) => AgentEntityTypes.soulDocumentHead,
+      goalSpecVersion: (_) => AgentEntityTypes.goalSpecVersion,
+      goalSpecHead: (_) => AgentEntityTypes.goalSpecHead,
+      goalProgress: (_) => AgentEntityTypes.goalProgress,
+      goalNudge: (_) => AgentEntityTypes.goalNudge,
       unknown: (_) => 'unknown',
     );
   }
@@ -308,6 +320,11 @@ class AgentDbConversions {
       changeSet: (c) => c.status.name,
       changeDecision: (d) => d.verdict.name,
       soulDocumentVersion: (v) => v.status.name,
+      goalSpecVersion: (v) => v.status.name,
+      // The policy-derived track status: what makes "all offTrack periods
+      // of this goal" an indexed scan over a decade of rows.
+      goalProgress: (progress) => progress.trackStatus.name,
+      goalNudge: (nudge) => nudge.status.name,
     );
   }
 
@@ -350,6 +367,10 @@ class AgentDbConversions {
       soulDocument: (e) => e.createdAt,
       soulDocumentVersion: (e) => e.createdAt,
       soulDocumentHead: (e) => e.updatedAt,
+      goalSpecVersion: (e) => e.createdAt,
+      goalSpecHead: (e) => e.updatedAt,
+      goalProgress: (e) => e.createdAt,
+      goalNudge: (e) => e.createdAt,
       unknown: (e) => e.createdAt,
     );
   }
@@ -393,6 +414,10 @@ class AgentDbConversions {
       soulDocument: (e) => e.updatedAt,
       soulDocumentVersion: (e) => e.createdAt,
       soulDocumentHead: (e) => e.updatedAt,
+      goalSpecVersion: (e) => e.createdAt,
+      goalSpecHead: (e) => e.updatedAt,
+      goalProgress: (e) => e.updatedAt,
+      goalNudge: (e) => e.updatedAt,
       unknown: (e) => e.createdAt,
     );
   }

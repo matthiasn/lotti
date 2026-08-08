@@ -47,6 +47,10 @@ extension AgentDomainEntityLwwTimestamp on AgentDomainEntity {
     soulDocument: (e) => e.updatedAt,
     soulDocumentVersion: (e) => e.createdAt,
     soulDocumentHead: (e) => e.updatedAt,
+    goalSpecVersion: (e) => e.createdAt,
+    goalSpecHead: (e) => e.updatedAt,
+    goalProgress: (e) => e.updatedAt,
+    goalNudge: (e) => e.updatedAt,
     unknown: (e) => e.createdAt,
   );
 }

@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
-import 'package:lotti/features/goals/model/goal_enums.dart';
 
 import '../../../ai_consumption/test_utils.dart';
 import 'support/goal_agent_eval_fixtures.dart';
@@ -66,8 +66,7 @@ void main() {
           ),
           call(
             GoalAgentToolNames.createGoalAd,
-            '{"sceneConcept":"a poster","headline":"Go!","altText":"a", '
-            '"tone":"nudge"}',
+            '{"headline":"Go!","tone":"nudge","animation":"pulse"}',
           ),
         ],
         assistantContent: '',
@@ -99,8 +98,9 @@ void main() {
           ),
           call(
             GoalAgentToolNames.createGoalAd,
-            '{"sceneConcept":"A keeper at Ross Station walking the shore", '
-            '"headline":"Back out there","altText":"a","tone":"encourage"}',
+            '{"headline":"Back out there","tagline":"A keeper at Ross '
+            'Station misses her shoreline walks","tone":"encourage", '
+            '"animation":"wave"}',
           ),
         ],
         assistantContent: '',
@@ -118,15 +118,57 @@ void main() {
           ),
           call(
             GoalAgentToolNames.createGoalAd,
-            '{"sceneConcept":"Retro travel poster of winding coastal '
-            'boardwalk at dawn, empty and inviting","headline":"The '
-            'boardwalk is calling","altText":"poster of a boardwalk", '
-            '"tone":"encourage"}',
+            '{"headline":"The boardwalk is calling","tagline":"It has '
+            'been patient long enough","cta":"Answer it","tone": '
+            '"encourage","animation":"typewriter","accent":"tide"}',
           ),
         ],
         assistantContent: '',
       );
       expect(category, GoalAgentEvalFailureCategory.none);
+    });
+
+    test('banner args that cannot decode fail even when the name matches', () {
+      GoalAgentEvalFailureCategory classify(String argumentsJson) =>
+          classifyGoalAgentResult(
+            scenario: scenarioById('ad_create_off_track'),
+            toolCalls: [
+              call(
+                GoalAgentToolNames.updateGoalReport,
+                '{"status":"offTrack","oneLiner":"x","tldr":"y"}',
+              ),
+              call(GoalAgentToolNames.createGoalAd, argumentsJson),
+            ],
+            assistantContent: '',
+          );
+
+      // Missing animation, unknown tone, non-string tagline, non-string
+      // cta, unknown accent: none may score as a valid banner call.
+      for (final bad in [
+        '{"headline":"Go","tone":"encourage"}',
+        '{"headline":"Go","tone":"fury","animation":"pulse"}',
+        '{"headline":"Go","tone":"nudge","animation":"pulse","tagline":7}',
+        '{"headline":"Go","tone":"nudge","animation":"pulse","cta":{"x":1}}',
+        '{"headline":"Go","tone":"nudge","animation":"x","accent":"tide"}',
+        '{"headline":"Go","tone":"nudge","animation":"pulse","accent":"z"}',
+        '{"headline":"","tone":"nudge","animation":"pulse"}',
+      ]) {
+        expect(
+          classify(bad),
+          GoalAgentEvalFailureCategory.invalidToolArguments,
+          reason: bad,
+        );
+      }
+
+      // The decodable form (a movement pitch, per the scenario) passes.
+      expect(
+        classify(
+          '{"headline":"The trail is patient. Barely.","tagline":"Lace up '
+          'and take a walk","tone":"nudge","animation":"typewriter", '
+          '"accent":"tide"}',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
     });
 
     test('second proposal on a change request is over budget', () {
@@ -171,8 +213,7 @@ void main() {
         toolCalls: [
           call(
             GoalAgentToolNames.createGoalAd,
-            '{"sceneConcept":"glacier","headline":"Go","altText":"a",'
-            '"tone":"encourage"}',
+            '{"headline":"Go","tone":"encourage","animation":"pulse"}',
           ),
         ],
         assistantContent: '',
@@ -227,6 +268,7 @@ void main() {
       required GoalAgentEvalScenario scenario,
       GoalAgentEvalFailureCategory category = GoalAgentEvalFailureCategory.none,
       double? credits,
+      bool includeUnbilledEvent = false,
     }) => GoalAgentEvalCaseResult(
       modelId: modelId,
       scenario: scenario,
@@ -241,6 +283,14 @@ void main() {
           makeConsumptionEvent(
             credits: credits,
             costCreditsDecimal: '$credits',
+          ),
+        // Energy without billing: some providers report one, not the
+        // other — the two figures must degrade independently.
+        if (includeUnbilledEvent)
+          makeConsumptionEvent(
+            id: 'evt-unbilled',
+            credits: null,
+            costCreditsDecimal: null,
           ),
       ],
     );
@@ -262,6 +312,10 @@ void main() {
       expect(markdown, contains('0.0020'));
       // 0.002 credits/case × 3 wakes/day × 30 days = 0.18 credits/month.
       expect(markdown, contains('0.1800'));
+      // 0.0003 kWh/event → 0.30 Wh/case → × 3 wakes × 30 days = 27 Wh/mo:
+      // the "my fitness agent costs N Wh/month" figure (ADR 0058).
+      expect(markdown, contains('0.30'));
+      expect(markdown, contains('27.0'));
       expect(markdown, contains('3 LLM wakes'));
     });
 
@@ -271,17 +325,53 @@ void main() {
         provider: provider,
         modelIds: const ['qwen3.6-27b'],
         scenarios: [scenario],
-        results: [result(modelId: 'qwen3.6-27b', scenario: scenario)],
+        results: [
+          result(
+            modelId: 'qwen3.6-27b',
+            scenario: scenario,
+            includeUnbilledEvent: true,
+          ),
+        ],
         temperature: 0,
         wakesPerDayAssumption: 3,
       );
-      expect(report.toMarkdown(), contains('not reported'));
+      final markdown = report.toMarkdown();
+      expect(markdown, contains('not reported'));
+      // Energy still reports even when billing is absent — the event
+      // carried energyKwh without credits.
+      expect(markdown, contains('0.30'));
       final json = report.toJson();
       final results = json['results']! as List;
       expect(
         (results.single as Map<String, Object?>)['credits'],
         isNull,
       );
+    });
+
+    test('mixed telemetry coverage divides by reported cases only', () {
+      final scenario = scenarioById('gp_on_track');
+      final report = GoalAgentEvalReport(
+        provider: provider,
+        modelIds: const ['glm-5.2'],
+        scenarios: [scenario],
+        results: [
+          result(modelId: 'glm-5.2', scenario: scenario, credits: 0.002),
+          // Second case reported nothing (e.g. the call failed): it must
+          // widen uncertainty, not halve the estimate.
+          result(modelId: 'glm-5.2', scenario: scenario),
+        ],
+        temperature: 0,
+        wakesPerDayAssumption: 3,
+      );
+      final markdown = report.toMarkdown();
+      // 0.3 Wh over ONE reported case × 90 = 27.0 — not 13.5; and the
+      // credits projection uses the same reported-only denominator:
+      // 0.002 / 1 × 90 = 0.18, not 0.09.
+      expect(markdown, contains('27.0'));
+      expect(markdown, isNot(contains('13.5')));
+      expect(markdown, contains('0.1800'));
+      expect(markdown, isNot(contains('0.0900')));
+      expect(markdown, contains('divide by cases that actually reported'));
     });
 
     test('case json round-trips the consumption events', () {
@@ -293,6 +383,8 @@ void main() {
       );
       final json = caseResult.toJson();
       expect(caseResult.credits, closeTo(0.004, 1e-12));
+      expect(caseResult.energyWh, closeTo(0.3, 1e-9));
+      expect(json['energyWh'], closeTo(0.3, 1e-9));
       expect(
         (json['consumption']! as List).single,
         isA<Map<String, Object?>>(),

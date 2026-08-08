@@ -63,6 +63,7 @@ Each ADR should contain:
 | [0055: The Banner-Nudge Attention Channel](./0055-banner-nudge-attention-channel.md) | Proposed | Banner-only in-app ads (never push), `goalNudge` lifecycle with dismissal-as-data, staleness contract, respect mechanics (cool-down, dedupe), quiet-by-default surfaces, on-device copy compositing, ads permanent in chat history. |
 | [0056: The Need-to-Know Visual Brief Boundary](./0056-need-to-know-visual-brief-boundary.md) | Proposed | Non-ZDR image providers receive only a self-contained typed brief; the parameter type is the enforcement; on-device text compositing; provenance-gated reference images; leakage evals; one-retry verification. |
 | [0057: Decade-Scale Agent Memory](./0057-decade-scale-agent-memory.md) | Proposed | Generalized search + keyed knowledge read path, bounded observation reads, epoch summaries via `summaryDepth` (amends 0017), distill-then-prune retention, bounded prune instead of the 20k skip, cold-prefill context budgets. |
+| [0058: Procedural Text Banners — No Generative Imagery](./0058-procedural-text-banners-no-generative-imagery.md) | Proposed | Goal ads are model-authored copy over code-owned animation/accent presets; no image provider in the channel (supersedes 0055 D8; 0056 dormant); per-agent energy (Wh/goal-month) is a first-class reported figure. |
 
 ### Chronological index
 
@@ -123,3 +124,4 @@ Each ADR should contain:
 - [`0055-banner-nudge-attention-channel.md`](./0055-banner-nudge-attention-channel.md)
 - [`0056-need-to-know-visual-brief-boundary.md`](./0056-need-to-know-visual-brief-boundary.md)
 - [`0057-decade-scale-agent-memory.md`](./0057-decade-scale-agent-memory.md)
+- [`0058-procedural-text-banners-no-generative-imagery.md`](./0058-procedural-text-banners-no-generative-imagery.md)

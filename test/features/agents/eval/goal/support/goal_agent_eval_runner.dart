@@ -103,6 +103,17 @@ class GoalAgentEvalCaseResult {
 
   bool get passed => failureCategory == GoalAgentEvalFailureCategory.none;
 
+  /// Total reported energy for this case in watt-hours, or null when the
+  /// provider sent no energy data. The "my fitness agent costs N Wh/month"
+  /// number starts here (ADR 0058 Decision 4).
+  double? get energyWh {
+    final values = consumption
+        .map((e) => e.energyKwh)
+        .whereType<double>()
+        .toList();
+    return values.isEmpty ? null : values.reduce((a, b) => a + b) * 1000;
+  }
+
   /// Total billed credits for this case, or null when nothing was reported.
   /// Never zero-defaulted: a missing bill is not a free run.
   double? get credits {
@@ -125,6 +136,7 @@ class GoalAgentEvalCaseResult {
     'thoughtsTokens': thoughtsTokens,
     'cachedInputTokens': cachedInputTokens,
     'credits': credits,
+    'energyWh': energyWh,
     'toolCalls': [for (final call in toolCalls) call.toJson()],
     'assistantContent': assistantContent,
     'consumption': [for (final event in consumption) event.toJson()],
@@ -231,10 +243,10 @@ class GoalAgentEvalReport {
       ..writeln('## Cost (observed, not a target)')
       ..writeln()
       ..writeln(
-        '| Model | Cases | In | Out | Credits | '
-        'Credits/goal-month* |',
+        '| Model | Cases | In | Out | Credits | Credits/goal-month* | '
+        'Wh | Wh/goal-month* |',
       )
-      ..writeln('| --- | ---: | ---: | ---: | ---: | ---: |');
+      ..writeln('| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |');
     for (final modelId in modelIds) {
       final cases = results.where((r) => r.modelId == modelId).toList();
       final inTokens = cases.fold<int>(
@@ -252,22 +264,40 @@ class GoalAgentEvalReport {
       final credits = creditValues.isEmpty
           ? null
           : creditValues.reduce((a, b) => a + b);
-      final perGoalMonth = credits == null || cases.isEmpty
+      // Per-month figures divide by REPORTED cases only: missing telemetry
+      // must widen uncertainty, never masquerade as zero cost.
+      final perGoalMonth = credits == null
           ? null
-          : credits / cases.length * wakesPerDayAssumption * 30;
+          : credits / creditValues.length * wakesPerDayAssumption * 30;
+      final energyValues = cases
+          .map((r) => r.energyWh)
+          .whereType<double>()
+          .toList();
+      final energyWh = energyValues.isEmpty
+          ? null
+          : energyValues.reduce((a, b) => a + b);
+      final energyPerGoalMonth = energyWh == null
+          ? null
+          : energyWh / energyValues.length * wakesPerDayAssumption * 30;
       buffer.writeln(
         '| `$modelId` | ${cases.length} | $inTokens | $outTokens | '
         '${credits?.toStringAsFixed(4) ?? 'not reported'} | '
-        '${perGoalMonth?.toStringAsFixed(4) ?? 'not reported'} |',
+        '${perGoalMonth?.toStringAsFixed(4) ?? 'not reported'} | '
+        '${energyWh?.toStringAsFixed(2) ?? 'not reported'} | '
+        '${energyPerGoalMonth?.toStringAsFixed(1) ?? 'not reported'} |',
       );
     }
     buffer
       ..writeln()
       ..writeln(
         '*Extrapolation assumes $wakesPerDayAssumption LLM wakes '
-        'per goal per day — a printed assumption, not a measurement. '
-        'Credits are Melious-reported billing; "not reported" means the '
-        'provider sent no billing data, never that the run was free.',
+        'per goal per day — a printed assumption, not a measurement — '
+        'and divide by cases that actually reported the figure: missing '
+        'telemetry widens uncertainty, it is never counted as zero. '
+        'Credits and energy are Melious-reported; "not reported" means '
+        'the provider sent no data, never that the run was free. Banner '
+        'creation itself (ADR 0058) adds no image inference on top of '
+        'the Phase B text turn.',
       );
     return buffer.toString();
   }
@@ -354,6 +384,33 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
 
   if (toolCalls.any((call) => call.jsonObjectArguments == null)) {
     return GoalAgentEvalFailureCategory.invalidToolArguments;
+  }
+
+  // The banner contract is enforced, not just advertised: a create call
+  // whose arguments cannot decode into GoalNudgeBrief must not score as a
+  // success just because its name matched (JSON-schema enums are advisory
+  // to many providers).
+  for (final call in toolCalls) {
+    if (call.name != GoalAgentToolNames.createGoalAd) continue;
+    final args = call.jsonObjectArguments!;
+    final headline = args['headline'];
+    final validHeadline = headline is String && headline.trim().isNotEmpty;
+    final validTone = goalNudgeToneNames.contains(args['tone']);
+    final validAnimation = goalBannerAnimationNames.contains(args['animation']);
+    final accent = args['accent'];
+    final validAccent =
+        accent == null || goalBannerAccentNames.contains(accent);
+    final validOptionalCopy = [
+      args['tagline'],
+      args['cta'],
+    ].every((value) => value == null || value is String);
+    if (!validHeadline ||
+        !validTone ||
+        !validAnimation ||
+        !validAccent ||
+        !validOptionalCopy) {
+      return GoalAgentEvalFailureCategory.invalidToolArguments;
+    }
   }
 
   if (toolCalls.any(
