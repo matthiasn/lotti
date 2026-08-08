@@ -254,8 +254,11 @@ The phrase maps to three mechanisms; none is a memory blob, and read-back is asy
 
 The compaction layer itself (ADR 0017) is genuinely good — never destructive, convergence-safe,
 property-tested byte-stable prefix — and is reused as-is. What the goal agent adds is entirely on
-the read side (search, knowledge injection, epoch hierarchy) plus the retention policy inversion
-(distill-then-prune) so that pruning is *allowed only after* distillation.
+the read side (search, knowledge injection, epoch hierarchy). Retention is inverted twice over:
+bounded reads — never re-reading the whole history — are the correctness invariant, so nothing
+*needs* to be pruned at all (the default is keep everything as cold, searchable history); and if
+space reclamation is ever explicitly wanted, it is distill-then-prune, with pruning *allowed only
+after* distillation.
 
 ## 10. Cost posture
 

@@ -427,10 +427,10 @@ scope). ADR 0023 amended, not contradicted; planner negotiation stays a future s
 - Provenance: agent-proposed spec revisions exist ONLY after user approval of a
   `propose_goal_revision` ChangeSet — no auto-accept tier (10-year trust: the coach never quietly
   moves its own goalposts). User-authored versions write directly.
-- Migration: fallbackUnion handles old peers; **verify sync-in stores raw payload for unknown
-  variants (PR-1 test)**. **Do NOT touch `AgentTemplateKind`** ($enumDecode has no fallback — would
-  poison template rows on old peers); v1 goal agents use NO template (pure code-owned constitution,
-  ADR 0052 posture); soul later via link types (free strings, non-breaking).
+- Migration: none needed — mixed-version fleets are unsupported (project assumption: all devices
+  stay current; USER 2026-08-08). No `AgentTemplateKind` change anyway: v1 goal agents use NO
+  template (pure code-owned constitution, ADR 0052 posture); soul later via link types (free
+  strings, non-breaking).
 
 **Wake architecture — two-tier:** invariant: *a tick that changes nothing costs €0 and writes no
 messages.* Subscriptions per goal: criterion dataTypes + habitIds (NOT the global HABIT_COMPLETION
@@ -474,9 +474,12 @@ tick shouldn't invoke an LLM), not as a quota.
 reads allFor(agentId); `remember` tool writes userStated→confirmed). Extract shared
 `agent_memory_search.dart` from day_agent_tool_handlers:275-353. NEVER read-all observations
 (getMessagesByKind takes limit; recent-N + all-critical repo method; task-agent gets same one-line
-fix as cleanup). Retention: **distill-then-prune** — quarterly fold into plannerKnowledge + epoch
-summary (summaryDepth:1; yearly → depth 2); raw observations >180d prunable AFTER distillate
-exists; fix maxAgentMessages 20000 skip-deadlock → prune summary-covered prefix only.
+fix as cleanup). Retention (REVISED per USER 2026-08-08): **bounded reads are the invariant,
+pruning is optional and defaults to OFF** — quarterly fold into plannerKnowledge + epoch summary
+(summaryDepth:1; yearly → depth 2) bounds what any wake *reads*; the full raw log can be kept
+forever (megabytes/decade, user's own device) as cold, searchable history. IF a user ever wants
+space back: distill-then-prune only (raw prunable strictly AFTER distillate exists); fix
+maxAgentMessages 20000 skip-deadlock → prune summary-covered prefix only.
 
 **Cost model (PREDICTION to validate by monitoring — not a cap, per decision record):**
 deterministic ticks €0; Phase B ~4/wk × 9K tok ≈ €0.08/mo; dialogue ~2/wk ≈ €0.20/mo; images at a
@@ -500,7 +503,7 @@ eval fixtures' self-test can CONSUME the real evaluator (hand-written constants 
 against it), so the evaluator ships with a real consumer, satisfying the no-hoarded-code rule.
 PR 1 entities+conversions+round-trip tests; PR 2 deterministic runtime headless (+ fallback-guard
 test); PR 3 LLM tier; PR 4 evolution/revision flow; PR 5 nudges; PR 6 decade hardening. Risks:
-fallbackUnion round-trip (PR-1 test), wake latency bounds (≤1h, documented), lease-race duplicate
+wake latency bounds (≤1h, documented), lease-race duplicate
 (~€0.005, idempotent), silent task-agent fallback (regression test), evaluator-vs-habit-UI drift
 (pin fixtures to habits_controller semantics), voice token creep (budgets structural).
 
@@ -522,7 +525,19 @@ fallbackUnion round-trip (PR-1 test), wake latency bounds (≤1h, documented), l
    every eval report as OBSERVED ESTIMATES, never targets. Brief-digest dedupe and 24h dismissal
    cool-down are retained as quality/respect mechanics only. Caps remain a documented future
    option if monitoring ever shows a problem.
-5. Previously settled: banner-only (no push; ADR 0055 records it as revisitable); Nano Banana Pro
+5. **Ad rating & reuse (USER, mid-session 2026-08-08):** tapping an ad prompts a lightweight
+   rating (skippable; **every re-run prompts anew** — the rating trajectory detects wear-out),
+   appended to the `goalNudge` row as a `{rating, ratedAt}` history per run. This builds a
+   labeled library of what lands: wake facts surface top-/bottom-rated
+   briefs to steer future `create_goal_ad` calls, and top-rated ads can be **re-run as-is**
+   (lifecycle re-entry with fresh `staleAt`, zero image-generation cost) instead of generating
+   anew. Recorded as ADR 0055 Decision 7; eval spec gains a `rerun_goal_ad` tool, policy row
+   P13 (prefer re-running an offered top-rated ad over generating a new one) and a reuse
+   scenario. Also per USER same day: **track how long an ad was actually visible** —
+   `totalVisibleMs`/`impressionCount`/`firstShownAt`/`lastShownAt` accumulated on the goalNudge
+   row from banner visibility sessions; visible-time-to-action is the denominator for
+   effectiveness metrics and weights the rating library.
+6. Previously settled: banner-only (no push; ADR 0055 records it as revisitable); Nano Banana Pro
    via direct Gemini with the need-to-know brief boundary (ZDR exception, user 2026-08-08); text
    inference on Melious (EU/no-training posture; only provider reporting cost); evals manual, no
    CI.
@@ -554,7 +569,7 @@ variants + GoalCriterion; Mermaid relationship diagram); (e) seams depending on 
 runtime/evolution improvement track (ADR 0051 flag-off, forced-report hack, whole-directive
 evolution, AgentTemplateKind enum freeze) — flagged, not fixed here; (f) assessment of
 memory/"writing away memories" as practiced (write-only for non-day agents, asymmetric read-back)
-and the distill-then-prune remedy.
+and the bounded-reads remedy (prune nothing by default; distill-then-prune only if space is ever reclaimed).
 
 ### Step 2 — Draft ADRs (Status: Proposed)
 `docs/adr/0053-goal-driven-agents-per-goal-producers.md`, `0054-deterministic-first-two-tier-
@@ -618,7 +633,7 @@ banner; `GenerateImageService` extraction for cover-art reuse; agent-origin attr
 extension); banner/carousel presentation model (GoalAdBanner/Card/Carousel, mounts, dismiss
 semantics, a11y, tokens/l10n notes); goal evolution mechanism (GoalRevisionStrategy + ChangeSet
 approval + version/head writes); memory & compaction strategy (PlannerKnowledge reuse, shared
-search extraction, distill-then-prune, epoch summaries via summaryDepth, cold-prefill budgets
+search extraction, bounded reads with optional distill-then-prune, epoch summaries via summaryDepth, cold-prefill budgets
 12000/4000, ≤8K input target); **cost monitoring section** (per-goal rollups via
 consumption_repository, UI surfacing, explicit no-caps stance); component inventory; PR 1–6
 phasing with green-PR discipline; risk register.

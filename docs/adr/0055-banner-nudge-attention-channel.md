@@ -53,12 +53,35 @@ routing to be tempted by.
    chat (pushed over the bottom nav); a separate 44 px dismiss affordance (and swipe) writes the
    dismissal. The two intents are never conflated on one gesture.
 
-7. **All copy is composited on-device.** The generated image contains no readable text (brief
+7. **Tap-through asks for a rating; top-rated ads are reusable.** Opening an ad's conversation
+   presents a lightweight rating prompt (the tap already proved engagement — that is the moment
+   to ask). Ratings are appended to the `goalNudge` row as a history (`{rating, ratedAt}` per
+   run), which turns the ad archive into a labeled library of what actually lands with this
+   user. Two uses:
+   the agent's wake facts summarize top-/bottom-rated briefs so future `create_goal_ad` calls
+   steer toward proven concepts, and a sufficiently high-rated ad may be **re-run as-is** —
+   re-activating the existing entity and its already-generated image at zero image-generation
+   cost — instead of generating a new one. Reuse is a first-class lifecycle move
+   (`active → retired → active` re-entry with a fresh `staleAt`), not a copy; the row keeps its
+   full rating and display history. **Every run is rated**: a re-run prompts for a fresh rating
+   on its next tap-through — the rating trajectory is what detects wear-out (an ad that slides
+   from 5 to 2 across re-runs retires from the library; a single frozen rating would hide
+   that). Skipping a prompt is always allowed; within the same run the skipped prompt is not
+   nagged again, but the next re-run asks anew.
+   Alongside the explicit rating, **exposure is measured implicitly**: the banner widget reports
+   visibility sessions, accumulated onto the row as `totalVisibleMs`, `impressionCount`,
+   `firstShownAt`/`lastShownAt` (LWW-merged per device, summed for display). An ad dismissed
+   after 40 minutes of accumulated visibility failed differently from one dismissed in two
+   seconds — visible-time-to-action is the denominator every effectiveness ratio needs, and it
+   also weights the rating library (a five-star ad seen once means less than a four-star ad
+   that earned its rating over many impressions).
+
+8. **All copy is composited on-device.** The generated image contains no readable text (brief
    contract, ADR 0056); `headline`/`caption` are overlaid by the UI from entity fields. This
    keeps personal/goal wording out of the image provider, makes past ads render correctly in the
    conversation history forever, and keeps text accessible (semantics labels) and theme-aware.
 
-8. **Past ads are part of the conversation history.** Ads render inline (compact card + status
+9. **Past ads are part of the conversation history.** Ads render inline (compact card + status
    badge) in the goal chat's timeline projection, permanently — the scrollable history of all
    interactions includes every banner the agent ever ran.
 
@@ -71,7 +94,10 @@ routing to be tempted by.
   the image file may land after the entity on a second device, so banner rendering keeps the
   gradient-fallback + file-watcher repaint pattern.
 - Ad effectiveness becomes measurable later (dismissal latency, tap-through, status at expiry)
-  without new instrumentation — the lifecycle timestamps are the instrument.
+  without new instrumentation — the lifecycle timestamps are the instrument, and explicit
+  ratings (Decision 7) add a labeled signal on top of the behavioral one.
+- The rating library shifts image spend downward over time: the more history a goal accumulates,
+  the more often a wake can re-run a proven ad instead of paying for a new generation.
 
 ## Non-Goals
 

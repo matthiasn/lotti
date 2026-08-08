@@ -29,7 +29,7 @@ arbitrate. It is Proposed and unimplemented. Its Decision 1 picks one agent per
   templates, souls) and is battle-tested with sync and vector clocks.
 - `AgentKinds` are free strings (`agent_constants.dart:5`) — a new kind is non-breaking.
   `AgentTemplateKind` is a closed enum whose decode has no fallback
-  (`agent_domain_entity.g.dart`) — extending it poisons template rows on old peers.
+  (`agent_domain_entity.g.dart`); v1 goal agents sidestep it by using no template at all.
 - The runtime plug-in seam (`agentWakeRunnersProvider` + `AgentRuntimeMaintenance`,
   `agent_runtime_registry.dart`) was built for new agent kinds and is exercised by Daily OS.
 
@@ -97,9 +97,9 @@ arbitrate. It is Proposed and unimplemented. Its Decision 1 picks one agent per
   note referencing this ADR), not superseded. If scope-level coaching is ever wanted, it composes
   over goal agents through the claim/agreement log — the interface 0023 already defines.
 - Four new entity variants ride the existing single-table union with `fallbackUnion: 'unknown'`
-  forward compatibility and no schema-version bump. One platform property must be verified by
-  test before shipping entities: sync-in must persist the *raw received* payload for unknown
-  variants so an old peer that stores-and-forwards does not strip fields.
+  forward compatibility and no schema-version bump. Mixed-version fleets are not a supported
+  configuration — the project assumes all of a user's devices stay current, so no
+  store-and-forward compatibility work is done for peers running older builds.
 - An orphaned, fully-modeled entity (`StandingAgreementEntity`) gains its first producer, and the
   never-evaluated criteria idea (`AutoCompleteRule`) gains a working evaluator lineage.
 - One agent per goal multiplies agent instances; wake cost is bounded by ADR 0054's

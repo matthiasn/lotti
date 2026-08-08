@@ -105,6 +105,7 @@ class EvalCostRow {
     required this.thoughtsTokens,
     required this.cachedInputTokens,
     required this.meanPromptBytes,
+    required this.credits,
   });
 
   final String modelId;
@@ -118,6 +119,12 @@ class EvalCostRow {
 
   /// Mean bytes of system + user prompts actually sent.
   final int meanPromptBytes;
+
+  /// Total billed credits across the pair's runs, as reported by the
+  /// provider (only Melious reports billing today). Null when no consumption
+  /// event carried credits — rendered as "not reported", never as zero:
+  /// a missing bill is not a free run.
+  final double? credits;
 }
 
 /// One violation, with enough context to act on.
@@ -282,6 +289,10 @@ class EvalReport {
         () {
           final runs = byPair[key]!;
           final events = runs.expand((r) => r.consumption);
+          final creditValues = events
+              .map((e) => e.credits)
+              .whereType<double>()
+              .toList();
           return EvalCostRow(
             modelId: key.$1,
             scenarioId: key.$2,
@@ -292,6 +303,9 @@ class EvalReport {
             thoughtsTokens: _sum(events.map((e) => e.thoughtsTokens)),
             cachedInputTokens: _sum(events.map((e) => e.cachedInputTokens)),
             meanPromptBytes: _mean(runs.map(_promptBytes)),
+            credits: creditValues.isEmpty
+                ? null
+                : creditValues.reduce((a, b) => a + b),
           );
         }(),
     ];
@@ -398,6 +412,7 @@ class EvalReport {
           'thoughtsTokens': row.thoughtsTokens,
           'cachedInputTokens': row.cachedInputTokens,
           'meanPromptBytes': row.meanPromptBytes,
+          'credits': row.credits,
         },
     ],
     'failures': [
@@ -610,6 +625,13 @@ class EvalReport {
           result.consumption.map((e) => e.cachedInputTokens),
         ),
         'promptBytes': _promptBytes(result),
+        'credits': () {
+          final values = result.consumption
+              .map((e) => e.credits)
+              .whereType<double>()
+              .toList();
+          return values.isEmpty ? null : values.reduce((a, b) => a + b);
+        }(),
       },
     };
   }
@@ -696,17 +718,20 @@ class EvalReport {
       ..writeln()
       ..writeln(
         '| Model | Scenario | Runs | Mean latency | In | Out | Thoughts | '
-        'Cached | Prompt bytes |',
+        'Cached | Prompt bytes | Credits |',
       )
       ..writeln(
-        '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |',
+        '| --- | --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: | '
+        '---: |',
       );
     for (final row in costRows) {
+      final credits = row.credits;
       buffer.writeln(
         '| `${row.modelId}` | ${row.scenarioId} | ${row.runs} | '
         '${row.meanLatencyMs} ms | ${row.inputTokens} | ${row.outputTokens} | '
         '${row.thoughtsTokens} | ${row.cachedInputTokens} | '
-        '${row.meanPromptBytes} |',
+        '${row.meanPromptBytes} | '
+        '${credits == null ? 'not reported' : credits.toStringAsFixed(4)} |',
       );
     }
 

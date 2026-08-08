@@ -5,7 +5,8 @@
 
 ## Context
 
-Goal agents live for up to ten years. The existing memory substrate is genuinely good — content-
+Goal agents are open-ended: they live for years, plausibly well beyond a decade — ten years is
+the design horizon we size for, not a lifetime cap. The existing memory substrate is genuinely good — content-
 addressed capture (ADR 0020), never-destructive prefix-coverage compaction (ADR 0017), keyed
 durable knowledge (`PlannerKnowledgeEntity`), author-time memory links (ADR 0026) — but several
 of its *policies* were tuned for task agents that live weeks, and are actively hostile to a
@@ -46,16 +47,25 @@ decade-long identity (verified in code, 2026-08-08):
    hierarchy above its rolling summary; the rolling mechanism itself is untouched. Epochs are
    collapsible dividers in history UI and retrievable via `search_memory`.
 
-4. **Retention becomes distill-then-prune.** Raw observations older than 180 days become
-   prunable **only after** their quarter has been distilled (epoch summary written, durable
-   facts promoted to keyed knowledge). Pruning without distillation is a policy violation, not a
-   space optimization. The `goalProgress` register (ADR 0053) is retention-exempt — at ~1 MB per
-   goal-decade it *is* the quantitative history.
+4. **Bounded reads are the invariant; pruning is optional.** What makes a decade viable is that
+   no wake ever re-reads the entire history — every read path goes through the epoch chain,
+   keyed knowledge, bounded observation windows and the `goalProgress` register. Once that
+   holds, keeping the full raw log forever is perfectly viable (a decade of daily wakes is
+   megabytes, not gigabytes, and storage is the user's own device): raw history behind the
+   summary frontier is simply *cold* — never loaded into context, still searchable and
+   browsable. Deletion, if ever wanted, is a user-facing space decision, and then strictly
+   **distill-then-prune**: raw observations become prunable only after their quarter's epoch
+   summary exists and durable facts are promoted to keyed knowledge. Pruning without
+   distillation is a policy violation, not a space optimization. The default is to prune
+   nothing. The `goalProgress` register (ADR 0053) is retention-exempt either way — at ~1 MB
+   per goal-decade it *is* the quantitative history.
 
-5. **The 20000-message skip becomes a bounded prune.** Instead of skipping oversized agents, the
-   sweep prunes only the summary-covered prefix (checkpoint-frontier aware, ancestor-closed,
-   protected heads untouched) — turning the deadlock into the intended steady state: a bounded
-   raw tail behind a summary chain.
+5. **The 20000-message skip is fixed, not repurposed.** Today crossing `maxAgentMessages` makes
+   the retention sweep skip the agent entirely while the task-agent policy still expects
+   pruning. For goal agents the sweep must simply not be the thing that bounds context (
+   Decision 4 does that); the skip-threshold deadlock is repaired so that *if* a prune is ever
+   requested it operates on the summary-covered prefix only (checkpoint-frontier aware,
+   ancestor-closed, protected heads untouched) instead of silently doing nothing.
 
 6. **Cold-prefill-sized context.** Goal-agent Phase B wakes pass per-call compaction budgets
    (`budget: 12000, retainTokens: 4000` — the parameters already exist on
@@ -65,10 +75,11 @@ decade-long identity (verified in code, 2026-08-08):
 
 ## Consequences
 
-- A ten-year goal agent's log stays bounded (raw tail + epoch chain + keyed facts + register),
-  queryable ("what did I conclude last January?" is a search over epochs and knowledge, not a
-  prayer), and honest — lossiness happens only at explicit fold boundaries, never by silent
-  deletion.
+- A ten-year goal agent's *context* stays bounded (epoch chain + keyed facts + bounded windows +
+  register) while its *log* can remain complete: nothing is lost by default, everything old is
+  merely cold. "What did I conclude last January?" is a search over epochs and knowledge — and
+  the raw source is still there underneath if the user scrolls. Lossiness, where it exists,
+  happens only at explicit fold boundaries into context, never by silent deletion.
 - Memory stops being write-only for non-day agents; ADR 0026 memory links become traversable in
   practice through search.
 - Quarterly/yearly distillation adds a scheduled Phase B wake four or five times a year per goal
