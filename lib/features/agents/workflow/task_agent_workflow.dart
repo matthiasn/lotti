@@ -438,9 +438,6 @@ class TaskAgentWorkflow with AgentErrorLogging {
     compactedTaskLog: compactedTaskLog,
   );
 
-  List<ChatCompletionTool> _buildToolDefinitions() =>
-      _contextBuilder.buildToolDefinitions();
-
   String? _extractFinalAssistantContent(ConversationManager? manager) =>
       _contextBuilder.extractFinalAssistantContent(manager);
 }
