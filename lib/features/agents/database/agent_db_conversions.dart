@@ -1,8 +1,6 @@
 import 'dart:convert';
 import 'package:drift/drift.dart';
 import 'package:lotti/classes/day_plan.dart';
-import 'package:lotti/classes/goal_nudge_models.dart';
-import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -130,52 +128,10 @@ class AgentDbConversions {
     final json = jsonDecode(serialized) as Map<String, dynamic>;
     _migrateReportContent(json);
     _migrateGCounters(json);
-    _validateGoalSpec(json);
-    _validateGoalNudge(json);
-    final entity = AgentDomainEntity.fromJson(json);
-    if (entity is GoalSpecVersionEntity) {
-      final issues = GoalSpecValidator.criterionIssues(entity.criteria);
-      if (issues.isNotEmpty) {
-        throw FormatException('Invalid goal criteria: ${issues.join('; ')}');
-      }
-    }
-    return entity;
-  }
-
-  /// Cross-field rating validation the per-field converters cannot do:
-  /// a contradictory `{skipped: true, rating: 4}` must be refused at the
-  /// decode boundary, not left to debug-only assertions.
-  static void _validateGoalNudge(Map<String, dynamic> json) {
-    if (json['runtimeType'] != 'goalNudge') return;
-    final ratings = json['ratings'];
-    if (ratings is! List) return;
-    for (final entry in ratings) {
-      if (entry is! Map<String, dynamic>) continue;
-      final issues = goalNudgeRatingJsonIssues(entry);
-      if (issues.isNotEmpty) {
-        throw FormatException(
-          'Invalid goal nudge rating: ${issues.join('; ')}',
-        );
-      }
-    }
-  }
-
-  /// Raw-JSON goal-criteria validation BEFORE the generated decoder runs:
-  /// json_serializable truncates fractional counts with `.toInt()`, so a
-  /// malformed `targetCount: 1.9` must be rejected while it is still
-  /// visible. A fixed [FormatException] lets sync classify the payload as
-  /// permanently poisonous rather than retrying it (the weekRollup
-  /// precedent).
-  static void _validateGoalSpec(Map<String, dynamic> json) {
-    if (json['runtimeType'] != 'goalSpecVersion') return;
-    final criteria = json['criteria'];
-    if (criteria is! Map<String, dynamic>) {
-      throw const FormatException('goalSpecVersion has no criteria tree');
-    }
-    final issues = GoalSpecValidator.criterionJsonIssues(criteria);
-    if (issues.isNotEmpty) {
-      throw FormatException('Invalid goal criteria: ${issues.join('; ')}');
-    }
+    // Goal-payload validation happens inside AgentDomainEntity.fromJson —
+    // the chokepoint every decode path shares, including Matrix sync's
+    // direct decodes that never pass through this method.
+    return AgentDomainEntity.fromJson(json);
   }
 
   /// If [json] is an `agentReport` whose `content` is still a Map (pre-migration

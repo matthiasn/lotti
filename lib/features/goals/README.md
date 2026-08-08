@@ -17,10 +17,12 @@ today:
 - `evaluation/` — `GoalProgressEvaluator`, a pure fold over a
   `GoalSignalWindow` of daily aggregates, and `GoalTrackPolicy`, which turns
   attainment, pace, grace, and data coverage into a `GoalTrackStatus`.
-- `validation/` — `GoalSpecValidator`, the persistence-path gate: raw-JSON
-  checks (fractional counts a decode would silently truncate) plus
-  structural checks (empty composites, unsatisfiable quotas), applied
-  before a criteria tree is stored or evaluated.
+- `GoalSpecValidator` (in `lib/classes/goal_spec_validator.dart`, beside
+  the vocabulary it validates) — the decode-boundary gate, invoked from
+  `AgentDomainEntity.fromJson` so every path (Matrix sync, storage reads)
+  passes it: raw-JSON checks (fractional counts a decode would silently
+  truncate) plus structural checks (empty composites, unsatisfiable
+  quotas, blank identifiers, duplicate criterion ids).
 
 Nothing here touches the database, the network, or the agent runtime: the
 evaluator is the Phase A of the two-tier wake design (ADR 0054) and is

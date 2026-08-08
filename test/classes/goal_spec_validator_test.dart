@@ -162,6 +162,64 @@ void main() {
       expect(issues.single, contains('no children'));
     });
 
+    test('blank signal identifiers are corrupt config, not zero data', () {
+      const blank = GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'gym',
+            habitId: '  ',
+            window: GoalWindow.calendarWeek(),
+            targetCount: 1,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'steps',
+            dataType: '',
+            window: GoalWindow.day(),
+            aggregation: GoalAggregation.sum,
+            target: 10,
+          ),
+          GoalCriterion.measurable(
+            criterionId: 'water',
+            dataTypeId: '',
+            window: GoalWindow.day(),
+            aggregation: GoalAggregation.sum,
+            target: 10,
+          ),
+        ],
+      );
+      final issues = GoalSpecValidator.criterionIssues(blank);
+      expect(issues, hasLength(3));
+      expect(issues, anyElement(contains('gym: habitId')));
+      expect(issues, anyElement(contains('steps: dataType')));
+      expect(issues, anyElement(contains('water: dataTypeId')));
+    });
+
+    test('duplicate criterion ids are rejected before they can shadow '
+        'results', () {
+      const duped = GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'leg',
+            habitId: 'h1',
+            window: GoalWindow.calendarWeek(),
+            targetCount: 1,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'leg',
+            habitId: 'h2',
+            window: GoalWindow.calendarWeek(),
+            targetCount: 1,
+          ),
+        ],
+      );
+      expect(
+        GoalSpecValidator.criterionIssues(duped).single,
+        contains('leg: duplicate criterionId'),
+      );
+    });
+
     test('decodeValidated reports structural issues too', () {
       final json = jsonOf(
         const GoalCriterion.anyOf(criterionId: 'root', criteria: []),

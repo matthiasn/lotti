@@ -6,6 +6,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
+import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
@@ -1024,8 +1025,64 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// mutating the caller's map. A malformed id is not guessed or echoed in the
   /// diagnostic: sync can classify the fixed [FormatException] as permanent
   /// and avoid retrying a poison payload.
-  factory AgentDomainEntity.fromJson(Map<String, dynamic> json) =>
-      _$AgentDomainEntityFromJson(_repairLegacyWeekRollup(json));
+  /// Every decode path — Matrix sync (inline and attachment payloads),
+  /// storage reads via `AgentDbConversions.fromSerialized`, tests — funnels
+  /// through this factory, so goal-payload validation lives HERE and not in
+  /// any single caller: raw checks before the generated decoder can
+  /// truncate what it does not understand, structural checks after. A
+  /// fixed [FormatException] lets sync classify the payload as permanently
+  /// poisonous rather than retrying it.
+  factory AgentDomainEntity.fromJson(Map<String, dynamic> json) {
+    final repaired = _repairLegacyWeekRollup(json);
+    _validateGoalSpecJson(repaired);
+    _validateGoalNudgeJson(repaired);
+    final entity = _$AgentDomainEntityFromJson(repaired);
+    if (entity is GoalSpecVersionEntity) {
+      final issues = GoalSpecValidator.criterionIssues(entity.criteria);
+      if (issues.isNotEmpty) {
+        throw FormatException('Invalid goal criteria: ${issues.join('; ')}');
+      }
+    }
+    return entity;
+  }
+}
+
+/// Raw-JSON goal-spec validation BEFORE the generated decoder runs:
+/// json_serializable truncates fractional numbers with `.toInt()`, so a
+/// malformed `targetCount: 1.9` or `version: 1.9` must be rejected while
+/// still visible.
+void _validateGoalSpecJson(Map<String, dynamic> json) {
+  if (json['runtimeType'] != 'goalSpecVersion') return;
+  final version = json['version'];
+  if (version is! num || version % 1 != 0 || version < 1) {
+    throw FormatException(
+      'goalSpecVersion.version must be a positive integer, was $version',
+    );
+  }
+  final criteria = json['criteria'];
+  if (criteria is! Map<String, dynamic>) {
+    throw const FormatException('goalSpecVersion has no criteria tree');
+  }
+  final issues = GoalSpecValidator.criterionJsonIssues(criteria);
+  if (issues.isNotEmpty) {
+    throw FormatException('Invalid goal criteria: ${issues.join('; ')}');
+  }
+}
+
+/// Cross-field rating validation the per-field converters cannot do.
+void _validateGoalNudgeJson(Map<String, dynamic> json) {
+  if (json['runtimeType'] != 'goalNudge') return;
+  final ratings = json['ratings'];
+  if (ratings is! List) return;
+  for (final entry in ratings) {
+    if (entry is! Map<String, dynamic>) continue;
+    final issues = goalNudgeRatingJsonIssues(entry);
+    if (issues.isNotEmpty) {
+      throw FormatException(
+        'Invalid goal nudge rating: ${issues.join('; ')}',
+      );
+    }
+  }
 }
 
 // Both register generations. The `_v2` ids this build writes always carry

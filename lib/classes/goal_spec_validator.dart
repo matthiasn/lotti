@@ -85,23 +85,42 @@ abstract final class GoalSpecValidator {
   /// Structural issues in a decoded tree.
   static List<String> criterionIssues(GoalCriterion criterion) {
     final issues = <String>[];
-    _structuralIssues(criterion, issues);
+    final seenIds = <String>{};
+    _structuralIssues(criterion, issues, seenIds);
     return issues;
   }
 
   static void _structuralIssues(
     GoalCriterion criterion,
     List<String> issues,
+    Set<String> seenIds,
   ) {
     final id = criterion.criterionId;
+    // Per-criterion results are keyed by criterionId (evaluator results
+    // map, goalProgress rows): a duplicate would silently overwrite one
+    // leg's history with another's.
+    if (!seenIds.add(id)) {
+      issues.add('$id: duplicate criterionId');
+    }
     switch (criterion) {
-      case GoalCriterionMetric(:final target, :final window):
+      case GoalCriterionMetric(:final dataType, :final target, :final window):
+        _requireIdentifier(id, 'dataType', dataType, issues);
         _requireFiniteTarget(id, target, issues);
         _requirePositiveRollingCount(id, window, issues);
-      case GoalCriterionMeasurable(:final target, :final window):
+      case GoalCriterionMeasurable(
+        :final dataTypeId,
+        :final target,
+        :final window,
+      ):
+        _requireIdentifier(id, 'dataTypeId', dataTypeId, issues);
         _requireFiniteTarget(id, target, issues);
         _requirePositiveRollingCount(id, window, issues);
-      case GoalCriterionHabit(:final targetCount, :final window):
+      case GoalCriterionHabit(
+        :final habitId,
+        :final targetCount,
+        :final window,
+      ):
+        _requireIdentifier(id, 'habitId', habitId, issues);
         if (targetCount < 1) {
           issues.add('$id: targetCount must be at least 1, was $targetCount');
         }
@@ -112,7 +131,7 @@ abstract final class GoalSpecValidator {
           issues.add('$id: composite has no children');
         }
         for (final child in criteria) {
-          _structuralIssues(child, issues);
+          _structuralIssues(child, issues, seenIds);
         }
       case GoalCriterionAtLeastCount(:final criteria, :final successes):
         if (criteria.isEmpty) {
@@ -127,8 +146,22 @@ abstract final class GoalSpecValidator {
           );
         }
         for (final child in criteria) {
-          _structuralIssues(child, issues);
+          _structuralIssues(child, issues, seenIds);
         }
+    }
+  }
+
+  /// A blank signal identifier queries an empty namespace and evaluates a
+  /// habit as "zero completions with full coverage" — corrupt config must
+  /// be rejected, not scored.
+  static void _requireIdentifier(
+    String id,
+    String field,
+    String value,
+    List<String> issues,
+  ) {
+    if (value.trim().isEmpty) {
+      issues.add('$id: $field must not be blank');
     }
   }
 

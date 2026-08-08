@@ -2282,6 +2282,22 @@ void main() {
         throwsFormatException,
       );
 
+      // Fractional version: a revision id must never be truncated into
+      // impersonating another revision.
+      final fractionalVersion = specJson({
+        'runtimeType': 'habit',
+        'criterionId': 'c',
+        'habitId': 'h',
+        'window': {'runtimeType': 'calendarWeek'},
+        'targetCount': 3,
+      })..['version'] = 1.9;
+      expect(
+        () => AgentDbConversions.fromSerialized(
+          jsonEncode(fractionalVersion),
+        ),
+        throwsFormatException,
+      );
+
       // No criteria tree at all.
       expect(
         () => AgentDbConversions.fromSerialized(

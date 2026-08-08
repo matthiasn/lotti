@@ -76,7 +76,9 @@ routing to be tempted by.
    also weights the rating library (a five-star ad seen once means less than a four-star ad
    that earned its rating over many impressions).
 
-8. **[Superseded by ADR 0058.]** ~~The ad is a designed banner — headline and CTA render IN the image.~~ The ad is a designed *text* banner rendered procedurally by the app; no image is generated. Original text kept for the record: (Revised same day:
+8. *[Superseded by ADR 0058 — ads are procedural text banners; no image is
+   generated. Original decision preserved below as the point-in-time record.]*
+   **The ad is a designed banner — headline and CTA render IN the image.** (Revised same day:
    text-free images read too tame; a real ad has type.) The composed prompt instructs a
    polished advertising-banner layout and passes the model-authored `headline` and optional
    `cta` verbatim as the only sanctioned text — both are leakage-checked tool arguments, so no

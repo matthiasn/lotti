@@ -153,7 +153,13 @@ String goalSpecHeadId(String agentId) => 'goal_spec_head:$agentId';
 /// Deterministic id for one goal's attainment register row, one per
 /// `(agentId, periodKey)` (ADR 0053 Decision 4).
 ///
-/// Recomputed-never-accumulated: N devices evaluating the same period write
-/// the same id and LWW-converge instead of duplicating.
+/// [periodKey] is the goal's EVALUATION-DAY key (`GoalWindow.day()`
+/// `periodKey` of the reference date, `2026-08-08`) — one register row per
+/// goal per day, regardless of how many windows its criteria mix: a
+/// composite of a rolling-7 metric and a calendar-week habit has no single
+/// "period", so the register snapshots the whole goal as-of each day and
+/// per-leaf window context lives inside `criterionResults`. Recomputed-
+/// never-accumulated: N devices evaluating the same day write the same id
+/// and LWW-converge instead of duplicating.
 String goalProgressId(String agentId, String periodKey) =>
     'goal_progress:$agentId:$periodKey';
