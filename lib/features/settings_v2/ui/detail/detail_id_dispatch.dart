@@ -15,6 +15,12 @@ import 'package:lotti/services/nav_service.dart';
 /// - **create** — when the URL ends with `/create`. Receives the full
 ///   route so create flows can read query parameters
 ///   (e.g. labels prefilling the new label's name).
+/// - **detail sub-route** — when [idParamKey] resolves *and* the URL's
+///   last segment names an entry in [detailSubRoutes]. This is the
+///   `/settings/agents/templates/:templateId/review` shape: the id is
+///   present, so without this branch the dispatcher would fall through
+///   to **detail** and silently re-render the detail body for a URL
+///   that means something else entirely.
 /// - **detail** — when [idParamKey] is present in `pathParameters` and
 ///   not the literal `'create'` (which Beamer hands back as a path
 ///   parameter on the matching route definition).
@@ -32,6 +38,7 @@ class DetailIdDispatch extends StatelessWidget {
     required this.list,
     required this.create,
     required this.detail,
+    this.detailSubRoutes = const {},
     this.listenable,
     super.key,
   });
@@ -54,6 +61,18 @@ class DetailIdDispatch extends StatelessWidget {
   /// Builds the detail body when [idParamKey] resolves to a non-empty
   /// id (and not the literal `create`). Receives that id.
   final Widget Function(BuildContext context, String id) detail;
+
+  /// Bodies for URLs that hang *below* a detail route, keyed by the
+  /// URL's trailing segment — `{'review': …}` serves
+  /// `…/templates/<id>/review`. Each builder receives the resolved id.
+  ///
+  /// Beamer exposes [idParamKey] on these routes too, so a segment
+  /// registered here is the only thing separating them from the plain
+  /// detail URL. Anything not registered falls through to [detail],
+  /// which keeps an unknown trailing segment showing the entity rather
+  /// than an empty pane.
+  final Map<String, Widget Function(BuildContext context, String id)>
+  detailSubRoutes;
 
   /// Test-only override for the route source. Production callers leave
   /// this `null` so the dispatcher reads from `getIt<NavService>()`.
@@ -78,11 +97,24 @@ class DetailIdDispatch extends StatelessWidget {
         } else {
           final id = params[idParamKey];
           if (id != null && id.isNotEmpty && id != 'create') {
-            child = detail(context, id);
-            // Key includes the id so swapping between two detail rows
-            // (e.g. tapping a different category) cross-fades instead
-            // of reusing the previous detail's element.
-            modeKey = 'detail:$id';
+            // `segment != id` keeps the bare detail URL out of the map
+            // lookup — its last segment *is* the id.
+            final segment = path.split('/').last;
+            final subRoute = segment == id ? null : detailSubRoutes[segment];
+            if (subRoute != null) {
+              child = subRoute(context, id);
+              // The segment belongs in the key: detail and sub-route
+              // share an id, and an unchanged key would make
+              // `AnimatedSwitcher` reuse the element and leave the
+              // previous body on screen.
+              modeKey = 'detail:$id/$segment';
+            } else {
+              child = detail(context, id);
+              // Key includes the id so swapping between two detail rows
+              // (e.g. tapping a different category) cross-fades instead
+              // of reusing the previous detail's element.
+              modeKey = 'detail:$id';
+            }
           } else {
             child = list(context);
             modeKey = 'list';

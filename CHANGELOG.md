@@ -6,6 +6,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.5]
 ### Fixed
+- **The one-on-one with an agent opens again on desktop.** Choosing Review on a
+  template or a soul did nothing in a desktop window — the address changed but
+  the same page stayed on screen — so there was no way to start an evolution
+  conversation, pick up one already waiting, or read past sessions. Phones and
+  tablets were never affected. The desktop settings pane now recognises the
+  review address and opens the conversation home it was always meant to.
 - **Task agents now clear a blocked status once the blocker is gone.** When a
   note said the thing holding a task up had been resolved, the agent would
   describe that in its report and leave the task sitting in Blocked anyway —

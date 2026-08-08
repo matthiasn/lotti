@@ -5,6 +5,8 @@ import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_review_page.dart';
+import 'package:lotti/features/agents/ui/evolution/soul_evolution_review_page.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
 import 'package:lotti/features/ai_consumption/ui/impact_analysis_body.dart';
@@ -454,6 +456,12 @@ Widget _agentsPendingWakesPanel(BuildContext context) =>
 // floating "+" beams to `/settings/agents/<tab>/create`, list rows
 // beam to `/settings/agents/<tab>/<id>`. Each tab has its own id key
 // (`templateId` / `soulId` / `agentId`).
+//
+// Templates and souls additionally own a `/review` sub-route — the
+// one-on-one home, where the evolution conversation is started. On
+// mobile `SettingsLocation` pushes it as its own `BeamPage`; on
+// desktop the page stack is bypassed entirely, so the sub-route has
+// to be declared here or the URL resolves back to the detail body.
 Widget _agentsTemplatesPanel(BuildContext context) => DetailIdDispatch(
   idParamKey: 'templateId',
   list: (_) => const AgentSettingsBody(initialTab: AgentSettingsTab.templates),
@@ -462,6 +470,12 @@ Widget _agentsTemplatesPanel(BuildContext context) => DetailIdDispatch(
     key: ValueKey('settings-v2-agent-template-$id'),
     templateId: id,
   ),
+  detailSubRoutes: {
+    'review': (_, id) => EvolutionReviewPage(
+      key: ValueKey('settings-v2-agent-template-review-$id'),
+      templateId: id,
+    ),
+  },
 );
 
 Widget _agentsSoulsPanel(BuildContext context) => DetailIdDispatch(
@@ -472,6 +486,12 @@ Widget _agentsSoulsPanel(BuildContext context) => DetailIdDispatch(
     key: ValueKey('settings-v2-agent-soul-$id'),
     soulId: id,
   ),
+  detailSubRoutes: {
+    'review': (_, id) => SoulEvolutionReviewPage(
+      key: ValueKey('settings-v2-agent-soul-review-$id'),
+      soulId: id,
+    ),
+  },
 );
 
 Widget _agentsInstancesPanel(BuildContext context) => DetailIdDispatch(
