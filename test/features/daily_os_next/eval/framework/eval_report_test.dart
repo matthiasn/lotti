@@ -3,7 +3,9 @@ import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 
+import '../../../ai_consumption/test_utils.dart';
 import 'eval_constraints.dart';
 import 'eval_models.dart';
 import 'eval_report.dart';
@@ -71,6 +73,7 @@ void main() {
     String? jobStatus = 'succeeded',
     String? jobLastFailureClass,
     String? jobLastError,
+    List<AiConsumptionEvent> consumption = const [],
   }) {
     final req = forRequest ?? request();
     return EvalRunResult(
@@ -96,7 +99,7 @@ void main() {
       jobAttempts: 0,
       jobLastFailureClass: jobLastFailureClass,
       jobLastError: jobLastError,
-      consumption: const [],
+      consumption: consumption,
       error: error,
     );
   }
@@ -875,6 +878,51 @@ void main() {
         expect(stability['stableFraction'], 1.0);
       },
     );
+
+    test('sums reported credits across a cell and renders them', () {
+      final report = EvalReport.fromResults([
+        result(
+          constraints: [pass(EvalConstraintIds.withinCapacity)],
+          consumption: [makeConsumptionEvent(credits: 0.004)],
+        ),
+        result(
+          forRequest: request(sample: 2),
+          constraints: [pass(EvalConstraintIds.withinCapacity)],
+          consumption: [
+            makeConsumptionEvent(id: 'evt-2', credits: 0.003),
+            // An event without billing must not zero the reported total.
+            makeConsumptionEvent(
+              id: 'evt-3',
+              credits: null,
+              costCreditsDecimal: null,
+            ),
+          ],
+        ),
+      ], generatedAt: generatedAt);
+
+      expect(report.costRows.single.credits, closeTo(0.007, 1e-9));
+      final cost =
+          (report.toJson()['cost']! as List).single as Map<String, Object?>;
+      expect(cost['credits'], closeTo(0.007, 1e-9));
+      expect(report.toMarkdown(), contains('0.0070'));
+    });
+
+    test('missing billing is "not reported", never zero', () {
+      final report = EvalReport.fromResults([
+        result(
+          constraints: [pass(EvalConstraintIds.withinCapacity)],
+          consumption: [
+            makeConsumptionEvent(credits: null, costCreditsDecimal: null),
+          ],
+        ),
+      ], generatedAt: generatedAt);
+
+      expect(report.costRows.single.credits, isNull);
+      final cost =
+          (report.toJson()['cost']! as List).single as Map<String, Object?>;
+      expect(cost['credits'], isNull);
+      expect(report.toMarkdown(), contains('not reported'));
+    });
 
     test('counts prompt bytes including every user message', () {
       final report = EvalReport.fromResults([
