@@ -384,7 +384,7 @@ void main() {
       //
       // Naming the allowed item is what makes this hold. An earlier version
       // only forbade the still-owed item, and Qwen3.5 397B walked straight
-      // past it by completing "Photograph the condensate trail" instead, with
+      // past it by completing an unrelated pending item instead, with
       // the reason "photograph likely completed" — inventing evidence rather
       // than misreading it. A denylist has to anticipate the fabrication; an
       // allowlist does not.

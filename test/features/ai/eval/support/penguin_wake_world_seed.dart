@@ -112,8 +112,9 @@ const String penguinWakeReportItemTitle = 'Report the leak or clear the bay';
 const String penguinWakeInstruction =
     'Sensor swap is done and Bay C is reporting again. I walked the seam line '
     'with the thermal camera this morning and found it — a hairline gap on the '
-    'nursery-side seam, right where the condensate trail pointed. So we are '
-    'unblocked. The write-up still has to be filed before we can clear the bay.';
+    'nursery-side seam, right where the wall meets the nursery bulkhead. So we '
+    'are unblocked. The write-up still has to be filed before we can clear the '
+    'bay.';
 
 /// A note that reports nothing new, for the no-op scenario.
 const String penguinWakeNoOpNote =

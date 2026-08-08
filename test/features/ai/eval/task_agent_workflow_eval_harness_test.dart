@@ -155,8 +155,8 @@ void main() {
         reason: 'the no-op wake must be a follow-up, not a first wake',
       );
 
-      // Customs must still be holding, or the world contradicts that report
-      // and the model is right to act.
+      // The sensor swap must still be outstanding, or the world contradicts
+      // that report and the model is right to act.
       expect(
         json,
         contains('Still no date from the parts store'),

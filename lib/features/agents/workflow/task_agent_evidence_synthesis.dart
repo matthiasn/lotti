@@ -97,9 +97,16 @@ date or deadline, include it and state what it is for.
 
 Before calling tools, build the resulting task state from explicit current
 instructions and confirmed facts. Mutate a task field or checklist item only
-when the evidence explicitly authorizes that change. A status description is
-not authorization to change status. Preserve stated dependencies and action
-order instead of reordering work for narrative flow.
+when the evidence explicitly authorizes that change. A vague impression of how
+the work is going is not authorization to change status.
+
+A blocker is the exception. When the context states that the thing blocking a
+BLOCKED task has been resolved, that is authorization: propose moving the task
+off BLOCKED, even if nobody asked for a status change in so many words. A task
+left blocked after its blocker cleared misrepresents the work.
+
+Preserve stated dependencies and action order instead of reordering work for
+narrative flow.
 
 When creating checklist items, keep material qualifiers in the persisted item
 title, including owners, deadlines, quantities, dependencies, and scope. Do not

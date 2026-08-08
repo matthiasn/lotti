@@ -75,7 +75,7 @@ class PenguinWakeScenario {
 
   /// Tools a correct wake must not call, even though it may call others.
   ///
-  /// The pending-proposal guard needs this: completing the swapped-cartridge
+  /// The pending-proposal guard needs this: completing the sensor-swap
   /// item is still correct, while re-proposing the status change that is
   /// already queued is not. A blanket "propose nothing" would fail a model for
   /// the half of the wake it got right.
@@ -133,35 +133,27 @@ class PenguinWakeScenario {
 /// turns "write a report" into the harder question the app actually asks:
 /// whether anything has changed enough to be worth rewriting.
 const String penguinWakePriorReportOneLiner =
-    'Blocked on customs; hold test cannot start until the cartridges clear';
+    'Blocked on the Bay C sensor swap; humidity still nine points high';
 const String penguinWakePriorReportTldr =
-    'Bay C is blocked pending a Ross Station customs hold on the replacement '
-    'desiccant cartridges, and the due date has been moved to Aug 14 to match. '
-    'The airlock gasket was reseated on Aug 2 and an informal check held 49%, '
-    'but the qualifying hold test needs the real stock. Nothing can move until '
-    'customs releases the shipment.';
+    'Bay C is blocked waiting on the wall-sensor swap. Humidity is still about '
+    'nine points above band and the readings have been charted, but the seam '
+    'line cannot be walked until the sensor reports again.';
 const String penguinWakePriorReportContent = '''
 ## Blockers
 
-Ross Station placed a formal hold on the replacement desiccant cartridges on
-Jul 29, pending a duty reclassification. The 24-hour hold test cannot start on
-borrowed cartridges from Bay E, so the cold-chain certificate stays suspended
-until the shipment clears.
+Bay C is waiting on the wall-sensor swap. Until the new sensor reports, the
+seam line cannot be walked with the thermal camera and the leak can be neither
+found nor ruled out.
 
 ## Progress
 
-The airlock gasket was reseated on Aug 2. An informal two-hour check afterwards
-held Bay C at 49% relative humidity, the first in-band reading since the
-incident, which points at the gasket as the original leak. That is not a
-qualifying test.
+The humidity readings have been charted by day, which is what established that
+nine points over three days is a leak rather than weather.
 
 ## Next actions
 
-Chase the customs hold, then run the 24-hour hold test, have Nima counter-sign
-the certificate, file the re-qualification and restore the shared return duct.
-
-The due date was moved out to Aug 14 on request, since none of this can start
-until the shipment clears.
+Wait for the sensor swap, then walk the seam line with the thermal camera and
+either report the leak or clear the bay.
 ''';
 
 /// Seeds a prior report and its head pointer, so the wake is a follow-up.

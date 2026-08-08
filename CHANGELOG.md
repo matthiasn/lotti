@@ -6,6 +6,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.0.5]
 ### Fixed
+- **Task agents now clear a blocked status once the blocker is gone.** When a
+  note said the thing holding a task up had been resolved, the agent would
+  describe that in its report and leave the task sitting in Blocked anyway —
+  because the instruction it follows treated a description of progress as
+  something it must not act on. It now treats a resolved blocker as reason
+  enough to propose moving the task out of Blocked, while still leaving vaguer
+  impressions of how work is going alone. In testing, one model went from
+  proposing the change in three runs out of six to six out of six.
 - **Task agents no longer lose a change because a smaller model spelled the
   call slightly wrong.** Two near-misses were common enough to cost real work:
   a model reaching for `update_task_status` when the tool is `set_task_status`,

@@ -185,9 +185,9 @@ class TaskAgentWorkflowEvalHarness {
       syncService: syncService,
     );
 
-    // The no-op wake is the world *before* the unblock: customs is still
-    // holding and the closing note reports no new fact, so the prior report
-    // remains accurate and a correct wake has nothing to do.
+    // The no-op wake keeps the task blocked: the sensor swap has not happened
+    // and the closing note reports no new fact, so the prior report remains
+    // accurate and a correct wake has nothing to do.
     final isNoOp = scenario == PenguinWakeScenarioId.noOp;
     // The app's own template seeding, so the directives the model receives are
     // the ones production seeds rather than anything authored here.
