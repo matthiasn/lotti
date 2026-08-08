@@ -54,6 +54,16 @@ Each ADR should contain:
 | [0035: Learning Verification Session Persistence](./0035-learning-verification-session-persistence.md) | Proposed | Quiz events/artifacts/links on the existing agent log, identity and sync convergence, device-local boundaries, plain deletion and export. |
 | [0036: Learning Understanding Rating](./0036-learning-understanding-rating.md) | Proposed | Per-item verdicts, session scores/labels, feedback-first presentation, honesty rules, storage separate from journal ratings. |
 
+### Goal-driven agents decision cluster
+
+| ADR | Status | Decision ownership |
+| --- | --- | --- |
+| [0053: Goal-Driven Agents — Per-Goal Durable Producers](./0053-goal-driven-agents-per-goal-producers.md) | Proposed | One durable agent per goal (amends 0023's granularity), versioned goal spec (version + head), purpose-built `GoalCriterion` tree, deterministic `goalProgress` register, proposal-only revision, StandingAgreement's first writer, no template in v1. |
+| [0054: Deterministic-First Two-Tier Wakes](./0054-deterministic-first-two-tier-wakes.md) | Proposed | €0 deterministic Phase A on every device, lease-elected LLM Phase B, sync-origin Phase-A dispatcher, per-goal subscriptions, recurrence by re-arm, fact-gated tools from day one, cost monitored not capped. |
+| [0055: The Banner-Nudge Attention Channel](./0055-banner-nudge-attention-channel.md) | Proposed | Banner-only in-app ads (never push), `goalNudge` lifecycle with dismissal-as-data, staleness contract, respect mechanics (cool-down, dedupe), quiet-by-default surfaces, on-device copy compositing, ads permanent in chat history. |
+| [0056: The Need-to-Know Visual Brief Boundary](./0056-need-to-know-visual-brief-boundary.md) | Proposed | Non-ZDR image providers receive only a self-contained typed brief; the parameter type is the enforcement; on-device text compositing; provenance-gated reference images; leakage evals; one-retry verification. |
+| [0057: Decade-Scale Agent Memory](./0057-decade-scale-agent-memory.md) | Proposed | Generalized search + keyed knowledge read path, bounded observation reads, epoch summaries via `summaryDepth` (amends 0017), distill-then-prune retention, bounded prune instead of the 20k skip, cold-prefill context budgets. |
+
 ### Chronological index
 
 - [`0001-agent-capabilities-runtime-model.md`](./0001-agent-capabilities-runtime-model.md)
@@ -108,3 +118,8 @@ Each ADR should contain:
 - [`0050-multi-tenant-worlds.md`](./0050-multi-tenant-worlds.md)
 - [`0051-agenda-gated-tool-exposure.md`](./0051-agenda-gated-tool-exposure.md)
 - [`0052-agent-directive-constitution.md`](./0052-agent-directive-constitution.md)
+- [`0053-goal-driven-agents-per-goal-producers.md`](./0053-goal-driven-agents-per-goal-producers.md)
+- [`0054-deterministic-first-two-tier-wakes.md`](./0054-deterministic-first-two-tier-wakes.md)
+- [`0055-banner-nudge-attention-channel.md`](./0055-banner-nudge-attention-channel.md)
+- [`0056-need-to-know-visual-brief-boundary.md`](./0056-need-to-know-visual-brief-boundary.md)
+- [`0057-decade-scale-agent-memory.md`](./0057-decade-scale-agent-memory.md)
