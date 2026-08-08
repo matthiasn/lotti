@@ -24,10 +24,20 @@ enum PenguinWakeScenarioId {
 
   /// Nothing report-worthy happened since the last wake.
   ///
-  /// The hardest thing to ask of a task agent is nothing. A prior report
-  /// already describes the state accurately and the newest note adds no fact
-  /// that changes it, so a correct wake proposes no changes and does not
-  /// rewrite the report. Models reliably fail this by finding something to do.
+  /// A prior report already describes the state accurately and the newest note
+  /// adds no fact that changes it, so a correct wake proposes no data changes.
+  ///
+  /// It still calls `update_report`. An earlier version of this scenario
+  /// asserted the opposite — that the stored report must be untouched — which
+  /// contradicted the shipped report directive: "You MUST call `update_report`
+  /// exactly once at the end of every wake... Do not end your turn with a
+  /// plain text message... If nothing new needs saying, reuse the previous
+  /// report's `content` and refresh `oneLiner` / `tldr` as appropriate — but
+  /// still call the tool." Models that rewrote the report were obeying the app;
+  /// the scenario was measuring a rule that exists only in an eval fixture.
+  ///
+  /// What is worth catching is fabrication: a wake with no news inventing
+  /// progress it cannot support.
   noOp,
 
   /// A proposal for the very change the model is about to suggest is already
@@ -79,10 +89,10 @@ class PenguinWakeScenario {
     PenguinWakeScenarioId.noOp: PenguinWakeScenario(
       id: PenguinWakeScenarioId.noOp,
       summary:
-          'Nothing changed since the last report: propose nothing and do not '
-          'rewrite the report.',
+          'Nothing changed since the last report: propose no data changes, '
+          'still publish a report, and do not invent progress.',
       expectsProposals: false,
-      expectsReport: false,
+      expectsReport: true,
     ),
     PenguinWakeScenarioId.pendingProposal: PenguinWakeScenario(
       id: PenguinWakeScenarioId.pendingProposal,

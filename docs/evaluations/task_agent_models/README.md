@@ -668,28 +668,45 @@ Run-to-run variance is large: GLM and 397B each passed and failed the identical
 input across sessions. **Do not rank models on this scenario.** It separates
 broken from working, not good from better.
 
-### Scenario 2 — `noOp`
+### Scenario 2 — `noOp` (results retracted)
 
-Nothing report-worthy changed. The prior report is accurate, no request is
-outstanding, and the newest note adds no fact. A correct wake proposes nothing
-and finishes with a short plain-text note, leaving the report standing.
+Nothing report-worthy changed. The scenario asserted that a correct wake
+proposes no data changes **and leaves the stored report untouched**, and
+reported that four of five models rewrote an accurate report — presented as the
+suite's headline defect.
 
-| Model | Passed | Failure seen |
-| --- | ---: | --- |
-| Qwen3.6 27B | 3 / 3 | — |
-| GLM 5.2 | 1 / 3 | rewrote an accurate report |
-| Kimi K3 | 0 / 3 | rewrote an accurate report |
-| Qwen3.5 397B | 0 / 3 | rewrote an accurate report |
-| DeepSeek V4 Flash 0731 | 0 / 3 | rewrote an accurate report |
+**The second half of that assertion contradicted the shipped directive and the
+results are retracted.** `taskAgentReportDirective` says:
 
-No model proposed a data change, so the restraint failure is narrow and
-specific: four of five cannot leave a correct report alone. Their rewrites were
-paraphrases — every one of the five produced a one-liner saying "blocked on Ross
-Station customs". In the app that is a task summary that changes under the user
-for no reason.
+> You MUST call `update_report` exactly once at the end of every wake […] This
+> is non-negotiable. Do not end your turn with a plain text message […] If
+> nothing new needs saying, reuse the previous report's `content` and refresh
+> `oneLiner` / `tldr` as appropriate — but still call the tool.
 
-This is the first scenario in the suite that discriminates, and it puts the
-dense 27B ahead of every frontier model tested.
+The models that rewrote the report were obeying the app. Qwen3.6 27B, which
+"passed" 3/3 and was held up as best-in-class restraint, was violating it. The
+"finish with a short plain-text note" rule the scenario encoded exists only in
+`_leanSystemPrompt`, an eval fixture, and was never production behaviour.
+
+Two defects compounded to hide this:
+
+1. **The eval ran without the shipped prompt.** `buildEvalTemplate` called
+   `makeTestTemplateVersion` without directives, which defaults to
+   `directives: 'You are a helpful agent.'` and empty `generalDirective` /
+   `reportDirective`. All 5,190 characters of the shipped task-agent directive
+   were absent from every run, including the rule the scenario was testing.
+   A harness test now asserts both directives reach the model.
+2. **The assertion was written from memory of the prompt rather than the
+   prompt.** The rule was never checked against
+   `seeded_directive_content.dart`.
+
+The scenario now tests what the directive actually asks: propose no data
+changes, still call `update_report`, and do not invent progress — the report
+must not claim the customs hold cleared, or that cartridges were swapped, when
+nothing in the wake supports it. **No results are published for it yet.**
+
+The half that was always valid: no model proposed a data change in this
+scenario, under either tool surface.
 
 ### Scenario 3 — `pendingProposal` (withdrawn, not a result)
 
@@ -737,37 +754,20 @@ user-visible defect. It is a reason to withhold the tool, not evidence of harm.
 `scripts/penguin_wake_eval_matrix.sh` warms the build once before fanning out
 for this reason; ad-hoc parallel loops must do the same.
 
-### Narrowing the tool surface does not fix report churn
+### Narrowing the tool surface (results retracted)
 
-`narrowToolSurface` gates tools on what the wake knows and withholds
-`update_report` from the opening turn, so a wake has to do its work before it
-can report. The hope was that a model with nothing to do would finish the first
-turn with a plain-text note instead of rewriting the report.
+`narrowToolSurface` was measured against `noOp` and reported as no better than
+noise. Both sides of that comparison are void:
 
-Measured on `noOp`, three samples per model:
+* The scenario's assertion contradicted the shipped directive (above).
+* The staged exposure **never ran**. `ConversationRepository` passed
+  `manager.turnCount` to `toolsForTurn`, and that counts user messages with this
+  turn's already logged — so the first request arrived as index 1, not 0.
+  `TaskAgentStagedToolExposure` treats only 0 as the opening turn, so it
+  restored the full list immediately. The flag-on runs exercised the
+  precondition gates alone.
 
-| Model | Flag off | Flag on |
-| --- | ---: | ---: |
-| GLM 5.2 | 1 / 3 | 0 / 3 |
-| Kimi K3 | 0 / 3 | 0 / 3 |
-| Qwen3.5 397B | 0 / 3 | 0 / 3 |
-| Qwen3.6 27B | 2 / 3 | 3 / 3 |
-| DeepSeek V4 Flash 0731 | 0 / 3 | 1 / 3 |
-| **Total** | **3 / 15** | **4 / 15** |
-
-Within noise. Withholding the tool for one turn does not produce restraint — the
-model waits and publishes on the next turn instead. A single earlier sample
-showed GLM flipping to a pass, which is exactly the kind of n=1 signal this
-table exists to refuse.
-
-`requalification` showed no regression across GLM, Kimi and 27B at one sample
-each, so the narrower surface does not appear to cost the wake real work. That
-is the weaker claim and needs more samples before it can be relied on.
-
-The flag stays off. What survives on its own merits is the per-turn tool hook
-(`ConversationStrategy.toolsForTurn`) and the precondition gates, which remove
-hallucination invitations — offering `update_running_timer` with no timer
-running gives a model no real id to pass — rather than buying restraint.
+Both are fixed and covered by tests. The flag stays off and unmeasured.
 
 ### The fixture was wrong first
 

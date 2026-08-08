@@ -329,6 +329,10 @@ class TaskAgentWorkflow with AgentErrorLogging {
         toolChoice: forcedToolChoice,
         temperature: temperature,
         strategy: strategy,
+        // The retry exists to force exactly one `update_report`; a staging
+        // strategy must not widen the surface back and hand a provider that
+        // ignores `toolChoice` a mutation tool.
+        useStrategyTools: false,
         consumptionAgentId: consumptionAgentId,
         consumptionTaskId: consumptionTaskId,
         consumptionCategoryId: consumptionCategoryId,

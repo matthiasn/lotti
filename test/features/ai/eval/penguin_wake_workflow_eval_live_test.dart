@@ -10,6 +10,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -292,15 +293,30 @@ void main() {
               '$proposedTools with ${jsonEncode(proposedArgs)}. $where',
         );
       }
-      if (!scenario.expectsReport) {
-        // A no-op wake ends with a short plain-text note and no update_report,
-        // so the stored report must still be the one the previous wake left.
+      if (scenario.id == PenguinWakeScenarioId.noOp) {
+        // The shipped directive mandates update_report on every wake, so not
+        // calling it is the violation — not calling it "again".
         expect(
-          agentReport?.oneLiner,
-          penguinWakePriorReportOneLiner,
+          calledTools,
+          contains(TaskAgentToolNames.updateReport),
           reason:
-              'REPORT CHURN: nothing changed, so the previous report should '
-              'have stood. $where',
+              'the report directive requires update_report every wake. $where',
+        );
+        // The failure worth catching: inventing progress with no news to
+        // support it. Nothing cleared the customs hold in this wake.
+        for (final fabricated in ['cleared customs', 'unblocked', 'swapped']) {
+          expect(
+            reportText,
+            isNot(contains(fabricated)),
+            reason:
+                'FABRICATION: reported "$fabricated" with nothing in the '
+                'context supporting it. $where',
+          );
+        }
+        expect(
+          reportText,
+          contains('customs'),
+          reason: 'the report should still describe the standing blocker',
         );
       }
       // ---- Proposals already awaiting the user --------------------------

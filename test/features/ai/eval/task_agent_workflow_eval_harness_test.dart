@@ -4,6 +4,7 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/seeded_directive_content.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -228,6 +229,27 @@ void main() {
       );
 
       harness = await TaskAgentWorkflowEvalHarness.start(container: container);
+    });
+
+    test('the eval template carries the shipped directives', () {
+      final template = buildEvalTemplate(profileId: 'profile-1');
+
+      // makeTestTemplateVersion defaults to empty directives and "You are a
+      // helpful agent.". Running with those silently strips the wake protocol,
+      // the report contract and every restraint rule from the system prompt,
+      // so the suite measures models against a prompt the app never sends.
+      expect(
+        template.version.generalDirective,
+        taskAgentGeneralDirective,
+        reason: 'the shipped general directive must reach the model',
+      );
+      expect(
+        template.version.reportDirective,
+        taskAgentReportDirective,
+        reason: 'the shipped report directive must reach the model',
+      );
+      expect(template.version.generalDirective, isNotEmpty);
+      expect(template.version.reportDirective, isNotEmpty);
     });
 
     test(

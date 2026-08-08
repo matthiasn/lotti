@@ -230,6 +230,12 @@ class ConversationRepository extends Notifier<void> {
     ChatCompletionToolChoiceOption? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
+    // Whether [strategy] may choose the tools for each turn. Callers that
+    // deliberately constrain the surface — the forced report-only retry, which
+    // pairs an explicit one-tool list with a forced `toolChoice` — set this
+    // false so a staging strategy cannot widen it back on a later turn and let
+    // a provider that ignores `toolChoice` reach a mutation tool.
+    bool useStrategyTools = true,
     // Owner ids for per-turn consumption recording. When [consumptionAgentId]
     // is null, recording is skipped (non-agent callers). Agent workflows pass
     // these so each turn is attributed to the task/category/wake.
@@ -311,11 +317,21 @@ class ConversationRepository extends Notifier<void> {
         // the turn index captured before the request advances the count.
         final impactCollector = InferenceImpactCollector();
         final turnIndex = manager.turnCount;
+        // `turnCount` counts user messages and this turn's user message is
+        // already in the log, so the first request sees 1. Strategies reason
+        // about "the opening turn", so they get a zero-based index while
+        // provider calls and telemetry keep the one-based value they had.
+        final strategyTurnIndex = turnIndex > 0 ? turnIndex - 1 : 0;
         // Ask the strategy what to advertise for this turn. Without this the
         // list captured at sendMessage is reused for every turn, so a wake
         // cannot narrow its opening turn and widen later.
         final turnTools =
-            strategy?.toolsForTurn(turnIndex: turnIndex, manager: manager) ??
+            (useStrategyTools
+                ? strategy?.toolsForTurn(
+                    turnIndex: strategyTurnIndex,
+                    manager: manager,
+                  )
+                : null) ??
             tools;
 
         // Collect response

@@ -2743,6 +2743,7 @@ class _ThrowingConversationRepository extends ConversationRepository {
     ChatCompletionToolChoiceOption? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
+    bool useStrategyTools = true,
     String? consumptionAgentId,
     String? consumptionTaskId,
     String? consumptionCategoryId,

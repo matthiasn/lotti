@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/seeded_directive_content.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
@@ -332,6 +333,18 @@ buildEvalTemplate({required String profileId}) {
       id: 'version-penguin-wake-eval',
       agentId: lauraTemplateId,
       profileId: profileId,
+      // The shipped directives, not the factory's placeholders. Without these
+      // `generalDirective` and `reportDirective` are empty strings and
+      // `directives` is "You are a helpful agent." — the wake protocol, the
+      // report contract and the restraint rules all vanish, and the eval
+      // measures models against a prompt the app never sends. The no-op
+      // scenario is the sharpest case: the rule it tests ("finish with a short
+      // plain-text note when nothing changed") lives in these constants.
+      directives:
+          'You are Laura, a diligent task management agent. You help users '
+          'organize, prioritize, and complete their tasks efficiently.',
+      generalDirective: taskAgentGeneralDirective,
+      reportDirective: taskAgentReportDirective,
     ),
   );
 }
