@@ -149,8 +149,8 @@ void main() {
         '{"headline":"Go","tone":"fury","animation":"pulse"}',
         '{"headline":"Go","tone":"nudge","animation":"pulse","tagline":7}',
         '{"headline":"Go","tone":"nudge","animation":"pulse","cta":{"x":1}}',
-        '{"headline":"Go","tone":"nudge","animation":"pulse", '
-            '"accent":"vantablack"}',
+        '{"headline":"Go","tone":"nudge","animation":"x","accent":"tide"}',
+        '{"headline":"Go","tone":"nudge","animation":"pulse","accent":"z"}',
         '{"headline":"","tone":"nudge","animation":"pulse"}',
       ]) {
         expect(
