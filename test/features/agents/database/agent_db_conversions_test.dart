@@ -2236,6 +2236,75 @@ void main() {
       expect(decoded.activationCount, 2);
     });
 
+    test('fromSerialized rejects poison goal-spec payloads at the gate', () {
+      Map<String, Object?> specJson(Object? criteria) => {
+        'runtimeType': 'goalSpecVersion',
+        'id': 'goal-spec-v1',
+        'agentId': 'goal-agent-1',
+        'version': 1,
+        'status': 'active',
+        'authoredBy': 'user',
+        'title': 'Steps',
+        'statement': 'Average 10,000 steps a day.',
+        'criteria': criteria,
+        'createdAt': '2026-08-08T00:00:00.000',
+        'vectorClock': null,
+      };
+
+      // Fractional count: caught in the RAW json, before the generated
+      // decoder can truncate 1.9 into a plausible-looking 1.
+      expect(
+        () => AgentDbConversions.fromSerialized(
+          jsonEncode(
+            specJson({
+              'runtimeType': 'habit',
+              'criterionId': 'c',
+              'habitId': 'h',
+              'window': {'runtimeType': 'calendarWeek'},
+              'targetCount': 1.9,
+            }),
+          ),
+        ),
+        throwsFormatException,
+      );
+
+      // Structurally invalid tree: decodes fine, must still be refused.
+      expect(
+        () => AgentDbConversions.fromSerialized(
+          jsonEncode(
+            specJson({
+              'runtimeType': 'allOf',
+              'criterionId': 'c',
+              'criteria': <Object?>[],
+            }),
+          ),
+        ),
+        throwsFormatException,
+      );
+
+      // No criteria tree at all.
+      expect(
+        () => AgentDbConversions.fromSerialized(
+          jsonEncode(specJson(null)),
+        ),
+        throwsFormatException,
+      );
+
+      // And the valid form still round-trips through the same gate.
+      final valid = AgentDbConversions.fromSerialized(
+        jsonEncode(
+          specJson({
+            'runtimeType': 'habit',
+            'criterionId': 'c',
+            'habitId': 'h',
+            'window': {'runtimeType': 'calendarWeek'},
+            'targetCount': 3,
+          }),
+        ),
+      );
+      expect(valid, isA<GoalSpecVersionEntity>());
+    });
+
     test('an unknown-variant peer payload still decodes as unknown', () {
       // fallbackUnion guard for the new type strings: a build without the
       // goal variants would map them to AgentUnknownEntity, not throw.
