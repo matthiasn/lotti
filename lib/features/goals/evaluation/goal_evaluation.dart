@@ -1,4 +1,4 @@
-import 'package:lotti/features/goals/model/goal_enums.dart';
+import 'package:lotti/classes/goal_enums.dart';
 
 /// Result of evaluating one criterion node for one period.
 class GoalCriterionResult {

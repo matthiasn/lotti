@@ -11,7 +11,7 @@ library;
 
 import 'dart:convert';
 
-import 'package:lotti/features/goals/model/goal_enums.dart';
+import 'package:lotti/classes/goal_enums.dart';
 
 /// Reference "today" for every scenario: Saturday 2026-08-08.
 final goalEvalReference = DateTime.utc(2026, 8, 8);

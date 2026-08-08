@@ -1,4 +1,4 @@
-import 'package:lotti/features/goals/model/goal_window.dart';
+import 'package:lotti/classes/goal_window.dart';
 
 /// The pre-fetched daily aggregates a goal evaluation runs over.
 ///

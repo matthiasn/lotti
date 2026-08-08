@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
-import 'package:lotti/features/goals/model/goal_enums.dart';
 
 void main() {
   const policy = GoalTrackPolicy();

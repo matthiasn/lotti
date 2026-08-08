@@ -2,7 +2,7 @@
 /// `goalAgentPolicyMatrix` — every scenario names the policy rule it tests.
 library;
 
-import 'package:lotti/features/goals/model/goal_enums.dart';
+import 'package:lotti/classes/goal_enums.dart';
 
 import 'goal_agent_eval_fixtures.dart';
 import 'goal_agent_spec.dart';

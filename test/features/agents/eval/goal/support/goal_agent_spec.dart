@@ -8,8 +8,8 @@
 /// the single source of truth — scenarios reference rows by id.
 library;
 
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
-import 'package:lotti/features/goals/model/goal_enums.dart';
 
 /// Tool names of the goal-agent surface, `<verb>_goal_<noun>` throughout —
 /// uniform naming so models cannot "generalise" a wrong prefix (the
