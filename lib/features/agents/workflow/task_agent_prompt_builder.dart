@@ -1,3 +1,4 @@
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/seeded_directive_content.dart';
 import 'package:lotti/features/agents/workflow/task_agent_evidence_synthesis.dart';
@@ -97,16 +98,21 @@ abstract final class TaskAgentPromptBuilder {
   /// Evidence synthesis substitutes its model-tuned report contract only for
   /// this seeded value. A custom directive remains authoritative.
   ///
-  /// The exact-match against [taskAgentReportDirective] is a **compatibility
-  /// sentinel**, not a content check: templates seeded on earlier versions
-  /// store that text byte-for-byte and are recognised by it. Editing the
-  /// constant would reclassify every one of them as customised and silently
-  /// stop substituting the model-tuned contract for them, so the constant has
-  /// to stay stable even though it is never rendered.
+  /// Provenance decides first: a system-authored version holds directives
+  /// seeding wrote, whichever release wrote them.
+  ///
+  /// The exact-match against [taskAgentReportDirective] remains as a
+  /// **compatibility sentinel** for versions whose author cannot settle it —
+  /// notably `system:config_change`, which copies directives forward. It is not
+  /// enough on its own: the constant has been edited (2026-04-19, 2026-06-07),
+  /// so every template seeded before the last edit fails the comparison and is
+  /// read as customised, which silently disables the model-tuned contract for
+  /// it. The constant still has to stay stable, and is still never rendered.
   static bool usesBuiltInReportContract(AgentTemplateVersionEntity version) {
     final configuredReportDirective = version.reportDirective.trim();
-    return configuredReportDirective.isEmpty ||
-        configuredReportDirective == taskAgentReportDirective.trim();
+    if (configuredReportDirective.isEmpty) return true;
+    if (AgentAuthors.isSystemAuthored(version.authoredBy)) return true;
+    return configuredReportDirective == taskAgentReportDirective.trim();
   }
 
   /// Whether [version] carries Lotti's seeded general directive rather than
@@ -114,14 +120,18 @@ abstract final class TaskAgentPromptBuilder {
   ///
   /// The seeded text restates rules the scaffold already asserts — user
   /// sovereignty, tool discipline, input handling — so rendering both spends
-  /// payload on a second, *editable* wording of a code-owned rule. The same
-  /// exact-match **compatibility sentinel** as
-  /// [usesBuiltInReportContract] applies: templates seeded on earlier versions
-  /// store the constant byte-for-byte and are recognised by it, so the constant
-  /// must stay stable even though it is no longer rendered.
+  /// payload on a second, *editable* wording of a code-owned rule.
+  ///
+  /// Resolved the same way as [usesBuiltInReportContract]: provenance first,
+  /// then the exact-match sentinel for versions whose author cannot settle it.
+  /// The general-directive constant has its own edit history (2026-03-02,
+  /// 2026-06-07), so text comparison alone would read an install seeded before
+  /// the last edit as customised.
   static bool usesBuiltInGeneralDirective(AgentTemplateVersionEntity version) {
     final configured = version.generalDirective.trim();
-    return configured.isEmpty || configured == taskAgentGeneralDirective.trim();
+    if (configured.isEmpty) return true;
+    if (AgentAuthors.isSystemAuthored(version.authoredBy)) return true;
+    return configured == taskAgentGeneralDirective.trim();
   }
 
   /// The general directive this wake actually receives.

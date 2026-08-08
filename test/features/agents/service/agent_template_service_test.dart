@@ -1559,9 +1559,13 @@ void main() {
         activeVersion.reportDirective,
         reason: '$scenario',
       );
+      // The directives are copied, not written, so their author carries over.
+      // A model swap that restamped the author made a seeded template read as
+      // customised — and an evolved one read as system-authored, which would
+      // suppress a user-approved directive (ADR 0052).
       expect(
         newVersion.authoredBy,
-        'system:config_change',
+        activeVersion.authoredBy,
         reason: '$scenario',
       );
       expect(

@@ -416,6 +416,84 @@ Lead with the decision. Keep it to three sentences.''';
       expect(prompt, contains('User actions are sovereign.'));
     });
 
+    test('an install seeded on an older release is still recognised', () {
+      // The whole reason provenance decides before text: both seeded constants
+      // have been edited, so a template seeded before the last edit stores text
+      // that matches neither constant. Judged on text alone it reads as
+      // customised — which renders a stale constitution *and* disables the
+      // model-tuned report contract, the one that tells a wake not to
+      // republish an unchanged report.
+      const oldSeededGeneral =
+          '## User Sovereignty\n\nAn older release wrote '
+          'this text, which no constant matches today.';
+      const oldSeededReport =
+          '## MANDATORY FINAL TOOL CALL\n\nAn older '
+          'release wrote this too.';
+      final version = makeTestTemplateVersion(
+        generalDirective: oldSeededGeneral,
+        reportDirective: oldSeededReport,
+        authoredBy: 'system',
+      );
+
+      expect(TaskAgentPromptBuilder.usesBuiltInGeneralDirective(version), true);
+      expect(TaskAgentPromptBuilder.usesBuiltInReportContract(version), true);
+
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: version,
+        soulVersion: null,
+      );
+
+      expect(prompt, isNot(contains('An older release wrote this text')));
+      expect(prompt, isNot(contains('MANDATORY FINAL TOOL CALL')));
+      expect(prompt, contains('do not republish unchanged content'));
+      expect(prompt, contains('## Input Handling'));
+    });
+
+    test('a config-change stamp never counts as system authorship', () {
+      // `system:config_change` is stamped on versions that COPY directives
+      // forward, so on an install that evolved a template and then changed its
+      // model it sits on evolved text. Treating it as seeding would delete a
+      // user-approved directive from the prompt.
+      final version = makeTestTemplateVersion(
+        generalDirective: 'Escalate contractual blockers within one wake.',
+        reportDirective: 'Lead with the delivery decision.',
+        authoredBy: 'system:config_change',
+      );
+
+      expect(
+        TaskAgentPromptBuilder.usesBuiltInGeneralDirective(version),
+        false,
+      );
+      expect(TaskAgentPromptBuilder.usesBuiltInReportContract(version), false);
+
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: version,
+        soulVersion: null,
+      );
+
+      expect(
+        prompt,
+        contains('Escalate contractual blockers within one wake.'),
+      );
+      expect(prompt, contains('Lead with the delivery decision.'));
+    });
+
+    test('an evolved directive is never mistaken for a seeded one', () {
+      final version = makeTestTemplateVersion(
+        generalDirective: 'Escalate contractual blockers within one wake.',
+        authoredBy: 'evolution_agent',
+      );
+
+      expect(
+        TaskAgentPromptBuilder.usesBuiltInGeneralDirective(version),
+        false,
+      );
+      expect(
+        TaskAgentPromptBuilder.effectiveGeneralDirective(version),
+        'Escalate contractual blockers within one wake.',
+      );
+    });
+
     test('a stock template never surfaces its legacy persona blob', () {
       // Seeded templates carry both a `directives` blurb and the seeded
       // general directive. Suppressing the latter must not promote the former:

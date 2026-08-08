@@ -313,6 +313,16 @@ Common changes across the path:
   `propose_directives` takes a complete rewrite rather than a delta, so a
   session shown the seeded text would rewrite a contract that was never in
   effect and have it adopted wholesale.
+- **Whether a directive is Lotti's own is decided by provenance, not by text.**
+  `AgentAuthors.isSystemAuthored(version.authoredBy)` — exactly `system` —
+  settles both checks before any comparison; the exact-match against the seeded
+  constant is only the fallback for versions whose author cannot settle it.
+  Comparing text alone misclassified every install seeded before a constant was
+  last edited as *customised*, which disabled the model-tuned report contract for
+  it and left the superseded "call `update_report` every wake" text in force.
+  `system:config_change` deliberately does **not** count as system authorship —
+  it marks a version that copied directives forward, so on an evolved template it
+  sits on evolved text — and that copy-forward now preserves the original author.
 - The **general** directive follows the same rule via
   `effectiveGeneralDirective`: the seeded `taskAgentGeneralDirective` resolves to
   empty because the scaffold's constitution already asserts user sovereignty,

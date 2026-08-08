@@ -54,6 +54,29 @@ byte-for-byte the seeded constant, appending only a genuinely customised one.
 The common scaffold never adopted that, so the same template produced a
 duplicated prompt on one path and a single one on the other.
 
+**The defect that decides who any of this reaches.** "Are these our directives?"
+was answered by comparing the stored text against today's seeded constant. That
+is an equality test against a moving target: `taskAgentReportDirective` was
+edited on 2026-04-19 (#2971) and 2026-06-07 (#3286), `taskAgentGeneralDirective`
+on 2026-03-02 (#2737) and 2026-06-07 (#3286). **Every install seeded before the
+last edit stores the older text, fails the comparison, and is classified as
+customised** — without anyone having customised anything.
+
+For the general directive that only means the constitution work below skips
+those installs. For the report directive the consequence is live today and worse:
+`usesBuiltInReportContract` returns false, the model-tuned evidence-synthesis
+contract is never substituted, and the agent instead receives the superseded
+seeded text headed `## MANDATORY FINAL TOOL CALL` — which mandates
+`update_report` on *every* wake. That is exactly the behaviour the `noOp`
+scenario penalises, and the eval harness cannot reproduce it, because the harness
+seeds the current constant and passes the comparison. An aged install can
+therefore churn reports for a reason the suite reports as fixed.
+
+The signal that answers the question directly is already stored:
+`AgentTemplateVersionEntity.authoredBy` is `system` for seeding,
+`evolution_agent` for an approved proposal, `user` for a hand-edit in the
+template detail page.
+
 **What is missing entirely** is the additive layer. An agent has no way to
 accumulate a standing rule — "this project's estimates are always in ideal
 days", "never propose a due date for this recurring task" — other than by
@@ -87,7 +110,25 @@ Concretely, and in this change:
    now behave the way the compact one already did. A stock wake gets one wording
    of each rule; an evolved directive is appended *after* the constitution, so it
    adds rather than replaces.
-3. **The evolution session sees what is in effect.** For a stock template the
+3. **Provenance decides whether directives are ours, not string equality.**
+   `AgentAuthors.isSystemAuthored` — exactly `system` — settles both
+   `usesBuiltInGeneralDirective` and `usesBuiltInReportContract` before any text
+   is compared, so a template seeded under any release is recognised. The
+   equality test stays as the fallback for versions whose author cannot settle
+   it. Two deliberate narrowings:
+
+   * **`system:config_change` is not system authorship.** It is stamped on
+     versions that *copy* directives forward after a model or profile change, so
+     on an install that evolved a template and then switched models it sits on
+     evolved text. Reading it as seeding would delete a user-approved directive
+     from the prompt — a worse failure than the one being fixed.
+   * **That copy-forward now preserves the directive's author** rather than
+     restamping it, because a model swap does not write a directive. The config
+     change stays visible in version history through the `modelId`/`profileId`
+     difference. Rows already stamped `system:config_change` keep falling back to
+     the text comparison, which is exactly today's behaviour for them.
+
+4. **The evolution session sees what is in effect.** For a stock template the
    general directive shows as *"None. This template adds nothing on top of the
    built-in task-agent constitution, which is code-owned…"*, mirroring the
    report-directive fix. Silence would invite a proposal that restates rules the
@@ -147,9 +188,26 @@ contradiction is still a bad proposal that the user can reject and roll back.
 Making contradiction structurally impossible would mean constraining what a
 directive may say, which is a larger change than this.
 
+**What an existing install gets**, by what its active template version holds:
+
+| State | Before | After |
+| --- | --- | --- |
+| Seeded on the current release | seeded constitution rendered on top of the scaffold's | constitution once, from the scaffold; ~1.5 kB smaller |
+| Seeded on an older release | read as customised: stale constitution rendered, model-tuned report contract **disabled** | recognised by author; same as a current seed |
+| Evolved or hand-edited | rendered verbatim | rendered verbatim, after a complete constitution |
+| Evolved, then model changed (`system:config_change`) | rendered verbatim | rendered verbatim — provenance deliberately declines to claim it |
+| Legacy, no split fields | `directives` blob rendered | unchanged |
+
+Personality is untouched in every row: soul versions have no sentinel and no
+substitution, so an evolved soul is rendered exactly as before.
+
 **Migration.** None. No stored data is rewritten and no version is created; the
-change is in what gets rendered. A template whose directive was hand-edited to
-something other than the seed is unaffected.
+change is in what gets rendered and how provenance is read. Re-seeding stale
+directive text onto old templates — as `seedDayAgentCaptureReconcileDirective`
+does for the day agent — would additionally repair installs whose stored text is
+genuinely outdated rather than merely misclassified. That is a separate decision,
+because it mints a version per template on upgrade and changes what an evolved
+template inherits.
 
 ## Follow-ups
 

@@ -84,6 +84,25 @@ abstract final class AgentReportScopes {
 abstract final class AgentAuthors {
   static const evolutionAgent = 'evolution_agent';
   static const system = 'system';
+
+  /// A version whose directives were written by seeding rather than by a person
+  /// or the evolution agent.
+  ///
+  /// This is the provenance signal the prompt builder uses to decide whether a
+  /// template carries Lotti's own directives (ADR 0052). It answers that
+  /// question directly, where comparing the text against today's seeded
+  /// constant only answers it for a template seeded since that constant last
+  /// changed — every earlier install reads as customised and silently loses the
+  /// substitutions the constants exist to drive.
+  ///
+  /// Deliberately exact rather than a `system:`-prefix match. Namespaced system
+  /// authors such as `system:config_change` are stamped on versions that *copy*
+  /// directives forward, so on an install that evolved a template and then
+  /// changed its model, that stamp sits on evolved text. Treating it as system
+  /// authorship would suppress a user-approved directive, which is a worse
+  /// failure than the one this fixes.
+  static bool isSystemAuthored(String authoredBy) =>
+      authoredBy.trim() == system;
 }
 
 /// Fixed schedule constants for recurring agent work.

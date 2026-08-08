@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/seeded_directive_content.dart';
@@ -1157,7 +1158,14 @@ String _buildEvalSystemPrompt(
                 '$taskAgentGeneralDirective${_evalVariantDirective(variant)}',
             reportDirective:
                 reportDirective ?? _reportDirectiveForVariant(variant),
-            authoredBy: 'system',
+            // A variant is a tuned directive, not seeded text, so it must not
+            // claim system authorship: since ADR 0052 that is the provenance
+            // signal saying "these are Lotti's own directives", and claiming it
+            // here would make the prompt builder drop the very variant this
+            // matrix exists to measure. The `production` variant appends
+            // nothing, so it still resolves to the shipped stock prompt through
+            // the text sentinel.
+            authoredBy: AgentAuthors.evolutionAgent,
             createdAt: DateTime.utc(2026, 7, 10),
             vectorClock: null,
           )
