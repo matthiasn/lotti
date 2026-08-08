@@ -128,6 +128,49 @@ void main() {
       expect(category, GoalAgentEvalFailureCategory.none);
     });
 
+    test('banner args that cannot decode fail even when the name matches', () {
+      GoalAgentEvalFailureCategory classify(String argumentsJson) =>
+          classifyGoalAgentResult(
+            scenario: scenarioById('ad_create_off_track'),
+            toolCalls: [
+              call(
+                GoalAgentToolNames.updateGoalReport,
+                '{"status":"offTrack","oneLiner":"x","tldr":"y"}',
+              ),
+              call(GoalAgentToolNames.createGoalAd, argumentsJson),
+            ],
+            assistantContent: '',
+          );
+
+      // Missing animation, unknown tone, non-string tagline, non-string
+      // cta, unknown accent: none may score as a valid banner call.
+      for (final bad in [
+        '{"headline":"Go","tone":"encourage"}',
+        '{"headline":"Go","tone":"fury","animation":"pulse"}',
+        '{"headline":"Go","tone":"nudge","animation":"pulse","tagline":7}',
+        '{"headline":"Go","tone":"nudge","animation":"pulse","cta":{"x":1}}',
+        '{"headline":"Go","tone":"nudge","animation":"pulse", '
+            '"accent":"vantablack"}',
+        '{"headline":"","tone":"nudge","animation":"pulse"}',
+      ]) {
+        expect(
+          classify(bad),
+          GoalAgentEvalFailureCategory.invalidToolArguments,
+          reason: bad,
+        );
+      }
+
+      // The decodable form (a movement pitch, per the scenario) passes.
+      expect(
+        classify(
+          '{"headline":"The trail is patient. Barely.","tagline":"Lace up '
+          'and take a walk","tone":"nudge","animation":"typewriter", '
+          '"accent":"tide"}',
+        ),
+        GoalAgentEvalFailureCategory.none,
+      );
+    });
+
     test('second proposal on a change request is over budget', () {
       const proposal =
           '{"changes":{"targetValue":8000},"rationale":"user asked"}';
