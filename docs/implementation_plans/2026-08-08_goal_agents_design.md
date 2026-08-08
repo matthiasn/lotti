@@ -85,8 +85,13 @@ is an invitation to invent its arguments"):
 | `offTrackOrWorseningAndNoFreshNudge` | `create_goal_ad` |
 | ...and `topRatedReusableNudges` non-empty | `rerun_goal_ad` (offered alongside create; prompt prefers it) |
 | `inDialogue` / clear change request | `propose_goal_revision` (ChangeSet-gated) |
-| `specImpliesCadenceAndDrifted` | `upsert_standing_agreement` (ChangeSet-gated) |
-| always | `record_goal_observation`, `remember`, `search_memory`, `set_next_check_in` (bounded/day) |
+| `specImpliesCadenceAndDrifted` | `upsert_standing_agreement` (ChangeSet-gated; **PR 4**, not in the eval contract) |
+| always | `record_goal_observation`; plus `remember`/`search_memory` (**PR 6**, shared memory extraction) and `set_next_check_in` (**PR 2**, bounded/day) — all outside the six-tool eval contract |
+
+`goal_agent_spec.dart` is the SINGLE Phase B tool contract: the six tools it
+defines are what ships in PR 3, and every tool added later (standing
+agreements, memory, scheduling) must land in the spec + scenarios first —
+eval-first is the process, not just the kickoff.
 
 The FACTS block rendered into the prompt is exactly the shape the eval
 fixtures author (`buildStepsFacts`/`buildGymFacts`) — the eval is the

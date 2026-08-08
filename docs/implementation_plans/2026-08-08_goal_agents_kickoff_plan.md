@@ -384,7 +384,9 @@ models `glm-5.2 kimi-k3 qwen3.5-122b-a10b qwen3.6-27b`; samples 3; temp 0. Repor
 cost, judge bundle). Judge: `tool/goal_agent_eval_judge.py` copying the billing-accounting pattern,
 qwen judge, default OFF during bring-up.
 
-**Session implementation list (12 files, ~2.3–2.7k LOC, build order + verify steps):** matchers
+**Session implementation list** *(historical digest — superseded by the shipped
+harness: six tools + cta, P1–P15, 23 scenarios, image stage; `goal_agent_spec.dart`
+is authoritative)* **(12 files, ~2.3–2.7k LOC, build order + verify steps):** matchers
 extraction → eval_report credits fix → goal_agent_spec.dart (prompt+tools+policy) → fixtures →
 scenarios → offline self-tests → runner/strategy/classifier/artifact writer → live test (@Tags
 eval-live, env-gated, skips cleanly without env) → report CLI + test → matrix script → judge
@@ -416,10 +418,10 @@ scope). ADR 0023 amended, not contradicted; planner negotiation stays a future s
   in one tap). The evaluator is the codebase's FIRST rule-tree evaluator; AutoCompleteRule adapter
   becomes trivial later.
 - `goalProgress` keyed register (id `goal_progress:<agentId>:<periodKey>`, recomputed-never-
-  accumulated like weekRollup → LWW-convergent across devices; trackStatus onTrack|atRisk|offTrack|
-  achieved|insufficientData as subtype for indexed scans; attainment 0..1 + per-criterion results;
+  accumulated like weekRollup → LWW-convergent across devices; trackStatus onTrack|atRisk|offTrack|recovering|
+  achieved|insufficientData (the full GoalTrackStatus vocabulary) as subtype for indexed scans; attainment 0..1 + per-criterion results;
   ~1MB/goal-decade, retention-exempt — it IS the chartable history + cheap agent context).
-- `goalNudge` ad entity (status draft→ready→active→dismissed|expired|superseded|failed as subtype;
+- `goalNudge` ad entity (status draft→ready→active→dismissed|retired|expired|superseded|failed as subtype (retired added with the reuse re-entry, ADR 0055);
   `GoalNudgeBrief` typed brief = the ONLY payload the image request may see; imageEntryId
   (JournalImage → media sync free); headline/caption composited ON DEVICE, never sent;
   triggerProgressId evidence; staleAt pulled forward by habit completions; reasonSummary).
@@ -460,7 +462,7 @@ tool loop maxTurns 8 → report editor → outputs + wakeTokenUsage row (per-goa
 budget enforcement, per decision record). Target ≤8K input tokens.
 
 **Tool gate (0051 designed-in):** statusTransitioned → update_goal_report (absent tool = wake
-CANNOT churn); hasActiveNudge → retire/mark; offTrackAndNoFreshNudge → create_goal_ad (writes
+CANNOT churn); hasActiveNudge → retire/mark; offTrackAndNoFreshNudge → create_goal_ad / rerun_goal_ad (reuse added with ADR 0055 Decision 7) (writes
 goalNudge DRAFT carrying only the brief; pipeline consumes; brief-digest dedupe = quality mechanic,
 not budget); specImpliesCadence&drifted → upsert_standing_agreement (ChangeSet); inDialogue →
 propose_goal_revision (ChangeSet); always: record_observations, remember, search_memory,
