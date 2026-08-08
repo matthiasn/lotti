@@ -2,6 +2,10 @@ import 'package:freezed_annotation/freezed_annotation.dart';
 import 'package:lotti/classes/day_agent_plan_models.dart';
 import 'package:lotti/classes/day_directive_models.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
@@ -859,6 +863,138 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     required VectorClock? vectorClock,
     DateTime? deletedAt,
   }) = SoulDocumentHeadEntity;
+
+  /// Immutable version of a goal's spec (ADR 0053 Decision 2).
+  ///
+  /// The goal is versioned structured state, not prose: [statement] is the
+  /// sentence the agent can always *speak*, [criteria] is the machine-
+  /// evaluable tree the deterministic tier folds. Versions are never edited;
+  /// a revision writes a new version (via ChangeSet approval when
+  /// agent-proposed — there is no auto-accept tier) and moves the head.
+  /// [agentId] is the goal agent; one agent IS one goal.
+  const factory AgentDomainEntity.goalSpecVersion({
+    required String id,
+    required String agentId,
+    required int version,
+    required GoalSpecVersionStatus status,
+    required String authoredBy,
+    required String title,
+
+    /// The speakable form: "Average 10,000 steps a day over a rolling week."
+    required String statement,
+    required GoalCriterion criteria,
+    required DateTime createdAt,
+    required VectorClock? vectorClock,
+
+    /// Conversation that produced an agent-proposed revision.
+    String? sourceSessionId,
+
+    /// Parent version for diff rendering in the revision ChangeSet.
+    String? diffFromVersionId,
+    DateTime? startDate,
+
+    /// Optional deadline; when passed, the track policy resolves to
+    /// achieved/offTrack instead of granting grace.
+    DateTime? targetDate,
+    String? rationale,
+    DateTime? deletedAt,
+  }) = GoalSpecVersionEntity;
+
+  /// Mutable head pointer for the active goal spec version.
+  ///
+  /// Deterministic id `goal_spec_head:<agentId>` (`goalSpecHeadId`), LWW.
+  /// "State your current goal" is a head→version read — zero inference.
+  const factory AgentDomainEntity.goalSpecHead({
+    required String id,
+    required String agentId,
+    required String versionId,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    DateTime? deletedAt,
+  }) = GoalSpecHeadEntity;
+
+  /// Deterministic attainment register for one goal period (ADR 0053
+  /// Decision 4).
+  ///
+  /// Keyed `goal_progress:<agentId>:<periodKey>` (`goalProgressId`) and
+  /// recomputed from source, never accumulated — the `weekRollup`
+  /// convergence pattern: N devices computing the same period write the
+  /// same row. [trackStatus] is derived by `GoalTrackPolicy`, never by a
+  /// model, and is mirrored into the row's `subtype` for indexed scans.
+  /// [specVersionId] pins which goal definition the numbers were computed
+  /// against, so charts stay honest across revisions. Retention-exempt:
+  /// this register IS the quantitative history.
+  const factory AgentDomainEntity.goalProgress({
+    required String id,
+    required String agentId,
+    required String periodKey,
+    required GoalTrackStatus trackStatus,
+    required double attainment,
+    required double dataCoverage,
+    required bool satisfied,
+    required String specVersionId,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    @Default(<GoalCriterionProgress>[])
+    List<GoalCriterionProgress> criterionResults,
+    bool? paceFeasible,
+    double? shortTermAttainment,
+    DateTime? deletedAt,
+  }) = GoalProgressEntity;
+
+  /// A goal ad — one banner nudge, its brief, and its whole life
+  /// (ADR 0055).
+  ///
+  /// The row is append-only in spirit: [status] moves through the lifecycle
+  /// (including the reuse re-entry `retired → active`), while [ratings] and
+  /// the visibility counters accumulate across runs — the labeled library
+  /// that personalizes future ads and detects wear-out. [brief] is the only
+  /// material an image request may be composed from (ADR 0056);
+  /// [briefDigest] is the near-duplicate dedupe key. [imageEntryId] points
+  /// at the generated `JournalImage`, so cross-device display rides on
+  /// existing media sync.
+  const factory AgentDomainEntity.goalNudge({
+    required String id,
+    required String agentId,
+    required GoalNudgeStatus status,
+    required GoalNudgeBrief brief,
+    required String briefDigest,
+    required DateTime createdAt,
+    required DateTime updatedAt,
+    required VectorClock? vectorClock,
+    String? imageEntryId,
+
+    /// Wake provenance (the DayPlanEntity precedent).
+    String? runKey,
+    String? threadId,
+
+    /// The `goalProgress` row that justified this ad.
+    String? triggerProgressId,
+    String? reasonSummary,
+
+    /// How long this ad may claim to be current; goal-relevant events pull
+    /// it forward (staleness is a contract, not a hope).
+    DateTime? staleAt,
+    DateTime? activatedAt,
+    DateTime? dismissedAt,
+    DateTime? retiredAt,
+    DateTime? expiredAt,
+
+    /// Rating history, one entry per rated run (never overwritten).
+    @Default(<GoalNudgeRating>[]) List<GoalNudgeRating> ratings,
+
+    /// Accumulated visible time across impressions, in milliseconds — the
+    /// denominator for every effectiveness ratio.
+    @Default(0) int totalVisibleMs,
+    @Default(0) int impressionCount,
+    DateTime? firstShownAt,
+    DateTime? lastShownAt,
+
+    /// Pipeline outcomes (verification verdict, generator model, …).
+    @Default(<String, String>{}) Map<String, String> provenance,
+    DateTime? deletedAt,
+  }) = GoalNudgeEntity;
 
   /// Fallback for forward compatibility.
   const factory AgentDomainEntity.unknown({

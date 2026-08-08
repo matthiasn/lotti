@@ -8,6 +8,7 @@ abstract final class AgentKinds {
   static const projectAgent = 'project_agent';
   static const dayAgent = 'day_agent';
   static const eventAgent = 'event_agent';
+  static const goalAgent = 'goal_agent';
 }
 
 /// `linkType` discriminators on `AgentLink` rows.
@@ -69,6 +70,10 @@ abstract final class AgentEntityTypes {
   static const soulDocument = 'soulDocument';
   static const soulDocumentVersion = 'soulDocumentVersion';
   static const soulDocumentHead = 'soulDocumentHead';
+  static const goalSpecVersion = 'goalSpecVersion';
+  static const goalSpecHead = 'goalSpecHead';
+  static const goalProgress = 'goalProgress';
+  static const goalNudge = 'goalNudge';
 }
 
 /// `scope` values for `AgentReport` rows. `current` marks the live report a
@@ -140,3 +145,15 @@ String evolutionSessionRecapId(String sessionId) =>
 /// scheduled wake.
 String scheduledWakeRecordId(String agentId, {String? workspaceKey}) =>
     'scheduled_wake:$agentId:${workspaceKey ?? 'global'}';
+
+/// Deterministic id for a goal agent's spec head pointer, one per agent
+/// (ADR 0053 Decision 2). One goal agent has exactly one current spec.
+String goalSpecHeadId(String agentId) => 'goal_spec_head:$agentId';
+
+/// Deterministic id for one goal's attainment register row, one per
+/// `(agentId, periodKey)` (ADR 0053 Decision 4).
+///
+/// Recomputed-never-accumulated: N devices evaluating the same period write
+/// the same id and LWW-converge instead of duplicating.
+String goalProgressId(String agentId, String periodKey) =>
+    'goal_progress:$agentId:$periodKey';

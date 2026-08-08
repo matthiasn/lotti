@@ -36,6 +36,13 @@ enum GoalDirection {
   atMost,
 }
 
+/// Lifecycle of one immutable `goalSpecVersion` (ADR 0053 Decision 2).
+///
+/// Versions are never edited: a revision writes a new version and moves the
+/// head, and the previous one becomes [superseded]. The version history IS
+/// the ten-year story of the goal.
+enum GoalSpecVersionStatus { active, superseded }
+
 /// Deterministic on/off-track classification of a goal for one period.
 ///
 /// Derived exclusively by `GoalTrackPolicy` from evaluator output — never by

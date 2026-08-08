@@ -1719,6 +1719,246 @@ Map<String, dynamic> _$SoulDocumentHeadEntityToJson(
   'runtimeType': instance.$type,
 };
 
+GoalSpecVersionEntity _$GoalSpecVersionEntityFromJson(
+  Map<String, dynamic> json,
+) => GoalSpecVersionEntity(
+  id: json['id'] as String,
+  agentId: json['agentId'] as String,
+  version: (json['version'] as num).toInt(),
+  status: $enumDecode(_$GoalSpecVersionStatusEnumMap, json['status']),
+  authoredBy: json['authoredBy'] as String,
+  title: json['title'] as String,
+  statement: json['statement'] as String,
+  criteria: GoalCriterion.fromJson(json['criteria'] as Map<String, dynamic>),
+  createdAt: DateTime.parse(json['createdAt'] as String),
+  vectorClock: json['vectorClock'] == null
+      ? null
+      : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+  sourceSessionId: json['sourceSessionId'] as String?,
+  diffFromVersionId: json['diffFromVersionId'] as String?,
+  startDate: json['startDate'] == null
+      ? null
+      : DateTime.parse(json['startDate'] as String),
+  targetDate: json['targetDate'] == null
+      ? null
+      : DateTime.parse(json['targetDate'] as String),
+  rationale: json['rationale'] as String?,
+  deletedAt: json['deletedAt'] == null
+      ? null
+      : DateTime.parse(json['deletedAt'] as String),
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$GoalSpecVersionEntityToJson(
+  GoalSpecVersionEntity instance,
+) => <String, dynamic>{
+  'id': instance.id,
+  'agentId': instance.agentId,
+  'version': instance.version,
+  'status': _$GoalSpecVersionStatusEnumMap[instance.status]!,
+  'authoredBy': instance.authoredBy,
+  'title': instance.title,
+  'statement': instance.statement,
+  'criteria': instance.criteria,
+  'createdAt': instance.createdAt.toIso8601String(),
+  'vectorClock': instance.vectorClock,
+  'sourceSessionId': instance.sourceSessionId,
+  'diffFromVersionId': instance.diffFromVersionId,
+  'startDate': instance.startDate?.toIso8601String(),
+  'targetDate': instance.targetDate?.toIso8601String(),
+  'rationale': instance.rationale,
+  'deletedAt': instance.deletedAt?.toIso8601String(),
+  'runtimeType': instance.$type,
+};
+
+const _$GoalSpecVersionStatusEnumMap = {
+  GoalSpecVersionStatus.active: 'active',
+  GoalSpecVersionStatus.superseded: 'superseded',
+};
+
+GoalSpecHeadEntity _$GoalSpecHeadEntityFromJson(Map<String, dynamic> json) =>
+    GoalSpecHeadEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      versionId: json['versionId'] as String,
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$GoalSpecHeadEntityToJson(GoalSpecHeadEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'versionId': instance.versionId,
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+GoalProgressEntity _$GoalProgressEntityFromJson(Map<String, dynamic> json) =>
+    GoalProgressEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      periodKey: json['periodKey'] as String,
+      trackStatus: $enumDecode(_$GoalTrackStatusEnumMap, json['trackStatus']),
+      attainment: (json['attainment'] as num).toDouble(),
+      dataCoverage: (json['dataCoverage'] as num).toDouble(),
+      satisfied: json['satisfied'] as bool,
+      specVersionId: json['specVersionId'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      criterionResults:
+          (json['criterionResults'] as List<dynamic>?)
+              ?.map(
+                (e) =>
+                    GoalCriterionProgress.fromJson(e as Map<String, dynamic>),
+              )
+              .toList() ??
+          const <GoalCriterionProgress>[],
+      paceFeasible: json['paceFeasible'] as bool?,
+      shortTermAttainment: (json['shortTermAttainment'] as num?)?.toDouble(),
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$GoalProgressEntityToJson(GoalProgressEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'periodKey': instance.periodKey,
+      'trackStatus': _$GoalTrackStatusEnumMap[instance.trackStatus]!,
+      'attainment': instance.attainment,
+      'dataCoverage': instance.dataCoverage,
+      'satisfied': instance.satisfied,
+      'specVersionId': instance.specVersionId,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'criterionResults': instance.criterionResults,
+      'paceFeasible': instance.paceFeasible,
+      'shortTermAttainment': instance.shortTermAttainment,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+const _$GoalTrackStatusEnumMap = {
+  GoalTrackStatus.onTrack: 'onTrack',
+  GoalTrackStatus.atRisk: 'atRisk',
+  GoalTrackStatus.offTrack: 'offTrack',
+  GoalTrackStatus.recovering: 'recovering',
+  GoalTrackStatus.achieved: 'achieved',
+  GoalTrackStatus.insufficientData: 'insufficientData',
+};
+
+GoalNudgeEntity _$GoalNudgeEntityFromJson(Map<String, dynamic> json) =>
+    GoalNudgeEntity(
+      id: json['id'] as String,
+      agentId: json['agentId'] as String,
+      status: $enumDecode(_$GoalNudgeStatusEnumMap, json['status']),
+      brief: GoalNudgeBrief.fromJson(json['brief'] as Map<String, dynamic>),
+      briefDigest: json['briefDigest'] as String,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      updatedAt: DateTime.parse(json['updatedAt'] as String),
+      vectorClock: json['vectorClock'] == null
+          ? null
+          : VectorClock.fromJson(json['vectorClock'] as Map<String, dynamic>),
+      imageEntryId: json['imageEntryId'] as String?,
+      runKey: json['runKey'] as String?,
+      threadId: json['threadId'] as String?,
+      triggerProgressId: json['triggerProgressId'] as String?,
+      reasonSummary: json['reasonSummary'] as String?,
+      staleAt: json['staleAt'] == null
+          ? null
+          : DateTime.parse(json['staleAt'] as String),
+      activatedAt: json['activatedAt'] == null
+          ? null
+          : DateTime.parse(json['activatedAt'] as String),
+      dismissedAt: json['dismissedAt'] == null
+          ? null
+          : DateTime.parse(json['dismissedAt'] as String),
+      retiredAt: json['retiredAt'] == null
+          ? null
+          : DateTime.parse(json['retiredAt'] as String),
+      expiredAt: json['expiredAt'] == null
+          ? null
+          : DateTime.parse(json['expiredAt'] as String),
+      ratings:
+          (json['ratings'] as List<dynamic>?)
+              ?.map((e) => GoalNudgeRating.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <GoalNudgeRating>[],
+      totalVisibleMs: (json['totalVisibleMs'] as num?)?.toInt() ?? 0,
+      impressionCount: (json['impressionCount'] as num?)?.toInt() ?? 0,
+      firstShownAt: json['firstShownAt'] == null
+          ? null
+          : DateTime.parse(json['firstShownAt'] as String),
+      lastShownAt: json['lastShownAt'] == null
+          ? null
+          : DateTime.parse(json['lastShownAt'] as String),
+      provenance:
+          (json['provenance'] as Map<String, dynamic>?)?.map(
+            (k, e) => MapEntry(k, e as String),
+          ) ??
+          const <String, String>{},
+      deletedAt: json['deletedAt'] == null
+          ? null
+          : DateTime.parse(json['deletedAt'] as String),
+      $type: json['runtimeType'] as String?,
+    );
+
+Map<String, dynamic> _$GoalNudgeEntityToJson(GoalNudgeEntity instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'agentId': instance.agentId,
+      'status': _$GoalNudgeStatusEnumMap[instance.status]!,
+      'brief': instance.brief,
+      'briefDigest': instance.briefDigest,
+      'createdAt': instance.createdAt.toIso8601String(),
+      'updatedAt': instance.updatedAt.toIso8601String(),
+      'vectorClock': instance.vectorClock,
+      'imageEntryId': instance.imageEntryId,
+      'runKey': instance.runKey,
+      'threadId': instance.threadId,
+      'triggerProgressId': instance.triggerProgressId,
+      'reasonSummary': instance.reasonSummary,
+      'staleAt': instance.staleAt?.toIso8601String(),
+      'activatedAt': instance.activatedAt?.toIso8601String(),
+      'dismissedAt': instance.dismissedAt?.toIso8601String(),
+      'retiredAt': instance.retiredAt?.toIso8601String(),
+      'expiredAt': instance.expiredAt?.toIso8601String(),
+      'ratings': instance.ratings,
+      'totalVisibleMs': instance.totalVisibleMs,
+      'impressionCount': instance.impressionCount,
+      'firstShownAt': instance.firstShownAt?.toIso8601String(),
+      'lastShownAt': instance.lastShownAt?.toIso8601String(),
+      'provenance': instance.provenance,
+      'deletedAt': instance.deletedAt?.toIso8601String(),
+      'runtimeType': instance.$type,
+    };
+
+const _$GoalNudgeStatusEnumMap = {
+  GoalNudgeStatus.draft: 'draft',
+  GoalNudgeStatus.ready: 'ready',
+  GoalNudgeStatus.active: 'active',
+  GoalNudgeStatus.dismissed: 'dismissed',
+  GoalNudgeStatus.retired: 'retired',
+  GoalNudgeStatus.expired: 'expired',
+  GoalNudgeStatus.superseded: 'superseded',
+  GoalNudgeStatus.failed: 'failed',
+};
+
 AgentUnknownEntity _$AgentUnknownEntityFromJson(Map<String, dynamic> json) =>
     AgentUnknownEntity(
       id: json['id'] as String,
