@@ -2,6 +2,10 @@
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/day_plan.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/attention_negotiation.dart';
@@ -283,6 +287,73 @@ final _cases = <({String label, AgentDomainEntity entity, DateTime expected})>[
     expected: _updated,
   ),
   (
+    label: 'goalSpecVersion (immutable — createdAt)',
+    entity: AgentDomainEntity.goalSpecVersion(
+      id: 'goal-spec-v1',
+      agentId: 'goal-1',
+      version: 1,
+      status: GoalSpecVersionStatus.active,
+      authoredBy: 'user',
+      title: 'Steps',
+      statement: 'Average 10,000 steps a day.',
+      criteria: const GoalCriterion.habit(
+        criterionId: 'c',
+        habitId: 'h',
+        window: GoalWindow.calendarWeek(),
+        targetCount: 3,
+      ),
+      createdAt: _created,
+      vectorClock: null,
+    ),
+    expected: _created,
+  ),
+  (
+    label: 'goalSpecHead',
+    entity: AgentDomainEntity.goalSpecHead(
+      id: 'goal_spec_head:goal-1',
+      agentId: 'goal-1',
+      versionId: 'goal-spec-v1',
+      updatedAt: _updated,
+      vectorClock: null,
+    ),
+    expected: _updated,
+  ),
+  (
+    label: 'goalProgress (register — updatedAt)',
+    entity: AgentDomainEntity.goalProgress(
+      id: 'goal_progress:goal-1:2026-W32',
+      agentId: 'goal-1',
+      periodKey: '2026-W32',
+      trackStatus: GoalTrackStatus.onTrack,
+      attainment: 1,
+      dataCoverage: 1,
+      satisfied: true,
+      specVersionId: 'goal-spec-v1',
+      createdAt: _created,
+      updatedAt: _updated,
+      vectorClock: null,
+    ),
+    expected: _updated,
+  ),
+  (
+    label: 'goalNudge (lifecycle — updatedAt)',
+    entity: AgentDomainEntity.goalNudge(
+      id: 'nudge-1',
+      agentId: 'goal-1',
+      status: GoalNudgeStatus.active,
+      brief: const GoalNudgeBrief(
+        headline: 'The trail is lapping you.',
+        tone: GoalNudgeTone.roast,
+        animation: GoalBannerAnimation.typewriter,
+      ),
+      briefDigest: 'digest-1',
+      createdAt: _created,
+      updatedAt: _updated,
+      vectorClock: null,
+    ),
+    expected: _updated,
+  ),
+  (
     label: 'unknown',
     entity: AgentDomainEntity.unknown(
       id: 'unknown-1',
@@ -309,7 +380,7 @@ void main() {
     test('covers every AgentDomainEntity variant', () {
       // Guards the data table above: if a variant is added (and classified in
       // the exhaustive `map`), this count must be bumped with a new case.
-      expect(_cases.length, 33);
+      expect(_cases.length, 37);
     });
   });
 }

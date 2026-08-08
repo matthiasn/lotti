@@ -138,6 +138,30 @@ void main() {
       expect(issues, anyElement(contains('quota: successes')));
     });
 
+    test('measurable leaves get the same target and window checks', () {
+      const bad = GoalCriterion.measurable(
+        criterionId: 'water',
+        dataTypeId: 'water-id',
+        window: GoalWindow.rollingDays(count: -2),
+        aggregation: GoalAggregation.sum,
+        target: double.infinity,
+      );
+      final issues = GoalSpecValidator.criterionIssues(bad);
+      expect(issues, hasLength(2));
+      expect(issues, anyElement(contains('water: target must be finite')));
+      expect(issues, anyElement(contains('water: rolling window')));
+    });
+
+    test('an empty atLeastCount reports childlessness, not a quota', () {
+      const empty = GoalCriterion.atLeastCount(
+        criterionId: 'root',
+        criteria: [],
+        successes: 2,
+      );
+      final issues = GoalSpecValidator.criterionIssues(empty);
+      expect(issues.single, contains('no children'));
+    });
+
     test('decodeValidated reports structural issues too', () {
       final json = jsonOf(
         const GoalCriterion.anyOf(criterionId: 'root', criteria: []),
