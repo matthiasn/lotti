@@ -341,7 +341,10 @@ into ad-brief forbidden-args; the leakage scenario deliberately stuffs context w
 private detail. Authored wake-context JSON (limitation stated); graduation path → workflow eval on
 a penguin fitness world once GoalAgentWorkflow exists.
 
-**Draft contract (executable spec):** 5 tools, uniform `<verb>_goal_<noun>` naming:
+**Draft contract (executable spec):** *(digest as received; superseded during the session —
+the shipped contract has 6 tools + `cta`, policy rows P1–P15, 23 scenarios, and the unified
+`GoalTrackStatus` names replacing `slightlyOff`; `goal_agent_spec.dart` is authoritative.)*
+5 tools, uniform `<verb>_goal_<noun>` naming:
 `update_goal_report{status: onTrack|slightlyOff|offTrack|recovering|insufficientData, oneLiner,
 tldr, content}`, `create_goal_ad{imageBrief, altText, tone: encourage|nudge|celebrate}`,
 `retire_goal_ad{adId, reason}`, `propose_goal_revision{changes: {metric,targetValue,period,cadence,

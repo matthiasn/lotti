@@ -134,7 +134,7 @@ void main() {
 
       // Optional image stage: render passing ad briefs through Nano Banana
       // Pro so the visuals can be judged by a human. The composed prompt is
-      // built exclusively from the three visual brief fields (ADR 0056) —
+      // built exclusively from the leakage-checked brief fields (ADR 0056) —
       // see goal_ad_image_probe.dart.
       final geminiKey = Platform.environment['GEMINI_API_KEY'] ?? '';
       if (Platform.environment['GOAL_AGENT_EVAL_IMAGES'] == '1' &&
@@ -163,26 +163,34 @@ void main() {
             if (sceneConcept is! String || sceneConcept.trim().isEmpty) {
               continue;
             }
-            final path = await generateGoalAdImage(
-              repository: cloudRepository,
-              geminiProvider: geminiProvider,
-              sceneConcept: sceneConcept,
-              headline: args?['headline'] as String?,
-              cta: args?['cta'] as String?,
-              mood: args?['mood'] as String?,
-              stylePreset: args?['stylePreset'] as String?,
-              outputPath: '$imageDir/${result.scenario.id}_${result.modelId}',
-            );
-            // Headline stays on-device: pair it with the image in a
-            // sidecar so a human can judge the composed ad.
-            File('$path.txt').writeAsStringSync(
-              jsonEncode({
-                'headline': args?['headline'],
-                'altText': args?['altText'],
-                'tone': args?['tone'],
-              }),
-            );
-            stdout.writeln('ad image: $path');
+            // One Gemini hiccup must not abort the whole optional stage —
+            // the scoring artifacts are already on disk at this point.
+            try {
+              final path = await generateGoalAdImage(
+                repository: cloudRepository,
+                geminiProvider: geminiProvider,
+                sceneConcept: sceneConcept,
+                headline: args?['headline'] as String?,
+                cta: args?['cta'] as String?,
+                mood: args?['mood'] as String?,
+                stylePreset: args?['stylePreset'] as String?,
+                outputPath: '$imageDir/${result.scenario.id}_${result.modelId}',
+              );
+              // Sidecar with the entity-side fields for human review.
+              File('$path.txt').writeAsStringSync(
+                jsonEncode({
+                  'headline': args?['headline'],
+                  'altText': args?['altText'],
+                  'tone': args?['tone'],
+                }),
+              );
+              stdout.writeln('ad image: $path');
+            } catch (error) {
+              stderr.writeln(
+                'ad image FAILED for ${result.scenario.id} × '
+                '${result.modelId}: $error',
+              );
+            }
           }
         }
       }

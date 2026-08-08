@@ -21,6 +21,17 @@ void main(List<String> args) {
     exitCode = 2;
     return;
   }
+  final missing = paths.where((path) => !File(path).existsSync()).toList();
+  if (missing.isNotEmpty) {
+    // An unexpanded glob lands here verbatim when no artifact was written —
+    // i.e. every eval process failed before producing a report.
+    stderr.writeln(
+      'No such artifact file(s): ${missing.join(', ')}. '
+      'Did every eval process fail before writing its JSON?',
+    );
+    exitCode = 2;
+    return;
+  }
   final artifacts = [
     for (final path in paths)
       jsonDecode(File(path).readAsStringSync()) as Map<String, dynamic>,

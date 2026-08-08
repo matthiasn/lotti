@@ -180,7 +180,7 @@ void main() {
       expect(category, GoalAgentEvalFailureCategory.forbiddenToolCall);
     });
 
-    test('fabricated step numbers in a data-gap report are caught', () {
+    test('guilt-tripping claims in a data-gap report are caught', () {
       final category = classifyGoalAgentResult(
         scenario: scenarioById('gp_data_gap'),
         toolCalls: [

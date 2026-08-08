@@ -31,9 +31,10 @@ final List<String> goalTrackStatusNames = [
   for (final status in GoalTrackStatus.values) status.name,
 ];
 
-/// The draft system prompt. Deliberately lean (~1.4k chars): the payload
-/// lesson from task-agent evals is that long prompts get skimmed, and every
-/// number the model needs arrives in the wake FACTS block, not here.
+/// The draft system prompt. Deliberately lean (hard-capped at 3.2k chars by
+/// the offline test): the payload lesson from task-agent evals is that long
+/// prompts get skimmed, and every number the model needs arrives in the
+/// wake FACTS block, not here.
 const goalAgentEvalSystemPrompt = '''
 You are the dedicated, long-lived coach for exactly one user goal.
 

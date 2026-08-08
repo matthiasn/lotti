@@ -65,7 +65,8 @@ arbitrate. It is Proposed and unimplemented. Its Decision 1 picks one agent per
 4. **Deterministic attainment is a keyed register.** `goalProgress` rows keyed
    `goal_progress:<agentId>:<periodKey>`, recomputed from source and never accumulated (the
    `weekRollup` convergence pattern), carrying `trackStatus`
-   (`onTrack | atRisk | offTrack | achieved | insufficientData`, mirrored into `subtype` for
+   (`onTrack | atRisk | offTrack | recovering | achieved | insufficientData` — the full
+   `GoalTrackStatus` vocabulary, one enum for evaluator, agent and evals, mirrored into `subtype` for
    indexed scans), `attainment 0..1`, per-criterion results, and the `specVersionId` the numbers
    were computed against — so a decade of charts stays honest across goal revisions. The register
    is retention-exempt: it is both the chartable history and the agent's cheap wake context.

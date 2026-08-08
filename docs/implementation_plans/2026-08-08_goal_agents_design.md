@@ -94,7 +94,7 @@ contract; the runtime renders the same JSON from real registers.
 
 ## 2. Ad pipeline
 
-```
+```text
 Phase B decides (create_goal_ad | rerun_goal_ad)
   → goalNudge DRAFT row carrying ONLY the typed GoalNudgeBrief
   → GoalAdPipeline consumes drafts
@@ -251,7 +251,7 @@ day-agent tool handlers (search extraction).
 | PR | Contents | Proof |
 | --- | --- | --- |
 | 0 (this branch) | ADRs, docs, goal core, eval harness | 211 tests, eval run book |
-| 1 | Entity variants + conversions | JSON round-trips, register id determinism |
+| 1 | Entity variants + conversions + spec validator (reject fractional `targetCount`/`successes`, empty composites, `successes > criteria.length`, malformed targets — decoded JSON is validated before persistence and before evaluation) | JSON round-trips, register id determinism, validator rejection tests |
 | 2 | Deterministic runtime, headless | Phase A unit tests; **non-fallback regression test**; sync dispatcher tests |
 | 3 | Phase B LLM tier | Workflow tests with recorded strategy; live smoke vs eval scenarios; consumption attribution asserted |
 | 4 | Revision flow + StandingAgreement writer | ChangeSet approval tests; head-move provenance |

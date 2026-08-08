@@ -25,16 +25,23 @@ deterministic-validation + one-repair-call + typed-failure shape for AI output g
    message (16:9, centre-safe, **no readable text, captions, UI, logos, or watermarks**). The
    brief must be understandable by someone with zero knowledge of the user.
 
-2. **The parameter type is the enforcement.** The request builder's entire input *is* the brief:
+2. **The parameter type enforces the channel; evals police the content.** The type guarantees
+   what it can: the request builder's entire input *is* the brief —
    no repository handle, no entity, no conversation context exists in its signature or call
    path. Personal data cannot be attached because no parameter can carry it. The shared image
    service (extracted from `SkillInferenceRunner.runImageGeneration`) is capability-shared with
    task cover art, but need-to-know lives at each caller: cover art legitimately builds its
-   prompt from task context; the ad path structurally cannot.
+   prompt from task context; the ad path structurally cannot. What the type cannot prevent is
+   the model writing personal data *into* a free-text brief field — that residual channel is
+   Decision 4's linting plus the leakage evals (Decision 6), never the type alone.
 
-3. **Personal text never leaves the device.** `headline` and `caption` — which may reference the
-   goal ("3,200 steps to go") — are entity fields composited on-device over the returned image
-   (ADR 0055 Decision 7). They are never part of the outbound request.
+3. **Only leakage-checked fields leave the device.** (Revised 2026-08-08 with ADR 0055
+   Decision 8.) The `headline` and optional `cta` ARE part of the outbound request — rendered as
+   banner typography — because they are model-authored brief fields covered by the same
+   constitution rules, handler linting and leakage evals as `sceneConcept`; by construction they
+   carry no personal data ("3,200 steps to go" is exactly what the lint rejects). `caption`,
+   `altText` and any goal-referencing copy remain entity-only and are never sent. The boundary
+   is the *field allowlist*, not the absence of text.
 
 4. **Defense-in-depth behind the type.** The agent authors the brief via a schema-constrained
    tool call; the goal constitution forbids names, health readings, locations, dates, or numbers

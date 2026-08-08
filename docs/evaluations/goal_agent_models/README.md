@@ -26,7 +26,7 @@ Four behaviours, one scenario catalog
    churn without it being tested.
 
 Every expectation derives from the policy matrix `goalAgentPolicyMatrix`
-(P1–P13) in the spec file — the single source of truth. The offline
+(P1–P15) in the spec file — the single source of truth. The offline
 self-test enforces that every policy row has a scenario and that every
 fixture number matches the REAL `GoalProgressEvaluator` + `GoalTrackPolicy`
 (`lib/features/goals/evaluation/`), so the fixtures double as the executable
@@ -101,8 +101,9 @@ Useful knobs:
 
 **Image stage** (optional): render every passing `create_goal_ad` brief
 through Nano Banana Pro so the visuals can be judged next to the scorecard.
-The outbound prompt is composed from the three visual brief fields only
-plus a fixed style contract (`goal_ad_image_probe.dart` — the executable
+The outbound prompt is composed only from the leakage-checked brief
+fields (scene, mood, style, plus the model-authored headline/CTA rendered
+as banner typography per ADR 0055 Decision 8) and a fixed style contract (`goal_ad_image_probe.dart` — the executable
 ADR 0056 boundary); the headline/altText/tone stay in a `.txt` sidecar for
 human review. Costs cents per image; needs a Gemini key:
 

@@ -425,6 +425,74 @@ void main() {
       );
     });
 
+    test('atLeastCount pace: one dead leg cannot sink a 2-of-3 quota', () {
+      // Evaluated Sunday Aug 9. deadlift needs 5 with one day left →
+      // impossible; walk needs 1 and today is uncredited → feasible;
+      // stretch is already satisfied.
+      const dead = GoalCriterion.habit(
+        criterionId: 'deadlift',
+        habitId: 'deadlift-habit',
+        window: GoalWindow.calendarWeek(),
+        targetCount: 5,
+      );
+      const walk = GoalCriterion.habit(
+        criterionId: 'walk',
+        habitId: 'walk-habit',
+        window: GoalWindow.calendarWeek(),
+        targetCount: 1,
+      );
+      const stretch = GoalCriterion.habit(
+        criterionId: 'stretch',
+        habitId: 'stretch-habit',
+        window: GoalWindow.calendarWeek(),
+        targetCount: 1,
+      );
+      const twoOfThree = GoalCriterion.atLeastCount(
+        criterionId: 'root',
+        criteria: [dead, walk, stretch],
+        successes: 2,
+      );
+      final signals = GoalSignalWindow(
+        habitSuccessesByDay: {
+          'stretch-habit': {d(4): 1},
+        },
+      );
+
+      // Two legs alive (walk feasible + stretch satisfied) → on pace,
+      // even though the deadlift quota is unreachable.
+      expect(
+        evaluator.evaluate(twoOfThree, signals, d(9)).paceFeasible,
+        isTrue,
+      );
+
+      // Same tree as allOf: the dead leg correctly sinks it.
+      const allThree = GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [dead, walk, stretch],
+      );
+      expect(
+        evaluator.evaluate(allThree, signals, d(9)).paceFeasible,
+        isFalse,
+      );
+
+      // 2-of-3 with two dead legs → genuinely impossible.
+      const heavy = GoalCriterion.habit(
+        criterionId: 'heavy',
+        habitId: 'heavy-habit',
+        window: GoalWindow.calendarWeek(),
+        targetCount: 6,
+      );
+      const doomed = GoalCriterion.atLeastCount(
+        criterionId: 'root',
+        criteria: [dead, heavy, walk],
+        successes: 2,
+      );
+      expect(
+        evaluator.evaluate(doomed, signals, d(9)).paceFeasible,
+        isFalse,
+      );
+    });
+
     test('metric-only trees have no pace opinion', () {
       const criterion = GoalCriterion.allOf(
         criterionId: 'root',

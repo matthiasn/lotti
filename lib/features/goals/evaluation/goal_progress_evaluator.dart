@@ -333,7 +333,7 @@ class GoalProgressEvaluator {
         ratio = top.reduce((a, b) => a + b) / top.length;
         satisfied = satisfiedCount >= successes;
         target = successes;
-        pace = _paceAll(children);
+        pace = _paceAtLeast(children, successes);
     }
     return _NodeOutcome(
       result: GoalCriterionResult(
@@ -365,6 +365,24 @@ class GoalProgressEvaluator {
       }
     }
     return sawTrue ? true : null;
+  }
+
+  /// atLeastCount pace: the quota is dead only when fewer than [successes]
+  /// children remain *possible* (satisfied, or not ruled out by their own
+  /// pace); it is affirmatively on pace when at least [successes] children
+  /// are already satisfied or affirmatively feasible. One impossible child
+  /// must not sink a "2 of 3" goal whose other two legs are alive.
+  bool? _paceAtLeast(List<_NodeOutcome> children, int successes) {
+    var possible = 0;
+    var viable = 0;
+    for (final child in children) {
+      final result = child.result;
+      if (result.satisfied || result.paceFeasible != false) possible++;
+      if (result.satisfied || result.paceFeasible == true) viable++;
+    }
+    if (possible < successes) return false;
+    if (viable >= successes) return true;
+    return null;
   }
 
   /// anyOf pace: one feasible child keeps the composite alive; it is only

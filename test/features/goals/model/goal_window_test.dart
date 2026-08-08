@@ -118,6 +118,21 @@ void main() {
     });
   });
 
+  test('a non-positive rolling count fails loudly, not with a bad range', () {
+    // Only malformed synced JSON can produce this; an inverted period must
+    // never reach the evaluator.
+    expect(
+      () => const GoalWindow.rollingDays(count: 0).periodRange(d(2026, 8, 8)),
+      throwsArgumentError,
+    );
+    expect(
+      () => GoalWindow.fromJson(
+        const {'runtimeType': 'rollingDays', 'count': -3},
+      ).periodRange(d(2026, 8, 8)),
+      throwsArgumentError,
+    );
+  });
+
   test('json round trip preserves the window', () {
     const windows = [
       GoalWindow.day(),

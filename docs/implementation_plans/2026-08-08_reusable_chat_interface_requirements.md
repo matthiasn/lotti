@@ -82,7 +82,9 @@ Requirements are numbered REQ-NN; "must" is normative.
 
 ## 7. Pagination & scale
 
-- REQ-15 Reverse list, createdAt-cursor pagination (~50/page), lazy
+- REQ-15 Reverse list, compound-cursor pagination (~50/page) over the
+  lexicographic pair `(createdAt, stableEntityId)` — a bare timestamp
+  cursor skips or repeats messages that share a createdAt — with lazy
   payload hydration. Must stay responsive on a **ten-year history**
   (tens of thousands of rows): no full-log reads on open (ADR 0057's
   bounded-read invariant applies to the UI too).

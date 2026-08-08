@@ -67,6 +67,12 @@ wait
 echo "Matrix finished in $(( $(date +%s) - start ))s."
 
 echo "Merging artifacts..."
+shopt -s nullglob
+artifacts=("$OUT_DIR"/goal_agent_*.json)
+if (( ${#artifacts[@]} == 0 )); then
+  echo "No artifacts in $OUT_DIR — every run failed; see $LOG_DIR." >&2
+  exit 1
+fi
 fvm dart run tool/goal_agent_eval_report.dart \
-  "$OUT_DIR"/goal_agent_*.json > "$OUT_DIR/goal_agent_merged_report.md"
+  "${artifacts[@]}" > "$OUT_DIR/goal_agent_merged_report.md"
 echo "Merged report: $OUT_DIR/goal_agent_merged_report.md"

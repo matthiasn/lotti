@@ -41,12 +41,24 @@ sealed class GoalWindow with _$GoalWindow {
       DateTime.utc(instant.year, instant.month, instant.day);
 
   /// Inclusive first and last day of the period containing [reference].
+  ///
+  /// Throws [ArgumentError] for a rolling window with a non-positive
+  /// [GoalWindowRollingDays.count] — such a value can only arrive through
+  /// malformed synced JSON, and an inverted range must fail loudly rather
+  /// than evaluate to nonsense.
   ({DateTime start, DateTime end}) periodRange(DateTime reference) {
     final day = dayUtc(reference);
     switch (this) {
       case GoalWindowDay():
         return (start: day, end: day);
       case GoalWindowRollingDays(:final count):
+        if (count < 1) {
+          throw ArgumentError.value(
+            count,
+            'count',
+            'a rolling window needs at least one day',
+          );
+        }
         return (start: day.subtract(Duration(days: count - 1)), end: day);
       case GoalWindowCalendarWeek():
         final monday = day.subtract(Duration(days: day.weekday - 1));

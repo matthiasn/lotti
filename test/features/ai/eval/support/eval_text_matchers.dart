@@ -71,12 +71,26 @@ bool containsAffirmativeReportClaim(String text, String claim) {
   var index = normalizedText.indexOf(needle);
   while (index != -1) {
     final end = index + needle.length;
-    final start = index < _claimNegationWindow
-        ? 0
-        : index - _claimNegationWindow;
-    final stop = end + _claimNegationWindow >= normalizedText.length
+    var start = index < _claimNegationWindow ? 0 : index - _claimNegationWindow;
+    var stop = end + _claimNegationWindow >= normalizedText.length
         ? normalizedText.length
         : end + _claimNegationWindow;
+    // A cut mid-word would fabricate a cue: "casino" truncated at the
+    // window edge leaves "no", which the whole-word pattern then matches
+    // (the lookbehind sees the string start, not the severed letters).
+    // Drop the partial word on either edge instead of keeping it.
+    while (start > 0 &&
+        start < index &&
+        _isLetterAt(normalizedText, start - 1) &&
+        _isLetterAt(normalizedText, start)) {
+      start++;
+    }
+    while (stop < normalizedText.length &&
+        stop > end &&
+        _isLetterAt(normalizedText, stop - 1) &&
+        _isLetterAt(normalizedText, stop)) {
+      stop--;
+    }
     // Skip the claim itself so a cue inside it cannot excuse the claim.
     final context =
         '${normalizedText.substring(start, index)} '
@@ -86,3 +100,8 @@ bool containsAffirmativeReportClaim(String text, String claim) {
   }
   return false;
 }
+
+final RegExp _letterPattern = RegExp(r'\p{L}', unicode: true);
+
+bool _isLetterAt(String text, int index) =>
+    _letterPattern.hasMatch(text[index]);
