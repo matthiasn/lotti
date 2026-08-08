@@ -154,10 +154,32 @@ record a conflict instead. Without that block a session looking at an evolved
 directive has no idea a code-owned layer exists, and restates or contradicts it.
 
 The UI splits into two surfaces: `EvolutionReviewPage` (a history-first ritual
-home with a pending-session card, compact metrics and persisted history) and
-`EvolutionChatPage` (the active negotiation loop). Session history cards prefer
-the persisted recap `tldr`, falling back to `session.feedbackSummary` when it is
-absent or empty.
+home) and `EvolutionChatPage` (the active negotiation loop). Session history
+cards prefer the persisted recap `tldr`, falling back to
+`session.feedbackSummary` when it is absent or empty.
+
+The home is **three blocks in one order** — what you can do now, what the agent
+has been doing since you last spoke, and what the two of you decided last time —
+and the first block is state-correct: a start card when nothing is pending, the
+proposal card when a session is waiting. There is deliberately no hero banner;
+the app bar carries the agent's own name, and the phrase *1-on-1* appears
+nowhere on the page.
+
+Both surfaces hold their content to `DetailContentWidth` so prose keeps one
+reading measure on a desktop window. The composer is the exception and uses
+`EvolutionComposerWidth`: `DetailContentWidth` centres on *both* axes, and a
+both-axes centre in a `bottomNavigationBar` slot expands to the full window
+height, leaving the transcript zero height.
+
+`EvolutionMessageList` is shared by the template and soul chats; only the
+system-token resolver differs (`resolveTemplateSystemText` /
+`resolveSoulSystemText`). Turn roles are separated by position and containment
+rather than by two competing fills: assistant prose is unbubbled, the user's
+turn is contained and narrower than the measure, and a system note is a quiet
+centred line. Until a session exists the chat shows `EvolutionSessionOpening`
+rather than a transcript, and `EvolutionTypingIndicator` marks the agent
+composing — it animates perpetually, so a test that reaches either must `pump`
+rather than `pumpAndSettle`.
 
 **Both review pages hang off a `/review` sub-route that has to be declared
 twice.** The template detail page beams to

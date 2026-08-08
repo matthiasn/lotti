@@ -7,8 +7,8 @@
   "addActionAddScreenshot": "Schermafbeelding maken",
   "addActionAddScreenshotHint": "Sluit dit menu en legt daarna het scherm vast.",
   "addActionAddTask": "Taak",
-  "addActionAddTimer": "Timer",
   "addActionAddTimeRecording": "Timerinvoer",
+  "addActionAddTimer": "Timer",
   "addActionCreateLinkedTask": "Nieuwe taak koppelen",
   "addActionCreateLinkedTaskHint": "Maakt en opent een nieuwe taak die aan deze gekoppeld is.",
   "addActionCreateTask": "Taak toevoegen",
@@ -129,7 +129,6 @@
   "agentEvolutionChartWakeHistory": "Wakegeschiedenis",
   "agentEvolutionChatPlaceholder": "Deel feedback of vraag naar prestaties...",
   "agentEvolutionCurrentDirectives": "Huidige richtlijnen",
-  "agentEvolutionDashboardTitle": "Prestaties",
   "agentEvolutionHistoryTitle": "Evolution-geschiedenis",
   "agentEvolutionMetricActive": "Actief",
   "agentEvolutionMetricAvgDuration": "Gem. duur",
@@ -313,7 +312,9 @@
   "agentReportHistoryEmpty": "Nog geen foto's van het rapport.",
   "agentReportHistoryError": "Er is een fout opgetreden bij het laden van de rapportgeschiedenis.",
   "agentReportNone": "Nog geen rapport beschikbaar.",
-  "agentRitualReviewAction": "Gesprek starten",
+  "agentRitualContinueAction": "1-op-1 voortzetten",
+  "agentRitualOpeningHint": "Leest wat er is gebeurd sinds jullie laatste gesprek…",
+  "agentRitualReviewAction": "1-op-1 starten",
   "agentRitualReviewNegativeSignals": "Negatief",
   "agentRitualReviewNeutralSignals": "Neutraal",
   "agentRitualReviewNoFeedback": "Geen feedbacksignalen in dit venster",
@@ -322,18 +323,20 @@
   "agentRitualReviewNoPositiveSignals": "Geen positieve feedbacksignalen in dit tabblad",
   "agentRitualReviewPositiveSignals": "Positief",
   "agentRitualReviewProposalSection": "Huidig voorstel",
-  "agentRitualReviewSessionHistory": "Sessiegeschiedenis",
+  "agentRitualReviewSessionHistory": "Eerdere 1-op-1's",
   "agentRitualReviewTitle": "1-op-1",
+  "agentRitualSinceLastHeading": "Sinds ons laatste gesprek",
+  "agentRitualStartHeading": "Een 1-op-1 starten",
   "agentRitualSummaryApprovedChangesHeading": "Goedgekeurde wijzigingen",
   "agentRitualSummaryConversationHeading": "Gesprek",
   "agentRitualSummaryRecapHeading": "Sessie Hersluiten",
   "agentRitualSummaryRoleAssistant": "Agent",
   "agentRitualSummaryRoleUser": "Jij",
-  "agentRitualSummaryStartHint": "Start een 1-op-1 om te bekijken wat je dwarszat, wat werkte en wat er daarna zou moeten veranderen.",
-  "agentRitualSummarySubtitle": "Recente 1-op-1's, echte wake activiteit, en de veranderingen waar je mee akkoord ging.",
+  "agentRitualSummaryStartHint": "Bekijk wat je dwarszat, wat werkte en wat er daarna zou moeten veranderen.",
   "agentRitualSummaryTokensSinceLast": "Tokens sinds de laatste 1-op-1",
   "agentRitualSummaryWakeHistory30Days": "Wakker worden (laatste 30 dagen)",
   "agentRitualSummaryWakesSinceLast": "Wakker worden sinds de laatste 1-op-1",
+  "agentRitualWakesSinceLastCount": "{count, plural, =1{1 keer wakker sinds jullie laatste 1-op-1} other{{count} keer wakker sinds jullie laatste 1-op-1}}",
   "agentRunningIndicator": "Uitvoeren",
   "agentSessionProgressTitle": "Voortgang van de zitting",
   "agentSettingsSubtitle": "Sjablonen, instanties en monitoring",
@@ -342,8 +345,8 @@
   "agentSoulAssignedTemplatesTitle": "Toegewezen sjablonen",
   "agentSoulAssignmentLabel": "Ziel",
   "agentSoulCoachingStyleLabel": "Coaching Style",
-  "agentSoulCreatedSuccess": "Ziel aangemaakt",
   "agentSoulCreateTitle": "Ziel aanmaken",
+  "agentSoulCreatedSuccess": "Ziel aangemaakt",
   "agentSoulDeleteConfirmBody": "Dit zal de ziel en al zijn versies verwijderen.",
   "agentSoulDeleteConfirmTitle": "Ziel verwijderen",
   "agentSoulDetailTitle": "Zieldetail",
@@ -359,7 +362,6 @@
   "agentSoulNotFound": "Ziel niet gevonden",
   "agentSoulProposalSubtitle": "Voorgestelde persoonlijkheidsveranderingen",
   "agentSoulProposalTitle": "Soul Personality Voorstel",
-  "agentSoulReviewHeroSubtitle": "Verfijn persoonlijkheid over alle sjablonen die deze ziel delen. De evolution agent ziet feedback van elke sjabloon die deze persoonlijkheid gebruikt.",
   "agentSoulReviewStartAction": "Persoonlijkheidstoets starten",
   "agentSoulReviewStartHint": "Start een persoonlijkheidsgerichte sessie om feedback te beoordelen en stem, toon, coaching stijl en directheid te ontwikkelen.",
   "agentSoulReviewTemplateCount": "{count, plural, =1{1 template delen van deze ziel} other{{count} templates die deze ziel delen}}",
@@ -381,10 +383,7 @@
     }
   },
   "agentSoulSelectTitle": "Selecteer Ziel",
-  "agentSoulsEmptyFiltered": "Geen zielen die overeenkomen met je filters.",
   "agentSoulSettingsTab": "Instellingen",
-  "agentSoulsSearchPlaceholder": "Zoek zielen...",
-  "agentSoulsTitle": "Zielen",
   "agentSoulToneBoundsLabel": "Toongrenzen",
   "agentSoulVersionHistoryTitle": "Versiegeschiedenis",
   "agentSoulVersionLabel": "Versie {version}",
@@ -397,6 +396,9 @@
   },
   "agentSoulVersionSaved": "Nieuwe ziel versie opgeslagen",
   "agentSoulVoiceDirectiveLabel": "Spraakrichtlijn",
+  "agentSoulsEmptyFiltered": "Geen zielen die overeenkomen met je filters.",
+  "agentSoulsSearchPlaceholder": "Zoek zielen...",
+  "agentSoulsTitle": "Zielen",
   "agentStateConsecutiveFailures": "Consecutieve storingen",
   "agentStateErrorLoading": "Laden van status is mislukt: {error}",
   "@agentStateErrorLoading": {
@@ -471,13 +473,13 @@
   "@agentTemplateAssignedLabel": {
     "description": "Label shown next to the template assigned to an agent."
   },
-  "agentTemplateCreatedSuccess": "Sjabloon aangemaakt",
-  "@agentTemplateCreatedSuccess": {
-    "description": "Snackbar message after successfully creating a new template."
-  },
   "agentTemplateCreateTitle": "Sjabloon aanmaken",
   "@agentTemplateCreateTitle": {
     "description": "Page title for the create-template form."
+  },
+  "agentTemplateCreatedSuccess": "Sjabloon aangemaakt",
+  "@agentTemplateCreatedSuccess": {
+    "description": "Snackbar message after successfully creating a new template."
   },
   "agentTemplateDeleteConfirm": "Deze sjabloon verwijderen? Dit kan niet ongedaan worden gemaakt.",
   "@agentTemplateDeleteConfirm": {
@@ -519,9 +521,9 @@
   "agentTemplateInstanceLastActive": "Laatste wake: {date}",
   "agentTemplateInstanceNeverActive": "Nooit gewekt",
   "agentTemplateInstanceOpenTask": "Taak openen",
+  "agentTemplateInstanceStarted": "Gestart op {date}",
   "agentTemplateInstancesEmpty": "Nog geen instanties.",
   "agentTemplateInstancesHeading": "Instanties",
-  "agentTemplateInstanceStarted": "Gestart op {date}",
   "agentTemplateKindDayAgent": "Dagagent",
   "@agentTemplateKindDayAgent": {
     "description": "Display name for the Daily OS day-agent template kind."
@@ -543,21 +545,21 @@
   "@agentTemplateMetricsTotalWakes": {
     "description": "Metric label for the total number of agent wakes."
   },
-  "agentTemplateNoneAssigned": "Geen sjabloon toegewezen",
-  "@agentTemplateNoneAssigned": {
-    "description": "Text shown when an agent has no template assigned."
-  },
   "agentTemplateNoTemplates": "Geen sjablonen beschikbaar. Maak er eerst een in Instellingen.",
   "@agentTemplateNoTemplates": {
     "description": "Message shown when no templates exist for agent creation."
   },
-  "agentTemplateNotFound": "Sjabloon niet gevonden",
-  "@agentTemplateNotFound": {
-    "description": "Error message when a referenced template cannot be found."
-  },
   "agentTemplateNoVersions": "Geen versies",
   "@agentTemplateNoVersions": {
     "description": "Placeholder shown when a template has no version history."
+  },
+  "agentTemplateNoneAssigned": "Geen sjabloon toegewezen",
+  "@agentTemplateNoneAssigned": {
+    "description": "Text shown when an agent has no template assigned."
+  },
+  "agentTemplateNotFound": "Sjabloon niet gevonden",
+  "@agentTemplateNotFound": {
+    "description": "Error message when a referenced template cannot be found."
   },
   "agentTemplateReportDirectiveHint": "Definieer de rapportstructuur, vereiste secties en opmaakregels...",
   "@agentTemplateReportDirectiveHint": {
@@ -592,15 +594,10 @@
   "@agentTemplateSelectTitle": {
     "description": "Title for the template selection dialog when creating an agent."
   },
-  "agentTemplatesEmptyFiltered": "Geen sjablonen die overeenkomen met uw filters.",
   "agentTemplateSettingsTab": "Instellingen",
   "@agentTemplateSettingsTab": {
     "description": "Tab label for the settings tab in agent template detail."
   },
-  "agentTemplatesFilterSectionKind": "Aardig",
-  "agentTemplatesGroupByKind": "Aardig",
-  "agentTemplatesGroupNone": "Alles",
-  "agentTemplatesSearchPlaceholder": "Sjablonen zoeken...",
   "agentTemplateStatsTab": "Statistieken",
   "@agentTemplateStatsTab": {
     "description": "Tab label for the stats tab in agent template detail."
@@ -612,10 +609,6 @@
   "agentTemplateStatusArchived": "Gearchiveerd",
   "@agentTemplateStatusArchived": {
     "description": "Label for the archived template status."
-  },
-  "agentTemplatesTitle": "Agent-sjablonen",
-  "@agentTemplatesTitle": {
-    "description": "Page title for the agent templates list."
   },
   "agentTemplateSwitchHint": "Om een ander sjabloon te gebruiken, vernietig dit middel en maak een nieuwe.",
   "@agentTemplateSwitchHint": {
@@ -636,6 +629,15 @@
   "agentTemplateVersionSaved": "Nieuwe versie opgeslagen",
   "@agentTemplateVersionSaved": {
     "description": "Snackbar message after successfully saving a new template version."
+  },
+  "agentTemplatesEmptyFiltered": "Geen sjablonen die overeenkomen met uw filters.",
+  "agentTemplatesFilterSectionKind": "Aardig",
+  "agentTemplatesGroupByKind": "Aardig",
+  "agentTemplatesGroupNone": "Alles",
+  "agentTemplatesSearchPlaceholder": "Sjablonen zoeken...",
+  "agentTemplatesTitle": "Agent-sjablonen",
+  "@agentTemplatesTitle": {
+    "description": "Page title for the agent templates list."
   },
   "agentThreadReportLabel": "Verslag dat tijdens deze wake is opgesteld",
   "agentTokenUsageCachedTokens": "Gekacheld",
@@ -998,6 +1000,30 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "Basis-URL (facultatief)",
   "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Getoond in uw provider lijst",
+  "aiProviderConnectKeyHelperLink": "Pak een sleutel bij {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Verborgen",
+  "aiProviderConnectKeyPrivacyHint": "Je API sleutel blijft nooit achter bij je apparaat.",
+  "aiProviderConnectPageTitle": "Verbinden {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Opslaan & doorgaan",
+  "aiProviderConnectSaveAsDraft": "Als concept opslaan",
+  "aiProviderConnectSavedAsDraftToast": "Opgeslagen als concept",
+  "aiProviderConnectStepChoose": "Kies provider",
+  "aiProviderConnectStepConnect": "Verbinden",
+  "aiProviderConnectStepReview": "Evaluatie",
   "aiProviderConnectionCheckingLabel": "Sleutel controleren, beschikbare modellen weergeven...",
   "aiProviderConnectionFailedBadResponseDetail": "Onverwachte responsvorm: {type}",
   "@aiProviderConnectionFailedBadResponseDetail": {
@@ -1050,30 +1076,6 @@
     }
   },
   "aiProviderConnectionVerifiedTitle": "Verbinding geverifieerd",
-  "aiProviderConnectKeyHelperLink": "Pak een sleutel bij {url}",
-  "@aiProviderConnectKeyHelperLink": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectKeyHiddenLabel": "Verborgen",
-  "aiProviderConnectKeyPrivacyHint": "Je API sleutel blijft nooit achter bij je apparaat.",
-  "aiProviderConnectPageTitle": "Verbinden {providerName}",
-  "@aiProviderConnectPageTitle": {
-    "placeholders": {
-      "providerName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectSaveAndContinue": "Opslaan & doorgaan",
-  "aiProviderConnectSaveAsDraft": "Als concept opslaan",
-  "aiProviderConnectSavedAsDraftToast": "Opgeslagen als concept",
-  "aiProviderConnectStepChoose": "Kies provider",
-  "aiProviderConnectStepConnect": "Verbinden",
-  "aiProviderConnectStepReview": "Evaluatie",
   "aiProviderDetailAddModelButton": "Model toevoegen",
   "aiProviderDetailApiKeyLabel": "API-sleutel",
   "aiProviderDetailBackTooltip": "Terug",
@@ -1131,13 +1133,13 @@
   "aiResponseShowLess": "Minder tonen",
   "aiResponseShowMore": "Meer tonen",
   "aiRunningActivityOpenProgress": "AI-voortgang tonen",
-  "aiSettingsAddedLabel": "Toegevoegd",
   "aiSettingsAddModelButton": "Model toevoegen",
   "aiSettingsAddModelErrorDescription": "Er is iets misgegaan bij het toevoegen van het model. Probeer het opnieuw.",
   "aiSettingsAddModelErrorTitle": "Kon model niet toevoegen",
   "aiSettingsAddModelTooltip": "Voeg dit model toe aan uw provider",
   "aiSettingsAddProfileButton": "Profiel toevoegen",
   "aiSettingsAddProviderButton": "Leverancier toevoegen",
+  "aiSettingsAddedLabel": "Toegevoegd",
   "aiSettingsAgentWakeConcurrencyDescription": "Kies hoeveel verschillende agenten in één keer gevolgtrekkingen kunnen uitvoeren. Hogere waarden reageren sneller maar gebruiken meer provider- en apparaatcapaciteit.",
   "aiSettingsAgentWakeConcurrencyLabel": "Gelijktijdige toediening van het middel",
   "aiSettingsClearAllFiltersTooltip": "Alle filters wissen",
@@ -1357,8 +1359,8 @@
   "audioRecordingDiscardDialogTitle": "Opname weggooien?",
   "audioRecordingPause": "Pauzeren",
   "audioRecordingResume": "Hervatten",
-  "audioRecordings": "Audio-opnames",
   "audioRecordingStop": "Stoppen",
+  "audioRecordings": "Audio-opnames",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 actie} other{{count} acties}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -1559,12 +1561,12 @@
   "checklistExpandTooltip": "Uitvouwen",
   "checklistExportAsMarkdown": "Checklist exporteren als markdown",
   "checklistExportFailed": "Exporteren mislukt",
-  "checklistItemArchived": "Gearchiveerd item",
   "checklistItemArchiveUndo": "Ongedaan maken",
+  "checklistItemArchived": "Gearchiveerd item",
   "checklistItemDeleteCancel": "Annuleren",
   "checklistItemDeleteConfirm": "Bevestigen",
-  "checklistItemDeleted": "Item verwijderd",
   "checklistItemDeleteWarning": "Deze actie kan niet ongedaan worden gemaakt.",
+  "checklistItemDeleted": "Item verwijderd",
   "checklistMarkdownCopied": "Checklist gekopieerd als Markdown",
   "checklistMoreTooltip": "Meer",
   "checklistNoneDone": "Nog geen voltooide items.",
@@ -1787,12 +1789,8 @@
   "conflictPickerUseFromSync": "Gebruik vanuit synchronisatie",
   "conflictPickerUseThisDevice": "Gebruik dit apparaat",
   "conflictResolvedToast": "Conflict opgelost",
-  "conflictsEmptyDescription": "Alles is nu in sync. Opgelost items blijven beschikbaar in de andere filter.",
-  "conflictsEmptyTitle": "Geen conflicten gevonden",
   "conflictSideFromSync": "VAN SYNC",
   "conflictSideThisDevice": "DIT DOEL",
-  "conflictsResolved": "opgelost",
-  "conflictsUnresolved": "onopgelost",
   "conflictValueAbsent": "Niet ingesteld",
   "conflictValueNo": "Nee",
   "conflictValueYes": "Ja.",
@@ -1806,6 +1804,10 @@
       }
     }
   },
+  "conflictsEmptyDescription": "Alles is nu in sync. Opgelost items blijven beschikbaar in de andere filter.",
+  "conflictsEmptyTitle": "Geen conflicten gevonden",
+  "conflictsResolved": "opgelost",
+  "conflictsUnresolved": "onopgelost",
   "contactUsDiscordLabel": "Discord",
   "contactUsEmailSubject": "Feedback over Lotti",
   "contactUsGithubLabel": "GitHub",
@@ -1979,7 +1981,6 @@
     }
   },
   "dailyOsNextCaptureReconcileCta": "Evaluatie",
-  "dailyOsNextCapturesPanelTitle": "Opnames",
   "dailyOsNextCaptureTranscribing": "Afschrijven...",
   "dailyOsNextCaptureTranscriptHint": "Maak alles goed wat het transcript fout deed voordat het gepland werd.",
   "dailyOsNextCaptureTranscriptLabel": "Beoordeling transcript",
@@ -1987,6 +1988,7 @@
   "dailyOsNextCaptureVoiceButtonReset": "Overnieuw beginnen",
   "dailyOsNextCaptureVoiceButtonStart": "Begin met luisteren",
   "dailyOsNextCaptureVoiceButtonStop": "Stop met luisteren.",
+  "dailyOsNextCapturesPanelTitle": "Opnames",
   "dailyOsNextCategoryFilterAll": "Alle categorieën",
   "dailyOsNextCategoryFilterDescription": "Alleen categorieën die zijn ingeschakeld voor dagplanning worden gearriveerd voor Daily OS geautomatiseerde verwerking.",
   "dailyOsNextCategoryFilterEmpty": "Nog geen categorieën voor dagplanning.",
@@ -2233,25 +2235,6 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Terugkerend · gemist",
-  "dailyOsNextTimelineActual": "Werkelijk",
-  "dailyOsNextTimelineArrange": "Blokjes ordenen",
-  "dailyOsNextTimelineBoth": "Plan en werkelijke",
-  "dailyOsNextTimelinePlanned": "Plan",
-  "dailyOsNextTimelineSessionOf": "Directoraat {index} van {total}",
-  "@dailyOsNextTimelineSessionOf": {
-    "placeholders": {
-      "index": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsNextTimelineShowBoth": "Plan en werkelijke samen tonen",
-  "dailyOsNextTimelineShowPaged": "Bewegingsbaar plan en werkelijke tonen",
-  "dailyOsNextTimelineSwipeHint": "Veeg voor werkelijke · knijp verticaal naar zoom",
-  "dailyOsNextTimelineTracked": "traced",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 vorige zitting} other{{count} eerdere sessies}}",
   "@dailyOsNextTimeSpentEarlierSessions": {
     "placeholders": {
@@ -2275,14 +2258,33 @@
   },
   "dailyOsNextTimeSpentTitle": "Vandaag zo ver",
   "dailyOsNextTimeSpentTitlePast": "TERMIJN",
+  "dailyOsNextTimelineActual": "Werkelijk",
+  "dailyOsNextTimelineArrange": "Blokjes ordenen",
+  "dailyOsNextTimelineBoth": "Plan en werkelijke",
+  "dailyOsNextTimelinePlanned": "Plan",
+  "dailyOsNextTimelineSessionOf": "Directoraat {index} van {total}",
+  "@dailyOsNextTimelineSessionOf": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextTimelineShowBoth": "Plan en werkelijke samen tonen",
+  "dailyOsNextTimelineShowPaged": "Bewegingsbaar plan en werkelijke tonen",
+  "dailyOsNextTimelineSwipeHint": "Veeg voor werkelijke · knijp verticaal naar zoom",
+  "dailyOsNextTimelineTracked": "traced",
   "dailyOsNextTriageConfirmDefer": "Afgeleid",
-  "dailyOsNextTriageConfirmDone": "Gemarkeerd",
   "dailyOsNextTriageConfirmDoNow": "Klaar nu",
+  "dailyOsNextTriageConfirmDone": "Gemarkeerd",
   "dailyOsNextTriageConfirmDrop": "Gedropt",
   "dailyOsNextTriageConfirmToday": "Toegevoegd aan vandaag",
   "dailyOsNextTriageDefer": "Uitstel",
-  "dailyOsNextTriageDone": "Klaar",
   "dailyOsNextTriageDoNow": "Nu",
+  "dailyOsNextTriageDone": "Klaar",
   "dailyOsNextTriageDrop": "Laat vallen",
   "dailyOsNextTriageToday": "Vandaag",
   "dailyOsOnboardingCoachCapture": "Zeg wat je aandacht trekt.",
@@ -2610,8 +2612,8 @@
   "designSystemSmallLabel": "Klein",
   "designSystemSpinnerPlainLabel": "Normaal",
   "designSystemSpinnerSkeletonPulseLabel": "Pols",
-  "designSystemSpinnerSkeletonsTitle": "Skeletten",
   "designSystemSpinnerSkeletonWaveLabel": "Golf",
+  "designSystemSpinnerSkeletonsTitle": "Skeletten",
   "designSystemSpinnerSpinnersTitle": "Spinners",
   "designSystemSpinnerTrackLabel": "met track",
   "designSystemSplitButtonDropdownSemantics": "Openen {label} opties",
@@ -2661,18 +2663,18 @@
   "desktopEmptyStateSelectDashboard": "Selecteer een dashboard om details te bekijken",
   "desktopEmptyStateSelectProject": "Selecteer een project om details te bekijken",
   "desktopEmptyStateSelectTask": "Selecteer een taak om details te bekijken",
-  "deviceDeletedSuccess": "{deviceName} uit synchronisatie verwijderd",
-  "@deviceDeletedSuccess": {
+  "deviceDeleteFailedGeneric": "Het apparaat kon niet worden verwijderd. Controleer je verbinding en probeer het opnieuw.",
+  "deviceDeleteQuestion": "{deviceName} uit je synchronisatieaccount verwijderen? Het apparaat wordt afgemeld en moet opnieuw worden gekoppeld voordat het kan synchroniseren.",
+  "@deviceDeleteQuestion": {
+    "description": "Confirmation question shown before deleting a device from the Matrix sync account.",
     "placeholders": {
       "deviceName": {
         "type": "String"
       }
     }
   },
-  "deviceDeleteFailedGeneric": "Het apparaat kon niet worden verwijderd. Controleer je verbinding en probeer het opnieuw.",
-  "deviceDeleteQuestion": "{deviceName} uit je synchronisatieaccount verwijderen? Het apparaat wordt afgemeld en moet opnieuw worden gekoppeld voordat het kan synchroniseren.",
-  "@deviceDeleteQuestion": {
-    "description": "Confirmation question shown before deleting a device from the Matrix sync account.",
+  "deviceDeletedSuccess": "{deviceName} uit synchronisatie verwijderd",
+  "@deviceDeletedSuccess": {
     "placeholders": {
       "deviceName": {
         "type": "String"
@@ -2821,6 +2823,18 @@
   "habitLogOtherDayHint": "Wacht om een andere dag in te loggen",
   "habitNotRecordedLabel": "Niet geregistreerd",
   "habitPriorityLabel": "Prioriteit",
+  "habitSectionOptionsTitle": "Opties",
+  "habitSectionScheduleTitle": "Schema",
+  "habitShowAlertAtLabel": "Alert tonen op",
+  "habitShowFromLabel": "Tonen van",
+  "habitStreakDaysSemantic": "{count}-dagstreak",
+  "@habitStreakDaysSemantic": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "habitsAboveGoal": "Op het spoor",
   "habitsActiveHabitsCount": "{count, plural, one{1 actieve gewoonte} other{{count} actieve gewoonten}}",
   "@habitsActiveHabitsCount": {
@@ -2861,8 +2875,6 @@
     }
   },
   "habitsDoneTodayLabel": "Vandaag klaar",
-  "habitSectionOptionsTitle": "Opties",
-  "habitSectionScheduleTitle": "Schema",
   "habitsFilterAll": "alle",
   "habitsFilterCompleted": "klaar",
   "habitsFilterOpenNow": "vervallen",
@@ -2871,8 +2883,6 @@
   "habitsHeatmapEmpty": "Voeg een gewoonte toe om uw consistentie te bouwen",
   "habitsHeatmapLess": "Minder",
   "habitsHeatmapMore": "Meer",
-  "habitShowAlertAtLabel": "Alert tonen op",
-  "habitShowFromLabel": "Tonen van",
   "habitsLaggardHint": "{habit}  — kept  {kept} van {active}",
   "@habitsLaggardHint": {
     "placeholders": {
@@ -2925,14 +2935,6 @@
       }
     }
   },
-  "habitStreakDaysSemantic": "{count}-dagstreak",
-  "@habitStreakDaysSemantic": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "habitsVsPreviousWeek": "vs vorige week",
   "helpMenuCommandPalette": "Commandopalet...",
   "helpMenuKeyboardShortcuts": "Sneltoetsen...",
@@ -2954,9 +2956,7 @@
   "imagePromptGenerationCopyTooltip": "Afbeeldingsprompt naar klembord kopiëren",
   "imagePromptGenerationExpandTooltip": "Volledige prompt tonen",
   "imagePromptGenerationFullPromptLabel": "Volledige afbeeldingsprompt:",
-  "images": "Afbeeldingen",
   "imageViewerDownloadFailed": "Kon afbeelding niet opslaan",
-  "imageViewerDownloadingTooltip": "Afbeelding opslaan",
   "imageViewerDownloadPermissionDenied": "Fototoegang geweigerd",
   "imageViewerDownloadSaved": "Opgeslagen {fileName}",
   "@imageViewerDownloadSaved": {
@@ -2968,8 +2968,10 @@
   },
   "imageViewerDownloadSavedToGallery": "Opgeslagen in foto's",
   "imageViewerDownloadTooltip": "Afbeelding downloaden",
+  "imageViewerDownloadingTooltip": "Afbeelding opslaan",
   "imageViewerNextTooltip": "Volgende afbeelding",
   "imageViewerPreviousTooltip": "Vorige afbeelding",
+  "images": "Afbeeldingen",
   "inactiveLabel": "Inactief",
   "inactiveSwitchDescription": "Kan worden gekozen voor nieuwe items wanneer op",
   "inferenceProfileChooseModelTitle": "Kies een model",
@@ -3002,7 +3004,6 @@
   "inferenceProfileSaveButton": "Opslaan",
   "inferenceProfileSelectModel": "Kies een model...",
   "inferenceProfileSelectProfile": "Kies een profiel...",
-  "inferenceProfilesEmpty": "Nog geen gevolgtrekkingensprofielen",
   "inferenceProfileSkillModelRequired": "Vereist {slotName} in te stellen model",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {
@@ -3011,7 +3012,6 @@
       }
     }
   },
-  "inferenceProfileSkillsSection": "Geautomatiseerde vaardigheden",
   "inferenceProfileSkillUsesModel": "Gebruik {slotName} model",
   "@inferenceProfileSkillUsesModel": {
     "placeholders": {
@@ -3020,12 +3020,14 @@
       }
     }
   },
-  "inferenceProfilesTitle": "Inferentieprofielen",
+  "inferenceProfileSkillsSection": "Geautomatiseerde vaardigheden",
   "inferenceProfileThinking": "Denken",
   "inferenceProfileThinkingHighEnd": "Denken (High-End)",
   "inferenceProfileThinkingRequired": "Een denkmodel is vereist",
   "inferenceProfileTranscription": "Omschrijving",
   "inferenceProfileUnavailable": "Inferentieprofiel niet beschikbaar",
+  "inferenceProfilesEmpty": "Nog geen gevolgtrekkingensprofielen",
+  "inferenceProfilesTitle": "Inferentieprofielen",
   "inputDataTypeAudioFilesDescription": "Gebruik audiobestanden als invoer",
   "inputDataTypeAudioFilesName": "Audiobestanden",
   "inputDataTypeImagesDescription": "Afbeeldingen als invoer gebruiken",
@@ -3119,9 +3121,9 @@
   "journalDeleteQuestion": "Wilt u dit journaal item verwijderen?",
   "journalDurationLabel": "Duur",
   "journalEndDateLabel": "Einddatum",
+  "journalEndTimeLabel": "Eindtijd",
   "journalEndsAnotherDayHint": "Kies een aparte einddatum",
   "journalEndsAnotherDayLabel": "Eindigt op een andere dag",
-  "journalEndTimeLabel": "Eindtijd",
   "journalEntryExpandLabel": "Item uitklappen",
   "journalFilterEntryTypesTitle": "Typen invoer",
   "journalFilterFlagged": "Gevlagd",
@@ -3131,6 +3133,8 @@
   "journalFilterTitle": "Filter journaal",
   "journalHideLinkHint": "Verwijzing verbergen",
   "journalHideMapHint": "Kaart verbergen",
+  "journalLinkFromHint": "Link van",
+  "journalLinkToHint": "Link naar",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
   "journalLinkedEntriesActivityFilterCode": "Rubriek",
   "journalLinkedEntriesActivityFilterImages": "Afbeeldingen",
@@ -3142,8 +3146,6 @@
   "journalLinkedEntriesSortNewestFirst": "Eerst nieuwste",
   "journalLinkedEntriesSortOldestFirst": "Oudste eerst",
   "journalLinkedFromLabel": "Verbonden met:",
-  "journalLinkFromHint": "Link van",
-  "journalLinkToHint": "Link naar",
   "journalOvernightNextDay": "Einde {date} (volgende dag)",
   "@journalOvernightNextDay": {
     "description": "Chip shown when an entry's end time is earlier than its start time, indicating it ends on the next day.",
@@ -3277,9 +3279,9 @@
   "knowledgeGraphFilterCategories": "Categorieën",
   "knowledgeGraphFilterRecency": "Recentheid",
   "knowledgeGraphFilterRelations": "Relaties",
-  "knowledgeGraphFilters": "Filters",
   "knowledgeGraphFilterTaskStatus": "Taakstatus",
   "knowledgeGraphFilterTypes": "Typen",
+  "knowledgeGraphFilters": "Filters",
   "knowledgeGraphForward": "Vooruit",
   "knowledgeGraphLast30Days": "Afgelopen 30 dagen",
   "knowledgeGraphLast7Days": "Afgelopen 7 dagen",
@@ -3315,8 +3317,8 @@
   "knowledgeGraphOpenDetails": "Open details",
   "knowledgeGraphOpenPhoto": "Foto op volledig scherm bekijken",
   "knowledgeGraphPhotosSection": "{count, plural, =1{FOTO · 1} other{FOTO'S · {count}}}",
-  "knowledgeGraphRecenter": "Recent",
   "knowledgeGraphRecentToOlder": "recent → ouder",
+  "knowledgeGraphRecenter": "Recent",
   "knowledgeGraphRelationAiSource": "AI bron",
   "knowledgeGraphRelationAssociation": "Gekoppeld item",
   "knowledgeGraphRelationChecklist": "checklist",
@@ -3339,10 +3341,6 @@
       }
     }
   },
-  "linkedTaskImageBadge": "Van verbonden taak",
-  "linkedTasksEmptyHint": "Verbind deze taak met een andere taak.",
-  "linkedTasksMenuTooltip": "Gekoppelde takenopties",
-  "linkedTasksTitle": "Gekoppelde taken",
   "linkExistingTask": "Bestaande taak koppelen…",
   "linkSummaryBasic": "Deze taak heeft betrekking op {target}",
   "linkSummaryBlocksInverse": "Deze taak wordt geblokkeerd door {target}",
@@ -3366,6 +3364,10 @@
   "linkSummaryNewTaskSupersedesPrimary": "Deze taak vervangt de nieuwe taak",
   "linkSummarySupersedesInverse": "Deze taak wordt vervangen door {target}",
   "linkSummarySupersedesPrimary": "Deze taak vervangt {target}",
+  "linkedTaskImageBadge": "Van verbonden taak",
+  "linkedTasksEmptyHint": "Verbind deze taak met een andere taak.",
+  "linkedTasksMenuTooltip": "Gekoppelde takenopties",
+  "linkedTasksTitle": "Gekoppelde taken",
   "loggingDomainAgentRuntime": "Agent runtime",
   "loggingDomainAgentWorkflow": "Werkstroom van het agentschap",
   "loggingDomainAi": "AI",
@@ -3447,10 +3449,6 @@
   "maintenancePurgeSentOutboxConfirm": "Ja, opschonen",
   "maintenancePurgeSentOutboxDescription": "Verwijder verzonden outbox rijen ouder dan 7 dagen en recupereer schijf",
   "maintenancePurgeSentOutboxQuestion": "Verwijder verzonden postvak UIT items ouder dan 7 dagen? Dit verwijdert reeds verzonden rijen in blokken en draait VACUUM om schijf terug te vorderen. In afwachting en fout items worden bewaard.",
-  "maintenanceRecreateFts5": "Volledige tekst-index opnieuw aanmaken",
-  "maintenanceRecreateFts5Confirm": "Ja, index opnieuw aanmaken",
-  "maintenanceRecreateFts5Description": "Volledige-tekstzoekindex opnieuw aanmaken",
-  "maintenanceRecreateFts5Message": "Weet u zeker dat u de volledige tekstindex wilt namaken? Dit kan enige tijd duren.",
   "maintenanceReSync": "Berichtgeschiedenis",
   "maintenanceReSyncAgentEntities": "Agententiteiten",
   "maintenanceReSyncAgentLinks": "Agentkoppelingen",
@@ -3470,6 +3468,10 @@
   "maintenanceReSyncSelectAtLeastOne": "Selecteer ten minste één entiteitstype",
   "maintenanceReSyncSending": "Berichten voorbereiden",
   "maintenanceReSyncStart": "Begin",
+  "maintenanceRecreateFts5": "Volledige tekst-index opnieuw aanmaken",
+  "maintenanceRecreateFts5Confirm": "Ja, index opnieuw aanmaken",
+  "maintenanceRecreateFts5Description": "Volledige-tekstzoekindex opnieuw aanmaken",
+  "maintenanceRecreateFts5Message": "Weet u zeker dat u de volledige tekstindex wilt namaken? Dit kan enige tijd duren.",
   "maintenanceSyncDefinitions": "Meetbare gegevens synchroniseren, dashboards, gewoonten, categorieën, AI-instellingen",
   "maintenanceSyncDefinitionsDescription": "Meetbare gegevens synchroniseren, dashboards, gewoonten, categorieën en AI-instellingen",
   "manageLinks": "Links beheren…",
@@ -3930,10 +3932,8 @@
   "projectPickerUnassigned": "Geen project",
   "projectRecommendationDismissTooltip": "Ingerukt",
   "projectRecommendationResolveTooltip": "Markering is opgelost",
-  "projectRecommendationsTitle": "Aanbevolen volgende stappen",
   "projectRecommendationUpdateError": "Ik kon de aanbeveling niet bijwerken.",
-  "projectsFilterStatusLabel": "Status:",
-  "projectsFilterTooltip": "Projecten filteren",
+  "projectRecommendationsTitle": "Aanbevolen volgende stappen",
   "projectShowcaseAiReportTitle": "AI-verslag",
   "projectShowcaseBlockedLegend": "{count} Geblokkeerd",
   "@projectShowcaseBlockedLegend": {
@@ -4034,6 +4034,8 @@
   "projectTargetDateLabel": "Streefdatum",
   "projectTitleLabel": "Projecttitel",
   "projectTitleRequired": "Projecttitel kan niet leeg zijn",
+  "projectsFilterStatusLabel": "Status:",
+  "projectsFilterTooltip": "Projecten filteren",
   "promptDefaultModelBadge": "Standaard",
   "promptGenerationCardTitle": "AI Coding Prompt",
   "promptGenerationCopiedSnackbar": "Naar klembord gekopieerd",
@@ -4319,8 +4321,8 @@
   "settingsCelebrationsPreviewSample3": "Water de planten",
   "settingsCelebrationsPreviewTitle": "Probeer het.",
   "settingsCelebrationsReplay": "Herspelen",
-  "settingsCelebrationsResetToast": "Standaard stijl terugzetten",
   "settingsCelebrationsResetToDefault": "Standaard terugzetten",
+  "settingsCelebrationsResetToast": "Standaard stijl terugzetten",
   "settingsCelebrationsResetUndo": "Ongedaan maken",
   "settingsCelebrationsSectionDescription": "Speel een bloeiende wanneer je iets af te maken. Schakel een uit houdt de voltooiing en de haptische . . het slaat gewoon de animatie.",
   "settingsCelebrationsSectionTitle": "Afrondingsfeesten",
@@ -4527,7 +4529,6 @@
   "settingsMatrixMetrics": "Synchroniseren metrics",
   "settingsMatrixNextPage": "Volgende pagina",
   "settingsMatrixPreviousPage": "Vorige pagina",
-  "settingsMatrixSentMessagesLabel": "Verzonden berichten:",
   "settingsMatrixSentMessageType": "Verzonden ({eventType})",
   "@settingsMatrixSentMessageType": {
     "placeholders": {
@@ -4536,6 +4537,7 @@
       }
     }
   },
+  "settingsMatrixSentMessagesLabel": "Verzonden berichten:",
   "settingsMatrixStartVerificationLabel": "Begincontrole",
   "settingsMatrixStatsTitle": "Matrix Stats",
   "settingsMatrixTitle": "Instellingen synchroniseren",
@@ -4550,6 +4552,7 @@
   "settingsMeasurableNameLabel": "Naam",
   "settingsMeasurablePrivateLabel": "Privé: ",
   "settingsMeasurableSaveLabel": "Opslaan",
+  "settingsMeasurableUnitLabel": "Eenheidsafkorting (facultatief)",
   "settingsMeasurablesCreateTitle": "Meetbaar maken",
   "settingsMeasurablesEmptyState": "Nog geen meetbare waarden",
   "settingsMeasurablesEmptyStateHint": "Measurables zijn nummers die je volgt in de tijd .. gewicht, water, stappen.",
@@ -4565,7 +4568,6 @@
   "settingsMeasurablesSearchHint": "Meetbare zoekresultaten...",
   "settingsMeasurablesSubtitle": "Meetbare gegevenstypen configureren",
   "settingsMeasurablesTitle": "Meetbare",
-  "settingsMeasurableUnitLabel": "Eenheidsafkorting (facultatief)",
   "settingsOnboardingActionSubtitle": "Open de welkomststroom . . Sluit uw AI-hersenen en maak een taak",
   "settingsOnboardingMetricsSubtitle": "FTUE trechter",
   "settingsOnboardingMetricsTitle": "Metrics aan boord",
@@ -4805,17 +4807,6 @@
   "syncPairClipboardUnavailable": "Het klembord kon niet worden gelezen. Plak de code rechtstreeks in het veld.",
   "syncPairConnectButton": "De codes komen overeen — verbinden",
   "syncPairDiscardCode": "Ze komen niet overeen",
-  "syncPairedFirstDeviceBody": "Het is het eerste apparaat op je account. Voeg er wanneer je wilt een toe — alles wat je hier schrijft staat er dan klaar voor.",
-  "syncPairedFirstDeviceTitle": "Synchronisatie is ingesteld op dit apparaat",
-  "syncPairedSettingsStep": "Categorieën, gewoonten, dashboards en AI-configuratie — verstuurd vanaf je andere apparaat nadat de emoji's overeenkomen.",
-  "syncPairedSettingsStepFallback": "Als je het hebt gesloten, open je op het andere apparaat Instellingen → Instellingen synchroniseren → Onderhoud, voer je de instellingensynchronisatie uit en kies je daarna Berichtgeschiedenis.",
-  "syncPairedSettingsStepTitle": "Ontvang je instellingen",
-  "syncPairedStepsLeft": "Nog twee stappen voordat dit apparaat je dagboek kan lezen.",
-  "syncPairedVerifyFallback": "Nog geen emoji? Controleer opnieuw – of open Apparaten en start het daar.",
-  "syncPairedVerifyStep": "Beide apparaten laten zo zeven emoji's zien. Tot ze overeenkomen, ziet dit apparaat alleen versleutelde tekst.",
-  "syncPairedVerifyStepDone": "Emoji kloppen – dit apparaat kan je notities lezen",
-  "syncPairedVerifyStepTitle": "Bevestig de emoji's",
-  "syncPairedVerifyWaiting": "Wachten tot de emoji verschijnen…",
   "syncPairEnterManually": "Plak de code in plaats daarvan",
   "syncPairEnterNewCode": "Nieuwe code invoeren",
   "syncPairErrorMalformed": "Dit lijkt geen koppelcode. Controleer of je hem helemaal hebt gekopieerd – druk op het andere apparaat opnieuw op Koppelcode kopiëren.",
@@ -4833,10 +4824,21 @@
   "syncPairSameCodeQuestion": "Dezelfde code op beide schermen?",
   "syncPairScanHint": "Richt op de QR onder Apparaat toevoegen op je andere apparaat.",
   "syncPairScanLink": "Camera bij de hand? Scan dan de QR",
-  "syncPairScannerRejected": "Dat is de code die je hebt geweigerd. Scan de code die je eigen apparaat toont, of plak hem hieronder.",
   "syncPairScanTitle": "Scan de koppelcode",
+  "syncPairScannerRejected": "Dat is de code die je hebt geweigerd. Scan de code die je eigen apparaat toont, of plak hem hieronder.",
   "syncPairShowEmoji": "Toon de emoji's",
   "syncPairWhereToFind": "Hij staat op je andere apparaat, onder Apparaat toevoegen — kopieer hem daar en plak hem hier.",
+  "syncPairedFirstDeviceBody": "Het is het eerste apparaat op je account. Voeg er wanneer je wilt een toe — alles wat je hier schrijft staat er dan klaar voor.",
+  "syncPairedFirstDeviceTitle": "Synchronisatie is ingesteld op dit apparaat",
+  "syncPairedSettingsStep": "Categorieën, gewoonten, dashboards en AI-configuratie — verstuurd vanaf je andere apparaat nadat de emoji's overeenkomen.",
+  "syncPairedSettingsStepFallback": "Als je het hebt gesloten, open je op het andere apparaat Instellingen → Instellingen synchroniseren → Onderhoud, voer je de instellingensynchronisatie uit en kies je daarna Berichtgeschiedenis.",
+  "syncPairedSettingsStepTitle": "Ontvang je instellingen",
+  "syncPairedStepsLeft": "Nog twee stappen voordat dit apparaat je dagboek kan lezen.",
+  "syncPairedVerifyFallback": "Nog geen emoji? Controleer opnieuw – of open Apparaten en start het daar.",
+  "syncPairedVerifyStep": "Beide apparaten laten zo zeven emoji's zien. Tot ze overeenkomen, ziet dit apparaat alleen versleutelde tekst.",
+  "syncPairedVerifyStepDone": "Emoji kloppen – dit apparaat kan je notities lezen",
+  "syncPairedVerifyStepTitle": "Bevestig de emoji's",
+  "syncPairedVerifyWaiting": "Wachten tot de emoji verschijnen…",
   "syncPayloadAgentBundle": "Agent bundel",
   "syncPayloadAgentEntity": "Agent-entiteit",
   "syncPayloadAgentLink": "Agentlink",
@@ -4978,9 +4980,9 @@
   "taskAgentNoAiSetup": "Geen AI-opstelling",
   "taskAgentNoAiSetupDescription": "Pauzeert agent gevolgtrekking totdat u een profiel of model kiest.",
   "taskAgentNoModelsAvailable": "Geen compatibele denkmodellen beschikbaar",
-  "taskAgentNoProfilesAvailable": "Geen profielen beschikbaar op dit apparaat",
   "taskAgentNoProfileSelected": "Geen AI-opstelling",
   "taskAgentNoProfileSelectedDescription": "Kies een opgeslagen setup of denkmodel voordat dit middel kan draaien.",
+  "taskAgentNoProfilesAvailable": "Geen profielen beschikbaar op dit apparaat",
   "taskAgentProfileChangedToast": "Gebruik {profile} voor elke toekomstige agent update totdat je het verandert.",
   "@taskAgentProfileChangedToast": {
     "placeholders": {
@@ -5166,20 +5168,9 @@
   "taskPriorityMedium": "Middel",
   "taskPriorityTooltip": "Prioriteit: {priority}",
   "taskPriorityUrgent": "Dringend",
-  "tasksAddLabelButton": "Label toevoegen",
-  "tasksAgentFilterAll": "Alles",
-  "tasksAgentFilterHasAgent": "Heeft agent",
-  "tasksAgentFilterNoAgent": "Geen agent.",
-  "tasksAgentFilterTitle": "Agent",
-  "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filters}}",
-  "tasksCompactHeaderExpandHint": "Zoeken en filters tonen",
-  "tasksCompactSearchContext": "‘{query}’",
   "taskSetCategoryLabel": "Categorie instellen",
   "taskSetDueDateLabel": "Vervaldatum instellen",
   "taskSetEstimateLabel": "Schatting toevoegen",
-  "tasksFilterApplyTitle": "Filter toepassen",
-  "tasksFilterClearAll": "Alles wissen",
-  "tasksFilterTitle": "Filtertaken",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} ' {total} klaar",
   "@taskShowcaseCompletedCount": {
@@ -5224,6 +5215,29 @@
   "taskShowcaseTimeTracker": "Tijdvolger",
   "taskShowcaseTodo": "Taken",
   "taskShowcaseTodos": "Taken",
+  "taskStatusAll": "Alles",
+  "taskStatusBlocked": "Geblokkeerd",
+  "taskStatusDone": "Klaar",
+  "taskStatusGroomed": "Verfijnd",
+  "taskStatusInProgress": "In behandeling",
+  "taskStatusLabel": "Status:",
+  "taskStatusOnHold": "In wacht",
+  "taskStatusOpen": "Openen",
+  "taskStatusRejected": "Afgewezen",
+  "taskTitleEmpty": "Geen titel",
+  "taskTitlePrompt": "Geef deze taak een naam",
+  "taskUntitled": "(zonder titel)",
+  "tasksAddLabelButton": "Label toevoegen",
+  "tasksAgentFilterAll": "Alles",
+  "tasksAgentFilterHasAgent": "Heeft agent",
+  "tasksAgentFilterNoAgent": "Geen agent.",
+  "tasksAgentFilterTitle": "Agent",
+  "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filters}}",
+  "tasksCompactHeaderExpandHint": "Zoeken en filters tonen",
+  "tasksCompactSearchContext": "‘{query}’",
+  "tasksFilterApplyTitle": "Filter toepassen",
+  "tasksFilterClearAll": "Alles wissen",
+  "tasksFilterTitle": "Filtertaken",
   "tasksLabelFilterAll": "Alles",
   "tasksLabelFilterTitle": "Label",
   "tasksLabelFilterUnlabeled": "Niet-gelabeld",
@@ -5247,6 +5261,23 @@
   "tasksSavedFilterDeleteTooltip": "Opgeslagen filter verwijderen",
   "tasksSavedFilterDragHandleSemantics": "Sleep naar herschikken",
   "tasksSavedFilterRenameSemantics": "Opgeslagen filter hernoemen",
+  "tasksSavedFilterToastDeleted": "Filter verwijderd",
+  "tasksSavedFilterToastSaved": "Opgeslagen '{name}'",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "Bijgewerkt '{name}'",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSavedFiltersAllShort": "Alles",
   "tasksSavedFiltersAllTasks": "Alle taken",
   "tasksSavedFiltersCustom": "Aangepast",
@@ -5324,23 +5355,6 @@
   "tasksSavedFiltersUpdateButtonLabel": "Filter bijwerken",
   "tasksSavedFiltersUpdateExistingDescription": "Vervang de opgeslagen criteria door de huidige filterconfiguratie.",
   "tasksSavedFiltersUpdateExistingTitle": "Bestaande filter bijwerken",
-  "tasksSavedFilterToastDeleted": "Filter verwijderd",
-  "tasksSavedFilterToastSaved": "Opgeslagen '{name}'",
-  "@tasksSavedFilterToastSaved": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "tasksSavedFilterToastUpdated": "Bijgewerkt '{name}'",
-  "@tasksSavedFilterToastUpdated": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "tasksSearchModeLabel": "Zoeken",
   "tasksShowCreationDate": "Aanmaakdatum op kaarten tonen",
   "tasksShowDueDate": "Vervallen datum op kaarten tonen",
@@ -5348,18 +5362,6 @@
   "tasksSortByDueDate": "Verloopdatum",
   "tasksSortByLabel": "Sorteren op",
   "tasksSortByPriority": "Prioriteit",
-  "taskStatusAll": "Alles",
-  "taskStatusBlocked": "Geblokkeerd",
-  "taskStatusDone": "Klaar",
-  "taskStatusGroomed": "Verfijnd",
-  "taskStatusInProgress": "In behandeling",
-  "taskStatusLabel": "Status:",
-  "taskStatusOnHold": "In wacht",
-  "taskStatusOpen": "Openen",
-  "taskStatusRejected": "Afgewezen",
-  "taskTitleEmpty": "Geen titel",
-  "taskTitlePrompt": "Geef deze taak een naam",
-  "taskUntitled": "(zonder titel)",
   "thinkingDisclosureCopied": "Redeneren gekopieerd",
   "thinkingDisclosureCopy": "Beredenering kopiëren",
   "thinkingDisclosureHide": "Beredenering verbergen",

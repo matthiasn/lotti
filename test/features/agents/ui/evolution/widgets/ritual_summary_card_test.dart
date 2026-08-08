@@ -40,17 +40,20 @@ void main() {
   }
 
   group('RitualSummaryCard', () {
-    testWidgets('renders title, subtitle, and formatted metric tiles', (
+    testWidgets('names the window its numbers cover, and formats them', (
       tester,
     ) async {
       await pumpCard(tester, makeMetrics());
 
-      expect(find.text('Performance'), findsOneWidget);
+      // The heading says which window the figures below describe. It used to
+      // read "Performance" over a subtitle that the review page printed
+      // verbatim a second time in its hero.
+      expect(find.text('Since we last spoke'), findsOneWidget);
       expect(
         find.text(
           'Recent 1-on-1s, real wake activity, and the changes you agreed to.',
         ),
-        findsOneWidget,
+        findsNothing,
       );
       // Metric values are number-formatted with grouping separators.
       expect(find.text('1,234'), findsOneWidget);

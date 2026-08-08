@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 
 import '../../../../helpers/fallbacks.dart';
 import '../../../../widget_test_utils.dart';
@@ -324,8 +325,8 @@ void main() {
         await tester.pumpWidget(widget);
         await tester.pumpAndSettle();
 
-        // No loading indicator initially.
-        expect(find.text('...'), findsNothing);
+        // No typing indicator initially.
+        expect(find.byType(EvolutionTypingIndicator), findsNothing);
 
         // Push isWaiting=true — triggers didUpdateWidget.
         capturedNotifier!.pushData(
@@ -337,8 +338,8 @@ void main() {
         );
         await tester.pump();
 
-        // Loading indicator should appear.
-        expect(find.text('...'), findsOneWidget);
+        // The typing indicator lands where the answer will.
+        expect(find.byType(EvolutionTypingIndicator), findsOneWidget);
       },
     );
 

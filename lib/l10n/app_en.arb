@@ -7,8 +7,8 @@
   "addActionAddScreenshot": "Capture a screenshot",
   "addActionAddScreenshotHint": "Closes this sheet, then captures the screen.",
   "addActionAddTask": "Task",
-  "addActionAddTimer": "Timer",
   "addActionAddTimeRecording": "Timer Entry",
+  "addActionAddTimer": "Timer",
   "addActionCreateLinkedTask": "Link a new task",
   "addActionCreateLinkedTaskHint": "Creates and opens a new task linked to this one.",
   "addActionCreateTask": "Add a task",
@@ -130,7 +130,6 @@
   "agentEvolutionChartWakeHistory": "Wake History",
   "agentEvolutionChatPlaceholder": "Share feedback or ask about performance...",
   "agentEvolutionCurrentDirectives": "Current Directives",
-  "agentEvolutionDashboardTitle": "Performance",
   "agentEvolutionHistoryTitle": "Evolution History",
   "agentEvolutionMetricActive": "Active",
   "agentEvolutionMetricAvgDuration": "Avg Duration",
@@ -314,7 +313,9 @@
   "agentReportHistoryEmpty": "No report snapshots yet.",
   "agentReportHistoryError": "An error occurred while loading the report history.",
   "agentReportNone": "No report available yet.",
-  "agentRitualReviewAction": "Start Conversation",
+  "agentRitualContinueAction": "Continue 1-on-1",
+  "agentRitualOpeningHint": "Reading what happened since you last spoke…",
+  "agentRitualReviewAction": "Start 1-on-1",
   "agentRitualReviewNegativeSignals": "Negative",
   "agentRitualReviewNeutralSignals": "Neutral",
   "agentRitualReviewNoFeedback": "No feedback signals in this window",
@@ -323,18 +324,28 @@
   "agentRitualReviewNoPositiveSignals": "No positive feedback signals in this tab",
   "agentRitualReviewPositiveSignals": "Positive",
   "agentRitualReviewProposalSection": "Current Proposal",
-  "agentRitualReviewSessionHistory": "Session History",
+  "agentRitualReviewSessionHistory": "Past 1-on-1s",
   "agentRitualReviewTitle": "1-on-1",
+  "agentRitualSinceLastHeading": "Since we last spoke",
+  "agentRitualStartHeading": "Start a 1-on-1",
   "agentRitualSummaryApprovedChangesHeading": "Approved changes",
   "agentRitualSummaryConversationHeading": "Conversation",
   "agentRitualSummaryRecapHeading": "Session Recap",
   "agentRitualSummaryRoleAssistant": "Agent",
   "agentRitualSummaryRoleUser": "You",
-  "agentRitualSummaryStartHint": "Start a 1-on-1 to review what bothered you, what worked, and what should change next.",
-  "agentRitualSummarySubtitle": "Recent 1-on-1s, real wake activity, and the changes you agreed to.",
+  "agentRitualSummaryStartHint": "Review what bothered you, what worked, and what should change next.",
   "agentRitualSummaryTokensSinceLast": "Tokens since last 1-on-1",
   "agentRitualSummaryWakeHistory30Days": "Wake activity (last 30 days)",
   "agentRitualSummaryWakesSinceLast": "Wakes since last 1-on-1",
+  "agentRitualWakesSinceLastCount": "{count, plural, =1{1 wake since your last 1-on-1} other{{count} wakes since your last 1-on-1}}",
+  "@agentRitualWakesSinceLastCount": {
+    "description": "Wakes recorded since the previous 1-on-1, shown under the agent name in the conversation.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "agentRunningIndicator": "Running",
   "agentSessionProgressTitle": "Session Progress",
   "agentSettingsSubtitle": "Templates, instances, and monitoring",
@@ -343,8 +354,8 @@
   "agentSoulAssignedTemplatesTitle": "Assigned Templates",
   "agentSoulAssignmentLabel": "Soul",
   "agentSoulCoachingStyleLabel": "Coaching Style",
-  "agentSoulCreatedSuccess": "Soul created",
   "agentSoulCreateTitle": "Create Soul",
+  "agentSoulCreatedSuccess": "Soul created",
   "agentSoulDeleteConfirmBody": "This will remove the soul and all its versions.",
   "agentSoulDeleteConfirmTitle": "Delete Soul",
   "agentSoulDetailTitle": "Soul Detail",
@@ -360,7 +371,6 @@
   "agentSoulNotFound": "Soul not found",
   "agentSoulProposalSubtitle": "Proposed personality changes",
   "agentSoulProposalTitle": "Soul Personality Proposal",
-  "agentSoulReviewHeroSubtitle": "Refine personality across all templates sharing this soul. The evolution agent sees feedback from every template that uses this personality.",
   "agentSoulReviewStartAction": "Start Personality Review",
   "agentSoulReviewStartHint": "Start a personality-focused session to review feedback and evolve voice, tone, coaching style, and directness.",
   "agentSoulReviewTemplateCount": "{count, plural, =1{1 template sharing this soul} other{{count} templates sharing this soul}}",
@@ -382,10 +392,7 @@
     }
   },
   "agentSoulSelectTitle": "Select Soul",
-  "agentSoulsEmptyFiltered": "No souls match your filters.",
   "agentSoulSettingsTab": "Settings",
-  "agentSoulsSearchPlaceholder": "Search souls…",
-  "agentSoulsTitle": "Souls",
   "agentSoulToneBoundsLabel": "Tone Bounds",
   "agentSoulVersionHistoryTitle": "Version History",
   "agentSoulVersionLabel": "Version {version}",
@@ -398,6 +405,9 @@
   },
   "agentSoulVersionSaved": "New soul version saved",
   "agentSoulVoiceDirectiveLabel": "Voice Directive",
+  "agentSoulsEmptyFiltered": "No souls match your filters.",
+  "agentSoulsSearchPlaceholder": "Search souls…",
+  "agentSoulsTitle": "Souls",
   "agentStateConsecutiveFailures": "Consecutive failures",
   "agentStateErrorLoading": "Failed to load state: {error}",
   "@agentStateErrorLoading": {
@@ -615,13 +625,13 @@
   "@agentTemplateAssignedLabel": {
     "description": "Label shown next to the template assigned to an agent."
   },
-  "agentTemplateCreatedSuccess": "Template created",
-  "@agentTemplateCreatedSuccess": {
-    "description": "Snackbar message after successfully creating a new template."
-  },
   "agentTemplateCreateTitle": "Create Template",
   "@agentTemplateCreateTitle": {
     "description": "Page title for the create-template form."
+  },
+  "agentTemplateCreatedSuccess": "Template created",
+  "@agentTemplateCreatedSuccess": {
+    "description": "Snackbar message after successfully creating a new template."
   },
   "agentTemplateDeleteConfirm": "Delete this template? This cannot be undone.",
   "@agentTemplateDeleteConfirm": {
@@ -679,14 +689,6 @@
   "@agentTemplateInstanceOpenTask": {
     "description": "Tooltip on the button that opens the task an agent instance belongs to."
   },
-  "agentTemplateInstancesEmpty": "No instances yet.",
-  "@agentTemplateInstancesEmpty": {
-    "description": "Shown when a template has no agent instances."
-  },
-  "agentTemplateInstancesHeading": "Instances",
-  "@agentTemplateInstancesHeading": {
-    "description": "Section heading above the list of a template's agent instances."
-  },
   "agentTemplateInstanceStarted": "Started {date}",
   "@agentTemplateInstanceStarted": {
     "placeholders": {
@@ -694,6 +696,14 @@
         "type": "String"
       }
     }
+  },
+  "agentTemplateInstancesEmpty": "No instances yet.",
+  "@agentTemplateInstancesEmpty": {
+    "description": "Shown when a template has no agent instances."
+  },
+  "agentTemplateInstancesHeading": "Instances",
+  "@agentTemplateInstancesHeading": {
+    "description": "Section heading above the list of a template's agent instances."
   },
   "agentTemplateKindDayAgent": "Day Agent",
   "@agentTemplateKindDayAgent": {
@@ -716,21 +726,21 @@
   "@agentTemplateMetricsTotalWakes": {
     "description": "Metric label for the total number of agent wakes."
   },
-  "agentTemplateNoneAssigned": "No template assigned",
-  "@agentTemplateNoneAssigned": {
-    "description": "Text shown when an agent has no template assigned."
-  },
   "agentTemplateNoTemplates": "No templates available. Create one in Settings first.",
   "@agentTemplateNoTemplates": {
     "description": "Message shown when no templates exist for agent creation."
   },
-  "agentTemplateNotFound": "Template not found",
-  "@agentTemplateNotFound": {
-    "description": "Error message when a referenced template cannot be found."
-  },
   "agentTemplateNoVersions": "No versions",
   "@agentTemplateNoVersions": {
     "description": "Placeholder shown when a template has no version history."
+  },
+  "agentTemplateNoneAssigned": "No template assigned",
+  "@agentTemplateNoneAssigned": {
+    "description": "Text shown when an agent has no template assigned."
+  },
+  "agentTemplateNotFound": "Template not found",
+  "@agentTemplateNotFound": {
+    "description": "Error message when a referenced template cannot be found."
   },
   "agentTemplateReportDirectiveHint": "Define the report structure, required sections, and formatting rules...",
   "@agentTemplateReportDirectiveHint": {
@@ -765,15 +775,10 @@
   "@agentTemplateSelectTitle": {
     "description": "Title for the template selection dialog when creating an agent."
   },
-  "agentTemplatesEmptyFiltered": "No templates match your filters.",
   "agentTemplateSettingsTab": "Settings",
   "@agentTemplateSettingsTab": {
     "description": "Tab label for the settings tab in agent template detail."
   },
-  "agentTemplatesFilterSectionKind": "Kind",
-  "agentTemplatesGroupByKind": "Kind",
-  "agentTemplatesGroupNone": "All",
-  "agentTemplatesSearchPlaceholder": "Search templates…",
   "agentTemplateStatsTab": "Stats",
   "@agentTemplateStatsTab": {
     "description": "Tab label for the stats tab in agent template detail."
@@ -785,10 +790,6 @@
   "agentTemplateStatusArchived": "Archived",
   "@agentTemplateStatusArchived": {
     "description": "Label for the archived template status."
-  },
-  "agentTemplatesTitle": "Agent Templates",
-  "@agentTemplatesTitle": {
-    "description": "Page title for the agent templates list."
   },
   "agentTemplateSwitchHint": "To use a different template, destroy this agent and create a new one.",
   "@agentTemplateSwitchHint": {
@@ -809,6 +810,15 @@
   "agentTemplateVersionSaved": "New version saved",
   "@agentTemplateVersionSaved": {
     "description": "Snackbar message after successfully saving a new template version."
+  },
+  "agentTemplatesEmptyFiltered": "No templates match your filters.",
+  "agentTemplatesFilterSectionKind": "Kind",
+  "agentTemplatesGroupByKind": "Kind",
+  "agentTemplatesGroupNone": "All",
+  "agentTemplatesSearchPlaceholder": "Search templates…",
+  "agentTemplatesTitle": "Agent Templates",
+  "@agentTemplatesTitle": {
+    "description": "Page title for the agent templates list."
   },
   "agentThreadReportLabel": "Report produced during this wake",
   "agentTokenUsageCachedTokens": "Cached",
@@ -898,8 +908,8 @@
       }
     }
   },
-  "aiAttributionTokens": "Tokens",
   "aiAttributionTokenUsageUnknown": "Token usage unknown",
+  "aiAttributionTokens": "Tokens",
   "aiAttributionTrigger": "Trigger",
   "aiAttributionTriggerAgent": "Agent",
   "aiAttributionTriggerAutomatic": "Automatic",
@@ -1265,6 +1275,30 @@
   "aiProviderConnectFieldBaseUrlLabelOptional": "Base URL (optional)",
   "aiProviderConnectFieldBaseUrlPlaceholder": "https://api.example.com",
   "aiProviderConnectFieldDisplayNameHint": "Shown in your provider list",
+  "aiProviderConnectKeyHelperLink": "Get a key at {url}",
+  "@aiProviderConnectKeyHelperLink": {
+    "placeholders": {
+      "url": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectKeyHiddenLabel": "Hidden",
+  "aiProviderConnectKeyPrivacyHint": "Your API key never leaves your device.",
+  "aiProviderConnectPageTitle": "Connect {providerName}",
+  "@aiProviderConnectPageTitle": {
+    "placeholders": {
+      "providerName": {
+        "type": "String"
+      }
+    }
+  },
+  "aiProviderConnectSaveAndContinue": "Save & continue",
+  "aiProviderConnectSaveAsDraft": "Save as draft",
+  "aiProviderConnectSavedAsDraftToast": "Saved as draft",
+  "aiProviderConnectStepChoose": "Choose provider",
+  "aiProviderConnectStepConnect": "Connect",
+  "aiProviderConnectStepReview": "Review",
   "aiProviderConnectionCheckingLabel": "Checking key, listing available models…",
   "aiProviderConnectionFailedBadResponseDetail": "Unexpected response shape: {type}",
   "@aiProviderConnectionFailedBadResponseDetail": {
@@ -1317,30 +1351,6 @@
     }
   },
   "aiProviderConnectionVerifiedTitle": "Connection verified",
-  "aiProviderConnectKeyHelperLink": "Get a key at {url}",
-  "@aiProviderConnectKeyHelperLink": {
-    "placeholders": {
-      "url": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectKeyHiddenLabel": "Hidden",
-  "aiProviderConnectKeyPrivacyHint": "Your API key never leaves your device.",
-  "aiProviderConnectPageTitle": "Connect {providerName}",
-  "@aiProviderConnectPageTitle": {
-    "placeholders": {
-      "providerName": {
-        "type": "String"
-      }
-    }
-  },
-  "aiProviderConnectSaveAndContinue": "Save & continue",
-  "aiProviderConnectSaveAsDraft": "Save as draft",
-  "aiProviderConnectSavedAsDraftToast": "Saved as draft",
-  "aiProviderConnectStepChoose": "Choose provider",
-  "aiProviderConnectStepConnect": "Connect",
-  "aiProviderConnectStepReview": "Review",
   "aiProviderDetailAddModelButton": "Add model",
   "aiProviderDetailApiKeyLabel": "API key",
   "aiProviderDetailBackTooltip": "Back",
@@ -1398,13 +1408,13 @@
   "aiResponseShowLess": "Show less",
   "aiResponseShowMore": "Show more",
   "aiRunningActivityOpenProgress": "Show AI progress",
-  "aiSettingsAddedLabel": "Added",
   "aiSettingsAddModelButton": "Add model",
   "aiSettingsAddModelErrorDescription": "Something went wrong while adding the model. Please try again.",
   "aiSettingsAddModelErrorTitle": "Couldn't add model",
   "aiSettingsAddModelTooltip": "Add this model to your provider",
   "aiSettingsAddProfileButton": "Add Profile",
   "aiSettingsAddProviderButton": "Add provider",
+  "aiSettingsAddedLabel": "Added",
   "aiSettingsAgentWakeConcurrencyDescription": "Choose how many different agents can run inference at once. Higher values respond faster but use more provider and device capacity.",
   "aiSettingsAgentWakeConcurrencyLabel": "Concurrent agent wakes",
   "aiSettingsClearAllFiltersTooltip": "Clear all filters",
@@ -1624,8 +1634,8 @@
   "audioRecordingDiscardDialogTitle": "Discard recording?",
   "audioRecordingPause": "Pause",
   "audioRecordingResume": "Resume",
-  "audioRecordings": "Audio Recordings",
   "audioRecordingStop": "Stop",
+  "audioRecordings": "Audio Recordings",
   "backfillAdvancedRecoveryActions": "{count, plural, =1{1 action} other{{count} actions}}",
   "@backfillAdvancedRecoveryActions": {
     "placeholders": {
@@ -1831,12 +1841,12 @@
   "checklistExpandTooltip": "Expand",
   "checklistExportAsMarkdown": "Export checklist as Markdown",
   "checklistExportFailed": "Export failed",
-  "checklistItemArchived": "Item archived",
   "checklistItemArchiveUndo": "Undo",
+  "checklistItemArchived": "Item archived",
   "checklistItemDeleteCancel": "Cancel",
   "checklistItemDeleteConfirm": "Confirm",
-  "checklistItemDeleted": "Item deleted",
   "checklistItemDeleteWarning": "This action cannot be undone.",
+  "checklistItemDeleted": "Item deleted",
   "checklistMarkdownCopied": "Checklist copied as Markdown",
   "checklistMoreTooltip": "More",
   "checklistNoneDone": "No completed items yet.",
@@ -2059,12 +2069,8 @@
   "conflictPickerUseFromSync": "Use from sync",
   "conflictPickerUseThisDevice": "Use this device",
   "conflictResolvedToast": "Conflict resolved",
-  "conflictsEmptyDescription": "Everything is in sync right now. Resolved items stay available in the other filter.",
-  "conflictsEmptyTitle": "No conflicts detected",
   "conflictSideFromSync": "FROM SYNC",
   "conflictSideThisDevice": "THIS DEVICE",
-  "conflictsResolved": "resolved",
-  "conflictsUnresolved": "unresolved",
   "conflictValueAbsent": "Not set",
   "conflictValueNo": "No",
   "conflictValueYes": "Yes",
@@ -2078,6 +2084,10 @@
       }
     }
   },
+  "conflictsEmptyDescription": "Everything is in sync right now. Resolved items stay available in the other filter.",
+  "conflictsEmptyTitle": "No conflicts detected",
+  "conflictsResolved": "resolved",
+  "conflictsUnresolved": "unresolved",
   "contactUsDiscordLabel": "Discord",
   "contactUsEmailSubject": "Lotti feedback",
   "contactUsGithubLabel": "GitHub",
@@ -2314,7 +2324,6 @@
   },
   "dailyOsNextCaptureReconcileCta": "Review",
   "dailyOsNextCaptureRecordingSavedStatus": "Recording saved",
-  "dailyOsNextCapturesPanelTitle": "Captures",
   "dailyOsNextCaptureTranscribing": "Transcribing…",
   "dailyOsNextCaptureTranscriptHint": "Fix anything the transcript got wrong before planning.",
   "dailyOsNextCaptureTranscriptLabel": "Review transcript",
@@ -2322,6 +2331,7 @@
   "dailyOsNextCaptureVoiceButtonReset": "Start over",
   "dailyOsNextCaptureVoiceButtonStart": "Start listening",
   "dailyOsNextCaptureVoiceButtonStop": "Stop listening",
+  "dailyOsNextCapturesPanelTitle": "Captures",
   "dailyOsNextCategoryFilterAll": "All categories",
   "dailyOsNextCategoryFilterDescription": "Only categories enabled for day planning are surfaced for Daily OS automated processing.",
   "dailyOsNextCategoryFilterEmpty": "No categories enabled for day planning yet.",
@@ -2598,25 +2608,6 @@
     }
   },
   "dailyOsNextStateRecurringMissed": "Recurring · missed",
-  "dailyOsNextTimelineActual": "Actual",
-  "dailyOsNextTimelineArrange": "Arrange blocks",
-  "dailyOsNextTimelineBoth": "Plan and actual",
-  "dailyOsNextTimelinePlanned": "Plan",
-  "dailyOsNextTimelineSessionOf": "Session {index} of {total}",
-  "@dailyOsNextTimelineSessionOf": {
-    "placeholders": {
-      "index": {
-        "type": "int"
-      },
-      "total": {
-        "type": "int"
-      }
-    }
-  },
-  "dailyOsNextTimelineShowBoth": "Show plan and actual together",
-  "dailyOsNextTimelineShowPaged": "Show swipeable plan and actual",
-  "dailyOsNextTimelineSwipeHint": "Swipe for actual · pinch vertically to zoom",
-  "dailyOsNextTimelineTracked": "tracked",
   "dailyOsNextTimeSpentEarlierSessions": "{count, plural, one{1 earlier session} other{{count} earlier sessions}}",
   "@dailyOsNextTimeSpentEarlierSessions": {
     "placeholders": {
@@ -2640,14 +2631,33 @@
   },
   "dailyOsNextTimeSpentTitle": "TODAY SO FAR",
   "dailyOsNextTimeSpentTitlePast": "TIME SPENT",
+  "dailyOsNextTimelineActual": "Actual",
+  "dailyOsNextTimelineArrange": "Arrange blocks",
+  "dailyOsNextTimelineBoth": "Plan and actual",
+  "dailyOsNextTimelinePlanned": "Plan",
+  "dailyOsNextTimelineSessionOf": "Session {index} of {total}",
+  "@dailyOsNextTimelineSessionOf": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      },
+      "total": {
+        "type": "int"
+      }
+    }
+  },
+  "dailyOsNextTimelineShowBoth": "Show plan and actual together",
+  "dailyOsNextTimelineShowPaged": "Show swipeable plan and actual",
+  "dailyOsNextTimelineSwipeHint": "Swipe for actual · pinch vertically to zoom",
+  "dailyOsNextTimelineTracked": "tracked",
   "dailyOsNextTriageConfirmDefer": "Deferred",
-  "dailyOsNextTriageConfirmDone": "Marked done",
   "dailyOsNextTriageConfirmDoNow": "Done now",
+  "dailyOsNextTriageConfirmDone": "Marked done",
   "dailyOsNextTriageConfirmDrop": "Dropped",
   "dailyOsNextTriageConfirmToday": "Added to today",
   "dailyOsNextTriageDefer": "Defer",
-  "dailyOsNextTriageDone": "Done",
   "dailyOsNextTriageDoNow": "Do now",
+  "dailyOsNextTriageDone": "Done",
   "dailyOsNextTriageDrop": "Drop",
   "dailyOsNextTriageToday": "Today",
   "dailyOsOnboardingCoachCapture": "Say what's pulling at your attention.",
@@ -2978,8 +2988,8 @@
   "designSystemSmallLabel": "Small",
   "designSystemSpinnerPlainLabel": "Plain",
   "designSystemSpinnerSkeletonPulseLabel": "Pulse",
-  "designSystemSpinnerSkeletonsTitle": "Skeletons",
   "designSystemSpinnerSkeletonWaveLabel": "Wave",
+  "designSystemSpinnerSkeletonsTitle": "Skeletons",
   "designSystemSpinnerSpinnersTitle": "Spinners",
   "designSystemSpinnerTrackLabel": "With track",
   "designSystemSplitButtonDropdownSemantics": "Open {label} options",
@@ -3029,18 +3039,18 @@
   "desktopEmptyStateSelectDashboard": "Select a dashboard to view details",
   "desktopEmptyStateSelectProject": "Select a project to view details",
   "desktopEmptyStateSelectTask": "Select a task to view details",
-  "deviceDeletedSuccess": "{deviceName} removed from sync",
-  "@deviceDeletedSuccess": {
+  "deviceDeleteFailedGeneric": "The device couldn't be removed. Check your connection and try again.",
+  "deviceDeleteQuestion": "Remove {deviceName} from your sync account? It will be signed out and will need to be paired again before it can sync.",
+  "@deviceDeleteQuestion": {
+    "description": "Confirmation question shown before deleting a device from the Matrix sync account.",
     "placeholders": {
       "deviceName": {
         "type": "String"
       }
     }
   },
-  "deviceDeleteFailedGeneric": "The device couldn't be removed. Check your connection and try again.",
-  "deviceDeleteQuestion": "Remove {deviceName} from your sync account? It will be signed out and will need to be paired again before it can sync.",
-  "@deviceDeleteQuestion": {
-    "description": "Confirmation question shown before deleting a device from the Matrix sync account.",
+  "deviceDeletedSuccess": "{deviceName} removed from sync",
+  "@deviceDeletedSuccess": {
     "placeholders": {
       "deviceName": {
         "type": "String"
@@ -3196,6 +3206,18 @@
   "habitLogOtherDayHint": "Hold to log another day",
   "habitNotRecordedLabel": "Not recorded",
   "habitPriorityLabel": "Priority",
+  "habitSectionOptionsTitle": "Options",
+  "habitSectionScheduleTitle": "Schedule",
+  "habitShowAlertAtLabel": "Show alert at",
+  "habitShowFromLabel": "Show from",
+  "habitStreakDaysSemantic": "{count}-day streak",
+  "@habitStreakDaysSemantic": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "habitsAboveGoal": "On track",
   "habitsActiveHabitsCount": "{count, plural, one{1 active habit} other{{count} active habits}}",
   "@habitsActiveHabitsCount": {
@@ -3236,8 +3258,6 @@
     }
   },
   "habitsDoneTodayLabel": "Done today",
-  "habitSectionOptionsTitle": "Options",
-  "habitSectionScheduleTitle": "Schedule",
   "habitsFilterAll": "all",
   "habitsFilterCompleted": "done",
   "habitsFilterOpenNow": "due",
@@ -3246,8 +3266,6 @@
   "habitsHeatmapEmpty": "Add a habit to start building your consistency",
   "habitsHeatmapLess": "Less",
   "habitsHeatmapMore": "More",
-  "habitShowAlertAtLabel": "Show alert at",
-  "habitShowFromLabel": "Show from",
   "habitsLaggardHint": "{habit} — kept {kept} of {active}",
   "@habitsLaggardHint": {
     "placeholders": {
@@ -3300,14 +3318,6 @@
       }
     }
   },
-  "habitStreakDaysSemantic": "{count}-day streak",
-  "@habitStreakDaysSemantic": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
   "habitsVsPreviousWeek": "vs previous week",
   "helpMenuCommandPalette": "Command Palette…",
   "helpMenuKeyboardShortcuts": "Keyboard Shortcuts…",
@@ -3329,9 +3339,7 @@
   "imagePromptGenerationCopyTooltip": "Copy image prompt to clipboard",
   "imagePromptGenerationExpandTooltip": "Show full prompt",
   "imagePromptGenerationFullPromptLabel": "Full Image Prompt:",
-  "images": "Images",
   "imageViewerDownloadFailed": "Could not save image",
-  "imageViewerDownloadingTooltip": "Saving image",
   "imageViewerDownloadPermissionDenied": "Photo access denied — enable it in Settings",
   "imageViewerDownloadSaved": "Saved {fileName}",
   "@imageViewerDownloadSaved": {
@@ -3343,8 +3351,10 @@
   },
   "imageViewerDownloadSavedToGallery": "Saved to Photos",
   "imageViewerDownloadTooltip": "Download image",
+  "imageViewerDownloadingTooltip": "Saving image",
   "imageViewerNextTooltip": "Next image",
   "imageViewerPreviousTooltip": "Previous image",
+  "images": "Images",
   "inactiveLabel": "Inactive",
   "inactiveSwitchDescription": "Can be chosen for new entries when on",
   "inferenceProfileChooseModelTitle": "Choose a model",
@@ -3377,7 +3387,6 @@
   "inferenceProfileSaveButton": "Save",
   "inferenceProfileSelectModel": "Choose a model…",
   "inferenceProfileSelectProfile": "Choose a profile…",
-  "inferenceProfilesEmpty": "No inference profiles yet",
   "inferenceProfileSkillModelRequired": "Requires {slotName} model to be set",
   "@inferenceProfileSkillModelRequired": {
     "placeholders": {
@@ -3386,7 +3395,6 @@
       }
     }
   },
-  "inferenceProfileSkillsSection": "Automated Skills",
   "inferenceProfileSkillUsesModel": "Uses {slotName} model",
   "@inferenceProfileSkillUsesModel": {
     "placeholders": {
@@ -3395,12 +3403,14 @@
       }
     }
   },
-  "inferenceProfilesTitle": "Inference Profiles",
+  "inferenceProfileSkillsSection": "Automated Skills",
   "inferenceProfileThinking": "Thinking",
   "inferenceProfileThinkingHighEnd": "Thinking (High-End)",
   "inferenceProfileThinkingRequired": "A thinking model is required",
   "inferenceProfileTranscription": "Transcription",
   "inferenceProfileUnavailable": "Inference profile unavailable",
+  "inferenceProfilesEmpty": "No inference profiles yet",
+  "inferenceProfilesTitle": "Inference Profiles",
   "inputDataTypeAudioFilesDescription": "Use audio files as input",
   "inputDataTypeAudioFilesName": "Audio Files",
   "inputDataTypeImagesDescription": "Use images as input",
@@ -3494,9 +3504,9 @@
   "journalDeleteQuestion": "Do you want to delete this journal entry?",
   "journalDurationLabel": "Duration",
   "journalEndDateLabel": "End date",
+  "journalEndTimeLabel": "End time",
   "journalEndsAnotherDayHint": "Pick a separate end date",
   "journalEndsAnotherDayLabel": "Ends on another day",
-  "journalEndTimeLabel": "End time",
   "journalEntryExpandLabel": "Expand entry",
   "journalFilterEntryTypesTitle": "Entry types",
   "journalFilterFlagged": "Flagged",
@@ -3506,6 +3516,8 @@
   "journalFilterTitle": "Filter journal",
   "journalHideLinkHint": "Hide link",
   "journalHideMapHint": "Hide map",
+  "journalLinkFromHint": "Link from",
+  "journalLinkToHint": "Link to",
   "journalLinkedEntriesActivityFilterAudio": "Audio",
   "journalLinkedEntriesActivityFilterCode": "Code",
   "journalLinkedEntriesActivityFilterImages": "Images",
@@ -3517,8 +3529,6 @@
   "journalLinkedEntriesSortNewestFirst": "Newest first",
   "journalLinkedEntriesSortOldestFirst": "Oldest first",
   "journalLinkedFromLabel": "Linked from:",
-  "journalLinkFromHint": "Link from",
-  "journalLinkToHint": "Link to",
   "journalOvernightNextDay": "Ends {date} (next day)",
   "@journalOvernightNextDay": {
     "description": "Chip shown when an entry's end time is earlier than its start time, indicating it ends on the next day.",
@@ -3652,9 +3662,9 @@
   "knowledgeGraphFilterCategories": "Categories",
   "knowledgeGraphFilterRecency": "Recency",
   "knowledgeGraphFilterRelations": "Relationships",
-  "knowledgeGraphFilters": "Filters",
   "knowledgeGraphFilterTaskStatus": "Task status",
   "knowledgeGraphFilterTypes": "Types",
+  "knowledgeGraphFilters": "Filters",
   "knowledgeGraphForward": "Forward",
   "knowledgeGraphLast30Days": "Last 30 days",
   "knowledgeGraphLast7Days": "Last 7 days",
@@ -3697,8 +3707,8 @@
       }
     }
   },
-  "knowledgeGraphRecenter": "Recenter",
   "knowledgeGraphRecentToOlder": "recent → older",
+  "knowledgeGraphRecenter": "Recenter",
   "knowledgeGraphRelationAiSource": "AI source",
   "knowledgeGraphRelationAssociation": "linked entry",
   "knowledgeGraphRelationChecklist": "checklist",
@@ -3722,6 +3732,10 @@
     }
   },
   "linkBlocksCycleErrorMessage": "This would create a blocking cycle — choose a different task.",
+  "linkCreateFailedMessage": "Couldn't create the link. Please try again.",
+  "@linkCreateFailedMessage": {
+    "description": "Shown when creating a link fails for a relation that is not \"blocks\", where a blocking-cycle explanation would be wrong."
+  },
   "linkCreatedMessage": "{relation}: {title}",
   "@linkCreatedMessage": {
     "placeholders": {
@@ -3734,17 +3748,7 @@
     }
   },
   "linkCreatedUndo": "Undo",
-  "linkCreateFailedMessage": "Couldn't create the link. Please try again.",
-  "@linkCreateFailedMessage": {
-    "description": "Shown when creating a link fails for a relation that is not \"blocks\", where a blocking-cycle explanation would be wrong."
-  },
   "linkDirectionLabel": "This task…",
-  "linkedTaskImageBadge": "From linked task",
-  "linkedTasksBlockedBySectionTitle": "Blocked by",
-  "linkedTasksEmptyAction": "Link a task…",
-  "linkedTasksEmptyHint": "Connect this task to another task.",
-  "linkedTasksMenuTooltip": "Linked tasks options",
-  "linkedTasksTitle": "Linked Tasks",
   "linkExistingTask": "Link existing task…",
   "linkExistingTaskTitle": "Link existing task",
   "@linkExistingTaskTitle": {
@@ -3851,6 +3855,12 @@
   "@linkTaskButton": {
     "description": "Short verb label for the Linked Tasks card header action that opens the link picker. Mirrors the Done button occupying the same slot in manage mode."
   },
+  "linkedTaskImageBadge": "From linked task",
+  "linkedTasksBlockedBySectionTitle": "Blocked by",
+  "linkedTasksEmptyAction": "Link a task…",
+  "linkedTasksEmptyHint": "Connect this task to another task.",
+  "linkedTasksMenuTooltip": "Linked tasks options",
+  "linkedTasksTitle": "Linked Tasks",
   "logbookEmptyHint": "Create your first entry to start journaling.",
   "logbookEmptyTitle": "Your logbook is empty",
   "logbookNewEntriesHint": "New entries will open here.",
@@ -3937,10 +3947,6 @@
   "maintenancePurgeSentOutboxConfirm": "Yes, purge",
   "maintenancePurgeSentOutboxDescription": "Delete sent outbox rows older than 7 days and reclaim disk",
   "maintenancePurgeSentOutboxQuestion": "Purge sent outbox items older than 7 days? This deletes already-sent rows in chunks and runs VACUUM to reclaim disk. Pending and error items are kept.",
-  "maintenanceRecreateFts5": "Recreate full-text index",
-  "maintenanceRecreateFts5Confirm": "Yes, recreate index",
-  "maintenanceRecreateFts5Description": "Recreate full-text search index",
-  "maintenanceRecreateFts5Message": "Are you sure you want to recreate the full-text index? This may take some time.",
   "maintenanceReSync": "Message history",
   "maintenanceReSyncAgentEntities": "Agent entities",
   "maintenanceReSyncAgentLinks": "Agent links",
@@ -3977,6 +3983,10 @@
   "maintenanceReSyncSelectAtLeastOne": "Select at least one entity type",
   "maintenanceReSyncSending": "Preparing messages",
   "maintenanceReSyncStart": "Start",
+  "maintenanceRecreateFts5": "Recreate full-text index",
+  "maintenanceRecreateFts5Confirm": "Yes, recreate index",
+  "maintenanceRecreateFts5Description": "Recreate full-text search index",
+  "maintenanceRecreateFts5Message": "Are you sure you want to recreate the full-text index? This may take some time.",
   "maintenanceSyncDefinitions": "Sync measurables, dashboards, habits, categories, AI settings",
   "maintenanceSyncDefinitionsDescription": "Sync measurables, dashboards, habits, categories, and AI settings",
   "manageLinks": "Manage links…",
@@ -4443,10 +4453,8 @@
   "projectPickerUnassigned": "No project",
   "projectRecommendationDismissTooltip": "Dismiss",
   "projectRecommendationResolveTooltip": "Mark resolved",
-  "projectRecommendationsTitle": "Recommended next steps",
   "projectRecommendationUpdateError": "Couldn't update the recommendation. Please try again.",
-  "projectsFilterStatusLabel": "Status:",
-  "projectsFilterTooltip": "Filter projects",
+  "projectRecommendationsTitle": "Recommended next steps",
   "projectShowcaseAiReportTitle": "AI Report",
   "projectShowcaseBlockedLegend": "{count} Blocked",
   "@projectShowcaseBlockedLegend": {
@@ -4547,6 +4555,8 @@
   "projectTargetDateLabel": "Target Date",
   "projectTitleLabel": "Project Title",
   "projectTitleRequired": "Project title cannot be empty",
+  "projectsFilterStatusLabel": "Status:",
+  "projectsFilterTooltip": "Filter projects",
   "promptDefaultModelBadge": "Default",
   "promptGenerationCardTitle": "AI Coding Prompt",
   "promptGenerationCopiedSnackbar": "Prompt copied to clipboard",
@@ -4832,8 +4842,8 @@
   "settingsCelebrationsPreviewSample3": "Water the plants",
   "settingsCelebrationsPreviewTitle": "Try it",
   "settingsCelebrationsReplay": "Replay",
-  "settingsCelebrationsResetToast": "Style reset to default",
   "settingsCelebrationsResetToDefault": "Reset to default",
+  "settingsCelebrationsResetToast": "Style reset to default",
   "settingsCelebrationsResetUndo": "Undo",
   "settingsCelebrationsSectionDescription": "Play a flourish when you finish something. Switching one off keeps the completion and its haptic — it just skips the animation.",
   "settingsCelebrationsSectionTitle": "Completion celebrations",
@@ -5040,7 +5050,6 @@
   "settingsMatrixMetrics": "Sync Metrics",
   "settingsMatrixNextPage": "Next Page",
   "settingsMatrixPreviousPage": "Previous Page",
-  "settingsMatrixSentMessagesLabel": "Sent messages:",
   "settingsMatrixSentMessageType": "Sent ({eventType})",
   "@settingsMatrixSentMessageType": {
     "placeholders": {
@@ -5049,6 +5058,7 @@
       }
     }
   },
+  "settingsMatrixSentMessagesLabel": "Sent messages:",
   "settingsMatrixStartVerificationLabel": "Start Verification",
   "settingsMatrixStatsTitle": "Matrix Stats",
   "settingsMatrixTitle": "Sync Settings",
@@ -5063,6 +5073,7 @@
   "settingsMeasurableNameLabel": "Measurable name",
   "settingsMeasurablePrivateLabel": "Private: ",
   "settingsMeasurableSaveLabel": "Save",
+  "settingsMeasurableUnitLabel": "Unit abbreviation (optional)",
   "settingsMeasurablesCreateTitle": "Create measurable",
   "settingsMeasurablesEmptyState": "No measurables yet",
   "settingsMeasurablesEmptyStateHint": "Measurables are numbers you track over time — weight, water, steps.",
@@ -5078,7 +5089,6 @@
   "settingsMeasurablesSearchHint": "Search measurables…",
   "settingsMeasurablesSubtitle": "Configure measurable data types",
   "settingsMeasurablesTitle": "Measurables",
-  "settingsMeasurableUnitLabel": "Unit abbreviation (optional)",
   "settingsOnboardingActionSubtitle": "Reopen the welcome flow — connect your AI brain and create a task",
   "settingsOnboardingMetricsSubtitle": "FTUE funnel — install, activation, retention (debug)",
   "settingsOnboardingMetricsTitle": "Onboarding Metrics",
@@ -5341,17 +5351,6 @@
   "syncPairClipboardUnavailable": "Couldn't read the clipboard. Paste the code into the field instead.",
   "syncPairConnectButton": "The codes match — connect",
   "syncPairDiscardCode": "They don't match",
-  "syncPairedFirstDeviceBody": "It's the first one on your account. Add another whenever you like — everything you write here will be waiting for it.",
-  "syncPairedFirstDeviceTitle": "Sync is set up on this device",
-  "syncPairedSettingsStep": "Categories, habits, dashboards and AI setup — sent from your other device after the emoji match.",
-  "syncPairedSettingsStepFallback": "If you closed it, on the other device open Settings → Sync Settings → Maintenance, choose Sync measurables, dashboards, habits, categories, AI settings, then choose Message history.",
-  "syncPairedSettingsStepTitle": "Receive your settings",
-  "syncPairedStepsLeft": "Two steps left before this device can read your journal.",
-  "syncPairedVerifyFallback": "No emoji yet? Check again — or open Devices and start it from there.",
-  "syncPairedVerifyStep": "Both devices are about to show seven emoji. Until they match, this device sees only ciphertext.",
-  "syncPairedVerifyStepDone": "Emoji matched — this device can read your entries",
-  "syncPairedVerifyStepTitle": "Confirm the emoji",
-  "syncPairedVerifyWaiting": "Waiting for the emoji to appear…",
   "syncPairEnterManually": "Paste the code instead",
   "syncPairEnterNewCode": "Enter a new code",
   "syncPairErrorMalformed": "That does not look like a pairing code. Check you copied all of it — on the other device, press Copy pairing code again.",
@@ -5369,10 +5368,21 @@
   "syncPairSameCodeQuestion": "Same code on both screens?",
   "syncPairScanHint": "Point at the QR under Add device on your other device.",
   "syncPairScanLink": "Have a camera? Scan the QR instead",
-  "syncPairScannerRejected": "That's the code you declined. Scan the code your own device is showing, or paste it below.",
   "syncPairScanTitle": "Scan the pairing code",
+  "syncPairScannerRejected": "That's the code you declined. Scan the code your own device is showing, or paste it below.",
   "syncPairShowEmoji": "Show the emoji",
   "syncPairWhereToFind": "It's on your other device, under Add device — copy it there, paste it here.",
+  "syncPairedFirstDeviceBody": "It's the first one on your account. Add another whenever you like — everything you write here will be waiting for it.",
+  "syncPairedFirstDeviceTitle": "Sync is set up on this device",
+  "syncPairedSettingsStep": "Categories, habits, dashboards and AI setup — sent from your other device after the emoji match.",
+  "syncPairedSettingsStepFallback": "If you closed it, on the other device open Settings → Sync Settings → Maintenance, choose Sync measurables, dashboards, habits, categories, AI settings, then choose Message history.",
+  "syncPairedSettingsStepTitle": "Receive your settings",
+  "syncPairedStepsLeft": "Two steps left before this device can read your journal.",
+  "syncPairedVerifyFallback": "No emoji yet? Check again — or open Devices and start it from there.",
+  "syncPairedVerifyStep": "Both devices are about to show seven emoji. Until they match, this device sees only ciphertext.",
+  "syncPairedVerifyStepDone": "Emoji matched — this device can read your entries",
+  "syncPairedVerifyStepTitle": "Confirm the emoji",
+  "syncPairedVerifyWaiting": "Waiting for the emoji to appear…",
   "syncPayloadAgentBundle": "Agent bundle",
   "syncPayloadAgentEntity": "Agent entity",
   "syncPayloadAgentLink": "Agent link",
@@ -5553,9 +5563,9 @@
   "taskAgentNoAiSetup": "No AI setup",
   "taskAgentNoAiSetupDescription": "Pauses agent inference until you choose a profile or model.",
   "taskAgentNoModelsAvailable": "No compatible thinking models available",
-  "taskAgentNoProfilesAvailable": "No profiles available on this device",
   "taskAgentNoProfileSelected": "No AI setup",
   "taskAgentNoProfileSelectedDescription": "Choose a saved setup or thinking model before this agent can run.",
+  "taskAgentNoProfilesAvailable": "No profiles available on this device",
   "taskAgentProfileChangedToast": "Using {profile} for every future agent update until you change it.",
   "@taskAgentProfileChangedToast": {
     "placeholders": {
@@ -5792,39 +5802,9 @@
     }
   },
   "taskPriorityUrgent": "Urgent",
-  "tasksAddLabelButton": "Add label",
-  "tasksAgentFilterAll": "All",
-  "tasksAgentFilterHasAgent": "Has Agent",
-  "tasksAgentFilterNoAgent": "No Agent",
-  "tasksAgentFilterTitle": "Agent",
-  "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filters}}",
-  "@tasksCompactFilterCount": {
-    "description": "Collapsed task-list header context: how many ad-hoc filter clauses narrow the list",
-    "placeholders": {
-      "count": {
-        "type": "num"
-      }
-    }
-  },
-  "tasksCompactHeaderExpandHint": "Show search and filters",
-  "@tasksCompactHeaderExpandHint": {
-    "description": "Semantic hint on the collapsed header title button: expanding reveals search and filters"
-  },
-  "tasksCompactSearchContext": "“{query}”",
-  "@tasksCompactSearchContext": {
-    "description": "Collapsed task-list header context: the active search query, wrapped in locale quotation marks",
-    "placeholders": {
-      "query": {
-        "type": "String"
-      }
-    }
-  },
   "taskSetCategoryLabel": "Set category",
   "taskSetDueDateLabel": "Set due date",
   "taskSetEstimateLabel": "Add estimate",
-  "tasksFilterApplyTitle": "Apply filter",
-  "tasksFilterClearAll": "Clear all",
-  "tasksFilterTitle": "Filter tasks",
   "taskShowcaseAudio": "Audio",
   "taskShowcaseCompletedCount": "{completed} / {total} done",
   "@taskShowcaseCompletedCount": {
@@ -5869,6 +5849,48 @@
   "taskShowcaseTimeTracker": "Time Tracker",
   "taskShowcaseTodo": "Todo",
   "taskShowcaseTodos": "Todos",
+  "taskStatusAll": "All",
+  "taskStatusBlocked": "Blocked",
+  "taskStatusDone": "Done",
+  "taskStatusGroomed": "Groomed",
+  "taskStatusInProgress": "In Progress",
+  "taskStatusLabel": "Status:",
+  "taskStatusOnHold": "On Hold",
+  "taskStatusOpen": "Open",
+  "taskStatusRejected": "Rejected",
+  "taskTitleEmpty": "No title",
+  "taskTitlePrompt": "Name this task",
+  "taskUntitled": "(untitled)",
+  "tasksAddLabelButton": "Add label",
+  "tasksAgentFilterAll": "All",
+  "tasksAgentFilterHasAgent": "Has Agent",
+  "tasksAgentFilterNoAgent": "No Agent",
+  "tasksAgentFilterTitle": "Agent",
+  "tasksCompactFilterCount": "{count, plural, one {{count} filter} other {{count} filters}}",
+  "@tasksCompactFilterCount": {
+    "description": "Collapsed task-list header context: how many ad-hoc filter clauses narrow the list",
+    "placeholders": {
+      "count": {
+        "type": "num"
+      }
+    }
+  },
+  "tasksCompactHeaderExpandHint": "Show search and filters",
+  "@tasksCompactHeaderExpandHint": {
+    "description": "Semantic hint on the collapsed header title button: expanding reveals search and filters"
+  },
+  "tasksCompactSearchContext": "“{query}”",
+  "@tasksCompactSearchContext": {
+    "description": "Collapsed task-list header context: the active search query, wrapped in locale quotation marks",
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksFilterApplyTitle": "Apply filter",
+  "tasksFilterClearAll": "Clear all",
+  "tasksFilterTitle": "Filter tasks",
   "tasksLabelFilterAll": "All",
   "tasksLabelFilterTitle": "Label",
   "tasksLabelFilterUnlabeled": "Unlabeled",
@@ -5892,6 +5914,23 @@
   "tasksSavedFilterDeleteTooltip": "Delete saved filter",
   "tasksSavedFilterDragHandleSemantics": "Drag to reorder",
   "tasksSavedFilterRenameSemantics": "Rename saved filter",
+  "tasksSavedFilterToastDeleted": "Filter deleted",
+  "tasksSavedFilterToastSaved": "Saved '{name}'",
+  "@tasksSavedFilterToastSaved": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "tasksSavedFilterToastUpdated": "Updated '{name}'",
+  "@tasksSavedFilterToastUpdated": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "tasksSavedFiltersAllShort": "All",
   "tasksSavedFiltersAllTasks": "All tasks",
   "tasksSavedFiltersCustom": "Custom",
@@ -5969,23 +6008,6 @@
   "tasksSavedFiltersUpdateButtonLabel": "Update filter",
   "tasksSavedFiltersUpdateExistingDescription": "Replace its saved criteria with the current filter configuration.",
   "tasksSavedFiltersUpdateExistingTitle": "Update existing filter",
-  "tasksSavedFilterToastDeleted": "Filter deleted",
-  "tasksSavedFilterToastSaved": "Saved '{name}'",
-  "@tasksSavedFilterToastSaved": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
-  "tasksSavedFilterToastUpdated": "Updated '{name}'",
-  "@tasksSavedFilterToastUpdated": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "tasksSearchModeLabel": "Search mode",
   "tasksShowCreationDate": "Show creation date on cards",
   "tasksShowDueDate": "Show due date on cards",
@@ -5993,18 +6015,6 @@
   "tasksSortByDueDate": "Due Date",
   "tasksSortByLabel": "Sort by",
   "tasksSortByPriority": "Priority",
-  "taskStatusAll": "All",
-  "taskStatusBlocked": "Blocked",
-  "taskStatusDone": "Done",
-  "taskStatusGroomed": "Groomed",
-  "taskStatusInProgress": "In Progress",
-  "taskStatusLabel": "Status:",
-  "taskStatusOnHold": "On Hold",
-  "taskStatusOpen": "Open",
-  "taskStatusRejected": "Rejected",
-  "taskTitleEmpty": "No title",
-  "taskTitlePrompt": "Name this task",
-  "taskUntitled": "(untitled)",
   "thinkingDisclosureCopied": "Reasoning copied",
   "thinkingDisclosureCopy": "Copy reasoning",
   "thinkingDisclosureHide": "Hide reasoning",

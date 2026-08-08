@@ -35,10 +35,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get addActionAddTask => 'Adăugați o sarcină';
 
   @override
-  String get addActionAddTimer => 'Cronometru';
+  String get addActionAddTimeRecording => 'Adăugați timp';
 
   @override
-  String get addActionAddTimeRecording => 'Adăugați timp';
+  String get addActionAddTimer => 'Cronometru';
 
   @override
   String get addActionCreateLinkedTask => 'Legați o sarcină nouă';
@@ -234,9 +234,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentEvolutionCurrentDirectives => 'Directive curente';
-
-  @override
-  String get agentEvolutionDashboardTitle => 'Performanță';
 
   @override
   String get agentEvolutionHistoryTitle => 'Istoricul evoluției';
@@ -599,7 +596,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentReportNone => 'Niciun raport disponibil încă.';
 
   @override
-  String get agentRitualReviewAction => 'Începeți conversația';
+  String get agentRitualContinueAction => 'Continuați discuția';
+
+  @override
+  String get agentRitualOpeningHint =>
+      'Citește ce s-a întâmplat de la ultima voastră discuție…';
+
+  @override
+  String get agentRitualReviewAction => 'Începeți 1-on-1';
 
   @override
   String get agentRitualReviewNegativeSignals => 'Negativ';
@@ -630,10 +634,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentRitualReviewProposalSection => 'Propunerea curentă';
 
   @override
-  String get agentRitualReviewSessionHistory => 'Istoricul sesiunilor';
+  String get agentRitualReviewSessionHistory => 'Discuții anterioare';
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSinceLastHeading => 'De la ultima noastră discuție';
+
+  @override
+  String get agentRitualStartHeading => 'Începeți un 1-on-1';
 
   @override
   String get agentRitualSummaryApprovedChangesHeading => 'Modificări aprobate';
@@ -652,11 +662,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Începeți un 1-la-1 pentru a revizui ce v-a deranjat, ce a funcționat și ce ar trebui schimbat.';
-
-  @override
-  String get agentRitualSummarySubtitle =>
-      'Sesiunile 1-on-1 anterioare, activitatea reală de activări și modificările convenite.';
+      'Treceți în revistă ce v-a deranjat, ce a funcționat și ce ar trebui să se schimbe.';
 
   @override
   String get agentRitualSummaryTokensSinceLast => 'Tokeni de la ultimul 1-on-1';
@@ -668,6 +674,18 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get agentRitualSummaryWakesSinceLast =>
       'Activări de la ultimul 1-on-1';
+
+  @override
+  String agentRitualWakesSinceLastCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de treziri de la ultima discuție',
+      few: '$count treziri de la ultima discuție',
+      one: '1 trezire de la ultima discuție',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentRunningIndicator => 'În execuție';
@@ -694,10 +712,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSoulCoachingStyleLabel => 'Stil de coaching';
 
   @override
-  String get agentSoulCreatedSuccess => 'Suflet creat';
+  String get agentSoulCreateTitle => 'Creați un suflet';
 
   @override
-  String get agentSoulCreateTitle => 'Creați un suflet';
+  String get agentSoulCreatedSuccess => 'Suflet creat';
 
   @override
   String get agentSoulDeleteConfirmBody =>
@@ -748,10 +766,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Propunere de personalitate a sufletului';
 
   @override
-  String get agentSoulReviewHeroSubtitle =>
-      'Rafinați personalitatea în toate șabloanele care partajează acest suflet. Agentul de evoluție vede feedbackul de la fiecare șablon care folosește această personalitate.';
-
-  @override
   String get agentSoulReviewStartAction => 'Începeți revizuirea personalității';
 
   @override
@@ -784,17 +798,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSoulSelectTitle => 'Selectați un suflet';
 
   @override
-  String get agentSoulsEmptyFiltered =>
-      'Niciun suflet nu se potrivește cu filtrele dvs.';
-
-  @override
   String get agentSoulSettingsTab => 'Setări';
-
-  @override
-  String get agentSoulsSearchPlaceholder => 'Căutați suflete…';
-
-  @override
-  String get agentSoulsTitle => 'Suflete';
 
   @override
   String get agentSoulToneBoundsLabel => 'Limite de ton';
@@ -812,6 +816,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Directivă vocală';
+
+  @override
+  String get agentSoulsEmptyFiltered =>
+      'Niciun suflet nu se potrivește cu filtrele dvs.';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Căutați suflete…';
+
+  @override
+  String get agentSoulsTitle => 'Suflete';
 
   @override
   String get agentStateConsecutiveFailures => 'Eșecuri consecutive';
@@ -1034,10 +1048,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateAssignedLabel => 'Șablon';
 
   @override
-  String get agentTemplateCreatedSuccess => 'Șablon creat';
+  String get agentTemplateCreateTitle => 'Creați un șablon';
 
   @override
-  String get agentTemplateCreateTitle => 'Creați un șablon';
+  String get agentTemplateCreatedSuccess => 'Șablon creat';
 
   @override
   String get agentTemplateDeleteConfirm =>
@@ -1084,15 +1098,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateInstanceOpenTask => 'Deschideți sarcina';
 
   @override
+  String agentTemplateInstanceStarted(String date) {
+    return 'Pornită la $date';
+  }
+
+  @override
   String get agentTemplateInstancesEmpty => 'Încă nu există instanțe.';
 
   @override
   String get agentTemplateInstancesHeading => 'Instanțe';
-
-  @override
-  String agentTemplateInstanceStarted(String date) {
-    return 'Pornită la $date';
-  }
 
   @override
   String get agentTemplateKindDayAgent => 'Agent de zi';
@@ -1113,17 +1127,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateMetricsTotalWakes => 'Total activări';
 
   @override
-  String get agentTemplateNoneAssigned => 'Niciun șablon atribuit';
-
-  @override
   String get agentTemplateNoTemplates =>
       'Nu sunt șabloane disponibile. Creați mai întâi unul în Setări.';
 
   @override
-  String get agentTemplateNotFound => 'Șablon negăsit';
+  String get agentTemplateNoVersions => 'Nicio versiune';
 
   @override
-  String get agentTemplateNoVersions => 'Nicio versiune';
+  String get agentTemplateNoneAssigned => 'Niciun șablon atribuit';
+
+  @override
+  String get agentTemplateNotFound => 'Șablon negăsit';
 
   @override
   String get agentTemplateReportDirectiveHint =>
@@ -1153,23 +1167,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateSelectTitle => 'Selectați un șablon';
 
   @override
-  String get agentTemplatesEmptyFiltered =>
-      'Niciun șablon nu corespunde filtrelor dvs.';
-
-  @override
   String get agentTemplateSettingsTab => 'Setări';
-
-  @override
-  String get agentTemplatesFilterSectionKind => 'Tip';
-
-  @override
-  String get agentTemplatesGroupByKind => 'Tip';
-
-  @override
-  String get agentTemplatesGroupNone => 'Toate';
-
-  @override
-  String get agentTemplatesSearchPlaceholder => 'Căutați șabloane…';
 
   @override
   String get agentTemplateStatsTab => 'Statistici';
@@ -1179,9 +1177,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTemplateStatusArchived => 'Arhivat';
-
-  @override
-  String get agentTemplatesTitle => 'Șabloane agent';
 
   @override
   String get agentTemplateSwitchHint =>
@@ -1197,6 +1192,25 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTemplateVersionSaved => 'Versiune nouă salvată';
+
+  @override
+  String get agentTemplatesEmptyFiltered =>
+      'Niciun șablon nu corespunde filtrelor dvs.';
+
+  @override
+  String get agentTemplatesFilterSectionKind => 'Tip';
+
+  @override
+  String get agentTemplatesGroupByKind => 'Tip';
+
+  @override
+  String get agentTemplatesGroupNone => 'Toate';
+
+  @override
+  String get agentTemplatesSearchPlaceholder => 'Căutați șabloane…';
+
+  @override
+  String get agentTemplatesTitle => 'Șabloane agent';
 
   @override
   String get agentThreadReportLabel => 'Raport generat în acest ciclu';
@@ -1338,11 +1352,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get aiAttributionTokens => 'Tokenuri';
-
-  @override
   String get aiAttributionTokenUsageUnknown =>
       'Utilizarea tokenurilor este necunoscută';
+
+  @override
+  String get aiAttributionTokens => 'Tokenuri';
 
   @override
   String get aiAttributionTrigger => 'Declanșator';
@@ -1975,6 +1989,41 @@ class AppLocalizationsRo extends AppLocalizations {
       'Apare în lista dvs. de furnizori';
 
   @override
+  String aiProviderConnectKeyHelperLink(String url) {
+    return 'Obțineți o cheie la $url';
+  }
+
+  @override
+  String get aiProviderConnectKeyHiddenLabel => 'Ascunsă';
+
+  @override
+  String get aiProviderConnectKeyPrivacyHint =>
+      'Cheia dvs. API nu părăsește niciodată dispozitivul.';
+
+  @override
+  String aiProviderConnectPageTitle(String providerName) {
+    return 'Conectați $providerName';
+  }
+
+  @override
+  String get aiProviderConnectSaveAndContinue => 'Salvați și continuați';
+
+  @override
+  String get aiProviderConnectSaveAsDraft => 'Salvați ca schiță';
+
+  @override
+  String get aiProviderConnectSavedAsDraftToast => 'Salvată ca schiță';
+
+  @override
+  String get aiProviderConnectStepChoose => 'Alegeți furnizorul';
+
+  @override
+  String get aiProviderConnectStepConnect => 'Conectați';
+
+  @override
+  String get aiProviderConnectStepReview => 'Verificați';
+
+  @override
   String get aiProviderConnectionCheckingLabel =>
       'Se verifică cheia, se listează modelele disponibile…';
 
@@ -2025,41 +2074,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiProviderConnectionVerifiedTitle => 'Conexiune verificată';
-
-  @override
-  String aiProviderConnectKeyHelperLink(String url) {
-    return 'Obțineți o cheie la $url';
-  }
-
-  @override
-  String get aiProviderConnectKeyHiddenLabel => 'Ascunsă';
-
-  @override
-  String get aiProviderConnectKeyPrivacyHint =>
-      'Cheia dvs. API nu părăsește niciodată dispozitivul.';
-
-  @override
-  String aiProviderConnectPageTitle(String providerName) {
-    return 'Conectați $providerName';
-  }
-
-  @override
-  String get aiProviderConnectSaveAndContinue => 'Salvați și continuați';
-
-  @override
-  String get aiProviderConnectSaveAsDraft => 'Salvați ca schiță';
-
-  @override
-  String get aiProviderConnectSavedAsDraftToast => 'Salvată ca schiță';
-
-  @override
-  String get aiProviderConnectStepChoose => 'Alegeți furnizorul';
-
-  @override
-  String get aiProviderConnectStepConnect => 'Conectați';
-
-  @override
-  String get aiProviderConnectStepReview => 'Verificați';
 
   @override
   String get aiProviderDetailAddModelButton => 'Adăugați un model';
@@ -2231,9 +2245,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Afișați progresul AI';
 
   @override
-  String get aiSettingsAddedLabel => 'Adăugat';
-
-  @override
   String get aiSettingsAddModelButton => 'Adăugați un model';
 
   @override
@@ -2252,6 +2263,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get aiSettingsAddProviderButton => 'Adăugați un furnizor';
+
+  @override
+  String get aiSettingsAddedLabel => 'Adăugat';
 
   @override
   String get aiSettingsAgentWakeConcurrencyDescription =>
@@ -2606,10 +2620,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get audioRecordingResume => 'Reluare';
 
   @override
-  String get audioRecordings => 'Înregistrări audio';
+  String get audioRecordingStop => 'Opriți';
 
   @override
-  String get audioRecordingStop => 'Opriți';
+  String get audioRecordings => 'Înregistrări audio';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -3087,10 +3101,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checklistExportFailed => 'Exportul a eșuat';
 
   @override
-  String get checklistItemArchived => 'Element arhivat';
+  String get checklistItemArchiveUndo => 'Anulați';
 
   @override
-  String get checklistItemArchiveUndo => 'Anulați';
+  String get checklistItemArchived => 'Element arhivat';
 
   @override
   String get checklistItemDeleteCancel => 'Anulați';
@@ -3099,11 +3113,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Confirmați';
 
   @override
-  String get checklistItemDeleted => 'Element șters';
-
-  @override
   String get checklistItemDeleteWarning =>
       'Această acțiune nu poate fi anulată.';
+
+  @override
+  String get checklistItemDeleted => 'Element șters';
 
   @override
   String get checklistMarkdownCopied =>
@@ -3550,23 +3564,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get conflictResolvedToast => 'Conflict rezolvat';
 
   @override
-  String get conflictsEmptyDescription =>
-      'Totul este sincronizat. Elementele rezolvate rămân disponibile în celălalt filtru.';
-
-  @override
-  String get conflictsEmptyTitle => 'Nu s-au detectat conflicte';
-
-  @override
   String get conflictSideFromSync => 'DIN SINCRONIZARE';
 
   @override
   String get conflictSideThisDevice => 'ACEST DISPOZITIV';
-
-  @override
-  String get conflictsResolved => 'rezolvat';
-
-  @override
-  String get conflictsUnresolved => 'nerezolvat';
 
   @override
   String get conflictValueAbsent => 'Nedefinit';
@@ -3588,6 +3589,19 @@ class AppLocalizationsRo extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String get conflictsEmptyDescription =>
+      'Totul este sincronizat. Elementele rezolvate rămân disponibile în celălalt filtru.';
+
+  @override
+  String get conflictsEmptyTitle => 'Nu s-au detectat conflicte';
+
+  @override
+  String get conflictsResolved => 'rezolvat';
+
+  @override
+  String get conflictsUnresolved => 'nerezolvat';
 
   @override
   String get contactUsDiscordLabel => 'Discord';
@@ -3990,9 +4004,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextCaptureRecordingSavedStatus => 'Înregistrare salvată';
 
   @override
-  String get dailyOsNextCapturesPanelTitle => 'Capturi';
-
-  @override
   String get dailyOsNextCaptureTranscribing => 'Se transcrie…';
 
   @override
@@ -4013,6 +4024,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureVoiceButtonStop => 'Opriți ascultarea';
+
+  @override
+  String get dailyOsNextCapturesPanelTitle => 'Capturi';
 
   @override
   String get dailyOsNextCategoryFilterAll => 'Toate categoriile';
@@ -4597,37 +4611,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextStateRecurringMissed => 'Recurent · ratat';
 
   @override
-  String get dailyOsNextTimelineActual => 'Real';
-
-  @override
-  String get dailyOsNextTimelineArrange => 'Aranjați blocurile';
-
-  @override
-  String get dailyOsNextTimelineBoth => 'Plan și real';
-
-  @override
-  String get dailyOsNextTimelinePlanned => 'Plan';
-
-  @override
-  String dailyOsNextTimelineSessionOf(int index, int total) {
-    return 'Sesiunea $index din $total';
-  }
-
-  @override
-  String get dailyOsNextTimelineShowBoth => 'Afișați planul și realul împreună';
-
-  @override
-  String get dailyOsNextTimelineShowPaged =>
-      'Afișați planul și realul prin glisare';
-
-  @override
-  String get dailyOsNextTimelineSwipeHint =>
-      'Glisați spre real · ciupiți vertical pentru zoom';
-
-  @override
-  String get dailyOsNextTimelineTracked => 'înregistrat';
-
-  @override
   String dailyOsNextTimeSpentEarlierSessions(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -4661,13 +4644,44 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextTimeSpentTitlePast => 'TIMP ÎNREGISTRAT';
 
   @override
+  String get dailyOsNextTimelineActual => 'Real';
+
+  @override
+  String get dailyOsNextTimelineArrange => 'Aranjați blocurile';
+
+  @override
+  String get dailyOsNextTimelineBoth => 'Plan și real';
+
+  @override
+  String get dailyOsNextTimelinePlanned => 'Plan';
+
+  @override
+  String dailyOsNextTimelineSessionOf(int index, int total) {
+    return 'Sesiunea $index din $total';
+  }
+
+  @override
+  String get dailyOsNextTimelineShowBoth => 'Afișați planul și realul împreună';
+
+  @override
+  String get dailyOsNextTimelineShowPaged =>
+      'Afișați planul și realul prin glisare';
+
+  @override
+  String get dailyOsNextTimelineSwipeHint =>
+      'Glisați spre real · ciupiți vertical pentru zoom';
+
+  @override
+  String get dailyOsNextTimelineTracked => 'înregistrat';
+
+  @override
   String get dailyOsNextTriageConfirmDefer => 'Amânat';
 
   @override
-  String get dailyOsNextTriageConfirmDone => 'Marcat ca finalizat';
+  String get dailyOsNextTriageConfirmDoNow => 'Făcut imediat';
 
   @override
-  String get dailyOsNextTriageConfirmDoNow => 'Făcut imediat';
+  String get dailyOsNextTriageConfirmDone => 'Marcat ca finalizat';
 
   @override
   String get dailyOsNextTriageConfirmDrop => 'Renunțat';
@@ -4679,10 +4693,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get dailyOsNextTriageDefer => 'Amână';
 
   @override
-  String get dailyOsNextTriageDone => 'Finalizat';
+  String get dailyOsNextTriageDoNow => 'Fă acum';
 
   @override
-  String get dailyOsNextTriageDoNow => 'Fă acum';
+  String get dailyOsNextTriageDone => 'Finalizat';
 
   @override
   String get dailyOsNextTriageDrop => 'Renunță';
@@ -5560,10 +5574,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get designSystemSpinnerSkeletonPulseLabel => 'Puls';
 
   @override
-  String get designSystemSpinnerSkeletonsTitle => 'Schelete';
+  String get designSystemSpinnerSkeletonWaveLabel => 'Val';
 
   @override
-  String get designSystemSpinnerSkeletonWaveLabel => 'Val';
+  String get designSystemSpinnerSkeletonsTitle => 'Schelete';
 
   @override
   String get designSystemSpinnerSpinnersTitle => 'Spinnere';
@@ -5700,17 +5714,17 @@ class AppLocalizationsRo extends AppLocalizations {
       'Selectați o sarcină pentru a vedea detaliile';
 
   @override
-  String deviceDeletedSuccess(String deviceName) {
-    return '$deviceName eliminat din sincronizare';
-  }
-
-  @override
   String get deviceDeleteFailedGeneric =>
       'Dispozitivul nu a putut fi eliminat. Verificați conexiunea și încercați din nou.';
 
   @override
   String deviceDeleteQuestion(String deviceName) {
     return 'Eliminați $deviceName din contul dvs. de sincronizare? Dispozitivul va fi deconectat și va trebui asociat din nou înainte de a putea sincroniza.';
+  }
+
+  @override
+  String deviceDeletedSuccess(String deviceName) {
+    return '$deviceName eliminat din sincronizare';
   }
 
   @override
@@ -6063,6 +6077,30 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitPriorityLabel => 'Prioritate';
 
   @override
+  String get habitSectionOptionsTitle => 'Opțiuni';
+
+  @override
+  String get habitSectionScheduleTitle => 'Programare';
+
+  @override
+  String get habitShowAlertAtLabel => 'Afișați alerta la';
+
+  @override
+  String get habitShowFromLabel => 'Afișați de la';
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de zile la rând',
+      few: '$count zile la rând',
+      one: '1 zi la rând',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get habitsAboveGoal => 'Conform planului';
 
   @override
@@ -6114,12 +6152,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get habitsDoneTodayLabel => 'Finalizate azi';
 
   @override
-  String get habitSectionOptionsTitle => 'Opțiuni';
-
-  @override
-  String get habitSectionScheduleTitle => 'Programare';
-
-  @override
   String get habitsFilterAll => 'toate';
 
   @override
@@ -6143,12 +6175,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get habitsHeatmapMore => 'Mai mult';
-
-  @override
-  String get habitShowAlertAtLabel => 'Afișați alerta la';
-
-  @override
-  String get habitShowFromLabel => 'Afișați de la';
 
   @override
   String habitsLaggardHint(String habit, int kept, int active) {
@@ -6196,18 +6222,6 @@ class AppLocalizationsRo extends AppLocalizations {
       other: '$count rămase',
       few: '$count rămase',
       one: '1 rămasă',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String habitStreakDaysSemantic(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de zile la rând',
-      few: '$count zile la rând',
-      one: '1 zi la rând',
     );
     return '$_temp0';
   }
@@ -6268,13 +6282,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get imagePromptGenerationFullPromptLabel => 'Prompt Imagine Complet:';
 
   @override
-  String get images => 'Imagini';
-
-  @override
   String get imageViewerDownloadFailed => 'Nu s-a putut salva imaginea';
-
-  @override
-  String get imageViewerDownloadingTooltip => 'Se salvează imaginea';
 
   @override
   String get imageViewerDownloadPermissionDenied =>
@@ -6292,10 +6300,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get imageViewerDownloadTooltip => 'Descărcați imaginea';
 
   @override
+  String get imageViewerDownloadingTooltip => 'Se salvează imaginea';
+
+  @override
   String get imageViewerNextTooltip => 'Imaginea următoare';
 
   @override
   String get imageViewerPreviousTooltip => 'Imaginea anterioară';
+
+  @override
+  String get images => 'Imagini';
 
   @override
   String get inactiveLabel => 'Inactiv';
@@ -6383,15 +6397,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get inferenceProfileSelectProfile => 'Selectați un profil…';
 
   @override
-  String get inferenceProfilesEmpty => 'Niciun profil de inferență';
-
-  @override
   String inferenceProfileSkillModelRequired(String slotName) {
     return 'Necesită modelul $slotName';
   }
-
-  @override
-  String get inferenceProfileSkillsSection => 'Competențe automatizate';
 
   @override
   String inferenceProfileSkillUsesModel(String slotName) {
@@ -6399,7 +6407,7 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get inferenceProfilesTitle => 'Profile de inferență';
+  String get inferenceProfileSkillsSection => 'Competențe automatizate';
 
   @override
   String get inferenceProfileThinking => 'Gândire';
@@ -6416,6 +6424,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get inferenceProfileUnavailable => 'Profil de inferență indisponibil';
+
+  @override
+  String get inferenceProfilesEmpty => 'Niciun profil de inferență';
+
+  @override
+  String get inferenceProfilesTitle => 'Profile de inferență';
 
   @override
   String get inputDataTypeAudioFilesDescription =>
@@ -6682,13 +6696,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get journalEndDateLabel => 'Dată de sfârșit';
 
   @override
+  String get journalEndTimeLabel => 'Oră de sfârșit';
+
+  @override
   String get journalEndsAnotherDayHint => 'Alegeți o dată de sfârșit separată';
 
   @override
   String get journalEndsAnotherDayLabel => 'Se termină în altă zi';
-
-  @override
-  String get journalEndTimeLabel => 'Oră de sfârșit';
 
   @override
   String get journalEntryExpandLabel => 'Extindeți intrarea';
@@ -6716,6 +6730,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get journalHideMapHint => 'Ascunde harta';
+
+  @override
+  String get journalLinkFromHint => 'Legătură de la';
+
+  @override
+  String get journalLinkToHint => 'Legătură la';
 
   @override
   String get journalLinkedEntriesActivityFilterAudio => 'Audio';
@@ -6750,12 +6770,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get journalLinkedFromLabel => 'Legat de la:';
-
-  @override
-  String get journalLinkFromHint => 'Legătură de la';
-
-  @override
-  String get journalLinkToHint => 'Legătură la';
 
   @override
   String journalOvernightNextDay(String date) {
@@ -7047,13 +7061,13 @@ class AppLocalizationsRo extends AppLocalizations {
   String get knowledgeGraphFilterRelations => 'Relații';
 
   @override
-  String get knowledgeGraphFilters => 'Filtre';
-
-  @override
   String get knowledgeGraphFilterTaskStatus => 'Starea sarcinii';
 
   @override
   String get knowledgeGraphFilterTypes => 'Tipuri';
+
+  @override
+  String get knowledgeGraphFilters => 'Filtre';
 
   @override
   String get knowledgeGraphForward => 'Înainte';
@@ -7139,10 +7153,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get knowledgeGraphRecenter => 'Recentrați';
+  String get knowledgeGraphRecentToOlder => 'Recent → mai vechi';
 
   @override
-  String get knowledgeGraphRecentToOlder => 'Recent → mai vechi';
+  String get knowledgeGraphRecenter => 'Recentrați';
 
   @override
   String get knowledgeGraphRelationAiSource => 'Sursă AI';
@@ -7204,6 +7218,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Aceasta ar crea un ciclu de blocare — alegeți o altă sarcină.';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Legătura nu a putut fi creată. Vă rugăm să încercați din nou.';
+
+  @override
   String linkCreatedMessage(String relation, String title) {
     return '$relation: $title';
   }
@@ -7212,30 +7230,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get linkCreatedUndo => 'Anulați';
 
   @override
-  String get linkCreateFailedMessage =>
-      'Legătura nu a putut fi creată. Vă rugăm să încercați din nou.';
-
-  @override
   String get linkDirectionLabel => 'Această sarcină…';
-
-  @override
-  String get linkedTaskImageBadge => 'Din sarcina legată';
-
-  @override
-  String get linkedTasksBlockedBySectionTitle => 'Blocată de';
-
-  @override
-  String get linkedTasksEmptyAction => 'Legați o sarcină…';
-
-  @override
-  String get linkedTasksEmptyHint =>
-      'Conectați această sarcină cu o altă sarcină.';
-
-  @override
-  String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
-
-  @override
-  String get linkedTasksTitle => 'Sarcini legate';
 
   @override
   String get linkExistingTask => 'Asociați o sarcină existentă…';
@@ -7382,6 +7377,25 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get linkTaskButton => 'Asociați';
+
+  @override
+  String get linkedTaskImageBadge => 'Din sarcina legată';
+
+  @override
+  String get linkedTasksBlockedBySectionTitle => 'Blocată de';
+
+  @override
+  String get linkedTasksEmptyAction => 'Legați o sarcină…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Conectați această sarcină cu o altă sarcină.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Opțiuni sarcini legate';
+
+  @override
+  String get linkedTasksTitle => 'Sarcini legate';
 
   @override
   String get logbookEmptyHint =>
@@ -7608,20 +7622,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ștergeți elementele trimise din coada de ieșire cu mai mult de 7 zile în urmă? Această operațiune șterge în loturi rândurile deja trimise și rulează VACUUM pentru a recupera spațiul pe disc. Elementele în așteptare și cu erori sunt păstrate.';
 
   @override
-  String get maintenanceRecreateFts5 => 'Recreați indexul full-text';
-
-  @override
-  String get maintenanceRecreateFts5Confirm => 'Da, recreați indexul';
-
-  @override
-  String get maintenanceRecreateFts5Description =>
-      'Recreează indexul de căutare text complet';
-
-  @override
-  String get maintenanceRecreateFts5Message =>
-      'Sigur doriți să recreați indexul de căutare text complet? Acest lucru poate dura ceva timp.';
-
-  @override
   String get maintenanceReSync => 'Istoricul mesajelor';
 
   @override
@@ -7698,6 +7698,20 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get maintenanceReSyncStart => 'Porniți';
+
+  @override
+  String get maintenanceRecreateFts5 => 'Recreați indexul full-text';
+
+  @override
+  String get maintenanceRecreateFts5Confirm => 'Da, recreați indexul';
+
+  @override
+  String get maintenanceRecreateFts5Description =>
+      'Recreează indexul de căutare text complet';
+
+  @override
+  String get maintenanceRecreateFts5Message =>
+      'Sigur doriți să recreați indexul de căutare text complet? Acest lucru poate dura ceva timp.';
 
   @override
   String get maintenanceSyncDefinitions =>
@@ -8726,17 +8740,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get projectRecommendationResolveTooltip => 'Marcați ca rezolvat';
 
   @override
-  String get projectRecommendationsTitle => 'Pași următori recomandați';
-
-  @override
   String get projectRecommendationUpdateError =>
       'Recomandarea nu a putut fi actualizată. Vă rugăm să încercați din nou.';
 
   @override
-  String get projectsFilterStatusLabel => 'Stare:';
-
-  @override
-  String get projectsFilterTooltip => 'Filtrați proiectele';
+  String get projectRecommendationsTitle => 'Pași următori recomandați';
 
   @override
   String get projectShowcaseAiReportTitle => 'Raport AI';
@@ -8864,6 +8872,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get projectTitleRequired => 'Titlul proiectului nu poate fi gol';
+
+  @override
+  String get projectsFilterStatusLabel => 'Stare:';
+
+  @override
+  String get projectsFilterTooltip => 'Filtrați proiectele';
 
   @override
   String get promptDefaultModelBadge => 'Implicit';
@@ -9584,12 +9598,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsCelebrationsReplay => 'Reia';
 
   @override
-  String get settingsCelebrationsResetToast =>
-      'Stil resetat la valorile implicite';
-
-  @override
   String get settingsCelebrationsResetToDefault =>
       'Resetați la valorile implicite';
+
+  @override
+  String get settingsCelebrationsResetToast =>
+      'Stil resetat la valorile implicite';
 
   @override
   String get settingsCelebrationsResetUndo => 'Anulați';
@@ -10110,12 +10124,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMatrixPreviousPage => 'Pagina anterioară';
 
   @override
-  String get settingsMatrixSentMessagesLabel => 'Mesaje trimise:';
-
-  @override
   String settingsMatrixSentMessageType(String eventType) {
     return 'Trimis ($eventType)';
   }
+
+  @override
+  String get settingsMatrixSentMessagesLabel => 'Mesaje trimise:';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Începeți verificarea';
@@ -10162,6 +10176,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Salvare';
 
   @override
+  String get settingsMeasurableUnitLabel => 'Unitatea abrevierii';
+
+  @override
   String get settingsMeasurablesCreateTitle => 'Creare măsurătoare';
 
   @override
@@ -10189,9 +10206,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get settingsMeasurablesTitle => 'Măsurători';
-
-  @override
-  String get settingsMeasurableUnitLabel => 'Unitatea abrevierii';
 
   @override
   String get settingsOnboardingActionSubtitle =>
@@ -10847,47 +10861,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPairDiscardCode => 'Nu coincid';
 
   @override
-  String get syncPairedFirstDeviceBody =>
-      'Este primul dispozitiv din contul dumneavoastră. Adăugați altul oricând doriți — tot ce scrieți aici îl va aștepta.';
-
-  @override
-  String get syncPairedFirstDeviceTitle =>
-      'Sincronizarea este configurată pe acest dispozitiv';
-
-  @override
-  String get syncPairedSettingsStep =>
-      'Categorii, obiceiuri, panouri și configurarea AI — trimise de pe celălalt dispozitiv după potrivirea emoji-urilor.';
-
-  @override
-  String get syncPairedSettingsStepFallback =>
-      'Dacă l-ați închis, pe celălalt dispozitiv deschideți Setări → Setări sincronizare → Întreținere, alegeți Sincronizați măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI, apoi alegeți Istoricul mesajelor.';
-
-  @override
-  String get syncPairedSettingsStepTitle => 'Primiți setările dumneavoastră';
-
-  @override
-  String get syncPairedStepsLeft =>
-      'Mai sunt doi pași până când acest dispozitiv vă poate citi jurnalul.';
-
-  @override
-  String get syncPairedVerifyFallback =>
-      'Încă niciun emoji? Verificați din nou – sau deschideți Dispozitive și porniți de acolo.';
-
-  @override
-  String get syncPairedVerifyStep =>
-      'Ambele dispozitive vor afișa șapte emoji-uri. Până când coincid, acest dispozitiv vede doar text criptat.';
-
-  @override
-  String get syncPairedVerifyStepDone =>
-      'Emoji potrivite – acest dispozitiv vă poate citi înregistrările';
-
-  @override
-  String get syncPairedVerifyStepTitle => 'Confirmați emoji-urile';
-
-  @override
-  String get syncPairedVerifyWaiting => 'Se așteaptă apariția emoji-urilor…';
-
-  @override
   String get syncPairEnterManually => 'Lipiți codul în schimb';
 
   @override
@@ -10946,11 +10919,11 @@ class AppLocalizationsRo extends AppLocalizations {
   String get syncPairScanLink => 'Aveți cameră? Scanați codul QR în schimb';
 
   @override
-  String get syncPairScannerRejected =>
-      'Acesta este codul pe care l-ați refuzat. Scanați codul afișat de propriul dispozitiv sau lipiți-l mai jos.';
+  String get syncPairScanTitle => 'Scanați codul de asociere';
 
   @override
-  String get syncPairScanTitle => 'Scanați codul de asociere';
+  String get syncPairScannerRejected =>
+      'Acesta este codul pe care l-ați refuzat. Scanați codul afișat de propriul dispozitiv sau lipiți-l mai jos.';
 
   @override
   String get syncPairShowEmoji => 'Afișați emoji-urile';
@@ -10958,6 +10931,47 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get syncPairWhereToFind =>
       'Se află pe celălalt dispozitiv, la „Adăugați un dispozitiv” — copiați-l acolo și lipiți-l aici.';
+
+  @override
+  String get syncPairedFirstDeviceBody =>
+      'Este primul dispozitiv din contul dumneavoastră. Adăugați altul oricând doriți — tot ce scrieți aici îl va aștepta.';
+
+  @override
+  String get syncPairedFirstDeviceTitle =>
+      'Sincronizarea este configurată pe acest dispozitiv';
+
+  @override
+  String get syncPairedSettingsStep =>
+      'Categorii, obiceiuri, panouri și configurarea AI — trimise de pe celălalt dispozitiv după potrivirea emoji-urilor.';
+
+  @override
+  String get syncPairedSettingsStepFallback =>
+      'Dacă l-ați închis, pe celălalt dispozitiv deschideți Setări → Setări sincronizare → Întreținere, alegeți Sincronizați măsurabilele, tablourile de bord, obiceiurile, categoriile și setările AI, apoi alegeți Istoricul mesajelor.';
+
+  @override
+  String get syncPairedSettingsStepTitle => 'Primiți setările dumneavoastră';
+
+  @override
+  String get syncPairedStepsLeft =>
+      'Mai sunt doi pași până când acest dispozitiv vă poate citi jurnalul.';
+
+  @override
+  String get syncPairedVerifyFallback =>
+      'Încă niciun emoji? Verificați din nou – sau deschideți Dispozitive și porniți de acolo.';
+
+  @override
+  String get syncPairedVerifyStep =>
+      'Ambele dispozitive vor afișa șapte emoji-uri. Până când coincid, acest dispozitiv vede doar text criptat.';
+
+  @override
+  String get syncPairedVerifyStepDone =>
+      'Emoji potrivite – acest dispozitiv vă poate citi înregistrările';
+
+  @override
+  String get syncPairedVerifyStepTitle => 'Confirmați emoji-urile';
+
+  @override
+  String get syncPairedVerifyWaiting => 'Se așteaptă apariția emoji-urilor…';
 
   @override
   String get syncPayloadAgentBundle => 'Pachet agent';
@@ -11260,15 +11274,15 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu există modele de raționament compatibile';
 
   @override
-  String get taskAgentNoProfilesAvailable =>
-      'Nu există profiluri disponibile pe acest dispozitiv';
-
-  @override
   String get taskAgentNoProfileSelected => 'Nicio configurare AI';
 
   @override
   String get taskAgentNoProfileSelectedDescription =>
       'Alegeți o configurare salvată sau un model înainte ca agentul să poată rula.';
+
+  @override
+  String get taskAgentNoProfilesAvailable =>
+      'Nu există profiluri disponibile pe acest dispozitiv';
 
   @override
   String taskAgentProfileChangedToast(String profile) {
@@ -11668,41 +11682,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get taskPriorityUrgent => 'Urgentă';
 
   @override
-  String get tasksAddLabelButton => 'Adăugați o etichetă';
-
-  @override
-  String get tasksAgentFilterAll => 'Toate';
-
-  @override
-  String get tasksAgentFilterHasAgent => 'Cu agent';
-
-  @override
-  String get tasksAgentFilterNoAgent => 'Fără agent';
-
-  @override
-  String get tasksAgentFilterTitle => 'Agent';
-
-  @override
-  String tasksCompactFilterCount(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count de filtre',
-      few: '$count filtre',
-      one: '$count filtru',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get tasksCompactHeaderExpandHint => 'Afișați căutarea și filtrele';
-
-  @override
-  String tasksCompactSearchContext(String query) {
-    return '„$query”';
-  }
-
-  @override
   String get taskSetCategoryLabel => 'Setați categoria';
 
   @override
@@ -11710,15 +11689,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskSetEstimateLabel => 'Adăugați o estimare';
-
-  @override
-  String get tasksFilterApplyTitle => 'Aplicați filtrul';
-
-  @override
-  String get tasksFilterClearAll => 'Ștergeți tot';
-
-  @override
-  String get tasksFilterTitle => 'Filtrați sarcinile';
 
   @override
   String get taskShowcaseAudio => 'Audio';
@@ -11781,6 +11751,86 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get taskShowcaseTodos => 'De făcut';
+
+  @override
+  String get taskStatusAll => 'Toate';
+
+  @override
+  String get taskStatusBlocked => 'Blocat';
+
+  @override
+  String get taskStatusDone => 'Terminat';
+
+  @override
+  String get taskStatusGroomed => 'Pregătit';
+
+  @override
+  String get taskStatusInProgress => 'În progres';
+
+  @override
+  String get taskStatusLabel => 'Starea Sarcinii:';
+
+  @override
+  String get taskStatusOnHold => 'În așteptare';
+
+  @override
+  String get taskStatusOpen => 'Deschis';
+
+  @override
+  String get taskStatusRejected => 'Respins';
+
+  @override
+  String get taskTitleEmpty => 'Fără titlu';
+
+  @override
+  String get taskTitlePrompt => 'Denumiți această sarcină';
+
+  @override
+  String get taskUntitled => '(fără titlu)';
+
+  @override
+  String get tasksAddLabelButton => 'Adăugați o etichetă';
+
+  @override
+  String get tasksAgentFilterAll => 'Toate';
+
+  @override
+  String get tasksAgentFilterHasAgent => 'Cu agent';
+
+  @override
+  String get tasksAgentFilterNoAgent => 'Fără agent';
+
+  @override
+  String get tasksAgentFilterTitle => 'Agent';
+
+  @override
+  String tasksCompactFilterCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de filtre',
+      few: '$count filtre',
+      one: '$count filtru',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksCompactHeaderExpandHint => 'Afișați căutarea și filtrele';
+
+  @override
+  String tasksCompactSearchContext(String query) {
+    return '„$query”';
+  }
+
+  @override
+  String get tasksFilterApplyTitle => 'Aplicați filtrul';
+
+  @override
+  String get tasksFilterClearAll => 'Ștergeți tot';
+
+  @override
+  String get tasksFilterTitle => 'Filtrați sarcinile';
 
   @override
   String get tasksLabelFilterAll => 'Toate';
@@ -11851,6 +11901,19 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Redenumiți filtrul salvat';
+
+  @override
+  String get tasksSavedFilterToastDeleted => 'Filtru șters';
+
+  @override
+  String tasksSavedFilterToastSaved(String name) {
+    return 'Salvat „$name”';
+  }
+
+  @override
+  String tasksSavedFilterToastUpdated(String name) {
+    return 'Actualizat „$name”';
+  }
 
   @override
   String get tasksSavedFiltersAllShort => 'Toate';
@@ -11991,19 +12054,6 @@ class AppLocalizationsRo extends AppLocalizations {
       'Actualizați filtrul existent';
 
   @override
-  String get tasksSavedFilterToastDeleted => 'Filtru șters';
-
-  @override
-  String tasksSavedFilterToastSaved(String name) {
-    return 'Salvat „$name”';
-  }
-
-  @override
-  String tasksSavedFilterToastUpdated(String name) {
-    return 'Actualizat „$name”';
-  }
-
-  @override
   String get tasksSearchModeLabel => 'Mod de căutare';
 
   @override
@@ -12023,42 +12073,6 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get tasksSortByPriority => 'Prioritate';
-
-  @override
-  String get taskStatusAll => 'Toate';
-
-  @override
-  String get taskStatusBlocked => 'Blocat';
-
-  @override
-  String get taskStatusDone => 'Terminat';
-
-  @override
-  String get taskStatusGroomed => 'Pregătit';
-
-  @override
-  String get taskStatusInProgress => 'În progres';
-
-  @override
-  String get taskStatusLabel => 'Starea Sarcinii:';
-
-  @override
-  String get taskStatusOnHold => 'În așteptare';
-
-  @override
-  String get taskStatusOpen => 'Deschis';
-
-  @override
-  String get taskStatusRejected => 'Respins';
-
-  @override
-  String get taskTitleEmpty => 'Fără titlu';
-
-  @override
-  String get taskTitlePrompt => 'Denumiți această sarcină';
-
-  @override
-  String get taskUntitled => '(fără titlu)';
 
   @override
   String get thinkingDisclosureCopied => 'Raționament copiat';

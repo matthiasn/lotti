@@ -87,13 +87,16 @@ void main() {
       final context = tester.element(find.byType(EvolutionReviewPage));
 
       expect(find.text('Daily Standup'), findsOneWidget);
+      // "1-on-1" used to be printed three times above the fold — hero title,
+      // card eyebrow and body copy. The app bar now carries the agent's own
+      // name instead, and the phrase appears nowhere on the page.
       expect(
         find.text(context.messages.agentRitualReviewTitle),
-        findsAtLeastNWidgets(1),
+        findsNothing,
       );
       expect(
-        find.text(context.messages.agentRitualSummarySubtitle),
-        findsAtLeastNWidgets(1),
+        find.text(context.messages.agentRitualSinceLastHeading),
+        findsOneWidget,
       );
       expect(find.byType(RitualSummaryCard), findsOneWidget);
     });
@@ -243,8 +246,14 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text(context.messages.agentRitualSummarySubtitle),
+        find.text(context.messages.agentRitualStartHeading),
         findsOneWidget,
+      );
+      // The card used to be headed "Current Proposal" in exactly the state
+      // where no proposal exists.
+      expect(
+        find.text(context.messages.agentRitualReviewProposalSection),
+        findsNothing,
       );
     });
 
@@ -276,10 +285,14 @@ void main() {
         ),
         findsOneWidget,
       );
-      // Action button should appear.
+      // A waiting session is continued, not started.
+      expect(
+        find.text(context.messages.agentRitualContinueAction),
+        findsOneWidget,
+      );
       expect(
         find.text(context.messages.agentRitualReviewAction),
-        findsOneWidget,
+        findsNothing,
       );
     });
 
@@ -305,7 +318,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text(context.messages.agentRitualReviewAction),
+          find.text(context.messages.agentRitualContinueAction),
           findsOneWidget,
         );
 
@@ -532,7 +545,7 @@ void main() {
         final context = tester.element(find.byType(EvolutionReviewPage));
 
         final actionButton = find.text(
-          context.messages.agentRitualReviewAction,
+          context.messages.agentRitualContinueAction,
         );
         expect(actionButton, findsOneWidget);
 

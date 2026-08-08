@@ -81,8 +81,14 @@ void main() {
       final context = tester.element(
         find.byType(SoulEvolutionReviewPage),
       );
+      // The start card names itself; the banner that repeated the page
+      // title above it is gone.
       expect(
-        find.text(context.messages.agentSoulReviewHeroSubtitle),
+        find.text(context.messages.agentSoulReviewTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentSoulReviewStartHint),
         findsOneWidget,
       );
     });
