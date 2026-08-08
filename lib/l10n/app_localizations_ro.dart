@@ -1054,6 +1054,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTemplateEditTitle => 'Editați șablonul';
 
   @override
+  String get agentTemplateEvolutionTab => 'Evoluție';
+
+  @override
   String get agentTemplateEvolveApprove => 'Aprobă și salvează';
 
   @override
@@ -1068,6 +1071,28 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Detaliere pe instanță';
+
+  @override
+  String agentTemplateInstanceLastActive(String date) {
+    return 'Ultima trezire: $date';
+  }
+
+  @override
+  String get agentTemplateInstanceNeverActive => 'Niciodată trezită';
+
+  @override
+  String get agentTemplateInstanceOpenTask => 'Deschideți sarcina';
+
+  @override
+  String get agentTemplateInstancesEmpty => 'Încă nu există instanțe.';
+
+  @override
+  String get agentTemplateInstancesHeading => 'Instanțe';
+
+  @override
+  String agentTemplateInstanceStarted(String date) {
+    return 'Pornită la $date';
+  }
 
   @override
   String get agentTemplateKindDayAgent => 'Agent de zi';

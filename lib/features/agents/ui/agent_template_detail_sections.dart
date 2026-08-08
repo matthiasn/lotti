@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/agent_date_format.dart';
 import 'package:lotti/features/agents/ui/agent_report_section.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_history_dashboard.dart';
+import 'package:lotti/features/agents/ui/template_instances_section.dart';
 import 'package:lotti/features/agents/ui/template_token_usage_section.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
@@ -190,33 +191,15 @@ class _VersionTile extends ConsumerWidget {
 class SettingsTabContent extends StatelessWidget {
   const SettingsTabContent({
     required this.formFields,
+    required this.onDelete,
     super.key,
   });
 
   final Widget formFields;
 
-  @override
-  Widget build(BuildContext context) {
-    return ListView(
-      padding: const EdgeInsets.all(16),
-      children: [
-        formFields,
-        const SizedBox(height: 16),
-      ],
-    );
-  }
-}
-
-/// Stats tab content — evolution history dashboard, token usage, version
-/// history, and delete action.
-class StatsTabContent extends StatelessWidget {
-  const StatsTabContent({
-    required this.templateId,
-    required this.onDelete,
-    super.key,
-  });
-
-  final String templateId;
+  /// Deleting a template is a settings action, and this is the only tab short
+  /// enough to reach the bottom of: the Stats tab now ends in a list with one
+  /// row per instance, where a trailing button is unreachable in practice.
   final VoidCallback onDelete;
 
   @override
@@ -224,11 +207,7 @@ class StatsTabContent extends StatelessWidget {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        EvolutionHistoryDashboard(templateId: templateId),
-        const SizedBox(height: 24),
-        TemplateTokenUsageSection(templateId: templateId),
-        const SizedBox(height: 24),
-        _VersionHistorySection(templateId: templateId),
+        formFields,
         const SizedBox(height: 24),
         Center(
           child: TextButton.icon(
@@ -243,7 +222,76 @@ class StatsTabContent extends StatelessWidget {
             ),
           ),
         ),
+        const SizedBox(height: 16),
+      ],
+    );
+  }
+}
+
+/// Evolution tab content — ritual history and the template's version history,
+/// including rollback.
+///
+/// Split out of the Stats tab: version history was the last section under an
+/// uncapped instance list, which made rollback effectively unreachable on any
+/// template with a real number of instances.
+class EvolutionTabContent extends StatelessWidget {
+  const EvolutionTabContent({required this.templateId, super.key});
+
+  final String templateId;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: const EdgeInsets.all(16),
+      children: [
+        EvolutionHistoryDashboard(templateId: templateId),
+        const SizedBox(height: 24),
+        _VersionHistorySection(templateId: templateId),
         const SizedBox(height: 80),
+      ],
+    );
+  }
+}
+
+/// Stats tab content — aggregate token usage, then one row per instance.
+///
+/// A `CustomScrollView` rather than a `ListView` of sections so the instance
+/// list can build lazily: a template collects an instance per task, and the
+/// previous `Column` materialised every one of them on every open.
+class StatsTabContent extends StatelessWidget {
+  const StatsTabContent({
+    required this.templateId,
+    super.key,
+  });
+
+  final String templateId;
+
+  @override
+  Widget build(BuildContext context) {
+    return CustomScrollView(
+      slivers: [
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 8),
+          sliver: SliverToBoxAdapter(
+            child: TemplateTokenUsageSection(templateId: templateId),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.fromLTRB(16, 8, 16, 8),
+          sliver: SliverToBoxAdapter(
+            child: Text(
+              context.messages.agentTemplateInstancesHeading,
+              style: context.textTheme.titleSmall?.copyWith(
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ),
+        ),
+        SliverPadding(
+          padding: const EdgeInsets.symmetric(horizontal: 8),
+          sliver: TemplateInstancesSliver(templateId: templateId),
+        ),
+        const SliverToBoxAdapter(child: SizedBox(height: 80)),
       ],
     );
   }

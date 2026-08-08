@@ -496,6 +496,7 @@
   "@agentTemplateEditTitle": {
     "description": "Page title for the edit-template form."
   },
+  "agentTemplateEvolutionTab": "Evolution",
   "agentTemplateEvolveApprove": "Godkend & Gem",
   "@agentTemplateEvolveApprove": {
     "description": "Button to accept and save proposed directive changes."
@@ -516,6 +517,12 @@
   "@agentTemplateInstanceBreakdownHeading": {
     "description": "Heading for the per-instance breakdown section in agent template stats."
   },
+  "agentTemplateInstanceLastActive": "Sidst vågen: {date}",
+  "agentTemplateInstanceNeverActive": "Aldrig vækket",
+  "agentTemplateInstanceOpenTask": "Åbn opgave",
+  "agentTemplateInstancesEmpty": "Ingen instanser endnu.",
+  "agentTemplateInstancesHeading": "Instanser",
+  "agentTemplateInstanceStarted": "Startet den {date}",
   "agentTemplateKindDayAgent": "Dagagent",
   "@agentTemplateKindDayAgent": {
     "description": "Display name for the Daily OS day-agent template kind."
