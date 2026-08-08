@@ -2628,7 +2628,7 @@ void main() {
     });
 
     test(
-      'useStrategyTools false keeps a constrained list constrained',
+      'a forced toolChoice keeps a constrained list constrained',
       () async {
         // The forced report-only retry pairs a one-tool list with a forced
         // toolChoice. A staging strategy widening it back would hand a provider
@@ -2678,7 +2678,13 @@ void main() {
           inferenceRepo: mockOllamaRepo,
           strategy: mockStrategy,
           tools: [reportOnly],
-          useStrategyTools: false,
+          // What the forced report-only retry passes.
+          toolChoice: const ChatCompletionToolChoiceOption.tool(
+            ChatCompletionNamedToolChoice(
+              type: ChatCompletionNamedToolChoiceType.function,
+              function: ChatCompletionFunctionCallOption(name: 'update_report'),
+            ),
+          ),
         );
 
         final captured =

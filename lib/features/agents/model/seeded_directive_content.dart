@@ -41,10 +41,29 @@ rather than assume.''';
 
 // ── Task Agent: Report Directive ───────────────────────────────────────────
 
-/// Default report directive for task agent templates.
+/// Seeded report directive for task agent templates — **never sent as-is**.
 ///
-/// Defines the report structure including the Links section that mirrors
-/// the proven task summary prompt approach.
+/// This text does not reach a stock task agent. `TaskAgentPromptBuilder`
+/// substitutes `TaskAgentEvidenceSynthesis.reportDirective` whenever
+/// `usesBuiltInReportContract` holds, and that covers both an empty directive
+/// and this exact value — so every stock agent gets the evidence-synthesis
+/// contract instead. Only a genuinely customised or evolved directive is sent
+/// verbatim.
+///
+/// **The two disagree, and the substituted one wins.** This text says
+/// `update_report` is mandatory on every wake and forbids ending a turn with a
+/// plain-text message. The live contract says the opposite: call it only when
+/// no report exists or the report materially changed, and *"otherwise finish
+/// with a brief plain-text note and do not republish unchanged content"*. On
+/// 2026-08-08 this constant was read as the live rule and a correct evaluation
+/// result was retracted in error because of it. Check a built prompt — see
+/// `TaskAgentPromptBuilder.buildSystemPrompt` — never this constant.
+///
+/// **Do not edit the text.** Templates seeded on earlier versions store it
+/// byte-for-byte, and `usesBuiltInReportContract` recognises them by exact
+/// match. Changing a character reclassifies every existing agent as having a
+/// custom directive, which silently disables the model-tuned substitution for
+/// them. Its value is now its stability, not its content.
 const taskAgentReportDirective = '''
 ## MANDATORY FINAL TOOL CALL
 

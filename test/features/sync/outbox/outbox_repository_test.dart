@@ -539,10 +539,10 @@ void main() {
             createdAt: now.subtract(const Duration(days: 30)),
           );
 
-        final deleted = await realRepo.pruneSentOutboxItems(
-          retention: const Duration(days: 7),
-          now: now,
-        );
+          final deleted = await realRepo.pruneSentOutboxItems(
+            retention: const Duration(days: 7),
+            now: now,
+          );
 
           expect(deleted, 1);
           expect(await realDb.getOutboxItemById(oldSent), isNull);

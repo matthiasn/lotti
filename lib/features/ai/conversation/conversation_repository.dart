@@ -230,12 +230,6 @@ class ConversationRepository extends Notifier<void> {
     ChatCompletionToolChoiceOption? toolChoice,
     double temperature = 0.7,
     ConversationStrategy? strategy,
-    // Whether [strategy] may choose the tools for each turn. Callers that
-    // deliberately constrain the surface — the forced report-only retry, which
-    // pairs an explicit one-tool list with a forced `toolChoice` — set this
-    // false so a staging strategy cannot widen it back on a later turn and let
-    // a provider that ignores `toolChoice` reach a mutation tool.
-    bool useStrategyTools = true,
     // Owner ids for per-turn consumption recording. When [consumptionAgentId]
     // is null, recording is skipped (non-agent callers). Agent workflows pass
     // these so each turn is attributed to the task/category/wake.
@@ -325,13 +319,24 @@ class ConversationRepository extends Notifier<void> {
         // Ask the strategy what to advertise for this turn. Without this the
         // list captured at sendMessage is reused for every turn, so a wake
         // cannot narrow its opening turn and widen later.
+        // A forced `toolChoice` means the caller is constraining this call to
+        // one named tool and passed the matching one-tool list — the report-only
+        // retry does exactly that. A staging strategy must not widen it back,
+        // or a provider that ignores `toolChoice` could reach a mutation tool
+        // during report recovery.
+        // `ChatCompletionToolChoiceOption` is a union: `.mode(auto|none|...)`
+        // or `.tool(named)`. Only the named-tool variant means the caller
+        // pinned this call to one tool.
+        final callerConstrainedTools =
+            toolChoice
+                is ChatCompletionToolChoiceOptionChatCompletionNamedToolChoice;
         final turnTools =
-            (useStrategyTools
-                ? strategy?.toolsForTurn(
+            (callerConstrainedTools
+                ? null
+                : strategy?.toolsForTurn(
                     turnIndex: strategyTurnIndex,
                     manager: manager,
-                  )
-                : null) ??
+                  )) ??
             tools;
 
         // Collect response
