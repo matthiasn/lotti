@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/model/template_instance_overview.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
 import 'package:lotti/features/agents/ui/instances/instance_view_model.dart';
+import 'package:lotti/features/agents/ui/listing/widgets/agent_list_row.dart';
 import 'package:lotti/features/agents/ui/template_instances_section.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -59,7 +60,7 @@ void main() {
   late MockNavService nav;
   late RecordingBeamerDelegate delegate;
 
-  setUp(() {
+  setUp(() async {
     nav = MockNavService();
     delegate = RecordingBeamerDelegate();
     when(() => nav.index).thenReturn(0);
@@ -68,17 +69,12 @@ void main() {
     when(() => nav.settingsDelegate).thenReturn(delegate);
     when(() => nav.persistNamedRoute(any())).thenAnswer((_) async {});
     when(() => nav.beamToNamed(any())).thenReturn(null);
-    if (getIt.isRegistered<NavService>()) {
-      getIt.unregister<NavService>();
-    }
-    getIt.registerSingleton<NavService>(nav);
+    await setUpTestGetIt(
+      additionalSetup: () => getIt.registerSingleton<NavService>(nav),
+    );
   });
 
-  tearDown(() {
-    if (getIt.isRegistered<NavService>()) {
-      getIt.unregister<NavService>();
-    }
-  });
+  tearDown(tearDownTestGetIt);
 
   group('TemplateInstancesSliver', () {
     testWidgets('names each instance by its task, not by the agent', (
@@ -229,7 +225,15 @@ void main() {
       );
       await tester.pumpAndSettle();
 
-      expect(find.textContaining('12,345'), findsOneWidget);
+      // Both halves of the claim: the used instance shows its total, and the
+      // unused one shows nothing rather than a bare "0". Asserted on the row
+      // data, since an absent meta cell has no text to search for.
+      final rows = tester
+          .widgetList<AgentListRow>(find.byType(AgentListRow))
+          .toList();
+      expect(rows, hasLength(2));
+      expect(rows.first.data.metaRight, '12,345');
+      expect(rows.last.data.metaRight, isNull);
     });
 
     testWidgets('renders a pill for every lifecycle', (tester) async {
