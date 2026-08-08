@@ -122,6 +122,28 @@ void main() {
     expect(report, contains('| gp_noop | 2/3 |'));
   });
 
+  test('mixed telemetry divides per-month figures by reported cases', () {
+    final report = buildGoalAgentEvalMergedReport([
+      _artifact(
+        modelId: 'glm-5.2',
+        results: [
+          _case(
+            modelId: 'glm-5.2',
+            scenarioId: 'gp_noop',
+            credits: 0.002,
+            energyWh: 0.3,
+          ),
+          // No telemetry at all for the second case.
+          _case(modelId: 'glm-5.2', scenarioId: 'gp_on_track'),
+        ],
+      ),
+    ]);
+    // 0.002 / 1 reported × 90 = 0.18; 0.3 / 1 reported × 90 = 27.0.
+    expect(report, contains('0.1800'));
+    expect(report, contains('27.0'));
+    expect(report, isNot(contains('13.5')));
+  });
+
   test('an all-failure report still renders and lists every failure', () {
     final report = buildGoalAgentEvalMergedReport([
       _artifact(

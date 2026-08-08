@@ -54,10 +54,13 @@ Cost is a first-class output, captured per case from day one:
   (`credits`) lands in each case artifact.
 - Reports show credits AND energy per model with **per-goal-month
   extrapolations** (mean per case × wakes/day × 30) — "my fitness agent
-  costs N Wh per month" is a first-class answer (ADR 0058). The wakes/day
+  costs N Wh per month" is a first-class answer (ADR 0058). Wh here is
+  the provider-reported energy of the AI inference itself
+  (`AiConsumptionEvent.energyKwh`), not total device energy. The wakes/day
   figure (default 3) is a printed assumption, not a measurement —
-  deterministic Phase A ticks and banner rendering cost €0 and 0 Wh by
-  design (ADR 0054/0058).
+  deterministic Phase A ticks and banner *rendering* cost €0 and no
+  inference energy by design (ADR 0054/0058); the Phase B turn that
+  authors banner copy is what the reported figures measure.
 - All cost figures are **observations for monitoring, never targets or
   caps** (session decision 2026-08-08). "not reported" means the provider
   sent no billing data; it is never rendered as zero.
@@ -103,9 +106,9 @@ Useful knobs:
 
 **Banners are procedural text** (ADR 0058): `create_goal_ad` authors copy
 (headline/tagline/cta) and selects animation + accent presets from the
-code-owned catalogs — no image provider exists in the channel, so ad
-creation itself consumes no inference, no image generation, no energy.
-The leakage evals police the copy fields.
+code-owned catalogs — no image provider exists in the channel, so beyond
+the Phase B text turn that authors the copy there is no separate image
+inference or generation. The leakage evals police the copy fields.
 
 Merging artifacts by hand:
 

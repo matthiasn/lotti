@@ -293,8 +293,9 @@ as String?,
 /// @nodoc
 mixin _$GoalNudgeRating {
 
-/// 1 (useless) .. 5 (loved it).
- int get rating; DateTime get ratedAt;
+/// Which run of this ad the outcome belongs to (1-based).
+@JsonKey(fromJson: _decodeActivation) int get activation; DateTime get ratedAt;/// 1 (useless) .. 5 (loved it); null iff [skipped].
+@JsonKey(fromJson: _decodeRating) int? get rating; bool get skipped;
 /// Create a copy of GoalNudgeRating
 /// with the given fields replaced by the non-null parameter values.
 @JsonKey(includeFromJson: false, includeToJson: false)
@@ -307,16 +308,16 @@ $GoalNudgeRatingCopyWith<GoalNudgeRating> get copyWith => _$GoalNudgeRatingCopyW
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalNudgeRating&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.ratedAt, ratedAt) || other.ratedAt == ratedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalNudgeRating&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.ratedAt, ratedAt) || other.ratedAt == ratedAt)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.skipped, skipped) || other.skipped == skipped));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,rating,ratedAt);
+int get hashCode => Object.hash(runtimeType,activation,ratedAt,rating,skipped);
 
 @override
 String toString() {
-  return 'GoalNudgeRating(rating: $rating, ratedAt: $ratedAt)';
+  return 'GoalNudgeRating(activation: $activation, ratedAt: $ratedAt, rating: $rating, skipped: $skipped)';
 }
 
 
@@ -327,7 +328,7 @@ abstract mixin class $GoalNudgeRatingCopyWith<$Res>  {
   factory $GoalNudgeRatingCopyWith(GoalNudgeRating value, $Res Function(GoalNudgeRating) _then) = _$GoalNudgeRatingCopyWithImpl;
 @useResult
 $Res call({
- int rating, DateTime ratedAt
+@JsonKey(fromJson: _decodeActivation) int activation, DateTime ratedAt,@JsonKey(fromJson: _decodeRating) int? rating, bool skipped
 });
 
 
@@ -344,11 +345,13 @@ class _$GoalNudgeRatingCopyWithImpl<$Res>
 
 /// Create a copy of GoalNudgeRating
 /// with the given fields replaced by the non-null parameter values.
-@pragma('vm:prefer-inline') @override $Res call({Object? rating = null,Object? ratedAt = null,}) {
+@pragma('vm:prefer-inline') @override $Res call({Object? activation = null,Object? ratedAt = null,Object? rating = freezed,Object? skipped = null,}) {
   return _then(_self.copyWith(
-rating: null == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+activation: null == activation ? _self.activation : activation // ignore: cast_nullable_to_non_nullable
 as int,ratedAt: null == ratedAt ? _self.ratedAt : ratedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,rating: freezed == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as int?,skipped: null == skipped ? _self.skipped : skipped // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 
@@ -433,10 +436,10 @@ return $default(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int rating,  DateTime ratedAt)?  $default,{required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _decodeActivation)  int activation,  DateTime ratedAt, @JsonKey(fromJson: _decodeRating)  int? rating,  bool skipped)?  $default,{required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case _GoalNudgeRating() when $default != null:
-return $default(_that.rating,_that.ratedAt);case _:
+return $default(_that.activation,_that.ratedAt,_that.rating,_that.skipped);case _:
   return orElse();
 
 }
@@ -454,10 +457,10 @@ return $default(_that.rating,_that.ratedAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int rating,  DateTime ratedAt)  $default,) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function(@JsonKey(fromJson: _decodeActivation)  int activation,  DateTime ratedAt, @JsonKey(fromJson: _decodeRating)  int? rating,  bool skipped)  $default,) {final _that = this;
 switch (_that) {
 case _GoalNudgeRating():
-return $default(_that.rating,_that.ratedAt);case _:
+return $default(_that.activation,_that.ratedAt,_that.rating,_that.skipped);case _:
   throw StateError('Unexpected subclass');
 
 }
@@ -474,10 +477,10 @@ return $default(_that.rating,_that.ratedAt);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int rating,  DateTime ratedAt)?  $default,) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function(@JsonKey(fromJson: _decodeActivation)  int activation,  DateTime ratedAt, @JsonKey(fromJson: _decodeRating)  int? rating,  bool skipped)?  $default,) {final _that = this;
 switch (_that) {
 case _GoalNudgeRating() when $default != null:
-return $default(_that.rating,_that.ratedAt);case _:
+return $default(_that.activation,_that.ratedAt,_that.rating,_that.skipped);case _:
   return null;
 
 }
@@ -489,12 +492,15 @@ return $default(_that.rating,_that.ratedAt);case _:
 @JsonSerializable()
 
 class _GoalNudgeRating implements GoalNudgeRating {
-  const _GoalNudgeRating({required this.rating, required this.ratedAt});
+  const _GoalNudgeRating({@JsonKey(fromJson: _decodeActivation) required this.activation, required this.ratedAt, @JsonKey(fromJson: _decodeRating) this.rating, this.skipped = false}): assert(skipped ? rating == null : rating != null && rating >= 1 && rating <= 5, 'a rating is 1..5, present exactly when the prompt was not skipped');
   factory _GoalNudgeRating.fromJson(Map<String, dynamic> json) => _$GoalNudgeRatingFromJson(json);
 
-/// 1 (useless) .. 5 (loved it).
-@override final  int rating;
+/// Which run of this ad the outcome belongs to (1-based).
+@override@JsonKey(fromJson: _decodeActivation) final  int activation;
 @override final  DateTime ratedAt;
+/// 1 (useless) .. 5 (loved it); null iff [skipped].
+@override@JsonKey(fromJson: _decodeRating) final  int? rating;
+@override@JsonKey() final  bool skipped;
 
 /// Create a copy of GoalNudgeRating
 /// with the given fields replaced by the non-null parameter values.
@@ -509,16 +515,16 @@ Map<String, dynamic> toJson() {
 
 @override
 bool operator ==(Object other) {
-  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalNudgeRating&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.ratedAt, ratedAt) || other.ratedAt == ratedAt));
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalNudgeRating&&(identical(other.activation, activation) || other.activation == activation)&&(identical(other.ratedAt, ratedAt) || other.ratedAt == ratedAt)&&(identical(other.rating, rating) || other.rating == rating)&&(identical(other.skipped, skipped) || other.skipped == skipped));
 }
 
 @JsonKey(includeFromJson: false, includeToJson: false)
 @override
-int get hashCode => Object.hash(runtimeType,rating,ratedAt);
+int get hashCode => Object.hash(runtimeType,activation,ratedAt,rating,skipped);
 
 @override
 String toString() {
-  return 'GoalNudgeRating(rating: $rating, ratedAt: $ratedAt)';
+  return 'GoalNudgeRating(activation: $activation, ratedAt: $ratedAt, rating: $rating, skipped: $skipped)';
 }
 
 
@@ -529,7 +535,7 @@ abstract mixin class _$GoalNudgeRatingCopyWith<$Res> implements $GoalNudgeRating
   factory _$GoalNudgeRatingCopyWith(_GoalNudgeRating value, $Res Function(_GoalNudgeRating) _then) = __$GoalNudgeRatingCopyWithImpl;
 @override @useResult
 $Res call({
- int rating, DateTime ratedAt
+@JsonKey(fromJson: _decodeActivation) int activation, DateTime ratedAt,@JsonKey(fromJson: _decodeRating) int? rating, bool skipped
 });
 
 
@@ -546,11 +552,13 @@ class __$GoalNudgeRatingCopyWithImpl<$Res>
 
 /// Create a copy of GoalNudgeRating
 /// with the given fields replaced by the non-null parameter values.
-@override @pragma('vm:prefer-inline') $Res call({Object? rating = null,Object? ratedAt = null,}) {
+@override @pragma('vm:prefer-inline') $Res call({Object? activation = null,Object? ratedAt = null,Object? rating = freezed,Object? skipped = null,}) {
   return _then(_GoalNudgeRating(
-rating: null == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+activation: null == activation ? _self.activation : activation // ignore: cast_nullable_to_non_nullable
 as int,ratedAt: null == ratedAt ? _self.ratedAt : ratedAt // ignore: cast_nullable_to_non_nullable
-as DateTime,
+as DateTime,rating: freezed == rating ? _self.rating : rating // ignore: cast_nullable_to_non_nullable
+as int?,skipped: null == skipped ? _self.skipped : skipped // ignore: cast_nullable_to_non_nullable
+as bool,
   ));
 }
 

@@ -28,7 +28,10 @@ consumed today by its unit tests and by the goal-agent evaluation harness
 (`test/features/agents/eval/goal/`), which cross-checks its fixture
 arithmetic against this evaluator.
 
-The runtime (agent kind, wake wiring, entities), the banner surface, and the
+The persistence entities exist (`goalSpecVersion`/`goalSpecHead`/
+`goalProgress`/`goalNudge` variants on `AgentDomainEntity`, with
+`GoalSpecValidator` gating decode). The runtime (agent kind, wake wiring),
+the banner surface (procedural text banners, ADR 0058), and the
 conversation UI follow in later increments; the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.
 
@@ -37,6 +40,7 @@ Decisions: ADRs
 [0054](../../../docs/adr/0054-deterministic-first-two-tier-wakes.md),
 [0055](../../../docs/adr/0055-banner-nudge-attention-channel.md),
 [0056](../../../docs/adr/0056-need-to-know-visual-brief-boundary.md),
-[0057](../../../docs/adr/0057-decade-scale-agent-memory.md).
+[0057](../../../docs/adr/0057-decade-scale-agent-memory.md),
+[0058](../../../docs/adr/0058-procedural-text-banners-no-generative-imagery.md).
 A `knowledge/` concept will be added when the runtime ships and there is
 running behavior to document.

@@ -103,8 +103,9 @@ contract; the runtime renders the same JSON from real registers.
 Phase B decides (create_goal_ad | rerun_goal_ad)
   → goalNudge row: copy (headline/tagline/cta, tone) + animation/accent
     presets from the code-owned catalogs
-  → status ready→active immediately — nothing to generate, verify or wait
-    for; creation is deterministic, free, and works offline
+  → status ready→active immediately after the tool call — no separate
+    image request, verification round-trip or wait; the only inference
+    spent is the Phase B text turn that authored the copy
   → activeGoalNudgesProvider (reactive) → banner surfaces
 ```
 

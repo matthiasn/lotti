@@ -58,20 +58,44 @@ abstract class GoalNudgeBrief with _$GoalNudgeBrief {
       _$GoalNudgeBriefFromJson(json);
 }
 
-/// One rating event for one run of an ad.
+/// One rating-prompt outcome for one activation of an ad.
 ///
-/// Ratings are a HISTORY, not a single value (ADR 0055 Decision 7): every
-/// re-run prompts anew, and the trajectory across runs is what detects
-/// wear-out — a five-star ad sliding to two stars retires from the reuse
-/// library.
+/// Ratings are a HISTORY, not a single value (ADR 0055 Decision 7): each
+/// re-run ([activation] is the 1-based run index) prompts anew, and the
+/// trajectory across runs detects wear-out. A [skipped] entry records that
+/// the prompt was shown and declined for that activation — which is what
+/// lets the UI prompt exactly once per run instead of nagging or wrongly
+/// suppressing the next run.
 @freezed
 abstract class GoalNudgeRating with _$GoalNudgeRating {
+  @Assert(
+    'skipped ? rating == null : rating != null && rating >= 1 && rating <= 5',
+    'a rating is 1..5, present exactly when the prompt was not skipped',
+  )
   const factory GoalNudgeRating({
-    /// 1 (useless) .. 5 (loved it).
-    required int rating,
+    /// Which run of this ad the outcome belongs to (1-based).
+    @JsonKey(fromJson: _decodeActivation) required int activation,
     required DateTime ratedAt,
+
+    /// 1 (useless) .. 5 (loved it); null iff [skipped].
+    @JsonKey(fromJson: _decodeRating) int? rating,
+    @Default(false) bool skipped,
   }) = _GoalNudgeRating;
 
   factory GoalNudgeRating.fromJson(Map<String, dynamic> json) =>
       _$GoalNudgeRatingFromJson(json);
+}
+
+/// Range- and integrality-enforcing decoder: the generated decoder would
+/// truncate `4.9` to 4 and store a lie in the permanent rating history;
+/// out-of-contract values must fail the decode instead.
+int? _decodeRating(Object? raw) {
+  if (raw == null) return null;
+  if (raw is num && raw % 1 == 0 && raw >= 1 && raw <= 5) return raw.toInt();
+  throw FormatException('rating outside the 1..5 contract: $raw');
+}
+
+int _decodeActivation(Object? raw) {
+  if (raw is num && raw % 1 == 0 && raw >= 1) return raw.toInt();
+  throw FormatException('activation must be a 1-based integer: $raw');
 }

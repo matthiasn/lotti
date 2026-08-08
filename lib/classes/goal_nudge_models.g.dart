@@ -54,12 +54,16 @@ const _$GoalBannerAccentEnumMap = {
 
 _GoalNudgeRating _$GoalNudgeRatingFromJson(Map<String, dynamic> json) =>
     _GoalNudgeRating(
-      rating: (json['rating'] as num).toInt(),
+      activation: _decodeActivation(json['activation']),
       ratedAt: DateTime.parse(json['ratedAt'] as String),
+      rating: _decodeRating(json['rating']),
+      skipped: json['skipped'] as bool? ?? false,
     );
 
 Map<String, dynamic> _$GoalNudgeRatingToJson(_GoalNudgeRating instance) =>
     <String, dynamic>{
-      'rating': instance.rating,
+      'activation': instance.activation,
       'ratedAt': instance.ratedAt.toIso8601String(),
+      'rating': instance.rating,
+      'skipped': instance.skipped,
     };

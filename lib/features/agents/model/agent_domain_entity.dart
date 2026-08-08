@@ -979,13 +979,26 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? retiredAt,
     DateTime? expiredAt,
 
-    /// Rating history, one entry per rated run (never overwritten).
+    /// How many times this ad has been activated (1-based; a reuse
+    /// re-entry increments it). Rating prompts key off this: one outcome
+    /// per activation in the ratings history.
+    @Default(1) int activationCount,
+
+    /// Rating-prompt outcomes, one per rated-or-skipped activation
+    /// (append-only; never overwritten).
     @Default(<GoalNudgeRating>[]) List<GoalNudgeRating> ratings,
 
-    /// Accumulated visible time across impressions, in milliseconds — the
-    /// denominator for every effectiveness ratio.
-    @Default(0) int totalVisibleMs,
-    @Default(0) int impressionCount,
+    /// Accumulated visible milliseconds, per host — grow-only counters so
+    /// concurrent exposure on two devices can merge by element-wise max
+    /// instead of losing one side to whole-row LWW (`.value` is the total).
+    /// The concurrent-merge rule itself lands with the first producer
+    /// (PR 5), before anything writes these rows.
+    @Default(GCounter.empty())
+    @JsonKey(name: 'totalVisibleMsByHost')
+    GCounter totalVisibleMs,
+    @Default(GCounter.empty())
+    @JsonKey(name: 'impressionCountByHost')
+    GCounter impressionCount,
     DateTime? firstShownAt,
     DateTime? lastShownAt,
 

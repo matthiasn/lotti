@@ -66,13 +66,17 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
         (scenarioId == null || r['scenarioId'] == scenarioId),
   );
 
-  double? sumOf(Iterable<Map<String, dynamic>> cases, String key) {
+  /// Sum and reporting count for [key] — per-month figures divide by the
+  /// REPORTED count: missing telemetry widens uncertainty, it never
+  /// masquerades as zero.
+  (double, int)? sumOf(Iterable<Map<String, dynamic>> cases, String key) {
     final values = cases
         .map((r) => r[key])
         .whereType<num>()
         .map((v) => v.toDouble())
         .toList();
-    return values.isEmpty ? null : values.reduce((a, b) => a + b);
+    if (values.isEmpty) return null;
+    return (values.reduce((a, b) => a + b), values.length);
   }
 
   final buffer = StringBuffer()
@@ -104,14 +108,16 @@ String buildGoalAgentEvalMergedReport(List<Map<String, dynamic>> artifacts) {
   for (final modelId in ranked) {
     final cases = casesFor(modelId).toList();
     final passedCount = cases.where((r) => r['passed'] == true).length;
-    final credits = sumOf(cases, 'credits');
-    final perGoalMonth = credits == null || cases.isEmpty
+    final creditsSum = sumOf(cases, 'credits');
+    final credits = creditsSum?.$1;
+    final perGoalMonth = creditsSum == null
         ? null
-        : credits / cases.length * wakesPerDay * 30;
-    final energyWh = sumOf(cases, 'energyWh');
-    final energyPerGoalMonth = energyWh == null || cases.isEmpty
+        : creditsSum.$1 / creditsSum.$2 * wakesPerDay * 30;
+    final energySum = sumOf(cases, 'energyWh');
+    final energyWh = energySum?.$1;
+    final energyPerGoalMonth = energySum == null
         ? null
-        : energyWh / cases.length * wakesPerDay * 30;
+        : energySum.$1 / energySum.$2 * wakesPerDay * 30;
     final rate = cases.isEmpty
         ? '—'
         : (passedCount / cases.length).toStringAsFixed(2);

@@ -3,8 +3,8 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/classes/goal_window.dart';
-import 'package:lotti/features/goals/validation/goal_spec_validator.dart';
 
 void main() {
   Map<String, dynamic> jsonOf(GoalCriterion criterion) =>

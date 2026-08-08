@@ -1893,13 +1893,22 @@ GoalNudgeEntity _$GoalNudgeEntityFromJson(Map<String, dynamic> json) =>
       expiredAt: json['expiredAt'] == null
           ? null
           : DateTime.parse(json['expiredAt'] as String),
+      activationCount: (json['activationCount'] as num?)?.toInt() ?? 1,
       ratings:
           (json['ratings'] as List<dynamic>?)
               ?.map((e) => GoalNudgeRating.fromJson(e as Map<String, dynamic>))
               .toList() ??
           const <GoalNudgeRating>[],
-      totalVisibleMs: (json['totalVisibleMs'] as num?)?.toInt() ?? 0,
-      impressionCount: (json['impressionCount'] as num?)?.toInt() ?? 0,
+      totalVisibleMs: json['totalVisibleMsByHost'] == null
+          ? const GCounter.empty()
+          : GCounter.fromJson(
+              json['totalVisibleMsByHost'] as Map<String, dynamic>,
+            ),
+      impressionCount: json['impressionCountByHost'] == null
+          ? const GCounter.empty()
+          : GCounter.fromJson(
+              json['impressionCountByHost'] as Map<String, dynamic>,
+            ),
       firstShownAt: json['firstShownAt'] == null
           ? null
           : DateTime.parse(json['firstShownAt'] as String),
@@ -1936,9 +1945,10 @@ Map<String, dynamic> _$GoalNudgeEntityToJson(GoalNudgeEntity instance) =>
       'dismissedAt': instance.dismissedAt?.toIso8601String(),
       'retiredAt': instance.retiredAt?.toIso8601String(),
       'expiredAt': instance.expiredAt?.toIso8601String(),
+      'activationCount': instance.activationCount,
       'ratings': instance.ratings,
-      'totalVisibleMs': instance.totalVisibleMs,
-      'impressionCount': instance.impressionCount,
+      'totalVisibleMsByHost': instance.totalVisibleMs,
+      'impressionCountByHost': instance.impressionCount,
       'firstShownAt': instance.firstShownAt?.toIso8601String(),
       'lastShownAt': instance.lastShownAt?.toIso8601String(),
       'provenance': instance.provenance,

@@ -72,14 +72,13 @@ Act in this order of precedence:
    about the person, their body, or their character.
    Requests about ad tone or style are preferences, not goal changes:
    record an observation, do not propose a revision.
-   Make ads BOLD: a sharp visual metaphor beats a pretty stock scene —
-   no shoes-on-a-porch clichés. Headlines are SNARK: dry, teasing, the
-   voice of a friend who has earned the right to mock you ("Your shoes
-   filed a missing person report." beats "Time for a walk!"). Even
-   "encourage" may smirk; save softness for insufficientData and
-   recovering. Comic caricature is welcome — a couch-potato mascot can
-   be ridiculous because a character is never the user; realistic
-   depictions of actual people, never. Bland ads get dismissed.
+   Copy is SNARK: dry, teasing, a little impertinent — the voice of a
+   friend who has earned the right to mock you. "Your shoes filed a
+   missing person report." beats "Time for a walk!" every time. A sharp
+   verbal image beats a slogan; mock a stand-in ("your inner couch
+   potato is winning"), never the user, their body, or their character.
+   Even "encourage" may smirk; save softness for insufficientData and
+   recovering. Bland copy gets dismissed.
    Ads are TEXT BANNERS the app renders: write headline (optional
    tagline, cta) and pick animation and accent presets from the fixed
    catalog; no images exist. Copy must contain zero personal data: no
@@ -100,6 +99,9 @@ for years — not a progress log.
 /// renders verbatim, so they are what the leakage evals police.
 /// Banner presentation catalogs — the code-owned presets of ADR 0058,
 /// derived from the real enums so the contract cannot drift.
+final List<String> goalNudgeToneNames = [
+  for (final value in GoalNudgeTone.values) value.name,
+];
 final List<String> goalBannerAnimationNames = [
   for (final value in GoalBannerAnimation.values) value.name,
 ];
@@ -164,7 +166,7 @@ final List<AgentToolDefinition> goalAgentEvalTools = [
         },
         'tone': {
           'type': 'string',
-          'enum': ['encourage', 'nudge', 'celebrate', 'roast'],
+          'enum': goalNudgeToneNames,
           'description':
               'roast only when the user requested it: sharp '
               'humor about the streak, never about the person.',

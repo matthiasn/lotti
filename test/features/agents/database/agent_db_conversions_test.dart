@@ -2210,13 +2210,14 @@ void main() {
         triggerProgressId: goalProgressId('goal-agent-1', '2026-W32'),
         staleAt: updatedAt,
         activatedAt: updatedAt,
+        activationCount: 2,
         ratings: [
-          GoalNudgeRating(rating: 5, ratedAt: createdAt),
-          GoalNudgeRating(rating: 2, ratedAt: updatedAt),
+          GoalNudgeRating(activation: 1, rating: 5, ratedAt: createdAt),
+          GoalNudgeRating(activation: 2, rating: 2, ratedAt: updatedAt),
         ],
-        totalVisibleMs: 42000,
-        impressionCount: 3,
-        provenance: const {'verification': 'matchesBrief'},
+        totalVisibleMs: const GCounter({'host-a': 30000, 'host-b': 12000}),
+        impressionCount: const GCounter({'host-a': 2, 'host-b': 1}),
+        provenance: const {'animation': 'typewriter'},
       );
       final companion = AgentDbConversions.toEntityCompanion(entity);
       expect(companion.type, const Value(AgentEntityTypes.goalNudge));
@@ -2229,7 +2230,10 @@ void main() {
       // The wear-out trajectory: both rating events, in order.
       expect(decoded.ratings.map((r) => r.rating), [5, 2]);
       expect(decoded.brief.tone, GoalNudgeTone.roast);
-      expect(decoded.totalVisibleMs, 42000);
+      // Per-host counters survive the roundtrip; .value is the total.
+      expect(decoded.totalVisibleMs.value, 42000);
+      expect(decoded.impressionCount.value, 3);
+      expect(decoded.activationCount, 2);
     });
 
     test('an unknown-variant peer payload still decodes as unknown', () {

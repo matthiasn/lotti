@@ -264,9 +264,11 @@ class GoalAgentEvalReport {
       final credits = creditValues.isEmpty
           ? null
           : creditValues.reduce((a, b) => a + b);
-      final perGoalMonth = credits == null || cases.isEmpty
+      // Per-month figures divide by REPORTED cases only: missing telemetry
+      // must widen uncertainty, never masquerade as zero cost.
+      final perGoalMonth = credits == null
           ? null
-          : credits / cases.length * wakesPerDayAssumption * 30;
+          : credits / creditValues.length * wakesPerDayAssumption * 30;
       final energyValues = cases
           .map((r) => r.energyWh)
           .whereType<double>()
@@ -274,9 +276,9 @@ class GoalAgentEvalReport {
       final energyWh = energyValues.isEmpty
           ? null
           : energyValues.reduce((a, b) => a + b);
-      final energyPerGoalMonth = energyWh == null || cases.isEmpty
+      final energyPerGoalMonth = energyWh == null
           ? null
-          : energyWh / cases.length * wakesPerDayAssumption * 30;
+          : energyWh / energyValues.length * wakesPerDayAssumption * 30;
       buffer.writeln(
         '| `$modelId` | ${cases.length} | $inTokens | $outTokens | '
         '${credits?.toStringAsFixed(4) ?? 'not reported'} | '
@@ -289,9 +291,13 @@ class GoalAgentEvalReport {
       ..writeln()
       ..writeln(
         '*Extrapolation assumes $wakesPerDayAssumption LLM wakes '
-        'per goal per day — a printed assumption, not a measurement. '
-        'Credits are Melious-reported billing; "not reported" means the '
-        'provider sent no billing data, never that the run was free.',
+        'per goal per day — a printed assumption, not a measurement — '
+        'and divide by cases that actually reported the figure: missing '
+        'telemetry widens uncertainty, it is never counted as zero. '
+        'Credits and energy are Melious-reported; "not reported" means '
+        'the provider sent no data, never that the run was free. Banner '
+        'creation itself (ADR 0058) adds no image inference on top of '
+        'the Phase B text turn.',
       );
     return buffer.toString();
   }
@@ -378,6 +384,25 @@ GoalAgentEvalFailureCategory classifyGoalAgentResult({
 
   if (toolCalls.any((call) => call.jsonObjectArguments == null)) {
     return GoalAgentEvalFailureCategory.invalidToolArguments;
+  }
+
+  // The banner contract is enforced, not just advertised: a create call
+  // whose arguments cannot decode into GoalNudgeBrief must not score as a
+  // success just because its name matched (JSON-schema enums are advisory
+  // to many providers).
+  for (final call in toolCalls) {
+    if (call.name != GoalAgentToolNames.createGoalAd) continue;
+    final args = call.jsonObjectArguments!;
+    final headline = args['headline'];
+    final validHeadline = headline is String && headline.trim().isNotEmpty;
+    final validTone = goalNudgeToneNames.contains(args['tone']);
+    final validAnimation = goalBannerAnimationNames.contains(args['animation']);
+    final accent = args['accent'];
+    final validAccent =
+        accent == null || goalBannerAccentNames.contains(accent);
+    if (!validHeadline || !validTone || !validAnimation || !validAccent) {
+      return GoalAgentEvalFailureCategory.invalidToolArguments;
+    }
   }
 
   if (toolCalls.any(

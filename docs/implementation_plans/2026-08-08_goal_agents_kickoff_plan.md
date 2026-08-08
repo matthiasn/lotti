@@ -546,8 +546,10 @@ wake latency bounds (≤1h, documented), lease-race duplicate
    Ads are procedural text banners — model-authored copy over code-owned
    animation/accent presets. The Nano Banana pipeline the eval proved end-to-end
    is removed (the proof made the energy cost visible, which was the point);
-   ADR 0056 goes dormant as the boundary any future image feature re-enters
-   through. Per-agent ENERGY (Wh/goal-month from AiConsumptionEvent.energyKwh)
+   only ADR 0056's image-transport path is retired — its need-to-know
+   allowlist rule stays ACTIVE for the model-authored banner copy
+   (headline/tagline/cta remain leakage-linted and leakage-evaled), and it
+   is the boundary any future image feature re-enters through. Per-agent ENERGY (Wh/goal-month from AiConsumptionEvent.energyKwh)
    joins credits as a first-class reported figure.
 7. Previously settled: banner-only (no push; ADR 0055 records it as revisitable); Nano Banana Pro
    via direct Gemini with the need-to-know brief boundary (ZDR exception, user 2026-08-08); text
