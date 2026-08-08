@@ -649,24 +649,35 @@ items across three lists, six weeks of linked notes, logged time, a blocked
 status, a due date and an estimate, and measures **9,004 characters** against
 the 921–2,207 the synthetic scenarios carried.
 
-### Scenario 1 — `requalification`
+### Scenario 1 — `requalification` (demo world, real prompt)
 
-Unblocked overnight. Complete the one item the notes support, clear the blocked
-status, and leave alone a deadline an older note asks to move and a newer one
-keeps.
+The wake is **"Trace the humidity spike in Bay C"**, taken from
+`ManualDemoWorld.penguinLogistics` — the fixture `DemoSeeder` writes on a user's
+first run. Blocked, two labels, a four-item checklist with one already done.
+The only authored addition is the closing note, which is how an instruction
+actually reaches an agent. It reports the sensor swap and the seam walk done,
+resolves the blocker, and leaves the write-up explicitly outstanding.
 
-| Model | Passed | Failure seen |
+Everything the model reads is assembled by the app: seeded categories and
+labels, `EntitiesCacheService` resolving them, `AgentTemplateSeeding` supplying
+the directives, `AgentTemplateService` resolving the template through a real
+`templateAssignment` link, and `AiInputRepository` building the context. 3,938
+characters.
+
+Three samples per model:
+
+| Model | Passed | Failure |
 | --- | ---: | --- |
 | Kimi K3 | 3 / 3 | — |
+| Qwen3.5 397B | 3 / 3 | — |
 | Qwen3.6 27B | 3 / 3 | — |
-| DeepSeek V4 Flash 0731 | 3 / 3 | — |
 | GLM 5.2 | 2 / 3 | left the task blocked after the note clearing it |
-| Qwen3.5 397B | 2 / 3 | completed an item with no supporting evidence |
-| Qwen3.6 35B A3B | 1 / 3 | provider rejected the request as malformed (×2) |
+| DeepSeek V4 Flash 0731 | 2 / 3 | third run was a five-minute provider timeout |
 
-Run-to-run variance is large: GLM and 397B each passed and failed the identical
-input across sessions. **Do not rank models on this scenario.** It separates
-broken from working, not good from better.
+Read it narrowly. One scenario, three samples, and four of five models are at or
+near the ceiling — it separates broken from working, not good from better. The
+earlier tables on this page were produced against an authored fixture with no
+labels and, for a period, no general directive; this one was not.
 
 ### Scenario 2 — `noOp`
 
