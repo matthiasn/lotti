@@ -7,6 +7,8 @@ import 'package:lotti/features/agents/ui/agent_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_settings_page.dart';
 import 'package:lotti/features/agents/ui/agent_soul_detail_page.dart';
 import 'package:lotti/features/agents/ui/agent_template_detail_page.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_review_page.dart';
+import 'package:lotti/features/agents/ui/evolution/soul_evolution_review_page.dart';
 import 'package:lotti/features/ai/ui/inference_profile_form.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_filter_state.dart';
 import 'package:lotti/features/ai/ui/settings/ai_settings_page.dart';
@@ -351,6 +353,38 @@ void main() {
         expect(build('agents-templates'), isA<DetailIdDispatch>());
         expect(build('agents-souls'), isA<DetailIdDispatch>());
         expect(build('agents-instances'), isA<DetailIdDispatch>());
+
+        // Templates and souls own a `/review` sub-route — the one-on-one
+        // home. It is unreachable on desktop unless it is registered here:
+        // `SettingsLocation` only pushes it as a `BeamPage` on mobile, and
+        // the URL carries `templateId` / `soulId`, so an unregistered
+        // `/review` resolves straight back to the detail body.
+        final templates = build('agents-templates') as DetailIdDispatch;
+        expect(
+          templates.detailSubRoutes['review']?.call(capturedContext, 't1'),
+          isA<EvolutionReviewPage>().having(
+            (page) => page.templateId,
+            'templateId',
+            't1',
+          ),
+        );
+
+        final souls = build('agents-souls') as DetailIdDispatch;
+        expect(
+          souls.detailSubRoutes['review']?.call(capturedContext, 's1'),
+          isA<SoulEvolutionReviewPage>().having(
+            (page) => page.soulId,
+            'soulId',
+            's1',
+          ),
+        );
+
+        // Instances have no evolution ritual of their own, so nothing is
+        // registered — a stray `/review` there keeps showing the instance.
+        expect(
+          (build('agents-instances') as DetailIdDispatch).detailSubRoutes,
+          isEmpty,
+        );
 
         // The remaining two registered builders: the headerless node-profile
         // body and the provisioned-sync consumer wrapper.

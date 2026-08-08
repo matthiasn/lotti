@@ -159,6 +159,21 @@ home with a pending-session card, compact metrics and persisted history) and
 the persisted recap `tldr`, falling back to `session.feedbackSummary` when it is
 absent or empty.
 
+**Both review pages hang off a `/review` sub-route that has to be declared
+twice.** The template detail page beams to
+`/settings/agents/templates/<templateId>/review` (souls use
+`/settings/agents/souls/<soulId>/review`). On mobile `SettingsLocation` matches
+that URL and pushes the review page onto the Beamer stack. On desktop
+`SettingsLocation.buildPages` short-circuits and returns only `SettingsRootPage`
+— the page stack is bypassed entirely and the URL is resolved by
+`DetailIdDispatch` inside the settings detail pane instead. Since Beamer binds
+`templateId` / `soulId` on the `/review` route as well, the dispatcher cannot
+tell it apart from the plain detail URL unless the trailing segment is
+registered in `detailSubRoutes` (`panel_registry.dart`); an unregistered
+sub-route silently renders the detail body and the one-on-one is unreachable.
+Any future sub-route below a settings detail URL needs the same pair of
+declarations.
+
 `EvolutionMessageInput` reuses the chat recorder controller for batch voice
 input. Successful transcripts populate the composer; failures render the
 provider's diagnostic detail in an error toast and clear the consumed recorder
