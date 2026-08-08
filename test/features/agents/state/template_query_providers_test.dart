@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
@@ -971,6 +972,126 @@ void main() {
 
         expect(result, isEmpty);
       });
+    });
+  });
+
+  group('templateInstanceOverviewProvider', () {
+    final now = DateTime(2026, 8, 8, 12);
+
+    setUp(() {
+      // No token records: the overview must still list every instance, since
+      // an agent that has never run inference is exactly the one worth seeing.
+      when(
+        () => repository.getTokenUsageForTemplate(templateId),
+      ).thenAnswer((_) async => <WakeTokenUsageEntity>[]);
+    });
+
+    test('reads state in bulk and orders by most recently active', () async {
+      final agents = [
+        makeTestIdentity(
+          id: 'agent-stale',
+          agentId: 'agent-stale',
+          displayName: 'Stale',
+          currentStateId: 'state-stale',
+          createdAt: now.subtract(const Duration(days: 30)),
+        ),
+        makeTestIdentity(
+          id: 'agent-fresh',
+          agentId: 'agent-fresh',
+          displayName: 'Fresh',
+          currentStateId: 'state-fresh',
+          createdAt: now.subtract(const Duration(days: 2)),
+        ),
+      ];
+      when(
+        () => templateService.getAgentsForTemplate(templateId),
+      ).thenAnswer((_) async => agents);
+      when(() => repository.getEntitiesByIds(any())).thenAnswer(
+        (_) async => {
+          'state-stale': makeTestState(
+            id: 'state-stale',
+            agentId: 'agent-stale',
+            lastWakeAt: now.subtract(const Duration(days: 20)),
+            slots: const AgentSlots(activeTaskId: 'task-stale'),
+          ),
+          'state-fresh': makeTestState(
+            id: 'state-fresh',
+            agentId: 'agent-fresh',
+            lastWakeAt: now.subtract(const Duration(hours: 1)),
+            slots: const AgentSlots(activeTaskId: 'task-fresh'),
+          ),
+        },
+      );
+
+      final rows = await container.read(
+        templateInstanceOverviewProvider(templateId).future,
+      );
+
+      expect(
+        rows.map((row) => row.agentId),
+        ['agent-fresh', 'agent-stale'],
+        reason: 'the instances that woke today are the ones being looked for',
+      );
+      expect(rows.first.taskId, 'task-fresh');
+      expect(rows.first.createdAt, now.subtract(const Duration(days: 2)));
+      expect(rows.first.lastWakeAt, now.subtract(const Duration(hours: 1)));
+      // One bulk read for every state, not one per instance: this list is the
+      // whole reason the tab was unusable at a few thousand agents.
+      verify(() => repository.getEntitiesByIds(any())).called(1);
+    });
+
+    test(
+      'keeps an instance that has never woken, ordered by creation',
+      () async {
+        when(
+          () => templateService.getAgentsForTemplate(templateId),
+        ).thenAnswer(
+          (_) async => [
+            makeTestIdentity(
+              id: 'agent-never',
+              agentId: 'agent-never',
+              currentStateId: 'state-never',
+              createdAt: now,
+            ),
+          ],
+        );
+        when(
+          () => repository.getEntitiesByIds(any()),
+        ).thenAnswer(
+          (_) async => {
+            'state-never': makeTestState(
+              id: 'state-never',
+              agentId: 'agent-never',
+            ),
+          },
+        );
+
+        final rows = await container.read(
+          templateInstanceOverviewProvider(templateId).future,
+        );
+
+        expect(rows, hasLength(1));
+        expect(rows.single.lastWakeAt, isNull);
+        expect(rows.single.taskId, isNull);
+        expect(
+          rows.single.lastActiveAt,
+          now,
+          reason: 'creation stands in for a wake that never happened',
+        );
+      },
+    );
+
+    test('returns nothing, and reads nothing, without instances', () async {
+      when(
+        () => templateService.getAgentsForTemplate(templateId),
+      ).thenAnswer((_) async => []);
+
+      final rows = await container.read(
+        templateInstanceOverviewProvider(templateId).future,
+      );
+
+      expect(rows, isEmpty);
+      verifyNever(() => repository.getEntitiesByIds(any()));
     });
   });
 }

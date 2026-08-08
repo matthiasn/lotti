@@ -1047,6 +1047,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTemplateEditTitle => 'Redigera mall';
 
   @override
+  String get agentTemplateEvolutionTab => 'Evolution';
+
+  @override
   String get agentTemplateEvolveApprove => 'Godkänn och spara';
 
   @override
@@ -1061,6 +1064,28 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Uppdelning per instans';
+
+  @override
+  String agentTemplateInstanceLastActive(String date) {
+    return 'Senast aktiv $date';
+  }
+
+  @override
+  String get agentTemplateInstanceNeverActive => 'Aldrig väckt';
+
+  @override
+  String get agentTemplateInstanceOpenTask => 'Öppna uppgift';
+
+  @override
+  String get agentTemplateInstancesEmpty => 'Inga instanser än.';
+
+  @override
+  String get agentTemplateInstancesHeading => 'Instanser';
+
+  @override
+  String agentTemplateInstanceStarted(String date) {
+    return 'Startad $date';
+  }
 
   @override
   String get agentTemplateKindDayAgent => 'Dagagent';

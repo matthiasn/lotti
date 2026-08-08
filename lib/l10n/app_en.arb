@@ -639,6 +639,10 @@
   "@agentTemplateEditTitle": {
     "description": "Page title for the edit-template form."
   },
+  "agentTemplateEvolutionTab": "Evolution",
+  "@agentTemplateEvolutionTab": {
+    "description": "Tab label for the evolution tab in agent template detail."
+  },
   "agentTemplateEvolveApprove": "Approve & Save",
   "@agentTemplateEvolveApprove": {
     "description": "Button to accept and save proposed directive changes."
@@ -658,6 +662,38 @@
   "agentTemplateInstanceBreakdownHeading": "Per-Instance Breakdown",
   "@agentTemplateInstanceBreakdownHeading": {
     "description": "Heading for the per-instance breakdown section in agent template stats."
+  },
+  "agentTemplateInstanceLastActive": "Last active {date}",
+  "@agentTemplateInstanceLastActive": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "agentTemplateInstanceNeverActive": "Never woken",
+  "@agentTemplateInstanceNeverActive": {
+    "description": "Shown instead of a last-active date for an instance that has never run a wake."
+  },
+  "agentTemplateInstanceOpenTask": "Open task",
+  "@agentTemplateInstanceOpenTask": {
+    "description": "Tooltip on the button that opens the task an agent instance belongs to."
+  },
+  "agentTemplateInstancesEmpty": "No instances yet.",
+  "@agentTemplateInstancesEmpty": {
+    "description": "Shown when a template has no agent instances."
+  },
+  "agentTemplateInstancesHeading": "Instances",
+  "@agentTemplateInstancesHeading": {
+    "description": "Section heading above the list of a template's agent instances."
+  },
+  "agentTemplateInstanceStarted": "Started {date}",
+  "@agentTemplateInstanceStarted": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
   },
   "agentTemplateKindDayAgent": "Day Agent",
   "@agentTemplateKindDayAgent": {

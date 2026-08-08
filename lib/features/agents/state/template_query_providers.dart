@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_token_usage.dart';
+import 'package:lotti/features/agents/model/template_instance_overview.dart';
 import 'package:lotti/features/agents/model/template_performance_metrics.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -186,6 +187,62 @@ Future<List<InstanceTokenBreakdown>> templateInstanceTokenBreakdown(
       summaries: summaries,
     );
   }).toList()..sort((a, b) => b.totalTokens.compareTo(a.totalTokens));
+}
+
+/// Every instance of a template, most recently active first.
+///
+/// Two bulk queries regardless of instance count: the template's agents, then
+/// their state snapshots by id. Token totals come from the breakdown provider
+/// that the aggregate view already builds, so this adds no third read.
+///
+/// Task titles are not resolved here on purpose — that would be one journal
+/// read per instance, thousands of them on a mature install, to fill a column
+/// only the visible rows can show. The row widget resolves its own title.
+final FutureProviderFamily<List<TemplateInstanceOverview>, String>
+templateInstanceOverviewProvider = FutureProvider.autoDispose
+    .family<List<TemplateInstanceOverview>, String>(
+      templateInstanceOverview,
+      name: 'templateInstanceOverviewProvider',
+    );
+Future<List<TemplateInstanceOverview>> templateInstanceOverview(
+  Ref ref,
+  String templateId,
+) async {
+  final templateService = ref.watch(agentTemplateServiceProvider);
+  final agents = await templateService.getAgentsForTemplate(templateId);
+  if (agents.isEmpty) return const [];
+
+  final repository = ref.watch(agentRepositoryProvider);
+  final states = await repository.getEntitiesByIds(
+    agents.map((agent) => agent.currentStateId),
+  );
+
+  final breakdowns = await ref.watch(
+    templateInstanceTokenBreakdownProvider(templateId).future,
+  );
+  final tokensByAgent = {
+    for (final breakdown in breakdowns)
+      breakdown.agentId: breakdown.totalTokens,
+  };
+
+  final rows = agents.map((agent) {
+    final state = states[agent.currentStateId]?.mapOrNull(
+      agentState: (state) => state,
+    );
+    return TemplateInstanceOverview(
+      agentId: agent.agentId,
+      displayName: agent.displayName,
+      lifecycle: agent.lifecycle,
+      createdAt: agent.createdAt,
+      lastWakeAt: state?.lastWakeAt,
+      taskId: state?.slots.activeTaskId,
+      totalTokens: tokensByAgent[agent.id] ?? 0,
+    );
+  }).toList();
+
+  // Most recently active first: on a template with thousands of instances the
+  // ones that woke today are the only ones anybody is looking for.
+  return rows..sort((a, b) => b.lastActiveAt.compareTo(a.lastActiveAt));
 }
 
 /// Recent reports from all instances of a template, newest-first.

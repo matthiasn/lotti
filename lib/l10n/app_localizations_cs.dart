@@ -1045,6 +1045,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTemplateEditTitle => 'Upravit šablonu';
 
   @override
+  String get agentTemplateEvolutionTab => 'Evoluce';
+
+  @override
   String get agentTemplateEvolveApprove => 'Schválit a uložit';
 
   @override
@@ -1059,6 +1062,28 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Rozpis podle instancí';
+
+  @override
+  String agentTemplateInstanceLastActive(String date) {
+    return 'Naposledy aktivní $date';
+  }
+
+  @override
+  String get agentTemplateInstanceNeverActive => 'Nikdy neprobuzena';
+
+  @override
+  String get agentTemplateInstanceOpenTask => 'Otevřít úkol';
+
+  @override
+  String get agentTemplateInstancesEmpty => 'Zatím žádné instance.';
+
+  @override
+  String get agentTemplateInstancesHeading => 'Instance';
+
+  @override
+  String agentTemplateInstanceStarted(String date) {
+    return 'Spuštěna $date';
+  }
 
   @override
   String get agentTemplateKindDayAgent => 'Denní agent';

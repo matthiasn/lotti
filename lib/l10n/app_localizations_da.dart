@@ -1039,6 +1039,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentTemplateEditTitle => 'Rediger skabelon';
 
   @override
+  String get agentTemplateEvolutionTab => 'Evolution';
+
+  @override
   String get agentTemplateEvolveApprove => 'Godkend & Gem';
 
   @override
@@ -1053,6 +1056,28 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Hændelsesopdeling';
+
+  @override
+  String agentTemplateInstanceLastActive(String date) {
+    return 'Sidst aktiv $date';
+  }
+
+  @override
+  String get agentTemplateInstanceNeverActive => 'Aldrig vækket';
+
+  @override
+  String get agentTemplateInstanceOpenTask => 'Åbn opgave';
+
+  @override
+  String get agentTemplateInstancesEmpty => 'Ingen instanser endnu.';
+
+  @override
+  String get agentTemplateInstancesHeading => 'Instanser';
+
+  @override
+  String agentTemplateInstanceStarted(String date) {
+    return 'Startet $date';
+  }
 
   @override
   String get agentTemplateKindDayAgent => 'Dagagent';

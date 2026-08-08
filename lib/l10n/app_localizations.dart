@@ -1831,6 +1831,12 @@ abstract class AppLocalizations {
   /// **'Edit Template'**
   String get agentTemplateEditTitle;
 
+  /// Tab label for the evolution tab in agent template detail.
+  ///
+  /// In en, this message translates to:
+  /// **'Evolution'**
+  String get agentTemplateEvolutionTab;
+
   /// Button to accept and save proposed directive changes.
   ///
   /// In en, this message translates to:
@@ -1860,6 +1866,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Per-Instance Breakdown'**
   String get agentTemplateInstanceBreakdownHeading;
+
+  /// No description provided for @agentTemplateInstanceLastActive.
+  ///
+  /// In en, this message translates to:
+  /// **'Last active {date}'**
+  String agentTemplateInstanceLastActive(String date);
+
+  /// Shown instead of a last-active date for an instance that has never run a wake.
+  ///
+  /// In en, this message translates to:
+  /// **'Never woken'**
+  String get agentTemplateInstanceNeverActive;
+
+  /// Tooltip on the button that opens the task an agent instance belongs to.
+  ///
+  /// In en, this message translates to:
+  /// **'Open task'**
+  String get agentTemplateInstanceOpenTask;
+
+  /// Shown when a template has no agent instances.
+  ///
+  /// In en, this message translates to:
+  /// **'No instances yet.'**
+  String get agentTemplateInstancesEmpty;
+
+  /// Section heading above the list of a template's agent instances.
+  ///
+  /// In en, this message translates to:
+  /// **'Instances'**
+  String get agentTemplateInstancesHeading;
+
+  /// No description provided for @agentTemplateInstanceStarted.
+  ///
+  /// In en, this message translates to:
+  /// **'Started {date}'**
+  String agentTemplateInstanceStarted(String date);
 
   /// Display name for the Daily OS day-agent template kind.
   ///

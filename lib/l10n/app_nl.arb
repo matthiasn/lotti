@@ -495,6 +495,7 @@
   "@agentTemplateEditTitle": {
     "description": "Page title for the edit-template form."
   },
+  "agentTemplateEvolutionTab": "Evolutie",
   "agentTemplateEvolveApprove": "Afstemming & Opslaan",
   "@agentTemplateEvolveApprove": {
     "description": "Button to accept and save proposed directive changes."
@@ -515,6 +516,12 @@
   "@agentTemplateInstanceBreakdownHeading": {
     "description": "Heading for the per-instance breakdown section in agent template stats."
   },
+  "agentTemplateInstanceLastActive": "Laatst actief {date}",
+  "agentTemplateInstanceNeverActive": "Nooit gewekt",
+  "agentTemplateInstanceOpenTask": "Taak openen",
+  "agentTemplateInstancesEmpty": "Nog geen instanties.",
+  "agentTemplateInstancesHeading": "Instanties",
+  "agentTemplateInstanceStarted": "Gestart {date}",
   "agentTemplateKindDayAgent": "Dagagent",
   "@agentTemplateKindDayAgent": {
     "description": "Display name for the Daily OS day-agent template kind."

@@ -561,8 +561,9 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Switch to Stats tab where version history now lives
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      // Version history lives on the Evolution tab (ADR 0052 follow-up: it
+      // was stranded under the uncapped instance list on Stats).
+      await tester.tap(find.text(context.messages.agentTemplateEvolutionTab));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -627,8 +628,9 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Switch to Stats tab where version history now lives
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      // Version history lives on the Evolution tab (ADR 0052 follow-up: it
+      // was stranded under the uncapped instance list on Stats).
+      await tester.tap(find.text(context.messages.agentTemplateEvolutionTab));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -692,7 +694,7 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.tap(find.text(context.messages.agentTemplateEvolutionTab));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -743,8 +745,9 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Navigate to Stats tab where delete button lives
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      // Delete lives on the Settings tab now — the Stats tab ends in a list
+      // with one row per instance, where a trailing button cannot be reached.
+      await tester.tap(find.text(context.messages.agentTemplateSettingsTab));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -787,7 +790,7 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      await tester.tap(find.text(context.messages.agentTemplateSettingsTab));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -838,8 +841,9 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Navigate to Stats tab where delete button lives
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      // Delete lives on the Settings tab now — the Stats tab ends in a list
+      // with one row per instance, where a trailing button cannot be reached.
+      await tester.tap(find.text(context.messages.agentTemplateSettingsTab));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -1026,8 +1030,9 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Navigate to Stats tab where delete button lives
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      // Delete lives on the Settings tab now — the Stats tab ends in a list
+      // with one row per instance, where a trailing button cannot be reached.
+      await tester.tap(find.text(context.messages.agentTemplateSettingsTab));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -1084,8 +1089,9 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Switch to Stats tab where version history now lives
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      // Version history lives on the Evolution tab (ADR 0052 follow-up: it
+      // was stranded under the uncapped instance list on Stats).
+      await tester.tap(find.text(context.messages.agentTemplateEvolutionTab));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -1144,8 +1150,9 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Switch to Stats tab where version history now lives
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      // Version history lives on the Evolution tab (ADR 0052 follow-up: it
+      // was stranded under the uncapped instance list on Stats).
+      await tester.tap(find.text(context.messages.agentTemplateEvolutionTab));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -1199,8 +1206,9 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Switch to Stats tab where version history now lives
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      // Version history lives on the Evolution tab (ADR 0052 follow-up: it
+      // was stranded under the uncapped instance list on Stats).
+      await tester.tap(find.text(context.messages.agentTemplateEvolutionTab));
       // Two pumps: one to start the tab transition, one past its duration.
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
@@ -1253,8 +1261,9 @@ void main() {
 
       final context = tester.element(find.byType(AgentTemplateDetailPage));
 
-      // Switch to Stats tab where version history now lives
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      // Version history lives on the Evolution tab (ADR 0052 follow-up: it
+      // was stranded under the uncapped instance list on Stats).
+      await tester.tap(find.text(context.messages.agentTemplateEvolutionTab));
       await tester.pumpAndSettle();
 
       // Scroll to version history section
@@ -1481,7 +1490,7 @@ void main() {
       );
     });
 
-    testWidgets('delete button visible on Stats tab', (tester) async {
+    testWidgets('delete button visible on Settings tab', (tester) async {
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
@@ -1500,8 +1509,8 @@ void main() {
         findsNothing,
       );
 
-      // Navigate to Stats tab
-      await tester.tap(find.text(context.messages.agentTemplateStatsTab));
+      // Delete lives at the bottom of Settings — the tab that stays short.
+      await tester.tap(find.text(context.messages.agentTemplateSettingsTab));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 350));
 
@@ -1518,7 +1527,7 @@ void main() {
       expect(find.text(context.messages.deleteButton), findsOneWidget);
     });
 
-    testWidgets('shows three tabs in edit mode', (tester) async {
+    testWidgets('shows four tabs in edit mode', (tester) async {
       await tester.pumpWidget(
         buildEditSubject(templateId: templateId),
       );
@@ -1529,6 +1538,10 @@ void main() {
 
       expect(
         find.text(context.messages.agentTemplateSettingsTab),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentTemplateEvolutionTab),
         findsOneWidget,
       );
       expect(

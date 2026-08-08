@@ -68,7 +68,8 @@ class _AgentTemplateDetailPageState
       _generalDirectiveController.text != _originalGeneralDirective ||
       _reportDirectiveController.text != _originalReportDirective;
 
-  static const _tabCount = 3;
+  /// Settings, Evolution, Stats, Reports.
+  static const _tabCount = 4;
 
   int _currentTabIndex = 0;
 
@@ -314,6 +315,7 @@ class _AgentTemplateDetailPageState
             controller: _tabController,
             tabs: [
               Tab(text: context.messages.agentTemplateSettingsTab),
+              Tab(text: context.messages.agentTemplateEvolutionTab),
               Tab(text: context.messages.agentTemplateStatsTab),
               Tab(text: context.messages.agentTemplateReportsTab),
             ],
@@ -326,12 +328,12 @@ class _AgentTemplateDetailPageState
           // Settings tab
           SettingsTabContent(
             formFields: _buildFormFields(context),
-          ),
-          // Stats tab
-          StatsTabContent(
-            templateId: templateId,
             onDelete: () => _handleDelete(context),
           ),
+          // Evolution tab
+          EvolutionTabContent(templateId: templateId),
+          // Stats tab
+          StatsTabContent(templateId: templateId),
           // Reports tab
           ReportsTabContent(templateId: templateId),
         ],

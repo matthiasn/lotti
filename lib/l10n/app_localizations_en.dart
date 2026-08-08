@@ -1034,6 +1034,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTemplateEditTitle => 'Edit Template';
 
   @override
+  String get agentTemplateEvolutionTab => 'Evolution';
+
+  @override
   String get agentTemplateEvolveApprove => 'Approve & Save';
 
   @override
@@ -1048,6 +1051,28 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Per-Instance Breakdown';
+
+  @override
+  String agentTemplateInstanceLastActive(String date) {
+    return 'Last active $date';
+  }
+
+  @override
+  String get agentTemplateInstanceNeverActive => 'Never woken';
+
+  @override
+  String get agentTemplateInstanceOpenTask => 'Open task';
+
+  @override
+  String get agentTemplateInstancesEmpty => 'No instances yet.';
+
+  @override
+  String get agentTemplateInstancesHeading => 'Instances';
+
+  @override
+  String agentTemplateInstanceStarted(String date) {
+    return 'Started $date';
+  }
 
   @override
   String get agentTemplateKindDayAgent => 'Day Agent';

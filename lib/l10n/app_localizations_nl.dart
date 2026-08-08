@@ -1042,6 +1042,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentTemplateEditTitle => 'Sjabloon bewerken';
 
   @override
+  String get agentTemplateEvolutionTab => 'Evolutie';
+
+  @override
   String get agentTemplateEvolveApprove => 'Afstemming & Opslaan';
 
   @override
@@ -1056,6 +1059,28 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentTemplateInstanceBreakdownHeading => 'Verdeling per ingang';
+
+  @override
+  String agentTemplateInstanceLastActive(String date) {
+    return 'Laatst actief $date';
+  }
+
+  @override
+  String get agentTemplateInstanceNeverActive => 'Nooit gewekt';
+
+  @override
+  String get agentTemplateInstanceOpenTask => 'Taak openen';
+
+  @override
+  String get agentTemplateInstancesEmpty => 'Nog geen instanties.';
+
+  @override
+  String get agentTemplateInstancesHeading => 'Instanties';
+
+  @override
+  String agentTemplateInstanceStarted(String date) {
+    return 'Gestart $date';
+  }
 
   @override
   String get agentTemplateKindDayAgent => 'Dagagent';
