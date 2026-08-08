@@ -303,4 +303,60 @@ Use the task language and omit empty sections.
       expect(prompt, contains('## Evidence-First Synthesis Protocol'));
     });
   });
+
+  group('the seeded report directive is never rendered', () {
+    // The constant reads like the live rule and contradicts it. On 2026-08-08
+    // it was mistaken for production behaviour and a correct evaluation result
+    // was retracted because of it. These assertions make the distinction
+    // mechanical instead of something a reader has to know.
+    for (final seeded in <({String label, String directive})>[
+      (label: 'empty directive', directive: ''),
+      (label: 'stock seeded directive', directive: taskAgentReportDirective),
+    ]) {
+      test('is substituted for a ${seeded.label}', () {
+        final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+          version: makeTestTemplateVersion(
+            id: 'v-sentinel',
+            agentId: 'a-sentinel',
+            generalDirective: taskAgentGeneralDirective,
+            reportDirective: seeded.directive,
+          ),
+          soulVersion: null,
+          modelId: 'glm-5.2',
+        );
+
+        expect(
+          prompt,
+          isNot(contains('MANDATORY FINAL TOOL CALL')),
+          reason: 'the seeded text must never reach a stock agent',
+        );
+        expect(
+          prompt,
+          contains('do not republish unchanged content'),
+          reason: 'the substituted contract is what the model actually gets',
+        );
+      });
+    }
+
+    test('a genuinely custom directive is sent verbatim', () {
+      const custom = '## Custom contract\n\nAlways include a haiku.';
+      final prompt = TaskAgentPromptBuilder.buildSystemPrompt(
+        version: makeTestTemplateVersion(
+          id: 'v-custom',
+          agentId: 'a-custom',
+          generalDirective: taskAgentGeneralDirective,
+          reportDirective: custom,
+        ),
+        soulVersion: null,
+        modelId: 'glm-5.2',
+      );
+
+      expect(prompt, contains('Always include a haiku.'));
+      expect(
+        prompt,
+        isNot(contains('do not republish unchanged content')),
+        reason: 'substitution must not override an evolved directive',
+      );
+    });
+  });
 }

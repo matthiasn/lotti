@@ -1,4 +1,5 @@
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
@@ -484,7 +485,15 @@ typedef TaskAgentWorkflowTestBench = ({
   TaskAgentWorkflow workflow,
 });
 
-TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench() {
+/// Builds the shared task-agent workflow bench.
+///
+/// [narrowToolSurface] flips the workflow's agenda-gated tool exposure on, so
+/// the wake resolves its gating facts and stages `update_report` (see
+/// `docs/adr/0051-agenda-gated-tool-exposure.md`). Off by default, matching the
+/// shipped wake.
+TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench({
+  bool narrowToolSurface = false,
+}) {
   const agentId = taskAgentTestAgentId;
   final testTemplate = taskAgentTestTemplate;
   final testTemplateVersion = taskAgentTestTemplateVersion;
@@ -623,6 +632,11 @@ TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench() {
   when(
     () => mockJournalDb.getLinkedEntities(any()),
   ).thenAnswer((_) async => <JournalEntity>[]);
+  // Only read when the tool surface is gated, but harmless as a default: a
+  // wake with no labels defined cannot assign one.
+  when(
+    mockJournalDb.getAllLabelDefinitions,
+  ).thenAnswer((_) async => <LabelDefinition>[]);
 
   // Default template stubs — tests that need different behavior override.
   when(
@@ -644,6 +658,7 @@ TaskAgentWorkflowTestBench createTaskAgentWorkflowTestBench() {
     labelsRepository: mockLabelsRepository,
     syncService: mockSyncService,
     templateService: mockTemplateService,
+    narrowToolSurface: narrowToolSurface,
     domainLogger: DomainLogger(loggingService: LoggingService())
       ..enabledDomains.add(LogDomain.agentWorkflow),
   );

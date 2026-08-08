@@ -6,17 +6,22 @@ import 'package:lotti/database/database.dart';
 import 'package:lotti/database/fts5_db.dart';
 import 'package:lotti/database/journal_db/config_flags.dart';
 import 'package:lotti/database/settings_db.dart';
-import 'package:lotti/features/agents/database/agent_database.dart';
+import 'package:lotti/features/agents/database/agent_database.dart'
+    hide AgentLink;
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/agent_link.dart' show AgentLink;
+import 'package:lotti/features/agents/model/seeded_directive_content.dart';
+import 'package:lotti/features/agents/service/agent_template_crud.dart';
+import 'package:lotti/features/agents/service/agent_template_seeding.dart';
 import 'package:lotti/features/agents/service/agent_template_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/repository/ai_input_repository.dart';
 import 'package:lotti/features/sync/outbox/outbox_service.dart';
-import 'package:lotti/features/tasks/repository/checklist_repository.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/logic/persistence_logic.dart';
 import 'package:lotti/logic/services/geolocation_service.dart';
@@ -36,6 +41,7 @@ import '../../../../helpers/path_provider.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 import '../../../agents/test_data/template_factories.dart';
+import 'penguin_wake_scenarios.dart';
 import 'penguin_wake_world_seed.dart';
 
 /// The task-agent workflow standing on real databases instead of mocks.
@@ -70,6 +76,8 @@ class TaskAgentWorkflowEvalHarness {
     required this.container,
     required this.world,
     required this.agentId,
+    required this.threadId,
+    required this.scenario,
   });
 
   final JournalDb journalDb;
@@ -81,6 +89,8 @@ class TaskAgentWorkflowEvalHarness {
   final ProviderContainer container;
   final PenguinWakeWorld world;
   final String agentId;
+  final String threadId;
+  final PenguinWakeScenario scenario;
 
   /// Builds the harness, seeds the wake world, and leaves everything ready for
   /// a [TaskAgentWorkflow] to run against it.
@@ -90,6 +100,12 @@ class TaskAgentWorkflowEvalHarness {
   static Future<TaskAgentWorkflowEvalHarness> start({
     required ProviderContainer container,
     String agentId = 'agent-penguin-wake-eval',
+    PenguinWakeScenarioId scenario = PenguinWakeScenarioId.requalification,
+    // The inference profile the wake resolves. Set on the agent's own config,
+    // which is where ProfileResolver looks first — an agent without one fails
+    // the wake with "No inference provider configured".
+    String profileId = 'penguin-wake-profile',
+    String threadId = 'thread-penguin-wake-eval',
     void Function()? additionalGetItSetup,
   }) async {
     setFakeDocumentsPath();
@@ -139,7 +155,15 @@ class TaskAgentWorkflowEvalHarness {
         put<VectorClockService>(VectorClockService());
         put<TimeService>(TimeService());
         put<NavService>(navService);
-        put<EntitiesCacheService>(MockEntitiesCacheService());
+        // Real, not mocked: `LinkedTaskContextBuilder` resolves every label
+        // through `getLabelById`, so a mock silently strips labels from what
+        // the model reads. `init()` is awaited below, once GetIt is populated.
+        put<EntitiesCacheService>(
+          EntitiesCacheService(
+            journalDb: journalDb,
+            updateNotifications: updateNotifications,
+          ),
+        );
         put<DomainLogger>(DomainLogger(loggingService: LoggingService()));
         put<MetadataService>(
           MetadataService(vectorClockService: getIt<VectorClockService>()),
@@ -161,9 +185,23 @@ class TaskAgentWorkflowEvalHarness {
       syncService: syncService,
     );
 
+    // The no-op wake keeps the task blocked: the sensor swap has not happened
+    // and the closing note reports no new fact, so the prior report remains
+    // accurate and a correct wake has nothing to do.
+    final isNoOp = scenario == PenguinWakeScenarioId.noOp;
+    // The app's own template seeding, so the directives the model receives are
+    // the ones production seeds rather than anything authored here.
+    await AgentTemplateSeeding(
+      syncService: syncService,
+      crud: AgentTemplateCrud(
+        repository: agentRepository,
+        syncService: syncService,
+      ),
+    ).seedDefaults();
+
     final world = await seedPenguinWakeWorld(
       persistenceLogic: getIt<PersistenceLogic>(),
-      checklistRepository: ChecklistRepository(),
+      finalNote: isNoOp ? penguinWakeNoOpNote : null,
     );
 
     // The seed is worth checking rather than assuming: a task without a
@@ -176,15 +214,74 @@ class TaskAgentWorkflowEvalHarness {
     );
     expect(
       world.checkedItemIds.length + world.pendingItemIds.length,
-      14,
-      reason: 'the seeded checklist must be the mid-sized one',
+      4,
+      reason: 'the demo task carries a four-item checklist',
+    );
+    expect(
+      world.labelIds,
+      isNotEmpty,
+      reason: 'the demo task is labelled; a wake without labels is not it',
     );
 
     await _seedAgent(
       syncService: syncService,
       agentId: agentId,
       categoryId: world.categoryId,
+      profileId: profileId,
     );
+
+    // Assign Laura the way the app does — a templateAssignment link — so the
+    // real AgentTemplateService resolves it and no template mock is needed.
+    await syncService.upsertLink(
+      AgentLink.templateAssignment(
+        id: 'penguin-wake-template-link',
+        fromId: lauraTemplateId,
+        toId: agentId,
+        createdAt: DateTime.utc(2026, 8, 5, 8, 30),
+        updatedAt: DateTime.utc(2026, 8, 5, 8, 30),
+        vectorClock: null,
+      ),
+    );
+
+    // The cache must load after the world is seeded, or it starts empty and
+    // labels resolve to null exactly as the mock used to make them.
+    await getIt<EntitiesCacheService>().init();
+
+    final resolvedTemplate = await templateService.getTemplateForAgent(agentId);
+    expect(
+      resolvedTemplate?.id,
+      lauraTemplateId,
+      reason: 'the agent must resolve a real seeded template, not a stub',
+    );
+
+    // Every scenario but the original is a follow-up wake, which is the common
+    // case in the app and the one the synthetic scenarios never covered.
+    if (scenario != PenguinWakeScenarioId.requalification) {
+      await seedPenguinWakePriorReport(
+        syncService: syncService,
+        agentId: agentId,
+      );
+    }
+
+    if (scenario == PenguinWakeScenarioId.pendingProposal) {
+      await seedPenguinWakePendingProposal(
+        syncService: syncService,
+        agentId: agentId,
+        threadId: threadId,
+      );
+      // Assert the queue rather than trust it: if the proposal is not actually
+      // pending, the model has nothing to be restrained about and the scenario
+      // silently degrades into the ordinary unblocking wake.
+      final pending = await agentRepository.getPendingChangeSets(
+        agentId,
+        taskId: penguinWakeTaskId,
+      );
+      expect(
+        pending.expand((changeSet) => changeSet.items).map((i) => i.toolName),
+        contains(TaskAgentToolNames.setTaskStatus),
+        reason: 'the status proposal must be queued before the wake runs',
+      );
+    }
 
     return TaskAgentWorkflowEvalHarness._(
       journalDb: journalDb,
@@ -196,6 +293,8 @@ class TaskAgentWorkflowEvalHarness {
       container: container,
       world: world,
       agentId: agentId,
+      threadId: threadId,
+      scenario: PenguinWakeScenario.of(scenario),
     );
   }
 
@@ -233,6 +332,7 @@ class TaskAgentWorkflowEvalHarness {
     required AgentSyncService syncService,
     required String agentId,
     required String categoryId,
+    required String profileId,
   }) async {
     final now = DateTime.utc(2026, 8, 5, 8, 30);
     const stateId = 'state-penguin-wake-eval';
@@ -247,7 +347,7 @@ class TaskAgentWorkflowEvalHarness {
         mode: AgentInteractionMode.autonomous,
         allowedCategoryIds: {categoryId},
         currentStateId: stateId,
-        config: const AgentConfig(),
+        config: AgentConfig(profileId: profileId),
         createdAt: now,
         updatedAt: now,
         vectorClock: null,
@@ -259,7 +359,7 @@ class TaskAgentWorkflowEvalHarness {
         id: stateId,
         agentId: agentId,
         revision: 1,
-        slots: const AgentSlots(activeTaskId: penguinWakeTaskId),
+        slots: AgentSlots(activeTaskId: penguinWakeTaskId),
         updatedAt: now,
         vectorClock: null,
       ),
@@ -284,6 +384,18 @@ buildEvalTemplate({required String profileId}) {
       id: 'version-penguin-wake-eval',
       agentId: lauraTemplateId,
       profileId: profileId,
+      // The shipped directives, not the factory's placeholders. Without these
+      // `generalDirective` and `reportDirective` are empty strings and
+      // `directives` is "You are a helpful agent." — the wake protocol, the
+      // report contract and the restraint rules all vanish, and the eval
+      // measures models against a prompt the app never sends. The no-op
+      // scenario is the sharpest case: the rule it tests ("finish with a short
+      // plain-text note when nothing changed") lives in these constants.
+      directives:
+          'You are Laura, a diligent task management agent. You help users '
+          'organize, prioritize, and complete their tasks efficiently.',
+      generalDirective: taskAgentGeneralDirective,
+      reportDirective: taskAgentReportDirective,
     ),
   );
 }

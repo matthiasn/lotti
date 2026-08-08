@@ -106,3 +106,4 @@ Each ADR should contain:
 - [`0048-one-device-runs-the-coordinator-digest.md`](./0048-one-device-runs-the-coordinator-digest.md)
 - [`0049-profile-scoped-storage-and-demo-mode.md`](./0049-profile-scoped-storage-and-demo-mode.md)
 - [`0050-multi-tenant-worlds.md`](./0050-multi-tenant-worlds.md)
+- [`0051-agenda-gated-tool-exposure.md`](./0051-agenda-gated-tool-exposure.md)

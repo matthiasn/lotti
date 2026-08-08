@@ -23,6 +23,8 @@ import 'package:lotti/features/agents/service/task_agent_service.dart';
 import 'package:lotti/features/agents/sync/agent_input_capture_service.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
+import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart';
+import 'package:lotti/features/agents/tools/task_agent_tool_gate.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/workflow/agent_wake_memory.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
@@ -115,7 +117,22 @@ class TaskAgentWorkflow with AgentErrorLogging {
     this.logSummarizer,
     this.compactionTailBudgetTokens = 50000,
     this.compactionTailRetainTokens = 20000,
+    this.narrowToolSurface = false,
   });
+
+  /// Advertise only the tools a wake can use, and only when it can use them.
+  ///
+  /// Off by default: every wake advertises the whole registry on every turn, as
+  /// it always has. When on, `TaskAgentWakeFacts` drops tools whose
+  /// precondition is absent — no timer running for this task, no checklist
+  /// items, no open proposals — and `TaskAgentStagedToolExposure` withholds
+  /// `update_report` from the opening turn so the wake does the work before it
+  /// reports on it.
+  ///
+  /// Flagged rather than shipped because the trade is not yet measured: a
+  /// report-only wake now needs a second turn to publish, which costs a round
+  /// trip on exactly the small models the smaller payload is meant to help.
+  final bool narrowToolSurface;
 
   final AgentRepository agentRepository;
 
@@ -420,9 +437,6 @@ class TaskAgentWorkflow with AgentErrorLogging {
     timeService: timeService,
     compactedTaskLog: compactedTaskLog,
   );
-
-  List<ChatCompletionTool> _buildToolDefinitions() =>
-      _contextBuilder.buildToolDefinitions();
 
   String? _extractFinalAssistantContent(ConversationManager? manager) =>
       _contextBuilder.extractFinalAssistantContent(manager);

@@ -196,6 +196,22 @@ abstract class ConversationStrategy {
 
   /// Generate continuation prompt
   String? getContinuationPrompt(ConversationManager manager);
+
+  /// The tools to advertise for the turn about to be sent, or null to keep
+  /// whatever the caller passed to `sendMessage`.
+  ///
+  /// `sendMessage` otherwise fixes one tool list for the whole conversation, so
+  /// a wake advertises every tool on every turn no matter what it is doing. A
+  /// strategy that overrides this can open with a small, relevant set and widen
+  /// as the conversation earns it, which costs no extra round trip because the
+  /// turns already exist.
+  ///
+  /// Returning null is the default and leaves behaviour exactly as before, so
+  /// strategies that do not care are unaffected.
+  List<ChatCompletionTool>? toolsForTurn({
+    required int turnIndex,
+    required ConversationManager manager,
+  }) => null;
 }
 
 /// Action to take after processing

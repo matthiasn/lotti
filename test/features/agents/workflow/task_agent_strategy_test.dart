@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/suggestion_retraction_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
@@ -167,6 +168,7 @@ ChatCompletionMessageToolCall _toolCall({
   Future<String?> Function(String taskId)? resolveLinkableTaskTitle,
   Future<Set<String>> Function()? resolveExistingTaskRelations,
   Future<void> Function()? flushChangeSet,
+  TaskAgentStagedToolExposure? stagedToolExposure,
 }) {
   const agentId = 'agent-001';
   const taskId = 'task-001';
@@ -209,6 +211,7 @@ ChatCompletionMessageToolCall _toolCall({
     resolveLinkableTaskTitle: resolveLinkableTaskTitle,
     resolveExistingTaskRelations: resolveExistingTaskRelations,
     flushChangeSet: flushChangeSet,
+    stagedToolExposure: stagedToolExposure,
   );
 
   return (strategy: strategy, builder: csBuilder);
@@ -5141,6 +5144,60 @@ void main() {
           expect(response, contains('retract_suggestions is not wired up'));
         },
       );
+    });
+
+    group('toolsForTurn', () {
+      ChatCompletionTool tool(String name) => ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(name: name),
+      );
+
+      final allTools = [
+        tool(TaskAgentToolNames.setTaskStatus),
+        tool(TaskAgentToolNames.updateReport),
+      ];
+
+      test('is null without staged exposure, leaving the turn list fixed', () {
+        // Null is what `ConversationRepository` reads as "use the tools you
+        // were given", so the shipped, unstaged behaviour depends on it — a
+        // strategy that returned an empty list instead would silently strip
+        // every tool from the wake.
+        final created = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+        );
+
+        for (final turnIndex in [0, 1, 5]) {
+          expect(
+            created.strategy.toolsForTurn(
+              turnIndex: turnIndex,
+              manager: mockManager,
+            ),
+            isNull,
+            reason: 'turn $turnIndex must not narrow the fixed tool list',
+          );
+        }
+      });
+
+      test('delegates to the staged exposure, withholding update_report '
+          'on the opening turn only', () {
+        final created = _createStrategy(
+          executor: mockExecutor,
+          syncService: mockSyncService,
+          stagedToolExposure: TaskAgentStagedToolExposure(allTools: allTools),
+        );
+
+        List<String>? namesForTurn(int turnIndex) => created.strategy
+            .toolsForTurn(turnIndex: turnIndex, manager: mockManager)
+            ?.map((tool) => tool.function.name)
+            .toList();
+
+        expect(namesForTurn(0), [TaskAgentToolNames.setTaskStatus]);
+        expect(namesForTurn(1), [
+          TaskAgentToolNames.setTaskStatus,
+          TaskAgentToolNames.updateReport,
+        ]);
+      });
     });
 
     // -------------------------------------------------------------------------

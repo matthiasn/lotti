@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/seeded_directive_content.dart';
 import 'package:lotti/features/agents/workflow/evolution_context_builder.dart';
 
 import '../test_utils.dart';
@@ -432,5 +433,40 @@ void main() {
         );
       }
     }, tags: 'glados');
+  });
+
+  group('report directive shown to the evolution session', () {
+    test('a task agent sees the effective contract, not the seeded one', () {
+      // `propose_directives` takes a complete rewrite rather than a delta, so
+      // whatever is shown here is the baseline that gets adopted wholesale.
+      // The stored value on a stock template is `taskAgentReportDirective`,
+      // which `TaskAgentPromptBuilder` always substitutes — the agent never
+      // receives it, and the two contradict each other.
+      final ctx = builder.build(
+        template: makeTestTemplate(displayName: 'Laura'),
+        currentVersion: makeTestTemplateVersion(
+          id: 'v1',
+          generalDirective: taskAgentGeneralDirective,
+          reportDirective: taskAgentReportDirective,
+        ),
+        recentVersions: const [],
+        instanceReports: const [],
+        instanceObservations: const [],
+        pastNotes: const [],
+        metrics: makeTestMetrics(),
+        changesSinceLastSession: 0,
+      );
+
+      expect(
+        ctx.initialUserMessage,
+        contains('do not republish unchanged content'),
+        reason: 'evolution must start from the directive actually in effect',
+      );
+      expect(
+        ctx.initialUserMessage,
+        isNot(contains('MANDATORY FINAL TOOL CALL')),
+        reason: 'the seeded text is never sent to the agent it describes',
+      );
+    });
   });
 }

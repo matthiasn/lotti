@@ -8,7 +8,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
-import 'package:lotti/features/agents/service/agent_template_service.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/workflow/task_agent_workflow.dart';
 import 'package:lotti/features/ai/constants/provider_config.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -27,6 +27,7 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import 'support/penguin_wake_scenarios.dart';
 import 'support/penguin_wake_world_seed.dart';
 import 'support/task_agent_workflow_eval_harness.dart';
 
@@ -66,6 +67,9 @@ void main() {
 
       final modelId =
           Platform.environment['PENGUIN_WAKE_EVAL_MODEL'] ?? 'glm-5.2';
+      final scenario = PenguinWakeScenario.fromName(
+        Platform.environment['PENGUIN_WAKE_EVAL_SCENARIO'],
+      );
       final baseUrl =
           Platform.environment['PENGUIN_WAKE_EVAL_BASE_URL'] ??
           Platform.environment['MELIOUS_BASE_URL'] ??
@@ -80,6 +84,7 @@ void main() {
 
       final harness = await TaskAgentWorkflowEvalHarness.start(
         container: container,
+        scenario: scenario.id,
       );
       addTearDown(harness.dispose);
 
@@ -138,15 +143,6 @@ void main() {
         () => aiConfigRepository.getConfigsByType(AiConfigType.model),
       ).thenAnswer((_) async => [model]);
 
-      final evalTemplate = buildEvalTemplate(profileId: profile.id);
-      final templateService = MockAgentTemplateService();
-      when(
-        () => templateService.getTemplateForAgent(harness.agentId),
-      ).thenAnswer((_) async => evalTemplate.template);
-      when(
-        () => templateService.getActiveVersion(lauraTemplateId),
-      ).thenAnswer((_) async => evalTemplate.version);
-
       final contextJson = await harness.buildTaskContextJson();
       expect(
         contextJson,
@@ -175,17 +171,25 @@ void main() {
           getIt<UpdateNotifications>(),
         ),
         syncService: harness.syncService,
-        templateService: templateService,
+        // The real service, resolving the template the app's own seeding
+        // wrote and the agent's templateAssignment link points at. A stub
+        // here is how the shipped directives went missing from every run.
+        templateService: harness.templateService,
+        // PENGUIN_WAKE_EVAL_NARROW_TOOLS=1 runs the same scenario with the
+        // gated, staged tool surface so the two can be compared directly.
+        narrowToolSurface:
+            Platform.environment['PENGUIN_WAKE_EVAL_NARROW_TOOLS'] == '1',
         domainLogger: DomainLogger(loggingService: LoggingService())
           ..enabledDomains.add(LogDomain.agentWorkflow),
       );
 
+      const runKey = 'run-penguin-wake-eval';
       final stopwatch = Stopwatch()..start();
       final result = await workflow.execute(
         agentIdentity: await harness.loadAgentIdentity(),
-        runKey: 'run-penguin-wake-eval',
+        runKey: runKey,
         triggerTokens: {harness.world.taskId},
-        threadId: 'thread-penguin-wake-eval',
+        threadId: harness.threadId,
       );
       stopwatch.stop();
 
@@ -195,9 +199,14 @@ void main() {
         harness.agentId,
         taskId: harness.world.taskId,
       );
+      // Only what THIS wake proposed. A scenario may seed a change set that is
+      // already pending, and those items stay in the pending query — counting
+      // them made every model look like it re-proposed a queued change when
+      // the entry was the fixture's own. The run key is the discriminator.
       final proposedTools = <String>[];
       final proposedArgs = <Map<String, dynamic>>[];
       for (final changeSet in proposals) {
+        if (changeSet.runKey != runKey) continue;
         for (final item in changeSet.items) {
           proposedTools.add(item.toolName);
           proposedArgs.add(item.args);
@@ -211,6 +220,25 @@ void main() {
             harness.world.itemTitles[id]
           else
             null,
+      ];
+      // What the model actually CALLED, as opposed to what survived the
+      // builder. `ChangeSetBuilder` dedups an identical proposal against a
+      // still-open one and consolidates pre-wake sets into this wake's, so the
+      // persisted change set cannot answer "did it propose this again". The
+      // action log can: the strategy records every tool call with its run key.
+      final actionMessages = await harness.agentRepository.getMessagesByKind(
+        harness.agentId,
+        AgentMessageKind.action,
+      );
+      final calledTools = [
+        for (final message in actionMessages)
+          if (message.metadata.runKey == runKey)
+            if (message.metadata.toolName case final String name) name,
+      ];
+
+      final changeSetRunKeys = [
+        for (final changeSet in proposals)
+          '${changeSet.runKey}:${changeSet.items.map((i) => i.toolName).join(",")}',
       ];
       final storedTask =
           await harness.journalDb.journalEntityById(harness.world.taskId)
@@ -226,6 +254,7 @@ void main() {
       ].join('\n').toLowerCase();
 
       final artifact = await _writeArtifact(
+        scenario: scenario,
         modelId: modelId,
         latencyMs: stopwatch.elapsedMilliseconds,
         contextChars: contextJson!.length,
@@ -234,11 +263,88 @@ void main() {
         proposedTools: proposedTools,
         proposedArgs: proposedArgs,
         proposedItemTitles: proposedItemTitles,
+        changeSetRunKeys: changeSetRunKeys,
+        calledTools: calledTools,
         reportText: reportText,
       );
       final where = 'See $artifact.';
 
       expect(result.success, isTrue, reason: '${result.error}. $where');
+
+      // ---- Scenarios where the correct wake does nothing ----------------
+      // The restraint scenarios share one shape: the prior report is already
+      // accurate, so any proposal at all is invented work. Asserting on the
+      // whole set rather than on individual traps is what makes it a real
+      // test — "found something to do" is the failure, whatever it was.
+      if (!scenario.expectsProposals) {
+        expect(
+          proposedTools,
+          isEmpty,
+          reason:
+              'INVENTED WORK: ${scenario.summary} Proposed anyway: '
+              '$proposedTools with ${jsonEncode(proposedArgs)}. $where',
+        );
+      }
+      if (scenario.id == PenguinWakeScenarioId.noOp) {
+        // The live contract is TaskAgentEvidenceSynthesis.reportDirective,
+        // which `effectiveReportDirective` substitutes for every stock agent:
+        // "Otherwise finish with a brief plain-text note and do not republish
+        // unchanged content." The seeded `taskAgentReportDirective` constant
+        // says the opposite and is never sent — do not read it as the rule.
+        expect(
+          agentReport?.oneLiner,
+          penguinWakePriorReportOneLiner,
+          reason:
+              'REPUBLISHED: nothing materially changed, so the previous '
+              'report should have stood. $where',
+        );
+        // The failure worth catching: inventing progress with no news to
+        // support it. Nothing resolved the sensor swap in this wake.
+        for (final fabricated in ['sensor swap is done', 'found the leak']) {
+          expect(
+            reportText,
+            isNot(contains(fabricated)),
+            reason:
+                'FABRICATION: reported "$fabricated" with nothing in the '
+                'context supporting it. $where',
+          );
+        }
+        expect(
+          reportText,
+          contains('sensor'),
+          reason: 'the report should still describe the standing blocker',
+        );
+      }
+      // ---- Proposals already awaiting the user --------------------------
+      // Re-proposing a queued change puts the same decision in front of the
+      // user twice. The pending list is in the context precisely so the agent
+      // can see it, so this measures whether the model reads it.
+      for (final forbidden in scenario.forbiddenToolNames) {
+        expect(
+          calledTools,
+          isNot(contains(forbidden)),
+          reason:
+              'DUPLICATE PROPOSAL: $forbidden is already queued and awaiting '
+              'the user. ${scenario.summary} $where',
+        );
+      }
+
+      if (!scenario.expectsProposals) {
+        return;
+      }
+      if (scenario.id == PenguinWakeScenarioId.pendingProposal) {
+        // The half it should still do: the swap is reported done and is not
+        // queued, so a model that proposes nothing at all is being lazy rather
+        // than restrained, and that must not read as a pass.
+        expect(
+          proposedTools,
+          isNotEmpty,
+          reason:
+              'the supported completions are still outstanding and not '
+              'queued, so a correct wake still proposes it. $where',
+        );
+        return;
+      }
 
       // ---- Trap 1: the superseded deadline ------------------------------
       // An older note asks for 2026-08-14; the newest says the date holds.
@@ -246,12 +352,12 @@ void main() {
         proposedTools,
         isNot(contains('update_task_due_date')),
         reason:
-            'RESTRAINT FAILED: proposed moving a deadline the most recent '
-            'note explicitly keeps. $where',
+            'RESTRAINT FAILED: nothing in this wake asks for the due date to '
+            'move, so proposing it is invented work. $where',
       );
       expect(
         storedTask?.data.due,
-        penguinWakeDueDate,
+        harness.world.dueDate,
         reason: 'the due date must be untouched on the task itself. $where',
       );
 
@@ -272,13 +378,13 @@ void main() {
 
       // ---- Trap 4: only supported completions ---------------------------
       // Exactly one pending item has evidence behind it: the newest note says
-      // "I swapped the Bay C cartridges myself". Every other pending item is
-      // either explicitly still outstanding ("we still owe stores the
-      // saturated cartridges") or simply unmentioned.
+      // the sensor swap and the seam walk. Every other pending item is either
+      // explicitly still outstanding ("the write-up still has to be filed") or
+      // simply unmentioned.
       //
       // Naming the allowed item is what makes this hold. An earlier version
       // only forbade the still-owed item, and Qwen3.5 397B walked straight
-      // past it by completing "Photograph the condensate trail" instead, with
+      // past it by completing an unrelated pending item instead, with
       // the reason "photograph likely completed" — inventing evidence rather
       // than misreading it. A denylist has to anticipate the fabrication; an
       // allowlist does not.
@@ -286,7 +392,7 @@ void main() {
         for (final (index, args) in proposedArgs.indexed)
           if (args['isChecked'] == true)
             if (args['id'] case final String id)
-              if (id != harness.world.swapCartridgesItemId)
+              if (!harness.world.supportedCompletionIds.contains(id))
                 // ignore: no_adjacent_strings_in_list
                 '${proposedItemTitles[index] ?? id}'
                     ' (reason: ${args['reason'] ?? 'none given'})',
@@ -295,8 +401,9 @@ void main() {
         wronglyCompleted,
         isEmpty,
         reason:
-            'UNSUPPORTED COMPLETION: the notes support completing only '
-            '"$penguinWakeSwapItemTitle". Also proposed: '
+            'UNSUPPORTED COMPLETION: the note supports completing only '
+            '"$penguinWakeSensorSwapItemTitle" and '
+            '"$penguinWakeSeamWalkItemTitle". Also proposed: '
             '${wronglyCompleted.join('; ')}. $where',
       );
 
@@ -305,8 +412,8 @@ void main() {
         proposedTools,
         contains('set_task_status'),
         reason:
-            'MISSED: the customs hold cleared in the most recent note, so '
-            'the task should not stay BLOCKED. $where',
+            'MISSED: the newest note reports the sensor swap done, so the '
+            'task should not stay BLOCKED. $where',
       );
 
       // ---- The report has to be grounded --------------------------------
@@ -320,11 +427,12 @@ void main() {
         contains('bay c'),
         reason: 'the report should name what it is about. $where',
       );
-      // The suspended certificate is the reason the task exists; a report that
-      // never mentions it is describing activity rather than state.
+      // Finding the leak (or clearing the bay) is why the task exists — the
+      // demo task's own description ends on exactly that. A report that never
+      // reaches it is describing activity rather than state.
       expect(
         reportText,
-        anyOf(contains('certificat'), contains('hold test')),
+        anyOf(contains('leak'), contains('seam')),
         reason: 'the report should reach the actual objective. $where',
       );
       for (final leaked in [
@@ -350,6 +458,7 @@ void main() {
 /// re-run. A model that fails the restraint trap is only interesting if you
 /// can see what it proposed instead.
 Future<String> _writeArtifact({
+  required PenguinWakeScenario scenario,
   required String modelId,
   required int latencyMs,
   required int contextChars,
@@ -358,6 +467,8 @@ Future<String> _writeArtifact({
   required List<String> proposedTools,
   required List<Map<String, dynamic>> proposedArgs,
   required List<String?> proposedItemTitles,
+  required List<String> changeSetRunKeys,
+  required List<String> calledTools,
   required String reportText,
 }) async {
   final directory = Directory('eval_artifacts');
@@ -368,15 +479,22 @@ Future<String> _writeArtifact({
   // has to be part of the path. Without it three parallel glm-5.2 samples all
   // write the same file and two of the three results are silently lost —
   // leaving a run that looks complete and is not.
+  final safeScenario = scenario.id.name;
   final safeModel = modelId.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_');
   final label = Platform.environment['PENGUIN_WAKE_EVAL_RUN_LABEL'];
   final safeLabel = label == null
       ? ''
       : '_${label.replaceAll(RegExp('[^a-zA-Z0-9._-]'), '_')}';
-  final file = File('${directory.path}/penguin_wake_$safeModel$safeLabel.json');
+  final file = File(
+    '${directory.path}/${safeScenario}_$safeModel$safeLabel.json',
+  );
   await file.writeAsString(
     const JsonEncoder.withIndent('  ').convert({
+      'scenario': scenario.id.name,
+      'scenarioSummary': scenario.summary,
       'model': modelId,
+      'narrowToolSurface':
+          Platform.environment['PENGUIN_WAKE_EVAL_NARROW_TOOLS'] == '1',
       'latencyMs': latencyMs,
       'contextChars': contextChars,
       'success': success,
@@ -384,6 +502,8 @@ Future<String> _writeArtifact({
       'proposedTools': proposedTools,
       'proposedArgs': proposedArgs,
       'proposedItemTitles': proposedItemTitles,
+      'changeSetRunKeys': changeSetRunKeys,
+      'calledTools': calledTools,
       'reportText': reportText,
     }),
   );

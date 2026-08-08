@@ -90,6 +90,13 @@ abstract final class TaskAgentPromptBuilder {
   ///
   /// Evidence synthesis substitutes its model-tuned report contract only for
   /// this seeded value. A custom directive remains authoritative.
+  ///
+  /// The exact-match against [taskAgentReportDirective] is a **compatibility
+  /// sentinel**, not a content check: templates seeded on earlier versions
+  /// store that text byte-for-byte and are recognised by it. Editing the
+  /// constant would reclassify every one of them as customised and silently
+  /// stop substituting the model-tuned contract for them, so the constant has
+  /// to stay stable even though it is never rendered.
   static bool usesBuiltInReportContract(AgentTemplateVersionEntity version) {
     final configuredReportDirective = version.reportDirective.trim();
     return configuredReportDirective.isEmpty ||

@@ -633,3 +633,171 @@ therefore uses Qwen for thinking and retains Mistral as a selectable task-agent
 executor and as the profile's multimodal vision model. Full generated outputs,
 the manifest, and the direct review are archived privately under
 `2026-07-12_production-routing-8d34a3088-full-r4`.
+
+## 2026-08-08: the real-wake suite
+
+Every result above was produced against a hand-written context. The harness
+declared the task as a JSON blob — `_taskDetailsJson` carried an empty checklist
+and a single log line restating the description — so the suite never measured
+what the app actually asks a model to read.
+
+`penguin_wake_workflow_eval_live_test.dart` runs the real `TaskAgentWorkflow`
+over real in-memory databases and asserts on rows read back out: pending
+proposals, the persisted report, the task itself. `AiInputRepository` assembles
+the context exactly as the app does. The seeded wake carries fourteen checklist
+items across three lists, six weeks of linked notes, logged time, a blocked
+status, a due date and an estimate, and measures **9,004 characters** against
+the 921–2,207 the synthetic scenarios carried.
+
+### Scenario 1 — `requalification` (demo world, real prompt)
+
+The wake is **"Trace the humidity spike in Bay C"**, taken from
+`ManualDemoWorld.penguinLogistics` — the fixture `DemoSeeder` writes on a user's
+first run. Blocked, two labels, a four-item checklist with one already done.
+The only authored addition is the closing note, which is how an instruction
+actually reaches an agent. It reports the sensor swap and the seam walk done,
+resolves the blocker, and leaves the write-up explicitly outstanding.
+
+Everything the model reads is assembled by the app: seeded categories and
+labels, `EntitiesCacheService` resolving them, `AgentTemplateSeeding` supplying
+the directives, `AgentTemplateService` resolving the template through a real
+`templateAssignment` link, and `AiInputRepository` building the context. 3,938
+characters.
+
+Three samples per model:
+
+| Model | Passed | Failure |
+| --- | ---: | --- |
+| Kimi K3 | 3 / 3 | — |
+| Qwen3.5 397B | 3 / 3 | — |
+| Qwen3.6 27B | 3 / 3 | — |
+| DeepSeek V4 Flash 0731 | 3 / 3 | — |
+| GLM 5.2 | 2 / 3 | ran out of turns before proposing the status change |
+
+DeepSeek's first attempt at a third sample was lost to a five-minute provider
+timeout; re-run, it passes, so it is 5/5 across completed runs.
+
+GLM's one failure is a turn-budget problem rather than a reasoning one. Both its
+runs call `set_task_language` twice — the task genuinely has no language, so the
+first call is correct and the second is rejected by the single-use guard — and
+both also call `record_observations`. In the passing run `set_task_status` still
+fits; in the failing one it does not, and the report it publishes says so
+outright: *"the task is still marked blocked despite the log saying
+'unblocked.'"* It saw the blocker resolve and ran out of turns before proposing
+it. Its two checklist completions were the two supported ones in both runs.
+
+Read it narrowly. One scenario, three samples, and four of five models are at or
+near the ceiling — it separates broken from working, not good from better. The
+earlier tables on this page were produced against an authored fixture with no
+labels and, for a period, no general directive; this one was not.
+
+### Scenario 2 — `noOp`
+
+Nothing materially changed. A correct wake proposes no data changes and does not
+republish the report.
+
+That rule is real and is what production sends. `TaskAgentPromptBuilder`
+substitutes `TaskAgentEvidenceSynthesis.reportDirective` for every stock agent:
+
+> When no report exists yet or the report materially changed, call
+> `update_report` exactly once as the final action. **Otherwise finish with a
+> brief plain-text note and do not republish unchanged content.**
+
+| Model | Passed |
+| --- | ---: |
+| Qwen3.6 27B | 3 / 3 |
+| GLM 5.2 | 1 / 3 |
+| Kimi K3 | 0 / 3 |
+| Qwen3.5 397B | 0 / 3 |
+| DeepSeek V4 Flash 0731 | 0 / 3 |
+
+No model proposed a data change, so the failure is narrow: four of five
+republish an unchanged report. Their rewrites are paraphrases — all five
+produced a one-liner saying "blocked on Ross Station customs".
+
+**Caveat on these numbers.** The runs were made with the template's
+`generalDirective` empty (1,509 characters absent). The *report* contract was
+present — an empty directive still counts as built-in and is substituted — so
+the rule under test reached the model. The result is very likely sound but one
+variable differed from production, and it should be re-run with the full prompt
+before being cited as final.
+
+**These results were once retracted in error.** The retraction was based on
+reading the seeded `taskAgentReportDirective` constant, which says the opposite
+("You MUST call `update_report` … do not end your turn with a plain text
+message") and is **never sent to a stock agent** — both an empty and a stock
+directive are replaced by the evidence-synthesis version. A test now asserts the
+built prompt, not the constant. Verify prompt rules against a built prompt.
+
+### Scenario 3 — `pendingProposal` (withdrawn, not a result)
+
+This scenario was written to catch a model re-proposing a change already queued
+and awaiting the user. It reported ten failures out of ten across five models.
+**That number was wrong and is retracted.** It was measurement error twice over:
+
+1. The proposals were read from `getPendingChangeSets` after the wake, which
+   still contains the change set the fixture seeded. Every run counted the
+   fixture's own item as a model proposal. Filtering by the wake's run key
+   removed that.
+2. The number did not move after the filter, because `ChangeSetBuilder.build`
+   **consolidates** pre-wake pending sets into the set the wake creates and
+   retires the originals. The seeded item is therefore carried into the wake's
+   own change set legitimately, and an identical model proposal would have been
+   dropped by `deduplicateItems` before it was ever persisted.
+
+The second point is the substantive one: **the app already prevents duplicate
+proposals structurally**, through dedup against still-open items plus
+consolidation. There was never a behaviour here for models to fail.
+
+It also means the persisted change set cannot answer the question. Whether a
+model *called* a redundant tool is only visible in its tool calls, not in what
+survived the builder. The scenario now reads the action messages the wake
+records — each carries `metadata.toolName` and `metadata.runKey` — which is the
+model's actual behaviour rather than the builder's output.
+
+On that instrument the scenario does discriminate:
+
+| Model | Called `set_task_status` again |
+| --- | --- |
+| Kimi K3 | no |
+| Qwen3.6 27B | yes |
+| Qwen3.5 397B | yes |
+| DeepSeek V4 Flash 0731 | yes |
+| GLM 5.2 | inconclusive (build race, see below) |
+
+Read it narrowly. Because dedup and consolidation already absorb the duplicate,
+the user never sees it twice — so this measures wasted turns and payload, not a
+user-visible defect. It is a reason to withhold the tool, not evidence of harm.
+
+**Runner note.** Concurrent `flutter test` processes contend on
+`build/unit_test_assets`, which surfaces as `PathNotFoundException` on
+`NativeAssetsManifest.json` and is not a model failure.
+`scripts/penguin_wake_eval_matrix.sh` warms the build once before fanning out
+for this reason; ad-hoc parallel loops must do the same.
+
+### Narrowing the tool surface (results retracted)
+
+`narrowToolSurface` was measured against `noOp` and reported as no better than
+noise. That comparison is void because the staged exposure **never ran**: `ConversationRepository` passed
+  `manager.turnCount` to `toolsForTurn`, and that counts user messages with this
+  turn's already logged — so the first request arrived as index 1, not 0.
+`ConversationRepository` passed `manager.turnCount` to `toolsForTurn`, and that
+counts user messages with this turn's already logged — so the first request
+arrived as index 1, not 0. `TaskAgentStagedToolExposure` treats only 0 as the
+opening turn, so it restored the full list immediately. The flag-on runs
+exercised the precondition gates alone.
+
+Fixed and covered by a test that fails on the off-by-one. The flag stays off and
+unmeasured.
+
+### The fixture was wrong first
+
+The first `noOp` run failed on all five models, each proposing exactly
+`update_task_due_date: 2026-08-14`. They were right. The variant had dropped the
+note that supersedes the 07-24 extension request while leaving the due date
+unmoved, so one genuine unfulfilled request remained in the context. The models
+found it; the fixture was corrected to grant the extension in the prior wake.
+
+Worth recording as method: a scenario every model fails deserves the same
+suspicion as one every model passes. Read what they proposed before believing
+the score.

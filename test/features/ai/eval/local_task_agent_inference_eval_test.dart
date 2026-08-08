@@ -423,33 +423,16 @@ void main() {
       scenarios.map((scenario) => scenario.promptVariant).toSet(),
       LocalTaskAgentEvalPromptVariant.values.toSet(),
     );
-    // Every variant carries the production scaffold except `lean`, whose
-    // whole purpose is to measure what happens without it.
+    // Every variant is the app's prompt plus a directive, never a replacement
+    // for it, so the production scaffold must survive in all of them.
     expect(
-      scenarios
-          .where(
-            (scenario) =>
-                scenario.promptVariant != LocalTaskAgentEvalPromptVariant.lean,
-          )
-          .every(
-            (scenario) => scenario.systemPrompt.contains(
-              '## Evidence-First Synthesis Protocol',
-            ),
-          ),
+      scenarios.every(
+        (scenario) => scenario.systemPrompt.contains(
+          '## Evidence-First Synthesis Protocol',
+        ),
+      ),
       isTrue,
-    );
-    expect(
-      scenarios
-          .where(
-            (scenario) =>
-                scenario.promptVariant == LocalTaskAgentEvalPromptVariant.lean,
-          )
-          .every(
-            (scenario) => !scenario.systemPrompt.contains(
-              '## Evidence-First Synthesis Protocol',
-            ),
-          ),
-      isTrue,
+      reason: 'a variant that drops the scaffold is not measuring the app',
     );
     expect(
       scenarios.map((scenario) => scenario.id),
@@ -723,62 +706,6 @@ void main() {
     expect(result.passedQualityCheckCount, 11);
     expect(result.qualityScore, 1);
     expect(result.reportToolCall?.name, TaskAgentToolNames.updateReport);
-  });
-
-  group('lean payload variant', () {
-    test('is an order of magnitude smaller than production', () {
-      final production = defaultMeliousTaskAgentEvalScenarios().first;
-      final lean = defaultMeliousTaskAgentEvalScenarios(
-        variants: const [LocalTaskAgentEvalPromptVariant.lean],
-      ).first;
-
-      expect(production.systemPrompt.length, greaterThan(15000));
-      expect(lean.systemPrompt.length, lessThan(3000));
-      // The bounds above are independent, so on their own they would admit a
-      // fivefold gap. Compare the two directly to hold the test to its name.
-      expect(
-        production.systemPrompt.length,
-        greaterThan(lean.systemPrompt.length * 10),
-      );
-    });
-
-    test('advertises the core tools only', () {
-      final leanTools = buildLocalTaskAgentEvalTools(
-        promptVariant: LocalTaskAgentEvalPromptVariant.lean,
-      ).map((tool) => tool.function.name).toSet();
-      final allTools = buildLocalTaskAgentEvalTools(
-        promptVariant: LocalTaskAgentEvalPromptVariant.production,
-      ).map((tool) => tool.function.name).toSet();
-
-      expect(leanTools, leanTaskAgentToolNames);
-      expect(leanTools.length, lessThan(allTools.length));
-      // Dropping a tool a scenario expects would make the probe measure the
-      // tool list rather than the payload.
-      for (final scenario in defaultMeliousTaskAgentEvalScenarios(
-        variants: const [LocalTaskAgentEvalPromptVariant.lean],
-      )) {
-        for (final expected in scenario.expectedToolCalls) {
-          expect(
-            leanTools,
-            contains(expected.name),
-            reason: '${scenario.id} expects ${expected.name}',
-          );
-        }
-      }
-    });
-
-    test('keeps the rules the checks depend on', () {
-      final lean = defaultMeliousTaskAgentEvalScenarios(
-        variants: const [LocalTaskAgentEvalPromptVariant.lean],
-      ).first.systemPrompt.toLowerCase();
-
-      // Trimming is only meaningful if the load-bearing contract survives:
-      // report-or-nothing, grounding, no process narration, task language.
-      expect(lean, contains('update_report'));
-      expect(lean, contains('languagecode'));
-      expect(lean, contains('deferred'));
-      expect(lean, contains('supported by the task context'));
-    });
   });
 
   group('tool responses match the production dispatcher', () {

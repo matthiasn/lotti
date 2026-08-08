@@ -2475,4 +2475,306 @@ void main() {
       );
     });
   });
+
+  group('per-turn tool exposure', () {
+    late AiConfigInferenceProvider provider;
+
+    setUp(() {
+      provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test Provider',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2024, 3, 15, 10, 30),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+    });
+
+    test(
+      'a strategy narrowing the turn changes what reaches the provider',
+      () async {
+        final conversationId = repository.createConversation(
+          systemMessage: 'system',
+        );
+
+        const wide = ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(name: 'wide_tool'),
+        );
+        const narrow = ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(name: 'narrow_tool'),
+        );
+
+        when(
+          () => mockStrategy.toolsForTurn(
+            turnIndex: any(named: 'turnIndex'),
+            manager: any(named: 'manager'),
+          ),
+        ).thenReturn([narrow]);
+        when(() => mockStrategy.shouldContinue(any())).thenReturn(false);
+
+        _stubGenerateText(mockOllamaRepo).thenAnswer(
+          (_) => Stream.value(
+            const CreateChatCompletionStreamResponse(
+              id: 'r1',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(content: 'done'),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: 1710500000,
+            ),
+          ),
+        );
+
+        await repository.sendMessage(
+          conversationId: conversationId,
+          message: 'go',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          strategy: mockStrategy,
+          tools: [wide],
+        );
+
+        final captured =
+            verify(
+                  () => mockOllamaRepo.generateTextWithMessages(
+                    messages: any(named: 'messages'),
+                    model: any(named: 'model'),
+                    provider: any(named: 'provider'),
+                    tools: captureAny(named: 'tools'),
+                    temperature: any(named: 'temperature'),
+                    thoughtSignatures: any(named: 'thoughtSignatures'),
+                    signatureCollector: any(named: 'signatureCollector'),
+                    turnIndex: any(named: 'turnIndex'),
+                    impactCollector: any(named: 'impactCollector'),
+                    toolChoice: any(named: 'toolChoice'),
+                  ),
+                ).captured.single
+                as List<ChatCompletionTool>?;
+
+        // The list passed to sendMessage must NOT be what the provider saw.
+        expect(
+          captured?.map((tool) => tool.function.name),
+          ['narrow_tool'],
+          reason: 'the strategy owns the tool surface for the turn',
+        );
+      },
+    );
+
+    test('the first request is the opening turn, index zero', () async {
+      // turnCount counts user messages and this turn's is already logged, so a
+      // naive read gives 1 on the first request. TaskAgentStagedToolExposure
+      // only treats 0 as the opening turn, so an off-by-one here silently
+      // restores the full tool list and the staging never happens at all.
+      final conversationId = repository.createConversation(
+        systemMessage: 'system',
+      );
+
+      const wide = ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(name: 'wide_tool'),
+      );
+
+      final seenTurnIndexes = <int>[];
+      when(
+        () => mockStrategy.toolsForTurn(
+          turnIndex: any(named: 'turnIndex'),
+          manager: any(named: 'manager'),
+        ),
+      ).thenAnswer((invocation) {
+        seenTurnIndexes.add(
+          invocation.namedArguments[const Symbol('turnIndex')] as int,
+        );
+        return null;
+      });
+      when(() => mockStrategy.shouldContinue(any())).thenReturn(false);
+
+      _stubGenerateText(mockOllamaRepo).thenAnswer(
+        (_) => Stream.value(
+          const CreateChatCompletionStreamResponse(
+            id: 'r1',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'done'),
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: 1710500000,
+          ),
+        ),
+      );
+
+      await repository.sendMessage(
+        conversationId: conversationId,
+        message: 'go',
+        model: 'test-model',
+        provider: provider,
+        inferenceRepo: mockOllamaRepo,
+        strategy: mockStrategy,
+        tools: [wide],
+      );
+
+      expect(
+        seenTurnIndexes,
+        [0],
+        reason: 'the opening request must be turn zero for the strategy',
+      );
+    });
+
+    test(
+      'a forced toolChoice keeps a constrained list constrained',
+      () async {
+        // The forced report-only retry pairs a one-tool list with a forced
+        // toolChoice. A staging strategy widening it back would hand a provider
+        // that ignores toolChoice a mutation tool during report recovery.
+        final conversationId = repository.createConversation(
+          systemMessage: 'system',
+        );
+
+        const reportOnly = ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(name: 'update_report'),
+        );
+        const mutation = ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(name: 'set_task_status'),
+        );
+
+        when(
+          () => mockStrategy.toolsForTurn(
+            turnIndex: any(named: 'turnIndex'),
+            manager: any(named: 'manager'),
+          ),
+        ).thenReturn([reportOnly, mutation]);
+        when(() => mockStrategy.shouldContinue(any())).thenReturn(false);
+
+        _stubGenerateText(mockOllamaRepo).thenAnswer(
+          (_) => Stream.value(
+            const CreateChatCompletionStreamResponse(
+              id: 'r1',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(content: 'done'),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: 1710500000,
+            ),
+          ),
+        );
+
+        await repository.sendMessage(
+          conversationId: conversationId,
+          message: 'call update_report now',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          strategy: mockStrategy,
+          tools: [reportOnly],
+          // What the forced report-only retry passes.
+          toolChoice: const ChatCompletionToolChoiceOption.tool(
+            ChatCompletionNamedToolChoice(
+              type: ChatCompletionNamedToolChoiceType.function,
+              function: ChatCompletionFunctionCallOption(name: 'update_report'),
+            ),
+          ),
+        );
+
+        final captured =
+            verify(
+                  () => mockOllamaRepo.generateTextWithMessages(
+                    messages: any(named: 'messages'),
+                    model: any(named: 'model'),
+                    provider: any(named: 'provider'),
+                    tools: captureAny(named: 'tools'),
+                    temperature: any(named: 'temperature'),
+                    thoughtSignatures: any(named: 'thoughtSignatures'),
+                    signatureCollector: any(named: 'signatureCollector'),
+                    turnIndex: any(named: 'turnIndex'),
+                    impactCollector: any(named: 'impactCollector'),
+                    toolChoice: any(named: 'toolChoice'),
+                  ),
+                ).captured.single
+                as List<ChatCompletionTool>?;
+
+        expect(
+          captured?.map((tool) => tool.function.name),
+          ['update_report'],
+          reason: 'the strategy must not widen a deliberately constrained list',
+        );
+      },
+    );
+
+    test('no override leaves the caller list untouched', () async {
+      final conversationId = repository.createConversation(
+        systemMessage: 'system',
+      );
+
+      const wide = ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(name: 'wide_tool'),
+      );
+
+      // Unstubbed toolsForTurn returns null, which is the shipped behaviour.
+      when(
+        () => mockStrategy.toolsForTurn(
+          turnIndex: any(named: 'turnIndex'),
+          manager: any(named: 'manager'),
+        ),
+      ).thenReturn(null);
+      when(() => mockStrategy.shouldContinue(any())).thenReturn(false);
+
+      _stubGenerateText(mockOllamaRepo).thenAnswer(
+        (_) => Stream.value(
+          const CreateChatCompletionStreamResponse(
+            id: 'r1',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'done'),
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: 1710500000,
+          ),
+        ),
+      );
+
+      await repository.sendMessage(
+        conversationId: conversationId,
+        message: 'go',
+        model: 'test-model',
+        provider: provider,
+        inferenceRepo: mockOllamaRepo,
+        strategy: mockStrategy,
+        tools: [wide],
+      );
+
+      final captured =
+          verify(
+                () => mockOllamaRepo.generateTextWithMessages(
+                  messages: any(named: 'messages'),
+                  model: any(named: 'model'),
+                  provider: any(named: 'provider'),
+                  tools: captureAny(named: 'tools'),
+                  temperature: any(named: 'temperature'),
+                  thoughtSignatures: any(named: 'thoughtSignatures'),
+                  signatureCollector: any(named: 'signatureCollector'),
+                  turnIndex: any(named: 'turnIndex'),
+                  impactCollector: any(named: 'impactCollector'),
+                  toolChoice: any(named: 'toolChoice'),
+                ),
+              ).captured.single
+              as List<ChatCompletionTool>?;
+
+      expect(captured?.map((tool) => tool.function.name), ['wide_tool']);
+    });
+  });
 }

@@ -311,6 +311,33 @@ class ConversationRepository extends Notifier<void> {
         // the turn index captured before the request advances the count.
         final impactCollector = InferenceImpactCollector();
         final turnIndex = manager.turnCount;
+        // `turnCount` counts user messages and this turn's user message is
+        // already in the log, so the first request sees 1. Strategies reason
+        // about "the opening turn", so they get a zero-based index while
+        // provider calls and telemetry keep the one-based value they had.
+        final strategyTurnIndex = turnIndex > 0 ? turnIndex - 1 : 0;
+        // Ask the strategy what to advertise for this turn. Without this the
+        // list captured at sendMessage is reused for every turn, so a wake
+        // cannot narrow its opening turn and widen later.
+        // A forced `toolChoice` means the caller is constraining this call to
+        // one named tool and passed the matching one-tool list — the report-only
+        // retry does exactly that. A staging strategy must not widen it back,
+        // or a provider that ignores `toolChoice` could reach a mutation tool
+        // during report recovery.
+        // `ChatCompletionToolChoiceOption` is a union: `.mode(auto|none|...)`
+        // or `.tool(named)`. Only the named-tool variant means the caller
+        // pinned this call to one tool.
+        final callerConstrainedTools =
+            toolChoice
+                is ChatCompletionToolChoiceOptionChatCompletionNamedToolChoice;
+        final turnTools =
+            (callerConstrainedTools
+                ? null
+                : strategy?.toolsForTurn(
+                    turnIndex: strategyTurnIndex,
+                    manager: manager,
+                  )) ??
+            tools;
 
         // Collect response
         final toolCalls = <ChatCompletionMessageToolCall>[];
@@ -329,7 +356,7 @@ class ConversationRepository extends Notifier<void> {
                 messages: messages,
                 model: model,
                 provider: provider,
-                tools: tools,
+                tools: turnTools,
                 toolChoice: toolChoice,
                 temperature: effectiveTemperature,
                 thoughtSignatures: manager.thoughtSignatures,

@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/service/attention_claim_maintenance_servic
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/correction_examples_builder.dart';
+import 'package:lotti/features/agents/tools/task_agent_tool_gate.dart';
 import 'package:lotti/features/agents/tools/task_label_handler.dart';
 import 'package:lotti/features/agents/workflow/project_agent_context_builder.dart'
     show LogErrorCallback;
@@ -465,27 +466,35 @@ class TaskAgentContextBuilder {
 
   /// Converts [AgentToolRegistry.taskAgentTools] to OpenAI-compatible
   /// [ChatCompletionTool] objects.
-  List<ChatCompletionTool> buildToolDefinitions() {
-    return AgentToolRegistry.taskAgentTools.where((def) => def.enabled).map((
-      def,
-    ) {
-      final optimizeReport = def.name == TaskAgentToolNames.updateReport;
-      return ChatCompletionTool(
-        type: ChatCompletionToolType.function,
-        function: FunctionObject(
-          name: def.name,
-          description: TaskAgentEvidenceSynthesis.toolDescription(
-            def.name,
-            def.description,
-          ),
-          parameters: optimizeReport
-              ? TaskAgentEvidenceSynthesis.updateReportParameters(
-                  def.parameters,
-                )
-              : def.parameters,
-        ),
-      );
-    }).toList();
+  ///
+  /// [facts] drops tools whose precondition this wake does not meet. It
+  /// defaults to permissive, so a caller that does not pass it advertises
+  /// exactly what it always has.
+  List<ChatCompletionTool> buildToolDefinitions({
+    TaskAgentWakeFacts facts = TaskAgentWakeFacts.permissive,
+  }) {
+    final visible = visibleTaskAgentToolNames(facts);
+    return AgentToolRegistry.taskAgentTools
+        .where((def) => def.enabled && visible.contains(def.name))
+        .map((def) {
+          final optimizeReport = def.name == TaskAgentToolNames.updateReport;
+          return ChatCompletionTool(
+            type: ChatCompletionToolType.function,
+            function: FunctionObject(
+              name: def.name,
+              description: TaskAgentEvidenceSynthesis.toolDescription(
+                def.name,
+                def.description,
+              ),
+              parameters: optimizeReport
+                  ? TaskAgentEvidenceSynthesis.updateReportParameters(
+                      def.parameters,
+                    )
+                  : def.parameters,
+            ),
+          );
+        })
+        .toList();
   }
 
   /// Extracts the final assistant text content from the conversation manager.
