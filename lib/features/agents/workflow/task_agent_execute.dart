@@ -952,7 +952,12 @@ extension TaskAgentExecute on TaskAgentWorkflow {
     final labelDefinitions = await journalDb.getAllLabelDefinitions();
 
     return TaskAgentWakeFacts(
-      hasChecklistItems: task?.data.checklistIds?.isNotEmpty ?? true,
+      // A null `checklistIds` and an empty one both mean "no checklists"
+      // everywhere else in the app, and a task that never had one carries null
+      // — so only an unresolvable task stays permissive here. Coalescing the
+      // null to `true` would leave the gate dead for the common case.
+      hasChecklistItems:
+          task == null || (task.data.checklistIds?.isNotEmpty ?? false),
       hasRunningTimerForTask: timerIsForThisTask,
       hasTimeRecords: hasEditableTimeEntries,
       hasLabelDefinitions: labelDefinitions.isNotEmpty,
