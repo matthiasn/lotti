@@ -38,12 +38,6 @@ class GoalCriterionResult {
   /// success per day). Null when pace is not applicable (rolling windows,
   /// metric leaves, already satisfied).
   final bool? paceFeasible;
-
-  @override
-  String toString() =>
-      'GoalCriterionResult($criterionId: actual=$actual/$target '
-      'ratio=${ratio.toStringAsFixed(3)} satisfied=$satisfied '
-      'samples=$sampleCount pace=$paceFeasible)';
 }
 
 /// Result of evaluating a whole criteria tree for one period.
@@ -73,10 +67,4 @@ class GoalEvaluation {
 
   /// Combined pace feasibility (see [GoalCriterionResult.paceFeasible]).
   final bool? paceFeasible;
-
-  @override
-  String toString() =>
-      'GoalEvaluation(attainment=${attainment.toStringAsFixed(3)} '
-      'satisfied=$satisfied coverage=${dataCoverage.toStringAsFixed(2)} '
-      'pace=$paceFeasible nodes=${results.length})';
 }

@@ -139,6 +139,38 @@ void main() {
       expect(actualFor(GoalAggregation.max), 9000);
     });
 
+    test('measurable leaves evaluate like metric leaves on their own map', () {
+      const water = GoalCriterion.measurable(
+        criterionId: 'water',
+        dataTypeId: 'water-id',
+        window: GoalWindow.rollingDays(count: 3),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 2000,
+      );
+      final signals = GoalSignalWindow(
+        measurableDailySums: {
+          'water-id': {d(6): 1500, d(7): 1800, d(8): 1200},
+        },
+        // Same id in the quantitative map must NOT leak into the
+        // measurable leaf — the maps are separate namespaces.
+        quantitativeDailySums: {
+          'water-id': {d(8): 99999},
+        },
+      );
+      final evaluation = evaluator.evaluate(water, signals, saturday);
+      final leaf = evaluation.results['water']!;
+      expect(leaf.actual, closeTo(4500 / 3, 1e-9)); // mean 1500
+      expect(evaluation.attainment, closeTo(0.75, 1e-9)); // 1500/2000
+      expect(evaluation.satisfied, isFalse);
+      expect(evaluation.dataCoverage, 1.0);
+
+      // Short-term re-windowing hits the same measurable series.
+      expect(
+        evaluator.shortTermAttainment(water, signals, saturday),
+        closeTo(0.75, 1e-9),
+      );
+    });
+
     test('atLeast with a zero target is trivially satisfied', () {
       const criterion = GoalCriterion.metric(
         criterionId: 'm',
