@@ -200,25 +200,17 @@ Future<void> seedPenguinWakePriorReport({
   );
 }
 
-/// A note that reports genuinely nothing new, for [PenguinWakeScenarioId.noOp].
-///
-/// It restates what the prior report already says. There is no instruction, no
-/// completion and no new fact — a wake that finds work here is inventing it.
-const String penguinWakeNoOpNote =
-    'Rang Ross Station again about the customs hold. Still no movement and no '
-    'date from them. Nothing else to report — the bay is holding on the '
-    'borrowed cartridges and the gasket reseat is still looking like the fix.';
-
 /// Seeds a change set that is already queued and awaiting the user.
 ///
 /// The wake is the unblocking one, so a model will want to move the task off
 /// BLOCKED — but a previous wake already proposed exactly that and the user has
-/// not answered yet. Proposing it again puts the same decision in front of them
-/// twice, which is why the context carries pending proposals at all.
+/// not answered. Proposing it again puts the same decision in front of them
+/// twice, which is what the pending list in the context exists to prevent.
 ///
-/// Only the status change is queued. Completing the swapped-cartridge item is
-/// still outstanding and still correct, so the scenario distinguishes a model
-/// that reads the pending list from one that simply does less.
+/// Only the status change is queued. The checklist completions the note
+/// supports are still outstanding and still correct, so the scenario
+/// distinguishes a model that reads the pending list from one that simply does
+/// less.
 Future<void> seedPenguinWakePendingProposal({
   required AgentSyncService syncService,
   required String agentId,

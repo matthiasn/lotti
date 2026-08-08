@@ -48,11 +48,13 @@ void main() {
         expect(stored, isA<Task>());
         final task = stored! as Task;
         expect(task.data.status, isA<TaskBlocked>());
-        expect(task.data.due, penguinWakeDueDate);
-        // Three lists, fourteen items, six of them already done by the user.
-        expect(task.data.checklistIds, hasLength(3));
-        expect(harness.world.checkedItemIds, hasLength(6));
-        expect(harness.world.pendingItemIds, hasLength(8));
+        expect(task.data.due, harness.world.dueDate);
+        // The demo task's own checklist: four items, one already done.
+        expect(task.data.checklistIds, hasLength(1));
+        expect(harness.world.checkedItemIds, hasLength(1));
+        expect(harness.world.pendingItemIds, hasLength(3));
+        // Demo labels must survive into the world the wake reads.
+        expect(harness.world.labelIds, hasLength(2));
       },
     );
 
@@ -90,17 +92,23 @@ void main() {
       // anyone noticing.
       expect(
         json.length,
-        greaterThan(6000),
+        greaterThan(2500),
         reason: 'a real context should dwarf the old hand-written fixture',
       );
 
       // Built, not declared: these strings exist only in the seeded rows.
       expect(json, contains('Bay C'));
-      expect(json, contains('Run a 24-hour hold test'));
       expect(
         json,
-        contains('Reseat the door gasket'),
+        contains(penguinWakeSeamWalkItemTitle),
         reason: 'checklist items must reach the model through the real builder',
+      );
+      // The label path only runs with a real EntitiesCacheService; a mocked one
+      // resolves every label to null and the model never sees one.
+      expect(
+        json,
+        anyOf(contains('Habitat critical'), contains('Blocked')),
+        reason: 'demo labels must resolve into the context',
       );
     });
 
@@ -111,13 +119,13 @@ void main() {
       // be present, or the restraint trap tests nothing.
       expect(
         json,
-        contains('August 14'),
-        reason: 'the superseded deadline request must be visible',
+        contains('Sensor swap is done'),
+        reason: 'the unblocking instruction must be visible',
       );
       expect(
         json,
-        contains('still holds'),
-        reason: 'the instruction overriding it must be visible',
+        contains('still has to be filed'),
+        reason: 'the outstanding-work clause must be visible',
       );
     });
 
@@ -151,29 +159,18 @@ void main() {
       // and the model is right to act.
       expect(
         json,
-        contains('Still no movement'),
+        contains('Still no date from the parts store'),
         reason: 'the closing note must be the one that reports nothing new',
       );
       expect(
         json,
-        isNot(contains('cleared customs this morning')),
+        isNot(contains('Sensor swap is done')),
         reason: 'the unblocking instruction must not leak into the no-op wake',
       );
       expect(
         noOp.scenario.expectsProposals,
         isFalse,
         reason: 'a correct no-op wake proposes nothing',
-      );
-
-      // The 07-24 extension request must already be satisfied. While it was
-      // not, every model correctly proposed moving the date to Aug 14 — the
-      // fixture, not the models, was wrong.
-      final noOpTask =
-          await noOp.journalDb.journalEntityById(noOp.world.taskId) as Task?;
-      expect(
-        noOpTask?.data.due,
-        penguinWakeExtendedDueDate,
-        reason: 'no request may remain outstanding in a no-op wake',
       );
 
       // Re-seed the default world so tearDown has a live harness to dispose.
@@ -211,8 +208,8 @@ void main() {
       // laziness.
       expect(
         pending.world.pendingItemIds,
-        contains(pending.world.swapCartridgesItemId),
-        reason: 'the swap completion must still be outstanding',
+        containsAll(pending.world.supportedCompletionIds),
+        reason: 'the supported completions must still be outstanding',
       );
 
       // The guard the model actually reads comes from the proposal ledger, not
