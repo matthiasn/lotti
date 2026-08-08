@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
+import 'package:lotti/features/agents/tools/task_agent_staged_tool_exposure.dart';
 import 'package:lotti/features/agents/workflow/change_proposal_filter.dart';
 import 'package:lotti/features/agents/workflow/change_set_builder.dart';
 import 'package:lotti/features/agents/workflow/task_agent_report_editor.dart';
@@ -88,6 +89,7 @@ class TaskAgentStrategy extends ConversationStrategy {
     this.resolveLinkableTaskTitle,
     this.resolveExistingTaskRelations,
     this.flushChangeSet,
+    this.stagedToolExposure,
   });
 
   /// The [AgentToolExecutor] that wraps handler calls with enforcement and
@@ -207,6 +209,18 @@ class TaskAgentStrategy extends ConversationStrategy {
   /// so repeated `retract_suggestions` calls don't stage the same item twice
   /// (nothing is persisted between calls, so the item still reads as pending).
   final _stagedRetractionKeys = <String>{};
+
+  /// Per-turn tool exposure for this wake, or null to advertise one fixed list.
+  ///
+  /// Opt-in so the shipped behaviour is unchanged until a measurement earns the
+  /// switch.
+  final TaskAgentStagedToolExposure? stagedToolExposure;
+
+  @override
+  List<ChatCompletionTool>? toolsForTurn({
+    required int turnIndex,
+    required ConversationManager manager,
+  }) => stagedToolExposure?.toolsForTurn(turnIndex);
 
   static const _uuid = Uuid();
 

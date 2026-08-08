@@ -2475,4 +2475,160 @@ void main() {
       );
     });
   });
+
+  group('per-turn tool exposure', () {
+    late AiConfigInferenceProvider provider;
+
+    setUp(() {
+      provider = AiConfigInferenceProvider(
+        id: 'test-provider',
+        name: 'Test Provider',
+        baseUrl: 'http://localhost:11434',
+        apiKey: '',
+        createdAt: DateTime(2024, 3, 15, 10, 30),
+        inferenceProviderType: InferenceProviderType.ollama,
+      );
+    });
+
+    test(
+      'a strategy narrowing the turn changes what reaches the provider',
+      () async {
+        final conversationId = repository.createConversation(
+          systemMessage: 'system',
+        );
+
+        const wide = ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(name: 'wide_tool'),
+        );
+        const narrow = ChatCompletionTool(
+          type: ChatCompletionToolType.function,
+          function: FunctionObject(name: 'narrow_tool'),
+        );
+
+        when(
+          () => mockStrategy.toolsForTurn(
+            turnIndex: any(named: 'turnIndex'),
+            manager: any(named: 'manager'),
+          ),
+        ).thenReturn([narrow]);
+        when(() => mockStrategy.shouldContinue(any())).thenReturn(false);
+
+        _stubGenerateText(mockOllamaRepo).thenAnswer(
+          (_) => Stream.value(
+            const CreateChatCompletionStreamResponse(
+              id: 'r1',
+              choices: [
+                ChatCompletionStreamResponseChoice(
+                  index: 0,
+                  delta: ChatCompletionStreamResponseDelta(content: 'done'),
+                ),
+              ],
+              object: 'chat.completion.chunk',
+              created: 1710500000,
+            ),
+          ),
+        );
+
+        await repository.sendMessage(
+          conversationId: conversationId,
+          message: 'go',
+          model: 'test-model',
+          provider: provider,
+          inferenceRepo: mockOllamaRepo,
+          strategy: mockStrategy,
+          tools: [wide],
+        );
+
+        final captured =
+            verify(
+                  () => mockOllamaRepo.generateTextWithMessages(
+                    messages: any(named: 'messages'),
+                    model: any(named: 'model'),
+                    provider: any(named: 'provider'),
+                    tools: captureAny(named: 'tools'),
+                    temperature: any(named: 'temperature'),
+                    thoughtSignatures: any(named: 'thoughtSignatures'),
+                    signatureCollector: any(named: 'signatureCollector'),
+                    turnIndex: any(named: 'turnIndex'),
+                    impactCollector: any(named: 'impactCollector'),
+                    toolChoice: any(named: 'toolChoice'),
+                  ),
+                ).captured.single
+                as List<ChatCompletionTool>?;
+
+        // The list passed to sendMessage must NOT be what the provider saw.
+        expect(
+          captured?.map((tool) => tool.function.name),
+          ['narrow_tool'],
+          reason: 'the strategy owns the tool surface for the turn',
+        );
+      },
+    );
+
+    test('no override leaves the caller list untouched', () async {
+      final conversationId = repository.createConversation(
+        systemMessage: 'system',
+      );
+
+      const wide = ChatCompletionTool(
+        type: ChatCompletionToolType.function,
+        function: FunctionObject(name: 'wide_tool'),
+      );
+
+      // Unstubbed toolsForTurn returns null, which is the shipped behaviour.
+      when(
+        () => mockStrategy.toolsForTurn(
+          turnIndex: any(named: 'turnIndex'),
+          manager: any(named: 'manager'),
+        ),
+      ).thenReturn(null);
+      when(() => mockStrategy.shouldContinue(any())).thenReturn(false);
+
+      _stubGenerateText(mockOllamaRepo).thenAnswer(
+        (_) => Stream.value(
+          const CreateChatCompletionStreamResponse(
+            id: 'r1',
+            choices: [
+              ChatCompletionStreamResponseChoice(
+                index: 0,
+                delta: ChatCompletionStreamResponseDelta(content: 'done'),
+              ),
+            ],
+            object: 'chat.completion.chunk',
+            created: 1710500000,
+          ),
+        ),
+      );
+
+      await repository.sendMessage(
+        conversationId: conversationId,
+        message: 'go',
+        model: 'test-model',
+        provider: provider,
+        inferenceRepo: mockOllamaRepo,
+        strategy: mockStrategy,
+        tools: [wide],
+      );
+
+      final captured =
+          verify(
+                () => mockOllamaRepo.generateTextWithMessages(
+                  messages: any(named: 'messages'),
+                  model: any(named: 'model'),
+                  provider: any(named: 'provider'),
+                  tools: captureAny(named: 'tools'),
+                  temperature: any(named: 'temperature'),
+                  thoughtSignatures: any(named: 'thoughtSignatures'),
+                  signatureCollector: any(named: 'signatureCollector'),
+                  turnIndex: any(named: 'turnIndex'),
+                  impactCollector: any(named: 'impactCollector'),
+                  toolChoice: any(named: 'toolChoice'),
+                ),
+              ).captured.single
+              as List<ChatCompletionTool>?;
+
+      expect(captured?.map((tool) => tool.function.name), ['wide_tool']);
+    });
+  });
 }

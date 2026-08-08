@@ -311,6 +311,12 @@ class ConversationRepository extends Notifier<void> {
         // the turn index captured before the request advances the count.
         final impactCollector = InferenceImpactCollector();
         final turnIndex = manager.turnCount;
+        // Ask the strategy what to advertise for this turn. Without this the
+        // list captured at sendMessage is reused for every turn, so a wake
+        // cannot narrow its opening turn and widen later.
+        final turnTools =
+            strategy?.toolsForTurn(turnIndex: turnIndex, manager: manager) ??
+            tools;
 
         // Collect response
         final toolCalls = <ChatCompletionMessageToolCall>[];
@@ -329,7 +335,7 @@ class ConversationRepository extends Notifier<void> {
                 messages: messages,
                 model: model,
                 provider: provider,
-                tools: tools,
+                tools: turnTools,
                 toolChoice: toolChoice,
                 temperature: effectiveTemperature,
                 thoughtSignatures: manager.thoughtSignatures,
