@@ -99,10 +99,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           );
       if (mounted) context.beamToNamed('/agents');
     } on Object {
+      // Validation already passed — this is an operational failure, and
+      // saying "pick a name" would misdiagnose it.
       if (mounted) {
         setState(() {
           _saving = false;
-          _validation = context.messages.goalCreateValidationMissing;
+          _validation = context.messages.goalCreateFailed;
         });
       }
     }
@@ -208,6 +210,16 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
 
 final StreamProvider<List<HabitDefinition>> _habitDefinitionsProvider =
     StreamProvider.autoDispose<List<HabitDefinition>>(
-      (ref) => ref.watch(habitsRepositoryProvider).watchHabitDefinitions(),
+      // Active only, matching the habits UI: a goal watching a paused
+      // habit would report false lack of progress forever.
+      (ref) => ref
+          .watch(habitsRepositoryProvider)
+          .watchHabitDefinitions()
+          .map(
+            (habits) => [
+              for (final habit in habits)
+                if (habit.active) habit,
+            ],
+          ),
       name: 'goalCreateHabitDefinitionsProvider',
     );

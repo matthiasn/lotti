@@ -3197,6 +3197,10 @@
       }
     }
   },
+  "goalCreateFailed": "Saving the goal failed — please try again.",
+  "@goalCreateFailed": {
+    "description": "Shown when persisting a new goal agent throws (validation already passed)."
+  },
   "goalCreateHabitCountLabel": "Times per week (each habit)",
   "@goalCreateHabitCountLabel": {
     "description": "Label of the per-habit weekly completion target."

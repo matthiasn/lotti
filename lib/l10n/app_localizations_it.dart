@@ -12186,4 +12186,8 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
+
+  @override
+  String get goalCreateFailed =>
+      'Salvataggio dell’obiettivo non riuscito: riprova.';
 }

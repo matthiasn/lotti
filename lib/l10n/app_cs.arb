@@ -2539,6 +2539,7 @@
   "goalBannerRatingSkip": "Přeskočit",
   "goalBannerRatingTitle": "Jaký byl tento banner?",
   "goalBannerSemanticLabel": "Banner cíle {goalTitle}",
+  "goalCreateFailed": "Cíl se nepodařilo uložit — zkus to znovu.",
   "goalCreateHabitCountLabel": "Krát týdně (každý návyk)",
   "goalCreateHabitsLabel": "Sledované návyky",
   "goalCreateNameLabel": "Název",

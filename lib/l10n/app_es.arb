@@ -2532,6 +2532,7 @@
   "goalBannerRatingSkip": "Omitir",
   "goalBannerRatingTitle": "¿Qué te pareció este banner?",
   "goalBannerSemanticLabel": "Banner del objetivo {goalTitle}",
+  "goalCreateFailed": "No se pudo guardar el objetivo; inténtalo de nuevo.",
   "goalCreateHabitCountLabel": "Veces por semana (cada hábito)",
   "goalCreateHabitsLabel": "Hábitos a seguir",
   "goalCreateNameLabel": "Nombre",

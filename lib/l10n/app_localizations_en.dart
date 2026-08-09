@@ -11942,6 +11942,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
+
+  @override
+  String get goalCreateFailed => 'Saving the goal failed — please try again.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -12470,4 +12473,7 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get settingsSyncConflictsSubtitle =>
       'Resolve synchronisation conflicts to ensure data consistency';
+
+  @override
+  String get goalCreateFailed => 'Saving the goal failed — please try again.';
 }

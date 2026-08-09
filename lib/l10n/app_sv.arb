@@ -2782,6 +2782,7 @@
   "goalBannerRatingSkip": "Hoppa över",
   "goalBannerRatingTitle": "Vad tyckte du om den här bannern?",
   "goalBannerSemanticLabel": "Målbanner för {goalTitle}",
+  "goalCreateFailed": "Målet kunde inte sparas — försök igen.",
   "goalCreateHabitCountLabel": "Gånger per vecka (per vana)",
   "goalCreateHabitsLabel": "Vanor att följa",
   "goalCreateNameLabel": "Namn",

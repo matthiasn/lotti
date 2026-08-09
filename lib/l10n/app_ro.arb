@@ -2532,6 +2532,7 @@
   "goalBannerRatingSkip": "Omiteți",
   "goalBannerRatingTitle": "Cum vi s-a părut acest banner?",
   "goalBannerSemanticLabel": "Banner pentru obiectivul {goalTitle}",
+  "goalCreateFailed": "Salvarea obiectivului a eșuat — vă rugăm să încercați din nou.",
   "goalCreateHabitCountLabel": "De câte ori pe săptămână (fiecare obicei)",
   "goalCreateHabitsLabel": "Obiceiuri de urmărit",
   "goalCreateNameLabel": "Nume",

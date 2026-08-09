@@ -12106,4 +12106,8 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
+
+  @override
+  String get goalCreateFailed =>
+      'Das Ziel konnte nicht gespeichert werden — versuch es noch einmal.';
 }

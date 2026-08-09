@@ -25,16 +25,43 @@ class GoalBannerAnimatedText extends StatefulWidget {
   State<GoalBannerAnimatedText> createState() => _GoalBannerAnimatedTextState();
 }
 
+/// The preset parameters — the code-owned animation catalog itself
+/// (ADR 0058: the model selects presets, code implements them). These
+/// are motion amplitudes, not layout values, which is why they live here
+/// as the catalog rather than in the spacing/typography token pipeline;
+/// durations and easing come from the motion tokens where they apply.
+abstract final class _GoalBannerMotion {
+  /// One full animation cycle for every preset.
+  static const cycle = Duration(seconds: 3);
+
+  /// Pulse breathes between these opacities — never below the readable
+  /// floor.
+  static const pulseFloorOpacity = 0.75;
+
+  /// Wave bob amplitude in logical pixels, and the per-word phase shift.
+  static const waveAmplitude = 2.0;
+  static const wavePhaseStep = 0.12;
+
+  /// Portion of the cycle the typewriter spends revealing characters.
+  static const typewriterRevealFraction = 0.66;
+
+  /// Glitch: the active-jitter slice of each half cycle, and the maximum
+  /// horizontal displacement in logical pixels.
+  static const glitchActiveFraction = 0.06;
+  static const glitchMaxOffset = 2.0;
+}
+
 class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
     with SingleTickerProviderStateMixin {
   late final AnimationController _controller;
 
-  static const _cycle = Duration(seconds: 3);
-
   @override
   void initState() {
     super.initState();
-    _controller = AnimationController(vsync: this, duration: _cycle);
+    _controller = AnimationController(
+      vsync: this,
+      duration: _GoalBannerMotion.cycle,
+    );
   }
 
   @override
@@ -76,23 +103,28 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
     );
   }
 
-  /// Characters appear over the first ~2/3 of the cycle, then hold.
+  /// Characters appear over the reveal fraction of the cycle, then hold.
+  /// Grapheme-cluster stepping: model copy can carry emoji and composed
+  /// characters, and a UTF-16 substring would split them mid-glyph.
   Widget _typewriter() {
-    final t = (_controller.value / 0.66).clamp(0.0, 1.0);
-    final count = (widget.text.length * t).round();
+    final t = (_controller.value / _GoalBannerMotion.typewriterRevealFraction)
+        .clamp(0.0, 1.0);
+    final graphemes = widget.text.characters;
+    final count = (graphemes.length * t).round();
     // Reserve the full size so the banner never reflows while typing.
     return Stack(
       children: [
         Opacity(opacity: 0, child: Text(widget.text, style: widget.style)),
-        Text(widget.text.substring(0, count), style: widget.style),
+        Text(graphemes.take(count).toString(), style: widget.style),
       ],
     );
   }
 
   Widget _pulse() {
     final phase = math.sin(_controller.value * 2 * math.pi);
+    const floor = _GoalBannerMotion.pulseFloorOpacity;
     return Opacity(
-      opacity: 0.75 + 0.25 * ((phase + 1) / 2),
+      opacity: floor + (1 - floor) * ((phase + 1) / 2),
       child: Text(widget.text, style: widget.style),
     );
   }
@@ -107,7 +139,13 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
           Transform.translate(
             offset: Offset(
               0,
-              -2 * math.sin(2 * math.pi * (_controller.value + i * 0.12)),
+              -_GoalBannerMotion.waveAmplitude *
+                  math.sin(
+                    2 *
+                        math.pi *
+                        (_controller.value +
+                            i * _GoalBannerMotion.wavePhaseStep),
+                  ),
             ),
             child: Text(word, style: widget.style),
           ),
@@ -154,9 +192,12 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
   /// the controller value, so tests and replays render identically.
   Widget _glitch() {
     final t = _controller.value;
-    final active = (t % 0.5) < 0.06;
+    final active = (t % 0.5) < _GoalBannerMotion.glitchActiveFraction;
     final seed = (t * 997).floor();
-    final dx = active ? ((seed % 5) - 2).toDouble() : 0.0;
+    const range = 2 * _GoalBannerMotion.glitchMaxOffset + 1;
+    final dx = active
+        ? (seed % range) - _GoalBannerMotion.glitchMaxOffset
+        : 0.0;
     return Transform.translate(
       offset: Offset(dx, 0),
       child: Text(widget.text, style: widget.style),

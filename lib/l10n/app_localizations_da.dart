@@ -12026,4 +12026,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
+
+  @override
+  String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
 }

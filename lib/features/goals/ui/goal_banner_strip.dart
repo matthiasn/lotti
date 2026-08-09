@@ -68,7 +68,7 @@ class _ExposureTracker extends ConsumerStatefulWidget {
 }
 
 class _ExposureTrackerState extends ConsumerState<_ExposureTracker> {
-  final Stopwatch _visible = Stopwatch()..start();
+  final Stopwatch _visible = Stopwatch();
   GoalNudgeInteractionsFlush? _flush;
 
   @override
@@ -77,12 +77,22 @@ class _ExposureTrackerState extends ConsumerState<_ExposureTracker> {
     // Captured while the element is live: `ref` must not be touched from
     // dispose, and the flush must survive the widget's death.
     _flush = ref.read(goalNudgeExposureFlushProvider);
+    // The app shell keeps inactive tabs mounted (IndexedStack) with
+    // their tickers disabled — TickerMode is therefore the "is this tab
+    // actually on screen" signal, and the stopwatch only runs under it.
+    if (TickerMode.valuesOf(context).enabled) {
+      _visible.start();
+    } else {
+      _visible.stop();
+    }
   }
 
   @override
   void dispose() {
     _visible.stop();
-    _flush?.call(widget.nudgeId, _visible.elapsed);
+    if (_visible.elapsed > Duration.zero) {
+      _flush?.call(widget.nudgeId, _visible.elapsed);
+    }
     super.dispose();
   }
 

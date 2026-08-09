@@ -12251,4 +12251,8 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
+
+  @override
+  String get goalCreateFailed =>
+      'Salvarea obiectivului a eșuat — vă rugăm să încercați din nou.';
 }

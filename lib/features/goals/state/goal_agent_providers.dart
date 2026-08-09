@@ -1,4 +1,6 @@
 import 'dart:async';
+
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -238,12 +240,19 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
       for (final identity in agents) {
         if (identity.kind != AgentKinds.goalAgent) continue;
         ref.watch(agentUpdateStreamProvider(identity.agentId));
+        final now = clock.now();
         final nudges =
             (await repository.getEntitiesByAgentId(
               identity.agentId,
               type: AgentEntityTypes.goalNudge,
             )).whereType<GoalNudgeEntity>().where(
-              (n) => n.deletedAt == null && n.status == GoalNudgeStatus.active,
+              // Staleness is a contract, not a hope (ADR 0055): an ad
+              // past its deadline stops RENDERING immediately, even
+              // though only a later Phase B wake retires the row.
+              (n) =>
+                  n.deletedAt == null &&
+                  n.status == GoalNudgeStatus.active &&
+                  (n.staleAt == null || now.isBefore(n.staleAt!)),
             );
         for (final nudge in nudges) {
           entries.add((nudge: nudge, goalTitle: identity.displayName));

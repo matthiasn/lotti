@@ -6,6 +6,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// The flag-gated Agents tab: every running goal agent with its health
 /// at a glance — track status, attainment, the standing report's
@@ -17,11 +18,18 @@ class AgentsPage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final agents = ref.watch(activeGoalAgentsProvider);
+    // Stale-while-revalidate: background wake/sync notifications reload
+    // the provider constantly; the established list must never flash
+    // away (the repo's no-flash rule). Empty state only on a SETTLED
+    // empty value.
+    final identities = agents.value;
     return Scaffold(
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () => context.beamToNamed('/agents/create'),
-        label: Text(context.messages.agentsCreateGoal),
-        icon: const Icon(Icons.add_rounded),
+      floatingActionButton: DesignSystemBottomNavigationFabPadding(
+        child: FloatingActionButton.extended(
+          onPressed: () => context.beamToNamed('/agents/create'),
+          label: Text(context.messages.agentsCreateGoal),
+          icon: const Icon(Icons.add_rounded),
+        ),
       ),
       body: SafeArea(
         child: CustomScrollView(
@@ -32,27 +40,27 @@ class AgentsPage extends ConsumerWidget {
             ),
             SliverPadding(
               padding: EdgeInsets.all(tokens.spacing.step5),
-              sliver: switch (agents) {
-                AsyncData(value: final identities) when identities.isEmpty =>
-                  SliverToBoxAdapter(
-                    child: Padding(
-                      padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
-                      child: Text(
-                        context.messages.agentsPageEmpty,
-                        textAlign: TextAlign.center,
-                        style: tokens.typography.styles.body.bodyMedium
-                            .copyWith(color: tokens.colors.text.mediumEmphasis),
+              sliver: switch (identities) {
+                null => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                [] => SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
+                    child: Text(
+                      context.messages.agentsPageEmpty,
+                      textAlign: TextAlign.center,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
                       ),
                     ),
                   ),
-                AsyncData(value: final identities) => SliverList.separated(
-                  itemCount: identities.length,
+                ),
+                final list => SliverList.separated(
+                  itemCount: list.length,
                   separatorBuilder: (_, _) =>
                       SizedBox(height: tokens.spacing.cardItemSpacing),
                   itemBuilder: (context, index) =>
-                      _GoalAgentCard(identity: identities[index]),
+                      _GoalAgentCard(identity: list[index]),
                 ),
-                _ => const SliverToBoxAdapter(child: SizedBox.shrink()),
               },
             ),
           ],

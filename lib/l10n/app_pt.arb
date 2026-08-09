@@ -2781,6 +2781,7 @@
   "goalBannerRatingSkip": "Ignorar",
   "goalBannerRatingTitle": "O que achaste deste banner?",
   "goalBannerSemanticLabel": "Banner da meta {goalTitle}",
+  "goalCreateFailed": "Não foi possível guardar a meta — tenta novamente.",
   "goalCreateHabitCountLabel": "Vezes por semana (cada hábito)",
   "goalCreateHabitsLabel": "Hábitos a acompanhar",
   "goalCreateNameLabel": "Nome",

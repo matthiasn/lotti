@@ -20450,6 +20450,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
+
+  /// Shown when persisting a new goal agent throws (validation already passed).
+  ///
+  /// In en, this message translates to:
+  /// **'Saving the goal failed — please try again.'**
+  String get goalCreateFailed;
 }
 
 class _AppLocalizationsDelegate

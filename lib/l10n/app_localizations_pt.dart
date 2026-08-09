@@ -12136,4 +12136,8 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
+
+  @override
+  String get goalCreateFailed =>
+      'Não foi possível guardar a meta — tenta novamente.';
 }

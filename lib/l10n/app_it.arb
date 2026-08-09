@@ -2782,6 +2782,7 @@
   "goalBannerRatingSkip": "Salta",
   "goalBannerRatingTitle": "Com’era questo banner?",
   "goalBannerSemanticLabel": "Banner dell’obiettivo {goalTitle}",
+  "goalCreateFailed": "Salvataggio dell’obiettivo non riuscito: riprova.",
   "goalCreateHabitCountLabel": "Volte a settimana (per abitudine)",
   "goalCreateHabitsLabel": "Abitudini da seguire",
   "goalCreateNameLabel": "Nome",

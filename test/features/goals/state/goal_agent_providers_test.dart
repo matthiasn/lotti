@@ -602,6 +602,21 @@ void main() {
       ['ad-new', 'ad-old'],
     );
     expect(entries.first.goalTitle, 'goal-a');
+
+    // An ad past its staleAt stops rendering even while still `active`.
+    when(
+      () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        nudgeRow(
+          'ad-stale',
+          GoalNudgeStatus.active,
+          DateTime(2026, 8, 1),
+        ).copyWith(staleAt: DateTime(2026, 8, 2)),
+      ],
+    );
+    container.invalidate(activeGoalNudgesProvider);
+    expect(await container.read(activeGoalNudgesProvider.future), isEmpty);
   });
 
   test('goalAgentHealthProvider assembles the latest register verdict, '

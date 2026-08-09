@@ -12065,4 +12065,8 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
+
+  @override
+  String get goalCreateFailed =>
+      'Het doel kon niet worden opgeslagen — probeer het opnieuw.';
 }

@@ -74,18 +74,27 @@ class GoalBannerCard extends ConsumerWidget {
                       Row(
                         children: [
                           if (brief.cta != null)
-                            Text(
-                              brief.cta!,
-                              style: tokens.typography.styles.body.bodySmall
-                                  .copyWith(color: style.accent),
+                            Flexible(
+                              child: Text(
+                                brief.cta!,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: tokens.typography.styles.body.bodySmall
+                                    .copyWith(color: style.accent),
+                              ),
                             ),
-                          const Spacer(),
-                          Text(
-                            entry.goalTitle,
-                            style: tokens.typography.styles.others.caption
-                                .copyWith(
-                                  color: tokens.colors.text.lowEmphasis,
-                                ),
+                          SizedBox(width: tokens.spacing.step2),
+                          Expanded(
+                            child: Text(
+                              entry.goalTitle,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.end,
+                              style: tokens.typography.styles.others.caption
+                                  .copyWith(
+                                    color: tokens.colors.text.lowEmphasis,
+                                  ),
+                            ),
                           ),
                         ],
                       ),
@@ -117,7 +126,11 @@ class GoalBannerCard extends ConsumerWidget {
   Future<void> _showRatingSheet(BuildContext context, WidgetRef ref) async {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final rating = await showModalBottomSheet<int?>(
+    // Sentinel contract: 1..5 = rating, 0 = the explicit Skip button,
+    // null = barrier/back/drag dismissal — which consumes NOTHING, so
+    // the one rating opportunity per activation survives an accidental
+    // swipe-away.
+    final outcome = await showModalBottomSheet<int>(
       context: context,
       showDragHandle: true,
       builder: (sheetContext) => SafeArea(
@@ -151,7 +164,7 @@ class GoalBannerCard extends ConsumerWidget {
               Align(
                 alignment: Alignment.centerRight,
                 child: TextButton(
-                  onPressed: () => Navigator.of(sheetContext).pop(),
+                  onPressed: () => Navigator.of(sheetContext).pop(0),
                   child: Text(messages.goalBannerRatingSkip),
                 ),
               ),
@@ -160,12 +173,13 @@ class GoalBannerCard extends ConsumerWidget {
         ),
       ),
     );
+    if (outcome == null) return;
     await ref
         .read(goalNudgeInteractionsProvider)
         .recordRating(
           entry.nudge.id,
-          rating: rating,
-          skipped: rating == null,
+          rating: outcome == 0 ? null : outcome,
+          skipped: outcome == 0,
         );
     ref.invalidate(activeGoalNudgesProvider);
   }

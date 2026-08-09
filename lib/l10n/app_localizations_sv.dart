@@ -12032,4 +12032,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
+
+  @override
+  String get goalCreateFailed => 'Målet kunde inte sparas — försök igen.';
 }

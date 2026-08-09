@@ -2532,6 +2532,7 @@
   "goalBannerRatingSkip": "Passer",
   "goalBannerRatingTitle": "Tu as trouvé cette bannière comment ?",
   "goalBannerSemanticLabel": "Bannière d’objectif pour {goalTitle}",
+  "goalCreateFailed": "L’enregistrement de l’objectif a échoué — réessaie.",
   "goalCreateHabitCountLabel": "Fois par semaine (par habitude)",
   "goalCreateHabitsLabel": "Habitudes à suivre",
   "goalCreateNameLabel": "Nom",

@@ -60,7 +60,14 @@ class GoalAgentDetailPage extends ConsumerWidget {
               confirmationProvider: goalChangeSetConfirmationServiceProvider,
             ),
             SizedBox(height: tokens.spacing.step2),
-            if (health?.reportOneLiner == null)
+            if (health?.reportOneLiner case final String oneLiner)
+              Text(
+                oneLiner,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              )
+            else
               Text(
                 context.messages.goalDetailNoReport,
                 style: tokens.typography.styles.body.bodySmall.copyWith(

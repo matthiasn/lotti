@@ -2781,6 +2781,7 @@
   "goalBannerRatingSkip": "Overslaan",
   "goalBannerRatingTitle": "Wat vond je van deze banner?",
   "goalBannerSemanticLabel": "Doelbanner voor {goalTitle}",
+  "goalCreateFailed": "Het doel kon niet worden opgeslagen — probeer het opnieuw.",
   "goalCreateHabitCountLabel": "Keer per week (per gewoonte)",
   "goalCreateHabitsLabel": "Te volgen gewoontes",
   "goalCreateNameLabel": "Naam",

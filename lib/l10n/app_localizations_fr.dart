@@ -12243,4 +12243,8 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
+
+  @override
+  String get goalCreateFailed =>
+      'L’enregistrement de l’objectif a échoué — réessaie.';
 }

@@ -2532,6 +2532,7 @@
   "goalBannerRatingSkip": "Überspringen",
   "goalBannerRatingTitle": "Wie fandest du dieses Banner?",
   "goalBannerSemanticLabel": "Ziel-Banner für {goalTitle}",
+  "goalCreateFailed": "Das Ziel konnte nicht gespeichert werden — versuch es noch einmal.",
   "goalCreateHabitCountLabel": "Mal pro Woche (je Gewohnheit)",
   "goalCreateHabitsLabel": "Zu beobachtende Gewohnheiten",
   "goalCreateNameLabel": "Name",
