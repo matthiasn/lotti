@@ -286,8 +286,7 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
             SizedBox(height: tokens.spacing.step2),
             Text(
               oneLiner,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              overflow: TextOverflow.clip,
               style: tokens.typography.styles.body.bodySmall.copyWith(
                 color: tokens.colors.aiCard.accent,
               ),

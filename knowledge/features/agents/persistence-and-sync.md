@@ -5,7 +5,7 @@ description: The agent.sqlite entity and link model, bulk-read chunking, and exa
 resource: ../../../lib/features/agents/database/agent_database.dart
 tags: [agents, persistence, sync, privacy, drift]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-06T17:10:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-10T01:20:00+02:00 }
 stale_after: 2026-10-12
 sources:
   - id: error-logging
@@ -43,7 +43,7 @@ sources:
   - id: entity-model
     resource: ../../../lib/features/agents/model/agent_domain_entity.dart
     title: AgentDomainEntity
-    last_modified: 2026-08-01
+    last_modified: 2026-08-10
   - id: db-conversions
     resource: ../../../lib/features/agents/database/agent_db_conversions.dart
     title: AgentDbConversions
@@ -292,6 +292,12 @@ sync payloads without mutating the decoded input map. An absent field paired wit
 `FormatException`; `SyncEventProcessor.prepare` treats that payload as
 unrecoverable, and `QueueApplyAdapter` returns a `permanentSkip` instead of
 spending the retry budget on deterministic poison data.
+
+The public `AgentDomainEntity.fromJson` factory remains expression-bodied and
+delegates those repairs and validations to a private decoder helper. Freezed
+uses that factory shape to discover JSON support for every union variant; moving
+the logic back into a block-bodied factory makes build generation drop the
+union's generated JSON methods.
 
 | Scope | Contents |
 |-------|----------|

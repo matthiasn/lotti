@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -11,6 +12,89 @@ import 'package:lotti/get_it.dart';
 import '../../../../test_helper.dart';
 import '../../../../widget_test_utils.dart';
 import 'test_utils.dart';
+
+final Uint8List _png1x1 = Uint8List.fromList(<int>[
+  0x89,
+  0x50,
+  0x4E,
+  0x47,
+  0x0D,
+  0x0A,
+  0x1A,
+  0x0A,
+  0x00,
+  0x00,
+  0x00,
+  0x0D,
+  0x49,
+  0x48,
+  0x44,
+  0x52,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x00,
+  0x01,
+  0x08,
+  0x06,
+  0x00,
+  0x00,
+  0x00,
+  0x1F,
+  0x15,
+  0xC4,
+  0x89,
+  0x00,
+  0x00,
+  0x00,
+  0x0A,
+  0x49,
+  0x44,
+  0x41,
+  0x54,
+  0x78,
+  0x9C,
+  0x63,
+  0x00,
+  0x01,
+  0x00,
+  0x00,
+  0x05,
+  0x00,
+  0x01,
+  0x0D,
+  0x0A,
+  0x2D,
+  0xB4,
+  0x00,
+  0x00,
+  0x00,
+  0x00,
+  0x49,
+  0x45,
+  0x4E,
+  0x44,
+  0xAE,
+  0x42,
+  0x60,
+  0x82,
+]);
+
+class _BrokenImageProvider extends ImageProvider<_BrokenImageProvider> {
+  @override
+  Future<_BrokenImageProvider> obtainKey(
+    ImageConfiguration configuration,
+  ) async => this;
+
+  @override
+  ImageStreamCompleter loadImage(
+    _BrokenImageProvider key,
+    ImageDecoderCallback decode,
+  ) => OneFrameImageStreamCompleter(Future<ImageInfo>.error('broken'));
+}
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -284,7 +368,9 @@ void main() {
       expect(continueButton.onPressed, isNull);
     });
 
-    testWidgets('displays grid of images', (tester) async {
+    testWidgets('renders exactly one clipped, bounded tile per real image', (
+      tester,
+    ) async {
       final stateWithImages = ReferenceImageSelectionState(
         availableImages: [
           buildTestReferenceImage('img-1'),
@@ -308,8 +394,123 @@ void main() {
         ),
       );
 
-      // GridView should be present
       expect(find.byType(GridView), findsOneWidget);
+      final grid = find.byType(GridView);
+      final tiles = find.descendant(
+        of: grid,
+        matching: find.byType(GestureDetector),
+      );
+      expect(tiles, findsNWidgets(stateWithImages.availableImages.length));
+      expect(
+        find.descendant(of: tiles, matching: find.byType(ClipRect)),
+        findsNWidgets(stateWithImages.availableImages.length),
+      );
+      final images = tester.widgetList<Image>(
+        find.descendant(of: grid, matching: find.byType(Image)),
+      );
+      expect(images, hasLength(stateWithImages.availableImages.length));
+      for (final image in images) {
+        expect(image.image, isA<CoverResizeImage>());
+        final provider = image.image as CoverResizeImage;
+        expect(provider.width, greaterThan(0));
+        expect(provider.height, provider.width);
+      }
+    });
+
+    test('cover decode keeps enough pixels on each source edge', () {
+      expect(
+        coverDecodeDimensions(
+          intrinsicWidth: 4000,
+          intrinsicHeight: 1000,
+          targetWidth: 300,
+          targetHeight: 300,
+        ),
+        (width: 1200, height: 300),
+      );
+      expect(
+        coverDecodeDimensions(
+          intrinsicWidth: 1000,
+          intrinsicHeight: 4000,
+          targetWidth: 300,
+          targetHeight: 300,
+        ),
+        (width: 300, height: 1200),
+      );
+      expect(
+        coverDecodeDimensions(
+          intrinsicWidth: 200,
+          intrinsicHeight: 100,
+          targetWidth: 300,
+          targetHeight: 300,
+        ),
+        (width: 200, height: 100),
+      );
+      expect(
+        coverDecodeDimensions(
+          intrinsicWidth: 1000,
+          intrinsicHeight: 100000,
+          targetWidth: 300,
+          targetHeight: 300,
+        ),
+        (width: 41, height: 4096),
+      );
+    });
+
+    testWidgets('cover provider decodes a real image', (tester) async {
+      final provider = CoverResizeImage(
+        MemoryImage(_png1x1),
+        width: 300,
+        height: 300,
+      );
+
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Image(
+            image: provider,
+            errorBuilder: (context, error, stackTrace) => const Text('failed'),
+          ),
+        ),
+      );
+      await tester.runAsync(
+        () => precacheImage(provider, tester.element(find.byType(Image))),
+      );
+      await tester.pump();
+
+      final rawImage = tester.widget<RawImage>(find.byType(RawImage));
+      expect(rawImage.image, isNotNull);
+      expect(find.text('failed'), findsNothing);
+    });
+
+    testWidgets('cover provider forwards decode failures to the fallback', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Image(
+            image: CoverResizeImage(
+              _BrokenImageProvider(),
+              width: 300,
+              height: 300,
+            ),
+            errorBuilder: (context, error, stackTrace) => const Text('failed'),
+          ),
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('failed'), findsOneWidget);
+    });
+
+    test('cover providers compare by source and decode target', () {
+      final source = MemoryImage(_png1x1);
+      final first = CoverResizeImage(source, width: 300, height: 300);
+      final same = CoverResizeImage(source, width: 300, height: 300);
+      final different = CoverResizeImage(source, width: 600, height: 300);
+
+      expect(first, same);
+      expect(first.hashCode, same.hashCode);
+      expect(first, isNot(different));
+      expect(first, isNot(source));
     });
 
     testWidgets('selection counter shows correct count', (tester) async {

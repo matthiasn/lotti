@@ -672,11 +672,13 @@ void main() {
       expect(find.byIcon(Icons.circle_outlined), findsNothing);
     });
 
-    testWidgets('long titles are truncated with ellipsis', (tester) async {
+    testWidgets('long titles remain fully available without ellipsis', (
+      tester,
+    ) async {
       const longTitle =
-          'A really long task title that should overflow the row and be '
-          'truncated with an ellipsis when it would otherwise wrap past the '
-          'maximum number of lines allowed in the row layout';
+          'A really long task title that should wrap across the linked task '
+          'row because the context remains valuable even when it needs more '
+          'than two lines in the available layout width';
       await pumpWidget(
         tester,
         incoming: [],
@@ -684,8 +686,9 @@ void main() {
       );
 
       final titleWidget = tester.widget<Text>(find.text(longTitle));
-      expect(titleWidget.maxLines, 2);
-      expect(titleWidget.overflow, TextOverflow.ellipsis);
+      expect(titleWidget.maxLines, isNull);
+      expect(titleWidget.overflow, TextOverflow.clip);
+      expect(tester.getSize(find.text(longTitle)).height, greaterThan(20));
     });
 
     testWidgets(

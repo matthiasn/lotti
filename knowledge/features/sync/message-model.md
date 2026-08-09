@@ -5,13 +5,13 @@ description: The twenty-five SyncMessage families, which seven are sequence-trac
 resource: ../../../lib/features/sync/model/sync_message.dart
 tags: [sync, wire-format, sync-message]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-06T00:30:48+02:00 }
+generated: { by: codex/gpt-5, at: 2026-08-10T01:20:00+02:00 }
 stale_after: 2026-11-02
 sources:
   - id: sync-message
     resource: ../../../lib/features/sync/model/sync_message.dart
     title: SyncMessage freezed union
-    last_modified: 2026-08-06
+    last_modified: 2026-08-10
   - id: payload-type
     resource: ../../../lib/features/sync/sequence/sync_sequence_payload_type.dart
     title: SyncSequencePayloadType
@@ -168,6 +168,12 @@ its sidecar as a compatibility fallback. Exact journal payloads are parsed
 directly from their referenced attachment rather than written through the
 mutable stable-path cache; outbox manifests retain their existing cache write
 because each current sender allocates a fresh UUID path per manifest.
+
+An inline `agentEntity` envelope must contain a nested JSON map, never the Dart
+union object. `SyncMessage.agentEntity` therefore supplies an explicit
+`JsonKey.toJson` encoder that calls `AgentDomainEntity.toJson`; this keeps direct
+envelope serialization correct even though the agent union wraps its generated
+decoder with compatibility repairs and domain validation.
 
 A journal entity's media blob is a *second* file event, sent alongside the JSON
 only when the payload calls for it — `status == initial`,

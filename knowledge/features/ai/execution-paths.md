@@ -5,7 +5,7 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-10T01:20:00+02:00 }
 stale_after: 2026-10-19
 sources:
   - id: runner
@@ -19,7 +19,7 @@ sources:
   - id: image-selector
     resource: ../../../lib/features/ai/ui/image_generation/reference_image_selection_widget.dart
     title: Shared reference-image selector
-    last_modified: 2026-08-09
+    last_modified: 2026-08-10
   - id: automation
     resource: ../../../lib/features/ai/services/profile_automation_service.dart
     title: ProfileAutomationService
@@ -90,6 +90,18 @@ modalities include text and image: `/v1/ocr` accepts documents, not coding-promp
 instructions. Continuing with no selection keeps the historical `generate()`
 request; one or more selections route through `generateWithImages()` with the
 unchanged prompt text.
+
+The selector grid is driven only by `ReferenceImageSelectionState.availableImages`:
+directly linked `JournalImage` records first, then de-duplicated cover art from
+linked tasks. The selection limit changes which of those records can be toggled;
+it never pads the grid with empty slots. Each cell clips its stack to the rounded
+tile and decodes the source through a device-pixel-ratio-sized
+`CoverResizeImage` instead of allocating the full photo or screenshot as an iOS
+texture. The decoder preserves the source aspect ratio and sizes the shorter
+edge for the square tile, so `BoxFit.cover` crops excess pixels without
+magnifying a fit-sized wide or tall thumbnail. The longer decoded edge is capped
+at 4096 pixels so scrolling screenshots and other extreme aspect ratios cannot
+reintroduce an oversized texture through proportional scaling.
 
 ```mermaid
 flowchart TD

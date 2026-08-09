@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -10,6 +13,8 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
+
+const _maxThumbnailDecodeDimension = 4096;
 
 /// Widget for selecting task images as AI reference inputs.
 ///
@@ -257,73 +262,229 @@ class _ImageGridTile extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(tokens.radii.s),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Image thumbnail
-              Image.file(
-                file,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => ColoredBox(
-                  color: colorScheme.surfaceContainerHighest,
-                  child: Icon(
-                    Icons.broken_image_outlined,
-                    color: colorScheme.onSurfaceVariant,
+          child: ClipRect(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Decode only the pixels this tile can display. Full-size
+                // screenshots and photos otherwise allocate oversized iOS
+                // textures for a tiny grid cell, which can surface stale
+                // texture fragments from previously rendered app content.
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final devicePixelRatio = MediaQuery.devicePixelRatioOf(
+                      context,
+                    );
+                    final cacheExtent =
+                        (constraints.biggest.longestSide * devicePixelRatio)
+                            .ceil()
+                            .clamp(1, 10000);
+                    return Image(
+                      image: CoverResizeImage(
+                        FileImage(file),
+                        width: cacheExtent,
+                        height: cacheExtent,
+                      ),
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                      errorBuilder: (context, error, stackTrace) => ColoredBox(
+                        color: colorScheme.surfaceContainerHighest,
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                // Dimming overlay for non-selectable
+                if (!canSelect)
+                  ColoredBox(
+                    color: colorScheme.scrim.withValues(alpha: 0.54),
                   ),
-                ),
-              ),
-              // Dimming overlay for non-selectable
-              if (!canSelect)
-                ColoredBox(
-                  color: colorScheme.scrim.withValues(alpha: 0.54),
-                ),
-              // Selection indicator
-              if (isSelected)
-                Positioned(
-                  top: spacing.step1,
-                  right: spacing.step1,
-                  child: Container(
-                    padding: EdgeInsets.all(spacing.step1),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.check,
-                      size: IconSizes.s,
-                      color: colorScheme.onPrimary,
-                    ),
-                  ),
-                ),
-              // Linked-task indicator
-              if (isFromLinkedTask)
-                Positioned(
-                  bottom: spacing.step1,
-                  left: spacing.step1,
-                  child: Tooltip(
-                    message: context.messages.linkedTaskImageBadge,
+                // Selection indicator
+                if (isSelected)
+                  Positioned(
+                    top: spacing.step1,
+                    right: spacing.step1,
                     child: Container(
                       padding: EdgeInsets.all(spacing.step1),
                       decoration: BoxDecoration(
-                        color: colorScheme.secondaryContainer.withValues(
-                          alpha: 0.85,
-                        ),
-                        borderRadius: BorderRadius.circular(tokens.radii.xs),
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.link_rounded,
-                        size: IconSizes.xs,
-                        color: colorScheme.onSecondaryContainer,
+                        Icons.check,
+                        size: IconSizes.s,
+                        color: colorScheme.onPrimary,
                       ),
                     ),
                   ),
-                ),
-            ],
+                // Linked-task indicator
+                if (isFromLinkedTask)
+                  Positioned(
+                    bottom: spacing.step1,
+                    left: spacing.step1,
+                    child: Tooltip(
+                      message: context.messages.linkedTaskImageBadge,
+                      child: Container(
+                        padding: EdgeInsets.all(spacing.step1),
+                        decoration: BoxDecoration(
+                          color: colorScheme.secondaryContainer.withValues(
+                            alpha: 0.85,
+                          ),
+                          borderRadius: BorderRadius.circular(tokens.radii.xs),
+                        ),
+                        child: Icon(
+                          Icons.link_rounded,
+                          size: IconSizes.xs,
+                          color: colorScheme.onSecondaryContainer,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
+}
+
+/// An image provider that decodes enough pixels for a [BoxFit.cover] target.
+///
+/// Unlike [ResizeImagePolicy.fit], the shorter source edge is decoded to the
+/// target extent. The longer edge remains proportional and is cropped by the
+/// painting step, avoiding blurry wide or tall thumbnails without retaining
+/// the full-size image in Flutter's image cache.
+@immutable
+class CoverResizeImage extends ImageProvider<CoverResizeImageKey> {
+  const CoverResizeImage(
+    this.imageProvider, {
+    required this.width,
+    required this.height,
+  });
+
+  final ImageProvider imageProvider;
+  final int width;
+  final int height;
+
+  @override
+  ImageStreamCompleter loadImage(
+    CoverResizeImageKey key,
+    ImageDecoderCallback decode,
+  ) {
+    Future<ui.Codec> decodeForCover(
+      ui.ImmutableBuffer buffer, {
+      ui.TargetImageSizeCallback? getTargetSize,
+    }) {
+      assert(
+        getTargetSize == null,
+        'CoverResizeImage cannot wrap an ImageProvider that already resizes.',
+      );
+      return decode(
+        buffer,
+        getTargetSize: (intrinsicWidth, intrinsicHeight) {
+          final dimensions = coverDecodeDimensions(
+            intrinsicWidth: intrinsicWidth,
+            intrinsicHeight: intrinsicHeight,
+            targetWidth: width,
+            targetHeight: height,
+          );
+          return ui.TargetImageSize(
+            width: dimensions.width,
+            height: dimensions.height,
+          );
+        },
+      );
+    }
+
+    final completer =
+        imageProvider.loadImage(
+          key.providerCacheKey,
+          decodeForCover,
+        )..addEphemeralErrorListener((exception, stackTrace) {
+          scheduleMicrotask(() {
+            PaintingBinding.instance.imageCache.evict(key);
+          });
+        });
+    return completer;
+  }
+
+  @override
+  Future<CoverResizeImageKey> obtainKey(
+    ImageConfiguration configuration,
+  ) async {
+    final providerCacheKey = await imageProvider.obtainKey(configuration);
+    return CoverResizeImageKey(
+      providerCacheKey: providerCacheKey,
+      width: width,
+      height: height,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CoverResizeImage &&
+          imageProvider == other.imageProvider &&
+          width == other.width &&
+          height == other.height;
+
+  @override
+  int get hashCode => Object.hash(imageProvider, width, height);
+}
+
+/// Cache key for [CoverResizeImage].
+@immutable
+class CoverResizeImageKey {
+  const CoverResizeImageKey({
+    required this.providerCacheKey,
+    required this.width,
+    required this.height,
+  });
+
+  final Object providerCacheKey;
+  final int width;
+  final int height;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CoverResizeImageKey &&
+          providerCacheKey == other.providerCacheKey &&
+          width == other.width &&
+          height == other.height;
+
+  @override
+  int get hashCode => Object.hash(providerCacheKey, width, height);
+}
+
+/// Calculates a proportional decode size that fully covers the target.
+///
+/// Extremely elongated sources are capped on their longer edge to keep the
+/// decoded bitmap within a safe texture and memory bound.
+({int width, int height}) coverDecodeDimensions({
+  required int intrinsicWidth,
+  required int intrinsicHeight,
+  required int targetWidth,
+  required int targetHeight,
+}) {
+  final coverScale = math.max(
+    targetWidth / intrinsicWidth,
+    targetHeight / intrinsicHeight,
+  );
+  final boundedScale =
+      _maxThumbnailDecodeDimension / math.max(intrinsicWidth, intrinsicHeight);
+  final scale = math.min(
+    1,
+    math.min(coverScale, boundedScale),
+  );
+  return (
+    width: (intrinsicWidth * scale).ceil(),
+    height: (intrinsicHeight * scale).ceil(),
+  );
 }
 
 /// Maps error codes to localized strings.

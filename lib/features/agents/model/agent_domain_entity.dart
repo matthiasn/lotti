@@ -1032,19 +1032,27 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
   /// truncate what it does not understand, structural checks after. A
   /// fixed [FormatException] lets sync classify the payload as permanently
   /// poisonous rather than retrying it.
-  factory AgentDomainEntity.fromJson(Map<String, dynamic> json) {
-    final repaired = _repairLegacyWeekRollup(json);
-    _validateGoalSpecJson(repaired);
-    _validateGoalNudgeJson(repaired);
-    final entity = _$AgentDomainEntityFromJson(repaired);
-    if (entity is GoalSpecVersionEntity) {
-      final issues = GoalSpecValidator.criterionIssues(entity.criteria);
-      if (issues.isNotEmpty) {
-        throw FormatException('Invalid goal criteria: ${issues.join('; ')}');
-      }
+  factory AgentDomainEntity.fromJson(Map<String, dynamic> json) =>
+      _decodeAgentDomainEntity(json);
+}
+
+/// Applies compatibility repairs and domain validation around Freezed's
+/// generated union decoder.
+///
+/// The public factory must stay expression-bodied: Freezed uses that shape to
+/// decide whether it should generate JSON support for the union variants.
+AgentDomainEntity _decodeAgentDomainEntity(Map<String, dynamic> json) {
+  final repaired = _repairLegacyWeekRollup(json);
+  _validateGoalSpecJson(repaired);
+  _validateGoalNudgeJson(repaired);
+  final entity = _$AgentDomainEntityFromJson(repaired);
+  if (entity is GoalSpecVersionEntity) {
+    final issues = GoalSpecValidator.criterionIssues(entity.criteria);
+    if (issues.isNotEmpty) {
+      throw FormatException('Invalid goal criteria: ${issues.join('; ')}');
     }
-    return entity;
   }
+  return entity;
 }
 
 /// Raw-JSON goal-spec validation BEFORE the generated decoder runs:

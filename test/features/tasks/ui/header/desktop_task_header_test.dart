@@ -168,23 +168,30 @@ String _priorityLabel(TaskPriority priority) => switch (priority) {
 
 void main() {
   group('DesktopTaskHeader — content + layout', () {
-    testWidgets('shows the AI one-liner between title and metadata', (
+    testWidgets('shows the complete AI one-liner between title and metadata', (
       tester,
     ) async {
-      const oneLiner = 'Settlement is ready for final verification';
+      const oneLiner =
+          'Settlement is ready for final verification once the complete '
+          'audit trail and every linked payment record have been reviewed';
       await _pumpDesktop(
         tester,
         DesktopTaskHeader(
           data: _fixture(oneLiner: oneLiner),
           onTitleSaved: (_) {},
         ),
+        size: const Size(480, 720),
       );
 
       final summary = tester.widget<Text>(find.text(oneLiner));
       final context = tester.element(find.text(oneLiner));
       expect(summary.style?.color, context.designTokens.colors.aiCard.accent);
-      expect(summary.maxLines, 1);
-      expect(summary.overflow, TextOverflow.ellipsis);
+      expect(summary.maxLines, isNull);
+      expect(summary.overflow, TextOverflow.clip);
+      expect(
+        tester.getSize(find.text(oneLiner)).height,
+        greaterThan(summary.style!.fontSize! * 2),
+      );
 
       final textOrder = tester
           .widgetList<Text>(find.byType(Text))

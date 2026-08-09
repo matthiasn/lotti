@@ -43,13 +43,6 @@ Widget linkedRowTrailingRail(BuildContext context, {required Widget child}) {
   );
 }
 
-/// Row width from which a status label can share the title's line without
-/// crowding it. Deliberately well below the detail reading measure the card is
-/// capped at on wide windows: a window-level desktop check would read true
-/// while the row it describes is narrower than the value it was compared
-/// against, so this is measured against the row's own constraints instead.
-const double _trailingStatusMinRowWidth = 520;
-
 /// One row's content: the other task in the link.
 ///
 /// Deliberately just the task — direction and relationship kind are stated by
@@ -111,118 +104,88 @@ class LinkedTaskRow extends StatelessWidget {
       context,
     );
 
-    // Measured against the row's own constraints, not the window: the card is
-    // capped at the detail reading measure on wide windows, and it can also
-    // sit in a narrow column, so the window width says nothing about how much
-    // room this row actually has.
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final wideEnoughForTrailingStatus =
-            constraints.maxWidth >= _trailingStatusMinRowWidth;
-        return DesignSystemListItem(
-          // Navigable in manage mode too: the edit/unlink buttons are additive,
-          // so nulling this only produced a row that looked tappable and wasn't.
-          onTap:
-              onOpen ??
-              () => openLinkedTaskDetail(context: context, taskId: task.id),
-          title: task.data.title,
-          titleMaxLines: 2,
-          size: DesignSystemListItemSize.small,
-          semanticsLabel: [
-            task.data.title,
-            if (hasOneLiner) oneLiner,
-            statusLabel,
-          ].join(', '),
-          leading: StatusGlyph(status: task.data.status),
-          // At the detail reading width, status remains the trailing anchor so
-          // it does not compete with the AI subtitle. Narrow rows fold it into
-          // that same ellipsized subtitle line instead of crowding the title.
-          // Kept in manage mode too: curating links is exactly when knowing a
-          // blocker is already Done matters most.
-          //
-          subtitle: hasOneLiner || wideEnoughForTrailingStatus
-              ? null
-              : statusLabel,
-          subtitleSpans: hasOneLiner
-              ? [
-                  if (!wideEnoughForTrailingStatus)
-                    TextSpan(
-                      text: '$statusLabel · ',
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
-                      ),
-                    ),
-                  TextSpan(
-                    text: oneLiner,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.aiCard.accent,
-                    ),
-                  ),
-                ]
-              : null,
-          // The list item's default subtitle ink is medium, which on the
-          // narrow layout tied the status with the section eyebrow grouping it
-          // and flattened the three roles the wide layout ranks.
-          subtitleEmphasis: tokens.colors.text.lowEmphasis,
-          trailing: !wideEnoughForTrailingStatus
-              ? null
-              : Text(
-                  statusLabel,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
+    return DesignSystemListItem(
+      // Navigable in manage mode too: the edit/unlink buttons are additive,
+      // so nulling this only produced a row that looked tappable and wasn't.
+      onTap:
+          onOpen ??
+          () => openLinkedTaskDetail(context: context, taskId: task.id),
+      title: task.data.title,
+      titleMaxLines: null,
+      size: DesignSystemListItemSize.small,
+      semanticsLabel: [
+        task.data.title,
+        if (hasOneLiner) oneLiner,
+        statusLabel,
+      ].join(', '),
+      leading: StatusGlyph(
+        status: task.data.status,
+        tooltip: statusLabel,
+      ),
+      subtitleSpans: hasOneLiner
+          ? [
+              TextSpan(
+                text: oneLiner,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.aiCard.accent,
                 ),
-          trailingExtra: showActions
-              ? SizedBox(
-                  // Pinned to the same width the browse chevron reserves, so a
-                  // row that offers only one action still leaves the title the
-                  // same space as one that offers two.
-                  width: tokens.spacing.step9 * 2,
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      if (onEdit != null)
-                        _RowAction(
-                          tooltip: context.messages.editLinkTypeTooltip,
-                          onPressed: () => onEdit?.call(),
-                          // Not Icons.edit_outlined — that glyph is StatusGlyph's
-                          // own icon for TaskStatus.groomed, so a Groomed row in
-                          // manage mode would show the same pencil twice with two
-                          // different meanings right next to each other.
-                          icon: Icons.swap_horiz_rounded,
-                          // The mode exists to retype relationships, so its
-                          // verb outranks its escape hatch.
-                          emphasis: tokens.colors.text.mediumEmphasis,
-                        ),
-                      if (onUnlink != null)
-                        _RowAction(
-                          tooltip: context.messages.unlinkButton,
-                          onPressed: () => _confirmUnlink(context),
-                          // Not Icons.close_rounded — that glyph is
-                          // StatusGlyph's own icon for TaskStatus.rejected, so
-                          // a Rejected row in manage mode showed the same mark
-                          // twice with two different meanings. Same collision
-                          // the edit action already avoids for Groomed.
-                          icon: Icons.link_off,
-                          // Quieter than its neighbour, not louder: the
-                          // confirmation modal is what makes unlinking safe,
-                          // and painting the destructive action as the
-                          // brightest mark on the row only draws the eye to it.
-                        ),
-                    ],
-                  ),
-                )
-              : linkedRowTrailingRail(
-                  context,
-                  child: Icon(
-                    Icons.arrow_forward_ios,
-                    size: tokens.spacing.step4,
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-        );
-      },
+              ),
+            ]
+          : null,
+      subtitleMaxLines: null,
+      // The list item's default subtitle ink is medium, which on the
+      // narrow layout tied the status with the section eyebrow grouping it
+      // and flattened the three roles the wide layout ranks.
+      subtitleEmphasis: tokens.colors.text.lowEmphasis,
+      trailingExtra: showActions
+          ? SizedBox(
+              // Pinned to the same width the browse chevron reserves, so a
+              // row that offers only one action still leaves the title the
+              // same space as one that offers two.
+              width: tokens.spacing.step9 * 2,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (onEdit != null)
+                    _RowAction(
+                      tooltip: context.messages.editLinkTypeTooltip,
+                      onPressed: () => onEdit?.call(),
+                      // Not Icons.edit_outlined — that glyph is StatusGlyph's
+                      // own icon for TaskStatus.groomed, so a Groomed row in
+                      // manage mode would show the same pencil twice with two
+                      // different meanings right next to each other.
+                      icon: Icons.swap_horiz_rounded,
+                      // The mode exists to retype relationships, so its
+                      // verb outranks its escape hatch.
+                      emphasis: tokens.colors.text.mediumEmphasis,
+                    ),
+                  if (onUnlink != null)
+                    _RowAction(
+                      tooltip: context.messages.unlinkButton,
+                      onPressed: () => _confirmUnlink(context),
+                      // Not Icons.close_rounded — that glyph is
+                      // StatusGlyph's own icon for TaskStatus.rejected, so
+                      // a Rejected row in manage mode showed the same mark
+                      // twice with two different meanings. Same collision
+                      // the edit action already avoids for Groomed.
+                      icon: Icons.link_off,
+                      // Quieter than its neighbour, not louder: the
+                      // confirmation modal is what makes unlinking safe,
+                      // and painting the destructive action as the
+                      // brightest mark on the row only draws the eye to it.
+                    ),
+                ],
+              ),
+            )
+          : linkedRowTrailingRail(
+              context,
+              child: Icon(
+                Icons.arrow_forward_ios,
+                size: tokens.spacing.step4,
+                color: tokens.colors.text.lowEmphasis,
+              ),
+            ),
     );
   }
 
@@ -321,21 +284,29 @@ class _RowAction extends StatelessWidget {
 /// Task-status icon + color glyph, shared by every linked-task row and the
 /// task search picker.
 class StatusGlyph extends StatelessWidget {
-  const StatusGlyph({required this.status, super.key});
+  const StatusGlyph({required this.status, this.tooltip, super.key});
 
   final TaskStatus status;
+  final String? tooltip;
 
   @override
   Widget build(BuildContext context) {
     final brightness = Theme.of(context).brightness;
     final tokens = context.designTokens;
-    return Icon(
+    final icon = Icon(
       taskIconFromStatusString(status.toDbString),
       size: tokens.spacing.step5,
       color: taskColorFromStatusString(
         status.toDbString,
         brightness: brightness,
       ),
+    );
+    final message = tooltip;
+    if (message == null) return icon;
+    return Tooltip(
+      message: message,
+      excludeFromSemantics: true,
+      child: icon,
     );
   }
 }
