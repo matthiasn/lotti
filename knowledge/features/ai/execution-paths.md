@@ -81,12 +81,15 @@ to `runner.runPromptGeneration()`, which derives the persisted response type fro
 entry → task links and falling back to task → entry child links.
 
 For coding-prompt generation, the per-run model picker also inspects the chosen
-`AiConfigModel.inputModalities`. A model carrying `Modality.image` opens the
-same task-image selector used by cover-art generation, with the coding-specific
-`kMaxCodingPromptImages` limit (currently 10). A text-only model such as GLM 5.2
-dispatches immediately and never mounts the selector. Continuing with no
-selection keeps the historical `generate()` request; one or more selections
-route through `generateWithImages()` with the unchanged prompt text.
+`AiConfigModel.inputModalities` and provider route. A chat-capable model carrying
+`Modality.image` opens the same task-image selector used by cover-art generation,
+with the coding-specific `kMaxCodingPromptImages` limit (currently 10). A
+text-only model such as GLM 5.2 dispatches immediately and never mounts the
+selector. Dedicated Mistral OCR models are excluded even though their catalog
+modalities include text and image: `/v1/ocr` accepts documents, not coding-prompt
+instructions. Continuing with no selection keeps the historical `generate()`
+request; one or more selections route through `generateWithImages()` with the
+unchanged prompt text.
 
 ```mermaid
 flowchart TD

@@ -886,6 +886,75 @@ void main() {
     );
 
     testWidgets(
+      'coding-prompt picker excludes dedicated Mistral OCR models',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 10);
+        final provider = _buildProvider(
+          id: 'provider-mistral',
+          name: 'Mistral',
+          type: InferenceProviderType.mistral,
+          t: now,
+        );
+        final ocrModel = _buildModel(
+          id: 'mistral-ocr',
+          name: 'Mistral OCR',
+          providerModelId: 'mistral-ocr-latest',
+          providerId: provider.id,
+          modality: Modality.image,
+          t: now,
+        );
+        final pixtralModel = _buildModel(
+          id: 'pixtral',
+          name: 'Pixtral',
+          providerModelId: 'pixtral-large-latest',
+          providerId: provider.id,
+          modality: Modality.image,
+          t: now,
+        );
+        final mistralSmallModel = _buildModel(
+          id: 'mistral-small',
+          name: 'Mistral Small Vision',
+          providerModelId: 'mistral-small-latest',
+          providerId: provider.id,
+          modality: Modality.image,
+          t: now,
+        );
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testTaskEntity,
+              linkedFromId: null,
+            ),
+            overrides: _baseOverrides(
+              entity: testTaskEntity,
+              skill: testSkills.last,
+              models: [ocrModel, pixtralModel, mistralSmallModel],
+              resolver: _NullProfileResolver(),
+              configs: [
+                ocrModel,
+                pixtralModel,
+                mistralSmallModel,
+                provider,
+              ],
+            ),
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Prompt Generation Skill'));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Mistral OCR'), findsNothing);
+        expect(find.text('Pixtral'), findsOneWidget);
+        expect(find.text('Mistral Small Vision'), findsOneWidget);
+      },
+    );
+
+    testWidgets(
       'Gemini 3 prompt generation asks for thinking mode and forwards it',
       (tester) async {
         final now = DateTime(2024, 3, 15, 10);
@@ -2298,12 +2367,13 @@ AiConfigInferenceProvider _buildProvider({
   required String id,
   required String name,
   required DateTime t,
+  InferenceProviderType type = InferenceProviderType.openAi,
 }) =>
     AiConfig.inferenceProvider(
           id: id,
           baseUrl: 'https://$id.example.com',
           name: name,
-          inferenceProviderType: InferenceProviderType.openAi,
+          inferenceProviderType: type,
           apiKey: '',
           createdAt: t,
         )

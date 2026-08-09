@@ -31,6 +31,7 @@ import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
@@ -644,7 +645,11 @@ class SkillInferenceRunner {
         );
         final impactCollector = InferenceImpactCollector();
         final selectedImages =
-            target.model?.inputModalities.contains(Modality.image) == true
+            target.model != null &&
+                supportsChatImageInput(
+                  model: target.model!,
+                  provider: target.provider,
+                )
             ? referenceImages ?? const []
             : const <ProcessedReferenceImage>[];
         final responseStream = selectedImages.isEmpty

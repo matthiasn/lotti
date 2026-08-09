@@ -168,6 +168,31 @@ bool isMlxAudioSpeechToTextModel(AiConfigModel model) {
       model.outputModalities.contains(Modality.text);
 }
 
+/// Whether [providerModelId] identifies Mistral's dedicated OCR endpoint.
+bool isMistralOcrModelId(String providerModelId) =>
+    providerModelId.toLowerCase().contains('ocr');
+
+/// Whether [model] can receive instruction-following chat requests.
+///
+/// Mistral OCR models advertise text and image modalities, but they accept
+/// documents on `/v1/ocr` rather than prompts on `/v1/chat/completions`.
+bool supportsChatCompletions({
+  required AiConfigModel model,
+  required AiConfigInferenceProvider? provider,
+}) {
+  return provider?.inferenceProviderType != InferenceProviderType.mistral ||
+      !isMistralOcrModelId(model.providerModelId);
+}
+
+/// Whether [model] can receive images as part of a chat request.
+bool supportsChatImageInput({
+  required AiConfigModel model,
+  required AiConfigInferenceProvider? provider,
+}) {
+  return model.inputModalities.contains(Modality.image) &&
+      supportsChatCompletions(model: model, provider: provider);
+}
+
 /// Generates a unique model ID based on provider ID and model ID
 String generateModelId(String inferenceProviderId, String providerModelId) {
   // Create a deterministic ID by combining provider and model IDs

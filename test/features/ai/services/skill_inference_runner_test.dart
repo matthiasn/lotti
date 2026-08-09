@@ -342,12 +342,15 @@ void main() {
     String? thinkingHighEndModelId,
     AiConfigInferenceProvider? thinkingHighEndProvider,
     AiConfigModel? thinkingModel,
+    AiConfigInferenceProvider? thinkingProvider,
   }) {
     return AutomationResult(
       handled: true,
       resolvedProfile: ResolvedProfile(
-        thinkingModelId: 'models/gemini-flash',
-        thinkingProvider: testInferenceProvider(id: 'p-flash'),
+        thinkingModelId:
+            thinkingModel?.providerModelId ?? 'models/gemini-flash',
+        thinkingProvider:
+            thinkingProvider ?? testInferenceProvider(id: 'p-flash'),
         thinkingModel: thinkingModel,
         thinkingHighEndModelId: thinkingHighEndModelId,
         thinkingHighEndProvider: thinkingHighEndProvider,
@@ -2724,6 +2727,100 @@ void main() {
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
               provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'does not send selected images to a dedicated Mistral OCR model',
+        () async {
+          final ocrProvider = testInferenceProvider(
+            id: 'p-mistral-ocr',
+            inferenceProviderType: InferenceProviderType.mistral,
+          );
+          final ocrModel =
+              AiConfig.model(
+                    id: 'ocr-model',
+                    name: 'Mistral OCR',
+                    providerModelId: 'mistral-ocr-latest',
+                    inferenceProviderId: ocrProvider.id,
+                    createdAt: DateTime(2024),
+                    inputModalities: const [Modality.text, Modality.image],
+                    outputModalities: const [Modality.text],
+                    isReasoningModel: false,
+                  )
+                  as AiConfigModel;
+          final textEntry = makeTextEntry(
+            id: 'text-ocr-model',
+            markdown: 'Generate an implementation prompt.',
+          );
+          const images = [
+            ProcessedReferenceImage(
+              base64Data: 'must-not-reach-ocr',
+              mimeType: 'image/jpeg',
+            ),
+          ];
+
+          when(
+            () => mockAiInputRepo.getEntity('text-ocr-model'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(makeStreamChunk('Text-only request')),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'text-ocr-model',
+            automationResult: makePromptGenerationResult(
+              thinkingModel: ocrModel,
+              thinkingProvider: ocrProvider,
+            ),
+            referenceImages: images,
+          );
+
+          verify(
+            () => mockCloudRepo.generate(
+              any(),
+              model: 'mistral-ocr-latest',
+              temperature: null,
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: ocrProvider,
               systemMessage: any(named: 'systemMessage'),
               impactCollector: any(named: 'impactCollector'),
             ),
