@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_spec_validator.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -21,18 +22,25 @@ import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 class GoalAgentService {
   GoalAgentService({
     required this._agentService,
+    required this._repository,
     required this._syncService,
     required this._orchestrator,
   });
 
   final AgentService _agentService;
+  final AgentRepository _repository;
   final AgentSyncService _syncService;
   final WakeOrchestrator _orchestrator;
 
-  /// Creates a goal agent with its v1 spec.
+  /// Creates a goal agent with its v1 spec — identity, state, spec
+  /// version, head and first cadence tick in ONE transaction (nested
+  /// `runInTransaction` calls join the outer one), so a failure anywhere
+  /// leaves no orphaned half-goal behind.
   ///
-  /// Throws [ArgumentError] when [criteria] fails structural validation —
-  /// an unsatisfiable or corrupt goal must not exist even for a moment.
+  /// Throws [ArgumentError] when [criteria] fails structural validation,
+  /// and [StateError] when a goal already exists for a caller-supplied
+  /// [agentId] — spec v1 is immutable and must never be rewritten by a
+  /// repeated create.
   Future<AgentIdentityEntity> createGoalAgent({
     required String title,
     required String statement,
@@ -46,17 +54,23 @@ class GoalAgentService {
     if (issues.isNotEmpty) {
       throw ArgumentError('Invalid goal criteria: ${issues.join('; ')}');
     }
+    if (agentId != null &&
+        await _repository.getEntity(goalSpecHeadId(agentId)) != null) {
+      throw StateError(
+        'goal $agentId already exists; spec v1 is immutable — revise via '
+        'a new version, never a repeated create',
+      );
+    }
 
-    final identity = await _agentService.createAgent(
-      kind: AgentKinds.goalAgent,
-      displayName: title,
-      config: const AgentConfig(),
-      agentId: agentId,
-    );
     final now = clock.now();
-    final versionId = '${identity.agentId}:spec-v1';
-
-    await _syncService.runInTransaction(() async {
+    final identity = await _syncService.runInTransaction(() async {
+      final identity = await _agentService.createAgent(
+        kind: AgentKinds.goalAgent,
+        displayName: title,
+        config: const AgentConfig(),
+        agentId: agentId,
+      );
+      final versionId = '${identity.agentId}:spec-v1';
       await _syncService.upsertEntity(
         AgentDomainEntity.goalSpecVersion(
           id: versionId,
@@ -87,6 +101,7 @@ class GoalAgentService {
       await _syncService.upsertEntity(
         goalCadenceWake(identity.agentId, now),
       );
+      return identity;
     });
 
     registerSignalSubscription(identity.agentId, criteria);

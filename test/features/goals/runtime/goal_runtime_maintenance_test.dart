@@ -2,13 +2,13 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
-import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/services/domain_logging.dart';
@@ -96,6 +96,7 @@ void main() {
       syncService: syncService,
       goalAgentService: GoalAgentService(
         agentService: agentService,
+        repository: repository,
         syncService: syncService,
         orchestrator: orchestrator,
       ),
@@ -152,6 +153,7 @@ void main() {
         syncService: syncService,
         goalAgentService: GoalAgentService(
           agentService: agentService,
+          repository: repository,
           syncService: syncService,
           orchestrator: orchestrator,
         ),

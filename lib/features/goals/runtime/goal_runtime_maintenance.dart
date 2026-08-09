@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -35,7 +36,14 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
 
   @override
   Future<void> restoreSubscriptions() async {
-    for (final identity in await _activeGoalAgents()) {
+    final List<AgentIdentityEntity> agents;
+    try {
+      agents = await _activeGoalAgents();
+    } catch (error, stackTrace) {
+      _log('restoreSubscriptions', 'listAgents', error, stackTrace);
+      return;
+    }
+    for (final identity in agents) {
       try {
         final criteria = await _headCriteria(identity.agentId);
         if (criteria == null) continue;
@@ -52,7 +60,14 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
   @override
   Future<void> beforeWakeScan() async {
     final now = clock.now();
-    for (final identity in await _activeGoalAgents()) {
+    final List<AgentIdentityEntity> agents;
+    try {
+      agents = await _activeGoalAgents();
+    } catch (error, stackTrace) {
+      _log('beforeWakeScan', 'listAgents', error, stackTrace);
+      return;
+    }
+    for (final identity in agents) {
       try {
         final record = await _repository.getEntity(
           scheduledWakeRecordId(

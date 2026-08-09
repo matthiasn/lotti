@@ -24,18 +24,19 @@ today:
   truncate) plus structural checks (empty composites, unsatisfiable
   quotas, blank identifiers, duplicate criterion ids).
 
-Nothing here touches the database, the network, or the agent runtime: the
-evaluator is the Phase A of the two-tier wake design (ADR 0054) and is
-consumed today by its unit tests and by the goal-agent evaluation harness
-(`test/features/agents/eval/goal/`), which cross-checks its fixture
-arithmetic against this evaluator.
+The deterministic runtime RUNS (Phase A of ADR 0054): `runtime/` holds the
+per-tick executor (`GoalAgentPhaseA`) and startup maintenance, `sync/` the
+synced-signal dispatcher, `service/` transactional goal creation, and
+`state/` the providers that plug the `goal_agent` kind into the shared
+agent runtime (merged in `app_bootstrap.dart`). Persistence entities live
+on `AgentDomainEntity` (`goalSpecVersion`/`goalSpecHead`/`goalProgress`/
+`goalNudge`) with `GoalSpecValidator` gating every decode path.
 
-The persistence entities exist (`goalSpecVersion`/`goalSpecHead`/
-`goalProgress`/`goalNudge` variants on `AgentDomainEntity`, with
-`GoalSpecValidator` gating decode). The runtime (agent kind, wake wiring),
-the banner surface (procedural text banners, ADR 0058), and the
-conversation UI follow in later increments; the plan of record is
-`docs/implementation_plans/2026-08-08_goal_agents_design.md`.
+The LLM tier (Phase B), the banner surface (procedural text banners,
+ADR 0058), and the conversation UI follow in later increments; the plan of
+record is `docs/implementation_plans/2026-08-08_goal_agents_design.md`.
+
+Runtime map: [knowledge/features/goals.md](../../../knowledge/features/goals.md).
 
 Decisions: ADRs
 [0053](../../../docs/adr/0053-goal-driven-agents-per-goal-producers.md),
@@ -44,5 +45,5 @@ Decisions: ADRs
 [0056](../../../docs/adr/0056-need-to-know-visual-brief-boundary.md),
 [0057](../../../docs/adr/0057-decade-scale-agent-memory.md),
 [0058](../../../docs/adr/0058-procedural-text-banners-no-generative-imagery.md).
-A `knowledge/` concept will be added when the runtime ships and there is
-running behavior to document.
+The runtime's knowledge concept is
+[knowledge/features/goals.md](../../../knowledge/features/goals.md).

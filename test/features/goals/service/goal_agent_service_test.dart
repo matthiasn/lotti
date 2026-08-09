@@ -1,13 +1,13 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
-import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -31,6 +31,7 @@ void main() {
   );
 
   late MockAgentService agentService;
+  late MockAgentRepository repository;
   late MockAgentSyncService syncService;
   late MockWakeOrchestrator orchestrator;
   late GoalAgentService service;
@@ -38,10 +39,13 @@ void main() {
 
   setUp(() {
     agentService = MockAgentService();
+    repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     orchestrator = MockWakeOrchestrator();
+    when(() => repository.getEntity(any())).thenAnswer((_) async => null);
     service = GoalAgentService(
       agentService: agentService,
+      repository: repository,
       syncService: syncService,
       orchestrator: orchestrator,
     );
@@ -128,4 +132,29 @@ void main() {
     expect(subscription.agentId, agentId);
     expect(subscription.matchEntityIds, {'gym-habit'});
   });
+
+  test(
+    'a repeated create for an existing goal refuses to rewrite spec v1',
+    () async {
+      when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+        (_) async => AgentDomainEntity.goalSpecHead(
+          id: goalSpecHeadId(agentId),
+          agentId: agentId,
+          versionId: '$agentId:spec-v1',
+          updatedAt: DateTime(2026),
+          vectorClock: null,
+        ),
+      );
+      await expectLater(
+        () => service.createGoalAgent(
+          title: 'Gym 3×/week',
+          statement: 'x',
+          criteria: criteria,
+          agentId: agentId,
+        ),
+        throwsStateError,
+      );
+      expect(upserts, isEmpty);
+    },
+  );
 }

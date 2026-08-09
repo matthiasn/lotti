@@ -22,6 +22,9 @@ final goalAgentPhaseAProvider = Provider<GoalAgentPhaseA>(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     signalReader: ref.watch(goalSignalReaderProvider),
+    // A locally armed escalation must not wait out the hourly poll.
+    onEscalationArmed: () =>
+        ref.read(scheduledWakeManagerProvider).requestCheck(),
   ),
   name: 'goalAgentPhaseAProvider',
 );
@@ -29,6 +32,7 @@ final goalAgentPhaseAProvider = Provider<GoalAgentPhaseA>(
 final goalAgentServiceProvider = Provider<GoalAgentService>(
   (ref) => GoalAgentService(
     agentService: ref.watch(agentServiceProvider),
+    repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     orchestrator: ref.watch(wakeOrchestratorProvider),
   ),
@@ -66,6 +70,7 @@ final goalRuntimeMaintenanceProvider = Provider<GoalRuntimeMaintenance>(
     repository: ref.watch(agentRepositoryProvider),
     syncService: ref.watch(agentSyncServiceProvider),
     goalAgentService: ref.watch(goalAgentServiceProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'goalRuntimeMaintenanceProvider',
 );
@@ -75,6 +80,7 @@ final goalSignalSyncDispatcherProvider = Provider<GoalSignalSyncDispatcher>(
     agentService: ref.watch(agentServiceProvider),
     repository: ref.watch(agentRepositoryProvider),
     phaseA: ref.watch(goalAgentPhaseAProvider),
+    domainLogger: ref.watch(domainLoggerProvider),
   ),
   name: 'goalSignalSyncDispatcherProvider',
 );
@@ -86,6 +92,7 @@ final goalSignalSyncListenerProvider = Provider<GoalSignalSyncListener>(
     final listener = GoalSignalSyncListener(
       updateNotifications: ref.watch(updateNotificationsProvider),
       dispatcher: ref.watch(goalSignalSyncDispatcherProvider),
+      domainLogger: ref.watch(domainLoggerProvider),
     )..start();
     ref.onDispose(listener.dispose);
     return listener;

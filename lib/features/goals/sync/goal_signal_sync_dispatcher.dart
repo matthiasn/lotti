@@ -38,40 +38,53 @@ class GoalSignalSyncDispatcher {
   final _inFlight = <String>{};
 
   /// Runs Phase A for every goal agent whose signal tokens intersect the
-  /// synced batch. Never throws.
+  /// synced batch. Never throws; each agent is contained individually so
+  /// one corrupt goal cannot suppress updates for unrelated goals.
   Future<void> dispatchBatch(Set<String> tokens) async {
+    final List<AgentIdentityEntity> agents;
     try {
-      final agents = await _agentService.listAgents(
+      agents = await _agentService.listAgents(
         lifecycle: AgentLifecycle.active,
       );
-      for (final identity in agents) {
-        if (identity.kind != AgentKinds.goalAgent) continue;
-        if (_inFlight.contains(identity.agentId)) continue;
+    } catch (error, stackTrace) {
+      _log('listing agents for a synced batch failed', error, stackTrace);
+      return;
+    }
+    for (final identity in agents) {
+      if (identity.kind != AgentKinds.goalAgent) continue;
+      if (_inFlight.contains(identity.agentId)) continue;
+      _inFlight.add(identity.agentId);
+      try {
         final matched = await _matchedTokens(identity.agentId, tokens);
         if (matched.isEmpty) continue;
-        _inFlight.add(identity.agentId);
-        try {
-          final runKey =
-              'goal-sync:${identity.agentId}:'
-              '${clock.now().millisecondsSinceEpoch}';
-          await _phaseA.execute(
-            agentIdentity: identity,
-            runKey: runKey,
-            triggerTokens: matched,
-            threadId: runKey,
-          );
-        } finally {
-          _inFlight.remove(identity.agentId);
-        }
+        final runKey =
+            'goal-sync:${identity.agentId}:'
+            '${clock.now().millisecondsSinceEpoch}';
+        await _phaseA.execute(
+          agentIdentity: identity,
+          runKey: runKey,
+          triggerTokens: matched,
+          threadId: runKey,
+        );
+      } catch (error, stackTrace) {
+        _log(
+          'goal signal sync dispatch failed for one agent',
+          error,
+          stackTrace,
+        );
+      } finally {
+        _inFlight.remove(identity.agentId);
       }
-    } catch (error, stackTrace) {
-      _domainLogger?.error(
-        LogDomain.sync,
-        error,
-        message: 'goal signal sync dispatch failed for one batch',
-        stackTrace: stackTrace,
-      );
     }
+  }
+
+  void _log(String message, Object error, StackTrace stackTrace) {
+    _domainLogger?.error(
+      LogDomain.sync,
+      error,
+      message: message,
+      stackTrace: stackTrace,
+    );
   }
 
   Future<Set<String>> _matchedTokens(
@@ -93,16 +106,29 @@ class GoalSignalSyncListener {
   GoalSignalSyncListener({
     required this._updateNotifications,
     required this._dispatcher,
+    this._domainLogger,
   });
 
   final UpdateNotifications _updateNotifications;
   final GoalSignalSyncDispatcher _dispatcher;
+  final DomainLogger? _domainLogger;
   StreamSubscription<void>? _subscription;
 
   void start() {
     _subscription ??= _updateNotifications.syncUpdateStream
         .asyncMap(_dispatcher.dispatchBatch)
-        .listen((_) {});
+        .listen(
+          (_) {},
+          // A stream error must be visible, not a silent end of synced
+          // goal evaluation for the rest of the app lifetime.
+          onError: (Object error, StackTrace stackTrace) =>
+              _domainLogger?.error(
+                LogDomain.sync,
+                error,
+                message: 'goal signal sync stream errored',
+                stackTrace: stackTrace,
+              ),
+        );
   }
 
   Future<void> dispose() async {

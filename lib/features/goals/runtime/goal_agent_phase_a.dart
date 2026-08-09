@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -12,15 +13,6 @@ import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_track_policy.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
-
-/// Workspace key of the recurring deterministic tick (re-armed on every
-/// run — recurrence by re-arm, no schema change; ADR 0054 Decision 3).
-const goalCadenceWorkspaceKey = 'goal-cadence';
-
-/// Workspace key of the immediate escalation wake Phase A arms when a tick
-/// is LLM-worthy; the scheduled-wake manager's lease election picks exactly
-/// one device to run it (ADR 0054 Decision 5).
-const goalEscalationWorkspaceKey = 'goal-escalation';
 
 /// Local hour at which the daily cadence tick fires.
 const goalCadenceHour = 6;
@@ -45,7 +37,13 @@ class GoalAgentPhaseA {
     required this._signalReader,
     this._evaluator = const GoalProgressEvaluator(),
     this._policy = const GoalTrackPolicy(),
+    this._onEscalationArmed,
   });
+
+  /// Nudges the scheduled-wake manager after an escalation is armed, so a
+  /// local transition is processed promptly instead of waiting out the
+  /// hourly poll. Sync-received records still ride the poll (by design).
+  final void Function()? _onEscalationArmed;
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
@@ -79,6 +77,14 @@ class GoalAgentPhaseA {
 
     await _rearmCadence(agentId, now);
 
+    final startDate = version.startDate;
+    if (startDate != null &&
+        GoalWindow.dayUtc(now).isBefore(GoalWindow.dayUtc(startDate))) {
+      // The goal has not begun: no register row, no escalation — the
+      // cadence tick above keeps checking until the start day arrives.
+      return const WakeResult(success: true);
+    }
+
     final signals = await _signalReader.read(
       criteria: version.criteria,
       reference: now,
@@ -92,7 +98,11 @@ class GoalAgentPhaseA {
       days: _policy.shortTermDays,
     );
 
-    final priors = await _priorRegisterRows(agentId, now);
+    final periodKey = const GoalWindow.day().periodKey(now);
+    final existingToday = await _repository.getEntity(
+      goalProgressId(agentId, periodKey),
+    );
+    final priors = await _priorRegisterRows(agentId, now, version.id);
     final targetDate = version.targetDate;
     final trackStatus = _policy.derive(
       evaluation: evaluation,
@@ -103,9 +113,17 @@ class GoalAgentPhaseA {
           GoalWindow.dayUtc(now).isAfter(GoalWindow.dayUtc(targetDate)),
     );
 
+    // The transition compares against the LAST PERSISTED status — today's
+    // own earlier run first (so an escalation wake re-running Phase A the
+    // same day is the documented no-op), yesterday's row otherwise.
+    final previousStatus = existingToday is GoalProgressEntity
+        ? existingToday.trackStatus
+        : priors.isEmpty
+        ? null
+        : priors.first.trackStatus;
     final facts = GoalWakeFacts(
       trackStatus: trackStatus,
-      previousStatus: priors.isEmpty ? null : priors.first.trackStatus,
+      previousStatus: previousStatus,
       evaluation: evaluation,
       shortTermAttainment: shortTerm,
     );
@@ -116,10 +134,13 @@ class GoalAgentPhaseA {
       evaluation: evaluation,
       facts: facts,
       now: now,
+      periodKey: periodKey,
+      existing: existingToday is GoalProgressEntity ? existingToday : null,
     );
 
     if (facts.needsEscalation) {
-      await _armEscalation(agentId, now);
+      await _armEscalation(agentId, now, periodKey);
+      _onEscalationArmed?.call();
     }
 
     return const WakeResult(success: true);
@@ -133,21 +154,36 @@ class GoalAgentPhaseA {
   /// Escalation is a scheduled wake due immediately: the manager's lease
   /// election guarantees exactly one device runs it, and an armer that
   /// dies is picked up remotely within the hourly poll (ADR 0054).
-  Future<void> _armEscalation(String agentId, DateTime now) =>
-      _syncService.upsertEntity(goalEscalationWake(agentId, now));
+  Future<void> _armEscalation(
+    String agentId,
+    DateTime now,
+    String periodKey,
+  ) => _syncService.upsertEntity(goalEscalationWake(agentId, now, periodKey));
 
   /// Most-recent-first register rows for the trailing
   /// [goalPriorLookbackDays] days before the evaluation day.
+  ///
+  /// The policy reads these as a CONSECUTIVE streak, so collection stops
+  /// at the first gap (a day the app never evaluated must not compact an
+  /// older bad day into "yesterday") and at the first row computed
+  /// against a different spec version (a revised goal starts its grace
+  /// history fresh). Date math is calendar-component arithmetic — a
+  /// Duration would drift across DST transitions.
   Future<List<GoalProgressEntity>> _priorRegisterRows(
     String agentId,
     DateTime now,
+    String specVersionId,
   ) async {
     const day = GoalWindow.day();
     final rows = <GoalProgressEntity>[];
     for (var back = 1; back <= goalPriorLookbackDays; back++) {
-      final key = day.periodKey(now.subtract(Duration(days: back)));
+      final key = day.periodKey(
+        DateTime(now.year, now.month, now.day - back),
+      );
       final row = await _repository.getEntity(goalProgressId(agentId, key));
-      if (row is GoalProgressEntity) rows.add(row);
+      if (row is! GoalProgressEntity) break;
+      if (row.specVersionId != specVersionId) break;
+      rows.add(row);
     }
     return rows;
   }
@@ -160,10 +196,10 @@ class GoalAgentPhaseA {
     required GoalEvaluation evaluation,
     required GoalWakeFacts facts,
     required DateTime now,
+    required String periodKey,
+    required GoalProgressEntity? existing,
   }) async {
-    final periodKey = const GoalWindow.day().periodKey(now);
     final id = goalProgressId(agentId, periodKey);
-    final existing = await _repository.getEntity(id);
     await _syncService.upsertEntity(
       AgentDomainEntity.goalProgress(
         id: id,
@@ -174,9 +210,12 @@ class GoalAgentPhaseA {
         dataCoverage: evaluation.dataCoverage,
         satisfied: evaluation.satisfied,
         specVersionId: version.id,
-        createdAt: existing is GoalProgressEntity ? existing.createdAt : now,
+        createdAt: existing?.createdAt ?? now,
         updatedAt: now,
-        vectorClock: null,
+        // Carry the row we read: dropping it would make this recompute
+        // causally CONCURRENT with the peer value it is based on, letting
+        // wall-clock LWW revert fresh progress.
+        vectorClock: existing?.vectorClock,
         criterionResults: [
           for (final result in evaluation.results.values)
             GoalCriterionProgress(
@@ -214,18 +253,24 @@ AgentDomainEntity goalCadenceWake(String agentId, DateTime now) {
   );
 }
 
-/// An escalation wake due immediately (see `_armEscalation`).
-AgentDomainEntity goalEscalationWake(String agentId, DateTime now) =>
-    AgentDomainEntity.scheduledWake(
-      id: scheduledWakeRecordId(
-        agentId,
-        workspaceKey: goalEscalationWorkspaceKey,
-      ),
-      agentId: agentId,
-      scheduledAt: now,
-      status: ScheduledWakeStatus.pending,
-      reason: WakeReason.scheduled.name,
-      updatedAt: now,
-      vectorClock: null,
-      workspaceKey: goalEscalationWorkspaceKey,
-    );
+/// An escalation wake due immediately, scoped to its evaluation period
+/// (see `_armEscalation`). The deadline is stored in UTC: it is an
+/// absolute moment a failover peer in another timezone must read
+/// correctly, unlike the cadence's deliberately local fixed hour.
+AgentDomainEntity goalEscalationWake(
+  String agentId,
+  DateTime now,
+  String periodKey,
+) => AgentDomainEntity.scheduledWake(
+  id: scheduledWakeRecordId(
+    agentId,
+    workspaceKey: goalEscalationWorkspaceKey(periodKey),
+  ),
+  agentId: agentId,
+  scheduledAt: now.toUtc(),
+  status: ScheduledWakeStatus.pending,
+  reason: WakeReason.scheduled.name,
+  updatedAt: now,
+  vectorClock: null,
+  workspaceKey: goalEscalationWorkspaceKey(periodKey),
+);

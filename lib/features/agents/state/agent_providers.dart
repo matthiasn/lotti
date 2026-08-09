@@ -5,6 +5,7 @@ import 'dart:io';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/day_agent_trigger_tokens.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
@@ -336,8 +337,10 @@ ScheduledWakeManager scheduledWakeManager(Ref ref) {
     // is shared rather than device-local: every device firing it means one
     // inference billed per device for a single result. Everything else stays
     // on the unleased path.
+    // Lease-elected records: work that must run on exactly one device.
     requiresLease: (record) =>
-        record.workspaceKey == coordinatorDigestWorkspaceKey,
+        record.workspaceKey == coordinatorDigestWorkspaceKey ||
+        isGoalEscalationWorkspace(record.workspaceKey),
     // `getHost()` reads a `late` field the service only assigns in `init()`,
     // so a cold start that reaches here first throws
     // LateInitializationError. The manager would catch that as a per-record

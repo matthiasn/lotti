@@ -39,6 +39,10 @@ class _RecordingPhaseA extends GoalAgentPhaseA {
 
   final calls = <(String, Set<String>)>[];
 
+  /// Completed on every recorded call — deterministic synchronization for
+  /// listener tests (no event-loop-turn guessing).
+  Completer<void> nextCall = Completer<void>();
+
   @override
   Future<WakeResult> execute({
     required AgentIdentityEntity agentIdentity,
@@ -47,6 +51,9 @@ class _RecordingPhaseA extends GoalAgentPhaseA {
     required String threadId,
   }) async {
     calls.add((agentIdentity.agentId, triggerTokens));
+    final completer = nextCall;
+    nextCall = Completer<void>();
+    completer.complete();
     return const WakeResult(success: true);
   }
 }

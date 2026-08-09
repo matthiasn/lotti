@@ -115,6 +115,15 @@ class ScheduledWakeManager with AgentErrorLogging {
   int _rerunGeneration = 0;
 
   /// Start periodic checking. Also immediately checks for missed wakes.
+  /// Runs one scan pass now (single-flighted with the periodic timer).
+  ///
+  /// For callers that just persisted an immediately-due record — e.g. a
+  /// goal Phase A arming an escalation — and must not wait out the hourly
+  /// poll on the arming device.
+  void requestCheck() {
+    unawaited(_checkAndEnqueue());
+  }
+
   void start() {
     unawaited(_checkAndEnqueue());
 

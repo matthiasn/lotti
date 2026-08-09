@@ -40,13 +40,14 @@ class GoalSignalReader {
   }) async {
     final needs = _SignalNeeds()..collect(criteria);
     final rangeStart = _rangeStart(criteria, reference, shortTermDays);
-    // End of the reference day in local time: `date_to <= rangeEnd` must
-    // include entries recorded later today.
+    // Next local calendar midnight, by component construction: adding a
+    // 24h Duration lands at 23:00 on a DST fall-back day and would drop
+    // the final hour's entries from `date_to <= rangeEnd`.
     final rangeEnd = DateTime(
       reference.year,
       reference.month,
-      reference.day,
-    ).add(const Duration(days: 1));
+      reference.day + 1,
+    );
 
     final quantitative = <String, Map<DateTime, num>>{};
     for (final dataType in needs.quantitativeTypes) {
@@ -55,17 +56,7 @@ class GoalSignalReader {
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
       );
-      final byDay = <DateTime, num>{};
-      // aggregateByType returns [] for types absent from healthTypes —
-      // that would silently evaluate real data as a tracker gap, so
-      // unknown types fall back to a plain daily sum.
-      final observations = healthTypes.containsKey(dataType)
-          ? aggregateByType(entities, dataType)
-          : aggregateDailySum(entities);
-      for (final observation in observations) {
-        byDay[GoalWindow.dayUtc(observation.dateTime)] = observation.value;
-      }
-      quantitative[dataType] = byDay;
+      quantitative[dataType] = _bucketQuantitative(entities, dataType);
     }
 
     final habits = <String, Map<DateTime, int>>{};
@@ -116,6 +107,61 @@ class GoalSignalReader {
       habitSuccessesByDay: habits,
       measurableDailySums: measurables,
     );
+  }
+
+  /// One deterministic value per day, honoring the health config's
+  /// per-type aggregation:
+  ///
+  /// - `dailyMax` (cumulative counters like steps): the day's peak;
+  /// - `dailySum` / `dailyTimeSum`: the day's total (hours for time);
+  /// - `none` (point samples like weight or heart rate): the day's LATEST
+  ///   sample — `aggregateNone` returns every raw sample, and folding
+  ///   those into a day-keyed map would keep whichever the query order
+  ///   put last (the oldest, since results are newest-first);
+  /// - unknown types: a daily sum, never silence.
+  Map<DateTime, num> _bucketQuantitative(
+    List<JournalEntity> entities,
+    String dataType,
+  ) {
+    final byDay = <DateTime, num>{};
+    switch (healthTypes[dataType]?.aggregationType) {
+      case HealthAggregationType.none:
+        final latestByDay = <DateTime, JournalEntity>{};
+        for (final entity in entities) {
+          entity.maybeMap(
+            quantitative: (quant) {
+              final day = GoalWindow.dayUtc(quant.data.dateFrom);
+              final current = latestByDay[day];
+              final currentFrom = current?.maybeMap(
+                quantitative: (q) => q.data.dateFrom,
+                orElse: () => null,
+              );
+              if (currentFrom == null ||
+                  quant.data.dateFrom.isAfter(currentFrom)) {
+                latestByDay[day] = entity;
+              }
+            },
+            orElse: () {},
+          );
+        }
+        for (final entry in latestByDay.entries) {
+          entry.value.maybeMap(
+            quantitative: (quant) => byDay[entry.key] = quant.data.value,
+            orElse: () {},
+          );
+        }
+      case HealthAggregationType.dailyMax:
+      case HealthAggregationType.dailySum:
+      case HealthAggregationType.dailyTimeSum:
+        for (final observation in aggregateByType(entities, dataType)) {
+          byDay[GoalWindow.dayUtc(observation.dateTime)] = observation.value;
+        }
+      case null:
+        for (final observation in aggregateDailySum(entities)) {
+          byDay[GoalWindow.dayUtc(observation.dateTime)] = observation.value;
+        }
+    }
+    return byDay;
   }
 
   /// Earliest day any leaf's period (or the short-term lookback, or the

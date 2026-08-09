@@ -49,6 +49,7 @@ void main() {
         agentServiceProvider.overrideWithValue(agentService),
         wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
         updateNotificationsProvider.overrideWithValue(updateNotifications),
+        domainLoggerProvider.overrideWithValue(MockDomainLogger()),
       ],
     );
     addTearDown(container.dispose);
@@ -101,15 +102,18 @@ void main() {
   test(
     'the sync listener starts on construction and feeds the dispatcher',
     () async {
+      final listed = Completer<void>();
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async {
+        if (!listed.isCompleted) listed.complete();
+        return [];
+      });
       container.read(goalSignalSyncListenerProvider);
       syncStream.add({'anything'});
-      await Future<void>.delayed(Duration.zero);
-      await Future<void>.delayed(Duration.zero);
-      // Empty agent list → no dispatch, but the listener consumed the batch
-      // (listAgents was hit through the provider-wired dispatcher).
-      verify(
-        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
-      ).called(1);
+      // Deterministic: resolves exactly when the provider-wired dispatcher
+      // reached the agent service, however many event-loop turns that took.
+      await listed.future;
     },
   );
 }
