@@ -12,13 +12,13 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/sync/g_counter.dart';
-import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 import '../../ai_consumption/test_utils.dart';
 
 // Deterministic identity / time used across the suite.
@@ -49,6 +49,14 @@ class _SequentialUuid implements Uuid {
   dynamic noSuchMethod(Invocation invocation) {
     if (invocation.memberName == #v4) return _next();
     return super.noSuchMethod(invocation);
+  }
+}
+
+class _PostCommitFailingAgentSyncService extends MockAgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    await action();
+    throw StateError('outbox enqueue failed');
   }
 }
 
@@ -93,8 +101,29 @@ void main() {
   late MockTaskAgentStrategy strategy;
   late MockSuggestionRetractionService retraction;
   late MockChangeSetBuilder builder;
+  late MockUpdateNotifications notifications;
 
-  setUp(() {
+  void stubSyncWrites() {
+    when(() => sync.upsertEntity(any())).thenAnswer((_) async {});
+    stubAppendMilestone(sync);
+  }
+
+  void usePostCommitFailingSync() {
+    sync = _PostCommitFailingAgentSyncService();
+    stubSyncWrites();
+    when(
+      () => builder.build(
+        sync,
+        existingPendingSets: any(named: 'existingPendingSets'),
+        rejectedFingerprints: any(named: 'rejectedFingerprints'),
+        rejectedDisplayKeys: any(named: 'rejectedDisplayKeys'),
+      ),
+    ).thenAnswer((_) async => null);
+  }
+
+  setUp(() async {
+    final getItMocks = await setUpTestGetIt();
+    notifications = getItMocks.updateNotifications;
     sync = MockAgentSyncService();
     repo = MockAgentRepository();
     strategy = MockTaskAgentStrategy();
@@ -103,8 +132,7 @@ void main() {
 
     // upsertEntity, appendMilestone, build, applyStaged are fire-and-forget
     // here; stub them to no-ops. runInTransaction/localHost have mock defaults.
-    when(() => sync.upsertEntity(any())).thenAnswer((_) async {});
-    stubAppendMilestone(sync);
+    stubSyncWrites();
     when(
       () => builder.build(
         sync,
@@ -125,6 +153,7 @@ void main() {
     when(() => strategy.finalResponse).thenReturn(null);
     when(() => strategy.extractStagedRetractions()).thenReturn(const []);
   });
+  tearDown(tearDownTestGetIt);
 
   WakeOutputWriter writer({Uuid? uuid}) => WakeOutputWriter(
     syncService: sync,
@@ -335,10 +364,6 @@ void main() {
       when(
         () => repo.getReportHead(_agentId, AgentReportScopes.current),
       ).thenAnswer((_) async => null);
-      final notifications = MockUpdateNotifications();
-      getIt.registerSingleton<UpdateNotifications>(notifications);
-      addTearDown(() => getIt.unregister<UpdateNotifications>());
-
       await run(reportContent: 'fresh report');
 
       verify(
@@ -348,6 +373,102 @@ void main() {
           agentNotification,
         }),
       ).called(1);
+    });
+
+    test(
+      'notifies after a committed report even when outbox flush fails',
+      () async {
+        usePostCommitFailingSync();
+        AgentReportEntity? committedReport;
+        when(() => sync.upsertEntity(any())).thenAnswer((invocation) async {
+          final entity = invocation.positionalArguments.single;
+          if (entity is AgentReportEntity) committedReport = entity;
+        });
+        when(
+          () => repo.getReportHead(_agentId, AgentReportScopes.current),
+        ).thenAnswer((_) async => null);
+        when(() => repo.getEntity('report-id')).thenAnswer(
+          (_) async => committedReport,
+        );
+
+        await expectLater(
+          run(
+            reportContent: 'durable report',
+            uuid: _SequentialUuid(['report-id', 'head-id']),
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        expect(committedReport?.id, 'report-id');
+        verify(
+          () => notifications.notifyUiOnly({
+            _agentId,
+            _taskId,
+            agentNotification,
+          }),
+        ).called(1);
+      },
+    );
+
+    test(
+      'does not notify when a failed write left no durable report',
+      () async {
+        usePostCommitFailingSync();
+        when(
+          () => repo.getReportHead(_agentId, AgentReportScopes.current),
+        ).thenAnswer((_) async => null);
+        when(() => repo.getEntity('report-id')).thenAnswer((_) async => null);
+
+        await expectLater(
+          run(
+            reportContent: 'rolled-back report',
+            uuid: _SequentialUuid(['report-id', 'head-id']),
+          ),
+          throwsA(isA<StateError>()),
+        );
+
+        verifyNever(() => notifications.notifyUiOnly(any()));
+      },
+    );
+
+    test('preserves the sync error when commit lookup also fails', () async {
+      usePostCommitFailingSync();
+      when(
+        () => repo.getReportHead(_agentId, AgentReportScopes.current),
+      ).thenAnswer((_) async => null);
+      when(
+        () => repo.getEntity('report-id'),
+      ).thenThrow(ArgumentError('lookup failed'));
+
+      await expectLater(
+        run(
+          reportContent: 'unknown report state',
+          uuid: _SequentialUuid(['report-id', 'head-id']),
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            'outbox enqueue failed',
+          ),
+        ),
+      );
+
+      verifyNever(() => notifications.notifyUiOnly(any()));
+    });
+
+    test('persists reports when UI notifications are unavailable', () async {
+      await tearDownTestGetIt();
+      when(
+        () => repo.getReportHead(_agentId, AgentReportScopes.current),
+      ).thenAnswer((_) async => null);
+
+      final result = await run(
+        reportContent: 'headless report',
+        uuid: _SequentialUuid(['report-id', 'head-id']),
+      );
+
+      expect(result?.reportId, 'report-id');
     });
 
     test('mints a fresh head id when there is no existing head', () async {

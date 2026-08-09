@@ -108,7 +108,7 @@ class WakeOutputWriter {
           );
     }
 
-    await _sync.runInTransaction(() async {
+    final persistence = _sync.runInTransaction(() async {
       // 8. Persist the final assistant response as a thought message.
       final thoughtText = strategy.finalResponse;
       if (thoughtText != null) {
@@ -284,16 +284,43 @@ class WakeOutputWriter {
         runKey: runKey,
       );
     });
-    if (reportToEmbed != null && getIt.isRegistered<UpdateNotifications>()) {
-      getIt<UpdateNotifications>().notifyUiOnly({
-        agentId,
-        taskId,
-        agentNotification,
-      });
+    try {
+      await persistence;
+    } catch (error, stackTrace) {
+      // Outbox flushing happens after the database transaction commits and
+      // can still surface an error. Confirm the report is durable before
+      // refreshing the UI, while preserving the original sync failure.
+      if (reportId != null && await _reportWasCommitted(reportId: reportId)) {
+        _notifyReportPublished(agentId: agentId, taskId: taskId);
+      }
+      Error.throwWithStackTrace(error, stackTrace);
+    }
+    if (reportToEmbed != null) {
+      _notifyReportPublished(agentId: agentId, taskId: taskId);
     }
     if (reportToEmbed != null && attributionEnvelope != null) {
       await getIt<AiAttributionService>().finalize(attributionEnvelope);
     }
     return reportToEmbed;
+  }
+
+  Future<bool> _reportWasCommitted({required String reportId}) async {
+    try {
+      return await _repo.getEntity(reportId) is AgentReportEntity;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _notifyReportPublished({
+    required String agentId,
+    required String taskId,
+  }) {
+    if (!getIt.isRegistered<UpdateNotifications>()) return;
+    getIt<UpdateNotifications>().notifyUiOnly({
+      agentId,
+      taskId,
+      agentNotification,
+    });
   }
 }
