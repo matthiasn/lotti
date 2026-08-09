@@ -1071,11 +1071,16 @@ void main() {
         final messages = AppLocalizations.of(
           tester.element(find.byType(TaskDetailsPage)),
         )!;
-        // The modal's title dropped the trailing ellipsis: the action label
-        // (linkExistingTask) stays on the trigger button underneath, while
-        // the sheet itself is titled linkExistingTaskTitle.
+        // Match the modal's route heading rather than every visible copy of
+        // the localized text. Some catalogs intentionally use the same copy
+        // for the underlying trigger and the sheet title.
         expect(
-          find.text(messages.linkExistingTaskTitle),
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics &&
+                widget.properties.header == true &&
+                widget.properties.label == messages.linkExistingTaskTitle,
+          ),
           findsOneWidget,
         );
         expect(
