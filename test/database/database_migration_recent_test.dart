@@ -90,7 +90,7 @@ void main() {
         ['ordinary-entry', '{"data":{}}', 'JournalEntry'],
       )
       ..execute('PRAGMA user_version = 44')
-      ..dispose();
+      ..close();
 
     final db = JournalDb(overriddenFilename: 'v45.db');
     addTearDown(db.close);

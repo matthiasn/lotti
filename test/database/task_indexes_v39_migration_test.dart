@@ -121,7 +121,7 @@ void main() {
         final sqlite = sqlite3.open(dbFile.path);
         createV38Schema(sqlite);
         sqlite.execute('PRAGMA user_version = 38');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v39_due_open.db');
         addTearDown(db.close);
@@ -158,7 +158,7 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
       createV38Schema(sqlite);
       sqlite.execute('PRAGMA user_version = 38');
-      sqlite.dispose();
+      sqlite.close();
 
       final db = JournalDb(overriddenFilename: 'test_v39_status_private.db');
       addTearDown(db.close);
@@ -192,7 +192,7 @@ void main() {
           "AND task_status NOT IN ('DONE', 'REJECTED')",
         );
         sqlite.execute('PRAGMA user_version = 38');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v39_rerun.db');
         addTearDown(db.close);
@@ -215,7 +215,7 @@ void main() {
         final sqlite = sqlite3.open(dbFile.path);
         createV38Schema(sqlite);
         sqlite.execute('PRAGMA user_version = 38');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v39_count_plan.db');
         addTearDown(db.close);
@@ -247,7 +247,7 @@ void main() {
         final sqlite = sqlite3.open(dbFile.path);
         createV38Schema(sqlite);
         sqlite.execute('PRAGMA user_version = 38');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v39_due_plan.db');
         addTearDown(db.close);
@@ -282,7 +282,7 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
       createV38Schema(sqlite);
       sqlite.execute('PRAGMA user_version = 43');
-      sqlite.dispose();
+      sqlite.close();
 
       final db = JournalDb(
         overriddenFilename: 'test_v44_task_priority_date.db',
@@ -318,7 +318,7 @@ void main() {
         final sqlite = sqlite3.open(dbFile.path);
         createV38Schema(sqlite);
         sqlite.execute('PRAGMA user_version = 38');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(
           overriddenFilename: 'test_v44_task_priority_plan.db',
@@ -407,7 +407,7 @@ void main() {
         final sqlite = sqlite3.open(dbFile.path);
         createV38Schema(sqlite);
         sqlite.execute('PRAGMA user_version = 39');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v39_fallback.db');
         addTearDown(db.close);

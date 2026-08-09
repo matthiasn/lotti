@@ -167,7 +167,7 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
       createV40Schema(sqlite);
       sqlite.execute('PRAGMA user_version = 40');
-      sqlite.dispose();
+      sqlite.close();
 
       final db = JournalDb(overriddenFilename: 'test_v41_column.db');
       addTearDown(db.close);
@@ -239,7 +239,7 @@ void main() {
         );
 
         sqlite.execute('PRAGMA user_version = 40');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v41_backfill.db');
         addTearDown(db.close);
@@ -275,7 +275,7 @@ void main() {
         final sqlite = sqlite3.open(dbFile.path);
         createV40Schema(sqlite);
         sqlite.execute('PRAGMA user_version = 40');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v41_index.db');
         addTearDown(db.close);
@@ -296,7 +296,7 @@ void main() {
       final sqlite = sqlite3.open(dbFile.path);
       createV40Schema(sqlite);
       sqlite.execute('PRAGMA user_version = 40');
-      sqlite.dispose();
+      sqlite.close();
 
       final db = JournalDb(overriddenFilename: 'test_v41_drop.db');
       addTearDown(db.close);
@@ -315,7 +315,7 @@ void main() {
         final sqlite = sqlite3.open(dbFile.path);
         createV40Schema(sqlite);
         sqlite.execute('PRAGMA user_version = 40');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v41_plan.db');
         addTearDown(db.close);
@@ -356,7 +356,7 @@ void main() {
         due: DateTime.utc(2026, 5),
       );
       sqlite.execute('PRAGMA user_version = 40');
-      sqlite.dispose();
+      sqlite.close();
 
       // First open runs the migration.
       var db = JournalDb(overriddenFilename: 'test_v41_idempotent.db');

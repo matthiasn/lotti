@@ -83,7 +83,7 @@ void main() {
         sqlite.execute('PRAGMA user_version = 1');
 
         // Close raw connection
-        sqlite.dispose();
+        sqlite.close();
 
         // Open with SyncDatabase to trigger migration
         final db = SyncDatabase(overriddenFilename: 'test_sync_v2.db');
@@ -234,7 +234,7 @@ void main() {
 
       _createOutboxV1(sqlite);
       sqlite.execute('PRAGMA user_version = 1');
-      sqlite.dispose();
+      sqlite.close();
 
       // Open with SyncDatabase to trigger migration
       final db = SyncDatabase(overriddenFilename: 'test_usage.db');
@@ -295,7 +295,7 @@ void main() {
         ''');
 
         sqlite.execute('PRAGMA user_version = 2');
-        sqlite.dispose();
+        sqlite.close();
 
         // Open with SyncDatabase to trigger the v2→v3→…→v24 migration.
         final db = SyncDatabase(overriddenFilename: 'test_sync_v3.db');
@@ -369,7 +369,7 @@ void main() {
       ''');
 
       sqlite.execute('PRAGMA user_version = 4');
-      sqlite.dispose();
+      sqlite.close();
 
       // Open with SyncDatabase to trigger v4→v5 migration
       final db = SyncDatabase(overriddenFilename: 'test_sync_v5.db');
@@ -416,7 +416,7 @@ void main() {
       ''');
 
       sqlite.execute('PRAGMA user_version = 5');
-      sqlite.dispose();
+      sqlite.close();
 
       // Open with SyncDatabase to trigger v5→v6 migration
       final db = SyncDatabase(overriddenFilename: 'test_sync_v6.db');
@@ -465,7 +465,7 @@ void main() {
       _createSyncSequenceLogV3(sqlite, withJsonPath: true);
       _createHostActivity(sqlite);
       sqlite.execute('PRAGMA user_version = 7');
-      sqlite.dispose();
+      sqlite.close();
 
       final db = SyncDatabase(overriddenFilename: 'test_sync_v8.db');
 
@@ -505,7 +505,7 @@ void main() {
         _createSyncSequenceLogV3(sqlite);
         _createHostActivity(sqlite);
         sqlite.execute('PRAGMA user_version = 3');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = SyncDatabase(overriddenFilename: 'test_sync_v4.db');
 
@@ -569,7 +569,7 @@ void main() {
             ('host-1', 4, NULL, $agentEntity, 1, 1704067200, 1704067200)
         ''');
         sqlite.execute('PRAGMA user_version = 6');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = SyncDatabase(overriddenFilename: 'test_sync_v7.db');
 
@@ -614,7 +614,7 @@ void main() {
         _createSyncSequenceLogV3(sqlite, withJsonPath: true);
         _createHostActivity(sqlite);
         sqlite.execute('PRAGMA user_version = 11');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = SyncDatabase(overriddenFilename: 'test_sync_v12.db');
 
@@ -672,7 +672,7 @@ void main() {
         _createInboundEventQueueV13(sqlite);
         _createQueueMarkers(sqlite);
         sqlite.execute('PRAGMA user_version = 14');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = SyncDatabase(overriddenFilename: 'test_sync_v15_20.db');
 
@@ -763,7 +763,7 @@ void main() {
           'ON outbox (status, priority, created_at)',
         );
         sqlite.execute('PRAGMA user_version = 9');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = SyncDatabase(overriddenFilename: 'test_sync_v10.db');
 
@@ -841,7 +841,7 @@ void main() {
           'WHERE entry_id IS NOT NULL',
         );
         sqlite.execute('PRAGMA user_version = 10');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = SyncDatabase(overriddenFilename: 'test_sync_v11.db');
 
@@ -917,7 +917,7 @@ void main() {
         ''');
 
         sqlite.execute('PRAGMA user_version = 12');
-        sqlite.dispose();
+        sqlite.close();
 
         // Open with SyncDatabase to trigger the v12→v13→…→v24 migration.
         final db = SyncDatabase(overriddenFilename: 'test_sync_v13.db');
@@ -1000,7 +1000,7 @@ void main() {
         _createInboundEventQueueV13(sqlite);
         _createQueueMarkers(sqlite);
         sqlite.execute('PRAGMA user_version = 13');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = SyncDatabase(overriddenFilename: 'test_sync_v14.db');
 
@@ -1061,7 +1061,7 @@ void main() {
         );
         _createSyncSequenceLogV3(sqlite, withJsonPath: true);
         sqlite.execute('PRAGMA user_version = 20');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = SyncDatabase(overriddenFilename: 'test_sync_v21.db');
 
@@ -1152,7 +1152,7 @@ void main() {
         );
         _createSyncSequenceLogV3(sqlite, withJsonPath: true);
         sqlite.execute('PRAGMA user_version = 21');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = SyncDatabase(
           overriddenFilename: 'test_sync_v23_from_v21.db',
@@ -1221,7 +1221,7 @@ void main() {
             'WHERE status = 3',
           )
           ..execute('PRAGMA user_version = 21')
-          ..dispose();
+          ..close();
 
         final db = SyncDatabase(overriddenFilename: 'test_sync_v22_reindex.db');
 
@@ -1260,7 +1260,7 @@ void main() {
         _createSyncSequenceLogV3(sqlite, withJsonPath: true);
         sqlite
           ..execute('PRAGMA user_version = 22')
-          ..dispose();
+          ..close();
 
         final db = SyncDatabase(
           overriddenFilename: 'test_sync_v23_watermark.db',
@@ -1313,7 +1313,7 @@ void main() {
             )
           ''')
           ..execute('PRAGMA user_version = 23')
-          ..dispose();
+          ..close();
 
         final db = SyncDatabase(overriddenFilename: 'test_sync_v24_burned.db');
 
@@ -1373,7 +1373,7 @@ void main() {
             'WHERE status IN (0, 3)',
           )
           ..execute('PRAGMA user_version = 24')
-          ..dispose();
+          ..close();
 
         final db = SyncDatabase(
           overriddenFilename: 'test_sync_v25_outbox_id.db',
@@ -1412,7 +1412,7 @@ void main() {
         _createSyncSequenceLogV3(sqlite, withJsonPath: true);
         sqlite
           ..execute('PRAGMA user_version = 25')
-          ..dispose();
+          ..close();
 
         final db = SyncDatabase(
           overriddenFilename: 'test_sync_v26_outbox_sent.db',
@@ -1452,7 +1452,7 @@ void main() {
         _createSyncSequenceLogV3(sqlite, withJsonPath: true);
         sqlite
           ..execute('PRAGMA user_version = 26')
-          ..dispose();
+          ..close();
 
         final db = SyncDatabase(
           overriddenFilename: 'test_sync_v27_outbox_subject.db',
@@ -1503,7 +1503,7 @@ void main() {
             ) VALUES ('!room:example.org', '$anchor', 5000, 7)
           ''')
           ..execute('PRAGMA user_version = 27')
-          ..dispose();
+          ..close();
 
         final db = SyncDatabase(
           overriddenFilename: 'test_sync_v28_resume_floor.db',
@@ -1552,7 +1552,7 @@ void main() {
         );
         sqlite3.open(dbFile.path)
           ..execute('PRAGMA user_version = 28')
-          ..dispose();
+          ..close();
 
         final db = SyncDatabase(
           overriddenFilename: 'test_sync_v29_onboarding.db',

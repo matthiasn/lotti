@@ -88,7 +88,7 @@ void main() {
 
       // Set user_version to 29 to trigger v30 migration
       sqlite.execute('PRAGMA user_version = 29');
-      sqlite.dispose();
+      sqlite.close();
 
       // Open with Drift to run migration
       final db = JournalDb(overriddenFilename: 'test_v30_linked_idx.db');

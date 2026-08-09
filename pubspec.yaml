@@ -64,7 +64,7 @@ dependencies:
   flutter_riverpod: ^3.1.0
   flutter_secure_storage: ^10.0.0
   flutter_svg: ^2.2.4
-  flutter_vodozemac: ^0.6.0
+  flutter_vodozemac: ^0.7.1
   form_builder_validators: ^11.0.0
   formz: ^0.8.0
   freezed_annotation: ^3.1.0
@@ -84,7 +84,7 @@ dependencies:
   just_waveform: ^0.0.7
   latlong2: ^0.10.1
   location: ^9.0.0
-  matrix: ^8.1.0
+  matrix: ^10.0.0
   media_kit: ^1.0.2
   media_kit_libs_audio: ^1.0.7
   meta: ^1.12.0
@@ -110,7 +110,7 @@ dependencies:
   share_plus: ^12.0.0
   shared_preferences: ^2.3.2
   sqflite_common_ffi: ^2.3.3
-  sqlite3: ^2.4.5
+  sqlite3: ^3.5.1
   sqlite3_flutter_libs: ^0.5.42
   super_clipboard: ^0.9.1
   super_drag_and_drop: ^0.9.1

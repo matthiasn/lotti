@@ -63,7 +63,7 @@ void main() {
       _createV33DefinitionSchema(sqlite);
 
       sqlite.execute('PRAGMA user_version = 33');
-      sqlite.dispose();
+      sqlite.close();
 
       final db = JournalDb(
         overriddenFilename: 'test_v34_definition_idx.db',
@@ -139,7 +139,7 @@ void main() {
         )
       ''');
         sqlite.execute('PRAGMA user_version = 33');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(
           overriddenFilename: 'test_v34_definition_idx_existing.db',

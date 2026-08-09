@@ -64,7 +64,7 @@ void main() {
         )
       ''')
       ..execute('PRAGMA user_version = 1')
-      ..dispose();
+      ..close();
 
     final migrated = ConsumptionDatabase(
       background: false,

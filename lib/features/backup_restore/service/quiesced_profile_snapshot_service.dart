@@ -585,7 +585,7 @@ class QuiescedProfileSnapshotService {
         cause: error,
       );
     } finally {
-      database?.dispose();
+      database?.close();
     }
   }
 
