@@ -9,7 +9,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// One goal ad, rendered as the procedural text banner ADR 0058
 /// specifies: model-authored copy, code-owned presentation. Dismissing is
-/// the terminal user verdict (starts the 24h quiet window); tapping
+/// the terminal user verdict (quiets ads for the rest of the day);
+/// tapping
 /// opens the per-activation rating prompt when one is due.
 class GoalBannerCard extends ConsumerWidget {
   const GoalBannerCard({required this.entry, super.key});

@@ -146,7 +146,7 @@ flowchart TD
   the period.
 - **Ad contracts are enforced at persistence, not just in the prompt.**
   `persistOutputs` re-reads the nudge rows (a dismissal during inference
-  must count), and suppresses creates/re-runs during the 24h dismissal
+  must count), and suppresses creates/re-runs during the same-day dismissal
   cooldown, while a fresh active ad exists (ads retired in the same wake
   don't count — the P14 swap stays legal), and for duplicate brief
   digests. Report prose passes `sanitizeAgentReportText`.
@@ -184,7 +184,7 @@ flowchart TD
   `interactive.enabled`, `decorative`, with `SurfaceAlphas.tint` fills).
   Mounted on the Daily OS day page nudge stack and the habits tab; both
   mounts shrink to nothing without an active ad. Dismissal is terminal
-  and starts the 24h quiet window; tapping opens the per-activation
+  and quiets ads for the rest of the local day; tapping opens the per-activation
   rating prompt (one outcome per activation, skips count); exposure is
   measured mount-to-unmount and flushed as one episode into the per-host
   G-counters.

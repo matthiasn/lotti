@@ -28,7 +28,7 @@ class GoalNudgeInteractions {
 
   /// Dismisses an active ad — the terminal user verdict (the resolver
   /// keeps it terminal against concurrent writes) and the start of the
-  /// 24h quiet window Phase B enforces.
+  /// same-day quiet window Phase B enforces.
   Future<void> dismiss(String nudgeId) async {
     final nudge = await _repository.getEntity(nudgeId);
     if (nudge is! GoalNudgeEntity) return;
