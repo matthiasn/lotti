@@ -20,6 +20,7 @@ import 'package:lotti/features/ai_consumption/service/ai_interaction_capture.dar
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
+import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
@@ -72,6 +73,24 @@ GoalAgentWorkflow _offTrackWorkflow(
   cloudInferenceRepository: cloudInferenceRepository,
   aiConfigRepository: aiConfigRepository,
 );
+
+Future<GoalWakeDerivation> _offTrackDerivation(
+  MockAgentRepository repository,
+  GoalSpecVersionEntity version,
+  DateTime now,
+) => GoalAgentPhaseA(
+  repository: repository,
+  syncService: MockAgentSyncService(),
+  signalReader: _FakeReader(
+    GoalSignalWindow(
+      quantitativeDailySums: {
+        'cumulative_step_count': {
+          for (var day = 3; day <= 9; day++) DateTime.utc(2026, 8, day): 6000,
+        },
+      },
+    ),
+  ),
+).deriveWakeFacts(agentId: version.agentId, version: version, now: now);
 
 void _stubBadPrior(
   MockAgentRepository repository,
@@ -292,6 +311,14 @@ void main() {
       'usage — all attributed to glm-5.2', () async {
     stubSpec();
     stubGlmResolution();
+    workflow = _offTrackWorkflow(
+      repository,
+      syncService,
+      conversationRepository,
+      cloudInferenceRepository,
+      aiConfigRepository,
+    );
+    _stubBadPrior(repository, agentId, now);
     conversationRepository.sendMessageDelegate =
         ({
           required conversationId,
@@ -312,13 +339,13 @@ void main() {
           await (strategy! as GoalAgentStrategy).processToolCalls(
             toolCalls: [
               toolCall(GoalAgentToolNames.updateGoalReport, {
-                'status': 'insufficientData',
-                'oneLiner': 'No step data this window.',
-                'tldr': 'The tracker went quiet; nothing to judge yet.',
+                'status': 'offTrack',
+                'oneLiner': 'Averaging 6k of 10k steps.',
+                'tldr': 'The rolling week slid well under target.',
               }, id: 'call-a'),
               toolCall(GoalAgentToolNames.createGoalAd, {
                 'headline': 'Your pedometer misses you.',
-                'tone': 'encourage',
+                'tone': 'nudge',
                 'animation': 'steady',
                 'accent': 'tide',
               }, id: 'call-b'),
@@ -341,8 +368,8 @@ void main() {
     expect(userMessages, hasLength(1), reason: 'the FACTS blob is inspectable');
 
     final report = upserts.whereType<AgentReportEntity>().single;
-    expect(report.tldr, 'The tracker went quiet; nothing to judge yet.');
-    expect(report.provenance['trackStatus'], 'insufficientData');
+    expect(report.tldr, 'The rolling week slid well under target.');
+    expect(report.provenance['trackStatus'], 'offTrack');
     final head = upserts.whereType<AgentReportHeadEntity>().single;
     expect(head.reportId, report.id);
 
@@ -477,6 +504,7 @@ void main() {
     );
 
     stubSpec();
+    _stubBadPrior(repository, agentId, now);
     await withClock(
       fixedClock,
       () async {
@@ -488,11 +516,7 @@ void main() {
           runKey: 'run-1',
           threadId: 'thread-1',
           strategy: strategy,
-          derivation: await GoalAgentPhaseA(
-            repository: repository,
-            syncService: MockAgentSyncService(),
-            signalReader: _FakeReader(),
-          ).deriveWakeFacts(agentId: agentId, version: version!, now: now),
+          derivation: await _offTrackDerivation(repository, version!, now),
           now: now,
         );
       },
@@ -524,6 +548,7 @@ void main() {
       'observation payload resolution, thought + observation persistence, '
       'and retry-usage merging', () async {
     stubSpec();
+    _stubBadPrior(repository, agentId, now);
     final profileIdentity = makeTestIdentity(
       id: agentId,
       agentId: agentId,
@@ -627,6 +652,13 @@ void main() {
         content: 'Re-running the proven banner.',
       ),
     ]);
+    workflow = _offTrackWorkflow(
+      repository,
+      syncService,
+      conversationRepository,
+      cloudInferenceRepository,
+      aiConfigRepository,
+    );
 
     conversationRepository.maxDelegateCalls = 2;
     var calls = 0;
@@ -660,13 +692,13 @@ void main() {
             );
             return const InferenceUsage(inputTokens: 800, outputTokens: 90);
           }
-          // Forced retry (first evaluation transitions): publish the report.
+          // Forced retry (the transition wake missed its report).
           await (strategy! as GoalAgentStrategy).processToolCalls(
             toolCalls: [
               toolCall(GoalAgentToolNames.updateGoalReport, {
-                'status': 'insufficientData',
-                'oneLiner': 'No data.',
-                'tldr': 'Quiet tracker.',
+                'status': 'offTrack',
+                'oneLiner': 'Behind.',
+                'tldr': 'The week slid under target.',
               }),
             ],
             manager: conversationManager,
@@ -946,6 +978,32 @@ void main() {
     () async {
       stubSpec();
       stubGlmResolution();
+      workflow = _offTrackWorkflow(
+        repository,
+        syncService,
+        conversationRepository,
+        cloudInferenceRepository,
+        aiConfigRepository,
+      );
+      // Prior bad day under the SAME (old) spec version → grace exhausted
+      // → offTrack, so the ad is policy-eligible.
+      when(
+        () => repository.getEntity(goalProgressId(agentId, '2026-08-05')),
+      ).thenAnswer(
+        (_) async => AgentDomainEntity.goalProgress(
+          id: goalProgressId(agentId, '2026-08-05'),
+          agentId: agentId,
+          periodKey: '2026-08-05',
+          trackStatus: GoalTrackStatus.atRisk,
+          attainment: 0.6,
+          dataCoverage: 1,
+          satisfied: false,
+          specVersionId: '$agentId:spec-v0',
+          createdAt: DateTime(2026, 8, 5),
+          updatedAt: DateTime(2026, 8, 5),
+          vectorClock: null,
+        ),
+      );
       // The old period's register was computed under a superseded spec —
       // the wake must be judged against THAT version, not today's head.
       when(
@@ -1002,13 +1060,13 @@ void main() {
             await (strategy! as GoalAgentStrategy).processToolCalls(
               toolCalls: [
                 toolCall(GoalAgentToolNames.updateGoalReport, {
-                  'status': 'insufficientData',
-                  'oneLiner': 'No data.',
-                  'tldr': 'Quiet tracker.',
+                  'status': 'offTrack',
+                  'oneLiner': 'Behind on the old spec.',
+                  'tldr': 'That week slid under target.',
                 }, id: 'call-a'),
                 toolCall(GoalAgentToolNames.createGoalAd, {
                   'headline': 'Late but not forgotten.',
-                  'tone': 'encourage',
+                  'tone': 'nudge',
                   'animation': 'steady',
                 }, id: 'call-b'),
               ],
@@ -1083,14 +1141,15 @@ void main() {
     }
 
     stubSpec();
+    _stubBadPrior(repository, agentId, now);
     final version =
         await repository.getEntity('$agentId:spec-v1')
             as GoalSpecVersionEntity?;
-    final derivation = await GoalAgentPhaseA(
-      repository: repository,
-      syncService: MockAgentSyncService(),
-      signalReader: _FakeReader(),
-    ).deriveWakeFacts(agentId: agentId, version: version!, now: now);
+    final derivation = await _offTrackDerivation(
+      repository,
+      version!,
+      now,
+    );
 
     // Cooldown: the model ignored dismissalCooldownActive — persistence
     // must still hold the 24h quiet contract, for creates AND reruns.
@@ -1546,14 +1605,11 @@ void main() {
     ).thenAnswer((_) async => [activeRow('ad-live')]);
 
     stubSpec();
+    _stubBadPrior(repository, agentId, now);
     final version =
         await repository.getEntity('$agentId:spec-v1')
             as GoalSpecVersionEntity?;
-    final derivation = await GoalAgentPhaseA(
-      repository: repository,
-      syncService: MockAgentSyncService(),
-      signalReader: _FakeReader(),
-    ).deriveWakeFacts(agentId: agentId, version: version!, now: now);
+    final derivation = await _offTrackDerivation(repository, version!, now);
 
     Future<GoalAgentStrategy> strategyWith(
       List<ChatCompletionMessageToolCall> calls,
@@ -1683,6 +1739,13 @@ void main() {
           strategy,
         }) async {
           callTools.add([for (final t in tools!) t.function.name]);
+          if (callTools.length == 2) {
+            expect(
+              message,
+              contains('The goal is offTrack'),
+              reason: 'the forced-ad prompt names the ACTUAL status',
+            );
+          }
           if (callTools.length == 1) {
             // The model reports but "forgets" the required ad.
             await (strategy! as GoalAgentStrategy).processToolCalls(
@@ -1865,5 +1928,296 @@ void main() {
     final result = await run();
     expect(result.success, isFalse);
     expect(result.error, contains('provider melted'));
+  });
+
+  test('persistOutputs: an ineligible status suppresses ads, an atRisk '
+      'worsening trend permits them, and banner copy is sanitized', () async {
+    stubSpec();
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => []);
+
+    Future<GoalAgentStrategy> creatingWithTagline(
+      String headline, [
+      String? tagline,
+    ]) async {
+      final strategy = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: agentId,
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        knownAdIds: const {},
+      );
+      await strategy.processToolCalls(
+        toolCalls: [
+          toolCall(GoalAgentToolNames.createGoalAd, {
+            'headline': headline,
+            'tagline': ?tagline,
+            'tone': 'nudge',
+            'animation': 'pulse',
+          }),
+        ],
+        manager: conversationManager,
+      );
+      return strategy;
+    }
+
+    Future<GoalAgentStrategy> creating(String headline) =>
+        creatingWithTagline(headline);
+
+    // insufficientData (default fake reader): the model's ad is refused —
+    // and a rerun of a retired library ad is refused the same way.
+    final retiredLibraryAd =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-lib',
+              agentId: agentId,
+              status: GoalNudgeStatus.retired,
+              brief: const GoalNudgeBrief(
+                headline: 'old',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-lib',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [retiredLibraryAd]);
+    final rerunning = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: agentId,
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-lib'},
+    );
+    await rerunning.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.rerunGoalAd, {
+          'adId': 'ad-lib',
+          'reason': 'bring it back',
+        }),
+      ],
+      manager: conversationManager,
+    );
+    await withClock(
+      fixedClock,
+      () async => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: rerunning,
+        derivation: await GoalAgentPhaseA(
+          repository: repository,
+          syncService: MockAgentSyncService(),
+          signalReader: _FakeReader(),
+        ).deriveWakeFacts(agentId: agentId, version: version!, now: now),
+        now: now,
+      ),
+    );
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => []);
+
+    // insufficientData (default fake reader): the model's ad is refused.
+    await withClock(
+      fixedClock,
+      () async => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: await creating('No data, but here is a banner anyway.'),
+        derivation: await GoalAgentPhaseA(
+          repository: repository,
+          syncService: MockAgentSyncService(),
+          signalReader: _FakeReader(),
+        ).deriveWakeFacts(agentId: agentId, version: version!, now: now),
+        now: now,
+      ),
+    );
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+
+    // atRisk with a strictly worsening trend (good prior days, bad today):
+    // eligible — and the persisted copy is sanitized.
+    for (final (period, attainment) in [
+      ('2026-08-08', 0.85),
+      ('2026-08-07', 0.9),
+    ]) {
+      when(
+        () => repository.getEntity(goalProgressId(agentId, period)),
+      ).thenAnswer(
+        (_) async => AgentDomainEntity.goalProgress(
+          id: goalProgressId(agentId, period),
+          agentId: agentId,
+          periodKey: period,
+          trackStatus: GoalTrackStatus.onTrack,
+          attainment: attainment,
+          dataCoverage: 1,
+          satisfied: true,
+          specVersionId: '$agentId:spec-v1',
+          createdAt: now,
+          updatedAt: now,
+          vectorClock: null,
+        ),
+      );
+    }
+    final atRisk = await _offTrackDerivation(repository, version!, now);
+    expect(atRisk.facts.trackStatus, GoalTrackStatus.atRisk);
+    await withClock(
+      fixedClock,
+      () async => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: await creatingWithTagline(
+          'Lace up (id: 123e4567-e89b-12d3-a456-426614174000)',
+          'Six quiet days (123e4567-e89b-12d3-a456-426614174000)',
+        ),
+        derivation: atRisk,
+        now: now,
+      ),
+    );
+    final nudge = upserts.whereType<GoalNudgeEntity>().single;
+    expect(nudge.brief.headline, 'Lace up');
+    expect(nudge.brief.tagline, 'Six quiet days');
+    expect(nudge.briefDigest, goalBriefDigest(nudge.brief));
+  });
+
+  test('an unresolvable provider re-arms the escalation — configuring it '
+      'later must retry the period', () async {
+    stubSpec();
+    when(
+      () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => []);
+    final result = await run();
+    expect(result.success, isFalse);
+    final rearmed = upserts.whereType<ScheduledWakeEntity>().singleWhere(
+      (w) => isGoalEscalationWorkspace(w.workspaceKey),
+    );
+    expect(rearmed.status, ScheduledWakeStatus.pending);
+  });
+
+  test('a bookkeeping failure after committed outputs neither fails the '
+      'wake nor re-arms the escalation', () async {
+    stubSpec();
+    stubGlmResolution();
+    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
+      final entity = invocation.positionalArguments.first as AgentDomainEntity;
+      if (entity is WakeTokenUsageEntity) throw StateError('outbox rejected');
+      upserts.add(entity);
+    });
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          await (strategy! as GoalAgentStrategy).processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.updateGoalReport, {
+                'status': 'insufficientData',
+                'oneLiner': 'No data.',
+                'tldr': 'Quiet tracker.',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          return const InferenceUsage(inputTokens: 100, outputTokens: 10);
+        };
+    final result = await run();
+    expect(
+      result.success,
+      isTrue,
+      reason:
+          'outputs committed — bookkeeping '
+          'must not fail the wake',
+    );
+    expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
+    expect(
+      upserts.whereType<ScheduledWakeEntity>().where(
+        (w) => isGoalEscalationWorkspace(w.workspaceKey),
+      ),
+      isEmpty,
+      reason: 'no re-arm: the wake must not be re-billed',
+    );
+  });
+
+  test('an overdue period stamps the head with the PERIOD end, so '
+      'cross-device LWW orders concurrent heads by period', () async {
+    final strategy = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: agentId,
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+    );
+    await strategy.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.updateGoalReport, {
+          'status': 'insufficientData',
+          'oneLiner': 'Old period.',
+          'tldr': 'Overdue evaluation.',
+        }),
+      ],
+      manager: conversationManager,
+    );
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => []);
+    stubSpec();
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    final oldDerivation =
+        await GoalAgentPhaseA(
+          repository: repository,
+          syncService: MockAgentSyncService(),
+          signalReader: _FakeReader(),
+        ).deriveWakeFacts(
+          agentId: agentId,
+          version: version!,
+          now: DateTime(2026, 8, 6, 23),
+        );
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: strategy,
+        derivation: oldDerivation,
+        now: now,
+      ),
+    );
+    final head = upserts.whereType<AgentReportHeadEntity>().single;
+    expect(
+      head.updatedAt,
+      DateTime.utc(2026, 8, 6, 23, 59, 59),
+      reason: 'UTC, so period order is timezone-independent across devices',
+    );
   });
 }
