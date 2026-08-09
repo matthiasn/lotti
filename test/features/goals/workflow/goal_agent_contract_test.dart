@@ -23,7 +23,7 @@ void main() {
       ],
     );
     for (final tool in goalAgentTools) {
-      expect(tool.name, matches(RegExp('^[a-z]+_goal_[a-z_]+')));
+      expect(tool.name, matches(RegExp(r'^[a-z]+_goal_[a-z_]+$')));
     }
   });
 

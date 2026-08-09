@@ -130,7 +130,25 @@ flowchart TD
   `deriveWakeFacts` Phase A used to arm the escalation and renders every
   number into the FACTS block; the prompt forbids the model to recompute.
   A wake with zero tool calls is legal (the no-op policy row) — the
-  strategy never nags for output.
+  strategy never nags for output. Two deterministic exceptions are forced
+  with one pinned retry each: a transition wake missing its report, and
+  policy row P5 (offTrack, no fresh ad, no cooldown) missing its ad.
+- **The escalation carries its own baseline and period.** The wake record
+  encodes the PRE-transition status as a `goal-baseline:<status>` trigger
+  token (Phase A's register write hides it from any re-derivation, and a
+  same-day double transition makes the prior-day row an insufficient
+  reconstruction) and is evaluated at ITS period — a stale escalation
+  resolves the spec version its register row recorded, and an older
+  period never advances the current report head. A failed Phase B wake
+  re-arms its escalation with a later deadline (the resolver's supported
+  reschedule-beats-consume path), so a transient failure cannot orphan
+  the period.
+- **Ad contracts are enforced at persistence, not just in the prompt.**
+  `persistOutputs` re-reads the nudge rows (a dismissal during inference
+  must count), and suppresses creates/re-runs during the 24h dismissal
+  cooldown, while a fresh active ad exists (ads retired in the same wake
+  don't count — the P14 swap stays legal), and for duplicate brief
+  digests. Report prose passes `sanitizeAgentReportText`.
 - **The goal spec never mutates in a wake.** `propose_goal_revision`
   lands as a pending ChangeSet for user approval (PR 4's flow mints the
   version); ad state is validated in-conversation against the ids the

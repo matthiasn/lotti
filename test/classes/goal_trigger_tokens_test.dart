@@ -25,4 +25,19 @@ void main() {
     expect(isGoalEscalationWorkspace(null), isFalse);
     expect(isGoalEscalationWorkspace(goalCadenceWorkspaceKey), isFalse);
   });
+
+  test('the baseline token round-trips the pre-transition status', () {
+    expect(goalEscalationBaselineToken('offTrack'), 'goal-baseline:offTrack');
+    expect(
+      goalEscalationBaselineFromTriggerTokens({
+        'goal-escalation:2026-08-09',
+        'goal-baseline:offTrack',
+      }),
+      'offTrack',
+    );
+    expect(
+      goalEscalationBaselineFromTriggerTokens({'goal-escalation:2026-08-09'}),
+      isNull,
+    );
+  });
 }

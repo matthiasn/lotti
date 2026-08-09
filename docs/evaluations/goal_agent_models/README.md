@@ -6,13 +6,13 @@
 > the contract the evals validate is the contract the runtime ships. The
 > policy matrix stays here as the scenario source of truth.
 
-
-Inference-level evals for the **goal agent** (ADR 0053–0057) — run *before*
-the production `GoalAgentWorkflow` exists, so the prompt/tool contract is
-model-validated before a line of runtime code depends on it. The draft
-contract lives in
-`test/features/agents/eval/goal/support/goal_agent_spec.dart` and graduates
-to `lib/features/agents/` when the workflow is built.
+Inference-level evals for the **goal agent** (ADR 0053–0057) — originally
+run *before* the production `GoalAgentWorkflow` existed, so the prompt/tool
+contract was model-validated before a line of runtime code depended on it.
+The contract now lives in
+`lib/features/goals/workflow/goal_agent_contract.dart`;
+`test/features/agents/eval/goal/support/goal_agent_spec.dart` re-exports it
+and keeps the policy matrix the scenarios are derived from.
 
 ## What is measured
 

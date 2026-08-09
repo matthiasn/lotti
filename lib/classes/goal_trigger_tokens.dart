@@ -44,3 +44,28 @@ String? goalEscalationPeriodFromTriggerTokens(Set<String> triggerTokens) {
   }
   return null;
 }
+
+/// Prefix of the baseline token an escalation wake carries: the status
+/// that was PERSISTED BEFORE the transition that armed the wake.
+///
+/// Phase A writes the day's register (new status) and the escalation in
+/// one transaction, so Phase B cannot reconstruct the pre-write status
+/// from storage — a same-day second transition would read its own first
+/// write as the baseline and the change would vanish. Encoding it on the
+/// wake record preserves the exact transition that justified the spend.
+const goalEscalationBaselinePrefix = 'goal-baseline';
+
+/// The baseline token for a pre-transition status name.
+String goalEscalationBaselineToken(String statusName) =>
+    '$goalEscalationBaselinePrefix:$statusName';
+
+/// The pre-transition status name encoded in an escalation wake's trigger
+/// tokens, or null when none was recorded (first-ever evaluation).
+String? goalEscalationBaselineFromTriggerTokens(Set<String> triggerTokens) {
+  for (final token in triggerTokens) {
+    if (token.startsWith('$goalEscalationBaselinePrefix:')) {
+      return token.substring(goalEscalationBaselinePrefix.length + 1);
+    }
+  }
+  return null;
+}

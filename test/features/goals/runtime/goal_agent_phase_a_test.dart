@@ -319,8 +319,39 @@ void main() {
     expect(escalation.scheduledAt, DateTime.utc(2026, 8, 8));
     // The wake-runner signature has no workspaceKey, so the router keys
     // Phase B entry on this token (the day agent's digest: precedent).
+    // First-ever evaluation: no baseline token (nothing preceded it).
     expect(escalation.triggerTokens, ['goal-escalation:2026-08-08']);
   });
+
+  test(
+    'a transition escalation encodes the PRE-transition status as a '
+    'baseline token — the register write hides it from re-derivation',
+    () async {
+      stubSpec();
+      when(
+        () => repository.getEntity(goalProgressId(agentId, '2026-08-07')),
+      ).thenAnswer(
+        (_) async => AgentDomainEntity.goalProgress(
+          id: goalProgressId(agentId, '2026-08-07'),
+          agentId: agentId,
+          periodKey: '2026-08-07',
+          trackStatus: GoalTrackStatus.atRisk,
+          attainment: 0.62,
+          dataCoverage: 1,
+          satisfied: false,
+          specVersionId: '$agentId:spec-v1',
+          createdAt: DateTime(2026, 8, 7),
+          updatedAt: DateTime(2026, 8, 7),
+          vectorClock: null,
+        ),
+      );
+      await run(onTrackSignals());
+      final escalation = upserts.whereType<ScheduledWakeEntity>().singleWhere(
+        (w) => isGoalEscalationWorkspace(w.workspaceKey),
+      );
+      expect(escalation.triggerTokens, contains('goal-baseline:atRisk'));
+    },
+  );
 
   test(
     'the register and its escalation land in ONE transaction — a '

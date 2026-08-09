@@ -3,6 +3,7 @@ import 'dart:convert' show utf8;
 import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart' show sha1;
 import 'package:flutter/foundation.dart' show visibleForTesting;
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
@@ -14,6 +15,7 @@ import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
+import 'package:lotti/features/agents/util/text_utils.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
 import 'package:lotti/features/agents/workflow/deferred_change_items.dart';
@@ -97,7 +99,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     if (head is! GoalSpecHeadEntity) {
       return const WakeResult(success: true);
     }
-    final version = await _repository.getEntity(head.versionId);
+    var version = await _repository.getEntity(head.versionId);
     if (version is! GoalSpecVersionEntity) {
       return WakeResult(
         success: false,
@@ -112,6 +114,20 @@ class GoalAgentWorkflow with AgentErrorLogging {
       triggerTokens,
     );
     final reference = _escalationReference(escalationPeriod, now);
+    // A delayed escalation may outlive a spec revision: the period's
+    // register row records the version that actually armed the wake, and
+    // judging the old period against new criteria would publish an
+    // unrelated status. Fall back to the head when that version is gone.
+    if (escalationPeriod != null) {
+      final register = await _repository.getEntity(
+        goalProgressId(agentId, escalationPeriod),
+      );
+      if (register is GoalProgressEntity &&
+          register.specVersionId != version.id) {
+        final armed = await _repository.getEntity(register.specVersionId);
+        if (armed is GoalSpecVersionEntity) version = armed;
+      }
+    }
     final derivation = await _phaseA.deriveWakeFacts(
       agentId: agentId,
       version: version,
@@ -119,14 +135,23 @@ class GoalAgentWorkflow with AgentErrorLogging {
     );
     // Phase A persisted the transition's register row BEFORE arming this
     // wake, so re-deriving sees the new status as previousStatus and the
-    // transition vanishes. The escalation's baseline is the last PRIOR
-    // day's status — restore it so the FACTS report the change that
-    // armed Phase B.
+    // transition vanishes. The wake record carries the PRE-transition
+    // status as a baseline token (same-day double transitions make the
+    // prior-day row an insufficient reconstruction); the prior day is the
+    // fallback for wakes armed before the token existed.
+    final baselineName = goalEscalationBaselineFromTriggerTokens(
+      triggerTokens,
+    );
+    final baseline = GoalTrackStatus.values
+        .where((status) => status.name == baselineName)
+        .firstOrNull;
     final facts = GoalWakeFacts(
       trackStatus: derivation.facts.trackStatus,
-      previousStatus: derivation.priors.isEmpty
-          ? null
-          : derivation.priors.first.trackStatus,
+      previousStatus:
+          baseline ??
+          (derivation.priors.isEmpty
+              ? null
+              : derivation.priors.first.trackStatus),
       evaluation: derivation.facts.evaluation,
       shortTermAttainment: derivation.facts.shortTermAttainment,
     );
@@ -241,6 +266,27 @@ class GoalAgentWorkflow with AgentErrorLogging {
         }
       }
 
+      // Policy row P5 is deterministic: offTrack + no fresh active ad +
+      // no cooldown REQUIRES an ad, and no later wake will re-arm this
+      // escalation (the status already persisted). One pinned retry.
+      if (_adRequired(facts, nudges, strategy, now) &&
+          strategy.createdAds.isEmpty &&
+          strategy.rerunRequests.isEmpty) {
+        final retryUsage = await _forceAd(
+          conversationId: conversationId,
+          resolved: resolved,
+          inferenceRepo: inferenceRepo,
+          tools: tools,
+          strategy: strategy,
+          agentId: recordConsumption ? agentId : null,
+          runKey: recordConsumption ? runKey : null,
+          threadId: recordConsumption ? threadId : null,
+        );
+        if (retryUsage != null) {
+          usage = usage == null ? retryUsage : usage.merge(retryUsage);
+        }
+      }
+
       final manager = _conversationRepository.getConversation(conversationId);
       strategy.recordFinalResponse(
         manager?.messages.reversed
@@ -257,7 +303,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
         threadId: threadId,
         strategy: strategy,
         derivation: derivation,
-        nudges: nudges,
         now: now,
       );
       if (!attributionFinalized && recordConsumption) {
@@ -308,7 +353,106 @@ class GoalAgentWorkflow with AgentErrorLogging {
           errorSummary: error.toString(),
         );
       }
+      // The escalation record was consumed before this workflow ran, and
+      // Phase A will not re-arm it (the transitioned status is already
+      // persisted) — a transient failure must not orphan the period.
+      // The re-arm carries a LATER deadline, which is the resolver's
+      // supported reschedule-beats-consume path; outputs are idempotent
+      // (deterministic report head, digest-deduped ads).
+      try {
+        await _syncService.upsertEntity(
+          AgentDomainEntity.scheduledWake(
+            id: scheduledWakeRecordId(
+              agentId,
+              workspaceKey: goalEscalationWorkspaceKey(derivation.periodKey),
+            ),
+            agentId: agentId,
+            scheduledAt: now.toUtc(),
+            status: ScheduledWakeStatus.pending,
+            reason: WakeReason.scheduled.name,
+            updatedAt: now,
+            vectorClock: null,
+            workspaceKey: goalEscalationWorkspaceKey(derivation.periodKey),
+            triggerTokens: [for (final token in triggerTokens) token],
+          ),
+        );
+      } catch (rearmError, rearmStack) {
+        logError(
+          'failed to re-arm escalation after wake failure',
+          error: rearmError,
+          stackTrace: rearmStack,
+        );
+      }
       return WakeResult(success: false, error: error.toString());
+    }
+  }
+
+  /// Policy row P5's deterministic precondition: offTrack, no fresh
+  /// active ad surviving this wake's retires, and no dismissal cooldown.
+  bool _adRequired(
+    GoalWakeFacts facts,
+    List<GoalNudgeEntity> nudges,
+    GoalAgentStrategy strategy,
+    DateTime now,
+  ) {
+    if (facts.trackStatus != GoalTrackStatus.offTrack) return false;
+    if (_factsRenderer.dismissalCooldownActive(nudges, now)) return false;
+    final retired = {for (final action in strategy.retireRequests) action.adId};
+    final freshActive = nudges.any(
+      (n) =>
+          n.status == GoalNudgeStatus.active &&
+          !retired.contains(n.id) &&
+          now.difference(n.activatedAt ?? n.createdAt) < goalAdFreshFor,
+    );
+    return !freshActive;
+  }
+
+  Future<InferenceUsage?> _forceAd({
+    required String conversationId,
+    required ({
+      String modelId,
+      AiConfigInferenceProvider provider,
+      GeminiThinkingMode? geminiThinkingMode,
+    })
+    resolved,
+    required CloudInferenceWrapper inferenceRepo,
+    required List<ChatCompletionTool> tools,
+    required GoalAgentStrategy strategy,
+    required String? agentId,
+    required String? runKey,
+    required String? threadId,
+  }) async {
+    try {
+      return await _conversationRepository.sendMessage(
+        conversationId: conversationId,
+        message:
+            'The goal is offTrack with no active banner and no cooldown — '
+            'an ad is REQUIRED (policy). Call create_goal_ad now (or '
+            'rerun_goal_ad if the FACTS offered a reusable one).',
+        model: resolved.modelId,
+        provider: resolved.provider,
+        inferenceRepo: inferenceRepo,
+        tools: [
+          for (final tool in tools)
+            if (tool.function.name == GoalAgentToolNames.createGoalAd ||
+                tool.function.name == GoalAgentToolNames.rerunGoalAd)
+              tool,
+        ],
+        temperature: 0,
+        strategy: strategy,
+        consumptionAgentId: agentId,
+        consumptionWakeRunKey: runKey,
+        consumptionThreadId: threadId,
+        rethrowInferenceErrors: true,
+      );
+    } catch (error) {
+      _domainLogger?.error(
+        LogDomain.agentWorkflow,
+        error,
+        subDomain: 'goalPhaseB',
+        message: 'forced goal ad retry failed',
+      );
+      return null;
     }
   }
 
@@ -487,9 +631,15 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required String threadId,
     required GoalAgentStrategy strategy,
     required GoalWakeDerivation derivation,
-    required List<GoalNudgeEntity> nudges,
     required DateTime now,
   }) async {
+    // RE-READ, never trust the pre-inference snapshot: the user may have
+    // dismissed an ad while the model was thinking, and that dismissal's
+    // cooldown must bind this wake's ad writes.
+    final nudges = (await _repository.getEntitiesByAgentId(
+      agentId,
+      type: AgentEntityTypes.goalNudge,
+    )).whereType<GoalNudgeEntity>().where((n) => n.deletedAt == null).toList();
     final byId = {for (final nudge in nudges) nudge.id: nudge};
     final reportId = strategy.hasReport ? _uuid.v4() : null;
     final attributionEnvelope = await prepareAgentReportAttribution(
@@ -526,7 +676,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
         );
       }
 
-      // Standing report + head (scope `current`).
+      // Standing report + head (scope `current`). Sanitized: weaker
+      // models echo the FACTS' internal ids into prose (the shared
+      // report-writer behavior).
       if (reportId != null) {
         await _syncService.upsertEntity(
           AgentDomainEntity.agentReport(
@@ -535,31 +687,47 @@ class GoalAgentWorkflow with AgentErrorLogging {
             scope: AgentReportScopes.current,
             createdAt: now,
             vectorClock: null,
-            content: strategy.reportContent ?? strategy.reportTldr!,
-            tldr: strategy.reportTldr,
-            oneLiner: strategy.reportOneLiner,
+            content: sanitizeAgentReportText(
+              strategy.reportContent ?? strategy.reportTldr!,
+            ),
+            tldr: sanitizeAgentReportText(strategy.reportTldr!),
+            oneLiner: sanitizeAgentReportText(strategy.reportOneLiner!),
             provenance: <String, Object?>{
               'trackStatus': strategy.reportStatus!.name,
+              'periodKey': derivation.periodKey,
               if (attributionEnvelope != null)
                 aiAttributionProvenanceKey: attributionEnvelope.toJson(),
             },
             threadId: threadId,
           ),
         );
+        // Out-of-order overdue escalations must not let an OLDER period
+        // replace the current standing report: the head only advances
+        // when this wake's period is not older than the published one.
         final existingHead = await _repository.getReportHead(
           agentId,
           AgentReportScopes.current,
         );
-        await _syncService.upsertEntity(
-          AgentDomainEntity.agentReportHead(
-            id: existingHead?.id ?? _uuid.v4(),
-            agentId: agentId,
-            scope: AgentReportScopes.current,
-            reportId: reportId,
-            updatedAt: now,
-            vectorClock: null,
-          ),
+        final published = await _repository.getLatestReport(
+          agentId,
+          AgentReportScopes.current,
         );
+        final publishedPeriod = published?.provenance['periodKey'];
+        final headMayAdvance =
+            publishedPeriod is! String ||
+            derivation.periodKey.compareTo(publishedPeriod) >= 0;
+        if (headMayAdvance) {
+          await _syncService.upsertEntity(
+            AgentDomainEntity.agentReportHead(
+              id: existingHead?.id ?? _uuid.v4(),
+              agentId: agentId,
+              scope: AgentReportScopes.current,
+              reportId: reportId,
+              updatedAt: now,
+              vectorClock: null,
+            ),
+          );
+        }
       }
 
       // Retire before create: a wake that swaps ads must never leave two
@@ -586,15 +754,31 @@ class GoalAgentWorkflow with AgentErrorLogging {
         nudges,
         now,
       );
+      // P6: a fresh active ad blocks a second one. Ads retired in THIS
+      // wake don't count — the retire+create swap (P14) stays legal.
+      final retiredNow = {
+        for (final action in strategy.retireRequests) action.adId,
+      };
+      var freshActiveExists = nudges.any(
+        (n) =>
+            n.status == GoalNudgeStatus.active &&
+            !retiredNow.contains(n.id) &&
+            now.difference(n.activatedAt ?? n.createdAt) < goalAdFreshFor,
+      );
       for (final action in strategy.rerunRequests) {
         if (cooldownActive) {
           logError('rerun suppressed: dismissal cooldown active');
+          continue;
+        }
+        if (freshActiveExists) {
+          logError('rerun suppressed: a fresh active ad already exists');
           continue;
         }
         final nudge = byId[action.adId];
         if (nudge == null || nudge.status != GoalNudgeStatus.retired) {
           continue;
         }
+        freshActiveExists = true;
         await _syncService.upsertEntity(
           nudge.copyWith(
             status: GoalNudgeStatus.active,
@@ -619,11 +803,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
           logError('ad creation suppressed: dismissal cooldown active');
           continue;
         }
+        if (freshActiveExists) {
+          logError('ad creation suppressed: a fresh active ad exists');
+          continue;
+        }
         final digest = goalBriefDigest(request.brief);
         if (!seenDigests.add(digest)) {
           logError('ad creation skipped: duplicate brief digest');
           continue;
         }
+        freshActiveExists = true;
         await _syncService.upsertEntity(
           AgentDomainEntity.goalNudge(
             id: _uuid.v4(),

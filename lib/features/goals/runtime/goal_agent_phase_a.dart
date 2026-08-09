@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
@@ -109,7 +110,7 @@ class GoalAgentPhaseA {
         existing: existingToday,
       );
       if (facts.needsEscalation) {
-        await _armEscalation(agentId, now, periodKey);
+        await _armEscalation(agentId, now, periodKey, facts.previousStatus);
       }
     });
     if (facts.needsEscalation) {
@@ -190,7 +191,10 @@ class GoalAgentPhaseA {
     String agentId,
     DateTime now,
     String periodKey,
-  ) => _syncService.upsertEntity(goalEscalationWake(agentId, now, periodKey));
+    GoalTrackStatus? previousStatus,
+  ) => _syncService.upsertEntity(
+    goalEscalationWake(agentId, now, periodKey, baseline: previousStatus),
+  );
 
   /// Most-recent-first register rows for the trailing
   /// [goalPriorLookbackDays] days before the evaluation day.
@@ -303,8 +307,9 @@ AgentDomainEntity goalCadenceWake(String agentId, DateTime now) {
 AgentDomainEntity goalEscalationWake(
   String agentId,
   DateTime now,
-  String periodKey,
-) => AgentDomainEntity.scheduledWake(
+  String periodKey, {
+  GoalTrackStatus? baseline,
+}) => AgentDomainEntity.scheduledWake(
   id: scheduledWakeRecordId(
     agentId,
     workspaceKey: goalEscalationWorkspaceKey(periodKey),
@@ -318,6 +323,11 @@ AgentDomainEntity goalEscalationWake(
   workspaceKey: goalEscalationWorkspaceKey(periodKey),
   // The workspace key doubles as a trigger token: the runner signature
   // carries no workspaceKey, so this token is how the wake router knows
-  // to enter Phase B (the day agent's `digest:` prefix precedent).
-  triggerTokens: [goalEscalationWorkspaceKey(periodKey)],
+  // to enter Phase B (the day agent's `digest:` prefix precedent). The
+  // baseline token carries the PRE-transition status — Phase A's own
+  // register write hides it from any later re-derivation.
+  triggerTokens: [
+    goalEscalationWorkspaceKey(periodKey),
+    if (baseline != null) goalEscalationBaselineToken(baseline.name),
+  ],
 );
