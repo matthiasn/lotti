@@ -1,4 +1,7 @@
+import 'dart:async';
 import 'dart:io';
+import 'dart:math' as math;
+import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -275,11 +278,10 @@ class _ImageGridTile extends StatelessWidget {
                             .ceil()
                             .clamp(1, 10000);
                     return Image(
-                      image: ResizeImage(
+                      image: CoverResizeImage(
                         FileImage(file),
                         width: cacheExtent,
                         height: cacheExtent,
-                        policy: ResizeImagePolicy.fit,
                       ),
                       fit: BoxFit.cover,
                       gaplessPlayback: true,
@@ -346,6 +348,135 @@ class _ImageGridTile extends StatelessWidget {
       ),
     );
   }
+}
+
+/// An image provider that decodes enough pixels for a [BoxFit.cover] target.
+///
+/// Unlike [ResizeImagePolicy.fit], the shorter source edge is decoded to the
+/// target extent. The longer edge remains proportional and is cropped by the
+/// painting step, avoiding blurry wide or tall thumbnails without retaining
+/// the full-size image in Flutter's image cache.
+@immutable
+class CoverResizeImage extends ImageProvider<CoverResizeImageKey> {
+  const CoverResizeImage(
+    this.imageProvider, {
+    required this.width,
+    required this.height,
+  });
+
+  final ImageProvider imageProvider;
+  final int width;
+  final int height;
+
+  @override
+  ImageStreamCompleter loadImage(
+    CoverResizeImageKey key,
+    ImageDecoderCallback decode,
+  ) {
+    Future<ui.Codec> decodeForCover(
+      ui.ImmutableBuffer buffer, {
+      ui.TargetImageSizeCallback? getTargetSize,
+    }) {
+      assert(
+        getTargetSize == null,
+        'CoverResizeImage cannot wrap an ImageProvider that already resizes.',
+      );
+      return decode(
+        buffer,
+        getTargetSize: (intrinsicWidth, intrinsicHeight) {
+          final dimensions = coverDecodeDimensions(
+            intrinsicWidth: intrinsicWidth,
+            intrinsicHeight: intrinsicHeight,
+            targetWidth: width,
+            targetHeight: height,
+          );
+          return ui.TargetImageSize(
+            width: dimensions.width,
+            height: dimensions.height,
+          );
+        },
+      );
+    }
+
+    final completer =
+        imageProvider.loadImage(
+          key.providerCacheKey,
+          decodeForCover,
+        )..addEphemeralErrorListener((exception, stackTrace) {
+          scheduleMicrotask(() {
+            PaintingBinding.instance.imageCache.evict(key);
+          });
+        });
+    return completer;
+  }
+
+  @override
+  Future<CoverResizeImageKey> obtainKey(
+    ImageConfiguration configuration,
+  ) async {
+    final providerCacheKey = await imageProvider.obtainKey(configuration);
+    return CoverResizeImageKey(
+      providerCacheKey: providerCacheKey,
+      width: width,
+      height: height,
+    );
+  }
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CoverResizeImage &&
+          imageProvider == other.imageProvider &&
+          width == other.width &&
+          height == other.height;
+
+  @override
+  int get hashCode => Object.hash(imageProvider, width, height);
+}
+
+/// Cache key for [CoverResizeImage].
+@immutable
+class CoverResizeImageKey {
+  const CoverResizeImageKey({
+    required this.providerCacheKey,
+    required this.width,
+    required this.height,
+  });
+
+  final Object providerCacheKey;
+  final int width;
+  final int height;
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is CoverResizeImageKey &&
+          providerCacheKey == other.providerCacheKey &&
+          width == other.width &&
+          height == other.height;
+
+  @override
+  int get hashCode => Object.hash(providerCacheKey, width, height);
+}
+
+/// Calculates a proportional decode size that fully covers the target.
+({int width, int height}) coverDecodeDimensions({
+  required int intrinsicWidth,
+  required int intrinsicHeight,
+  required int targetWidth,
+  required int targetHeight,
+}) {
+  final scale = math.min(
+    1,
+    math.max(
+      targetWidth / intrinsicWidth,
+      targetHeight / intrinsicHeight,
+    ),
+  );
+  return (
+    width: (intrinsicWidth * scale).ceil(),
+    height: (intrinsicHeight * scale).ceil(),
+  );
 }
 
 /// Maps error codes to localized strings.

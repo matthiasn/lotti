@@ -5,7 +5,7 @@ description: The legacy prompt path, the skill/profile path, the category consen
 resource: ../../../lib/features/ai/services/skill_inference_runner.dart
 tags: [ai, skills, automation, consent, overrides, diagnostics]
 status: stable
-generated: { by: codex/gpt-5, at: 2026-08-09T22:06:53Z }
+generated: { by: codex/gpt-5, at: 2026-08-10T01:20:00+02:00 }
 stale_after: 2026-10-19
 sources:
   - id: runner
@@ -95,8 +95,11 @@ The selector grid is driven only by `ReferenceImageSelectionState.availableImage
 directly linked `JournalImage` records first, then de-duplicated cover art from
 linked tasks. The selection limit changes which of those records can be toggled;
 it never pads the grid with empty slots. Each cell clips its stack to the rounded
-tile and decodes the source through a device-pixel-ratio-sized `ResizeImage`
-instead of allocating the full photo or screenshot as an iOS texture.
+tile and decodes the source through a device-pixel-ratio-sized
+`CoverResizeImage` instead of allocating the full photo or screenshot as an iOS
+texture. The decoder preserves the source aspect ratio and sizes the shorter
+edge for the square tile, so `BoxFit.cover` crops excess pixels without
+magnifying a fit-sized wide or tall thumbnail.
 
 ```mermaid
 flowchart TD

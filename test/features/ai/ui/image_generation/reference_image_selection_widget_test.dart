@@ -326,12 +326,41 @@ void main() {
       );
       expect(images, hasLength(stateWithImages.availableImages.length));
       for (final image in images) {
-        expect(image.image, isA<ResizeImage>());
-        final provider = image.image as ResizeImage;
-        expect(provider.policy, ResizeImagePolicy.fit);
-        expect(provider.width, isNotNull);
+        expect(image.image, isA<CoverResizeImage>());
+        final provider = image.image as CoverResizeImage;
+        expect(provider.width, greaterThan(0));
         expect(provider.height, provider.width);
       }
+    });
+
+    test('cover decode keeps enough pixels on each source edge', () {
+      expect(
+        coverDecodeDimensions(
+          intrinsicWidth: 4000,
+          intrinsicHeight: 1000,
+          targetWidth: 300,
+          targetHeight: 300,
+        ),
+        (width: 1200, height: 300),
+      );
+      expect(
+        coverDecodeDimensions(
+          intrinsicWidth: 1000,
+          intrinsicHeight: 4000,
+          targetWidth: 300,
+          targetHeight: 300,
+        ),
+        (width: 300, height: 1200),
+      );
+      expect(
+        coverDecodeDimensions(
+          intrinsicWidth: 200,
+          intrinsicHeight: 100,
+          targetWidth: 300,
+          targetHeight: 300,
+        ),
+        (width: 200, height: 100),
+      );
     });
 
     testWidgets('selection counter shows correct count', (tester) async {
