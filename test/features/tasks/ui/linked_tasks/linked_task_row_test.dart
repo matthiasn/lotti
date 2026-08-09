@@ -25,8 +25,9 @@ void main() {
     await getIt.reset();
   });
 
-  LinkedTaskRowData buildRowData() => LinkedTaskRowData(
+  LinkedTaskRowData buildRowData({String? oneLiner}) => LinkedTaskRowData(
     task: TestTaskFactory.create(id: 'other-task', title: 'Other Task'),
+    oneLiner: oneLiner,
   );
 
   group('LinkedTaskRow', () {
@@ -49,6 +50,52 @@ void main() {
         expect(find.byType(SvgPicture), findsNothing);
       },
     );
+
+    testWidgets('renders the AI one-liner in accent ink with ellipsis', (
+      tester,
+    ) async {
+      const oneLiner =
+          'A deliberately long AI summary that cannot fit in this linked row';
+      await tester.pumpWidget(
+        WidgetTestBench(
+          surfaceConstraints: const BoxConstraints.tightFor(
+            width: 500,
+            height: 800,
+          ),
+          child: LinkedTaskRow(
+            data: buildRowData(oneLiner: oneLiner),
+            manageMode: false,
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final oneLinerText = find.byWidgetPredicate(
+        (widget) =>
+            widget is RichText && widget.text.toPlainText().contains(oneLiner),
+      );
+      final richText = tester.widget<RichText>(oneLinerText);
+      final rootSpan = richText.text as TextSpan;
+      final summarySpan = rootSpan.children!.last as TextSpan;
+      final context = tester.element(find.byType(LinkedTaskRow));
+      final textPainter = TextPainter(
+        text: richText.text,
+        textDirection: TextDirection.ltr,
+        maxLines: richText.maxLines,
+        ellipsis: '…',
+      )..layout(maxWidth: tester.getSize(oneLinerText).width);
+
+      expect(summarySpan.text, oneLiner);
+      expect(rootSpan.toPlainText(), 'Open · $oneLiner');
+      expect(
+        summarySpan.style?.color,
+        context.designTokens.colors.aiCard.accent,
+      );
+      expect(richText.maxLines, 1);
+      expect(richText.overflow, TextOverflow.ellipsis);
+      expect(textPainter.didExceedMaxLines, isTrue);
+    });
 
     testWidgets(
       'shows the plain chevron in manage mode when onUnlink is null',

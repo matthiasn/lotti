@@ -25,6 +25,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_selection_modal_content.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
+import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_connector.dart';
@@ -245,6 +246,7 @@ void main() {
     ProjectEntry? project,
     List<LabelDefinition> labels = const [],
     TaskProgressState? progress,
+    String? oneLiner,
     Locale locale = const Locale('en'),
   }) {
     return ProviderScope(
@@ -258,6 +260,9 @@ void main() {
         ),
         taskProgressControllerProvider(task.id).overrideWith(
           () => _FakeTaskProgressController(progress),
+        ),
+        taskOneLinerProvider.overrideWith(
+          (ref, taskId) async => oneLiner,
         ),
       ],
       child: MaterialApp(
@@ -288,6 +293,19 @@ void main() {
 
       expect(find.byType(DesktopTaskHeader), findsOneWidget);
       expect(find.text('Test Task'), findsOneWidget);
+    });
+
+    testWidgets('passes the task AI one-liner into the header', (tester) async {
+      const oneLiner = 'Final review is waiting on the payment provider';
+      final task = buildTask();
+
+      await tester.pumpWidget(
+        pumpConnector(task: task, oneLiner: oneLiner),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(find.text(oneLiner), findsOneWidget);
     });
 
     testWidgets('formats due dates for the active German locale', (

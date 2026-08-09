@@ -63,11 +63,13 @@ class TaskRelationshipSections extends ConsumerWidget {
   const TaskRelationshipSections({
     required this.taskId,
     required this.manageMode,
+    this.oneLinersByTaskId = const {},
     super.key,
   });
 
   final String taskId;
   final bool manageMode;
+  final Map<String, String> oneLinersByTaskId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -143,7 +145,10 @@ class TaskRelationshipSections extends ConsumerWidget {
       for (final entry in sections[s].entries) {
         children.add(
           LinkedTaskRow(
-            data: LinkedTaskRowData(task: entry.task),
+            data: LinkedTaskRowData(
+              task: entry.task,
+              oneLiner: oneLinersByTaskId[entry.task.meta.id],
+            ),
             manageMode: manageMode,
             onEdit: () => EditLinkTypeModal.show(
               context: context,

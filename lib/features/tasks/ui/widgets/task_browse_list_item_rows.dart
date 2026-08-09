@@ -253,7 +253,7 @@ class TaskRowContent extends ConsumerWidget {
                   maxLines: 2,
                   overflow: TextOverflow.ellipsis,
                   style: tokens.typography.styles.others.caption.copyWith(
-                    color: TaskShowcasePalette.lowText(context),
+                    color: tokens.colors.aiCard.accent,
                   ),
                 ),
               ],

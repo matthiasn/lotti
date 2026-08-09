@@ -4,6 +4,13 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.6]
+### Changed
+- **AI task summaries now look like AI content wherever you scan tasks.** The
+  agent's one-line take uses the AI accent in task lists, appears beneath linked
+  task titles, and sits between the title and status pills on task details, so
+  the same compact context is visible without opening the full AI summary card.
+
 ## [1.0.5]
 ### Changed
 - **The 1-on-1 with an agent now looks like one screen rather than several.**

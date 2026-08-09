@@ -11,7 +11,7 @@ sources:
   - id: header
     resource: ../../../lib/features/tasks/ui/header
     title: Desktop task header
-    last_modified: 2026-08-03
+    last_modified: 2026-08-09
   - id: pages
     resource: ../../../lib/features/tasks/ui/pages
     title: TaskDetailsPage and TaskForm
@@ -114,9 +114,21 @@ text.
 # The header
 
 `DesktopTaskHeaderConnector` concentrates the whole metadata band. It watches
-`entryControllerProvider`, `projectForTaskProvider` and the labels stream, maps
-the task to an immutable `DesktopTaskHeaderData` plus a Riverpod-aware
-`estimateSlot`, and forwards callbacks to the existing modal pickers.
+`entryControllerProvider`, `projectForTaskProvider`, `taskOneLinerProvider` and
+the labels stream, maps the task to an immutable `DesktopTaskHeaderData` plus a
+Riverpod-aware `estimateSlot`, and forwards callbacks to the existing modal
+pickers. When the task agent has published a one-liner, the header renders it as
+a single ellipsized line directly between the title and metadata. Its ink is
+`aiCard.accent`, matching the AI summary card instead of neutral task metadata.
+
+`LinkedTasksWidget` resolves every linked task's one-liner through one
+`taskOneLinersProvider` batch and passes the results into both plain and typed
+rows. The batch watches the shared agent-update topic, so a local or synced
+report refreshes the card without one query and stream subscription per row.
+Each compact text column becomes title plus one-line AI subtitle while the
+status remains on the trailing rail at the detail reading width; narrow rows
+prefix the status before the ellipsized summary so it cannot disappear behind
+a long tagline.
 
 **Extended actions — share, speech modal — belong to the pinned app bar's
 `more_vert` button, not the header.** There is no ellipsis inside the header.
@@ -187,12 +199,15 @@ Three rules govern getting *out* of edit mode:
 
 ## The two-lane meta row
 
-The header body is Crumb → Title → Meta:
+The header body is Crumb → Title → AI one-liner → Meta:
 
 1. **Crumb** — `category / [project | No project]` separated by a literal `/`.
    No label chips here.
 2. **Title** — full width, tap to edit.
-3. **Meta** — a two-lane column.
+3. **AI one-liner** — an optional, single-line AI-accent summary. It preserves
+   the last value during background refresh and truncates rather than widening
+   the header.
+4. **Meta** — a two-lane column.
 
 **Without a category the crumb is one segment: `No category`.** A project is
 scoped to a category — `ProjectRepository.linkTaskToProject` refuses a

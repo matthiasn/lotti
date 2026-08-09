@@ -379,6 +379,26 @@ void main() {
         linkedTo: any(named: 'linkedTo'),
       ),
     ).thenAnswer((_) async => []);
+    when(
+      () => journalRepository.getTypedLinksForTaskIds(
+        {manualOrbitalHabitatTaskId},
+        linkTypes: any(named: 'linkTypes'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        EntryLink.basic(
+          id: 'link-habitat-feeder',
+          fromId: manualOrbitalHabitatTaskId,
+          toId: manualFishFeederTaskId,
+          createdAt: manualDemoNow.subtract(const Duration(days: 2)),
+          updatedAt: manualDemoNow.subtract(const Duration(days: 2)),
+          vectorClock: null,
+        ),
+      ],
+    );
+    when(
+      () => journalRepository.getJournalEntitiesByIds({manualFishFeederTaskId}),
+    ).thenAnswer((_) async => [world.fishFeederTask]);
 
     when(() => entitiesCache.sortedCategories).thenReturn([world.category]);
     when(() => entitiesCache.sortedLabels).thenReturn(world.labels);
@@ -605,6 +625,36 @@ void main() {
             _t('Pre-launch checks', 'Checks vor dem Start'),
           ),
         );
+        _expectVisible(
+          tester,
+          device,
+          find
+              .text(
+                _t(
+                  'Pressure stable · 37 penguins accounted for',
+                  'Druck stabil · 37 Pinguine vollzählig',
+                ),
+              )
+              .last,
+        );
+        // The phone capture is intentionally anchored on the page header;
+        // its linked-task rows are below the viewport. The desktop capture
+        // scrolls the whole task form into view and therefore proves both AI
+        // subtitle surfaces in one frame.
+        if (!device.isPhone) {
+          _expectVisible(
+            tester,
+            device,
+            find
+                .text(
+                  _t(
+                    'Feeder calibration blocks the habitat demo',
+                    'Futterautomat-Kalibrierung blockiert die Habitat-Demo',
+                  ),
+                )
+                .last,
+          );
+        }
         await captureScreenshot(
           tester,
           'task_detail_${viewport}_$theme',
@@ -1027,11 +1077,16 @@ void main() {
         final messages = AppLocalizations.of(
           tester.element(find.byType(TaskDetailsPage)),
         )!;
-        // The modal's title dropped the trailing ellipsis: the action label
-        // (linkExistingTask) stays on the trigger button underneath, while
-        // the sheet itself is titled linkExistingTaskTitle.
+        // Match the modal's route heading rather than every visible copy of
+        // the localized text. Some catalogs intentionally use the same copy
+        // for the underlying trigger and the sheet title.
         expect(
-          find.text(messages.linkExistingTaskTitle),
+          find.byWidgetPredicate(
+            (widget) =>
+                widget is Semantics &&
+                widget.properties.header == true &&
+                widget.properties.label == messages.linkExistingTaskTitle,
+          ),
           findsOneWidget,
         );
         expect(
@@ -1083,6 +1138,24 @@ Future<void> _pumpTaskSurface(
   final taskAgentState = _manualTaskAgentState(
     automaticUpdates: automaticUpdates,
   );
+  String oneLinerFor(String taskId) => switch (taskId) {
+    final id when id == manualOrbitalHabitatTaskId => _t(
+      'Pressure stable · 37 penguins accounted for',
+      'Druck stabil · 37 Pinguine vollzählig',
+    ),
+    final id when id == manualFishFeederTaskId => _t(
+      'Feeder calibration blocks the habitat demo',
+      'Futterautomat-Kalibrierung blockiert die Habitat-Demo',
+    ),
+    final id when id == manualSardineCargoTaskId => _t(
+      'Europa cold-chain manifest ready to reconcile',
+      'Europa-Kühlkettenmanifest bereit zum Abgleich',
+    ),
+    _ => _t(
+      'Awaiting an answer from orbital transport counsel',
+      'Warte auf Antwort der orbitalen Transportrechtsberatung',
+    ),
+  };
 
   await withClock(Clock.fixed(manualDemoNow), () async {
     await primeManualDemoCoverArt(
@@ -1121,23 +1194,12 @@ Future<void> _pumpTaskSurface(
               (ref, taskId) async => tasksById[taskId],
             ),
             taskOneLinerProvider.overrideWith(
-              (ref, taskId) async => switch (taskId) {
-                final id when id == manualOrbitalHabitatTaskId => _t(
-                  'Pressure stable · 37 penguins accounted for',
-                  'Druck stabil · 37 Pinguine vollzählig',
-                ),
-                final id when id == manualFishFeederTaskId => _t(
-                  'Feeder calibration blocks the habitat demo',
-                  'Futterautomat-Kalibrierung blockiert die Habitat-Demo',
-                ),
-                final id when id == manualSardineCargoTaskId => _t(
-                  'Europa cold-chain manifest ready to reconcile',
-                  'Europa-Kühlkettenmanifest bereit zum Abgleich',
-                ),
-                _ => _t(
-                  'Awaiting an answer from orbital transport counsel',
-                  'Warte auf Antwort der orbitalen Transportrechtsberatung',
-                ),
+              (ref, taskId) async => oneLinerFor(taskId),
+            ),
+            taskOneLinersProvider.overrideWith(
+              (ref, request) async => {
+                for (final taskId in request.taskIds)
+                  taskId: oneLinerFor(taskId),
               },
             ),
             hasAvailableSkillsProvider((

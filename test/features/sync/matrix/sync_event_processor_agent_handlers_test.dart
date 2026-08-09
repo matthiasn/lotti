@@ -48,6 +48,12 @@ void main() {
       when(() => mockAgentRepo.getLinkById(any())).thenAnswer(
         (_) async => null,
       );
+      when(
+        () => mockAgentRepo.getLinksFrom(
+          any(),
+          type: any(named: 'type'),
+        ),
+      ).thenAnswer((_) async => const []);
       processor.agentRepository = mockAgentRepo;
     });
 
@@ -974,11 +980,37 @@ void main() {
         agentEntity: entity,
         status: SyncEntryStatus.update,
       );
+      final taskLink = AgentLink.agentTask(
+        id: 'agent-task-link',
+        fromId: 'agent-1',
+        toId: 'task-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+      final deletedTaskLink = AgentLink.agentTask(
+        id: 'deleted-agent-task-link',
+        fromId: 'agent-1',
+        toId: 'deleted-task',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+        deletedAt: DateTime(2024, 3, 16),
+      );
+      when(
+        () => mockAgentRepo.getLinksFrom('agent-1', type: 'agent_task'),
+      ).thenAnswer((_) async => [taskLink, deletedTaskLink]);
       when(() => event.text).thenReturn(encodeMessage(message));
 
       await processor.process(event: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'task-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
     });
 
     test('processes agent report head entity', () async {
@@ -995,11 +1027,28 @@ void main() {
         agentEntity: entity,
         status: SyncEntryStatus.update,
       );
+      final taskLink = AgentLink.agentTask(
+        id: 'agent-task-link',
+        fromId: 'agent-1',
+        toId: 'task-1',
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+      when(
+        () => mockAgentRepo.getLinksFrom('agent-1', type: 'agent_task'),
+      ).thenAnswer((_) async => [taskLink]);
       when(() => event.text).thenReturn(encodeMessage(message));
 
       await processor.process(event: event, journalDb: journalDb);
 
       verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
+      verify(
+        () => updateNotifications.notify(
+          {'agent-1', 'task-1', 'AGENT_CHANGED'},
+          fromSync: true,
+        ),
+      ).called(1);
     });
 
     test(

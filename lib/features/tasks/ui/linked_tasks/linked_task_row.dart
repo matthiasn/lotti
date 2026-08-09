@@ -55,16 +55,17 @@ const double _trailingStatusMinRowWidth = 520;
 /// Deliberately just the task — direction and relationship kind are stated by
 /// the section header the row sits under, never repeated per row.
 class LinkedTaskRowData {
-  const LinkedTaskRowData({required this.task});
+  const LinkedTaskRowData({required this.task, this.oneLiner});
 
   final Task task;
+  final String? oneLiner;
 }
 
-/// A single row in the linked-tasks card: status glyph, title, and either a
-/// chevron (browse mode) or edit/unlink buttons (manage mode, only for
-/// whichever of [onEdit]/[onUnlink] is supplied). Shared by the flat
-/// plain-link list and the typed relationship sections — one template for
-/// every row on the card.
+/// A single row in the linked-tasks card: status glyph, title, optional AI
+/// one-liner subtitle, and either a chevron (browse mode) or edit/unlink
+/// buttons (manage mode, only for whichever of [onEdit]/[onUnlink] is
+/// supplied). Shared by the flat plain-link list and the typed relationship
+/// sections — one template for every row on the card.
 class LinkedTaskRow extends StatelessWidget {
   const LinkedTaskRow({
     required this.data,
@@ -101,6 +102,8 @@ class LinkedTaskRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final task = data.task;
+    final oneLiner = data.oneLiner;
+    final hasOneLiner = oneLiner != null && oneLiner.isNotEmpty;
 
     final showActions = manageMode && (onEdit != null || onUnlink != null);
     final statusLabel = taskLabelFromStatusString(
@@ -125,16 +128,38 @@ class LinkedTaskRow extends StatelessWidget {
           title: task.data.title,
           titleMaxLines: 2,
           size: DesignSystemListItemSize.small,
-          semanticsLabel: '${task.data.title}, $statusLabel',
+          semanticsLabel: [
+            task.data.title,
+            if (hasOneLiner) oneLiner,
+            statusLabel,
+          ].join(', '),
           leading: StatusGlyph(status: task.data.status),
-          // Status as a trailing anchor rather than a second line: it keeps the
-          // row one line tall, and on a wide detail pane it stops the trailing
-          // affordance floating alone at the far edge of an otherwise empty row.
+          // At the detail reading width, status remains the trailing anchor so
+          // it does not compete with the AI subtitle. Narrow rows fold it into
+          // that same ellipsized subtitle line instead of crowding the title.
           // Kept in manage mode too: curating links is exactly when knowing a
-          // blocker is already Done matters most, and dropping it there cost
-          // the row its second type level during the one task it serves.
+          // blocker is already Done matters most.
           //
-          subtitle: wideEnoughForTrailingStatus ? null : statusLabel,
+          subtitle: hasOneLiner || wideEnoughForTrailingStatus
+              ? null
+              : statusLabel,
+          subtitleSpans: hasOneLiner
+              ? [
+                  if (!wideEnoughForTrailingStatus)
+                    TextSpan(
+                      text: '$statusLabel · ',
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                  TextSpan(
+                    text: oneLiner,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.aiCard.accent,
+                    ),
+                  ),
+                ]
+              : null,
           // The list item's default subtitle ink is medium, which on the
           // narrow layout tied the status with the section eyebrow grouping it
           // and flattened the three roles the wide layout ranks.

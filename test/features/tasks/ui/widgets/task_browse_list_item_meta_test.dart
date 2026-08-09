@@ -4,6 +4,7 @@ import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/categories/ui/widgets/category_color_icon.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/state/journal_page_state.dart';
 import 'package:lotti/features/tasks/model/task_progress_state.dart';
 import 'package:lotti/features/tasks/state/task_live_data_provider.dart';
@@ -357,6 +358,11 @@ void main() {
 
       expect(find.text('Task With Summary'), findsOneWidget);
       expect(find.text('Implementing OAuth2 flow'), findsOneWidget);
+      final oneLiner = tester.widget<Text>(
+        find.text('Implementing OAuth2 flow'),
+      );
+      final context = tester.element(find.text('Implementing OAuth2 flow'));
+      expect(oneLiner.style?.color, context.designTokens.colors.aiCard.accent);
     });
 
     testWidgets('does not render one-liner when provider returns null', (
