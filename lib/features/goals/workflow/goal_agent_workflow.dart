@@ -172,6 +172,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
     final resolved = await _resolveModel(agentIdentity);
     if (resolved == null) {
+      // The escalation record is already consumed and Phase A will not
+      // re-arm this transition — a temporarily unconfigured provider must
+      // not orphan the period. The retry costs €0 until resolution works
+      // (this guard aborts before any inference).
+      await _rearmEscalation(agentId, derivation.periodKey, triggerTokens, now);
       return const WakeResult(
         success: false,
         error: 'no inference provider resolves for the goal agent',
@@ -229,6 +234,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       geminiThinkingMode: resolved.geminiThinkingMode,
     );
     final recordConsumption = canRecordAgentConsumption;
+    var outputsCommitted = false;
 
     try {
       var usage = await _conversationRepository.sendMessage(
@@ -269,9 +275,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // Policy row P5 is deterministic: offTrack + no fresh active ad +
       // no cooldown REQUIRES an ad, and no later wake will re-arm this
       // escalation (the status already persisted). One pinned retry.
-      if (_adRequired(facts, nudges, strategy, now) &&
-          strategy.createdAds.isEmpty &&
-          strategy.rerunRequests.isEmpty) {
+      if (_adRequired(facts, derivation.priors, nudges, strategy, now) &&
+          !_hasViableAdAction(strategy, nudges)) {
         final retryUsage = await _forceAd(
           conversationId: conversationId,
           resolved: resolved,
@@ -305,6 +310,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
         derivation: derivation,
         now: now,
       );
+      outputsCommitted = true;
       if (!attributionFinalized && recordConsumption) {
         // No report → no output carrier: close the wake's attribution
         // session explicitly or it looks perpetually in-flight in the
@@ -317,22 +323,32 @@ class GoalAgentWorkflow with AgentErrorLogging {
         );
       }
 
+      // Bookkeeping, contained: a failed usage row must not fail (or
+      // re-run!) a wake whose outputs already committed.
       if (usage != null && usage.hasData) {
-        await _syncService.upsertEntity(
-          AgentDomainEntity.wakeTokenUsage(
-            id: _uuid.v4(),
-            agentId: agentId,
-            runKey: runKey,
-            threadId: threadId,
-            modelId: resolved.modelId,
-            createdAt: now,
-            vectorClock: null,
-            inputTokens: usage.inputTokens,
-            outputTokens: usage.outputTokens,
-            thoughtsTokens: usage.thoughtsTokens,
-            cachedInputTokens: usage.cachedInputTokens,
-          ),
-        );
+        try {
+          await _syncService.upsertEntity(
+            AgentDomainEntity.wakeTokenUsage(
+              id: _uuid.v4(),
+              agentId: agentId,
+              runKey: runKey,
+              threadId: threadId,
+              modelId: resolved.modelId,
+              createdAt: now,
+              vectorClock: null,
+              inputTokens: usage.inputTokens,
+              outputTokens: usage.outputTokens,
+              thoughtsTokens: usage.thoughtsTokens,
+              cachedInputTokens: usage.cachedInputTokens,
+            ),
+          );
+        } catch (error, stackTrace) {
+          logError(
+            'failed to persist wake token usage',
+            error: error,
+            stackTrace: stackTrace,
+          );
+        }
       }
 
       return const WakeResult(success: true);
@@ -355,47 +371,79 @@ class GoalAgentWorkflow with AgentErrorLogging {
       }
       // The escalation record was consumed before this workflow ran, and
       // Phase A will not re-arm it (the transitioned status is already
-      // persisted) — a transient failure must not orphan the period.
-      // The re-arm carries a LATER deadline, which is the resolver's
-      // supported reschedule-beats-consume path; outputs are idempotent
-      // (deterministic report head, digest-deduped ads).
-      try {
-        await _syncService.upsertEntity(
-          AgentDomainEntity.scheduledWake(
-            id: scheduledWakeRecordId(
-              agentId,
-              workspaceKey: goalEscalationWorkspaceKey(derivation.periodKey),
-            ),
-            agentId: agentId,
-            scheduledAt: now.toUtc(),
-            status: ScheduledWakeStatus.pending,
-            reason: WakeReason.scheduled.name,
-            updatedAt: now,
-            vectorClock: null,
-            workspaceKey: goalEscalationWorkspaceKey(derivation.periodKey),
-            triggerTokens: [for (final token in triggerTokens) token],
-          ),
-        );
-      } catch (rearmError, rearmStack) {
-        logError(
-          'failed to re-arm escalation after wake failure',
-          error: rearmError,
-          stackTrace: rearmStack,
+      // persisted) — a transient failure must not orphan the period. But
+      // ONLY when the outputs never committed: a post-commit bookkeeping
+      // failure re-armed would re-bill the wake and duplicate its
+      // UUID-keyed outputs.
+      if (!outputsCommitted) {
+        await _rearmEscalation(
+          agentId,
+          derivation.periodKey,
+          triggerTokens,
+          now,
         );
       }
       return WakeResult(success: false, error: error.toString());
     }
   }
 
-  /// Policy row P5's deterministic precondition: offTrack, no fresh
-  /// active ad surviving this wake's retires, and no dismissal cooldown.
+  /// Re-arms the period's escalation with a LATER deadline — the
+  /// resolver's supported reschedule-beats-consume path. Contained: a
+  /// failed re-arm is logged, never masks the original failure.
+  Future<void> _rearmEscalation(
+    String agentId,
+    String periodKey,
+    Set<String> triggerTokens,
+    DateTime now,
+  ) async {
+    try {
+      await _syncService.upsertEntity(
+        AgentDomainEntity.scheduledWake(
+          id: scheduledWakeRecordId(
+            agentId,
+            workspaceKey: goalEscalationWorkspaceKey(periodKey),
+          ),
+          agentId: agentId,
+          scheduledAt: now.toUtc(),
+          status: ScheduledWakeStatus.pending,
+          reason: WakeReason.scheduled.name,
+          updatedAt: now,
+          vectorClock: null,
+          workspaceKey: goalEscalationWorkspaceKey(periodKey),
+          triggerTokens: [for (final token in triggerTokens) token],
+        ),
+      );
+    } catch (error, stackTrace) {
+      logError(
+        'failed to re-arm escalation after wake failure',
+        error: error,
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  /// Whether the deterministic facts permit ad activity at all: offTrack
+  /// always; atRisk only on a worsening trend (policy rows P4/P5). Every
+  /// other status forbids ads — succeeding, recovering or data-gapped
+  /// users are never chided.
+  bool _adsEligible(GoalWakeFacts facts, List<GoalProgressEntity> priors) =>
+      facts.trackStatus == GoalTrackStatus.offTrack ||
+      (facts.trackStatus == GoalTrackStatus.atRisk &&
+          _factsRenderer.trendWorsening(facts.evaluation.attainment, [
+            for (final row in priors) row.attainment,
+          ]));
+
+  /// The deterministic ad requirement (policy rows P4/P5): an eligible
+  /// status, no fresh active ad surviving this wake's retires, and no
+  /// dismissal cooldown.
   bool _adRequired(
     GoalWakeFacts facts,
+    List<GoalProgressEntity> priors,
     List<GoalNudgeEntity> nudges,
     GoalAgentStrategy strategy,
     DateTime now,
   ) {
-    if (facts.trackStatus != GoalTrackStatus.offTrack) return false;
+    if (!_adsEligible(facts, priors)) return false;
     if (_factsRenderer.dismissalCooldownActive(nudges, now)) return false;
     final retired = {for (final action in strategy.retireRequests) action.adId};
     final freshActive = nudges.any(
@@ -405,6 +453,21 @@ class GoalAgentWorkflow with AgentErrorLogging {
           now.difference(n.activatedAt ?? n.createdAt) < goalAdFreshFor,
     );
     return !freshActive;
+  }
+
+  /// Whether the strategy holds an ad action that will actually SURVIVE
+  /// the persistence guards: any create, or a rerun whose target really
+  /// is a retired row — a rerun of a stale-but-active ad would be
+  /// rejected at persistence and must not satisfy the requirement.
+  bool _hasViableAdAction(
+    GoalAgentStrategy strategy,
+    List<GoalNudgeEntity> nudges,
+  ) {
+    if (strategy.createdAds.isNotEmpty) return true;
+    final byId = {for (final nudge in nudges) nudge.id: nudge};
+    return strategy.rerunRequests.any(
+      (action) => byId[action.adId]?.status == GoalNudgeStatus.retired,
+    );
   }
 
   Future<InferenceUsage?> _forceAd({
@@ -456,6 +519,25 @@ class GoalAgentWorkflow with AgentErrorLogging {
     }
   }
 
+  /// The head's LWW timestamp: the period's last instant when the period
+  /// is already over, the wall clock otherwise — so concurrent heads from
+  /// different overdue periods resolve by PERIOD under generic LWW.
+  DateTime _headTimestamp(String periodKey, DateTime now) {
+    final periodEnd = _periodEnd(periodKey);
+    if (periodEnd == null) return now;
+    return periodEnd.isBefore(now) ? periodEnd : now;
+  }
+
+  DateTime? _periodEnd(String periodKey) {
+    final parts = periodKey.split('-');
+    if (parts.length != 3) return null;
+    final year = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final day = int.tryParse(parts[2]);
+    if (year == null || month == null || day == null) return null;
+    return DateTime(year, month, day, 23, 59, 59);
+  }
+
   /// The instant the derivation evaluates at: the escalation's encoded
   /// day when that day is already over (evaluated at its last hour, so
   /// the whole day's data is in range), otherwise now. Day keys are
@@ -464,13 +546,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     if (periodKey == null) return now;
     final today = const GoalWindow.day().periodKey(now);
     if (periodKey.compareTo(today) >= 0) return now;
-    final parts = periodKey.split('-');
-    if (parts.length != 3) return now;
-    final year = int.tryParse(parts[0]);
-    final month = int.tryParse(parts[1]);
-    final day = int.tryParse(parts[2]);
-    if (year == null || month == null || day == null) return now;
-    return DateTime(year, month, day, 23, 59, 59);
+    return _periodEnd(periodKey) ?? now;
   }
 
   /// glm-5.2 on Melious is the validated default (the model the eval
@@ -723,7 +799,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
               agentId: agentId,
               scope: AgentReportScopes.current,
               reportId: reportId,
-              updatedAt: now,
+              // Stamped with the PERIOD's end (not the wall clock) for
+              // overdue periods: two devices lease-elected onto different
+              // overdue periods write concurrent head versions, and LWW
+              // on this timestamp then prefers the NEWER period no matter
+              // which device finished last.
+              updatedAt: _headTimestamp(derivation.periodKey, now),
               vectorClock: null,
             ),
           );
@@ -754,6 +835,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
         nudges,
         now,
       );
+      // The authoritative status permits ads only for offTrack or a
+      // worsening atRisk (P4/P5) — an imperfect model response must not
+      // chide a succeeding, recovering or data-gapped user.
+      final adsEligible = _adsEligible(derivation.facts, derivation.priors);
       // P6: a fresh active ad blocks a second one. Ads retired in THIS
       // wake don't count — the retire+create swap (P14) stays legal.
       final retiredNow = {
@@ -766,6 +851,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
             now.difference(n.activatedAt ?? n.createdAt) < goalAdFreshFor,
       );
       for (final action in strategy.rerunRequests) {
+        if (!adsEligible) {
+          logError('rerun suppressed: status does not permit ads');
+          continue;
+        }
         if (cooldownActive) {
           logError('rerun suppressed: dismissal cooldown active');
           continue;
@@ -799,6 +888,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
         for (final nudge in nudges) nudge.briefDigest,
       };
       for (final request in strategy.createdAds) {
+        if (!adsEligible) {
+          logError('ad creation suppressed: status does not permit ads');
+          continue;
+        }
         if (cooldownActive) {
           logError('ad creation suppressed: dismissal cooldown active');
           continue;
@@ -807,7 +900,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
           logError('ad creation suppressed: a fresh active ad exists');
           continue;
         }
-        final digest = goalBriefDigest(request.brief);
+        // Weaker models echo FACTS ids into copy; the banner renders
+        // this text verbatim, so it gets the same sanitizer as reports.
+        final brief = _sanitizeBrief(request.brief);
+        final digest = goalBriefDigest(brief);
         if (!seenDigests.add(digest)) {
           logError('ad creation skipped: duplicate brief digest');
           continue;
@@ -818,7 +914,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
             id: _uuid.v4(),
             agentId: agentId,
             status: GoalNudgeStatus.active,
-            brief: request.brief,
+            brief: brief,
             briefDigest: digest,
             createdAt: now,
             updatedAt: now,
@@ -916,6 +1012,15 @@ class GoalAgentWorkflow with AgentErrorLogging {
     return attributionFinalized;
   }
 }
+
+/// The report sanitizer applied to every copy field a banner renders.
+GoalNudgeBrief _sanitizeBrief(GoalNudgeBrief brief) => brief.copyWith(
+  headline: sanitizeAgentReportText(brief.headline),
+  tagline: brief.tagline == null
+      ? null
+      : sanitizeAgentReportText(brief.tagline!),
+  cta: brief.cta == null ? null : sanitizeAgentReportText(brief.cta!),
+);
 
 /// Near-duplicate dedupe key over the banner copy: the same words with
 /// different presets are the same ad.
