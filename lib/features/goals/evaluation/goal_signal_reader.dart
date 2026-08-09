@@ -126,27 +126,18 @@ class GoalSignalReader {
     final byDay = <DateTime, num>{};
     switch (healthTypes[dataType]?.aggregationType) {
       case HealthAggregationType.none:
-        final latestByDay = <DateTime, JournalEntity>{};
+        final latestFromByDay = <DateTime, DateTime>{};
         for (final entity in entities) {
           entity.maybeMap(
             quantitative: (quant) {
               final day = GoalWindow.dayUtc(quant.data.dateFrom);
-              final current = latestByDay[day];
-              final currentFrom = current?.maybeMap(
-                quantitative: (q) => q.data.dateFrom,
-                orElse: () => null,
-              );
+              final currentFrom = latestFromByDay[day];
               if (currentFrom == null ||
                   quant.data.dateFrom.isAfter(currentFrom)) {
-                latestByDay[day] = entity;
+                latestFromByDay[day] = quant.data.dateFrom;
+                byDay[day] = quant.data.value;
               }
             },
-            orElse: () {},
-          );
-        }
-        for (final entry in latestByDay.entries) {
-          entry.value.maybeMap(
-            quantitative: (quant) => byDay[entry.key] = quant.data.value,
             orElse: () {},
           );
         }

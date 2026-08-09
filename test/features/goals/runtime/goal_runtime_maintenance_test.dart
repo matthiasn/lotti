@@ -178,6 +178,22 @@ void main() {
     },
   );
 
+  test(
+    'a listAgents failure is contained in both maintenance passes',
+    () async {
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenThrow(StateError('db gone'));
+      await expectLater(maintenance.restoreSubscriptions(), completes);
+      await expectLater(
+        withClock(fixedClock, maintenance.beforeWakeScan),
+        completes,
+      );
+      verifyNever(() => orchestrator.addSubscription(any()));
+      expect(upserts, isEmpty);
+    },
+  );
+
   test('beforeWakeScan heals a missing cadence record', () async {
     when(
       () => agentService.listAgents(lifecycle: AgentLifecycle.active),

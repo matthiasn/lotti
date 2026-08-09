@@ -213,6 +213,54 @@ void main() {
     },
   );
 
+  test("point-sample types (aggregation none) keep the day's LATEST "
+      'sample', () async {
+    const weight = GoalCriterion.metric(
+      criterionId: 'weight',
+      dataType: 'HealthDataType.WEIGHT',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.max,
+      target: 80,
+      direction: GoalDirection.atMost,
+    );
+    JournalEntity sample(DateTime at, num value) => JournalEntity.quantitative(
+      meta: meta(at),
+      data: QuantitativeData.discreteQuantityData(
+        dateFrom: at,
+        dateTo: at,
+        value: value,
+        dataType: 'HealthDataType.WEIGHT',
+        unit: 'kg',
+      ),
+    );
+    when(
+      () => journalDb.getQuantitativeByType(
+        type: 'HealthDataType.WEIGHT',
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer(
+      // Newest-first, like the real query: without deterministic
+      // reduction the OLDEST sample would win the day-keyed map.
+      (_) async => [
+        sample(DateTime(2026, 8, 8, 21), 79.4),
+        sample(DateTime(2026, 8, 8, 7), 81.2),
+        // Defensive: a stray non-quantitative row is skipped, not bucketed.
+        measurement(DateTime(2026, 8, 8, 12), 1),
+      ],
+    );
+
+    final window = await reader.read(criteria: weight, reference: reference);
+    expect(
+      window.quantitativeDailySums['HealthDataType.WEIGHT']![DateTime.utc(
+        2026,
+        8,
+        8,
+      )],
+      79.4,
+    );
+  });
+
   test('measurements sum per day', () async {
     const water = GoalCriterion.measurable(
       criterionId: 'water',

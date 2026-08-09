@@ -29,6 +29,26 @@ class _FakeReader extends GoalSignalReader {
   }) async => const GoalSignalWindow();
 }
 
+class _ThrowingThenRecordingPhaseA extends _RecordingPhaseA {
+  @override
+  Future<WakeResult> execute({
+    required AgentIdentityEntity agentIdentity,
+    required String runKey,
+    required Set<String> triggerTokens,
+    required String threadId,
+  }) {
+    if (agentIdentity.agentId == 'goal-broken') {
+      throw StateError('corrupt goal');
+    }
+    return super.execute(
+      agentIdentity: agentIdentity,
+      runKey: runKey,
+      triggerTokens: triggerTokens,
+      threadId: threadId,
+    );
+  }
+}
+
 class _RecordingPhaseA extends GoalAgentPhaseA {
   _RecordingPhaseA()
     : super(
@@ -192,6 +212,65 @@ void main() {
     controller.add({'cumulative_step_count'});
     await Future<void>.delayed(Duration.zero);
     expect(phaseA.calls, hasLength(1), reason: 'disposed = deaf');
+  });
+
+  test('one throwing goal cannot suppress evaluation of the next', () async {
+    final throwing = _ThrowingThenRecordingPhaseA();
+    final containedDispatcher = GoalSignalSyncDispatcher(
+      agentService: agentService,
+      repository: repository,
+      phaseA: throwing,
+    );
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [
+        identity('goal-broken', AgentKinds.goalAgent),
+        identity('goal-b', AgentKinds.goalAgent),
+      ],
+    );
+    stubSpec('goal-broken');
+    stubSpec('goal-b');
+
+    await containedDispatcher.dispatchBatch({'cumulative_step_count'});
+    expect(throwing.calls.map((c) => c.$1), ['goal-b']);
+  });
+
+  test('a stream error reaches the logger instead of ending evaluation '
+      'silently', () async {
+    final logger = MockDomainLogger();
+    when(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    ).thenReturn(null);
+    final controller = StreamController<Set<String>>.broadcast();
+    addTearDown(controller.close);
+    final updateNotifications = MockUpdateNotifications();
+    when(
+      () => updateNotifications.syncUpdateStream,
+    ).thenAnswer((_) => controller.stream);
+    GoalSignalSyncListener(
+      updateNotifications: updateNotifications,
+      dispatcher: dispatcher,
+      domainLogger: logger,
+    ).start();
+
+    controller.addError(StateError('stream broke'));
+    await Future<void>.delayed(Duration.zero);
+    verify(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    ).called(1);
   });
 
   test(

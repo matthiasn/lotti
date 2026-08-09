@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -25,6 +28,8 @@ void main() {
   late StreamController<Set<String>> syncStream;
   late MockAgentService agentService;
   late MockAgentRepository repository;
+  late MockAgentSyncService syncService;
+  late MockJournalDb journalDb;
   late ProviderContainer container;
 
   setUp(() {
@@ -32,6 +37,8 @@ void main() {
     addTearDown(syncStream.close);
     agentService = MockAgentService();
     repository = MockAgentRepository();
+    syncService = MockAgentSyncService();
+    journalDb = MockJournalDb();
     final updateNotifications = MockUpdateNotifications();
     when(
       () => updateNotifications.syncUpdateStream,
@@ -43,9 +50,9 @@ void main() {
 
     container = ProviderContainer(
       overrides: [
-        journalDbProvider.overrideWithValue(MockJournalDb()),
+        journalDbProvider.overrideWithValue(journalDb),
         agentRepositoryProvider.overrideWithValue(repository),
-        agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+        agentSyncServiceProvider.overrideWithValue(syncService),
         agentServiceProvider.overrideWithValue(agentService),
         wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
         updateNotificationsProvider.overrideWithValue(updateNotifications),
@@ -97,6 +104,85 @@ void main() {
       threadId: 'thread-1',
     );
     expect(result.success, isTrue);
+  });
+
+  test('a local escalation nudges the scheduled-wake manager instead of '
+      'waiting out the hourly poll', () async {
+    const agentId = 'goal-esc';
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v1',
+        agentId: agentId,
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Gym',
+        statement: 'x',
+        criteria: const GoalCriterion.habit(
+          criterionId: 'gym',
+          habitId: 'gym-habit',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 3,
+        ),
+        createdAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(
+      () => journalDb.getHabitCompletionsByHabitId(
+        habitId: any(named: 'habitId'),
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    // The nudged manager runs one scan pass; an empty due list ends it.
+    when(
+      () => repository.getDueScheduledWakeRecords(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getDueScheduledAgentStates(any()),
+    ).thenAnswer((_) async => []);
+
+    final result =
+        await container.read(
+          goalAgentWakeRunnersProvider,
+        )[AgentKinds.goalAgent]!(
+          agentIdentity:
+              AgentDomainEntity.agent(
+                    id: agentId,
+                    agentId: agentId,
+                    kind: AgentKinds.goalAgent,
+                    displayName: 'Gym',
+                    lifecycle: AgentLifecycle.active,
+                    mode: AgentInteractionMode.autonomous,
+                    allowedCategoryIds: const {},
+                    currentStateId: '$agentId:state',
+                    config: const AgentConfig(),
+                    createdAt: DateTime(2026),
+                    updatedAt: DateTime(2026),
+                    vectorClock: null,
+                  )
+                  as AgentIdentityEntity,
+          runKey: 'run-esc',
+          triggerTokens: const {'gym-habit'},
+          threadId: 'thread-esc',
+        );
+    expect(result.success, isTrue);
+
+    // First-ever evaluation is a transition, so Phase A armed an
+    // escalation and the provider-wired callback must have kicked the
+    // manager into an immediate scan pass.
+    await untilCalled(() => repository.getDueScheduledWakeRecords(any()));
   });
 
   test(
