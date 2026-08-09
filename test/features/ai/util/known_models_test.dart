@@ -1462,6 +1462,10 @@ void main() {
           Modality.text,
           Modality.image,
         ]);
+        final paddedOcr = model('  Mistral-OCR-Latest  ', const [
+          Modality.text,
+          Modality.image,
+        ]);
 
         expect(
           supportsChatCompletions(model: ocr, provider: mistralProvider),
@@ -1469,6 +1473,13 @@ void main() {
         );
         expect(
           supportsChatImageInput(model: ocr, provider: mistralProvider),
+          isFalse,
+        );
+        expect(
+          supportsChatCompletions(
+            model: paddedOcr,
+            provider: mistralProvider,
+          ),
           isFalse,
         );
       });

@@ -170,7 +170,7 @@ bool isMlxAudioSpeechToTextModel(AiConfigModel model) {
 
 /// Whether [providerModelId] identifies Mistral's dedicated OCR endpoint.
 bool isMistralOcrModelId(String providerModelId) =>
-    providerModelId.toLowerCase().startsWith('mistral-ocr');
+    providerModelId.trim().toLowerCase().startsWith('mistral-ocr');
 
 /// Whether [model] can receive instruction-following chat requests.
 ///

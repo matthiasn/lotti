@@ -71,6 +71,10 @@ void main() {
           MistralOcrRepository.isMistralOcrModel('Mistral-OCR-Latest'),
           true,
         );
+        expect(
+          MistralOcrRepository.isMistralOcrModel('  mistral-ocr-latest  '),
+          true,
+        );
       });
 
       test('does not match non-ocr models', () {
