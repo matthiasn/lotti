@@ -139,6 +139,8 @@ class KnowledgeGraphView extends StatefulWidget {
 class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     with TickerProviderStateMixin {
   static const int _maxMotionNodes = 52;
+  static const double _minimumFramedScale = 0.45;
+  static const double _maximumFramedScale = 1.5;
 
   late final GraphScenario _scenario;
   late final GraphLayout _topologyLayout;
@@ -502,9 +504,28 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     )) {
       _viewport.selectNode(_focusId);
     }
-    _layout = computeGraphLayout(_displayScenario, iterations: 140);
     _degrees = degreeMap(_displayScenario.edges);
     _displayAdjacency = _adjacencyFor(_displayScenario);
+    final layoutHops = _bfs(_focusId);
+    final collisionRadii = {
+      for (final node in _displayScenario.nodes)
+        node.id:
+            KnowledgeGraphPainter.nodeRadiusFor(
+              node: node,
+              scenario: _displayScenario,
+              degrees: _degrees,
+              focusId: _focusId,
+              hops: layoutHops,
+              scale: _minimumFramedScale,
+              visualSpec: _visualSpec,
+            ) /
+            _minimumFramedScale,
+    };
+    _layout = computeGraphLayout(
+      _displayScenario,
+      iterations: 140,
+      collisionRadii: collisionRadii,
+    );
   }
 
   Map<String, List<String>> _adjacencyFor(GraphScenario scenario) {
@@ -725,7 +746,9 @@ class _KnowledgeGraphViewState extends State<KnowledgeGraphView>
     double solveScale(double worldPad) {
       final bw = math.max(maxX - minX + worldPad * 2, 1);
       final bh = math.max(maxY - minY + worldPad * 2, 1);
-      return math.min(availW / bw, availH / bh).clamp(0.45, 1.5);
+      return math
+          .min(availW / bw, availH / bh)
+          .clamp(_minimumFramedScale, _maximumFramedScale);
     }
 
     final firstPass = solveScale(0);
