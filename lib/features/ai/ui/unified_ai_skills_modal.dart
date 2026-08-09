@@ -437,8 +437,8 @@ class UnifiedAiModal {
     List<ProcessedReferenceImage>? referenceImages;
     if (skill.skillType == SkillType.promptGeneration &&
         linkedTaskId != null &&
-        selectedModel?.inputModalities.contains(Modality.image) == true) {
-      if (!context.mounted) return;
+        selectedModel?.inputModalities.contains(Modality.image) == true &&
+        context.mounted) {
       final selected = await ReferenceImageSelectionModal.show(
         context: context,
         taskId: linkedTaskId,

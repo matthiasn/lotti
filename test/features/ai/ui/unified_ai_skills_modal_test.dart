@@ -1783,6 +1783,82 @@ void main() {
       },
     );
 
+    testWidgets(
+      'vision prompt dispatch survives disposal while the model picker is '
+      'open and continues without image selection',
+      (tester) async {
+        final t = DateTime(2024, 3, 15, 10);
+        final provider = _buildProvider(
+          id: 'provider-melious',
+          name: 'Melious',
+          t: t,
+        );
+        final modelA = _buildModel(
+          id: 'kimi-a',
+          name: 'Kimi K3 A',
+          providerModelId: 'kimi-k3-a',
+          providerId: provider.id,
+          modality: Modality.image,
+          t: t,
+        );
+        final modelB = _buildModel(
+          id: 'kimi-b',
+          name: 'Kimi K3 B',
+          providerModelId: 'kimi-k3-b',
+          providerId: provider.id,
+          modality: Modality.image,
+          t: t,
+        );
+        final showButton = ValueNotifier(true);
+        addTearDown(showButton.dispose);
+        TriggerSkillParams? capturedParams;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            ValueListenableBuilder<bool>(
+              valueListenable: showButton,
+              builder: (_, show, _) => show
+                  ? UnifiedAiPopUpMenu(
+                      journalEntity: testTaskEntity,
+                      linkedFromId: null,
+                    )
+                  : const SizedBox.shrink(),
+            ),
+            overrides: [
+              ..._baseOverrides(
+                entity: testTaskEntity,
+                skill: testSkills.last,
+                models: [modelA, modelB],
+                resolver: _NullProfileResolver(),
+                configs: [modelA, modelB, provider],
+              ),
+              triggerSkillProvider.overrideWith((ref, params) async {
+                capturedParams = params;
+              }),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.pumpAndSettle();
+        await tester.tap(find.text('Prompt Generation Skill'));
+        await tester.pumpAndSettle();
+        expect(find.text(modelA.name), findsOneWidget);
+
+        showButton.value = false;
+        await tester.pump();
+        await tester.tap(find.text(modelA.name));
+        await tester.pumpAndSettle();
+
+        expect(find.text('Select Reference Images'), findsNothing);
+        expect(capturedParams, isNotNull);
+        expect(capturedParams!.overrideModelId, modelA.id);
+        expect(capturedParams!.referenceImages, isNull);
+      },
+    );
+
     // When the entity itself is a Task, linkedTaskId is non-null
     // (journalEntity.id) so the override handler resolves the profile via
     // resolveForTask rather than resolveForCategory. This drives the

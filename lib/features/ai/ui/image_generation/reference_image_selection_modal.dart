@@ -15,14 +15,19 @@ class ReferenceImageSelectionModal {
   }) {
     return ModalUtils.showSinglePageModal<List<ProcessedReferenceImage>>(
       context: context,
-      builder: (modalContext) => ReferenceImageSelectionWidget(
-        taskId: taskId,
-        maxImages: maxImages,
-        onContinue: (images) => Navigator.of(modalContext).pop(images),
-        onSkip: () => Navigator.of(
-          modalContext,
-        ).pop(const <ProcessedReferenceImage>[]),
-      ),
+      builder: (modalContext) {
+        void closeWith(List<ProcessedReferenceImage> images) {
+          if (!modalContext.mounted) return;
+          Navigator.of(modalContext).pop(images);
+        }
+
+        return ReferenceImageSelectionWidget(
+          taskId: taskId,
+          maxImages: maxImages,
+          onContinue: closeWith,
+          onSkip: () => closeWith(const <ProcessedReferenceImage>[]),
+        );
+      },
     );
   }
 }

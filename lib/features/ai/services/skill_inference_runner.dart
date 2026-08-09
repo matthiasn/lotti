@@ -552,8 +552,9 @@ class SkillInferenceRunner {
   /// thinking model) to transform the entry's content (audio transcript or
   /// typed text) plus task context into a detailed prompt. The result is
   /// saved as an [AiResponseEntry] linked to the source entry.
-  /// When [referenceImages] is non-empty, they are forwarded with the text as
-  /// a multimodal prompt-generation request.
+  /// When [referenceImages] is non-empty and the resolved target model still
+  /// supports image input, they are forwarded with the text as a multimodal
+  /// prompt-generation request.
   Future<void> runPromptGeneration({
     required String entryId,
     required AutomationResult automationResult,
@@ -642,7 +643,10 @@ class SkillInferenceRunner {
           taskId: linkedTaskId,
         );
         final impactCollector = InferenceImpactCollector();
-        final selectedImages = referenceImages ?? const [];
+        final selectedImages =
+            target.model?.inputModalities.contains(Modality.image) == true
+            ? referenceImages ?? const []
+            : const <ProcessedReferenceImage>[];
         final responseStream = selectedImages.isEmpty
             ? _cloudRepository.generate(
                 promptResult.userMessage,

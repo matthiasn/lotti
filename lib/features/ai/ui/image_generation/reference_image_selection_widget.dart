@@ -211,6 +211,7 @@ class _ReferenceImageSelectionWidgetState
                   ? null
                   : () async {
                       final images = await controller.processSelectedImages();
+                      if (!mounted) return;
                       widget.onContinue(images);
                     },
             ),

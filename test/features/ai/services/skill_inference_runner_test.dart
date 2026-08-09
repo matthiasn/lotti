@@ -341,12 +341,14 @@ void main() {
   AutomationResult makePromptGenerationResult({
     String? thinkingHighEndModelId,
     AiConfigInferenceProvider? thinkingHighEndProvider,
+    AiConfigModel? thinkingModel,
   }) {
     return AutomationResult(
       handled: true,
       resolvedProfile: ResolvedProfile(
         thinkingModelId: 'models/gemini-flash',
         thinkingProvider: testInferenceProvider(id: 'p-flash'),
+        thinkingModel: thinkingModel,
         thinkingHighEndModelId: thinkingHighEndModelId,
         thinkingHighEndProvider: thinkingHighEndProvider,
       ),
@@ -2544,6 +2546,18 @@ void main() {
       test(
         'uses multimodal inference and forwards every selected task image',
         () async {
+          final visionModel =
+              AiConfig.model(
+                    id: 'vision-model',
+                    name: 'Vision model',
+                    providerModelId: 'models/gemini-flash',
+                    inferenceProviderId: 'p-flash',
+                    createdAt: DateTime(2024),
+                    inputModalities: const [Modality.text, Modality.image],
+                    outputModalities: const [Modality.text],
+                    isReasoningModel: true,
+                  )
+                  as AiConfigModel;
           final textEntry = makeTextEntry(
             id: 'text-with-images',
             markdown: 'Rebuild this interface.',
@@ -2598,7 +2612,9 @@ void main() {
 
           await runner.runPromptGeneration(
             entryId: 'text-with-images',
-            automationResult: makePromptGenerationResult(),
+            automationResult: makePromptGenerationResult(
+              thinkingModel: visionModel,
+            ),
             linkedTaskId: 'task-vision',
             referenceImages: images,
           );
@@ -2626,6 +2642,100 @@ void main() {
               temperature: any(named: 'temperature'),
               baseUrl: any(named: 'baseUrl'),
               apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          );
+        },
+      );
+
+      test(
+        'drops selected images when a stale override falls back to a '
+        'text-only profile model',
+        () async {
+          final textModel =
+              AiConfig.model(
+                    id: 'text-model',
+                    name: 'Text-only model',
+                    providerModelId: 'models/gemini-flash',
+                    inferenceProviderId: 'p-flash',
+                    createdAt: DateTime(2024),
+                    inputModalities: const [Modality.text],
+                    outputModalities: const [Modality.text],
+                    isReasoningModel: true,
+                  )
+                  as AiConfigModel;
+          final textEntry = makeTextEntry(
+            id: 'text-stale-vision',
+            markdown: 'Describe the implementation.',
+          );
+          const images = [
+            ProcessedReferenceImage(
+              base64Data: 'stale-image',
+              mimeType: 'image/jpeg',
+            ),
+          ];
+
+          when(
+            () => mockAiConfigRepo.getConfigById('stale-vision-model'),
+          ).thenAnswer((_) async => null);
+          when(
+            () => mockAiInputRepo.getEntity('text-stale-vision'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(makeStreamChunk('Text-only fallback')),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'text-stale-vision',
+            automationResult: makePromptGenerationResult(
+              thinkingModel: textModel,
+            ),
+            referenceImages: images,
+            overrideModelId: 'stale-vision-model',
+          );
+
+          verify(
+            () => mockCloudRepo.generate(
+              any(),
+              model: 'models/gemini-flash',
+              temperature: null,
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              images: any(named: 'images'),
               provider: any(named: 'provider'),
               systemMessage: any(named: 'systemMessage'),
               impactCollector: any(named: 'impactCollector'),
