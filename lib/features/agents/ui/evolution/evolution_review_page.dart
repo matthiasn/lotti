@@ -218,19 +218,19 @@ class _PendingSessionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              Expanded(
-                child: Text(
-                  context.messages.agentRitualReviewProposalSection,
-                  style: tokens.typography.styles.heading.heading2.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-              ),
-              SizedBox(width: tokens.spacing.step4),
-              _SessionBadge(session: session),
-            ],
+          Text(
+            context.messages.agentRitualReviewProposalSection,
+            style: tokens.typography.styles.heading.heading2.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          // On its own line: beside the heading in a Row the badge is a
+          // non-flex child, so a longer localized session phrase or a large
+          // text scale takes its full intrinsic width and overflows.
+          Align(
+            alignment: AlignmentDirectional.centerStart,
+            child: _SessionBadge(session: session),
           ),
           if (session.feedbackSummary case final summary?) ...[
             SizedBox(height: tokens.spacing.step4),

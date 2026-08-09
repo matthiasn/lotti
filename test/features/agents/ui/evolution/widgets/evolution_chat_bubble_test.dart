@@ -38,6 +38,56 @@ void main() {
       });
     });
 
+    testWidgets('a short reply shrinks to its text — the width factor is a '
+        'cap, not the width', (tester) async {
+      await tester.pumpWidget(buildSubject(text: 'Yes', role: 'user'));
+      await tester.pumpAndSettle();
+
+      final turnWidth = tester
+          .getSize(
+            find
+                .ancestor(
+                  of: find.text('Yes'),
+                  matching: find.byType(Container),
+                )
+                .first,
+          )
+          .width;
+      final available = tester.getSize(find.byType(EvolutionChatBubble)).width;
+
+      // A tight 80% made "Yes" a near-full-width slab of empty container.
+      expect(
+        turnWidth,
+        lessThan(available * EvolutionChatBubble.userTurnWidthFactor),
+      );
+    });
+
+    testWidgets('a long reply is capped at the width factor', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(text: 'x ' * 400, role: 'user'),
+      );
+      await tester.pumpAndSettle();
+
+      final turnWidth = tester
+          .getSize(
+            find
+                .ancestor(
+                  of: find.byType(Text).first,
+                  matching: find.byType(Container),
+                )
+                .first,
+          )
+          .width;
+      final available = tester.getSize(find.byType(EvolutionChatBubble)).width;
+
+      expect(
+        turnWidth,
+        lessThanOrEqualTo(
+          available * EvolutionChatBubble.userTurnWidthFactor + 1,
+        ),
+      );
+    });
+
     group('assistant role', () {
       testWidgets('renders markdown via AgentMarkdownView', (tester) async {
         await tester.pumpWidget(

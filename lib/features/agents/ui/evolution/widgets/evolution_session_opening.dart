@@ -55,15 +55,21 @@ class EvolutionSessionOpening extends StatelessWidget {
             SizedBox(height: tokens.spacing.step5),
             // The agent is named in the app bar directly above; repeating it
             // here is the duplication this redesign set out to remove.
-            Text(
-              context.messages.agentRitualOpeningHint,
-              textAlign: TextAlign.center,
-              style: tokens.typography.styles.body.bodyMedium.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
+            // This line is the status, so it is the live region — the dots
+            // below must not also announce "composing a reply", which is not
+            // what is happening yet.
+            Semantics(
+              liveRegion: true,
+              child: Text(
+                context.messages.agentRitualOpeningHint,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
               ),
             ),
             SizedBox(height: tokens.spacing.step6),
-            const EvolutionTypingIndicator(),
+            const EvolutionTypingIndicator(announceComposing: false),
           ],
         ),
       ),

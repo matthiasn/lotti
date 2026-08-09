@@ -61,6 +61,7 @@ class SoulEvolutionReviewPage extends ConsumerWidget {
                 return _PendingSessionCard(
                   session: session,
                   onPressed: () => _openChat(context),
+                  templateCount: templatesAsync.value?.length ?? 0,
                 );
               },
               loading: () => const SizedBox.shrink(),
@@ -210,10 +211,17 @@ class _PendingSessionCard extends StatelessWidget {
   const _PendingSessionCard({
     required this.session,
     required this.onPressed,
+    this.templateCount = 0,
   });
 
   final EvolutionSessionEntity session;
   final VoidCallback onPressed;
+
+  /// How many templates wear this soul. A personality change is approved from
+  /// inside the session, so the blast radius has to be visible on the way in —
+  /// the removed hero used to state it unconditionally, and resuming a pending
+  /// session skips the start card that otherwise carries it.
+  final int templateCount;
 
   @override
   Widget build(BuildContext context) {
@@ -254,13 +262,24 @@ class _PendingSessionCard extends StatelessWidget {
             ),
             SizedBox(height: tokens.spacing.step4),
           ],
-          SizedBox(
-            width: double.infinity,
-            child: DesignSystemButton(
-              onPressed: onPressed,
-              label: context.messages.agentSoulReviewStartAction,
-              size: DesignSystemButtonSize.medium,
-            ),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: tokens.spacing.step4,
+            runSpacing: tokens.spacing.step3,
+            children: [
+              DesignSystemButton(
+                onPressed: onPressed,
+                label: context.messages.agentSoulReviewStartAction,
+                size: DesignSystemButtonSize.medium,
+              ),
+              if (templateCount > 0)
+                Text(
+                  context.messages.agentSoulReviewTemplateCount(templateCount),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+            ],
           ),
         ],
       ),

@@ -329,6 +329,30 @@ void main() {
       },
     );
 
+    testWidgets('a pending session still states how many templates it '
+        'touches — approving a personality rewrite from inside the session '
+        'must not hide its blast radius', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          templateIds: ['template-1', 'template-2'],
+          pendingOverride: () async => makeTestEvolutionSession(
+            agentId: kTestSoulId,
+            templateId: kTestSoulId,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(SoulEvolutionReviewPage));
+      expect(
+        find.text(
+          context.messages.agentSoulReviewTemplateCount(2),
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets(
       'tapping pending session action navigates to chat page',
       (tester) async {

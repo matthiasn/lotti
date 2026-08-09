@@ -34,6 +34,7 @@ void main() {
     Future<EvolutionChatData> Function(String)? chatStateBuilder,
     FutureOr<AgentDomainEntity?> Function(Ref, String)? templateOverride,
     List<Override> extraOverrides = const [],
+    MediaQueryData? mediaQueryData,
   }) {
     final tpl = makeTestTemplate(id: templateId, agentId: templateId);
 
@@ -53,6 +54,7 @@ void main() {
 
     return makeTestableWidgetNoScroll(
       EvolutionChatPage(templateId: templateId),
+      mediaQueryData: mediaQueryData,
       overrides: [
         agentTemplateProvider.overrideWith(
           templateOverride ?? (ref, id) async => tpl,
@@ -103,6 +105,29 @@ void main() {
       // The collapsible Performance card that used to sit above the
       // conversation duplicated the review page's card in full.
       expect(find.byType(RitualSummaryCard), findsNothing);
+    });
+
+    testWidgets('drops the subtitle at large text scales rather than '
+        'overflowing a fixed-height toolbar', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(EvolutionChatPage));
+      final subtitle = context.messages.agentRitualWakesSinceLastCount(7);
+      expect(find.text(subtitle), findsOneWidget);
+
+      await tester.pumpWidget(
+        buildSubject(
+          mediaQueryData: const MediaQueryData(
+            textScaler: TextScaler.linear(2),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The agent's name is the part that must survive.
+      expect(find.text('Test Template'), findsOneWidget);
+      expect(find.text(subtitle), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('shows message input', (tester) async {

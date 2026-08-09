@@ -9,7 +9,15 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 /// 16px spinner beside a literal `'...'`, which read as an unstyled loading
 /// artefact rather than a participant thinking.
 class EvolutionTypingIndicator extends StatefulWidget {
-  const EvolutionTypingIndicator({super.key});
+  const EvolutionTypingIndicator({this.announceComposing = true, super.key});
+
+  /// Whether the dots announce themselves as *the agent composing a reply*.
+  ///
+  /// False where that would be a lie: the session-opening frame reuses these
+  /// dots while the agent is still reading the window, and its own text
+  /// already carries the status. Announcing "composing a reply" there would
+  /// contradict the words on screen before any reply exists.
+  final bool announceComposing;
 
   /// One full travel of the wave across the three dots.
   static const Duration cycle = Duration(milliseconds: 1200);
@@ -63,8 +71,10 @@ class _EvolutionTypingIndicatorState extends State<EvolutionTypingIndicator>
     // between sending a message and the reply arriving — indistinguishable
     // from a stuck chat, with the composer disabled meanwhile.
     return Semantics(
-      liveRegion: true,
-      label: context.messages.agentRitualTypingSemantics,
+      liveRegion: widget.announceComposing,
+      label: widget.announceComposing
+          ? context.messages.agentRitualTypingSemantics
+          : null,
       child: ExcludeSemantics(
         child: Padding(
           padding: EdgeInsets.only(bottom: tokens.spacing.step5),

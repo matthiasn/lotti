@@ -20,8 +20,13 @@ void main() {
   // Reduced motion is read through `MediaQuery.disableAnimationsOf`, so the
   // tests drive it the way the widget actually observes it — a rebuild with a
   // different MediaQuery is exactly what an OS toggle produces.
-  Widget subject({bool reduceMotion = false}) => makeTestableWidgetNoScroll(
-    const Center(child: EvolutionTypingIndicator()),
+  Widget subject({
+    bool reduceMotion = false,
+    bool announceComposing = true,
+  }) => makeTestableWidgetNoScroll(
+    Center(
+      child: EvolutionTypingIndicator(announceComposing: announceComposing),
+    ),
     mediaQueryData: MediaQueryData(disableAnimations: reduceMotion),
   );
 
@@ -83,6 +88,23 @@ void main() {
 
       // The dots themselves are decorative and must not be announced.
       expect(node.childrenCount, 0);
+
+      handle.dispose();
+    });
+
+    testWidgets('stays silent where the placement makes that status wrong', (
+      tester,
+    ) async {
+      await tester.pumpWidget(subject(announceComposing: false));
+      await tester.pump();
+
+      final context = tester.element(find.byType(EvolutionTypingIndicator));
+      final handle = tester.ensureSemantics();
+
+      expect(
+        find.bySemanticsLabel(context.messages.agentRitualTypingSemantics),
+        findsNothing,
+      );
 
       handle.dispose();
     });

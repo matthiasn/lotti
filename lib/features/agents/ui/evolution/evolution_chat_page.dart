@@ -106,10 +106,17 @@ class _ChatTitle extends ConsumerWidget {
   final String templateName;
   final String templateId;
 
+  /// Above this text scale the two stacked lines no longer fit a standard
+  /// toolbar, so the subtitle is dropped rather than overflowing it. The name
+  /// is the part that must survive.
+  static const double _twoLineScaleLimit = 1.3;
+
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
     final metrics = ref.watch(ritualSummaryMetricsProvider(templateId)).value;
+    final textScale = MediaQuery.textScalerOf(context).scale(1);
+    final showsSubtitle = metrics != null && textScale <= _twoLineScaleLimit;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -120,9 +127,13 @@ class _ChatTitle extends ConsumerWidget {
           style: tokens.typography.styles.heading.heading3.copyWith(
             color: tokens.colors.text.highEmphasis,
           ),
+          // `maxLines` as well as `overflow`: ellipsis alone still lets a
+          // long agent name wrap, and a wrapped title plus a subtitle
+          // overflows the fixed-height toolbar.
+          maxLines: 1,
           overflow: TextOverflow.ellipsis,
         ),
-        if (metrics != null)
+        if (showsSubtitle)
           Text(
             context.messages.agentRitualWakesSinceLastCount(
               metrics.wakesSinceLastSession,
@@ -130,6 +141,7 @@ class _ChatTitle extends ConsumerWidget {
             style: tokens.typography.styles.others.caption.copyWith(
               color: tokens.colors.text.mediumEmphasis,
             ),
+            maxLines: 1,
             overflow: TextOverflow.ellipsis,
           ),
       ],

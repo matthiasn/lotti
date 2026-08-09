@@ -32,6 +32,27 @@ void main() {
       expect(find.text('...'), findsNothing);
     });
 
+    testWidgets('does not announce "composing a reply" — the agent is still '
+        'reading, and the visible text says so', (tester) async {
+      await tester.pumpWidget(subject());
+      await tester.pump();
+
+      final context = tester.element(find.byType(EvolutionSessionOpening));
+      final handle = tester.ensureSemantics();
+
+      expect(
+        find.bySemanticsLabel(context.messages.agentRitualTypingSemantics),
+        findsNothing,
+      );
+      // The opening line itself carries the status instead.
+      expect(
+        find.bySemanticsLabel(context.messages.agentRitualOpeningHint),
+        findsOneWidget,
+      );
+
+      handle.dispose();
+    });
+
     testWidgets('is centred in the column the conversation will occupy', (
       tester,
     ) async {

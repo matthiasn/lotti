@@ -296,6 +296,39 @@ void main() {
       );
     });
 
+    testWidgets('the proposal heading and its badge survive a large text '
+        'scale — side by side in a Row the badge overflowed', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          pendingOverride: () async => makeTestEvolutionSession(
+            sessionNumber: 12,
+          ),
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(390, 2000),
+            textScaler: const TextScaler.linear(2.5),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionReviewPage));
+      expect(
+        find.text(
+          context.messages.agentRitualReviewProposalSection,
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          context.messages.agentEvolutionSessionProgress(12, 12),
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
+    });
+
     testWidgets(
       'shows pending session card without feedback summary',
       (tester) async {

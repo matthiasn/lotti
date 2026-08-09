@@ -36,9 +36,9 @@ class EvolutionChatBubble extends StatelessWidget {
   /// Whether to animate the bubble on first appearance.
   final bool animate;
 
-  /// How much of the column a user turn may occupy. Short by design — a user
+  /// The **most** of the column a user turn may occupy. Short by design — a
   /// turn that reached the full measure would be indistinguishable from the
-  /// agent's prose beside it.
+  /// agent's prose beside it. Shorter turns shrink to their text.
   static const double userTurnWidthFactor = 0.8;
 
   @override
@@ -61,26 +61,33 @@ class _UserTurn extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    final turn = Align(
-      alignment: Alignment.centerRight,
-      child: FractionallySizedBox(
+    // LayoutBuilder + maxWidth rather than FractionallySizedBox: the latter
+    // gives its child a *tight* width, so "yes" rendered as a near-full-width
+    // slab of empty container. The factor is a ceiling for long turns.
+    final turn = LayoutBuilder(
+      builder: (context, constraints) => Align(
         alignment: Alignment.centerRight,
-        widthFactor: EvolutionChatBubble.userTurnWidthFactor,
-        child: Container(
-          margin: EdgeInsets.only(bottom: tokens.spacing.step5),
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.step5,
-            vertical: tokens.spacing.step4,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth:
+                constraints.maxWidth * EvolutionChatBubble.userTurnWidthFactor,
           ),
-          decoration: BoxDecoration(
-            color: tokens.colors.background.level03,
-            borderRadius: BorderRadius.circular(tokens.radii.l),
-            border: Border.all(color: tokens.colors.decorative.level02),
-          ),
-          child: Text(
-            text,
-            style: tokens.typography.styles.body.bodyLarge.copyWith(
-              color: tokens.colors.text.highEmphasis,
+          child: Container(
+            margin: EdgeInsets.only(bottom: tokens.spacing.step5),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step5,
+              vertical: tokens.spacing.step4,
+            ),
+            decoration: BoxDecoration(
+              color: tokens.colors.background.level03,
+              borderRadius: BorderRadius.circular(tokens.radii.l),
+              border: Border.all(color: tokens.colors.decorative.level02),
+            ),
+            child: Text(
+              text,
+              style: tokens.typography.styles.body.bodyLarge.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
             ),
           ),
         ),
