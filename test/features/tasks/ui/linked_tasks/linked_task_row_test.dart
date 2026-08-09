@@ -102,12 +102,9 @@ void main() {
         final rootSpan = richText.text as TextSpan;
         final summarySpan = rootSpan.children!.last as TextSpan;
         final context = tester.element(find.byType(LinkedTaskRow));
-        final textPainter = TextPainter(
-          text: richText.text,
-          textDirection: TextDirection.ltr,
-          maxLines: richText.maxLines,
-        )..layout(maxWidth: tester.getSize(oneLinerText).width);
         final titleText = tester.widget<Text>(find.text(title));
+        final titleHeight = tester.getSize(find.text(title)).height;
+        final oneLinerHeight = tester.getSize(oneLinerText).height;
 
         expect(summarySpan.text, oneLiner);
         expect(rootSpan.toPlainText(), oneLiner);
@@ -119,7 +116,8 @@ void main() {
         expect(titleText.overflow, TextOverflow.clip);
         expect(richText.maxLines, isNull);
         expect(richText.overflow, TextOverflow.clip);
-        expect(textPainter.didExceedMaxLines, isFalse);
+        expect(titleHeight, inInclusiveRange(80, 120));
+        expect(oneLinerHeight, inInclusiveRange(96, 128));
         expect(find.text('Done'), findsNothing);
         expect(
           find.byWidgetPredicate(
