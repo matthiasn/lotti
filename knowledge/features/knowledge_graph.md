@@ -11,7 +11,7 @@ sources:
   - id: src
     resource: ../../lib/features/knowledge_graph
     title: Knowledge-graph explorer source
-    last_modified: 2026-08-06
+    last_modified: 2026-08-09
 ---
 
 The task knowledge-graph explorer described in ADR 0029.
@@ -75,6 +75,14 @@ circular node body, with the stored horizontal focal crop. Cover-backed tasks,
 image entries, and media collections render at twice the ordinary node diameter
 so their imagery acts as a useful landmark. The same radius calculation drives
 edge clipping, label clearance, hit testing, and semantics.
+
+The local layout also receives each rendered body's world-space collision
+radius, calculated at the camera's minimum automatic framing scale. After the
+short force relaxation, a deterministic pairwise pass separates intersecting
+circles while leaving the focused node pinned. This keeps enlarged media nodes
+useful as visual landmarks instead of allowing their images to overlap in dense
+hub sectors; the full topology layout remains point-based because the minimap
+renders its nodes at a separate, small fixed radius.
 
 A media collection's circular body is tiled by `mediaMosaicCells`, whose layout
 depends on the photo count (one full, two halves, a hero plus a stacked pair,

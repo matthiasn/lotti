@@ -234,6 +234,96 @@ void main() {
       expect(painterOf(tester).scenario.nodes.length, lessThanOrEqualTo(2));
     });
 
+    testWidgets('keeps enlarged media node bodies from overlapping', (
+      tester,
+    ) async {
+      const relationKinds = [
+        GraphEdgeKind.association,
+        GraphEdgeKind.blocks,
+        GraphEdgeKind.followsUp,
+        GraphEdgeKind.duplicates,
+        GraphEdgeKind.fixes,
+        GraphEdgeKind.supersedes,
+      ];
+      final nodes = [
+        GraphNode(
+          id: 'focus',
+          type: GraphNodeType.task,
+          label: 'Focus',
+          categoryId: catWork,
+          createdAt: fixedNow,
+          coverImagePath: '/shared-cover.png',
+        ),
+        for (var kindIndex = 0; kindIndex < relationKinds.length; kindIndex++)
+          for (var nodeIndex = 0; nodeIndex < 5; nodeIndex++)
+            GraphNode(
+              id: 'media-$kindIndex-$nodeIndex',
+              type: GraphNodeType.task,
+              label: 'Media $kindIndex $nodeIndex',
+              categoryId: catWork,
+              createdAt: fixedNow,
+              coverImagePath: '/shared-cover.png',
+            ),
+      ];
+      final scenario = GraphScenario(
+        name: 'Dense media neighborhood',
+        seedId: 'focus',
+        nodes: nodes,
+        edges: [
+          for (var kindIndex = 0; kindIndex < relationKinds.length; kindIndex++)
+            for (var nodeIndex = 0; nodeIndex < 5; nodeIndex++)
+              GraphEdge(
+                fromId: 'focus',
+                toId: 'media-$kindIndex-$nodeIndex',
+                kind: relationKinds[kindIndex],
+              ),
+        ],
+        now: fixedNow,
+      );
+
+      await pumpView(
+        tester,
+        scenario: scenario,
+        showInspector: false,
+        showTitle: false,
+        showLegend: false,
+        disableAnimations: true,
+        size: phoneSize,
+        visualSpec: GraphVisualSpec(
+          style: GraphStyle.fromTokens(dsTokensDark),
+          balancedNodeLimit: 40,
+        ),
+        imageLoader: (path, targetExtent) async =>
+            throw StateError('Thumbnail bytes are irrelevant to geometry'),
+      );
+
+      final painter = painterOf(tester);
+      expect(painter.scenario.nodes, hasLength(nodes.length));
+      for (var first = 0; first < painter.scenario.nodes.length; first++) {
+        final firstNode = painter.scenario.nodes[first];
+        final firstCenter =
+            painter.positions[firstNode.id]! * painter.scale + painter.pan;
+        for (
+          var second = first + 1;
+          second < painter.scenario.nodes.length;
+          second++
+        ) {
+          final secondNode = painter.scenario.nodes[second];
+          final secondCenter =
+              painter.positions[secondNode.id]! * painter.scale + painter.pan;
+          expect(
+            (firstCenter - secondCenter).distance,
+            greaterThanOrEqualTo(
+              painter.radiusFor(firstNode) +
+                  painter.radiusFor(secondNode) -
+                  0.01,
+            ),
+            reason: '${firstNode.id} overlaps ${secondNode.id}',
+          );
+        }
+      }
+    });
+
     testWidgets('reprojects when a host replaces the visual spec', (
       tester,
     ) async {

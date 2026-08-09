@@ -20,6 +20,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   date labels thin out on a narrow screen instead of all shortening to "J…".
 
 ### Fixed
+- **Large image nodes in the knowledge graph no longer overlap.** Cover-backed
+  tasks and photo collections are deliberately twice the normal node diameter,
+  but the local layout still treated every node as a point, so dense task hubs
+  could stack those visual landmarks on top of one another. The layout now
+  separates their actual circular footprints while keeping the focused task
+  fixed in place.
 - **The one-on-one with an agent opens again on desktop.** Choosing Review on a
   template or a soul did nothing in a desktop window — the address changed but
   the same page stayed on screen — so there was no way to start an evolution

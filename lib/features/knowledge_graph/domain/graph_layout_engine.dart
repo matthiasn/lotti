@@ -92,6 +92,7 @@ GraphLayout computeGraphLayout(
   GraphScenario scenario, {
   int seed = 7,
   int iterations = 260,
+  Map<String, double> collisionRadii = const {},
 }) {
   final rng = math.Random(seed);
   final ids = scenario.nodes.map((n) => n.id).toList();
@@ -176,7 +177,65 @@ GraphLayout computeGraphLayout(
   }
 
   _relax(scenario, ids, pos, rng, iterations, pinned: scenario.seedId);
+  _resolveCollisions(
+    ids,
+    pos,
+    collisionRadii,
+    pinned: scenario.seedId,
+  );
   return GraphLayout(pos);
+}
+
+/// Separates circular node footprints without moving the focused node.
+///
+/// The ego graph is intentionally small, so a deterministic pairwise pass is
+/// preferable to introducing a spatial index here. Callers supply world-space
+/// radii only when rendered node sizes differ materially from the layout's
+/// point-node model (for example, media-backed task nodes).
+void _resolveCollisions(
+  List<String> ids,
+  Map<String, Offset> positions,
+  Map<String, double> radii, {
+  required String pinned,
+}) {
+  if (radii.isEmpty) return;
+
+  const maximumPasses = 120;
+  const tolerance = 0.01;
+  for (var pass = 0; pass < maximumPasses; pass++) {
+    var moved = false;
+    for (var first = 0; first < ids.length; first++) {
+      final firstId = ids[first];
+      final firstRadius = radii[firstId] ?? 0;
+      for (var second = first + 1; second < ids.length; second++) {
+        final secondId = ids[second];
+        final minimumDistance = firstRadius + (radii[secondId] ?? 0);
+        if (minimumDistance <= 0) continue;
+
+        final delta = positions[secondId]! - positions[firstId]!;
+        final distance = delta.distance;
+        final overlap = minimumDistance - distance;
+        if (overlap <= tolerance) continue;
+
+        // Valid deterministic seeding never produces coincident node centres;
+        // retain a stable fallback for defensive callers supplying such a map.
+        final direction = distance <= tolerance
+            ? const Offset(1, 0) // coverage:ignore-line
+            : delta / distance;
+        if (firstId == pinned) {
+          positions[secondId] = positions[secondId]! + direction * overlap;
+        } else if (secondId == pinned) {
+          positions[firstId] = positions[firstId]! - direction * overlap;
+        } else {
+          final correction = direction * (overlap / 2);
+          positions[firstId] = positions[firstId]! - correction;
+          positions[secondId] = positions[secondId]! + correction;
+        }
+        moved = true;
+      }
+    }
+    if (!moved) return;
+  }
 }
 
 /// General force-directed layout over a whole connected "world" graph (no

@@ -541,6 +541,105 @@ void main() {
       },
     );
 
+    test('keeps supplied node footprints separated after relaxation', () {
+      final nodes = [
+        node(id: 'focus', type: GraphNodeType.task),
+        for (var index = 0; index < 23; index++)
+          node(id: 'neighbor-$index', type: GraphNodeType.task),
+      ];
+      final s = scenario(
+        nodes: nodes,
+        edges: [
+          for (var index = 0; index < 23; index++)
+            GraphEdge(
+              fromId: 'focus',
+              toId: 'neighbor-$index',
+              kind: GraphEdgeKind.association,
+            ),
+        ],
+      );
+      final collisionRadii = {
+        for (var index = 0; index < nodes.length; index++)
+          nodes[index].id: index.isEven ? 48.0 : 30.0,
+      };
+
+      final layout = computeGraphLayout(
+        s,
+        iterations: 140,
+        collisionRadii: collisionRadii,
+      );
+
+      expect(layout.positions['focus'], Offset.zero);
+      for (var first = 0; first < nodes.length; first++) {
+        for (var second = first + 1; second < nodes.length; second++) {
+          final firstNode = nodes[first];
+          final secondNode = nodes[second];
+          final minimumDistance =
+              collisionRadii[firstNode.id]! + collisionRadii[secondNode.id]!;
+          expect(
+            dist(
+              layout.positions[firstNode.id]!,
+              layout.positions[secondNode.id]!,
+            ),
+            greaterThanOrEqualTo(minimumDistance - 0.01),
+            reason: '${firstNode.id} overlaps ${secondNode.id}',
+          );
+        }
+      }
+    });
+
+    test('keeps the focus pinned when it is listed after another node', () {
+      final s = scenario(
+        nodes: [
+          node(id: 'neighbor', type: GraphNodeType.task),
+          node(id: 'focus', type: GraphNodeType.task),
+        ],
+        edges: const [
+          GraphEdge(
+            fromId: 'focus',
+            toId: 'neighbor',
+            kind: GraphEdgeKind.association,
+          ),
+        ],
+      );
+
+      final layout = computeGraphLayout(
+        s,
+        iterations: 0,
+        collisionRadii: const {'focus': 300, 'neighbor': 300},
+      );
+
+      expect(layout.positions['focus'], Offset.zero);
+      expect(
+        dist(layout.positions['focus']!, layout.positions['neighbor']!),
+        closeTo(600, 0.01),
+      );
+    });
+
+    test('ignores collision radii for ids outside the scenario', () {
+      final s = scenario(
+        nodes: [
+          node(id: 'focus', type: GraphNodeType.task),
+          node(id: 'neighbor'),
+        ],
+        edges: const [
+          GraphEdge(
+            fromId: 'focus',
+            toId: 'neighbor',
+            kind: GraphEdgeKind.association,
+          ),
+        ],
+      );
+
+      expect(
+        computeGraphLayout(
+          s,
+          collisionRadii: const {'outside-scenario': 500},
+        ).positions,
+        computeGraphLayout(s).positions,
+      );
+    });
+
     test('handles a scenario with only the focus node', () {
       final s = scenario(
         nodes: [node(id: 'focus', type: GraphNodeType.task)],
