@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -15,6 +17,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/linkable_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
 import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
@@ -32,6 +35,17 @@ import '../../../../mocks/mocks.dart';
 import '../../../../test_helper.dart';
 import '../../../../test_utils/screenshot_harness.dart';
 import '../../../../widget_test_utils.dart';
+
+class _ControllableTaskLinkGroupsController extends TaskLinkGroupsController {
+  _ControllableTaskLinkGroupsController(this._initial);
+
+  final TaskLinkGroups _initial;
+
+  @override
+  Future<TaskLinkGroups> build() async => _initial;
+
+  void push(TaskLinkGroups groups) => state = AsyncData(groups);
+}
 
 void main() {
   final now = DateTime(2025, 12, 31, 12);
@@ -303,6 +317,79 @@ void main() {
 
       final row = tester.widget<LinkedTaskRow>(find.byType(LinkedTaskRow));
       expect(row.data.oneLiner, 'Ready for final review');
+    });
+
+    testWidgets('retains existing taglines while a changed link set reloads', (
+      tester,
+    ) async {
+      final firstTask = buildTask(id: 'task-2', title: 'Existing link');
+      final addedTask = buildTask(id: 'task-3', title: 'New link');
+      TaskLinkEntry entry(Task task) => TaskLinkEntry(
+        linkId: 'link-${task.id}',
+        task: task,
+        kind: TaskLinkKind.basic,
+        direction: TaskLinkDirection.outgoing,
+      );
+      final initialGroups = TaskLinkGroups(
+        flat: [entry(firstTask)],
+        typed: const [],
+      );
+      final refreshedGroups = TaskLinkGroups(
+        flat: [entry(firstTask), entry(addedTask)],
+        typed: const [],
+      );
+      final refreshedOneLiners = Completer<Map<String, String>>();
+      late _ControllableTaskLinkGroupsController groupsController;
+      final journalRepo = MockJournalRepository();
+
+      await tester.pumpWidget(
+        ProviderScope(
+          overrides: [
+            linkableTasksOverride('task-main', exists: true),
+            linkedTasksControllerProvider(
+              'task-main',
+            ).overrideWith(LinkedTasksController.new),
+            taskLinkGroupsControllerProvider('task-main').overrideWith(
+              () => groupsController = _ControllableTaskLinkGroupsController(
+                initialGroups,
+              ),
+            ),
+            taskOneLinersProvider.overrideWith((ref, request) async {
+              if (request.taskIds.contains(addedTask.id)) {
+                return refreshedOneLiners.future;
+              }
+              return {firstTask.id: 'Established summary'};
+            }),
+            journalRepositoryProvider.overrideWithValue(journalRepo),
+          ],
+          child: const WidgetTestBench(
+            child: LinkedTasksWidget(taskId: 'task-main'),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      LinkedTaskRow rowFor(String taskId) => tester
+          .widgetList<LinkedTaskRow>(find.byType(LinkedTaskRow))
+          .singleWhere((row) => row.data.task.id == taskId);
+      expect(rowFor(firstTask.id).data.oneLiner, 'Established summary');
+
+      groupsController.push(refreshedGroups);
+      await tester.pump();
+
+      expect(rowFor(firstTask.id).data.oneLiner, 'Established summary');
+      expect(rowFor(addedTask.id).data.oneLiner, isNull);
+
+      refreshedOneLiners.complete({
+        firstTask.id: 'Updated summary',
+        addedTask.id: 'New summary',
+      });
+      await tester.pump();
+      await tester.pump();
+
+      expect(rowFor(firstTask.id).data.oneLiner, 'Updated summary');
+      expect(rowFor(addedTask.id).data.oneLiner, 'New summary');
     });
 
     testWidgets(

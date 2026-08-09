@@ -51,12 +51,14 @@ class LinkedTasksWidget extends ConsumerStatefulWidget {
 
 class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
   bool _expanded = true;
+  Map<String, String> _lastOneLinersByTaskId = const {};
 
   @override
   void didUpdateWidget(LinkedTasksWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.taskId != widget.taskId) {
       _expanded = true;
+      _lastOneLinersByTaskId = const {};
     }
   }
 
@@ -77,13 +79,17 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
       ...linkGroups.flat.map((entry) => entry.task.meta.id),
       ...linkGroups.typed.map((entry) => entry.task.meta.id),
     ];
-    final oneLinersByTaskId =
-        ref
-            .watch(
-              taskOneLinersProvider(TaskOneLinerRequest(linkedTaskIds)),
-            )
-            .value ??
-        const {};
+    final oneLiners = ref.watch(
+      taskOneLinersProvider(TaskOneLinerRequest(linkedTaskIds)),
+    );
+    if (oneLiners.value case final latest?) {
+      _lastOneLinersByTaskId = latest;
+    }
+    final oneLinersByTaskId = <String, String>{};
+    for (final taskId in linkedTaskIds) {
+      final oneLiner = _lastOneLinersByTaskId[taskId];
+      if (oneLiner != null) oneLinersByTaskId[taskId] = oneLiner;
+    }
 
     // Nothing to link to, nothing to show. On a first-run install this card
     // was a bordered box teaching a relationship feature that could not be

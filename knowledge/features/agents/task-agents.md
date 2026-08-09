@@ -510,6 +510,13 @@ because `notify` also feeds `localUpdateStream`, which drives wake
 orchestration and would let a wake re-trigger itself. Without that call the
 whole feature is invisible.
 
+The final report has the same post-commit requirement. `WakeOutputWriter`
+calls `UpdateNotifications.notifyUiOnly` only after the encompassing
+transaction succeeds, with the agent id, active task id and shared agent topic.
+Task headers and linked-task tagline batches therefore refresh immediately
+after a local wake publishes a report, without feeding the local
+wake-orchestration stream or exposing a report that later rolls back.
+
 The `incremental` flag separates the two modes. A mid-wake flush is narrow on
 purpose; the end-of-wake build is the only one allowed to reshape existing
 sets:

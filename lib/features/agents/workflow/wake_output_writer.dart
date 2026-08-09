@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/workflow/task_agent_strategy.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:uuid/uuid.dart';
 
 /// Report details captured inside the wake transaction and returned to the
@@ -31,12 +32,13 @@ typedef WakeReportToEmbed = ({
 /// wake-completed milestone).
 ///
 /// Extracted from the Task Agent workflow into a standalone, independently
-/// testable collaborator. It depends only on an [AgentSyncService] for all
-/// sync-aware writes and an [AgentRepository] for the single read it needs
-/// (the current report head). Everything else a wake produced — the strategy,
-/// report fields, observations, retraction/change-set collaborators, the
-/// proposal ledger, the agent state, and the run identity — is passed in as
-/// data to [persist].
+/// testable collaborator. It depends on an [AgentSyncService] for all
+/// sync-aware writes, an [AgentRepository] for the single report-head read,
+/// and the registered [UpdateNotifications] service for a post-commit UI
+/// refresh when one is available.
+/// Everything else a wake produced — the strategy, report fields,
+/// observations, retraction/change-set collaborators, the proposal ledger,
+/// the agent state, and the run identity — is passed in as data to [persist].
 class WakeOutputWriter {
   /// Creates a writer bound to the sync write service and agent repository.
   ///
@@ -282,6 +284,13 @@ class WakeOutputWriter {
         runKey: runKey,
       );
     });
+    if (reportToEmbed != null && getIt.isRegistered<UpdateNotifications>()) {
+      getIt<UpdateNotifications>().notifyUiOnly({
+        agentId,
+        taskId,
+        agentNotification,
+      });
+    }
     if (reportToEmbed != null && attributionEnvelope != null) {
       await getIt<AiAttributionService>().finalize(attributionEnvelope);
     }
