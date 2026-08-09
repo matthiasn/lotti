@@ -160,8 +160,10 @@ void main() {
 
   test('a revision over an already-corrupt tree fails validation and '
       'refuses to mint', () async {
-    // Duplicate criterionIds (e.g. a bad sync from an old peer): the
-    // revision applies structurally, but the validator must veto the mint.
+    // Duplicate criterionIds on two OTHER leaves (e.g. a bad sync from an
+    // old peer): the target change on the unique steps leaf is a REAL
+    // structural change, so the apply step succeeds — proving it is the
+    // validator, not an apply no-op, that vetoes the mint.
     when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecHead(
         id: goalSpecHeadId(agentId),
@@ -181,8 +183,22 @@ void main() {
         title: 'Steps',
         statement: 'x',
         criteria: const GoalCriterion.allOf(
-          criterionId: 'steps',
-          criteria: [criteria],
+          criterionId: 'root',
+          criteria: [
+            criteria,
+            GoalCriterion.habit(
+              criterionId: 'dup',
+              habitId: 'gym-a',
+              window: GoalWindow.calendarWeek(),
+              targetCount: 3,
+            ),
+            GoalCriterion.habit(
+              criterionId: 'dup',
+              habitId: 'gym-b',
+              window: GoalWindow.calendarWeek(),
+              targetCount: 2,
+            ),
+          ],
         ),
         createdAt: DateTime(2026, 8),
         vectorClock: null,
@@ -190,7 +206,7 @@ void main() {
     );
     final outcome = await service.reviseFromProposal(
       agentId: agentId,
-      changes: {'targetValue': 8000},
+      changes: {'metric': 'steps', 'targetValue': 8000},
       rationale: 'r',
     );
     expect(
@@ -215,4 +231,132 @@ void main() {
       '$agentId:spec-v5',
     );
   });
+
+  test('reads happen INSIDE the transaction, and a successor id that '
+      'already exists refuses instead of overwriting provenance', () async {
+    final order = <String>[];
+    final txnSyncService = _OrderRecordingSyncService(order);
+    when(() => txnSyncService.upsertEntity(any())).thenAnswer((
+      invocation,
+    ) async {
+      upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
+    });
+    final txnService = GoalSpecRevisionService(
+      repository: repository,
+      syncService: txnSyncService,
+    );
+    stubSpec();
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer((
+      _,
+    ) async {
+      order.add('read-head');
+      return AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026, 8),
+        vectorClock: null,
+      );
+    });
+    // The successor already exists: a concurrent acceptance won.
+    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v2',
+        agentId: agentId,
+        version: 2,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: AgentKinds.goalAgent,
+        title: 'Steps',
+        statement: 'x',
+        criteria: criteria,
+        createdAt: DateTime(2026, 8, 10, 8),
+        vectorClock: null,
+      ),
+    );
+
+    final outcome = await txnService.reviseFromProposal(
+      agentId: agentId,
+      changes: {'targetValue': 8000},
+      rationale: 'r',
+    );
+    expect(
+      (outcome as GoalSpecRevisionRefused).reason,
+      contains('concurrent revision already minted'),
+    );
+    expect(upserts, isEmpty);
+    expect(
+      order.first,
+      'transaction',
+      reason: 'the head read must be serialized by the transaction',
+    );
+  });
+
+  test('a post-commit sync failure is reconciled: the head already moved '
+      'to the minted version, so the approval is reported as committed — '
+      'a retry must not mint twice', () async {
+    stubSpec();
+    final failing = _CommitThenThrowSyncService();
+    when(() => failing.upsertEntity(any())).thenAnswer((invocation) async {
+      upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
+    });
+    final service = GoalSpecRevisionService(
+      repository: repository,
+      syncService: failing,
+    );
+    // After the (durable) writes, the repository serves the moved head.
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async =>
+          upserts.whereType<GoalSpecHeadEntity>().lastOrNull ??
+          AgentDomainEntity.goalSpecHead(
+                id: goalSpecHeadId(agentId),
+                agentId: agentId,
+                versionId: '$agentId:spec-v1',
+                updatedAt: DateTime(2026, 8),
+                vectorClock: null,
+              )
+              as GoalSpecHeadEntity,
+    );
+    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
+      (_) async => upserts
+          .whereType<GoalSpecVersionEntity>()
+          .where((v) => v.id == '$agentId:spec-v2')
+          .lastOrNull,
+    );
+
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromProposal(
+        agentId: agentId,
+        changes: {'targetValue': 8000},
+        rationale: 'r',
+      ),
+    );
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    expect(
+      (outcome as GoalSpecRevisionMinted).version.id,
+      '$agentId:spec-v2',
+    );
+  });
+}
+
+class _OrderRecordingSyncService extends MockAgentSyncService {
+  _OrderRecordingSyncService(this.order);
+
+  final List<String> order;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    order.add('transaction');
+    return action();
+  }
+}
+
+/// Runs the transaction body (writes land) and THEN throws — the durable
+/// commit + failed outbox flush shape.
+class _CommitThenThrowSyncService extends MockAgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    await action();
+    throw StateError('outbox flush failed');
+  }
 }

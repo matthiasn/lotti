@@ -278,6 +278,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       if (_adRequired(facts, derivation.priors, nudges, strategy, now) &&
           !_hasViableAdAction(strategy, nudges)) {
         final retryUsage = await _forceAd(
+          facts: facts,
           conversationId: conversationId,
           resolved: resolved,
           inferenceRepo: inferenceRepo,
@@ -387,9 +388,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
     }
   }
 
-  /// Re-arms the period's escalation with a LATER deadline — the
-  /// resolver's supported reschedule-beats-consume path. Contained: a
-  /// failed re-arm is logged, never masks the original failure.
+  /// Re-arms the period's escalation as pending, due at the current
+  /// instant — a strictly later deadline than the consumed record's, so
+  /// this is the resolver's supported reschedule-beats-consume path.
+  /// Contained: a failed re-arm is logged, never masks the original
+  /// failure.
   Future<void> _rearmEscalation(
     String agentId,
     String periodKey,
@@ -471,6 +474,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
   }
 
   Future<InferenceUsage?> _forceAd({
+    required GoalWakeFacts facts,
     required String conversationId,
     required ({
       String modelId,
@@ -489,9 +493,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
       return await _conversationRepository.sendMessage(
         conversationId: conversationId,
         message:
-            'The goal is offTrack with no active banner and no cooldown — '
-            'an ad is REQUIRED (policy). Call create_goal_ad now (or '
-            'rerun_goal_ad if the FACTS offered a reusable one).',
+            'The goal is ${facts.trackStatus.name} with no active banner '
+            'and no cooldown — an ad is REQUIRED (policy). Call '
+            'create_goal_ad now (or rerun_goal_ad if the FACTS offered a '
+            'reusable one).',
         model: resolved.modelId,
         provider: resolved.provider,
         inferenceRepo: inferenceRepo,
@@ -523,19 +528,33 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// is already over, the wall clock otherwise — so concurrent heads from
   /// different overdue periods resolve by PERIOD under generic LWW.
   DateTime _headTimestamp(String periodKey, DateTime now) {
-    final periodEnd = _periodEnd(periodKey);
-    if (periodEnd == null) return now;
+    // UTC, deliberately: this timestamp exists to give concurrent heads
+    // from different devices a PERIOD-based LWW order, and a local
+    // constructor would map the same period key to different instants
+    // across timezones — an eastern device's older period could outrank
+    // a western device's newer one.
+    final parts = _periodParts(periodKey);
+    if (parts == null) return now;
+    final periodEnd = DateTime.utc(parts.$1, parts.$2, parts.$3, 23, 59, 59);
     return periodEnd.isBefore(now) ? periodEnd : now;
   }
 
+  /// The evaluation instant for an overdue period — LOCAL wall clock,
+  /// unlike [_headTimestamp]: signal queries and day keys are local.
   DateTime? _periodEnd(String periodKey) {
+    final parts = _periodParts(periodKey);
+    if (parts == null) return null;
+    return DateTime(parts.$1, parts.$2, parts.$3, 23, 59, 59);
+  }
+
+  (int, int, int)? _periodParts(String periodKey) {
     final parts = periodKey.split('-');
     if (parts.length != 3) return null;
     final year = int.tryParse(parts[0]);
     final month = int.tryParse(parts[1]);
     final day = int.tryParse(parts[2]);
     if (year == null || month == null || day == null) return null;
-    return DateTime(year, month, day, 23, 59, 59);
+    return (year, month, day);
   }
 
   /// The instant the derivation evaluates at: the escalation's encoded
@@ -978,6 +997,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
                     'args': {
                       'changes': proposal.changes,
                       'rationale': proposal.rationale,
+                      // Provenance for the minted version: the wake
+                      // conversation that proposed this revision.
+                      'sourceThreadId': threadId,
                     },
                   },
               ],

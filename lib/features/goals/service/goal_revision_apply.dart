@@ -65,9 +65,11 @@ GoalRevisionResult applyGoalRevisionChanges({
       );
     }
     if (targetValue != null) {
-      if (targetValue is! num || !targetValue.isFinite || targetValue <= 0) {
+      // Zero is legal (an atMost-0 goal); only negative and non-finite
+      // values are outside the creation-time domain.
+      if (targetValue is! num || !targetValue.isFinite || targetValue < 0) {
         return GoalRevisionRejected(
-          'targetValue must be a positive number, got "$targetValue"',
+          'targetValue must be a non-negative number, got "$targetValue"',
         );
       }
       final before = _leafTarget(leaf);
@@ -135,6 +137,14 @@ GoalRevisionResult applyGoalRevisionChanges({
       '(free-form successCriteria alone cannot rewrite the criteria)',
     );
   }
+  if (revised == criteria) {
+    // A stale proposal restating the current values must not supersede
+    // the spec: an equivalent v(n+1) would still reset the same-version
+    // grace history for no actual change.
+    return const GoalRevisionRejected(
+      'the proposal restates the current criteria — nothing would change',
+    );
+  }
   return GoalRevisionApplied(criteria: revised, changeSummaries: summaries);
 }
 
@@ -147,8 +157,12 @@ GoalWindow? parseGoalWindowPhrase(String phrase) {
   }
   final rolling = RegExp(r'rolling\s+(\d+)\s+days?').firstMatch(normalized);
   if (rolling != null) {
-    final count = int.parse(rolling.group(1)!);
-    return count > 0 ? GoalWindow.rollingDays(count: count) : null;
+    // tryParse: model-authored digits can overflow a 64-bit int, and this
+    // parser's contract is null for unusable input, never a throw.
+    final count = int.tryParse(rolling.group(1)!);
+    return count != null && count > 0
+        ? GoalWindow.rollingDays(count: count)
+        : null;
   }
   if (normalized.contains('calendar week') ||
       normalized == 'week' ||
@@ -167,10 +181,14 @@ int? _parseCadenceCount(Object? cadence) {
   if (cadence is num) {
     return cadence % 1 == 0 && cadence > 0 ? cadence.toInt() : null;
   }
-  final match = RegExp(r'^\s*(\d+)\s*(x|times)?').firstMatch('$cadence');
+  // Anchored end to end: '3.5' or '3 bananas' must reject, not silently
+  // truncate to 3 — this runs on the approval-time mutation path.
+  final match = RegExp(
+    r'^\s*(\d+)\s*(x|times(\s+per\s+\w+)?)?\s*$',
+  ).firstMatch('$cadence');
   if (match == null) return null;
-  final count = int.parse(match.group(1)!);
-  return count > 0 ? count : null;
+  final count = int.tryParse(match.group(1)!);
+  return count != null && count > 0 ? count : null;
 }
 
 /// The single metric/measurable leaf a quantitative change binds to, or

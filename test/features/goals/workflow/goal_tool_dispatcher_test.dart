@@ -78,11 +78,20 @@ void main() {
         {
           'changes': {'targetValue': 8000},
           'rationale': 'ease off',
+          'sourceThreadId': 'thread-42',
         },
         agentId,
       );
       expect(result.success, isTrue);
       expect(result.mutatedEntityId, '$agentId:spec-v2');
+      expect(
+        upserts
+            .whereType<GoalSpecVersionEntity>()
+            .singleWhere((v) => v.id == '$agentId:spec-v2')
+            .sourceSessionId,
+        'thread-42',
+        reason: 'the proposing conversation stays auditable on the version',
+      );
       expect(result.output, contains('Goal revised to v2'));
       expect(result.output, contains('target: 10000 → 8000'));
       expect(

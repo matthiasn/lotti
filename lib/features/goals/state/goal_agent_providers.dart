@@ -19,6 +19,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/domain_logging.dart';
 
 /// Goal-agent runtime wiring (the Daily OS plug-in pattern: providers live
 /// in the owning feature; `features/agents` never imports goals).
@@ -169,9 +170,27 @@ final goalChangeSetConfirmationServiceProvider =
               final head = await repository.getEntity(
                 goalSpecHeadId(changeSet.agentId),
               );
-              if (head is! GoalSpecHeadEntity) return;
-              final version = await repository.getEntity(head.versionId);
-              if (version is! GoalSpecVersionEntity) return;
+              final version = head is GoalSpecHeadEntity
+                  ? await repository.getEntity(head.versionId)
+                  : null;
+              if (version is! GoalSpecVersionEntity) {
+                // A confirmed revision whose head/version cannot be read
+                // back leaves the runtime subscribed to the OLD criteria
+                // until restart — visible, not silent.
+                ref
+                    .read(domainLoggerProvider)
+                    .error(
+                      LogDomain.agentRuntime,
+                      StateError(
+                        'goal spec unreadable after confirmed revision',
+                      ),
+                      subDomain: 'goalRevision',
+                      message:
+                          'signal re-registration skipped for '
+                          '${changeSet.agentId}',
+                    );
+                return;
+              }
               ref
                   .read(goalAgentServiceProvider)
                   .registerSignalSubscription(

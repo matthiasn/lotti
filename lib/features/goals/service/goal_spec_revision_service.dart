@@ -54,6 +54,51 @@ class GoalSpecRevisionService {
     required String rationale,
     String? sourceThreadId,
   }) async {
+    final now = clock.now();
+    // Everything — reads included — runs inside the serialized
+    // transaction: two near-simultaneous acceptances reading the head
+    // BEFORE their transactions would both allocate spec-v(n+1) and the
+    // later commit would silently swallow the earlier user-approved
+    // revision.
+    try {
+      return await _syncService.runInTransaction(
+        () => _reviseInTransaction(
+          agentId: agentId,
+          changes: changes,
+          rationale: rationale,
+          sourceThreadId: sourceThreadId,
+          now: now,
+        ),
+      );
+    } catch (error) {
+      // The transaction's database writes can be durable even when a
+      // deferred post-commit step (the sync outbox flush) rethrows. If
+      // the head already moved to the version this call was minting, the
+      // revision IS committed — reporting failure would let a retry mint
+      // a second version on top of it.
+      final head = await _repository.getEntity(goalSpecHeadId(agentId));
+      if (head is GoalSpecHeadEntity) {
+        final version = await _repository.getEntity(head.versionId);
+        if (version is GoalSpecVersionEntity &&
+            version.authoredBy == AgentKinds.goalAgent &&
+            version.createdAt == now) {
+          return GoalSpecRevisionMinted(
+            version: version,
+            changeSummaries: const ['(committed before a sync error)'],
+          );
+        }
+      }
+      rethrow;
+    }
+  }
+
+  Future<GoalSpecRevisionOutcome> _reviseInTransaction({
+    required String agentId,
+    required Map<String, dynamic> changes,
+    required String rationale,
+    required String? sourceThreadId,
+    required DateTime now,
+  }) async {
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
     if (head is! GoalSpecHeadEntity) {
       return const GoalSpecRevisionRefused(
@@ -82,9 +127,17 @@ class GoalSpecRevisionService {
       );
     }
 
-    final now = clock.now();
     final nextVersion = current.version + 1;
     final versionId = '$agentId:spec-v$nextVersion';
+    final existing = await _repository.getEntity(versionId);
+    if (existing != null) {
+      // The successor id already exists: another acceptance won the race
+      // within this id space. Refuse rather than overwrite provenance.
+      return GoalSpecRevisionRefused(
+        'a concurrent revision already minted $versionId — re-approve '
+        'against the new head if the change is still wanted',
+      );
+    }
     final minted =
         AgentDomainEntity.goalSpecVersion(
               id: versionId,
@@ -105,15 +158,13 @@ class GoalSpecRevisionService {
             )
             as GoalSpecVersionEntity;
 
-    await _syncService.runInTransaction(() async {
-      await _syncService.upsertEntity(
-        current.copyWith(status: GoalSpecVersionStatus.superseded),
-      );
-      await _syncService.upsertEntity(minted);
-      await _syncService.upsertEntity(
-        head.copyWith(versionId: versionId, updatedAt: now),
-      );
-    });
+    await _syncService.upsertEntity(
+      current.copyWith(status: GoalSpecVersionStatus.superseded),
+    );
+    await _syncService.upsertEntity(minted);
+    await _syncService.upsertEntity(
+      head.copyWith(versionId: versionId, updatedAt: now),
+    );
 
     return GoalSpecRevisionMinted(
       version: minted,

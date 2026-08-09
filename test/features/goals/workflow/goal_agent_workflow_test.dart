@@ -1739,6 +1739,13 @@ void main() {
           strategy,
         }) async {
           callTools.add([for (final t in tools!) t.function.name]);
+          if (callTools.length == 2) {
+            expect(
+              message,
+              contains('The goal is offTrack'),
+              reason: 'the forced-ad prompt names the ACTUAL status',
+            );
+          }
           if (callTools.length == 1) {
             // The model reports but "forgets" the required ad.
             await (strategy! as GoalAgentStrategy).processToolCalls(
@@ -2207,6 +2214,10 @@ void main() {
       ),
     );
     final head = upserts.whereType<AgentReportHeadEntity>().single;
-    expect(head.updatedAt, DateTime(2026, 8, 6, 23, 59, 59));
+    expect(
+      head.updatedAt,
+      DateTime.utc(2026, 8, 6, 23, 59, 59),
+      reason: 'UTC, so period order is timezone-independent across devices',
+    );
   });
 }

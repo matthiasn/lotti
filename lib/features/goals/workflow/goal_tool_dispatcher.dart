@@ -45,11 +45,13 @@ class GoalToolDispatcher {
     }
     final rationaleValue = args['rationale'];
     final rationale = rationaleValue is String ? rationaleValue.trim() : '';
+    final sourceThreadId = args['sourceThreadId'];
 
     final outcome = await _revisionService.reviseFromProposal(
       agentId: agentId,
       changes: changes,
       rationale: rationale,
+      sourceThreadId: sourceThreadId is String ? sourceThreadId : null,
     );
     return switch (outcome) {
       GoalSpecRevisionMinted(:final version, :final changeSummaries) =>

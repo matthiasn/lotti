@@ -154,8 +154,9 @@ void main() {
     );
   });
 
-  test('invalid target values are rejected', () {
-    for (final bad in ['8000', -1, 0, double.nan]) {
+  test('invalid target values are rejected; zero is legal (atMost-0 '
+      'goals exist)', () {
+    for (final bad in ['8000', -1, double.nan]) {
       expect(
         rejected(
           applyGoalRevisionChanges(
@@ -163,9 +164,65 @@ void main() {
             changes: {'targetValue': bad},
           ),
         ),
-        contains('targetValue must be a positive number'),
+        contains('targetValue must be a non-negative number'),
       );
     }
+    final zeroed = applied(
+      applyGoalRevisionChanges(criteria: steps, changes: {'targetValue': 0}),
+    );
+    expect((zeroed.criteria as GoalCriterionMetric).target, 0);
+  });
+
+  test('a proposal restating the current values is a rejected no-op — it '
+      'must not reset the grace history', () {
+    expect(
+      rejected(
+        applyGoalRevisionChanges(
+          criteria: steps,
+          changes: {'targetValue': 10000},
+        ),
+      ),
+      contains('restates the current criteria'),
+    );
+  });
+
+  test('cadence strings with trailing garbage are rejected, not '
+      'truncated', () {
+    const composite = GoalCriterion.allOf(
+      criterionId: 'fit',
+      criteria: [steps, gym],
+    );
+    for (final bad in ['3.5', '3 bananas', '3x weekly-ish']) {
+      expect(
+        rejected(
+          applyGoalRevisionChanges(
+            criteria: composite,
+            changes: {'cadence': bad},
+          ),
+        ),
+        contains('unrecognized cadence'),
+      );
+    }
+  });
+
+  test('absurdly long digit runs reject instead of throwing', () {
+    expect(
+      parseGoalWindowPhrase('rolling 99999999999999999999999 days'),
+      isNull,
+    );
+    const composite = GoalCriterion.allOf(
+      criterionId: 'fit',
+      criteria: [steps, gym],
+    );
+    expect(
+      rejected(
+        applyGoalRevisionChanges(
+          criteria: composite,
+          changes: {'cadence': '99999999999999999999999'},
+        ),
+      ),
+      contains('unrecognized cadence'),
+    );
   });
 
   test('successCriteria alone never rewrites the tree', () {

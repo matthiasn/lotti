@@ -438,4 +438,104 @@ void main() {
     expect(subscription.agentId, agentId);
     expect(subscription.matchEntityIds, {'gym-habit'});
   });
+
+  test('a confirmed revision whose spec cannot be read back logs the '
+      'skipped re-registration instead of failing silently', () async {
+    const agentId = 'goal-gone';
+    final logger = container.read(domainLoggerProvider) as MockDomainLogger;
+    when(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    ).thenReturn(null);
+    final upserted = <AgentDomainEntity>[];
+    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
+      upserted.add(invocation.positionalArguments.first as AgentDomainEntity);
+    });
+    when(() => syncService.repository).thenReturn(repository);
+
+    // The head is readable for the mint, then gone for the hook's
+    // read-back (e.g. clobbered by a concurrent sync apply).
+    var headReads = 0;
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer((
+      _,
+    ) async {
+      headReads++;
+      if (headReads > 1) return null;
+      return AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026, 8),
+        vectorClock: null,
+      );
+    });
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v1',
+        agentId: agentId,
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Gym',
+        statement: 'x',
+        criteria: const GoalCriterion.habit(
+          criterionId: 'gym',
+          habitId: 'gym-habit',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 3,
+        ),
+        createdAt: DateTime(2026, 8),
+        vectorClock: null,
+      ),
+    );
+
+    final changeSet =
+        AgentDomainEntity.changeSet(
+              id: 'cs-2',
+              agentId: agentId,
+              taskId: agentId,
+              threadId: 'thread-1',
+              runKey: 'run-1',
+              status: ChangeSetStatus.pending,
+              items: const [
+                ChangeItem(
+                  toolName: GoalAgentToolNames.proposeGoalRevision,
+                  args: {
+                    'changes': {'cadence': 4},
+                    'rationale': 'step it up',
+                  },
+                  humanSummary: 'Raise the cadence to 4',
+                ),
+              ],
+              createdAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as ChangeSetEntity;
+    when(() => repository.getEntity('cs-2')).thenAnswer((_) async => changeSet);
+
+    final orchestrator =
+        container.read(wakeOrchestratorProvider) as MockWakeOrchestrator;
+    final service = container.read(goalChangeSetConfirmationServiceProvider);
+    final result = await service.confirmItem(changeSet, 0);
+    expect(result.success, isTrue);
+
+    verify(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'goalRevision',
+        message: any(
+          named: 'message',
+          that: contains('re-registration skipped'),
+        ),
+      ),
+    ).called(1);
+    verifyNever(() => orchestrator.addSubscription(any()));
+  });
 }
