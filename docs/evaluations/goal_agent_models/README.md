@@ -1,5 +1,12 @@
 # Goal-agent model evaluations
 
+> **Graduated (2026-08-09, PR 3):** the system prompt and tool definitions
+> now live in `lib/features/goals/workflow/goal_agent_contract.dart` — the
+> production Phase B workflow and this eval suite import the SAME file, so
+> the contract the evals validate is the contract the runtime ships. The
+> policy matrix stays here as the scenario source of truth.
+
+
 Inference-level evals for the **goal agent** (ADR 0053–0057) — run *before*
 the production `GoalAgentWorkflow` exists, so the prompt/tool contract is
 model-validated before a line of runtime code depends on it. The draft

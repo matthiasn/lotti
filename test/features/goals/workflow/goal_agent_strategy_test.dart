@@ -1,0 +1,253 @@
+import 'dart:convert';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
+import 'package:mocktail/mocktail.dart';
+import 'package:openai_dart/openai_dart.dart';
+
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
+
+ChatCompletionMessageToolCall _call({
+  required String name,
+  required Map<String, dynamic> args,
+  String id = 'call-1',
+}) => ChatCompletionMessageToolCall(
+  id: id,
+  type: ChatCompletionMessageToolCallType.function,
+  function: ChatCompletionMessageFunctionCall(
+    name: name,
+    arguments: jsonEncode(args),
+  ),
+);
+
+void main() {
+  late MockAgentSyncService syncService;
+  late MockConversationManager manager;
+  late GoalAgentStrategy strategy;
+
+  setUpAll(registerAllFallbackValues);
+
+  setUp(() {
+    syncService = MockAgentSyncService();
+    manager = MockConversationManager();
+    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    strategy = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: {'ad-known'},
+    );
+  });
+
+  String rejection() =>
+      (verify(
+            () => manager.addToolResponse(
+              toolCallId: any(named: 'toolCallId'),
+              response: captureAny(named: 'response'),
+            ),
+          ).captured.last)
+          as String;
+
+  test('update_goal_report accumulates the validated report', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {
+            'status': 'offTrack',
+            'oneLiner': 'Averaging 6.4k of 10k steps.',
+            'tldr': 'The rolling week slid under target.',
+          },
+        ),
+      ],
+      manager: manager,
+    );
+    expect(strategy.hasReport, isTrue);
+    expect(strategy.reportStatus, GoalTrackStatus.offTrack);
+    expect(strategy.reportOneLiner, 'Averaging 6.4k of 10k steps.');
+    expect(strategy.reportContent, isNull);
+  });
+
+  test('a status outside the enum is rejected in-conversation, so the '
+      'report stays unset for the forced retry', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {'status': 'doomed', 'oneLiner': 'x', 'tldr': 'y'},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(strategy.hasReport, isFalse);
+    expect(rejection(), contains('update_goal_report needs status'));
+  });
+
+  test('create_goal_ad builds a typed brief with preset fallbacks', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.createGoalAd,
+          args: {
+            'headline': 'Your shoes filed a missing person report.',
+            'tagline': 'Six days. Zero gym.',
+            'cta': 'Lace up now',
+            'tone': 'nudge',
+            'animation': 'typewriter',
+            // No accent: the calm default must apply.
+          },
+        ),
+      ],
+      manager: manager,
+    );
+    final ad = strategy.createdAds.single;
+    expect(ad.brief.headline, 'Your shoes filed a missing person report.');
+    expect(ad.brief.tone, GoalNudgeTone.nudge);
+    expect(ad.brief.animation, GoalBannerAnimation.typewriter);
+    expect(ad.brief.accent, GoalBannerAccent.calm);
+    expect(ad.brief.cta, 'Lace up now');
+  });
+
+  test('an invented animation preset is rejected — the catalog is '
+      'code-owned', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.createGoalAd,
+          args: {'headline': 'x', 'tone': 'nudge', 'animation': 'explode'},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(strategy.createdAds, isEmpty);
+    expect(rejection(), contains('animation'));
+  });
+
+  test('retire/rerun accept only adIds offered in FACTS', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          id: 'call-a',
+          name: GoalAgentToolNames.retireGoalAd,
+          args: {'adId': 'ad-known', 'reason': 'back on pace'},
+        ),
+        _call(
+          id: 'call-b',
+          name: GoalAgentToolNames.rerunGoalAd,
+          args: {'adId': 'ad-hallucinated', 'reason': 'it was great'},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(strategy.retireRequests.single.adId, 'ad-known');
+    expect(strategy.rerunRequests, isEmpty);
+    expect(rejection(), contains('unknown adId'));
+  });
+
+  test('only ONE revision proposal per wake is accepted', () async {
+    for (final (id, target) in [('call-a', 12000), ('call-b', 8000)]) {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            id: id,
+            name: GoalAgentToolNames.proposeGoalRevision,
+            args: {
+              'changes': {'targetValue': target},
+              'rationale': 'user asked',
+            },
+          ),
+        ],
+        manager: manager,
+      );
+    }
+    expect(strategy.revisionProposals, hasLength(1));
+    expect(strategy.revisionProposals.single.changes['targetValue'], 12000);
+    expect(rejection(), contains('only one revision proposal'));
+  });
+
+  test('observations and unknown tools', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          id: 'call-a',
+          name: GoalAgentToolNames.recordGoalObservation,
+          args: {'note': 'User prefers roast-tone ads.'},
+        ),
+        _call(id: 'call-b', name: 'made_up_tool', args: {}),
+      ],
+      manager: manager,
+    );
+    expect(strategy.observations.single.text, 'User prefers roast-tone ads.');
+    expect(rejection(), contains('unknown tool'));
+  });
+
+  test('the continuation prompt never nags — a no-op wake stays legal '
+      '(policy row P2)', () {
+    expect(strategy.getContinuationPrompt(manager), isNull);
+  });
+
+  test(
+    'unparseable tool arguments are reported back, not crashed on',
+    () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          const ChatCompletionMessageToolCall(
+            id: 'call-raw',
+            type: ChatCompletionMessageToolCallType.function,
+            function: ChatCompletionMessageFunctionCall(
+              name: GoalAgentToolNames.updateGoalReport,
+              arguments: '{not json',
+            ),
+          ),
+        ],
+        manager: manager,
+      );
+      expect(strategy.hasReport, isFalse);
+      expect(rejection(), contains('invalid arguments format'));
+    },
+  );
+
+  test('ad actions need both adId and reason; a changes payload must be an '
+      'object', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          id: 'c1',
+          name: GoalAgentToolNames.retireGoalAd,
+          args: {'adId': 'ad-known', 'reason': '  '},
+        ),
+        _call(
+          id: 'c2',
+          name: GoalAgentToolNames.proposeGoalRevision,
+          args: {'changes': 'make it easier', 'rationale': 'r'},
+        ),
+        _call(
+          id: 'c3',
+          name: GoalAgentToolNames.recordGoalObservation,
+          args: {'note': '   '},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(strategy.retireRequests, isEmpty);
+    expect(strategy.revisionProposals, isEmpty);
+    expect(strategy.observations, isEmpty);
+  });
+
+  test('shouldContinue delegates to the manager and the final response '
+      'keeps only non-empty text', () {
+    when(manager.canContinue).thenReturn(true);
+    expect(strategy.shouldContinue(manager), isTrue);
+    strategy
+      ..recordFinalResponse('')
+      ..recordFinalResponse(null);
+    expect(strategy.finalResponse, isNull);
+    strategy.recordFinalResponse('Answered the user.');
+    expect(strategy.finalResponse, 'Answered the user.');
+  });
+}

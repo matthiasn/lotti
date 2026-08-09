@@ -1,6 +1,7 @@
 import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
 
@@ -10,6 +11,9 @@ import '../test_data/entity_factories.dart';
 /// rather than only on a return value.
 class _RecordingMaintenance implements AgentRuntimeMaintenance {
   _RecordingMaintenance({this.beforeScanError});
+
+  @override
+  Future<void> onIdentityReceived(AgentIdentityEntity identity) async {}
 
   /// Thrown by [beforeWakeScan] when set, to exercise the runtime's handling.
   final Error? beforeScanError;

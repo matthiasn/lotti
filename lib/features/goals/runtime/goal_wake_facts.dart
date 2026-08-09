@@ -1,4 +1,5 @@
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 
 /// The deterministic facts one Phase A tick derives for a goal agent
@@ -34,4 +35,31 @@ class GoalWakeFacts {
   /// messages. Ad staleness and dialogue triggers join this predicate
   /// with PR 5's nudge state.
   bool get needsEscalation => statusTransitioned;
+}
+
+/// Everything one deterministic derivation pass computed for a goal wake:
+/// the shared product of `GoalAgentPhaseA.deriveWakeFacts`, consumed by
+/// Phase A's register/escalation writes AND by Phase B's FACTS renderer —
+/// one derivation, two tiers, zero drift.
+class GoalWakeDerivation {
+  const GoalWakeDerivation({
+    required this.version,
+    required this.facts,
+    required this.periodKey,
+    required this.priors,
+    this.existingToday,
+  });
+
+  final GoalSpecVersionEntity version;
+  final GoalWakeFacts facts;
+
+  /// The evaluation day's register period key.
+  final String periodKey;
+
+  /// Most-recent-first prior register rows (consecutive, same spec
+  /// version — the grace streak).
+  final List<GoalProgressEntity> priors;
+
+  /// Today's already-persisted register row, if any.
+  final GoalProgressEntity? existingToday;
 }

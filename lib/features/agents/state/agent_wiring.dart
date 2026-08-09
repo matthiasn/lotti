@@ -228,14 +228,19 @@ void wireSyncEventProcessor(
   final repository = ref.read(agentRepositoryProvider);
   processor
     ..agentRepository = repository
-    ..wakeOrchestrator = orchestrator;
+    ..wakeOrchestrator = orchestrator
+    // Feature-owned runtime mirrors (goal agents today): a synced-in
+    // identity is offered to each contributor so subscriptions follow the
+    // agent onto this device mid-session.
+    ..runtimeMaintenance = ref.read(agentRuntimeMaintenanceProvider);
   // Also wire the agent repository into the backfill handler so it can
   // look up agent entities and links when responding to backfill requests.
   processor.backfillResponseHandler.agentRepository = repository;
   ref.onDispose(() {
     processor
       ..agentRepository = null
-      ..wakeOrchestrator = null;
+      ..wakeOrchestrator = null
+      ..runtimeMaintenance = const [];
     processor.backfillResponseHandler.agentRepository = null;
   });
 }

@@ -7,10 +7,12 @@ import 'dart:typed_data';
 
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/sync/g_counter.dart';
 import 'package:lotti/features/sync/matrix/pipeline/attachment_index.dart';
@@ -404,6 +406,148 @@ void main() {
       // Both devices' increments survive the concurrent apply.
       expect(upserted.wakeCounter.byHost, {'host-A': 7, 'host-B': 4});
       expect(upserted.wakeCounter.value, 11);
+    });
+
+    test('concurrent goal-nudge edits join exposure counters and union '
+        'ratings — the labeled library survives whole-row LWW', () async {
+      const localVc = VectorClock({'host-A': 2, 'host-B': 1});
+      const incomingVc = VectorClock({'host-A': 1, 'host-B': 2});
+      GoalNudgeEntity nudgeRow({
+        required VectorClock vc,
+        required GCounter visibleMs,
+        required List<GoalNudgeRating> ratings,
+        GoalNudgeStatus status = GoalNudgeStatus.active,
+      }) =>
+          AgentDomainEntity.goalNudge(
+                id: 'nudge-1',
+                agentId: 'agent-1',
+                status: status,
+                brief: const GoalNudgeBrief(
+                  headline: 'h',
+                  tone: GoalNudgeTone.nudge,
+                  animation: GoalBannerAnimation.steady,
+                ),
+                briefDigest: 'd',
+                createdAt: DateTime(2026, 8),
+                updatedAt: DateTime(2026, 8, 2),
+                vectorClock: vc,
+                totalVisibleMs: visibleMs,
+                ratings: ratings,
+              )
+              as GoalNudgeEntity;
+
+      final local = nudgeRow(
+        vc: localVc,
+        visibleMs: const GCounter({'host-A': 5000}),
+        ratings: [
+          GoalNudgeRating(
+            activation: 1,
+            ratedAt: DateTime(2026, 8, 1, 9),
+            rating: 5,
+          ),
+        ],
+        status: GoalNudgeStatus.dismissed,
+      );
+      final incoming = nudgeRow(
+        vc: incomingVc,
+        visibleMs: const GCounter({'host-B': 3000}),
+        ratings: [
+          GoalNudgeRating(
+            activation: 1,
+            ratedAt: DateTime(2026, 8, 1, 11),
+            rating: 4,
+          ),
+        ],
+      );
+      when(
+        () => mockAgentRepo.getEntity('nudge-1'),
+      ).thenAnswer((_) async => local);
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.agentEntity(
+            agentEntity: incoming,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      final upserted =
+          verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
+              as GoalNudgeEntity;
+      // The dismissal-terminal override picked local as the winner, and
+      // the accumulator join recovered the other device's exposure and
+      // rating anyway.
+      expect(upserted.status, GoalNudgeStatus.dismissed);
+      expect(
+        upserted.totalVisibleMs.byHost,
+        {'host-A': 5000, 'host-B': 3000},
+      );
+      expect(upserted.ratings, hasLength(2));
+    });
+
+    test('concurrent goal-nudge edits with no dismissal fall to LWW for '
+        'the row while still joining the counters', () async {
+      const localVc = VectorClock({'host-A': 2, 'host-B': 1});
+      const incomingVc = VectorClock({'host-A': 1, 'host-B': 2});
+      final local =
+          AgentDomainEntity.goalNudge(
+                id: 'nudge-2',
+                agentId: 'agent-1',
+                status: GoalNudgeStatus.active,
+                brief: const GoalNudgeBrief(
+                  headline: 'old copy',
+                  tone: GoalNudgeTone.nudge,
+                  animation: GoalBannerAnimation.steady,
+                ),
+                briefDigest: 'd',
+                createdAt: DateTime(2026, 8),
+                updatedAt: DateTime(2026, 8, 2),
+                vectorClock: localVc,
+                totalVisibleMs: const GCounter({'host-A': 100}),
+              )
+              as GoalNudgeEntity;
+      final incoming =
+          AgentDomainEntity.goalNudge(
+                id: 'nudge-2',
+                agentId: 'agent-1',
+                status: GoalNudgeStatus.retired,
+                brief: const GoalNudgeBrief(
+                  headline: 'old copy',
+                  tone: GoalNudgeTone.nudge,
+                  animation: GoalBannerAnimation.steady,
+                ),
+                briefDigest: 'd',
+                createdAt: DateTime(2026, 8),
+                // Strictly newer wall clock → incoming wins the row.
+                updatedAt: DateTime(2026, 8, 3),
+                vectorClock: incomingVc,
+                totalVisibleMs: const GCounter({'host-B': 200}),
+              )
+              as GoalNudgeEntity;
+      when(
+        () => mockAgentRepo.getEntity('nudge-2'),
+      ).thenAnswer((_) async => local);
+      when(() => event.text).thenReturn(
+        encodeMessage(
+          SyncMessage.agentEntity(
+            agentEntity: incoming,
+            status: SyncEntryStatus.update,
+          ),
+        ),
+      );
+
+      await processor.process(event: event, journalDb: journalDb);
+
+      final upserted =
+          verify(() => mockAgentRepo.upsertEntity(captureAny())).captured.single
+              as GoalNudgeEntity;
+      expect(upserted.status, GoalNudgeStatus.retired);
+      expect(
+        upserted.totalVisibleMs.byHost,
+        {'host-A': 100, 'host-B': 200},
+      );
     });
 
     test('a locally-dominating agent state is kept — incoming is neither '
@@ -2191,6 +2335,48 @@ void main() {
         when(
           () => mockOrchestrator.enableAutomaticUpdatesRuntime(any()),
         ).thenReturn(null);
+      });
+
+      test('offers a synced-in identity to every runtime-maintenance '
+          'contributor, containing a throwing one', () async {
+        final seen = <String>[];
+        final recorder = _RecordingMaintenance(seen);
+        processor.runtimeMaintenance = [
+          _ThrowingMaintenance(),
+          _DefaultHookMaintenance(),
+          recorder,
+        ];
+        addTearDown(() => processor.runtimeMaintenance = const []);
+
+        final entity = AgentDomainEntity.agent(
+          id: 'goal-77',
+          agentId: 'goal-77',
+          kind: 'goal_agent',
+          displayName: 'Steps goal',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2026, 8),
+          updatedAt: DateTime(2026, 8),
+          vectorClock: null,
+        );
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: entity,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        // The thrower ran first and was contained; the recorder still got
+        // the identity, and the entity was persisted normally.
+        expect(seen, ['goal-77']);
+        verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       });
 
       test('removes subscriptions when agent is dormant', () async {
@@ -4002,4 +4188,44 @@ void main() {
       ),
     ).called(1);
   });
+}
+
+/// Extends (not implements) so the interface's default no-op
+/// [AgentRuntimeMaintenance.onIdentityReceived] body itself is exercised.
+class _DefaultHookMaintenance extends AgentRuntimeMaintenance {
+  @override
+  Future<void> beforeWakeScan() async {}
+
+  @override
+  Future<void> restoreSubscriptions() async {}
+}
+
+class _RecordingMaintenance implements AgentRuntimeMaintenance {
+  _RecordingMaintenance(this.seen);
+
+  final List<String> seen;
+
+  @override
+  Future<void> beforeWakeScan() async {}
+
+  @override
+  Future<void> restoreSubscriptions() async {}
+
+  @override
+  Future<void> onIdentityReceived(AgentIdentityEntity identity) async {
+    seen.add(identity.agentId);
+  }
+}
+
+class _ThrowingMaintenance implements AgentRuntimeMaintenance {
+  @override
+  Future<void> beforeWakeScan() async {}
+
+  @override
+  Future<void> restoreSubscriptions() async {}
+
+  @override
+  Future<void> onIdentityReceived(AgentIdentityEntity identity) async {
+    throw StateError('bad contributor');
+  }
 }

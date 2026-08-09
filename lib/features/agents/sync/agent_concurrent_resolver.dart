@@ -1,3 +1,4 @@
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -116,6 +117,15 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     if (byCreated == 0) return null;
     return byCreated < 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
   }
+  if (local is GoalNudgeEntity && incoming is GoalNudgeEntity) {
+    // Dismissal is terminal (ADR 0055): the user's "stop showing me this"
+    // must not be revived by a concurrent re-activation or bookkeeping
+    // write on another device — a fresh dismissal is a request for quiet.
+    final localDismissed = local.status == GoalNudgeStatus.dismissed;
+    final incomingDismissed = incoming.status == GoalNudgeStatus.dismissed;
+    if (localDismissed == incomingDismissed) return null;
+    return localDismissed ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+  }
   return null;
 }
 
@@ -173,6 +183,49 @@ AgentStateEntity mergeAgentStateCounters({
       ),
     ),
   );
+}
+
+/// Merges the convergent fields of two **concurrent** [GoalNudgeEntity]
+/// versions into [winner] (chosen by [resolveConcurrent], possibly after
+/// the dismissal-terminal override): the per-host exposure G-counters
+/// joined element-wise, the ratings histories unioned, and the
+/// observed-event watermarks widened. Whole-row LWW alone would let the
+/// losing device's visible-time, impressions and rating-prompt outcomes
+/// vanish — and those accumulate across YEARS of activations (ADR 0055's
+/// labeled library), so losing one side is permanent damage, not noise.
+///
+/// Ratings are append-only, keyed by activation index: the union keeps
+/// one entry per `(activation, ratedAt, rating, skipped)` tuple, ordered
+/// by activation then ratedAt, so both replicas converge on the identical
+/// list regardless of arrival order. Pure: same inputs → same result.
+GoalNudgeEntity mergeGoalNudgeAccumulators({
+  required GoalNudgeEntity winner,
+  required GoalNudgeEntity local,
+  required GoalNudgeEntity incoming,
+}) {
+  final ratings =
+      <GoalNudgeRating>{...local.ratings, ...incoming.ratings}.toList()
+        ..sort((a, b) {
+          final byActivation = a.activation.compareTo(b.activation);
+          if (byActivation != 0) return byActivation;
+          return a.ratedAt.compareTo(b.ratedAt);
+        });
+  return winner.copyWith(
+    totalVisibleMs: local.totalVisibleMs.merge(incoming.totalVisibleMs),
+    impressionCount: local.impressionCount.merge(incoming.impressionCount),
+    ratings: ratings,
+    activationCount: local.activationCount > incoming.activationCount
+        ? local.activationCount
+        : incoming.activationCount,
+    firstShownAt: _earliestInstant(local.firstShownAt, incoming.firstShownAt),
+    lastShownAt: _latestInstant(local.lastShownAt, incoming.lastShownAt),
+  );
+}
+
+DateTime? _earliestInstant(DateTime? a, DateTime? b) {
+  if (a == null) return b;
+  if (b == null) return a;
+  return a.isBefore(b) ? a : b;
 }
 
 DateTime? _latestInstant(DateTime? a, DateTime? b) {

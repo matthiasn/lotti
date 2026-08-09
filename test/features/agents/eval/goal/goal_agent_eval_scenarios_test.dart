@@ -371,14 +371,14 @@ void main() {
       final noop = goalAgentEvalScenarios.singleWhere(
         (s) => s.expectsNoToolCalls,
       );
-      final allNames = goalAgentEvalTools.map((t) => t.name).toSet();
+      final allNames = goalAgentTools.map((t) => t.name).toSet();
       expect(noop.forbiddenToolNames.toSet(), allNames);
     });
   });
 
   group('spec invariants', () {
     test('report tool status enum is the GoalTrackStatus vocabulary', () {
-      final reportTool = goalAgentEvalTools.singleWhere(
+      final reportTool = goalAgentTools.singleWhere(
         (t) => t.name == GoalAgentToolNames.updateGoalReport,
       );
       final properties =
@@ -392,7 +392,7 @@ void main() {
     });
 
     test('tool names follow the verb_goal_noun convention', () {
-      for (final tool in goalAgentEvalTools) {
+      for (final tool in goalAgentTools) {
         expect(
           RegExp(r'^[a-z]+_goal_[a-z_]+$').hasMatch(tool.name),
           isTrue,
@@ -405,11 +405,11 @@ void main() {
       // The payload lesson: a bloated prompt gets skimmed. Budget grew with
       // the judgment tier (composite targeting, cooldown, roast bounds) —
       // still a hard ceiling, revisit any growth past it.
-      expect(goalAgentEvalSystemPrompt.length, lessThan(3200));
-      expect(goalAgentEvalSystemPrompt, contains('insufficientData'));
-      expect(goalAgentEvalSystemPrompt, contains('rerun_goal_ad'));
-      expect(goalAgentEvalSystemPrompt, contains('roast'));
-      expect(goalAgentEvalSystemPrompt, contains('dismissalCooldownActive'));
+      expect(goalAgentSystemPrompt.length, lessThan(3200));
+      expect(goalAgentSystemPrompt, contains('insufficientData'));
+      expect(goalAgentSystemPrompt, contains('rerun_goal_ad'));
+      expect(goalAgentSystemPrompt, contains('roast'));
+      expect(goalAgentSystemPrompt, contains('dismissalCooldownActive'));
     });
 
     test('numberTerms accepts the groupings models actually emit', () {

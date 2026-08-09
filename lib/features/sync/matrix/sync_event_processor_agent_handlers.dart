@@ -170,12 +170,24 @@ extension _AgentHandlers on SyncEventProcessor {
       // LWW winner) and bypasses the keep-local skip below; otherwise it returns
       // null and the standard dominance path applies (causal dominance already
       // implies counter-domination, so no merge is needed there).
-      final mergedState = resolvedEntity is AgentStateEntity
-          ? await _mergeConcurrentAgentState(
-              incoming: resolvedEntity,
-              prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
-            )
-          : null;
+      final AgentDomainEntity? mergedState;
+      if (resolvedEntity is AgentStateEntity) {
+        mergedState = await _mergeConcurrentAgentState(
+          incoming: resolvedEntity,
+          prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+        );
+      } else if (resolvedEntity is GoalNudgeEntity) {
+        // Goal nudges accumulate exposure counters and rating history
+        // across years of activations (ADR 0055); like the agent-state
+        // counters, a concurrent conflict must join them element-wise
+        // instead of letting whole-row LWW erase one device's outcomes.
+        mergedState = await _mergeConcurrentGoalNudge(
+          incoming: resolvedEntity,
+          prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+        );
+      } else {
+        mergedState = null;
+      }
 
       if (mergedState == null &&
           await _localAgentEntityDominates(
@@ -264,6 +276,25 @@ extension _AgentHandlers on SyncEventProcessor {
                 _addProjectSubscription(link);
               }
             }
+          }
+        }
+        // Plug-in kinds (goal agents today): offer the identity to each
+        // registered runtime-maintenance contributor, so the owning
+        // feature mirrors its subscriptions without this file hard-coding
+        // another kind branch. Contributors contain their own failures.
+        for (final maintenance in runtimeMaintenance) {
+          try {
+            await maintenance.onIdentityReceived(appliedIdentity);
+          } catch (error, stackTrace) {
+            _loggingService.error(
+              LogDomain.sync,
+              error,
+              subDomain: 'processor.identityMirror',
+              message:
+                  'runtime maintenance identity mirror failed for '
+                  '${appliedIdentity.agentId}',
+              stackTrace: stackTrace,
+            );
           }
         }
       }
@@ -515,6 +546,61 @@ extension _AgentHandlers on SyncEventProcessor {
     // the joined counters, the standard path is correct (keep local / apply
     // incoming) and we avoid a redundant write — and stay behaviour-compatible
     // with the non-counter concurrent resolution.
+    return merged == winner ? null : merged;
+  }
+
+  /// The [GoalNudgeEntity] analogue of [_mergeConcurrentAgentState]: on a
+  /// **concurrent** clock conflict, returns the nudge with exposure
+  /// counters joined, ratings unioned and watermarks widened via
+  /// [mergeGoalNudgeAccumulators], with non-accumulator fields from the
+  /// deterministic winner — which honours the dismissal-terminal override
+  /// before generic LWW, so a concurrent bookkeeping write can never
+  /// resurrect a dismissed ad. Returns null when clocks are missing or
+  /// not concurrent (causal dominance already carries the accumulators).
+  Future<GoalNudgeEntity?> _mergeConcurrentGoalNudge({
+    required GoalNudgeEntity incoming,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
+  }) async {
+    final incomingVc = incoming.vectorClock;
+    if (incomingVc == null) return null;
+
+    final local =
+        (prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false)
+        ? prefetchedAgentEntitiesById![incoming.id]
+        : await agentRepository!.getEntity(incoming.id);
+    if (local is! GoalNudgeEntity) return null;
+    final localVc = local.vectorClock;
+    if (localVc == null) return null;
+
+    final VclockStatus status;
+    try {
+      status = VectorClock.compare(localVc, incomingVc);
+    } catch (_) {
+      return null;
+    }
+    if (status != VclockStatus.concurrent) return null;
+
+    final overrideWinner = resolveConcurrentAgentEntityOverride(
+      local: local,
+      incoming: incoming,
+    );
+    final winnerSide =
+        overrideWinner ??
+        resolveConcurrent(
+          localVc: localVc,
+          incomingVc: incomingVc,
+          localUpdatedAt: local.effectiveUpdatedAt,
+          incomingUpdatedAt: incoming.effectiveUpdatedAt,
+        );
+    final winner = winnerSide == ConcurrentWinner.local ? local : incoming;
+
+    final merged = mergeGoalNudgeAccumulators(
+      winner: winner,
+      local: local,
+      incoming: incoming,
+    );
+    // As with agent state: only diverge from the standard whole-row path
+    // when the join actually recovers something the winner lacked.
     return merged == winner ? null : merged;
   }
 

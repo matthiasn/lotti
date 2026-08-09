@@ -110,6 +110,11 @@ class GoalAgentService {
     return identity;
   }
 
+  /// Drops the agent's runtime subscriptions (paused/archived goals must
+  /// stop waking on signals; a re-activation re-registers).
+  void removeSignalSubscriptions(String agentId) =>
+      _orchestrator.removeSubscriptions(agentId);
+
   /// Evidence-triggered wakes: the goal agent listens to exactly the
   /// signals its criteria reference — leaf dataTypes, habitIds and
   /// measurable ids — never a global sentinel.

@@ -317,6 +317,9 @@ void main() {
     // escalation must write the IDENTICAL deadline, or the concurrent
     // resolver's later-deadline preference resurrects consumed wakes.
     expect(escalation.scheduledAt, DateTime.utc(2026, 8, 8));
+    // The wake-runner signature has no workspaceKey, so the router keys
+    // Phase B entry on this token (the day agent's digest: precedent).
+    expect(escalation.triggerTokens, ['goal-escalation:2026-08-08']);
   });
 
   test(

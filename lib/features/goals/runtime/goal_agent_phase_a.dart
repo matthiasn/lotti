@@ -85,6 +85,49 @@ class GoalAgentPhaseA {
       return const WakeResult(success: true);
     }
 
+    final derivation = await deriveWakeFacts(
+      agentId: agentId,
+      version: version,
+      now: now,
+    );
+    final facts = derivation.facts;
+    final periodKey = derivation.periodKey;
+    final existingToday = derivation.existingToday;
+    final evaluation = facts.evaluation;
+
+    // One transaction: a register write acknowledging the transition
+    // without its escalation would be permanent — the next run reads the
+    // new status as previousStatus and never re-arms the missed wake.
+    await _syncService.runInTransaction(() async {
+      await _upsertRegister(
+        agentId: agentId,
+        version: version,
+        evaluation: evaluation,
+        facts: facts,
+        now: now,
+        periodKey: periodKey,
+        existing: existingToday,
+      );
+      if (facts.needsEscalation) {
+        await _armEscalation(agentId, now, periodKey);
+      }
+    });
+    if (facts.needsEscalation) {
+      _onEscalationArmed?.call();
+    }
+
+    return const WakeResult(success: true);
+  }
+
+  /// One deterministic derivation pass: signals → evaluation → policy →
+  /// transition facts. Shared by [execute] (which persists the register
+  /// and arms escalation from it) and by Phase B's FACTS renderer, so the
+  /// two tiers can never disagree about what the wake is about.
+  Future<GoalWakeDerivation> deriveWakeFacts({
+    required String agentId,
+    required GoalSpecVersionEntity version,
+    required DateTime now,
+  }) async {
     final signals = await _signalReader.read(
       criteria: version.criteria,
       reference: now,
@@ -121,35 +164,18 @@ class GoalAgentPhaseA {
         : priors.isEmpty
         ? null
         : priors.first.trackStatus;
-    final facts = GoalWakeFacts(
-      trackStatus: trackStatus,
-      previousStatus: previousStatus,
-      evaluation: evaluation,
-      shortTermAttainment: shortTerm,
-    );
-
-    // One transaction: a register write acknowledging the transition
-    // without its escalation would be permanent — the next run reads the
-    // new status as previousStatus and never re-arms the missed wake.
-    await _syncService.runInTransaction(() async {
-      await _upsertRegister(
-        agentId: agentId,
-        version: version,
+    return GoalWakeDerivation(
+      version: version,
+      facts: GoalWakeFacts(
+        trackStatus: trackStatus,
+        previousStatus: previousStatus,
         evaluation: evaluation,
-        facts: facts,
-        now: now,
-        periodKey: periodKey,
-        existing: existingToday is GoalProgressEntity ? existingToday : null,
-      );
-      if (facts.needsEscalation) {
-        await _armEscalation(agentId, now, periodKey);
-      }
-    });
-    if (facts.needsEscalation) {
-      _onEscalationArmed?.call();
-    }
-
-    return const WakeResult(success: true);
+        shortTermAttainment: shortTerm,
+      ),
+      periodKey: periodKey,
+      priors: priors,
+      existingToday: existingToday is GoalProgressEntity ? existingToday : null,
+    );
   }
 
   /// Recurrence by re-arm: every run schedules the next cadence tick, and
@@ -290,4 +316,8 @@ AgentDomainEntity goalEscalationWake(
   updatedAt: now,
   vectorClock: null,
   workspaceKey: goalEscalationWorkspaceKey(periodKey),
+  // The workspace key doubles as a trigger token: the runner signature
+  // carries no workspaceKey, so this token is how the wake router knows
+  // to enter Phase B (the day agent's `digest:` prefix precedent).
+  triggerTokens: [goalEscalationWorkspaceKey(periodKey)],
 );

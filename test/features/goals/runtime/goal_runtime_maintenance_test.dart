@@ -35,13 +35,17 @@ void main() {
     targetCount: 3,
   );
 
-  AgentIdentityEntity goalIdentity(String id) =>
+  AgentIdentityEntity goalIdentity(
+    String id, {
+    String kind = AgentKinds.goalAgent,
+    AgentLifecycle lifecycle = AgentLifecycle.active,
+  }) =>
       AgentDomainEntity.agent(
             id: id,
             agentId: id,
-            kind: AgentKinds.goalAgent,
+            kind: kind,
             displayName: id,
-            lifecycle: AgentLifecycle.active,
+            lifecycle: lifecycle,
             mode: AgentInteractionMode.autonomous,
             allowedCategoryIds: const {},
             currentStateId: '$id:state',
@@ -193,6 +197,40 @@ void main() {
       expect(upserts, isEmpty);
     },
   );
+
+  test('a synced-in ACTIVE goal identity subscribes mid-session; a '
+      'non-goal identity is ignored', () async {
+    stubSpec('goal-a');
+    await maintenance.onIdentityReceived(goalIdentity('goal-a'));
+    final subscription =
+        verify(() => orchestrator.addSubscription(captureAny())).captured.single
+            as AgentSubscription;
+    expect(subscription.agentId, 'goal-a');
+    expect(subscription.matchEntityIds, {'gym-habit'});
+
+    await maintenance.onIdentityReceived(
+      goalIdentity('task-1', kind: AgentKinds.taskAgent),
+    );
+    verifyNever(() => orchestrator.removeSubscriptions(any()));
+  });
+
+  test('a synced-in dormant goal identity is unsubscribed, and a failing '
+      'spec read is contained', () async {
+    when(() => orchestrator.removeSubscriptions(any())).thenReturn(null);
+    await maintenance.onIdentityReceived(
+      goalIdentity('goal-a', lifecycle: AgentLifecycle.dormant),
+    );
+    verify(() => orchestrator.removeSubscriptions('goal-a')).called(1);
+
+    when(
+      () => repository.getEntity(goalSpecHeadId('goal-a')),
+    ).thenThrow(StateError('db gone'));
+    await expectLater(
+      maintenance.onIdentityReceived(goalIdentity('goal-a')),
+      completes,
+    );
+    verifyNever(() => orchestrator.addSubscription(any()));
+  });
 
   test('beforeWakeScan heals a missing cadence record', () async {
     when(

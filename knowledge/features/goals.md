@@ -1,7 +1,7 @@
 ---
 type: Feature Module
-title: Goal Agents — Deterministic Runtime
-description: The Phase A tier of goal-driven agents — evidence- and cadence-triggered evaluation of goal criteria into convergent daily progress registers, with escalation wakes armed only on status transitions.
+title: Goal Agents — Runtime
+description: Goal-driven agents — the deterministic Phase A tier evaluating criteria into convergent daily registers, and the lease-elected Phase B LLM tier consuming escalation wakes through the eval-graduated contract.
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
@@ -32,6 +32,14 @@ sources:
     resource: ../../lib/classes/goal_criterion.dart
     title: GoalCriterion tree (shared vocabulary in lib/classes)
     last_modified: 2026-08-09
+  - id: workflow
+    resource: ../../lib/features/goals/workflow/goal_agent_workflow.dart
+    title: GoalAgentWorkflow — the Phase B LLM tier
+    last_modified: 2026-08-09
+  - id: contract
+    resource: ../../lib/features/goals/workflow/goal_agent_contract.dart
+    title: Goal-agent contract (eval-graduated prompt + tools)
+    last_modified: 2026-08-09
   - id: sync-dispatcher
     resource: ../../lib/features/goals/sync/goal_signal_sync_dispatcher.dart
     title: GoalSignalSyncDispatcher — the sync blind-spot bridge
@@ -42,14 +50,17 @@ sources:
     last_modified: 2026-08-08
 ---
 
-# Goal Agents — Deterministic Runtime
+# Goal Agents — Runtime
 
 One long-lived agent per user goal (ADR 0053), built deterministic-first
 (ADR 0054): the invariant is that **a tick that changes nothing costs €0
-and writes no messages**. What runs today is Phase A — the model-free
-tier; the LLM tier (Phase B) consumes the escalation wakes this tier arms
-and is a later increment, as are the banner surface (ADR 0058) and the
-goal chat.
+and writes no messages**. Phase A is the model-free tier that runs on
+every wake; Phase B is the lease-elected LLM tier that consumes the
+escalation wakes Phase A arms, speaking the contract that was validated
+in the eval harness *before* this runtime existed (the prompt and tool
+definitions live in `goal_agent_contract.dart` and the eval suite imports
+them — one artifact, zero drift). The banner surface (ADR 0058) and the
+goal chat are later increments.
 
 ## Runtime flow
 
@@ -72,6 +83,12 @@ flowchart TD
     TRANS -- no --> DONE[return — the €0 no-op]
     TRANS -- yes --> ESC[arm escalation wake\ngoal-escalation:periodKey,\nperiod-derived UTC deadline,\nlease-elected, same txn\nas the register]
     ESC --> NUDGE[nudge ScheduledWakeManager\nrequestCheck on arming device]
+    NUDGE --> ROUTE{escalation trigger token\non the wake?}
+    ROUTE -- no --> PA
+    ROUTE -- yes --> PB[GoalAgentWorkflow — Phase B\nsame derivation as Phase A]
+    PB --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone]
+    FACTS --> CONV[one bounded conversation\nglm-5.2 default, profile override,\ntemperature 0, 6-tool contract]
+    CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet]
 ```
 
 ## Invariants
@@ -106,7 +123,22 @@ flowchart TD
 - **Phase B is reachable only through the lease.** Sync-received signals
   run Phase A directly (the orchestrator deliberately listens local-only);
   anything LLM-worthy becomes a `goal-escalation:<periodKey>` scheduled
-  wake whose lease election picks exactly one device.
+  wake whose lease election picks exactly one device. The wake-runner
+  signature carries no workspace key, so the escalation record stores its
+  workspace key as a trigger token and the runner routes on it.
+- **Phase B re-derives, never trusts.** The workflow calls the same
+  `deriveWakeFacts` Phase A used to arm the escalation and renders every
+  number into the FACTS block; the prompt forbids the model to recompute.
+  A wake with zero tool calls is legal (the no-op policy row) — the
+  strategy never nags for output.
+- **The goal spec never mutates in a wake.** `propose_goal_revision`
+  lands as a pending ChangeSet for user approval (PR 4's flow mints the
+  version); ad state is validated in-conversation against the ids the
+  FACTS offered, and all outputs commit in one transaction.
+- **Nudge accumulators are CRDTs.** Dismissal is terminal in the
+  concurrent resolver, and exposure counters (per-host G-counters),
+  rating histories and shown-at watermarks merge losslessly on concurrent
+  sync — the labeled ad library must survive whole-row LWW.
 - **Calendar arithmetic is component-based** (`DateTime(y, m, d ± n)`),
   never `Duration` math, so DST transitions cannot shift the cadence hour,
   skip a prior-day register key, or truncate a 25-hour day's query range.
@@ -118,9 +150,9 @@ flowchart TD
   maps, and `test/app_bootstrap_test.dart` pins both registrations — do
   not turn that merge back into a replacement.
 - Subscriptions are in-memory: `GoalRuntimeMaintenance.restoreSubscriptions`
-  rebuilds them at startup. A goal agent synced in mid-session is not
-  subscribed until restart (known limitation, tracked for the Phase B
-  increment).
+  rebuilds them at startup, and `onIdentityReceived` (the
+  `AgentRuntimeMaintenance` hook the sync processor offers every
+  contributor) mirrors a goal agent synced in mid-session.
 - Imported workout rules currently produce metric leaves whose dataTypes
   only match `QuantitativeEntry` rows; workout-entry signals are a
   documented follow-up.
