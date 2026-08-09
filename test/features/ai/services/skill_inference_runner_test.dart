@@ -2760,6 +2760,76 @@ void main() {
       );
 
       test(
+        'logs missing model metadata separately when dropping selected images',
+        () async {
+          final textEntry = makeTextEntry(
+            id: 'text-missing-model-metadata',
+            markdown: 'Describe the implementation.',
+          );
+          const images = [
+            ProcessedReferenceImage(
+              base64Data: 'unroutable-image',
+              mimeType: 'image/jpeg',
+            ),
+          ];
+
+          when(
+            () => mockAiInputRepo.getEntity('text-missing-model-metadata'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(makeStreamChunk('Text-only request')),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'text-missing-model-metadata',
+            automationResult: makePromptGenerationResult(),
+            referenceImages: images,
+          );
+
+          verify(
+            () => mockLoggingService.log(
+              LogDomain.ai,
+              any<String>(
+                that: allOf(
+                  contains('Dropping 1 selected image'),
+                  contains('model metadata is unavailable'),
+                  contains('models/gemini-flash'),
+                ),
+              ),
+              subDomain: 'runPromptGeneration',
+            ),
+          ).called(1);
+          verifyNever(
+            () => mockLoggingService.log(
+              LogDomain.ai,
+              any<String>(that: contains('does not accept chat images')),
+              subDomain: 'runPromptGeneration',
+            ),
+          );
+        },
+      );
+
+      test(
         'does not send selected images to a dedicated Mistral OCR model',
         () async {
           final ocrProvider = testInferenceProvider(
