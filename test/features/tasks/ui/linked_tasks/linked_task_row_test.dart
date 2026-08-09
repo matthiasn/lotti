@@ -58,37 +58,48 @@ void main() {
           'A deliberately long AI summary that cannot fit in this linked row';
       await tester.pumpWidget(
         WidgetTestBench(
+          surfaceConstraints: const BoxConstraints.tightFor(
+            width: 500,
+            height: 800,
+          ),
           overrides: [
             taskOneLinerProvider.overrideWith(
               (ref, taskId) async => oneLiner,
             ),
           ],
-          child: SizedBox(
-            width: 540,
-            child: LinkedTaskRow(
-              data: buildRowData(),
-              manageMode: false,
-            ),
+          child: LinkedTaskRow(
+            data: buildRowData(),
+            manageMode: false,
           ),
         ),
       );
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 300));
 
-      final richText = tester.widget<RichText>(
-        find.text(oneLiner, findRichText: true),
+      final oneLinerText = find.byWidgetPredicate(
+        (widget) =>
+            widget is RichText && widget.text.toPlainText().contains(oneLiner),
       );
+      final richText = tester.widget<RichText>(oneLinerText);
       final rootSpan = richText.text as TextSpan;
       final summarySpan = rootSpan.children!.first as TextSpan;
       final context = tester.element(find.byType(LinkedTaskRow));
+      final textPainter = TextPainter(
+        text: richText.text,
+        textDirection: TextDirection.ltr,
+        maxLines: richText.maxLines,
+        ellipsis: '…',
+      )..layout(maxWidth: tester.getSize(oneLinerText).width);
 
       expect(summarySpan.text, oneLiner);
+      expect(rootSpan.toPlainText(), '$oneLiner · Open');
       expect(
         summarySpan.style?.color,
         context.designTokens.colors.aiCard.accent,
       );
       expect(richText.maxLines, 1);
       expect(richText.overflow, TextOverflow.ellipsis);
+      expect(textPainter.didExceedMaxLines, isTrue);
     });
 
     testWidgets(
