@@ -161,6 +161,9 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
           text: TextSpan(text: widget.text, style: widget.style),
           maxLines: 1,
           textDirection: Directionality.of(context),
+          // The rendered Text inherits the ambient scaler; measuring
+          // unscaled would under-estimate travel under large text.
+          textScaler: MediaQuery.textScalerOf(context),
         )..layout();
         if (painter.width <= constraints.maxWidth) {
           return Text(

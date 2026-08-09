@@ -97,6 +97,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
             statement: statement.isEmpty ? name : statement,
             criteria: criteria,
           );
+      // Creation writes through the sync service, which emits no UI
+      // notification — refresh the list the pop reveals.
+      ref
+        ..invalidate(activeGoalAgentsProvider)
+        ..invalidate(activeGoalNudgesProvider);
       if (mounted) context.beamToNamed('/agents');
     } on Object {
       // Validation already passed — this is an operational failure, and

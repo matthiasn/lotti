@@ -43,14 +43,18 @@ class GoalNudgeInteractions {
     );
   }
 
-  /// Records the rating-prompt outcome for the CURRENT activation —
-  /// [rating] 1..5, or a skip. A second outcome for the same activation
-  /// is refused silently: the history is one entry per run, and re-runs
-  /// re-prompt by incrementing the activation count.
+  /// Records the rating-prompt outcome — [rating] 1..5, or a skip — for
+  /// [forActivation] (the activation the user actually SAW; defaults to
+  /// the current one). If the persisted activation moved on while the
+  /// sheet was open (a synced re-run), the outcome is discarded rather
+  /// than mis-attributed to a run the user never looked at. A second
+  /// outcome for the same activation is refused silently: the history is
+  /// one entry per run, and re-runs re-prompt by incrementing the count.
   Future<void> recordRating(
     String nudgeId, {
     int? rating,
     bool skipped = false,
+    int? forActivation,
   }) async {
     assert(
       skipped != (rating != null),
@@ -61,7 +65,8 @@ class GoalNudgeInteractions {
     }
     final nudge = await _repository.getEntity(nudgeId);
     if (nudge is! GoalNudgeEntity) return;
-    final activation = nudge.activationCount;
+    final activation = forActivation ?? nudge.activationCount;
+    if (activation != nudge.activationCount) return;
     if (nudge.ratings.any((r) => r.activation == activation)) return;
     await _syncService.upsertEntity(
       nudge.copyWith(

@@ -180,6 +180,7 @@ class GoalBannerCard extends ConsumerWidget {
           entry.nudge.id,
           rating: outcome == 0 ? null : outcome,
           skipped: outcome == 0,
+          forActivation: entry.nudge.activationCount,
         );
     ref.invalidate(activeGoalNudgesProvider);
   }

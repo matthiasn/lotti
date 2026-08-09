@@ -7,6 +7,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -26,6 +27,7 @@ import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -64,6 +66,10 @@ void main() {
     container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
+        // The banner provider is gated on the agents rollout flag.
+        configFlagProvider(
+          enableAgentsPageFlag,
+        ).overrideWith((ref) => Stream.value(true)),
         cloudInferenceRepositoryProvider.overrideWithValue(
           MockCloudInferenceRepository(),
         ),
@@ -596,6 +602,15 @@ void main() {
       ],
     );
 
+    // Warm the rollout flag and KEEP it alive: the gate reads the
+    // stream's latest value, and an autodisposed flag provider would be
+    // torn down between reads.
+    final flagSub = container.listen(
+      configFlagProvider(enableAgentsPageFlag),
+      (_, _) {},
+    );
+    addTearDown(flagSub.close);
+    await container.read(configFlagProvider(enableAgentsPageFlag).future);
     final entries = await container.read(activeGoalNudgesProvider.future);
     expect(
       [for (final entry in entries) entry.nudge.id],

@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -29,6 +30,7 @@ import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart' show agentNotification;
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Goal-agent runtime wiring (the Daily OS plug-in pattern: providers live
 /// in the owning feature; `features/agents` never imports goals).
@@ -231,6 +233,12 @@ typedef GoalBannerEntry = ({GoalNudgeEntity nudge, String goalTitle});
 /// dismiss/rate.
 final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
     FutureProvider.autoDispose<List<GoalBannerEntry>>((ref) async {
+      // The banner mounts are unconditional on their host pages, so the
+      // rollout flag gates HERE: agents off → no banners, even for ads
+      // that synced in from a device that has the feature enabled.
+      final agentsEnabled =
+          ref.watch(configFlagProvider(enableAgentsPageFlag)).value ?? false;
+      if (!agentsEnabled) return const [];
       ref.watch(agentUpdateStreamProvider(agentNotification));
       final agents = await ref
           .watch(agentServiceProvider)

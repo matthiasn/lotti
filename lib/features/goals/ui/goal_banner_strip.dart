@@ -4,6 +4,10 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 
+/// How many banners a host surface shows at once: the newest render,
+/// the rest wait their turn (and are always on the Agents tab).
+const goalBannerStripMaxVisible = 2;
+
 /// The banner mount: renders every active goal ad, newest first, and
 /// shrinks to nothing when there are none (the `KnowledgeNudge`
 /// contract — hosts mount it unconditionally).
@@ -32,7 +36,10 @@ class GoalBannerStrip extends ConsumerWidget {
       ),
       child: Column(
         children: [
-          for (final entry in entries)
+          // Bounded: the strip sits above non-scrolling page content, so
+          // an unbounded stack could overflow the viewport. The rest are
+          // always visible on the Agents tab.
+          for (final entry in entries.take(goalBannerStripMaxVisible))
             Padding(
               padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
               child: _ExposureTracker(

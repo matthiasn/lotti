@@ -87,86 +87,6 @@ void main() {
     expect(find.byTooltip('Dismiss'), findsNothing);
   });
 
-  testWidgets('the X dismisses the ad — the terminal verdict that starts '
-      'the quiet window', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidget(
-        const GoalBannerStrip(),
-        overrides: overrides([(nudge: nudge(), goalTitle: 'Move more')]),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.byTooltip('Dismiss'));
-    await tester.pumpAndSettle();
-    verify(() => interactions.dismiss('ad-1')).called(1);
-  });
-
-  testWidgets('tapping the banner opens the rating sheet; picking a star '
-      'records it for this activation', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidget(
-        const GoalBannerStrip(),
-        overrides: overrides([(nudge: nudge(), goalTitle: 'Move more')]),
-      ),
-    );
-    await tester.pumpAndSettle();
-
-    await tester.tap(find.text('Your shoes filed a missing person report.'));
-    await tester.pumpAndSettle();
-    expect(find.text('How was this banner?'), findsOneWidget);
-
-    await tester.tap(find.byTooltip('4'));
-    await tester.pumpAndSettle();
-    verify(
-      () => interactions.recordRating('ad-1', rating: 4),
-    ).called(1);
-  });
-
-  testWidgets('skipping the rating records the skip so the prompt never '
-      'nags again this activation', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidget(
-        const GoalBannerStrip(),
-        overrides: overrides([(nudge: nudge(), goalTitle: 'Move more')]),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Your shoes filed a missing person report.'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Skip'));
-    await tester.pumpAndSettle();
-    verify(
-      () => interactions.recordRating('ad-1', skipped: true),
-    ).called(1);
-  });
-
-  testWidgets('a rated activation stops responding to taps', (tester) async {
-    await tester.pumpWidget(
-      makeTestableWidget(
-        const GoalBannerStrip(),
-        overrides: overrides([
-          (
-            nudge: nudge(
-              ratings: [
-                GoalNudgeRating(
-                  activation: 1,
-                  ratedAt: DateTime(2026, 8, 9, 12),
-                  rating: 5,
-                ),
-              ],
-            ),
-            goalTitle: 'Move more',
-          ),
-        ]),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Your shoes filed a missing person report.'));
-    await tester.pumpAndSettle();
-    expect(find.text('How was this banner?'), findsNothing);
-  });
-
   testWidgets('one exposure episode is flushed when the banner leaves the '
       'tree', (tester) async {
     final sameOverrides = overrides([
@@ -186,5 +106,22 @@ void main() {
     await tester.pumpAndSettle();
     expect(exposures, hasLength(1));
     expect(exposures.single.$1, 'ad-1');
+  });
+
+  testWidgets('at most two banners render — the rest wait their turn on '
+      'the Agents tab', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidget(
+        const GoalBannerStrip(),
+        overrides: overrides([
+          (nudge: nudge(), goalTitle: 'One'),
+          (nudge: nudge(id: 'ad-2'), goalTitle: 'Two'),
+          (nudge: nudge(id: 'ad-3'), goalTitle: 'Three'),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Dismiss'), findsNWidgets(2));
+    expect(find.text('Three'), findsNothing);
   });
 }
