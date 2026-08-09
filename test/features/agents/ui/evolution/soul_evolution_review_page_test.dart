@@ -81,8 +81,14 @@ void main() {
       final context = tester.element(
         find.byType(SoulEvolutionReviewPage),
       );
+      // The start card names itself; the banner that repeated the page
+      // title above it is gone.
       expect(
-        find.text(context.messages.agentSoulReviewHeroSubtitle),
+        find.text(context.messages.agentSoulReviewTitle),
+        findsOneWidget,
+      );
+      expect(
+        find.text(context.messages.agentSoulReviewStartHint),
         findsOneWidget,
       );
     });
@@ -323,6 +329,30 @@ void main() {
       },
     );
 
+    testWidgets('a pending session still states how many templates it '
+        'touches — approving a personality rewrite from inside the session '
+        'must not hide its blast radius', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          templateIds: ['template-1', 'template-2'],
+          pendingOverride: () async => makeTestEvolutionSession(
+            agentId: kTestSoulId,
+            templateId: kTestSoulId,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(SoulEvolutionReviewPage));
+      expect(
+        find.text(
+          context.messages.agentSoulReviewTemplateCount(2),
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+    });
+
     testWidgets(
       'tapping pending session action navigates to chat page',
       (tester) async {
@@ -339,6 +369,37 @@ void main() {
         final context = tester.element(find.byType(SoulEvolutionReviewPage));
         await tester.tap(
           find.text(context.messages.agentSoulReviewStartAction),
+        );
+        // Route transition; do not settle — the destination chat page is kept
+        // in a perpetual loading state.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(find.byType(SoulEvolutionChatPage), findsOneWidget);
+      },
+    );
+
+    testWidgets(
+      'the start card offered by the error branch still opens the chat — the '
+      'fallback has to be usable, not just visible',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: const Size(390, 2000),
+            ),
+            pendingOverride: () => throw Exception('pending failed'),
+            historyOverride: () => throw Exception('history failed'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(SoulEvolutionReviewPage));
+        await tester.tap(
+          find.text(
+            context.messages.agentSoulReviewStartAction,
+            skipOffstage: false,
+          ),
         );
         // Route transition; do not settle — the destination chat page is kept
         // in a perpetual loading state.
@@ -387,6 +448,19 @@ void main() {
             find.byType(DesignSystemButton, skipOffstage: false),
           );
           expect(button.onPressed, actionEnabled ? isNotNull : isNull);
+
+          // The count sits beside the button because zero templates is the
+          // reason the action is disabled — so it must survive the error
+          // branch too, not just the happy path.
+          expect(
+            find.text(
+              context.messages.agentSoulReviewTemplateCount(
+                templateIds.length,
+              ),
+              skipOffstage: false,
+            ),
+            templateIds.isEmpty ? findsNothing : findsOneWidget,
+          );
         },
       );
     }

@@ -517,12 +517,6 @@ abstract class AppLocalizations {
   /// **'Current Directives'**
   String get agentEvolutionCurrentDirectives;
 
-  /// No description provided for @agentEvolutionDashboardTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Performance'**
-  String get agentEvolutionDashboardTitle;
-
   /// No description provided for @agentEvolutionHistoryTitle.
   ///
   /// In en, this message translates to:
@@ -1123,10 +1117,22 @@ abstract class AppLocalizations {
   /// **'No report available yet.'**
   String get agentReportNone;
 
+  /// No description provided for @agentRitualContinueAction.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue 1-on-1'**
+  String get agentRitualContinueAction;
+
+  /// No description provided for @agentRitualOpeningHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Reading what happened since you last spoke…'**
+  String get agentRitualOpeningHint;
+
   /// No description provided for @agentRitualReviewAction.
   ///
   /// In en, this message translates to:
-  /// **'Start Conversation'**
+  /// **'Start 1-on-1'**
   String get agentRitualReviewAction;
 
   /// No description provided for @agentRitualReviewNegativeSignals.
@@ -1180,7 +1186,7 @@ abstract class AppLocalizations {
   /// No description provided for @agentRitualReviewSessionHistory.
   ///
   /// In en, this message translates to:
-  /// **'Session History'**
+  /// **'Past 1-on-1s'**
   String get agentRitualReviewSessionHistory;
 
   /// No description provided for @agentRitualReviewTitle.
@@ -1188,6 +1194,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'1-on-1'**
   String get agentRitualReviewTitle;
+
+  /// No description provided for @agentRitualSinceLastHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Since we last spoke'**
+  String get agentRitualSinceLastHeading;
+
+  /// No description provided for @agentRitualStartHeading.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a 1-on-1'**
+  String get agentRitualStartHeading;
 
   /// No description provided for @agentRitualSummaryApprovedChangesHeading.
   ///
@@ -1222,14 +1240,8 @@ abstract class AppLocalizations {
   /// No description provided for @agentRitualSummaryStartHint.
   ///
   /// In en, this message translates to:
-  /// **'Start a 1-on-1 to review what bothered you, what worked, and what should change next.'**
+  /// **'Review what bothered you, what worked, and what should change next.'**
   String get agentRitualSummaryStartHint;
-
-  /// No description provided for @agentRitualSummarySubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Recent 1-on-1s, real wake activity, and the changes you agreed to.'**
-  String get agentRitualSummarySubtitle;
 
   /// No description provided for @agentRitualSummaryTokensSinceLast.
   ///
@@ -1248,6 +1260,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Wakes since last 1-on-1'**
   String get agentRitualSummaryWakesSinceLast;
+
+  /// No description provided for @agentRitualTypingSemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'The agent is composing a reply'**
+  String get agentRitualTypingSemantics;
+
+  /// No description provided for @agentRitualWakesSinceLastCount.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 wake since your last 1-on-1} other{{count} wakes since your last 1-on-1}}'**
+  String agentRitualWakesSinceLastCount(int count);
 
   /// No description provided for @agentRunningIndicator.
   ///
@@ -1398,12 +1422,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Soul Personality Proposal'**
   String get agentSoulProposalTitle;
-
-  /// No description provided for @agentSoulReviewHeroSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Refine personality across all templates sharing this soul. The evolution agent sees feedback from every template that uses this personality.'**
-  String get agentSoulReviewHeroSubtitle;
 
   /// No description provided for @agentSoulReviewStartAction.
   ///

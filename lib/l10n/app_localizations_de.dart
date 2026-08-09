@@ -239,9 +239,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentEvolutionCurrentDirectives => 'Aktuelle Anweisungen';
 
   @override
-  String get agentEvolutionDashboardTitle => 'Leistung';
-
-  @override
   String get agentEvolutionHistoryTitle => 'Evolutionsverlauf';
 
   @override
@@ -597,7 +594,14 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentReportNone => 'Noch kein Bericht verfügbar.';
 
   @override
-  String get agentRitualReviewAction => 'Gespräch starten';
+  String get agentRitualContinueAction => 'Einzelgespräch fortsetzen';
+
+  @override
+  String get agentRitualOpeningHint =>
+      'Liest, was seit eurem letzten Gespräch passiert ist …';
+
+  @override
+  String get agentRitualReviewAction => 'Einzelgespräch starten';
 
   @override
   String get agentRitualReviewNegativeSignals => 'Negativ';
@@ -628,10 +632,16 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentRitualReviewProposalSection => 'Aktueller Vorschlag';
 
   @override
-  String get agentRitualReviewSessionHistory => 'Sitzungsverlauf';
+  String get agentRitualReviewSessionHistory => 'Frühere Einzelgespräche';
 
   @override
   String get agentRitualReviewTitle => 'Einzelgespräch';
+
+  @override
+  String get agentRitualSinceLastHeading => 'Seit unserem letzten Gespräch';
+
+  @override
+  String get agentRitualStartHeading => 'Einzelgespräch starten';
 
   @override
   String get agentRitualSummaryApprovedChangesHeading =>
@@ -651,11 +661,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Starte ein Einzelgespräch, um zu prüfen, was dich gestört hat, was gut funktioniert hat und was sich als Nächstes ändern sollte.';
-
-  @override
-  String get agentRitualSummarySubtitle =>
-      'Frühere Einzelgespräche, echte Aufwachaktivität und die Änderungen, auf die du dich mit dem Agenten geeinigt hast.';
+      'Geh durch, was dich gestört hat, was gut lief und was sich als Nächstes ändern sollte.';
 
   @override
   String get agentRitualSummaryTokensSinceLast =>
@@ -668,6 +674,20 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get agentRitualSummaryWakesSinceLast =>
       'Aufwachvorgänge seit dem letzten Einzelgespräch';
+
+  @override
+  String get agentRitualTypingSemantics => 'Der Agent formuliert eine Antwort';
+
+  @override
+  String agentRitualWakesSinceLastCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Aufwachvorgänge seit eurem letzten Einzelgespräch',
+      one: '1 Aufwachvorgang seit eurem letzten Einzelgespräch',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentRunningIndicator => 'Läuft';
@@ -746,10 +766,6 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Seelen-Persönlichkeitsvorschlag';
-
-  @override
-  String get agentSoulReviewHeroSubtitle =>
-      'Verfeinere die Persönlichkeit über alle Vorlagen hinweg, die diese Seele teilen. Der Evolutionsagent sieht Feedback von jeder Vorlage, die diese Persönlichkeit verwendet.';
 
   @override
   String get agentSoulReviewStartAction => 'Persönlichkeitsüberprüfung starten';

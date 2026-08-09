@@ -5,13 +5,17 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/ritual_review_providers.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_page.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_dashboard_header.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_opening.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/ritual_summary_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../helpers/fallbacks.dart';
@@ -30,6 +34,7 @@ void main() {
     Future<EvolutionChatData> Function(String)? chatStateBuilder,
     FutureOr<AgentDomainEntity?> Function(Ref, String)? templateOverride,
     List<Override> extraOverrides = const [],
+    MediaQueryData? mediaQueryData,
   }) {
     final tpl = makeTestTemplate(id: templateId, agentId: templateId);
 
@@ -49,12 +54,23 @@ void main() {
 
     return makeTestableWidgetNoScroll(
       EvolutionChatPage(templateId: templateId),
+      mediaQueryData: mediaQueryData,
       overrides: [
         agentTemplateProvider.overrideWith(
           templateOverride ?? (ref, id) async => tpl,
         ),
         templatePerformanceMetricsProvider.overrideWith(
           (ref, id) async => makeTestMetrics(templateId: templateId),
+        ),
+        // The app-bar subtitle reads this: the one fact that explains why
+        // the conversation is happening now.
+        ritualSummaryMetricsProvider.overrideWith(
+          (ref, id) async => const RitualSummaryMetrics(
+            lifetimeWakeCount: 40,
+            wakesSinceLastSession: 7,
+            totalTokenUsageSinceLastSession: 888,
+            dailyWakeCounts: [],
+          ),
         ),
         evolutionChatStateProvider.overrideWith2(
           (_) => FakeEvolutionChatState(
@@ -74,11 +90,44 @@ void main() {
       expect(find.text('Test Template'), findsOneWidget);
     });
 
-    testWidgets('shows dashboard header', (tester) async {
+    testWidgets('states the wake count under the agent name, and does not '
+        'repeat the metrics card from the page you arrived from', (
+      tester,
+    ) async {
       await tester.pumpWidget(buildSubject());
       await tester.pumpAndSettle();
 
-      expect(find.byType(EvolutionDashboardHeader), findsOneWidget);
+      final context = tester.element(find.byType(EvolutionChatPage));
+      expect(
+        find.text(context.messages.agentRitualWakesSinceLastCount(7)),
+        findsOneWidget,
+      );
+      // The collapsible Performance card that used to sit above the
+      // conversation duplicated the review page's card in full.
+      expect(find.byType(RitualSummaryCard), findsNothing);
+    });
+
+    testWidgets('drops the subtitle at large text scales rather than '
+        'overflowing a fixed-height toolbar', (tester) async {
+      await tester.pumpWidget(buildSubject());
+      await tester.pumpAndSettle();
+      final context = tester.element(find.byType(EvolutionChatPage));
+      final subtitle = context.messages.agentRitualWakesSinceLastCount(7);
+      expect(find.text(subtitle), findsOneWidget);
+
+      await tester.pumpWidget(
+        buildSubject(
+          mediaQueryData: const MediaQueryData(
+            textScaler: TextScaler.linear(2),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      // The agent's name is the part that must survive.
+      expect(find.text('Test Template'), findsOneWidget);
+      expect(find.text(subtitle), findsNothing);
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets('shows message input', (tester) async {
@@ -192,7 +241,41 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Opening a session is a framed moment, not a bare spinner.
+      expect(find.byType(EvolutionSessionOpening), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+
+    testWidgets('a start that failed shows its error note rather than an '
+        'opening state that implies work is still in progress', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          // Exactly what EvolutionChatState.build settles with when
+          // startSession returns null: no session id, ever.
+          chatStateBuilder: (_) async => EvolutionChatData(
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'starting_session',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+              EvolutionChatMessage.system(
+                text: 'session_error',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionChatPage));
+      expect(
+        find.text(context.messages.agentEvolutionSessionError),
+        findsOneWidget,
+      );
+      expect(find.byType(EvolutionSessionOpening), findsNothing);
     });
 
     testWidgets('shows error message when session fails', (tester) async {
@@ -251,7 +334,11 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      // `pump`, not `pumpAndSettle`: with no session the page shows the
+      // opening state, whose typing indicator animates for as long as it is
+      // on screen and would never let the tester settle.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       final input = tester.widget<EvolutionMessageInput>(
         find.byType(EvolutionMessageInput),
@@ -279,11 +366,12 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 100));
 
-      // Loading indicator with ellipsis should appear.
-      expect(find.text('...'), findsOneWidget);
-      // The waiting indicator in the message list (there may be more from
-      // the input widget).
-      expect(find.byType(CircularProgressIndicator), findsWidgets);
+      // A typing indicator, not a spinner beside a literal '...'.
+      expect(find.byType(EvolutionTypingIndicator), findsOneWidget);
+      expect(find.text('...'), findsNothing);
+      // Nothing spins any more: the transcript's own indicator is the only
+      // signal that the agent is composing.
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
     testWidgets('resolves session_completed token with version number', (

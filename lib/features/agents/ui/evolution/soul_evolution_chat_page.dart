@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:genui/genui.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
-import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/soul_evolution_chat_state.dart';
-import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_composer_width.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_list.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_opening.dart';
+import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Chat-based evolution page for standalone soul evolution sessions.
@@ -46,44 +48,44 @@ class _SoulEvolutionChatPageState extends ConsumerState<SoulEvolutionChatPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          title: Text(
-            soulName,
-            style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-              fontWeight: FontWeight.w800,
-            ),
-          ),
+          title: Text(soulName),
         ),
         body: chatAsync.when(
-          data: (data) => _buildChat(context, data),
-          loading: () => const Center(
-            child: CircularProgressIndicator(),
-          ),
-          error: (error, _) => Center(
-            child: Padding(
-              padding: const EdgeInsets.all(32),
-              child: Text(
-                context.messages.agentEvolutionSessionError,
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ),
+          data: (data) => _buildChat(context, data, soulName),
+          loading: () => const EvolutionSessionOpening(),
+          error: (error, _) => const _SoulChatError(),
         ),
         bottomNavigationBar: chatAsync.whenOrNull(
-          data: (data) => EvolutionMessageInput(
-            onSend: _handleSend,
-            isWaiting: data.isWaiting,
-            enabled: data.sessionId != null,
+          data: (data) => EvolutionComposerWidth(
+            child: EvolutionMessageInput(
+              onSend: _handleSend,
+              isWaiting: data.isWaiting,
+              enabled: data.sessionId != null,
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildChat(BuildContext context, EvolutionChatData data) {
-    return _MessageList(
-      messages: data.messages,
-      isWaiting: data.isWaiting,
-      processor: data.processor,
+  Widget _buildChat(
+    BuildContext context,
+    EvolutionChatData data,
+    String soulName,
+  ) {
+    // Nothing to converse with until the session exists — see the template
+    // chat for why this state gets a page of its own.
+    if (shouldShowSessionOpening(data)) {
+      return const EvolutionSessionOpening();
+    }
+
+    return DetailContentWidth(
+      child: EvolutionMessageList(
+        messages: data.messages,
+        isWaiting: data.isWaiting,
+        processor: data.processor,
+        resolveSystemText: resolveSoulSystemText,
+      ),
     );
   }
 
@@ -94,163 +96,22 @@ class _SoulEvolutionChatPageState extends ConsumerState<SoulEvolutionChatPage> {
   }
 }
 
-class _MessageList extends StatefulWidget {
-  const _MessageList({
-    required this.messages,
-    required this.isWaiting,
-    this.processor,
-  });
-
-  final List<EvolutionChatMessage> messages;
-  final bool isWaiting;
-  final SurfaceController? processor;
-
-  @override
-  State<_MessageList> createState() => _MessageListState();
-}
-
-class _MessageListState extends State<_MessageList> {
-  late final ScrollController _scrollController;
-
-  /// While true, new messages / the typing indicator follow to the bottom. Set
-  /// from the user's position *before* new content lays out, so someone who
-  /// scrolled up to read earlier messages is never yanked back down. Starts
-  /// true so the chat opens pinned to the latest message.
-  bool _stickToBottom = true;
-
-  /// Distance from the bottom (logical px) within which the view still counts
-  /// as "following" — slack so a partially-scrolled tail still sticks.
-  static const double _stickToBottomThreshold = 120;
-
-  @override
-  void initState() {
-    super.initState();
-    _scrollController = ScrollController();
-    _scheduleScrollToBottom();
-  }
-
-  @override
-  void didUpdateWidget(covariant _MessageList oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (widget.messages.length != oldWidget.messages.length ||
-        widget.isWaiting != oldWidget.isWaiting) {
-      // Decide here, before the new content lays out: the controller still
-      // reflects the old extent, so this measures where the user actually was.
-      _stickToBottom = _isNearBottom();
-      _scheduleScrollToBottom(animate: true);
-    }
-  }
-
-  @override
-  void dispose() {
-    _scrollController.dispose();
-    super.dispose();
-  }
-
-  bool _isNearBottom() {
-    if (!_scrollController.hasClients) return true;
-    final position = _scrollController.position;
-    return position.maxScrollExtent - position.pixels <=
-        _stickToBottomThreshold;
-  }
-
-  void _scheduleScrollToBottom({bool animate = false}) {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted || !_scrollController.hasClients || !_stickToBottom) return;
-      final target = _scrollController.position.maxScrollExtent;
-      if (animate && !MediaQuery.disableAnimationsOf(context)) {
-        _scrollController.animateTo(
-          target,
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeOut,
-        );
-      } else {
-        _scrollController.jumpTo(target);
-      }
-    });
-  }
+class _SoulChatError extends StatelessWidget {
+  const _SoulChatError();
 
   @override
   Widget build(BuildContext context) {
-    final items = <Widget>[];
-    for (final message in widget.messages) {
-      items.add(_buildMessage(context, message));
-    }
+    final tokens = context.designTokens;
 
-    if (widget.isWaiting) {
-      items.add(_buildLoadingIndicator(context));
-    }
-
-    return ListView.builder(
-      controller: _scrollController,
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-      itemCount: items.length,
-      itemBuilder: (context, index) => items[index],
-    );
-  }
-
-  Widget _buildMessage(BuildContext context, EvolutionChatMessage message) {
-    return switch (message) {
-      EvolutionUserMessage(:final text) => EvolutionChatBubble(
-        text: text,
-        role: 'user',
-      ),
-      EvolutionAssistantMessage(:final text) => EvolutionChatBubble(
-        text: text,
-        role: 'assistant',
-      ),
-      EvolutionSystemMessage(:final text) => EvolutionChatBubble(
-        text: _resolveSystemText(context, text),
-        role: 'system',
-      ),
-      EvolutionSurfaceMessage(:final surfaceId) =>
-        widget.processor != null
-            ? Surface(
-                surfaceContext: widget.processor!.contextFor(surfaceId),
-              )
-            : const SizedBox.shrink(),
-    };
-  }
-
-  String _resolveSystemText(BuildContext context, String token) {
-    final messages = context.messages;
-    if (token.startsWith('soul_version_created:')) {
-      final version = token.split(':').last;
-      return messages.agentEvolutionSessionCompleted(
-        int.tryParse(version.replaceFirst('v', '')) ?? 0,
-      );
-    }
-    return switch (token) {
-      'starting_session' => messages.agentEvolutionSessionStarting,
-      'session_error' => messages.agentEvolutionSessionError,
-      'session_abandoned' => messages.agentEvolutionSessionAbandoned,
-      'soul_proposal_rejected' => messages.agentEvolutionProposalRejected,
-      _ => token,
-    };
-  }
-
-  Widget _buildLoadingIndicator(BuildContext context) {
-    return Align(
-      alignment: Alignment.centerLeft,
+    return Center(
       child: Padding(
-        padding: const EdgeInsets.only(left: 8, bottom: 8),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const SizedBox(
-              width: 16,
-              height: 16,
-              child: CircularProgressIndicator(strokeWidth: 2),
-            ),
-            const SizedBox(width: 8),
-            Text(
-              '...',
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-                fontSize: 14,
-              ),
-            ),
-          ],
+        padding: EdgeInsets.all(tokens.spacing.step7),
+        child: Text(
+          context.messages.agentEvolutionSessionError,
+          textAlign: TextAlign.center,
+          style: tokens.typography.styles.body.bodyMedium.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
         ),
       ),
     );

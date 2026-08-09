@@ -235,9 +235,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentEvolutionCurrentDirectives => 'Current Directives';
 
   @override
-  String get agentEvolutionDashboardTitle => 'Performance';
-
-  @override
   String get agentEvolutionHistoryTitle => 'Evolution History';
 
   @override
@@ -587,7 +584,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentReportNone => 'No report available yet.';
 
   @override
-  String get agentRitualReviewAction => 'Start Conversation';
+  String get agentRitualContinueAction => 'Continue 1-on-1';
+
+  @override
+  String get agentRitualOpeningHint =>
+      'Reading what happened since you last spoke…';
+
+  @override
+  String get agentRitualReviewAction => 'Start 1-on-1';
 
   @override
   String get agentRitualReviewNegativeSignals => 'Negative';
@@ -618,10 +622,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentRitualReviewProposalSection => 'Current Proposal';
 
   @override
-  String get agentRitualReviewSessionHistory => 'Session History';
+  String get agentRitualReviewSessionHistory => 'Past 1-on-1s';
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSinceLastHeading => 'Since we last spoke';
+
+  @override
+  String get agentRitualStartHeading => 'Start a 1-on-1';
 
   @override
   String get agentRitualSummaryApprovedChangesHeading => 'Approved changes';
@@ -640,11 +650,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Start a 1-on-1 to review what bothered you, what worked, and what should change next.';
-
-  @override
-  String get agentRitualSummarySubtitle =>
-      'Recent 1-on-1s, real wake activity, and the changes you agreed to.';
+      'Review what bothered you, what worked, and what should change next.';
 
   @override
   String get agentRitualSummaryTokensSinceLast => 'Tokens since last 1-on-1';
@@ -655,6 +661,20 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentRitualSummaryWakesSinceLast => 'Wakes since last 1-on-1';
+
+  @override
+  String get agentRitualTypingSemantics => 'The agent is composing a reply';
+
+  @override
+  String agentRitualWakesSinceLastCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count wakes since your last 1-on-1',
+      one: '1 wake since your last 1-on-1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentRunningIndicator => 'Running';
@@ -731,10 +751,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Soul Personality Proposal';
-
-  @override
-  String get agentSoulReviewHeroSubtitle =>
-      'Refine personality across all templates sharing this soul. The evolution agent sees feedback from every template that uses this personality.';
 
   @override
   String get agentSoulReviewStartAction => 'Start Personality Review';

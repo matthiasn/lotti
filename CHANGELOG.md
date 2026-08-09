@@ -5,6 +5,20 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.5]
+### Changed
+- **The 1-on-1 with an agent now looks like one screen rather than several.**
+  The conversation home opened with a banner that repeated the page's own title,
+  followed by a card headed *Current Proposal* in the state where no proposal
+  exists, and a sentence printed twice on the same screen. It now leads with the
+  one thing you can do, then what the agent has been doing since you last spoke,
+  then what you decided last time — with past 1-on-1s visible without scrolling.
+  The conversation itself no longer stretches its text the full width of a
+  desktop window, the agent's replies are readable instead of sitting a shade
+  above the background, and starting a session shows what is happening rather
+  than a hairline spinner and three dots in the corner of an empty page. The
+  wake-activity bars read as a chart rather than blurred lozenges, and their
+  date labels thin out on a narrow screen instead of all shortening to "J…".
+
 ### Fixed
 - **The one-on-one with an agent opens again on desktop.** Choosing Review on a
   template or a soul did nothing in a desktop window — the address changed but

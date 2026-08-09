@@ -236,9 +236,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentEvolutionCurrentDirectives => 'Directive curente';
 
   @override
-  String get agentEvolutionDashboardTitle => 'Performanță';
-
-  @override
   String get agentEvolutionHistoryTitle => 'Istoricul evoluției';
 
   @override
@@ -599,7 +596,14 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentReportNone => 'Niciun raport disponibil încă.';
 
   @override
-  String get agentRitualReviewAction => 'Începeți conversația';
+  String get agentRitualContinueAction => 'Continuați discuția';
+
+  @override
+  String get agentRitualOpeningHint =>
+      'Citește ce s-a întâmplat de la ultima voastră discuție…';
+
+  @override
+  String get agentRitualReviewAction => 'Începeți 1-on-1';
 
   @override
   String get agentRitualReviewNegativeSignals => 'Negativ';
@@ -630,10 +634,16 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentRitualReviewProposalSection => 'Propunerea curentă';
 
   @override
-  String get agentRitualReviewSessionHistory => 'Istoricul sesiunilor';
+  String get agentRitualReviewSessionHistory => 'Discuții anterioare';
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSinceLastHeading => 'De la ultima noastră discuție';
+
+  @override
+  String get agentRitualStartHeading => 'Începeți un 1-on-1';
 
   @override
   String get agentRitualSummaryApprovedChangesHeading => 'Modificări aprobate';
@@ -652,11 +662,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Începeți un 1-la-1 pentru a revizui ce v-a deranjat, ce a funcționat și ce ar trebui schimbat.';
-
-  @override
-  String get agentRitualSummarySubtitle =>
-      'Sesiunile 1-on-1 anterioare, activitatea reală de activări și modificările convenite.';
+      'Treceți în revistă ce v-a deranjat, ce a funcționat și ce ar trebui să se schimbe.';
 
   @override
   String get agentRitualSummaryTokensSinceLast => 'Tokeni de la ultimul 1-on-1';
@@ -668,6 +674,21 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get agentRitualSummaryWakesSinceLast =>
       'Activări de la ultimul 1-on-1';
+
+  @override
+  String get agentRitualTypingSemantics => 'Agentul redactează un răspuns';
+
+  @override
+  String agentRitualWakesSinceLastCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de treziri de la ultima discuție',
+      few: '$count treziri de la ultima discuție',
+      one: '1 trezire de la ultima discuție',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentRunningIndicator => 'În execuție';
@@ -746,10 +767,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get agentSoulProposalTitle =>
       'Propunere de personalitate a sufletului';
-
-  @override
-  String get agentSoulReviewHeroSubtitle =>
-      'Rafinați personalitatea în toate șabloanele care partajează acest suflet. Agentul de evoluție vede feedbackul de la fiecare șablon care folosește această personalitate.';
 
   @override
   String get agentSoulReviewStartAction => 'Începeți revizuirea personalității';

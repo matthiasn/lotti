@@ -4,9 +4,13 @@ import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_wake_activity_chart.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 
+/// What the agent has been doing since the last 1-on-1.
+///
+/// The heading names the window the numbers cover, which is the one thing a
+/// reader needs to interpret them. It previously read *Performance* over a
+/// subtitle that was printed verbatim a second time in the page's hero.
 class RitualSummaryCard extends StatelessWidget {
   const RitualSummaryCard({
     required this.metrics,
@@ -15,6 +19,8 @@ class RitualSummaryCard extends StatelessWidget {
   });
 
   final RitualSummaryMetrics metrics;
+
+  /// Tightens the internal rhythm for embedded placements.
   final bool compact;
 
   static final NumberFormat _numberFormat = NumberFormat.decimalPattern();
@@ -25,50 +31,42 @@ class RitualSummaryCard extends StatelessWidget {
     final spacing = compact ? tokens.spacing.step4 : tokens.spacing.step5;
 
     return ModernBaseCard(
-      margin: EdgeInsets.only(bottom: tokens.spacing.step4),
-      padding: EdgeInsets.all(spacing),
+      padding: EdgeInsets.all(tokens.spacing.cardPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            context.messages.agentEvolutionDashboardTitle,
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-          SizedBox(height: tokens.spacing.step2),
-          Text(
-            context.messages.agentRitualSummarySubtitle,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-              color: context.colorScheme.onSurfaceVariant,
+            context.messages.agentRitualSinceLastHeading,
+            style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+              color: tokens.colors.text.highEmphasis,
             ),
           ),
           SizedBox(height: spacing),
           Wrap(
-            spacing: 10,
-            runSpacing: 10,
+            spacing: tokens.spacing.step6,
+            runSpacing: tokens.spacing.step5,
             children: [
-              _MetricTile(
-                label: context.messages.agentTemplateMetricsTotalWakes,
-                value: _numberFormat.format(metrics.lifetimeWakeCount),
-              ),
-              _MetricTile(
+              _Metric(
                 label: context.messages.agentRitualSummaryWakesSinceLast,
                 value: _numberFormat.format(metrics.wakesSinceLastSession),
               ),
-              _MetricTile(
+              _Metric(
                 label: context.messages.agentRitualSummaryTokensSinceLast,
                 value: _numberFormat.format(
                   metrics.totalTokenUsageSinceLastSession,
                 ),
+              ),
+              _Metric(
+                label: context.messages.agentTemplateMetricsTotalWakes,
+                value: _numberFormat.format(metrics.lifetimeWakeCount),
               ),
             ],
           ),
           SizedBox(height: spacing),
           Text(
             context.messages.agentRitualSummaryWakeHistory30Days,
-            style: Theme.of(context).textTheme.labelLarge?.copyWith(
-              fontWeight: FontWeight.w600,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
             ),
           ),
           SizedBox(height: tokens.spacing.step3),
@@ -81,8 +79,11 @@ class RitualSummaryCard extends StatelessWidget {
   }
 }
 
-class _MetricTile extends StatelessWidget {
-  const _MetricTile({
+/// One figure over its label. Deliberately uncontained: three boxed tiles
+/// inside a card read as three cards, and the middle label wrapped to two
+/// lines while its neighbours did not, which is what made the row look ragged.
+class _Metric extends StatelessWidget {
+  const _Metric({
     required this.label,
     required this.value,
   });
@@ -94,35 +95,24 @@ class _MetricTile extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
 
-    return ConstrainedBox(
-      constraints: const BoxConstraints(minWidth: 132, maxWidth: 180),
-      child: Container(
-        padding: EdgeInsets.all(tokens.spacing.step4),
-        decoration: BoxDecoration(
-          color: context.colorScheme.surfaceContainerHighest.withValues(
-            alpha: 0.45,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Text(
+          value,
+          style: tokens.typography.styles.heading.heading3.copyWith(
+            color: tokens.colors.text.highEmphasis,
           ),
-          borderRadius: BorderRadius.circular(tokens.radii.m),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              value,
-              style: Theme.of(context).textTheme.titleLarge?.copyWith(
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step2),
-            Text(
-              label,
-              style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                color: context.colorScheme.onSurfaceVariant,
-              ),
-            ),
-          ],
+        SizedBox(height: tokens.spacing.step2),
+        Text(
+          label,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.mediumEmphasis,
+          ),
         ),
-      ),
+      ],
     );
   }
 }

@@ -87,13 +87,16 @@ void main() {
       final context = tester.element(find.byType(EvolutionReviewPage));
 
       expect(find.text('Daily Standup'), findsOneWidget);
+      // "1-on-1" used to be printed three times above the fold — hero title,
+      // card eyebrow and body copy. The app bar now carries the agent's own
+      // name instead, and the phrase appears nowhere on the page.
       expect(
         find.text(context.messages.agentRitualReviewTitle),
-        findsAtLeastNWidgets(1),
+        findsNothing,
       );
       expect(
-        find.text(context.messages.agentRitualSummarySubtitle),
-        findsAtLeastNWidgets(1),
+        find.text(context.messages.agentRitualSinceLastHeading),
+        findsOneWidget,
       );
       expect(find.byType(RitualSummaryCard), findsOneWidget);
     });
@@ -243,8 +246,14 @@ void main() {
         findsOneWidget,
       );
       expect(
-        find.text(context.messages.agentRitualSummarySubtitle),
+        find.text(context.messages.agentRitualStartHeading),
         findsOneWidget,
+      );
+      // The card used to be headed "Current Proposal" in exactly the state
+      // where no proposal exists.
+      expect(
+        find.text(context.messages.agentRitualReviewProposalSection),
+        findsNothing,
       );
     });
 
@@ -276,11 +285,48 @@ void main() {
         ),
         findsOneWidget,
       );
-      // Action button should appear.
+      // A waiting session is continued, not started.
       expect(
-        find.text(context.messages.agentRitualReviewAction),
+        find.text(context.messages.agentRitualContinueAction),
         findsOneWidget,
       );
+      expect(
+        find.text(context.messages.agentRitualReviewAction),
+        findsNothing,
+      );
+    });
+
+    testWidgets('the proposal heading and its badge survive a large text '
+        'scale — side by side in a Row the badge overflowed', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(
+          pendingOverride: () async => makeTestEvolutionSession(
+            sessionNumber: 12,
+          ),
+          mediaQueryData: phoneMediaQueryData.copyWith(
+            size: const Size(390, 2000),
+            textScaler: const TextScaler.linear(2.5),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionReviewPage));
+      expect(
+        find.text(
+          context.messages.agentRitualReviewProposalSection,
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.text(
+          context.messages.agentEvolutionSessionProgress(12, 12),
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+      expect(tester.takeException(), isNull);
     });
 
     testWidgets(
@@ -305,7 +351,7 @@ void main() {
           findsOneWidget,
         );
         expect(
-          find.text(context.messages.agentRitualReviewAction),
+          find.text(context.messages.agentRitualContinueAction),
           findsOneWidget,
         );
 
@@ -532,7 +578,7 @@ void main() {
         final context = tester.element(find.byType(EvolutionReviewPage));
 
         final actionButton = find.text(
-          context.messages.agentRitualReviewAction,
+          context.messages.agentRitualContinueAction,
         );
         expect(actionButton, findsOneWidget);
 

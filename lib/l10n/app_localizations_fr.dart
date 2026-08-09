@@ -240,9 +240,6 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentEvolutionCurrentDirectives => 'Directives actuelles';
 
   @override
-  String get agentEvolutionDashboardTitle => 'Performance';
-
-  @override
   String get agentEvolutionHistoryTitle => 'Historique d\'évolution';
 
   @override
@@ -599,7 +596,14 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentReportNone => 'Aucun rapport disponible pour l\'instant.';
 
   @override
-  String get agentRitualReviewAction => 'Démarrer la conversation';
+  String get agentRitualContinueAction => 'Continuer le 1-on-1';
+
+  @override
+  String get agentRitualOpeningHint =>
+      'Lecture de ce qui s\'est passé depuis votre dernier échange…';
+
+  @override
+  String get agentRitualReviewAction => 'Démarrer le 1-on-1';
 
   @override
   String get agentRitualReviewNegativeSignals => 'Négatif';
@@ -630,10 +634,16 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentRitualReviewProposalSection => 'Proposition actuelle';
 
   @override
-  String get agentRitualReviewSessionHistory => 'Historique des sessions';
+  String get agentRitualReviewSessionHistory => '1-on-1 précédents';
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSinceLastHeading => 'Depuis notre dernier échange';
+
+  @override
+  String get agentRitualStartHeading => 'Démarrer un 1-on-1';
 
   @override
   String get agentRitualSummaryApprovedChangesHeading =>
@@ -653,11 +663,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Lance un 1-on-1 pour passer en revue ce qui a dérangé l’utilisateur, ce qui a bien marché et ce qui doit changer ensuite.';
-
-  @override
-  String get agentRitualSummarySubtitle =>
-      'Tes derniers 1-on-1, l’activité réelle des réveils et les changements que tu as validés.';
+      'Passe en revue ce qui t\'a dérangé, ce qui a bien marché et ce qui doit changer ensuite.';
 
   @override
   String get agentRitualSummaryTokensSinceLast =>
@@ -670,6 +676,20 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get agentRitualSummaryWakesSinceLast =>
       'Réveils depuis le dernier 1-on-1';
+
+  @override
+  String get agentRitualTypingSemantics => 'L\'agent rédige une réponse';
+
+  @override
+  String agentRitualWakesSinceLastCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count réveils depuis votre dernier 1-on-1',
+      one: '1 réveil depuis votre dernier 1-on-1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentRunningIndicator => 'En cours';
@@ -749,10 +769,6 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Proposition de personnalité de l\'âme';
-
-  @override
-  String get agentSoulReviewHeroSubtitle =>
-      'Affine la personnalité dans tous les modèles partageant cette âme. L\'agent d\'évolution voit les retours de chaque modèle qui utilise cette personnalité.';
 
   @override
   String get agentSoulReviewStartAction => 'Lancer la revue de personnalité';

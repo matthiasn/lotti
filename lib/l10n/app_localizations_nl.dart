@@ -235,9 +235,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentEvolutionCurrentDirectives => 'Huidige richtlijnen';
 
   @override
-  String get agentEvolutionDashboardTitle => 'Prestaties';
-
-  @override
   String get agentEvolutionHistoryTitle => 'Evolution-geschiedenis';
 
   @override
@@ -589,7 +586,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentReportNone => 'Nog geen rapport beschikbaar.';
 
   @override
-  String get agentRitualReviewAction => 'Gesprek starten';
+  String get agentRitualContinueAction => '1-op-1 voortzetten';
+
+  @override
+  String get agentRitualOpeningHint =>
+      'Leest wat er is gebeurd sinds jullie laatste gesprek…';
+
+  @override
+  String get agentRitualReviewAction => '1-op-1 starten';
 
   @override
   String get agentRitualReviewNegativeSignals => 'Negatief';
@@ -620,10 +624,16 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentRitualReviewProposalSection => 'Huidig voorstel';
 
   @override
-  String get agentRitualReviewSessionHistory => 'Sessiegeschiedenis';
+  String get agentRitualReviewSessionHistory => 'Eerdere 1-op-1\'s';
 
   @override
   String get agentRitualReviewTitle => '1-op-1';
+
+  @override
+  String get agentRitualSinceLastHeading => 'Sinds ons laatste gesprek';
+
+  @override
+  String get agentRitualStartHeading => 'Een 1-op-1 starten';
 
   @override
   String get agentRitualSummaryApprovedChangesHeading =>
@@ -643,11 +653,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Start een 1-op-1 om te bekijken wat je dwarszat, wat werkte en wat er daarna zou moeten veranderen.';
-
-  @override
-  String get agentRitualSummarySubtitle =>
-      'Recente 1-op-1\'s, echte wake activiteit, en de veranderingen waar je mee akkoord ging.';
+      'Bekijk wat je dwarszat, wat werkte en wat er daarna zou moeten veranderen.';
 
   @override
   String get agentRitualSummaryTokensSinceLast =>
@@ -660,6 +666,20 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get agentRitualSummaryWakesSinceLast =>
       'Wakker worden sinds de laatste 1-op-1';
+
+  @override
+  String get agentRitualTypingSemantics => 'De agent stelt een antwoord op';
+
+  @override
+  String agentRitualWakesSinceLastCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count keer wakker sinds jullie laatste 1-op-1',
+      one: '1 keer wakker sinds jullie laatste 1-op-1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentRunningIndicator => 'Uitvoeren';
@@ -737,10 +757,6 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Soul Personality Voorstel';
-
-  @override
-  String get agentSoulReviewHeroSubtitle =>
-      'Verfijn persoonlijkheid over alle sjablonen die deze ziel delen. De evolution agent ziet feedback van elke sjabloon die deze persoonlijkheid gebruikt.';
 
   @override
   String get agentSoulReviewStartAction => 'Persoonlijkheidstoets starten';

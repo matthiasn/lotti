@@ -11,15 +11,36 @@ void main() {
 
   Future<void> pumpChart(
     WidgetTester tester,
-    List<DailyWakeCountBucket> buckets,
-  ) async {
+    List<DailyWakeCountBucket> buckets, {
+    double? width,
+    double textScale = 1,
+  }) async {
+    final chart = EvolutionWakeActivityChart(buckets: buckets);
     await tester.pumpWidget(
       makeTestableWidgetWithScaffold(
-        EvolutionWakeActivityChart(buckets: buckets),
+        MediaQuery(
+          data: MediaQueryData(textScaler: TextScaler.linear(textScale)),
+          child: width == null
+              ? chart
+              : Center(
+                  child: SizedBox(width: width, child: chart),
+                ),
+        ),
       ),
     );
     await tester.pump();
   }
+
+  /// Every date label currently drawn, left to right.
+  List<String> labels(WidgetTester tester) => tester
+      .widgetList<Text>(
+        find.descendant(
+          of: find.byType(EvolutionWakeActivityChart),
+          matching: find.byType(Text),
+        ),
+      )
+      .map((t) => t.data ?? '')
+      .toList();
 
   List<DailyWakeCountBucket> makeBuckets(List<int> counts) => [
     for (final (i, count) in counts.indexed)
@@ -72,6 +93,51 @@ void main() {
         expect(find.text(label), findsOneWidget, reason: label);
       }
       expect(find.byType(FractionallySizedBox), findsNWidgets(30));
+    });
+
+    group('label thinning', () {
+      // Thirty days, so the number of labels is the only thing that varies.
+      List<DailyWakeCountBucket> month() =>
+          makeBuckets(List.generate(30, (i) => (i % 4) + 1));
+
+      testWidgets('a wide chart carries five dates', (tester) async {
+        await pumpChart(tester, month(), width: 800);
+
+        expect(labels(tester), hasLength(5));
+      });
+
+      testWidgets('a mid-width chart drops to three', (tester) async {
+        await pumpChart(tester, month(), width: 300);
+
+        expect(labels(tester), hasLength(3));
+      });
+
+      testWidgets('a very narrow chart keeps only the endpoints', (
+        tester,
+      ) async {
+        await pumpChart(tester, month(), width: 150);
+
+        final drawn = labels(tester);
+        expect(drawn, hasLength(2));
+        // First and last day of the window, so the range still reads.
+        expect(drawn.first, isNot(drawn.last));
+      });
+
+      testWidgets('a large text scale thins the labels too, rather than '
+          'squeezing five of them into the same row', (tester) async {
+        await pumpChart(tester, month(), width: 800, textScale: 2.5);
+
+        expect(labels(tester).length, lessThan(5));
+      });
+
+      testWidgets('labels never overflow their row — the ellipsis backstop '
+          'for a locale or scale the width budget did not anticipate', (
+        tester,
+      ) async {
+        await pumpChart(tester, month(), width: 120, textScale: 3);
+
+        expect(tester.takeException(), isNull);
+      });
     });
   });
 }

@@ -2,14 +2,24 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/chat_interface/thinking_disclosure.dart';
 import 'package:lotti/features/ai_chat/ui/widgets/thinking_parser.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/themes/theme.dart';
 
-/// A single chat bubble in the evolution conversation.
+/// A single turn in the evolution conversation.
 ///
-/// Renders differently based on [role]:
-/// - **user**: Right-aligned filled bubble
-/// - **assistant**: Left-aligned surface bubble with markdown rendering
-/// - **system**: Centered muted info pill
+/// The three roles are separated by *position and containment*, not by two
+/// competing fills:
+///
+/// - **assistant** — unbubbled prose on the page ground, full measure. The
+///   agent does the long-form talking here, and a container around a
+///   paragraph that already spans the column adds an edge without adding
+///   meaning. It also kept the agent's own words at the lowest contrast on
+///   the page, which is backwards.
+/// - **user** — right-aligned, contained, and deliberately narrower than the
+///   measure. Your turns are short; the indent is what makes the exchange
+///   scannable at a glance.
+/// - **system** — a quiet centred line. It reports on the session rather than
+///   speaking in it, so it carries no container at all.
 class EvolutionChatBubble extends StatelessWidget {
   const EvolutionChatBubble({
     required this.text,
@@ -26,170 +36,129 @@ class EvolutionChatBubble extends StatelessWidget {
   /// Whether to animate the bubble on first appearance.
   final bool animate;
 
+  /// The **most** of the column a user turn may occupy. Short by design — a
+  /// turn that reached the full measure would be indistinguishable from the
+  /// agent's prose beside it. Shorter turns shrink to their text.
+  static const double userTurnWidthFactor = 0.8;
+
   @override
   Widget build(BuildContext context) {
     return switch (role) {
-      'user' => _UserBubble(text: text, animate: animate),
-      'assistant' => _AssistantBubble(text: text, animate: animate),
-      'system' => _SystemBubble(text: text, animate: animate),
+      'user' => _UserTurn(text: text, animate: animate),
+      'assistant' => _AssistantTurn(text: text, animate: animate),
+      'system' => _SystemNote(text: text, animate: animate),
       _ => const SizedBox.shrink(),
     };
   }
 }
 
-class _UserBubble extends StatelessWidget {
-  const _UserBubble({required this.text, required this.animate});
+class _UserTurn extends StatelessWidget {
+  const _UserTurn({required this.text, required this.animate});
   final String text;
   final bool animate;
 
   @override
   Widget build(BuildContext context) {
-    final bubble = Align(
-      alignment: Alignment.centerRight,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.75,
-        ),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8, left: 48),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          decoration: BoxDecoration(
-            color: context.colorScheme.primary,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
-              bottomLeft: Radius.circular(18),
-              bottomRight: Radius.circular(4),
-            ),
+    final tokens = context.designTokens;
+
+    // LayoutBuilder + maxWidth rather than FractionallySizedBox: the latter
+    // gives its child a *tight* width, so "yes" rendered as a near-full-width
+    // slab of empty container. The factor is a ceiling for long turns.
+    final turn = LayoutBuilder(
+      builder: (context, constraints) => Align(
+        alignment: Alignment.centerRight,
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth:
+                constraints.maxWidth * EvolutionChatBubble.userTurnWidthFactor,
           ),
-          child: Text(
-            text,
-            style: TextStyle(
-              color: context.colorScheme.onPrimary,
-              fontSize: 15,
-              height: 1.4,
+          child: Container(
+            margin: EdgeInsets.only(bottom: tokens.spacing.step5),
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step5,
+              vertical: tokens.spacing.step4,
+            ),
+            decoration: BoxDecoration(
+              color: tokens.colors.background.level03,
+              borderRadius: BorderRadius.circular(tokens.radii.l),
+              border: Border.all(color: tokens.colors.decorative.level02),
+            ),
+            child: Text(
+              text,
+              style: tokens.typography.styles.body.bodyLarge.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
             ),
           ),
         ),
       ),
     );
 
-    if (!animate) return bubble;
-    return _AnimatedEntry(child: bubble);
+    if (!animate) return turn;
+    return _AnimatedEntry(child: turn);
   }
 }
 
-class _AssistantBubble extends StatelessWidget {
-  const _AssistantBubble({required this.text, required this.animate});
+class _AssistantTurn extends StatelessWidget {
+  const _AssistantTurn({required this.text, required this.animate});
   final String text;
   final bool animate;
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
     final segments = splitThinkingSegments(text);
-    final hasVisibleContent = segments.any((seg) => !seg.isThinking);
-    final bubblePadding = hasVisibleContent
-        ? const EdgeInsets.symmetric(horizontal: 16, vertical: 12)
-        : const EdgeInsets.symmetric(horizontal: 12, vertical: 8);
 
-    final bubble = Align(
-      alignment: Alignment.centerLeft,
-      child: ConstrainedBox(
-        constraints: BoxConstraints(
-          maxWidth: MediaQuery.sizeOf(context).width * 0.85,
-        ),
-        child: Container(
-          margin: const EdgeInsets.only(bottom: 8, right: 24),
-          padding: bubblePadding,
-          decoration: BoxDecoration(
-            color: context.colorScheme.surfaceContainerHigh,
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(18),
-              topRight: Radius.circular(18),
-              bottomLeft: Radius.circular(4),
-              bottomRight: Radius.circular(18),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: context.colorScheme.shadow.withValues(alpha: 0.08),
-                blurRadius: 10,
-                offset: const Offset(0, 3),
+    final turn = Padding(
+      padding: EdgeInsets.only(bottom: tokens.spacing.step5),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (final seg in segments)
+            if (seg.isThinking)
+              ThinkingDisclosure(thinking: seg.text)
+            else
+              AgentMarkdownView(
+                seg.text,
+                style: tokens.typography.styles.body.bodyLarge.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
               ),
-            ],
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              for (final seg in segments)
-                if (seg.isThinking)
-                  ThinkingDisclosure(thinking: seg.text)
-                else
-                  AgentMarkdownView(
-                    seg.text,
-                    style: TextStyle(
-                      color: context.colorScheme.onSurface,
-                      fontSize: 15,
-                      height: 1.5,
-                    ),
-                  ),
-            ],
-          ),
-        ),
+        ],
       ),
     );
 
-    if (!animate) return bubble;
-    return _AnimatedEntry(child: bubble);
+    if (!animate) return turn;
+    return _AnimatedEntry(child: turn);
   }
 }
 
-class _SystemBubble extends StatelessWidget {
-  const _SystemBubble({required this.text, required this.animate});
+class _SystemNote extends StatelessWidget {
+  const _SystemNote({required this.text, required this.animate});
   final String text;
   final bool animate;
 
   @override
   Widget build(BuildContext context) {
-    final bubble = Center(
-      child: Container(
-        margin: const EdgeInsets.symmetric(vertical: 12),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: context.colorScheme.surfaceContainerHighest.withValues(
-            alpha: 0.85,
-          ),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(
-              Icons.info_outline_rounded,
-              size: 14,
-              color: Colors.white.withValues(alpha: 0.5),
-            ),
-            const SizedBox(width: 8),
-            Flexible(
-              child: Text(
-                text,
-                style: TextStyle(
-                  color: context.colorScheme.onSurfaceVariant,
-                  fontSize: 13,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ),
-          ],
+    final tokens = context.designTokens;
+
+    final note = Padding(
+      padding: EdgeInsets.symmetric(vertical: tokens.spacing.step4),
+      child: Text(
+        text,
+        textAlign: TextAlign.center,
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: tokens.colors.text.lowEmphasis,
         ),
       ),
     );
 
-    if (!animate) return bubble;
-    return _AnimatedEntry(child: bubble);
+    if (!animate) return note;
+    return _AnimatedEntry(child: note);
   }
 }
 
-/// Fade + slide up entry animation for chat bubbles.
+/// Fade + slide up entry animation for chat turns.
 class _AnimatedEntry extends StatefulWidget {
   const _AnimatedEntry({required this.child});
   final Widget child;

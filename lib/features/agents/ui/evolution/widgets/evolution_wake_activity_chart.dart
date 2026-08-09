@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/model/ritual_summary.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/themes/theme.dart';
 
 /// Compact 30-day wake activity chart with date labels.
 class EvolutionWakeActivityChart extends StatelessWidget {
@@ -19,8 +18,6 @@ class EvolutionWakeActivityChart extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-
     if (buckets.isEmpty) {
       return const SizedBox.shrink();
     }
@@ -32,28 +29,71 @@ class EvolutionWakeActivityChart extends StatelessWidget {
       }),
     );
 
-    final labelIndexes = <int>{
-      0,
-      buckets.length ~/ 4,
-      buckets.length ~/ 2,
-      (buckets.length * 3) ~/ 4,
-      buckets.length - 1,
-    }.toList()..sort();
+    return LayoutBuilder(
+      builder: (context, constraints) => _buildChart(
+        context,
+        maxWakeCount: maxWakeCount,
+        labelIndexes: _labelIndexes(
+          constraints.maxWidth,
+          MediaQuery.textScalerOf(context).scale(1),
+        ),
+      ),
+    );
+  }
+
+  /// Date labels are dropped rather than truncated as the column narrows: a
+  /// phone fitted five of them only by ellipsising every one to "J…", which
+  /// tells the reader nothing at all.
+  ///
+  /// [textScale] widens the nominal per-label budget so an accessibility text
+  /// size drops labels instead of squeezing them; the labels themselves also
+  /// ellipsise as a backstop, since the budget is a heuristic and localized
+  /// date formats vary in length.
+  List<int> _labelIndexes(double width, double textScale) {
+    final minWidthPerLabel = 72.0 * textScale;
+    final affordable = width.isFinite ? (width / minWidthPerLabel).floor() : 5;
+    final count = affordable.clamp(2, 5);
+
+    if (count >= 5) {
+      return <int>{
+        0,
+        buckets.length ~/ 4,
+        buckets.length ~/ 2,
+        (buckets.length * 3) ~/ 4,
+        buckets.length - 1,
+      }.toList()..sort();
+    }
+    if (count >= 3) {
+      return <int>{
+        0,
+        buckets.length ~/ 2,
+        buckets.length - 1,
+      }.toList()..sort();
+    }
+    return <int>{0, buckets.length - 1}.toList()..sort();
+  }
+
+  Widget _buildChart(
+    BuildContext context, {
+    required int maxWakeCount,
+    required List<int> labelIndexes,
+  }) {
+    final tokens = context.designTokens;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          height: 60,
+          // No chart-height token exists; step10 is the nearest scale value
+          // to the compact strip this occupies inside a card.
+          height: tokens.spacing.step10,
           child: Stack(
             children: [
               Align(
                 alignment: Alignment.bottomCenter,
                 child: Container(
                   height: 1,
-                  color: context.colorScheme.outlineVariant.withValues(
-                    alpha: 0.38,
-                  ),
+                  color: tokens.colors.decorative.level02,
                 ),
               ),
               Row(
@@ -62,7 +102,9 @@ class EvolutionWakeActivityChart extends StatelessWidget {
                   for (final bucket in buckets)
                     Expanded(
                       child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 1.5),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: tokens.spacing.step1 / 2,
+                        ),
                         child: Align(
                           alignment: Alignment.bottomCenter,
                           child: FractionallySizedBox(
@@ -72,22 +114,17 @@ class EvolutionWakeActivityChart extends StatelessWidget {
                             ),
                             child: DecoratedBox(
                               decoration: BoxDecoration(
-                                gradient: LinearGradient(
-                                  begin: Alignment.bottomCenter,
-                                  end: Alignment.topCenter,
-                                  colors: [
-                                    context.colorScheme.primary.withValues(
-                                      alpha: bucket.wakeCount == 0 ? 0.18 : 0.9,
-                                    ),
-                                    context.colorScheme.primaryContainer
-                                        .withValues(
-                                          alpha: bucket.wakeCount == 0
-                                              ? 0.1
-                                              : 0.72,
-                                        ),
-                                  ],
+                                // Flat fill, flat foot, and a radius small
+                                // enough to stay a bar: a pill radius on a
+                                // wide short column turned every quiet day
+                                // into a blurred lozenge, and the vertical
+                                // gradient read as a glow rather than data.
+                                color: bucket.wakeCount == 0
+                                    ? tokens.colors.decorative.level02
+                                    : tokens.colors.interactive.enabled,
+                                borderRadius: BorderRadius.vertical(
+                                  top: Radius.circular(tokens.radii.xs),
                                 ),
-                                borderRadius: BorderRadius.circular(999),
                               ),
                               child: const SizedBox(width: double.infinity),
                             ),
@@ -100,40 +137,45 @@ class EvolutionWakeActivityChart extends StatelessWidget {
             ],
           ),
         ),
-        const SizedBox(height: 6),
+        SizedBox(height: tokens.spacing.step3),
+        // Ticks sit in the bucket grid so each one lands on its own day.
         Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             for (var index = 0; index < buckets.length; index++)
               Expanded(
                 child: labelIndexes.contains(index)
-                    ? Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Container(
-                            width: 1,
-                            height: 6,
-                            color: context.colorScheme.outlineVariant
-                                .withValues(alpha: 0.42),
-                          ),
-                          SizedBox(height: tokens.spacing.step2),
-                          Text(
-                            _labelFormat.format(buckets[index].date),
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: index == 0
-                                ? TextAlign.left
-                                : index == buckets.length - 1
-                                ? TextAlign.right
-                                : TextAlign.center,
-                            style: Theme.of(context).textTheme.labelSmall
-                                ?.copyWith(
-                                  color: context.colorScheme.onSurfaceVariant,
-                                ),
-                          ),
-                        ],
+                    ? Align(
+                        child: Container(
+                          width: 1,
+                          height: tokens.spacing.step3,
+                          color: tokens.colors.decorative.level02,
+                        ),
                       )
                     : const SizedBox.shrink(),
+              ),
+          ],
+        ),
+        SizedBox(height: tokens.spacing.step2),
+        // The dates do NOT: a label confined to one bucket's cell has about a
+        // thirtieth of the width and ellipsises to "Ma…" however few labels
+        // are drawn. Spread across the full row they size to their content.
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            // Flexible + ellipsis rather than bare Text: the count below is
+            // chosen from a nominal label width, which a large text scale or
+            // a long localized date can exceed. Shortening a label is a
+            // blemish; overflowing the row is a yellow-and-black stripe.
+            for (final index in labelIndexes)
+              Flexible(
+                child: Text(
+                  _labelFormat.format(buckets[index].date),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
               ),
           ],
         ),

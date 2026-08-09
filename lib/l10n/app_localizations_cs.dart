@@ -235,9 +235,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentEvolutionCurrentDirectives => 'Aktuální direktivy';
 
   @override
-  String get agentEvolutionDashboardTitle => 'Výkon';
-
-  @override
   String get agentEvolutionHistoryTitle => 'Historie vývoje';
 
   @override
@@ -593,7 +590,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentReportNone => 'Report zatím není k dispozici.';
 
   @override
-  String get agentRitualReviewAction => 'Zahájit konverzaci';
+  String get agentRitualContinueAction => 'Pokračovat v 1-on-1';
+
+  @override
+  String get agentRitualOpeningHint =>
+      'Čte, co se stalo od vašeho posledního rozhovoru…';
+
+  @override
+  String get agentRitualReviewAction => 'Zahájit 1-on-1';
 
   @override
   String get agentRitualReviewNegativeSignals => 'Negativní';
@@ -624,10 +628,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentRitualReviewProposalSection => 'Aktuální návrh';
 
   @override
-  String get agentRitualReviewSessionHistory => 'Historie relací';
+  String get agentRitualReviewSessionHistory => 'Předchozí 1-on-1';
 
   @override
   String get agentRitualReviewTitle => '1-on-1';
+
+  @override
+  String get agentRitualSinceLastHeading => 'Od našeho posledního rozhovoru';
+
+  @override
+  String get agentRitualStartHeading => 'Zahájit 1-on-1';
 
   @override
   String get agentRitualSummaryApprovedChangesHeading => 'Schválené změny';
@@ -646,11 +656,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Zahaj 1-on-1 a projdi, co ti vadilo, co fungovalo a co by se mělo změnit.';
-
-  @override
-  String get agentRitualSummarySubtitle =>
-      'Nedávné 1-on-1, skutečná aktivita probuzení a domluvené změny.';
+      'Projděte, co vás štvalo, co fungovalo a co by se mělo změnit dál.';
 
   @override
   String get agentRitualSummaryTokensSinceLast => 'Tokeny od posledního 1-on-1';
@@ -662,6 +668,21 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get agentRitualSummaryWakesSinceLast =>
       'Probuzení od posledního 1-on-1';
+
+  @override
+  String get agentRitualTypingSemantics => 'Agent připravuje odpověď';
+
+  @override
+  String agentRitualWakesSinceLastCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count probuzení od posledního 1-on-1',
+      few: '$count probuzení od posledního 1-on-1',
+      one: '1 probuzení od posledního 1-on-1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentRunningIndicator => 'Běží';
@@ -738,10 +759,6 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Návrh změn osobnosti duše';
-
-  @override
-  String get agentSoulReviewHeroSubtitle =>
-      'Uprav osobnost napříč všemi šablonami sdílejícími tuto duši. Agent pro vývoj vidí zpětnou vazbu z každé šablony, která tuto osobnost používá.';
 
   @override
   String get agentSoulReviewStartAction => 'Zahájit revizi osobnosti';

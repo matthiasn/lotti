@@ -13,6 +13,8 @@ import 'package:lotti/features/agents/ui/evolution/soul_evolution_chat_page.dart
 import 'package:lotti/features/agents/ui/evolution/soul_evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_chat_bubble.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_opening.dart';
+import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -118,6 +120,7 @@ void main() {
       await tester.pumpWidget(
         buildSubject(
           chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
             messages: [
               EvolutionChatMessage.system(
                 text: 'soul_version_created:v3',
@@ -140,6 +143,7 @@ void main() {
       await tester.pumpWidget(
         buildSubject(
           chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
             messages: [
               EvolutionChatMessage.system(
                 text: 'session_abandoned',
@@ -162,6 +166,7 @@ void main() {
       await tester.pumpWidget(
         buildSubject(
           chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
             messages: [
               EvolutionChatMessage.system(
                 text: 'soul_proposal_rejected',
@@ -188,7 +193,9 @@ void main() {
       );
       await tester.pump();
 
-      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      // Opening a session is a framed moment, not a bare spinner.
+      expect(find.byType(EvolutionSessionOpening), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
     testWidgets('shows error state', (tester) async {
@@ -215,7 +222,10 @@ void main() {
           ),
         ),
       );
-      await tester.pumpAndSettle();
+      // `pump`, not `pumpAndSettle`: with no session the page shows the
+      // opening state, whose typing indicator never stops animating.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 50));
 
       final input = tester.widget<EvolutionMessageInput>(
         find.byType(EvolutionMessageInput),
@@ -227,6 +237,7 @@ void main() {
       await tester.pumpWidget(
         buildSubject(
           chatStateBuilder: (_) async => EvolutionChatData(
+            sessionId: 'session-1',
             messages: [
               EvolutionChatMessage.system(
                 text: 'session_error',
@@ -307,7 +318,8 @@ void main() {
       await tester.pump();
       await tester.pump();
 
-      expect(find.text('...'), findsOneWidget);
+      expect(find.byType(EvolutionTypingIndicator), findsOneWidget);
+      expect(find.text('...'), findsNothing);
     });
 
     testWidgets(
@@ -528,7 +540,8 @@ void main() {
         await tester.pump();
 
         // The loading indicator ('...') should now appear.
-        expect(find.text('...'), findsOneWidget);
+        expect(find.byType(EvolutionTypingIndicator), findsOneWidget);
+        expect(find.text('...'), findsNothing);
       },
     );
 

@@ -38,6 +38,56 @@ void main() {
       });
     });
 
+    testWidgets('a short reply shrinks to its text — the width factor is a '
+        'cap, not the width', (tester) async {
+      await tester.pumpWidget(buildSubject(text: 'Yes', role: 'user'));
+      await tester.pumpAndSettle();
+
+      final turnWidth = tester
+          .getSize(
+            find
+                .ancestor(
+                  of: find.text('Yes'),
+                  matching: find.byType(Container),
+                )
+                .first,
+          )
+          .width;
+      final available = tester.getSize(find.byType(EvolutionChatBubble)).width;
+
+      // A tight 80% made "Yes" a near-full-width slab of empty container.
+      expect(
+        turnWidth,
+        lessThan(available * EvolutionChatBubble.userTurnWidthFactor),
+      );
+    });
+
+    testWidgets('a long reply is capped at the width factor', (tester) async {
+      await tester.pumpWidget(
+        buildSubject(text: 'x ' * 400, role: 'user'),
+      );
+      await tester.pumpAndSettle();
+
+      final turnWidth = tester
+          .getSize(
+            find
+                .ancestor(
+                  of: find.byType(Text).first,
+                  matching: find.byType(Container),
+                )
+                .first,
+          )
+          .width;
+      final available = tester.getSize(find.byType(EvolutionChatBubble)).width;
+
+      expect(
+        turnWidth,
+        lessThanOrEqualTo(
+          available * EvolutionChatBubble.userTurnWidthFactor + 1,
+        ),
+      );
+    });
+
     group('assistant role', () {
       testWidgets('renders markdown via AgentMarkdownView', (tester) async {
         await tester.pumpWidget(
@@ -47,33 +97,44 @@ void main() {
 
         // AgentMarkdownView widget should be present
         expect(find.byType(AgentMarkdownView), findsOneWidget);
-        // Left-aligned
-        final align = tester.widget<Align>(
+        // The agent's prose is unbubbled: a container around a paragraph that
+        // already spans the column added an edge without adding meaning, and
+        // its fill left the agent's own words at the lowest contrast on the
+        // page. Nothing decorated may wrap it.
+        expect(
           find.ancestor(
             of: find.byType(AgentMarkdownView),
-            matching: find.byType(Align),
+            matching: find.byWidgetPredicate(
+              (w) => w is Container && w.decoration != null,
+            ),
           ),
+          findsNothing,
         );
-        expect(align.alignment, Alignment.centerLeft);
       });
     });
 
     group('system role', () {
-      testWidgets('displays centered text with info icon', (tester) async {
+      testWidgets('is a quiet centred line, not a pill', (tester) async {
         await tester.pumpWidget(
           buildSubject(text: 'Session started', role: 'system'),
         );
         await tester.pumpAndSettle();
 
-        expect(find.text('Session started'), findsOneWidget);
-        expect(find.byIcon(Icons.info_outline_rounded), findsOneWidget);
-        // Verify the bubble is wrapped in a Center via ancestor check
+        final text = tester.widget<Text>(find.text('Session started'));
+        expect(text.textAlign, TextAlign.center);
+
+        // A system note reports on the session rather than speaking in it, so
+        // it carries no container and no icon competing with the turns
+        // around it.
+        expect(find.byIcon(Icons.info_outline_rounded), findsNothing);
         expect(
           find.ancestor(
             of: find.text('Session started'),
-            matching: find.byType(Center),
+            matching: find.byWidgetPredicate(
+              (w) => w is Container && w.decoration != null,
+            ),
           ),
-          findsOneWidget,
+          findsNothing,
         );
       });
     });
@@ -111,7 +172,7 @@ void main() {
       });
 
       testWidgets(
-        'uses a more compact bubble when only thinking is present',
+        'a thinking-only turn renders the disclosure and no prose',
         (tester) async {
           await tester.pumpWidget(
             buildSubject(
@@ -121,13 +182,8 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          final thinkingOnlyBubble = tester.widget<Container>(
-            find.byWidgetPredicate(
-              (widget) =>
-                  widget is Container &&
-                  widget.margin == const EdgeInsets.only(bottom: 8, right: 24),
-            ),
-          );
+          expect(find.byType(ThinkingDisclosure), findsOneWidget);
+          expect(find.byType(AgentMarkdownView), findsNothing);
 
           await tester.pumpWidget(
             buildSubject(
@@ -137,22 +193,9 @@ void main() {
           );
           await tester.pumpAndSettle();
 
-          final mixedBubble = tester.widget<Container>(
-            find.byWidgetPredicate(
-              (widget) =>
-                  widget is Container &&
-                  widget.margin == const EdgeInsets.only(bottom: 8, right: 24),
-            ),
-          );
-
-          expect(
-            thinkingOnlyBubble.padding,
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-          );
-          expect(
-            mixedBubble.padding,
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          );
+          // A mixed turn keeps both, in order: the disclosure, then the answer.
+          expect(find.byType(ThinkingDisclosure), findsOneWidget);
+          expect(find.byType(AgentMarkdownView), findsOneWidget);
         },
       );
 

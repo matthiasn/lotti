@@ -237,9 +237,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentEvolutionCurrentDirectives => 'Nuvarande direktiv';
 
   @override
-  String get agentEvolutionDashboardTitle => 'Prestanda';
-
-  @override
   String get agentEvolutionHistoryTitle => 'Evolutionshistoria';
 
   @override
@@ -593,7 +590,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentReportNone => 'Ingen rapport finns tillgänglig än.';
 
   @override
-  String get agentRitualReviewAction => 'Starta samtal';
+  String get agentRitualContinueAction => 'Fortsätt samtalet';
+
+  @override
+  String get agentRitualOpeningHint =>
+      'Läser vad som hänt sedan ert senaste samtal …';
+
+  @override
+  String get agentRitualReviewAction => 'Starta enskilt samtal';
 
   @override
   String get agentRitualReviewNegativeSignals => 'Negativt';
@@ -624,10 +628,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentRitualReviewProposalSection => 'Nuvarande förslag';
 
   @override
-  String get agentRitualReviewSessionHistory => 'Sessionens historik';
+  String get agentRitualReviewSessionHistory => 'Tidigare samtal';
 
   @override
   String get agentRitualReviewTitle => '1-mot-1';
+
+  @override
+  String get agentRitualSinceLastHeading => 'Sedan vårt senaste samtal';
+
+  @override
+  String get agentRitualStartHeading => 'Starta ett enskilt samtal';
 
   @override
   String get agentRitualSummaryApprovedChangesHeading =>
@@ -647,11 +657,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Starta ett enskilt möte för att gå igenom vad som störde dig, vad som fungerade och vad som bör ändras härnäst.';
-
-  @override
-  String get agentRitualSummarySubtitle =>
-      'Nyliga enskilda möten, riktig vakaktivitet och de förändringar ni gått med på.';
+      'Gå igenom vad som störde dig, vad som fungerade och vad som bör ändras härnäst.';
 
   @override
   String get agentRitualSummaryTokensSinceLast => 'Tokens sedan förra 1-mot-1';
@@ -663,6 +669,20 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get agentRitualSummaryWakesSinceLast =>
       'Vakor sedan senaste en-mot-en-mötet';
+
+  @override
+  String get agentRitualTypingSemantics => 'Agenten skriver ett svar';
+
+  @override
+  String agentRitualWakesSinceLastCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vakor sedan ert senaste samtal',
+      one: '1 vaka sedan ert senaste samtal',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentRunningIndicator => 'Löpning';
@@ -741,10 +761,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Själspersonlighetsförslag';
-
-  @override
-  String get agentSoulReviewHeroSubtitle =>
-      'Förfina personligheten över alla mallar som delar denna själ. Evolutionsagenten ser feedback från varje mall som använder denna personlighet.';
 
   @override
   String get agentSoulReviewStartAction => 'Starta Personlighetsgranskning';

@@ -239,9 +239,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentEvolutionCurrentDirectives => 'Direttive attuali';
 
   @override
-  String get agentEvolutionDashboardTitle => 'Prestazioni';
-
-  @override
   String get agentEvolutionHistoryTitle => 'Storia dell\'evoluzione';
 
   @override
@@ -598,7 +595,14 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentReportNone => 'Nessun rapporto disponibile ancora.';
 
   @override
-  String get agentRitualReviewAction => 'Iniziare la conversazione';
+  String get agentRitualContinueAction => 'Continua il 1-on-1';
+
+  @override
+  String get agentRitualOpeningHint =>
+      'Sta leggendo cosa è successo dalla vostra ultima conversazione…';
+
+  @override
+  String get agentRitualReviewAction => 'Avvia 1-on-1';
 
   @override
   String get agentRitualReviewNegativeSignals => 'Negativo';
@@ -629,10 +633,16 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentRitualReviewProposalSection => 'Proposta attuale';
 
   @override
-  String get agentRitualReviewSessionHistory => 'Storia della sessione';
+  String get agentRitualReviewSessionHistory => '1-on-1 precedenti';
 
   @override
   String get agentRitualReviewTitle => '1 su 1';
+
+  @override
+  String get agentRitualSinceLastHeading => 'Dalla nostra ultima conversazione';
+
+  @override
+  String get agentRitualStartHeading => 'Avvia un 1-on-1';
 
   @override
   String get agentRitualSummaryApprovedChangesHeading => 'Modifiche approvate';
@@ -651,11 +661,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Inizia un 1-on-1 per rivedere quello che ti ha disturbato, cosa ha funzionato, e cosa dovrebbe cambiare dopo.';
-
-  @override
-  String get agentRitualSummarySubtitle =>
-      'Recenti 1-on-1, attività di sveglia reale, e i cambiamenti che hai accettato.';
+      'Rivedi cosa ti ha dato fastidio, cosa ha funzionato e cosa dovrebbe cambiare.';
 
   @override
   String get agentRitualSummaryTokensSinceLast => 'Tokens dall\'ultimo 1-on-1';
@@ -666,6 +672,21 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get agentRitualSummaryWakesSinceLast => 'Sveglia dall\'ultimo 1-on-1';
+
+  @override
+  String get agentRitualTypingSemantics =>
+      'L\'agente sta scrivendo una risposta';
+
+  @override
+  String agentRitualWakesSinceLastCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count risvegli dal vostro ultimo 1-on-1',
+      one: '1 risveglio dal vostro ultimo 1-on-1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentRunningIndicator => 'Esecuzione';
@@ -744,10 +765,6 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Proposta di personalità dell\'anima';
-
-  @override
-  String get agentSoulReviewHeroSubtitle =>
-      'Definire la personalità in tutti i modelli che condividono questa anima. L\'agente di evoluzione vede feedback da ogni modello che utilizza questa personalità.';
 
   @override
   String get agentSoulReviewStartAction =>

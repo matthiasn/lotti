@@ -6,9 +6,9 @@ import 'package:lotti/features/agents/ui/agent_nav_helpers.dart';
 import 'package:lotti/features/agents/ui/evolution/soul_evolution_chat_page.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/ritual_session_history_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/layout/detail_content_width.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
-import 'package:lotti/themes/theme.dart';
 import 'package:lotti/widgets/cards/modern_base_card.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
 import 'package:lotti/widgets/nav_bar/bottom_nav_safe_navigator.dart';
@@ -42,57 +42,62 @@ class SoulEvolutionReviewPage extends ConsumerWidget {
         leading: agentBackButton(context),
         title: Text(soulName),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(AppTheme.spacingLarge),
-        children: [
-          _HeroPanel(templateCount: templatesAsync.value?.length ?? 0),
-          SizedBox(height: tokens.spacing.step5),
-          pendingAsync.when(
-            data: (entity) {
-              final hasTemplates = templatesAsync.value?.isNotEmpty ?? false;
-              final session = entity is EvolutionSessionEntity ? entity : null;
-              if (session == null) {
-                return _StartCard(
-                  onPressed: hasTemplates ? () => _openChat(context) : null,
+      body: DetailContentWidth(
+        child: ListView(
+          padding: EdgeInsets.symmetric(vertical: tokens.spacing.step5),
+          children: [
+            pendingAsync.when(
+              data: (entity) {
+                final hasTemplates = templatesAsync.value?.isNotEmpty ?? false;
+                final session = entity is EvolutionSessionEntity
+                    ? entity
+                    : null;
+                if (session == null) {
+                  return _StartCard(
+                    onPressed: hasTemplates ? () => _openChat(context) : null,
+                    templateCount: templatesAsync.value?.length ?? 0,
+                  );
+                }
+                return _PendingSessionCard(
+                  session: session,
+                  onPressed: () => _openChat(context),
+                  templateCount: templatesAsync.value?.length ?? 0,
                 );
-              }
-              return _PendingSessionCard(
-                session: session,
-                onPressed: () => _openChat(context),
-              );
-            },
-            loading: () => const SizedBox.shrink(),
-            error: (_, _) => _StartCard(
-              onPressed: (templatesAsync.value?.isNotEmpty ?? false)
-                  ? () => _openChat(context)
-                  : null,
+              },
+              loading: () => const SizedBox.shrink(),
+              error: (_, _) => _StartCard(
+                onPressed: (templatesAsync.value?.isNotEmpty ?? false)
+                    ? () => _openChat(context)
+                    : null,
+                templateCount: templatesAsync.value?.length ?? 0,
+              ),
             ),
-          ),
-          SizedBox(height: tokens.spacing.step4),
-          _SectionHeader(
-            icon: Icons.history_rounded,
-            title: context.messages.agentRitualReviewSessionHistory,
-          ),
-          SizedBox(height: tokens.spacing.step4),
-          historyAsync.when(
-            data: (entries) {
-              if (entries.isEmpty) {
-                return _EmptyHistoryCard(
-                  text: context.messages.agentSoulEvolutionNoSessions,
+            SizedBox(height: tokens.spacing.step4),
+            _SectionHeader(
+              icon: Icons.history_rounded,
+              title: context.messages.agentRitualReviewSessionHistory,
+            ),
+            SizedBox(height: tokens.spacing.step4),
+            historyAsync.when(
+              data: (entries) {
+                if (entries.isEmpty) {
+                  return _EmptyHistoryCard(
+                    text: context.messages.agentSoulEvolutionNoSessions,
+                  );
+                }
+                return Column(
+                  children: entries
+                      .map((entry) => RitualSessionHistoryCard(entry: entry))
+                      .toList(),
                 );
-              }
-              return Column(
-                children: entries
-                    .map((entry) => RitualSessionHistoryCard(entry: entry))
-                    .toList(),
-              );
-            },
-            loading: () => const _LoadingCard(),
-            error: (_, _) => _EmptyHistoryCard(
-              text: context.messages.commonError,
+              },
+              loading: () => const _LoadingCard(),
+              error: (_, _) => _EmptyHistoryCard(
+                text: context.messages.commonError,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -103,75 +108,6 @@ class SoulEvolutionReviewPage extends ConsumerWidget {
     bottomNavSafeNavigatorOf(context).push(
       MaterialPageRoute<void>(
         builder: (_) => SoulEvolutionChatPage(soulId: soulId),
-      ),
-    );
-  }
-}
-
-class _HeroPanel extends StatelessWidget {
-  const _HeroPanel({required this.templateCount});
-
-  final int templateCount;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-
-    return ModernBaseCard(
-      padding: EdgeInsets.all(tokens.spacing.step6),
-      backgroundColor: tokens.colors.background.alternative01,
-      borderColor: tokens.colors.decorative.level02,
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              const ModernIconContainer(
-                icon: Icons.auto_awesome_rounded,
-                isCompact: true,
-              ),
-              SizedBox(width: tokens.spacing.step4),
-              Expanded(
-                child: Text(
-                  context.messages.agentSoulReviewTitle,
-                  style: tokens.typography.styles.heading.heading1.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 14),
-          Text(
-            context.messages.agentSoulReviewHeroSubtitle,
-            style: tokens.typography.styles.body.bodyLarge.copyWith(
-              color: tokens.colors.text.highEmphasis,
-              height: 1.35,
-            ),
-          ),
-          if (templateCount > 0) ...[
-            SizedBox(height: tokens.spacing.step3),
-            Container(
-              padding: EdgeInsets.symmetric(
-                horizontal: tokens.spacing.step4,
-                vertical: tokens.spacing.step3,
-              ),
-              decoration: BoxDecoration(
-                color: tokens.colors.background.level03,
-                borderRadius: BorderRadius.circular(tokens.radii.badgesPills),
-                border: Border.all(
-                  color: tokens.colors.decorative.level02,
-                ),
-              ),
-              child: Text(
-                context.messages.agentSoulReviewTemplateCount(templateCount),
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-            ),
-          ],
-        ],
       ),
     );
   }
@@ -197,7 +133,7 @@ class _SectionHeader extends StatelessWidget {
           isCompact: true,
           iconColor: tokens.colors.interactive.enabled,
         ),
-        const SizedBox(width: 10),
+        SizedBox(width: tokens.spacing.step4),
         Expanded(
           child: Text(
             title,
@@ -212,7 +148,11 @@ class _SectionHeader extends StatelessWidget {
 }
 
 class _StartCard extends StatelessWidget {
-  const _StartCard({this.onPressed});
+  const _StartCard({this.onPressed, this.templateCount = 0});
+
+  /// How many templates wear this soul. Zero is why the action is disabled,
+  /// so the number belongs beside the button rather than in a banner.
+  final int templateCount;
 
   final VoidCallback? onPressed;
 
@@ -227,24 +167,13 @@ class _StartCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              ModernIconContainer(
-                icon: Icons.auto_awesome_rounded,
-                isCompact: true,
-                iconColor: tokens.colors.interactive.enabled,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                context.messages.agentSoulReviewTitle,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                  letterSpacing: 0.25,
-                ),
-              ),
-            ],
+          Text(
+            context.messages.agentSoulReviewTitle,
+            style: tokens.typography.styles.heading.heading2.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: tokens.spacing.step3),
           Text(
             context.messages.agentSoulReviewStartHint,
             style: tokens.typography.styles.body.bodyMedium.copyWith(
@@ -253,13 +182,24 @@ class _StartCard extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step5),
-          SizedBox(
-            width: double.infinity,
-            child: DesignSystemButton(
-              onPressed: onPressed,
-              label: context.messages.agentSoulReviewStartAction,
-              size: DesignSystemButtonSize.medium,
-            ),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: tokens.spacing.step4,
+            runSpacing: tokens.spacing.step3,
+            children: [
+              DesignSystemButton(
+                onPressed: onPressed,
+                label: context.messages.agentSoulReviewStartAction,
+                size: DesignSystemButtonSize.medium,
+              ),
+              if (templateCount > 0)
+                Text(
+                  context.messages.agentSoulReviewTemplateCount(templateCount),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+            ],
           ),
         ],
       ),
@@ -271,10 +211,17 @@ class _PendingSessionCard extends StatelessWidget {
   const _PendingSessionCard({
     required this.session,
     required this.onPressed,
+    this.templateCount = 0,
   });
 
   final EvolutionSessionEntity session;
   final VoidCallback onPressed;
+
+  /// How many templates wear this soul. A personality change is approved from
+  /// inside the session, so the blast radius has to be visible on the way in —
+  /// the removed hero used to state it unconditionally, and resuming a pending
+  /// session skips the start card that otherwise carries it.
+  final int templateCount;
 
   @override
   Widget build(BuildContext context) {
@@ -287,25 +234,13 @@ class _PendingSessionCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            children: [
-              ModernIconContainer(
-                icon: Icons.bolt_rounded,
-                isCompact: true,
-                iconColor: tokens.colors.text.highEmphasis,
-                borderColor: tokens.colors.decorative.level02,
-              ),
-              const SizedBox(width: 10),
-              Text(
-                context.messages.agentSoulReviewTitle,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                  letterSpacing: 0.25,
-                ),
-              ),
-            ],
+          Text(
+            context.messages.agentRitualReviewProposalSection,
+            style: tokens.typography.styles.heading.heading2.copyWith(
+              color: tokens.colors.text.highEmphasis,
+            ),
           ),
-          const SizedBox(height: 14),
+          SizedBox(height: tokens.spacing.step4),
           if (session.feedbackSummary case final summary?) ...[
             Container(
               width: double.infinity,
@@ -327,13 +262,24 @@ class _PendingSessionCard extends StatelessWidget {
             ),
             SizedBox(height: tokens.spacing.step4),
           ],
-          SizedBox(
-            width: double.infinity,
-            child: DesignSystemButton(
-              onPressed: onPressed,
-              label: context.messages.agentSoulReviewStartAction,
-              size: DesignSystemButtonSize.medium,
-            ),
+          Wrap(
+            crossAxisAlignment: WrapCrossAlignment.center,
+            spacing: tokens.spacing.step4,
+            runSpacing: tokens.spacing.step3,
+            children: [
+              DesignSystemButton(
+                onPressed: onPressed,
+                label: context.messages.agentSoulReviewStartAction,
+                size: DesignSystemButtonSize.medium,
+              ),
+              if (templateCount > 0)
+                Text(
+                  context.messages.agentSoulReviewTemplateCount(templateCount),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+            ],
           ),
         ],
       ),

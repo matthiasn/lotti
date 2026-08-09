@@ -235,9 +235,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentEvolutionCurrentDirectives => 'Nuværende direktiver';
 
   @override
-  String get agentEvolutionDashboardTitle => 'Ydeevne';
-
-  @override
   String get agentEvolutionHistoryTitle => 'Evolutionshistorie';
 
   @override
@@ -591,7 +588,14 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentReportNone => 'Ingen rapport tilgængelig endnu.';
 
   @override
-  String get agentRitualReviewAction => 'Start samtale';
+  String get agentRitualContinueAction => 'Fortsæt 1-til-1';
+
+  @override
+  String get agentRitualOpeningHint =>
+      'Læser, hvad der er sket, siden I sidst talte sammen …';
+
+  @override
+  String get agentRitualReviewAction => 'Start 1-til-1';
 
   @override
   String get agentRitualReviewNegativeSignals => 'Negativ';
@@ -622,10 +626,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentRitualReviewProposalSection => 'Nuværende forslag';
 
   @override
-  String get agentRitualReviewSessionHistory => 'Sessionens historie';
+  String get agentRitualReviewSessionHistory => 'Tidligere 1-til-1-samtaler';
 
   @override
   String get agentRitualReviewTitle => '1-mod-1';
+
+  @override
+  String get agentRitualSinceLastHeading => 'Siden vi sidst talte sammen';
+
+  @override
+  String get agentRitualStartHeading => 'Start en 1-til-1';
 
   @override
   String get agentRitualSummaryApprovedChangesHeading => 'Godkendte ændringer';
@@ -644,11 +654,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentRitualSummaryStartHint =>
-      'Start et en-til-en møde for at gennemgå, hvad der generede dig, hvad der virkede, og hvad der bør ændres næste gang.';
-
-  @override
-  String get agentRitualSummarySubtitle =>
-      'Nylige 1-til-1-møder, rigtig vågeaktivitet og de ændringer, du har accepteret.';
+      'Gennemgå, hvad der generede dig, hvad der virkede, og hvad der bør ændres.';
 
   @override
   String get agentRitualSummaryTokensSinceLast => 'Tokens siden sidste 1-mod-1';
@@ -659,6 +665,20 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentRitualSummaryWakesSinceLast => 'Våger siden sidste 1-til-1';
+
+  @override
+  String get agentRitualTypingSemantics => 'Agenten skriver et svar';
+
+  @override
+  String agentRitualWakesSinceLastCount(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count opvågninger siden jeres sidste 1-til-1',
+      one: '1 opvågning siden jeres sidste 1-til-1',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get agentRunningIndicator => 'Løb';
@@ -736,10 +756,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentSoulProposalTitle => 'Forslag om sjælepersonlighed';
-
-  @override
-  String get agentSoulReviewHeroSubtitle =>
-      'Forfine personligheden på tværs af alle skabeloner, der deler denne sjæl. Evolutionsagenten ser feedback fra hver skabelon, der bruger denne personlighed.';
 
   @override
   String get agentSoulReviewStartAction => 'Start Personlighedsgennemgang';
