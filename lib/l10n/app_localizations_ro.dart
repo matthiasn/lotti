@@ -694,6 +694,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentRunningIndicator => 'În execuție';
 
   @override
+  String get agentsCreateGoal => 'Agent de obiectiv nou';
+
+  @override
   String get agentSessionProgressTitle => 'Progresul sesiunii';
 
   @override
@@ -829,6 +832,13 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Directivă vocală';
+
+  @override
+  String get agentsPageEmpty =>
+      'Încă nu există agenți de obiective. Creați unul și vă va urmări discret progresul.';
+
+  @override
+  String get agentsPageTitle => 'Agenți';
 
   @override
   String get agentStateConsecutiveFailures => 'Eșecuri consecutive';
@@ -6001,6 +6011,82 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Creează imagine din descrierea vocală';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% din obiectiv';
+  }
+
+  @override
+  String get goalBannerDismissTooltip => 'Închideți';
+
+  @override
+  String get goalBannerRatingSkip => 'Omiteți';
+
+  @override
+  String get goalBannerRatingTitle => 'Cum vi s-a părut acest banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Banner pentru obiectivul $goalTitle';
+  }
+
+  @override
+  String get goalCreateHabitCountLabel =>
+      'De câte ori pe săptămână (fiecare obicei)';
+
+  @override
+  String get goalCreateHabitsLabel => 'Obiceiuri de urmărit';
+
+  @override
+  String get goalCreateNameLabel => 'Nume';
+
+  @override
+  String get goalCreateSaveButton => 'Creați agentul';
+
+  @override
+  String get goalCreateStatementLabel => 'Enunțul obiectivului';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Media pașilor pe zi';
+
+  @override
+  String get goalCreateTypeHabits => 'Rutină de obiceiuri';
+
+  @override
+  String get goalCreateTypeSteps => 'Pași zilnici (săptămână glisantă)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Dați obiectivului un nume și cel puțin un criteriu.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Încă nu există raport — agentul va raporta după prima schimbare relevantă.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interacțiuni';
+
+  @override
+  String get goalPendingProposalBadge => 'Propunere în așteptarea evaluării';
+
+  @override
+  String get goalStatusAchieved => 'Atins';
+
+  @override
+  String get goalStatusAtRisk => 'În pericol';
+
+  @override
+  String get goalStatusInsufficientData => 'Fără date';
+
+  @override
+  String get goalStatusOffTrack => 'Deviat de la obiectiv';
+
+  @override
+  String get goalStatusOnTrack => 'Pe drumul cel bun';
+
+  @override
+  String get goalStatusRecovering => 'În revenire';
 
   @override
   String get goMenuTitle => 'Navigare';

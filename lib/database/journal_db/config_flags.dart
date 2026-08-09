@@ -86,6 +86,13 @@ Future<void> initConfigFlags(
   );
   await db.insertFlagIfNotExists(
     const ConfigFlag(
+      name: enableAgentsPageFlag,
+      description: 'Enable Agents Page?',
+      status: false,
+    ),
+  );
+  await db.insertFlagIfNotExists(
+    const ConfigFlag(
       name: enableDailyOsPageFlag,
       description: 'Enable DailyOS Page?',
       status: false,

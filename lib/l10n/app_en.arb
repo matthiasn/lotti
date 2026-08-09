@@ -347,6 +347,10 @@
     }
   },
   "agentRunningIndicator": "Running",
+  "agentsCreateGoal": "New goal agent",
+  "@agentsCreateGoal": {
+    "description": "Button/page title for creating a goal agent."
+  },
   "agentSessionProgressTitle": "Session Progress",
   "agentSettingsSubtitle": "Templates, instances, and monitoring",
   "agentSettingsTitle": "Agents",
@@ -408,6 +412,14 @@
   },
   "agentSoulVersionSaved": "New soul version saved",
   "agentSoulVoiceDirectiveLabel": "Voice Directive",
+  "agentsPageEmpty": "No goal agents yet. Create one and it will quietly watch your progress.",
+  "@agentsPageEmpty": {
+    "description": "Empty state of the agents page."
+  },
+  "agentsPageTitle": "Agents",
+  "@agentsPageTitle": {
+    "description": "Title of the top-level agents page."
+  },
   "agentStateConsecutiveFailures": "Consecutive failures",
   "agentStateErrorLoading": "Failed to load state: {error}",
   "@agentStateErrorLoading": {
@@ -3155,6 +3167,108 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generate Cover Art",
   "generateCoverArtSubtitle": "Create image from voice description",
+  "goalAttainmentLabel": "{percent}% of target",
+  "@goalAttainmentLabel": {
+    "description": "Attainment summary on an agent card; percent is 0-100.",
+    "placeholders": {
+      "percent": {
+        "type": "int"
+      }
+    }
+  },
+  "goalBannerDismissTooltip": "Dismiss",
+  "@goalBannerDismissTooltip": {
+    "description": "Tooltip of the X button on a goal banner; dismissing starts a 24h quiet window."
+  },
+  "goalBannerRatingSkip": "Skip",
+  "@goalBannerRatingSkip": {
+    "description": "Skips the banner rating prompt for this activation."
+  },
+  "goalBannerRatingTitle": "How was this banner?",
+  "@goalBannerRatingTitle": {
+    "description": "Title of the per-activation rating prompt for a goal banner."
+  },
+  "goalBannerSemanticLabel": "Goal banner for {goalTitle}",
+  "@goalBannerSemanticLabel": {
+    "description": "Accessibility label of one goal ad banner; goalTitle is the goal name.",
+    "placeholders": {
+      "goalTitle": {
+        "type": "String"
+      }
+    }
+  },
+  "goalCreateHabitCountLabel": "Times per week (each habit)",
+  "@goalCreateHabitCountLabel": {
+    "description": "Label of the per-habit weekly completion target."
+  },
+  "goalCreateHabitsLabel": "Habits to watch",
+  "@goalCreateHabitsLabel": {
+    "description": "Label of the multi-select habit picker on the goal form."
+  },
+  "goalCreateNameLabel": "Name",
+  "@goalCreateNameLabel": {
+    "description": "Label of the goal name field on the creation form."
+  },
+  "goalCreateSaveButton": "Create agent",
+  "@goalCreateSaveButton": {
+    "description": "Submit button of the goal creation form."
+  },
+  "goalCreateStatementLabel": "Goal statement",
+  "@goalCreateStatementLabel": {
+    "description": "Label of the speakable goal statement field."
+  },
+  "goalCreateStepsTargetLabel": "Average steps per day",
+  "@goalCreateStepsTargetLabel": {
+    "description": "Label of the steps target field."
+  },
+  "goalCreateTypeHabits": "Habit routine",
+  "@goalCreateTypeHabits": {
+    "description": "Goal type option: one or more habits completed N times per week."
+  },
+  "goalCreateTypeSteps": "Daily steps (rolling week)",
+  "@goalCreateTypeSteps": {
+    "description": "Goal type option: average daily step count over a rolling week."
+  },
+  "goalCreateValidationMissing": "Give the goal a name and at least one criterion.",
+  "@goalCreateValidationMissing": {
+    "description": "Validation message on the goal creation form."
+  },
+  "goalDetailNoReport": "No report yet — the agent reports after its first meaningful change.",
+  "@goalDetailNoReport": {
+    "description": "Placeholder when a goal agent has not written a report yet."
+  },
+  "goalDetailTimelineTitle": "Interactions",
+  "@goalDetailTimelineTitle": {
+    "description": "Section title of the agent detail interaction timeline."
+  },
+  "goalPendingProposalBadge": "Proposal awaiting review",
+  "@goalPendingProposalBadge": {
+    "description": "Badge on an agent card when a revision proposal is pending."
+  },
+  "goalStatusAchieved": "Achieved",
+  "@goalStatusAchieved": {
+    "description": "Goal track status chip: target date passed with criteria met."
+  },
+  "goalStatusAtRisk": "At risk",
+  "@goalStatusAtRisk": {
+    "description": "Goal track status chip: behind but within grace."
+  },
+  "goalStatusInsufficientData": "No data",
+  "@goalStatusInsufficientData": {
+    "description": "Goal track status chip: tracker gap, no verdict."
+  },
+  "goalStatusOffTrack": "Off track",
+  "@goalStatusOffTrack": {
+    "description": "Goal track status chip: decisively behind."
+  },
+  "goalStatusOnTrack": "On track",
+  "@goalStatusOnTrack": {
+    "description": "Goal track status chip: criteria currently met."
+  },
+  "goalStatusRecovering": "Recovering",
+  "@goalStatusRecovering": {
+    "description": "Goal track status chip: climbing back after being behind."
+  },
   "goMenuTitle": "Go",
   "habitActiveFromLabel": "Start date",
   "habitActiveSwitchDescription": "Shown on the Habits page",

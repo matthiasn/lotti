@@ -688,6 +688,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentRunningIndicator => 'Běží';
 
   @override
+  String get agentsCreateGoal => 'Nový cílový agent';
+
+  @override
   String get agentSessionProgressTitle => 'Průběh relace';
 
   @override
@@ -820,6 +823,13 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Hlasová direktiva';
+
+  @override
+  String get agentsPageEmpty =>
+      'Zatím žádní cíloví agenti. Vytvoř jednoho a bude tiše sledovat tvůj pokrok.';
+
+  @override
+  String get agentsPageTitle => 'Agenti';
 
   @override
   String get agentStateConsecutiveFailures => 'Po sobě jdoucí selhání';
@@ -5970,6 +5980,81 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get generateCoverArtSubtitle => 'Vytvořit obrázek z hlasového popisu';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent % cíle';
+  }
+
+  @override
+  String get goalBannerDismissTooltip => 'Zavřít';
+
+  @override
+  String get goalBannerRatingSkip => 'Přeskočit';
+
+  @override
+  String get goalBannerRatingTitle => 'Jaký byl tento banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Banner cíle $goalTitle';
+  }
+
+  @override
+  String get goalCreateHabitCountLabel => 'Krát týdně (každý návyk)';
+
+  @override
+  String get goalCreateHabitsLabel => 'Sledované návyky';
+
+  @override
+  String get goalCreateNameLabel => 'Název';
+
+  @override
+  String get goalCreateSaveButton => 'Vytvořit agenta';
+
+  @override
+  String get goalCreateStatementLabel => 'Znění cíle';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Průměr kroků za den';
+
+  @override
+  String get goalCreateTypeHabits => 'Rutina návyků';
+
+  @override
+  String get goalCreateTypeSteps => 'Denní kroky (klouzavý týden)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Pojmenuj cíl a zadej alespoň jedno kritérium.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Zatím žádná zpráva — agent se ozve po první podstatné změně.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interakce';
+
+  @override
+  String get goalPendingProposalBadge => 'Návrh čeká na posouzení';
+
+  @override
+  String get goalStatusAchieved => 'Splněno';
+
+  @override
+  String get goalStatusAtRisk => 'Ohroženo';
+
+  @override
+  String get goalStatusInsufficientData => 'Bez dat';
+
+  @override
+  String get goalStatusOffTrack => 'Mimo kurz';
+
+  @override
+  String get goalStatusOnTrack => 'Na dobré cestě';
+
+  @override
+  String get goalStatusRecovering => 'Zotavuje se';
 
   @override
   String get goMenuTitle => 'Přejít';

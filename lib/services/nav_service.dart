@@ -29,7 +29,8 @@ class NavService {
     resetTabsToRoots();
 
     _navigationFlagsSub =
-        Rx.combineLatest5<
+        Rx.combineLatest6<
+              bool,
               bool,
               bool,
               bool,
@@ -41,6 +42,7 @@ class NavService {
                 bool dailyOs,
                 bool projects,
                 bool events,
+                bool agents,
               })
             >(
               _journalDb.watchConfigFlag(enableHabitsPageFlag),
@@ -48,12 +50,14 @@ class NavService {
               _journalDb.watchConfigFlag(enableDailyOsPageFlag),
               _journalDb.watchConfigFlag(enableProjectsFlag),
               _journalDb.watchConfigFlag(enableEventsFlag),
-              (habits, dashboards, dailyOs, projects, events) => (
+              _journalDb.watchConfigFlag(enableAgentsPageFlag),
+              (habits, dashboards, dailyOs, projects, events, agents) => (
                 habits: habits,
                 dashboards: dashboards,
                 dailyOs: dailyOs,
                 projects: projects,
                 events: events,
+                agents: agents,
               ),
             )
             .listen(_handleNavigationFlagsUpdated);
@@ -68,6 +72,7 @@ class NavService {
       bool dailyOs,
       bool projects,
       bool events,
+      bool agents,
     })
   >
   _navigationFlagsSub;
@@ -128,6 +133,7 @@ class NavService {
       ValueNotifier<DesktopSettingsRoute?>(null);
 
   bool _isHabitsPageEnabled = false;
+  bool _isAgentsPageEnabled = false;
   bool _isDashboardsPageEnabled = false;
   bool _isDailyOsPageEnabled = false;
   bool _isProjectsPageEnabled = false;
@@ -148,6 +154,7 @@ class NavService {
   final BeamerDelegate tasksDelegate = tasksBeamerDelegate;
   final BeamerDelegate calendarDelegate = calendarBeamerDelegate;
   final BeamerDelegate settingsDelegate = settingsBeamerDelegate;
+  final BeamerDelegate agentsDelegate = agentsBeamerDelegate;
 
   /// Sends every tab back to its root path and selects Tasks.
   ///
@@ -173,6 +180,7 @@ class NavService {
   }
 
   bool get isHabitsPageEnabled => _isHabitsPageEnabled;
+  bool get isAgentsPageEnabled => _isAgentsPageEnabled;
   bool get isDashboardsPageEnabled => _isDashboardsPageEnabled;
   bool get isDailyOsPageEnabled => _isDailyOsPageEnabled;
   bool get isProjectsPageEnabled => _isProjectsPageEnabled;
@@ -206,6 +214,11 @@ class NavService {
       enabled: _isDashboardsPageEnabled,
       rootPath: '/dashboards',
       delegate: dashboardsDelegate,
+    );
+    yield (
+      enabled: _isAgentsPageEnabled,
+      rootPath: '/agents',
+      delegate: agentsDelegate,
     );
     yield (enabled: true, rootPath: '/journal', delegate: journalDelegate);
     yield (
@@ -253,10 +266,12 @@ class NavService {
       bool dailyOs,
       bool projects,
       bool events,
+      bool agents,
     })
     flags,
   ) {
     _isHabitsPageEnabled = flags.habits;
+    _isAgentsPageEnabled = flags.agents;
     _isDashboardsPageEnabled = flags.dashboards;
     _isDailyOsPageEnabled = flags.dailyOs;
     _isProjectsPageEnabled = flags.projects;

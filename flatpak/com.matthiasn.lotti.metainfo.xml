@@ -1108,6 +1108,7 @@
       <description>
           <p>Task detail header rebuilt against the desktop Figma:</p>
           <ul>
+          <li>Experimental goal agents: a flag-gated Agents tab with per-goal health, proposal approval, goal creation, and dismissible rated text banners on the day and habits pages when a goal slips.</li>
               <li>New DesktopTaskHeader replaces the pinned title sliver and legacy TaskHeaderMetaCard, with an inline capsule-style multi-line title editor and three explicit rows for title, classification, and metadata.</li>
               <li>Figma priority / status / project / due-date / work-category chips; estimate chip with live progress bar and overtime styling; assigned-label chips with a leading color dot.</li>
               <li>Subdued placeholder chips for every empty state ("No project", "unassigned" category, "No due date", "Add Label") open the corresponding picker when tapped.</li>

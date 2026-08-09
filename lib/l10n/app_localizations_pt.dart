@@ -691,6 +691,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentRunningIndicator => 'Correndo';
 
   @override
+  String get agentsCreateGoal => 'Novo agente de meta';
+
+  @override
   String get agentSessionProgressTitle => 'Progresso da sessão';
 
   @override
@@ -825,6 +828,13 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Diretiva de Voz';
+
+  @override
+  String get agentsPageEmpty =>
+      'Ainda não há agentes de metas. Cria um e ele acompanha o teu progresso discretamente.';
+
+  @override
+  String get agentsPageTitle => 'Agentes';
 
   @override
   String get agentStateConsecutiveFailures => 'Falhas consecutivas';
@@ -5962,6 +5972,81 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Criar imagem a partir da descrição de voz';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% da meta';
+  }
+
+  @override
+  String get goalBannerDismissTooltip => 'Dispensar';
+
+  @override
+  String get goalBannerRatingSkip => 'Ignorar';
+
+  @override
+  String get goalBannerRatingTitle => 'O que achaste deste banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Banner da meta $goalTitle';
+  }
+
+  @override
+  String get goalCreateHabitCountLabel => 'Vezes por semana (cada hábito)';
+
+  @override
+  String get goalCreateHabitsLabel => 'Hábitos a acompanhar';
+
+  @override
+  String get goalCreateNameLabel => 'Nome';
+
+  @override
+  String get goalCreateSaveButton => 'Criar agente';
+
+  @override
+  String get goalCreateStatementLabel => 'Descrição da meta';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Média de passos por dia';
+
+  @override
+  String get goalCreateTypeHabits => 'Rotina de hábitos';
+
+  @override
+  String get goalCreateTypeSteps => 'Passos diários (semana móvel)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Dá um nome à meta e pelo menos um critério.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Ainda sem relatório — o agente reporta após a primeira mudança relevante.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interações';
+
+  @override
+  String get goalPendingProposalBadge => 'Proposta a aguardar revisão';
+
+  @override
+  String get goalStatusAchieved => 'Alcançado';
+
+  @override
+  String get goalStatusAtRisk => 'Em risco';
+
+  @override
+  String get goalStatusInsufficientData => 'Sem dados';
+
+  @override
+  String get goalStatusOffTrack => 'Fora do caminho';
+
+  @override
+  String get goalStatusOnTrack => 'No bom caminho';
+
+  @override
+  String get goalStatusRecovering => 'A recuperar';
 
   @override
   String get goMenuTitle => 'Vá';

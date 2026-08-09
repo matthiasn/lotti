@@ -685,6 +685,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentRunningIndicator => 'Uitvoeren';
 
   @override
+  String get agentsCreateGoal => 'Nieuwe doelagent';
+
+  @override
   String get agentSessionProgressTitle => 'Voortgang van de zitting';
 
   @override
@@ -819,6 +822,13 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Spraakrichtlijn';
+
+  @override
+  String get agentsPageEmpty =>
+      'Nog geen doelagenten. Maak er een aan en hij volgt stilletjes je voortgang.';
+
+  @override
+  String get agentsPageTitle => 'Agenten';
 
   @override
   String get agentStateConsecutiveFailures => 'Consecutieve storingen';
@@ -5924,6 +5934,81 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Afbeelding aanmaken van spraakbeschrijving';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% van het doel';
+  }
+
+  @override
+  String get goalBannerDismissTooltip => 'Verbergen';
+
+  @override
+  String get goalBannerRatingSkip => 'Overslaan';
+
+  @override
+  String get goalBannerRatingTitle => 'Wat vond je van deze banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Doelbanner voor $goalTitle';
+  }
+
+  @override
+  String get goalCreateHabitCountLabel => 'Keer per week (per gewoonte)';
+
+  @override
+  String get goalCreateHabitsLabel => 'Te volgen gewoontes';
+
+  @override
+  String get goalCreateNameLabel => 'Naam';
+
+  @override
+  String get goalCreateSaveButton => 'Agent aanmaken';
+
+  @override
+  String get goalCreateStatementLabel => 'Doelomschrijving';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Gemiddeld aantal stappen per dag';
+
+  @override
+  String get goalCreateTypeHabits => 'Gewoonteroutine';
+
+  @override
+  String get goalCreateTypeSteps => 'Dagelijkse stappen (lopende week)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Geef het doel een naam en minstens één criterium.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Nog geen rapport — de agent rapporteert na de eerste relevante verandering.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interacties';
+
+  @override
+  String get goalPendingProposalBadge => 'Voorstel wacht op beoordeling';
+
+  @override
+  String get goalStatusAchieved => 'Behaald';
+
+  @override
+  String get goalStatusAtRisk => 'Risico';
+
+  @override
+  String get goalStatusInsufficientData => 'Geen gegevens';
+
+  @override
+  String get goalStatusOffTrack => 'Uit koers';
+
+  @override
+  String get goalStatusOnTrack => 'Op koers';
+
+  @override
+  String get goalStatusRecovering => 'Herstellend';
 
   @override
   String get goMenuTitle => 'Ga';

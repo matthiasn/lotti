@@ -692,6 +692,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentRunningIndicator => 'Esecuzione';
 
   @override
+  String get agentsCreateGoal => 'Nuovo agente obiettivo';
+
+  @override
   String get agentSessionProgressTitle => 'Progressi di sessione';
 
   @override
@@ -828,6 +831,13 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Direttiva della voce';
+
+  @override
+  String get agentsPageEmpty =>
+      'Ancora nessun agente obiettivo. Creane uno e seguirà i tuoi progressi in silenzio.';
+
+  @override
+  String get agentsPageTitle => 'Agenti';
 
   @override
   String get agentStateConsecutiveFailures => 'Fallimenti consecutivi';
@@ -5977,6 +5987,81 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Crea immagine dalla descrizione vocale';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% dell’obiettivo';
+  }
+
+  @override
+  String get goalBannerDismissTooltip => 'Ignora';
+
+  @override
+  String get goalBannerRatingSkip => 'Salta';
+
+  @override
+  String get goalBannerRatingTitle => 'Com’era questo banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Banner dell’obiettivo $goalTitle';
+  }
+
+  @override
+  String get goalCreateHabitCountLabel => 'Volte a settimana (per abitudine)';
+
+  @override
+  String get goalCreateHabitsLabel => 'Abitudini da seguire';
+
+  @override
+  String get goalCreateNameLabel => 'Nome';
+
+  @override
+  String get goalCreateSaveButton => 'Crea agente';
+
+  @override
+  String get goalCreateStatementLabel => 'Enunciato dell’obiettivo';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Passi medi al giorno';
+
+  @override
+  String get goalCreateTypeHabits => 'Routine di abitudini';
+
+  @override
+  String get goalCreateTypeSteps => 'Passi giornalieri (settimana mobile)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Dai un nome all’obiettivo e almeno un criterio.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Ancora nessun report: l’agente riferirà al primo cambiamento rilevante.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interazioni';
+
+  @override
+  String get goalPendingProposalBadge => 'Proposta in attesa';
+
+  @override
+  String get goalStatusAchieved => 'Raggiunto';
+
+  @override
+  String get goalStatusAtRisk => 'A rischio';
+
+  @override
+  String get goalStatusInsufficientData => 'Nessun dato';
+
+  @override
+  String get goalStatusOffTrack => 'Fuori rotta';
+
+  @override
+  String get goalStatusOnTrack => 'In linea';
+
+  @override
+  String get goalStatusRecovering => 'In ripresa';
 
   @override
   String get goMenuTitle => 'Vai.';

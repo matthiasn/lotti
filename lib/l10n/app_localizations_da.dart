@@ -684,6 +684,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentRunningIndicator => 'Løb';
 
   @override
+  String get agentsCreateGoal => 'Ny målagent';
+
+  @override
   String get agentSessionProgressTitle => 'Sessionens fremskridt';
 
   @override
@@ -817,6 +820,13 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Taledirektivet';
+
+  @override
+  String get agentsPageEmpty =>
+      'Ingen målagenter endnu. Opret en, så følger den stille dine fremskridt.';
+
+  @override
+  String get agentsPageTitle => 'Agenter';
 
   @override
   String get agentStateConsecutiveFailures => 'På hinanden følgende fejl';
@@ -5906,6 +5916,81 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Opret billede ud fra stemmebeskrivelse';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent % af målet';
+  }
+
+  @override
+  String get goalBannerDismissTooltip => 'Afvis';
+
+  @override
+  String get goalBannerRatingSkip => 'Spring over';
+
+  @override
+  String get goalBannerRatingTitle => 'Hvordan var dette banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Målbanner for $goalTitle';
+  }
+
+  @override
+  String get goalCreateHabitCountLabel => 'Gange om ugen (pr. vane)';
+
+  @override
+  String get goalCreateHabitsLabel => 'Vaner at følge';
+
+  @override
+  String get goalCreateNameLabel => 'Navn';
+
+  @override
+  String get goalCreateSaveButton => 'Opret agent';
+
+  @override
+  String get goalCreateStatementLabel => 'Målsætning';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Gennemsnitlige skridt pr. dag';
+
+  @override
+  String get goalCreateTypeHabits => 'Vanerutine';
+
+  @override
+  String get goalCreateTypeSteps => 'Daglige skridt (rullende uge)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Giv målet et navn og mindst ét kriterium.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Ingen rapport endnu — agenten rapporterer efter den første relevante ændring.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interaktioner';
+
+  @override
+  String get goalPendingProposalBadge => 'Forslag afventer';
+
+  @override
+  String get goalStatusAchieved => 'Opnået';
+
+  @override
+  String get goalStatusAtRisk => 'I fare';
+
+  @override
+  String get goalStatusInsufficientData => 'Ingen data';
+
+  @override
+  String get goalStatusOffTrack => 'Ude af kurs';
+
+  @override
+  String get goalStatusOnTrack => 'På sporet';
+
+  @override
+  String get goalStatusRecovering => 'På vej tilbage';
 
   @override
   String get goMenuTitle => 'Gå';

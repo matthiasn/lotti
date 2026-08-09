@@ -689,7 +689,13 @@ class MockAudioRecorder extends Mock implements record.AudioRecorder {}
 class MockAudioTranscriptionService extends Mock
     implements AudioTranscriptionService {}
 
-class MockNavService extends Mock implements NavService {}
+class MockNavService extends Mock implements NavService {
+  /// Concrete default so the many app-shell tests that predate the
+  /// agents tab don't each need a stub; tests exercising the tab use the
+  /// real NavService with flag streams.
+  @override
+  bool get isAgentsPageEnabled => false;
+}
 
 class MockWindowService extends Mock implements WindowService {}
 

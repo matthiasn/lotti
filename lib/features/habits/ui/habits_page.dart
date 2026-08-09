@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/design_system/theme/ds_surface_elevation.dart';
+import 'package:lotti/features/goals/ui/goal_banner_strip.dart';
 import 'package:lotti/features/habits/state/habits_controller.dart';
 import 'package:lotti/features/habits/state/habits_state.dart';
 import 'package:lotti/features/habits/state/heatmap/habit_heatmap_controller.dart';
@@ -277,6 +278,8 @@ class _HabitsTabPageState extends ConsumerState<HabitsTabPage> {
                     HabitsHeader(searchFocusNode: _searchFocusNode),
                     SizedBox(height: tokens.spacing.sectionGap),
                     const HabitsSummaryCard(),
+                    // Goal ad banners (host already pads horizontally).
+                    const GoalBannerStrip(padded: false),
                     if (showOpenNow) ...[
                       if (showAll)
                         HabitsSectionHeader(

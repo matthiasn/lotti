@@ -1279,6 +1279,12 @@ abstract class AppLocalizations {
   /// **'Running'**
   String get agentRunningIndicator;
 
+  /// Button/page title for creating a goal agent.
+  ///
+  /// In en, this message translates to:
+  /// **'New goal agent'**
+  String get agentsCreateGoal;
+
   /// No description provided for @agentSessionProgressTitle.
   ///
   /// In en, this message translates to:
@@ -1518,6 +1524,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Voice Directive'**
   String get agentSoulVoiceDirectiveLabel;
+
+  /// Empty state of the agents page.
+  ///
+  /// In en, this message translates to:
+  /// **'No goal agents yet. Create one and it will quietly watch your progress.'**
+  String get agentsPageEmpty;
+
+  /// Title of the top-level agents page.
+  ///
+  /// In en, this message translates to:
+  /// **'Agents'**
+  String get agentsPageTitle;
 
   /// No description provided for @agentStateConsecutiveFailures.
   ///
@@ -10156,6 +10174,144 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Create image from voice description'**
   String get generateCoverArtSubtitle;
+
+  /// Attainment summary on an agent card; percent is 0-100.
+  ///
+  /// In en, this message translates to:
+  /// **'{percent}% of target'**
+  String goalAttainmentLabel(int percent);
+
+  /// Tooltip of the X button on a goal banner; dismissing starts a 24h quiet window.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get goalBannerDismissTooltip;
+
+  /// Skips the banner rating prompt for this activation.
+  ///
+  /// In en, this message translates to:
+  /// **'Skip'**
+  String get goalBannerRatingSkip;
+
+  /// Title of the per-activation rating prompt for a goal banner.
+  ///
+  /// In en, this message translates to:
+  /// **'How was this banner?'**
+  String get goalBannerRatingTitle;
+
+  /// Accessibility label of one goal ad banner; goalTitle is the goal name.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal banner for {goalTitle}'**
+  String goalBannerSemanticLabel(String goalTitle);
+
+  /// Label of the per-habit weekly completion target.
+  ///
+  /// In en, this message translates to:
+  /// **'Times per week (each habit)'**
+  String get goalCreateHabitCountLabel;
+
+  /// Label of the multi-select habit picker on the goal form.
+  ///
+  /// In en, this message translates to:
+  /// **'Habits to watch'**
+  String get goalCreateHabitsLabel;
+
+  /// Label of the goal name field on the creation form.
+  ///
+  /// In en, this message translates to:
+  /// **'Name'**
+  String get goalCreateNameLabel;
+
+  /// Submit button of the goal creation form.
+  ///
+  /// In en, this message translates to:
+  /// **'Create agent'**
+  String get goalCreateSaveButton;
+
+  /// Label of the speakable goal statement field.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal statement'**
+  String get goalCreateStatementLabel;
+
+  /// Label of the steps target field.
+  ///
+  /// In en, this message translates to:
+  /// **'Average steps per day'**
+  String get goalCreateStepsTargetLabel;
+
+  /// Goal type option: one or more habits completed N times per week.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit routine'**
+  String get goalCreateTypeHabits;
+
+  /// Goal type option: average daily step count over a rolling week.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily steps (rolling week)'**
+  String get goalCreateTypeSteps;
+
+  /// Validation message on the goal creation form.
+  ///
+  /// In en, this message translates to:
+  /// **'Give the goal a name and at least one criterion.'**
+  String get goalCreateValidationMissing;
+
+  /// Placeholder when a goal agent has not written a report yet.
+  ///
+  /// In en, this message translates to:
+  /// **'No report yet — the agent reports after its first meaningful change.'**
+  String get goalDetailNoReport;
+
+  /// Section title of the agent detail interaction timeline.
+  ///
+  /// In en, this message translates to:
+  /// **'Interactions'**
+  String get goalDetailTimelineTitle;
+
+  /// Badge on an agent card when a revision proposal is pending.
+  ///
+  /// In en, this message translates to:
+  /// **'Proposal awaiting review'**
+  String get goalPendingProposalBadge;
+
+  /// Goal track status chip: target date passed with criteria met.
+  ///
+  /// In en, this message translates to:
+  /// **'Achieved'**
+  String get goalStatusAchieved;
+
+  /// Goal track status chip: behind but within grace.
+  ///
+  /// In en, this message translates to:
+  /// **'At risk'**
+  String get goalStatusAtRisk;
+
+  /// Goal track status chip: tracker gap, no verdict.
+  ///
+  /// In en, this message translates to:
+  /// **'No data'**
+  String get goalStatusInsufficientData;
+
+  /// Goal track status chip: decisively behind.
+  ///
+  /// In en, this message translates to:
+  /// **'Off track'**
+  String get goalStatusOffTrack;
+
+  /// Goal track status chip: criteria currently met.
+  ///
+  /// In en, this message translates to:
+  /// **'On track'**
+  String get goalStatusOnTrack;
+
+  /// Goal track status chip: climbing back after being behind.
+  ///
+  /// In en, this message translates to:
+  /// **'Recovering'**
+  String get goalStatusRecovering;
 
   /// No description provided for @goMenuTitle.
   ///

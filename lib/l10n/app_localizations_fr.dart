@@ -695,6 +695,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentRunningIndicator => 'En cours';
 
   @override
+  String get agentsCreateGoal => 'Nouvel agent d’objectif';
+
+  @override
   String get agentSessionProgressTitle => 'Progression de session';
 
   @override
@@ -831,6 +834,13 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Directive vocale';
+
+  @override
+  String get agentsPageEmpty =>
+      'Pas encore d’agent d’objectif. Crée-en un et il suivra tes progrès discrètement.';
+
+  @override
+  String get agentsPageTitle => 'Agents';
 
   @override
   String get agentStateConsecutiveFailures => 'Échecs consécutifs';
@@ -5997,6 +6007,81 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Créer une image à partir de la description vocale';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent % de l’objectif';
+  }
+
+  @override
+  String get goalBannerDismissTooltip => 'Ignorer';
+
+  @override
+  String get goalBannerRatingSkip => 'Passer';
+
+  @override
+  String get goalBannerRatingTitle => 'Tu as trouvé cette bannière comment ?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Bannière d’objectif pour $goalTitle';
+  }
+
+  @override
+  String get goalCreateHabitCountLabel => 'Fois par semaine (par habitude)';
+
+  @override
+  String get goalCreateHabitsLabel => 'Habitudes à suivre';
+
+  @override
+  String get goalCreateNameLabel => 'Nom';
+
+  @override
+  String get goalCreateSaveButton => 'Créer l’agent';
+
+  @override
+  String get goalCreateStatementLabel => 'Énoncé de l’objectif';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Pas moyens par jour';
+
+  @override
+  String get goalCreateTypeHabits => 'Routine d’habitudes';
+
+  @override
+  String get goalCreateTypeSteps => 'Pas quotidiens (semaine glissante)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Donne un nom à l’objectif et au moins un critère.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Pas encore de rapport — l’agent en publiera un au premier changement notable.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interactions';
+
+  @override
+  String get goalPendingProposalBadge => 'Proposition en attente';
+
+  @override
+  String get goalStatusAchieved => 'Atteint';
+
+  @override
+  String get goalStatusAtRisk => 'À risque';
+
+  @override
+  String get goalStatusInsufficientData => 'Pas de données';
+
+  @override
+  String get goalStatusOffTrack => 'Hors piste';
+
+  @override
+  String get goalStatusOnTrack => 'Sur la bonne voie';
+
+  @override
+  String get goalStatusRecovering => 'En reprise';
 
   @override
   String get goMenuTitle => 'Aller';

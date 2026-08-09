@@ -1,7 +1,12 @@
+import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
@@ -12,6 +17,7 @@ import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
@@ -19,6 +25,7 @@ import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/db_notification.dart' show agentNotification;
 import 'package:lotti/services/domain_logging.dart';
 
 /// Goal-agent runtime wiring (the Daily OS plug-in pattern: providers live
@@ -201,3 +208,133 @@ final goalChangeSetConfirmationServiceProvider =
       ),
       name: 'goalChangeSetConfirmationServiceProvider',
     );
+
+/// The user's side of the ad contract: dismiss, rate, account exposure.
+final goalNudgeInteractionsProvider = Provider<GoalNudgeInteractions>(
+  (ref) => GoalNudgeInteractions(
+    repository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+  ),
+  name: 'goalNudgeInteractionsProvider',
+);
+
+/// One live goal banner: the nudge plus the goal it advertises for.
+typedef GoalBannerEntry = ({GoalNudgeEntity nudge, String goalTitle});
+
+/// The ACTIVE banners across all active goal agents, newest first.
+///
+/// Watches the agent-level notification token so wake writes refresh it;
+/// interaction writes go through the sync service (which deliberately
+/// does not notify), so the UI handlers invalidate this provider after
+/// dismiss/rate.
+final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
+    FutureProvider.autoDispose<List<GoalBannerEntry>>((ref) async {
+      ref.watch(agentUpdateStreamProvider(agentNotification));
+      final agents = await ref
+          .watch(agentServiceProvider)
+          .listAgents(lifecycle: AgentLifecycle.active);
+      final repository = ref.watch(agentRepositoryProvider);
+      final entries = <GoalBannerEntry>[];
+      for (final identity in agents) {
+        if (identity.kind != AgentKinds.goalAgent) continue;
+        ref.watch(agentUpdateStreamProvider(identity.agentId));
+        final nudges =
+            (await repository.getEntitiesByAgentId(
+              identity.agentId,
+              type: AgentEntityTypes.goalNudge,
+            )).whereType<GoalNudgeEntity>().where(
+              (n) => n.deletedAt == null && n.status == GoalNudgeStatus.active,
+            );
+        for (final nudge in nudges) {
+          entries.add((nudge: nudge, goalTitle: identity.displayName));
+        }
+      }
+      entries.sort(
+        (a, b) => (b.nudge.activatedAt ?? b.nudge.createdAt).compareTo(
+          a.nudge.activatedAt ?? a.nudge.createdAt,
+        ),
+      );
+      return entries;
+    }, name: 'activeGoalNudgesProvider');
+
+/// The active goal agents, for the settings list and approval surface.
+final FutureProvider<List<AgentIdentityEntity>> activeGoalAgentsProvider =
+    FutureProvider.autoDispose<List<AgentIdentityEntity>>((ref) async {
+      ref.watch(agentUpdateStreamProvider(agentNotification));
+      final agents = await ref
+          .watch(agentServiceProvider)
+          .listAgents(lifecycle: AgentLifecycle.active);
+      return [
+        for (final identity in agents)
+          if (identity.kind == AgentKinds.goalAgent) identity,
+      ];
+    }, name: 'activeGoalAgentsProvider');
+
+/// Fire-and-forget exposure flush, captured by the banner's tracker
+/// while its element is live and safe to call from `dispose`.
+typedef GoalNudgeInteractionsFlush =
+    void Function(String nudgeId, Duration visibleFor);
+
+final goalNudgeExposureFlushProvider = Provider<GoalNudgeInteractionsFlush>(
+  (ref) {
+    final interactions = ref.watch(goalNudgeInteractionsProvider);
+    return (nudgeId, visibleFor) {
+      unawaited(interactions.recordExposure(nudgeId, visibleFor: visibleFor));
+    };
+  },
+  name: 'goalNudgeExposureFlushProvider',
+);
+
+/// Health-at-a-glance for one goal agent: the latest register verdict,
+/// the standing report's one-liner, and whether a revision proposal
+/// waits for review.
+typedef GoalAgentHealth = ({
+  GoalTrackStatus? trackStatus,
+  double? attainment,
+  String? reportOneLiner,
+  int pendingProposals,
+  GoalSpecVersionEntity? spec,
+});
+
+final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
+    FutureProvider.autoDispose.family<GoalAgentHealth, String>((
+      ref,
+      agentId,
+    ) async {
+      ref.watch(agentUpdateStreamProvider(agentId));
+      final repository = ref.watch(agentRepositoryProvider);
+
+      final head = await repository.getEntity(goalSpecHeadId(agentId));
+      final spec = head is GoalSpecHeadEntity
+          ? await repository.getEntity(head.versionId)
+          : null;
+
+      final registers =
+          (await repository.getEntitiesByAgentId(
+                agentId,
+                type: AgentEntityTypes.goalProgress,
+              ))
+              .whereType<GoalProgressEntity>()
+              .where((row) => row.deletedAt == null)
+              .toList()
+            ..sort((a, b) => b.periodKey.compareTo(a.periodKey));
+      final latest = registers.firstOrNull;
+
+      final report = await repository.getLatestReport(
+        agentId,
+        AgentReportScopes.current,
+      );
+
+      final pending = await repository.getPendingChangeSets(
+        agentId,
+        taskId: agentId,
+      );
+
+      return (
+        trackStatus: latest?.trackStatus,
+        attainment: latest?.attainment,
+        reportOneLiner: report?.oneLiner,
+        pendingProposals: pending.length,
+        spec: spec is GoalSpecVersionEntity ? spec : null,
+      );
+    }, name: 'goalAgentHealthProvider');

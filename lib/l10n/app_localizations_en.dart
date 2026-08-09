@@ -680,6 +680,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentRunningIndicator => 'Running';
 
   @override
+  String get agentsCreateGoal => 'New goal agent';
+
+  @override
   String get agentSessionProgressTitle => 'Session Progress';
 
   @override
@@ -812,6 +815,13 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Voice Directive';
+
+  @override
+  String get agentsPageEmpty =>
+      'No goal agents yet. Create one and it will quietly watch your progress.';
+
+  @override
+  String get agentsPageTitle => 'Agents';
 
   @override
   String get agentStateConsecutiveFailures => 'Consecutive failures';
@@ -5878,6 +5888,81 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get generateCoverArtSubtitle => 'Create image from voice description';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% of target';
+  }
+
+  @override
+  String get goalBannerDismissTooltip => 'Dismiss';
+
+  @override
+  String get goalBannerRatingSkip => 'Skip';
+
+  @override
+  String get goalBannerRatingTitle => 'How was this banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Goal banner for $goalTitle';
+  }
+
+  @override
+  String get goalCreateHabitCountLabel => 'Times per week (each habit)';
+
+  @override
+  String get goalCreateHabitsLabel => 'Habits to watch';
+
+  @override
+  String get goalCreateNameLabel => 'Name';
+
+  @override
+  String get goalCreateSaveButton => 'Create agent';
+
+  @override
+  String get goalCreateStatementLabel => 'Goal statement';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Average steps per day';
+
+  @override
+  String get goalCreateTypeHabits => 'Habit routine';
+
+  @override
+  String get goalCreateTypeSteps => 'Daily steps (rolling week)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Give the goal a name and at least one criterion.';
+
+  @override
+  String get goalDetailNoReport =>
+      'No report yet — the agent reports after its first meaningful change.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interactions';
+
+  @override
+  String get goalPendingProposalBadge => 'Proposal awaiting review';
+
+  @override
+  String get goalStatusAchieved => 'Achieved';
+
+  @override
+  String get goalStatusAtRisk => 'At risk';
+
+  @override
+  String get goalStatusInsufficientData => 'No data';
+
+  @override
+  String get goalStatusOffTrack => 'Off track';
+
+  @override
+  String get goalStatusOnTrack => 'On track';
+
+  @override
+  String get goalStatusRecovering => 'Recovering';
 
   @override
   String get goMenuTitle => 'Go';
@@ -11867,6 +11952,16 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get agentControlsReanalyzeButton => 'Re-analyse';
 
   @override
+  String get agentsCreateGoal => 'New goal agent';
+
+  @override
+  String get agentsPageEmpty =>
+      'No goal agents yet. Create one and it will quietly watch your progress.';
+
+  @override
+  String get agentsPageTitle => 'Agents';
+
+  @override
   String get aiSetupWizardCreatesOptimized =>
       'Creates optimised models, prompts, and a test category';
 
@@ -12040,6 +12135,81 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get fileMenuTitle => 'File';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% of target';
+  }
+
+  @override
+  String get goalBannerDismissTooltip => 'Dismiss';
+
+  @override
+  String get goalBannerRatingSkip => 'Skip';
+
+  @override
+  String get goalBannerRatingTitle => 'How was this banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Goal banner for $goalTitle';
+  }
+
+  @override
+  String get goalCreateHabitCountLabel => 'Times per week (each habit)';
+
+  @override
+  String get goalCreateHabitsLabel => 'Habits to watch';
+
+  @override
+  String get goalCreateNameLabel => 'Name';
+
+  @override
+  String get goalCreateSaveButton => 'Create agent';
+
+  @override
+  String get goalCreateStatementLabel => 'Goal statement';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Average steps per day';
+
+  @override
+  String get goalCreateTypeHabits => 'Habit routine';
+
+  @override
+  String get goalCreateTypeSteps => 'Daily steps (rolling week)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Give the goal a name and at least one criterion.';
+
+  @override
+  String get goalDetailNoReport =>
+      'No report yet — the agent reports after its first meaningful change.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interactions';
+
+  @override
+  String get goalPendingProposalBadge => 'Proposal awaiting review';
+
+  @override
+  String get goalStatusAchieved => 'Achieved';
+
+  @override
+  String get goalStatusAtRisk => 'At risk';
+
+  @override
+  String get goalStatusInsufficientData => 'No data';
+
+  @override
+  String get goalStatusOffTrack => 'Off track';
+
+  @override
+  String get goalStatusOnTrack => 'On track';
+
+  @override
+  String get goalStatusRecovering => 'Recovering';
 
   @override
   String get habitActiveFromLabel => 'Start date';

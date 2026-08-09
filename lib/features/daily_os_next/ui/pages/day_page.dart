@@ -31,6 +31,7 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/ui/goal_banner_strip.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -426,6 +427,8 @@ class _DayPageState extends ConsumerState<DayPage> {
                 child: KnowledgeNudge(),
               ),
             ),
+            // Goal ad banners: shrink to nothing on good days.
+            const GoalBannerStrip(),
             Expanded(
               // Rows meeting the fold dissolve instead of resting
               // razor-cut against the footer's glass edge.

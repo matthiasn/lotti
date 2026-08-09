@@ -12,7 +12,8 @@ import 'package:lotti/features/agents/state/change_set_providers.dart'
         eventChangeSetConfirmationServiceProvider,
         eventPendingChangeSetsProvider,
         projectChangeSetConfirmationServiceProvider,
-        projectPendingChangeSetsProvider;
+        projectPendingChangeSetsProvider,
+        selfTargetedPendingChangeSetsProvider;
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/ui/localized_change_summary.dart';
 import 'package:lotti/features/agents/ui/time_entry_tile.dart';
@@ -30,29 +31,47 @@ import 'package:lotti/widgets/cards/modern_base_card.dart';
 /// suggestions are rendered by `AiSummaryCard`, which goes
 /// through the proposal ledger; this card still serves the project-agent
 /// path until the same consolidation lands there.
-/// Whether the card surfaces a project agent's or an event agent's proposals.
-enum _ChangeSetScope { project, event }
+/// Whether the card surfaces a project agent's, an event agent's, or a
+/// goal agent's proposals.
+enum _ChangeSetScope { project, event, goal }
 
 class ChangeSetSummaryCard extends ConsumerWidget {
   const ChangeSetSummaryCard.project({
     required String projectId,
     super.key,
   }) : _targetId = projectId,
-       _scope = _ChangeSetScope.project;
+       _scope = _ChangeSetScope.project,
+       _customConfirmationProvider = null;
 
   const ChangeSetSummaryCard.event({
     required String eventId,
     super.key,
   }) : _targetId = eventId,
-       _scope = _ChangeSetScope.event;
+       _scope = _ChangeSetScope.event,
+       _customConfirmationProvider = null;
+
+  /// Self-targeted agents (goal agents today): the pending sets are the
+  /// agent's OWN proposals (`taskId == agentId`). The confirmation
+  /// service is passed in because the owning feature defines it — this
+  /// file must not import feature plug-ins (the runtime-registry
+  /// direction: `features/agents` never imports goals).
+  const ChangeSetSummaryCard.selfTargeted({
+    required String agentId,
+    required Provider<ChangeSetConfirmationService> confirmationProvider,
+    super.key,
+  }) : _targetId = agentId,
+       _scope = _ChangeSetScope.goal,
+       _customConfirmationProvider = confirmationProvider;
 
   final String _targetId;
   final _ChangeSetScope _scope;
+  final Provider<ChangeSetConfirmationService>? _customConfirmationProvider;
 
   Provider<ChangeSetConfirmationService> get _confirmationProvider =>
       switch (_scope) {
         _ChangeSetScope.project => projectChangeSetConfirmationServiceProvider,
         _ChangeSetScope.event => eventChangeSetConfirmationServiceProvider,
+        _ChangeSetScope.goal => _customConfirmationProvider!,
       };
 
   @override
@@ -63,6 +82,9 @@ class ChangeSetSummaryCard extends ConsumerWidget {
       ),
       _ChangeSetScope.event => ref.watch(
         eventPendingChangeSetsProvider(_targetId),
+      ),
+      _ChangeSetScope.goal => ref.watch(
+        selfTargetedPendingChangeSetsProvider(_targetId),
       ),
     };
 

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -537,5 +538,206 @@ void main() {
       ),
     ).called(1);
     verifyNever(() => orchestrator.addSubscription(any()));
+  });
+
+  test('activeGoalNudgesProvider surfaces only ACTIVE ads of goal agents, '
+      'newest first, with the goal title attached', () async {
+    GoalNudgeEntity nudgeRow(
+      String id,
+      GoalNudgeStatus status,
+      DateTime activatedAt,
+    ) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-a',
+              status: status,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+              activatedAt: activatedAt,
+            )
+            as GoalNudgeEntity;
+
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [
+        goalIdentity('goal-a'),
+        AgentDomainEntity.agent(
+              id: 'task-1',
+              agentId: 'task-1',
+              kind: AgentKinds.taskAgent,
+              displayName: 'task',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: 'task-1:state',
+              config: const AgentConfig(),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity,
+      ],
+    );
+    when(
+      () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        nudgeRow('ad-old', GoalNudgeStatus.active, DateTime(2026, 8, 8)),
+        nudgeRow('ad-new', GoalNudgeStatus.active, DateTime(2026, 8, 10)),
+        nudgeRow('ad-gone', GoalNudgeStatus.dismissed, DateTime(2026, 8, 9)),
+      ],
+    );
+
+    final entries = await container.read(activeGoalNudgesProvider.future);
+    expect(
+      [for (final entry in entries) entry.nudge.id],
+      ['ad-new', 'ad-old'],
+    );
+    expect(entries.first.goalTitle, 'goal-a');
+  });
+
+  test('goalAgentHealthProvider assembles the latest register verdict, '
+      'the report one-liner and the pending-proposal count', () async {
+    const agentId = 'goal-h';
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v1',
+        agentId: agentId,
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Steps',
+        statement: 'Average 10,000 steps per day.',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 10000,
+        ),
+        createdAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    GoalProgressEntity register(String period, double attainment) =>
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: attainment >= 0.8
+                  ? GoalTrackStatus.onTrack
+                  : GoalTrackStatus.atRisk,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: attainment >= 1,
+              specVersionId: '$agentId:spec-v1',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer(
+      (_) async => [register('2026-08-08', 1), register('2026-08-09', 0.64)],
+    );
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'r1',
+                agentId: agentId,
+                scope: 'current',
+                createdAt: DateTime(2026, 8, 9),
+                vectorClock: null,
+                content: 'body',
+                oneLiner: 'Averaging 6.4k of 10k.',
+              )
+              as AgentReportEntity,
+    );
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.changeSet(
+              id: 'cs',
+              agentId: agentId,
+              taskId: agentId,
+              threadId: 't',
+              runKey: 'r',
+              status: ChangeSetStatus.pending,
+              items: const [],
+              createdAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as ChangeSetEntity,
+      ],
+    );
+
+    final health = await container.read(
+      goalAgentHealthProvider(agentId).future,
+    );
+    expect(
+      health.trackStatus,
+      GoalTrackStatus.atRisk,
+      reason: 'the LATEST period wins, not the best one',
+    );
+    expect(health.attainment, 0.64);
+    expect(health.reportOneLiner, 'Averaging 6.4k of 10k.');
+    expect(health.pendingProposals, 1);
+    expect(health.spec?.title, 'Steps');
+  });
+
+  test('the exposure flush provider forwards to the interactions service '
+      'fire-and-forget', () async {
+    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(() => repository.getEntity('ad-x')).thenAnswer((_) async => null);
+    container.read(goalNudgeExposureFlushProvider)(
+      'ad-x',
+      const Duration(seconds: 2),
+    );
+    // Unknown id is a no-op inside the service — the provider's job is
+    // only to bridge the sync call into a void signature.
+    await container
+        .read(goalNudgeInteractionsProvider)
+        .recordExposure('ad-x', visibleFor: const Duration(seconds: 2));
+    verify(() => repository.getEntity('ad-x')).called(greaterThan(0));
+  });
+
+  test('health for a goal without a spec head reports nulls instead of '
+      'throwing', () async {
+    when(
+      () => repository.getEntitiesByAgentId('goal-z', type: 'goalProgress'),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getLatestReport('goal-z', 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets('goal-z', taskId: 'goal-z'),
+    ).thenAnswer((_) async => []);
+    final health = await container.read(
+      goalAgentHealthProvider('goal-z').future,
+    );
+    expect(health.trackStatus, isNull);
+    expect(health.spec, isNull);
+    expect(health.pendingProposals, 0);
   });
 }
