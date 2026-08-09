@@ -1,0 +1,112 @@
+import 'dart:async';
+
+import 'package:clock/clock.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/service/agent_service.dart';
+import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
+import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/domain_logging.dart';
+
+/// Bridges the sync blind spot for goal signals (ADR 0054 Decision 4).
+///
+/// `WakeOrchestrator` deliberately listens to `localUpdateStream` only —
+/// synced writes must not wake LLM tiers. But goal *Phase A* is
+/// deterministic and idempotent (keyed registers), so a desktop receiving
+/// phone-imported steps runs the €0 tier directly and converges instead of
+/// showing stale registers. Phase B is never triggered from here: if
+/// Phase A finds an LLM-worthy transition it arms the escalation wake, and
+/// the scheduled-wake manager's lease election picks exactly one device.
+class GoalSignalSyncDispatcher {
+  GoalSignalSyncDispatcher({
+    required this._agentService,
+    required this._repository,
+    required this._phaseA,
+    this._domainLogger,
+  });
+
+  final AgentService _agentService;
+  final AgentRepository _repository;
+  final GoalAgentPhaseA _phaseA;
+  final DomainLogger? _domainLogger;
+
+  /// Per-agent single flight: a burst of synced batches must not stack
+  /// concurrent evaluations of the same goal.
+  final _inFlight = <String>{};
+
+  /// Runs Phase A for every goal agent whose signal tokens intersect the
+  /// synced batch. Never throws.
+  Future<void> dispatchBatch(Set<String> tokens) async {
+    try {
+      final agents = await _agentService.listAgents(
+        lifecycle: AgentLifecycle.active,
+      );
+      for (final identity in agents) {
+        if (identity.kind != AgentKinds.goalAgent) continue;
+        if (_inFlight.contains(identity.agentId)) continue;
+        final matched = await _matchedTokens(identity.agentId, tokens);
+        if (matched.isEmpty) continue;
+        _inFlight.add(identity.agentId);
+        try {
+          final runKey =
+              'goal-sync:${identity.agentId}:'
+              '${clock.now().millisecondsSinceEpoch}';
+          await _phaseA.execute(
+            agentIdentity: identity,
+            runKey: runKey,
+            triggerTokens: matched,
+            threadId: runKey,
+          );
+        } finally {
+          _inFlight.remove(identity.agentId);
+        }
+      }
+    } catch (error, stackTrace) {
+      _domainLogger?.error(
+        LogDomain.sync,
+        error,
+        message: 'goal signal sync dispatch failed for one batch',
+        stackTrace: stackTrace,
+      );
+    }
+  }
+
+  Future<Set<String>> _matchedTokens(
+    String agentId,
+    Set<String> tokens,
+  ) async {
+    final head = await _repository.getEntity(goalSpecHeadId(agentId));
+    if (head is! GoalSpecHeadEntity) return const {};
+    final version = await _repository.getEntity(head.versionId);
+    if (version is! GoalSpecVersionEntity) return const {};
+    return goalSignalTriggerTokens(version.criteria).intersection(tokens);
+  }
+}
+
+/// App-lifetime subscription pumping synced batches into the dispatcher
+/// (the `SyncedAudioInferenceListener` pattern: `asyncMap` serializes
+/// batches; the 1-second sync batching window is the debounce).
+class GoalSignalSyncListener {
+  GoalSignalSyncListener({
+    required this._updateNotifications,
+    required this._dispatcher,
+  });
+
+  final UpdateNotifications _updateNotifications;
+  final GoalSignalSyncDispatcher _dispatcher;
+  StreamSubscription<void>? _subscription;
+
+  void start() {
+    _subscription ??= _updateNotifications.syncUpdateStream
+        .asyncMap(_dispatcher.dispatchBatch)
+        .listen((_) {});
+  }
+
+  Future<void> dispose() async {
+    await _subscription?.cancel();
+    _subscription = null;
+  }
+}

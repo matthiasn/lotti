@@ -11,6 +11,7 @@ import 'package:lotti/database/maintenance.dart';
 import 'package:lotti/database/settings_db.dart';
 import 'package:lotti/database/sync_db.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/workflow/prompt_log_wrap.dart';
 import 'package:lotti/features/agents/workflow/prompt_record.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
+import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
@@ -453,6 +455,12 @@ void main() {
         overrides: [
           ...buildProviderOverrides(context),
           dayAgentServiceProvider.overrideWithValue(MockDayAgentService()),
+          // Same reasoning for the goal chain's leaves: these tests assert
+          // wiring, not behavior, and the real ones pull in the agent DB.
+          agentRepositoryProvider.overrideWithValue(MockAgentRepository()),
+          agentSyncServiceProvider.overrideWithValue(MockAgentSyncService()),
+          agentServiceProvider.overrideWithValue(MockAgentService()),
+          wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
         ],
       );
       addTearDown(container.dispose);
@@ -477,8 +485,36 @@ void main() {
         realContext(),
       ).read(agentRuntimeMaintenanceProvider);
 
-      expect(maintenance, hasLength(1));
-      expect(maintenance.single, isA<DailyOsRuntimeMaintenance>());
+      expect(maintenance, hasLength(2));
+      expect(maintenance.first, isA<DailyOsRuntimeMaintenance>());
+    });
+
+    test('registers the goal_agent wake runner', () {
+      // Without this a goal wake silently falls through to the task-agent
+      // workflow (agent_wiring's unregistered-kind fallback) — the exact
+      // failure ADR 0054's deterministic tier exists to prevent.
+      final runners = containerFor(
+        realContext(),
+      ).read(agentWakeRunnersProvider);
+
+      expect(runners.keys, contains(AgentKinds.goalAgent));
+      expect(runners[AgentKinds.goalAgent], isNotNull);
+      // And the merge kept Daily OS intact — a replacement instead of a
+      // merge would silently unregister the other feature's kind.
+      expect(runners.keys, contains(AgentKinds.dayAgent));
+    });
+
+    test('registers goal runtime maintenance alongside Daily OS', () {
+      // Without this no goal subscription survives a restart and a missed
+      // cadence re-arm is never healed.
+      final maintenance = containerFor(
+        realContext(),
+      ).read(agentRuntimeMaintenanceProvider);
+
+      expect(
+        maintenance.whereType<GoalRuntimeMaintenance>(),
+        hasLength(1),
+      );
     });
 
     test('registers both day prompt-log wrap renderers', () {
@@ -521,9 +557,9 @@ void main() {
 
       expect(
         container.read(agentWakeRunnersProvider).keys,
-        contains(AgentKinds.dayAgent),
+        containsAll([AgentKinds.dayAgent, AgentKinds.goalAgent]),
       );
-      expect(container.read(agentRuntimeMaintenanceProvider), hasLength(1));
+      expect(container.read(agentRuntimeMaintenanceProvider), hasLength(2));
       expect(container.read(promptLogWrapRenderersProvider), hasLength(2));
       expect(container.read(dailyOsSetupSheetLauncherProvider), isNotNull);
     });
