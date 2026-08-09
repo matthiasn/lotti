@@ -22,6 +22,12 @@ def synapse_handler(request: httpx.Request) -> httpx.Response:
 
     Path segments are URL-decoded before matching so that percent-encoded
     MXIDs (e.g. ``%40user%3Aserver``) are handled correctly.
+
+    A GET on the user endpoint 404s: the provisioner reads that as "the
+    localpart is free". Modelling it is the point rather than a detail — the
+    real endpoint is an upsert on PUT, so a mock that reported every user as
+    existing (or every user as absent regardless of state) would hide whether
+    the guard against overwriting a live account works.
     """
     path = unquote(request.url.path)
 
@@ -35,6 +41,8 @@ def synapse_handler(request: httpx.Request) -> httpx.Response:
         )
 
     if path.startswith("/_synapse/admin/v2/users/"):
+        if request.method == "GET":
+            return httpx.Response(404, json={"errcode": "M_NOT_FOUND"})
         return httpx.Response(200, json={})
 
     if path.startswith("/_synapse/admin/v1/users/") and path.endswith("/login"):

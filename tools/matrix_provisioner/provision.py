@@ -1,66 +1,56 @@
 #!/usr/bin/env python3
 """Matrix account and room provisioning tool for Lotti sync.
 
-Creates a Matrix user account and sync room on a Synapse homeserver,
-then outputs a Base64-encoded provisioning bundle that can be imported
-by the Lotti desktop client.
+Creates a Matrix user account and sync room on a Synapse homeserver, then
+outputs a Base64url-encoded provisioning bundle that can be imported by the
+Lotti desktop client.
+
+The provisioning flow itself lives in ``services/shared/matrix`` so that this
+CLI and the matrix-provisioning-service web API cannot drift apart. This module
+is the command-line front end: argument parsing, credential resolution, stderr
+progress and file output.
 """
 
 import argparse
 import asyncio
-import base64
 import getpass
 import json
 import os
-import secrets
 import sys
-import time
-from urllib.parse import quote
+from pathlib import Path
 
 import httpx
 
+# The shared provisioning core lives under services/. Add it to the path so the
+# CLI can run standalone from its own virtualenv without a packaging step.
+_SERVICES_DIR = Path(__file__).resolve().parents[2] / "services"
+if str(_SERVICES_DIR) not in sys.path:
+    sys.path.insert(0, str(_SERVICES_DIR))
 
-def _encode_mxid_for_path(mxid: str) -> str:
-    """URL-encode a Matrix user ID for use in a URL path segment.
+# These follow the sys.path bootstrap above, hence the E402 suppressions.
+from shared.matrix import (  # noqa: E402
+    AdminCredentials,
+    ProvisioningError,
+    SynapseProvisioner,
+    UserAlreadyExistsError,
+    encode_mxid_for_path,
+    encode_room_id_for_path,
+)
 
-    MXIDs can contain characters like ``/`` that are significant in URL
-    paths, so the entire MXID must be percent-encoded (with ``safe=""``)
-    before interpolation into a path.
-    """
-    return quote(mxid, safe="")
+# Kept under their original private names for backwards compatibility.
+_encode_mxid_for_path = encode_mxid_for_path
+_encode_room_id_for_path = encode_room_id_for_path
 
-
-def _encode_room_id_for_path(room_id: str) -> str:
-    """URL-encode a Matrix room ID for use in a URL path segment."""
-    return quote(room_id, safe="")
-
-
-async def _deactivate_user(
-    client: httpx.AsyncClient,
-    admin_headers: dict,
-    user_mxid: str,
-) -> None:
-    """Best-effort deactivation of an orphan user after a partial failure."""
-    encoded = _encode_mxid_for_path(user_mxid)
-    try:
-        resp = await client.put(
-            f"/_synapse/admin/v2/users/{encoded}",
-            headers=admin_headers,
-            json={"deactivated": True},
-        )
-        if resp.is_success:
-            print(f"Rolled back: deactivated orphan user {user_mxid}", file=sys.stderr)
-        else:
-            print(
-                f"Warning: failed to deactivate orphan user {user_mxid} "
-                f"(HTTP {resp.status_code})",
-                file=sys.stderr,
-            )
-    except httpx.RequestError as exc:
-        print(
-            f"Warning: could not deactivate orphan user {user_mxid}: {exc}",
-            file=sys.stderr,
-        )
+__all__ = [
+    "AdminCredentials",
+    "ProvisioningError",
+    "SynapseProvisioner",
+    "UserAlreadyExistsError",
+    "_encode_mxid_for_path",
+    "_encode_room_id_for_path",
+    "main",
+    "provision",
+]
 
 
 async def provision(
@@ -72,188 +62,66 @@ async def provision(
 
     Args:
         args: CLI arguments (homeserver, admin_user, admin_password, username,
-              display_name, verbose).
+              display_name, output_file, verbose).
         transport: Optional HTTP transport for testing. When ``None``, httpx
                    uses its default transport.
 
     Returns:
         The Base64url-encoded provisioning bundle (no padding).
+
+    Raises:
+        httpx.HTTPStatusError: If any Synapse call returns an error status.
+        UserAlreadyExistsError: If the localpart already has an account on the
+            homeserver. Provisioning over it would reset that account's
+            password, so the flow refuses rather than upserting.
+        ValueError: If Synapse returns a malformed response.
+        OSError: If the bundle cannot be written to ``--output-file``.
     """
-    homeserver = args.homeserver.rstrip("/")
     verbose = getattr(args, "verbose", False)
 
-    client_kwargs: dict = {"base_url": homeserver, "timeout": 30}
-    if transport is not None:
-        client_kwargs["transport"] = transport
+    def log(msg: str) -> None:
+        print(msg, file=sys.stderr)
 
-    async with httpx.AsyncClient(**client_kwargs) as client:
-        log = lambda msg: print(msg, file=sys.stderr)  # noqa: E731
+    credentials = AdminCredentials(
+        homeserver=args.homeserver,
+        admin_user=args.admin_user,
+        admin_password=args.admin_password,
+    )
+    provisioner = SynapseProvisioner(credentials, transport=transport, log=log)
 
-        # Step 1: Login as admin
-        log(f"Logging in as admin '{args.admin_user}'...")
-        resp = await client.post(
-            "/_matrix/client/v3/login",
-            json={
-                "type": "m.login.password",
-                "user": args.admin_user,
-                "password": args.admin_password,
-            },
-        )
-        resp.raise_for_status()
-        login_data = resp.json()
-        admin_token = login_data["access_token"]
-        admin_mxid = login_data["user_id"]
+    result = await provisioner.provision(
+        username=args.username,
+        display_name=args.display_name or None,
+    )
+    bundle_b64 = result.encoded_bundle
 
-        # Extract server name from admin MXID (@admin:server_name)
-        if ":" not in admin_mxid:
-            raise ValueError(
-                f"Admin login returned invalid MXID (no ':' separator): {admin_mxid!r}"
-            )
-        server_name = admin_mxid.split(":", 1)[1]
-        if not server_name:
-            raise ValueError(f"Admin login returned MXID with empty domain part: {admin_mxid!r}")
-        log(f"Server name: {server_name}")
-
-        admin_headers = {"Authorization": f"Bearer {admin_token}"}
-
-        # Step 2: Generate random password (43 chars, cryptographically random)
-        password = secrets.token_urlsafe(32)
-
-        # Step 3: Create user
-        user_mxid = f"@{args.username}:{server_name}"
-        encoded_mxid = _encode_mxid_for_path(user_mxid)
-        display_name = args.display_name or f"Lotti Sync ({args.username})"
-        room_name = f"Lotti Sync ({args.username})"
-
-        log(f"Creating user {user_mxid}...")
-        resp = await client.put(
-            f"/_synapse/admin/v2/users/{encoded_mxid}",
-            headers=admin_headers,
-            json={
-                "password": password,
-                "admin": False,
-                "displayname": display_name,
-            },
-        )
-        resp.raise_for_status()
-        log(f"User created: {user_mxid}")
-
-        # From here on, if anything fails we try to deactivate the orphan user.
+    # Write the bundle to a file instead of stdout to avoid leaking credentials
+    # into terminal scrollback, CI logs, or shell history. The bundle
+    # intentionally contains the generated password — the Lotti desktop client
+    # rotates it immediately upon import.
+    output_file = getattr(args, "output_file", None)
+    if output_file:
         try:
-            # Step 4: Login as user via admin endpoint (short-lived token)
-            valid_until_ms = int(time.time() * 1000) + 10 * 60 * 1000  # 10 min
+            # 0600 from the moment it exists. A plain open() applies the umask,
+            # usually landing on 0644, which leaves a live password readable by
+            # every local account — and on a shared admin box that is the whole
+            # point of writing to a file instead of stdout. O_CREAT does not
+            # change the mode of a file that already exists, so chmod covers the
+            # overwrite case too.
+            fd = os.open(output_file, os.O_WRONLY | os.O_CREAT | os.O_TRUNC, 0o600)
+            with os.fdopen(fd, "w", encoding="utf-8") as fh:
+                # codeql[py/clear-text-storage-sensitive-data]
+                fh.write(bundle_b64)
+            os.chmod(output_file, 0o600)
+        except OSError as exc:
+            raise OSError(f"Failed to write bundle to {output_file}: {exc}") from exc
+        log(f"Bundle written to {output_file} (mode 0600)")
 
-            log("Obtaining user token...")
-            resp = await client.post(
-                f"/_synapse/admin/v1/users/{encoded_mxid}/login",
-                headers=admin_headers,
-                json={"valid_until_ms": valid_until_ms},
-            )
-            resp.raise_for_status()
-            user_token = resp.json()["access_token"]
+    if verbose:
+        log("\n--- Decoded (for verification) ---")
+        log(json.dumps(result.bundle.redacted_dict(), indent=2))
 
-            user_headers = {"Authorization": f"Bearer {user_token}"}
-
-            # Step 5: Create room as user
-            log("Creating sync room...")
-            resp = await client.post(
-                "/_matrix/client/v3/createRoom",
-                headers=user_headers,
-                json={
-                    "visibility": "private",
-                    "name": room_name,
-                    "preset": "trusted_private_chat",
-                    "creation_content": {"m.federate": False},
-                    "initial_state": [
-                        {
-                            "type": "m.room.encryption",
-                            "state_key": "",
-                            "content": {
-                                "algorithm": "m.megolm.v1.aes-sha2",
-                            },
-                        },
-                        {
-                            "type": "m.lotti.sync_room",
-                            "state_key": "",
-                            "content": {"version": 1},
-                        },
-                    ],
-                },
-            )
-            resp.raise_for_status()
-            room_id = resp.json()["room_id"]
-            log(f"Room created: {room_id}")
-
-            # Step 5b: Explicitly enforce critical room state. Some homeserver
-            # versions/setups can ignore parts of initial_state.
-            encoded_room_id = _encode_room_id_for_path(room_id)
-
-            log("Enforcing room encryption state...")
-            resp = await client.put(
-                f"/_matrix/client/v3/rooms/{encoded_room_id}/state/m.room.encryption",
-                headers=user_headers,
-                json={"algorithm": "m.megolm.v1.aes-sha2"},
-            )
-            resp.raise_for_status()
-
-            log("Setting room name...")
-            resp = await client.put(
-                f"/_matrix/client/v3/rooms/{encoded_room_id}/state/m.room.name",
-                headers=user_headers,
-                json={"name": room_name},
-            )
-            resp.raise_for_status()
-
-            log("Setting Lotti sync marker state...")
-            resp = await client.put(
-                f"/_matrix/client/v3/rooms/{encoded_room_id}/state/m.lotti.sync_room",
-                headers=user_headers,
-                json={"version": 1},
-            )
-            resp.raise_for_status()
-        except Exception:
-            await _deactivate_user(client, admin_headers, user_mxid)
-            raise
-
-        # Step 6: Build provisioning bundle.
-        #
-        # `kind="provisioned"` tells the Lotti client this is a fresh CLI
-        # bundle whose password MUST be rotated on first consumption. The
-        # peer-to-peer handover bundle emitted by a configured desktop uses
-        # `kind="handover"` instead so that secondary devices join without
-        # rotating the live credential.
-        bundle = {
-            "v": 2,
-            "kind": "provisioned",
-            "homeServer": homeserver,
-            "user": user_mxid,
-            "password": password,
-            "roomId": room_id,
-        }
-
-        bundle_json = json.dumps(bundle, separators=(",", ":"))
-        bundle_b64 = base64.urlsafe_b64encode(bundle_json.encode()).rstrip(b"=").decode()
-
-        # Write the bundle to a file instead of stdout to avoid leaking
-        # credentials into terminal scrollback, CI logs, or shell history.
-        # The bundle intentionally contains the generated password — the Lotti
-        # desktop client rotates it immediately upon import.
-        output_file = getattr(args, "output_file", None)
-        if output_file:
-            try:
-                with open(output_file, "w", encoding="utf-8") as fh:
-                    # codeql[py/clear-text-storage-sensitive-data]
-                    fh.write(bundle_b64)
-            except OSError as exc:
-                raise OSError(f"Failed to write bundle to {output_file}: {exc}") from exc
-            log(f"Bundle written to {output_file}")
-
-        if verbose:
-            redacted = {**bundle, "password": "<redacted>"}
-            log("\n--- Decoded (for verification) ---")
-            log(json.dumps(redacted, indent=2))
-
-        return bundle_b64
+    return bundle_b64
 
 
 def _resolve_admin_password(args: argparse.Namespace) -> str:
@@ -333,6 +201,11 @@ def main() -> None:
         sys.exit(1)
     except OSError as exc:
         print(f"\nFile error: {exc}", file=sys.stderr)
+        sys.exit(1)
+    except UserAlreadyExistsError as exc:
+        # Ahead of the ValueError branch it inherits from, so this reads as the
+        # deliberate refusal it is rather than a malformed-response error.
+        print(f"\nRefusing to provision: {exc}", file=sys.stderr)
         sys.exit(1)
     except ValueError as exc:
         print(f"\nValidation error: {exc}", file=sys.stderr)

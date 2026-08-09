@@ -2,12 +2,13 @@
 
 import base64
 import json
+import stat
 from urllib.parse import unquote
 
 import httpx
 import pytest
 
-from provision import _encode_mxid_for_path, provision
+from provision import UserAlreadyExistsError, _encode_mxid_for_path, provision
 from tests.conftest import decode_bundle, make_args, synapse_handler
 
 # ---------------------------------------------------------------------------
@@ -486,3 +487,113 @@ def test_bundle_room_id_format():
     decoded = decode_bundle(encoded)
 
     assert decoded["roomId"].startswith("!")
+
+
+@pytest.mark.anyio
+async def test_refuses_to_provision_over_an_existing_account(caplog):
+    """`PUT /users/{mxid}` is an upsert, so it would reset a live password."""
+    requests_seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests_seen.append(request)
+        path = unquote(request.url.path)
+        if path.startswith("/_synapse/admin/v2/users/") and request.method == "GET":
+            return httpx.Response(200, json={"name": "@lotti_user:example.com"})
+        return synapse_handler(request)
+
+    with pytest.raises(UserAlreadyExistsError, match="already exists"):
+        await provision(make_args(), transport=httpx.MockTransport(handler))
+
+    assert [r for r in requests_seen if r.method == "PUT"] == []
+
+
+@pytest.mark.anyio
+async def test_an_inconclusive_lookup_is_not_read_as_free():
+    """A 500 on the existence check must stop the flow, not wave it through."""
+    requests_seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        requests_seen.append(request)
+        path = unquote(request.url.path)
+        if path.startswith("/_synapse/admin/v2/users/") and request.method == "GET":
+            return httpx.Response(500, json={"errcode": "M_UNKNOWN"})
+        return synapse_handler(request)
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await provision(make_args(), transport=httpx.MockTransport(handler))
+
+    assert [r for r in requests_seen if r.method == "PUT"] == []
+
+
+@pytest.mark.anyio
+async def test_a_failed_rollback_is_logged_as_a_warning(caplog):
+    """An orphan account nobody knows about is the worst outcome there is.
+
+    The progress sink is stderr, which nobody greps after the fact, so the
+    warning has to reach the log as well.
+    """
+
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = unquote(request.url.path)
+        if path == "/_matrix/client/v3/createRoom":
+            return httpx.Response(500, json={"errcode": "M_UNKNOWN"})
+        if path.startswith("/_synapse/admin/v2/users/") and request.method == "PUT":
+            calls["n"] += 1
+            # The first PUT creates the account; only the rollback one fails,
+            # which is what leaves the orphan behind.
+            if calls["n"] > 1:
+                return httpx.Response(403, json={"errcode": "M_FORBIDDEN"})
+        return synapse_handler(request)
+
+    with caplog.at_level("WARNING"):
+        with pytest.raises(httpx.HTTPStatusError):
+            await provision(make_args(), transport=httpx.MockTransport(handler))
+
+    assert "needs manual cleanup" in caplog.text
+    assert "@lotti_user:example.com" in caplog.text
+
+
+@pytest.mark.anyio
+async def test_an_unreachable_homeserver_during_rollback_is_logged(caplog):
+    calls = {"n": 0}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        path = unquote(request.url.path)
+        if path == "/_matrix/client/v3/createRoom":
+            return httpx.Response(500, json={"errcode": "M_UNKNOWN"})
+        if path.startswith("/_synapse/admin/v2/users/") and request.method == "PUT":
+            calls["n"] += 1
+            if calls["n"] > 1:  # the rollback PUT, not the create
+                raise httpx.ConnectError("connection reset")
+        return synapse_handler(request)
+
+    with caplog.at_level("WARNING"):
+        with pytest.raises(httpx.HTTPStatusError):
+            await provision(make_args(), transport=httpx.MockTransport(handler))
+
+    assert "connection reset" in caplog.text
+    assert "needs manual cleanup" in caplog.text
+
+
+@pytest.mark.anyio
+async def test_the_bundle_file_is_not_world_readable(mock_transport, tmp_path):
+    """It holds a live password; the default umask would make it 0644."""
+    out = tmp_path / "bundle.txt"
+
+    await provision(make_args(output_file=str(out)), transport=mock_transport)
+
+    assert stat.S_IMODE(out.stat().st_mode) == 0o600
+
+
+@pytest.mark.anyio
+async def test_overwriting_an_existing_bundle_file_tightens_its_mode(mock_transport, tmp_path):
+    """O_CREAT leaves an existing file's mode alone, so the chmod matters."""
+    out = tmp_path / "bundle.txt"
+    out.write_text("stale")
+    out.chmod(0o644)
+
+    await provision(make_args(output_file=str(out)), transport=mock_transport)
+
+    assert stat.S_IMODE(out.stat().st_mode) == 0o600

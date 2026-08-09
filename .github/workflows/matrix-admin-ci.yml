@@ -1,0 +1,120 @@
+name: Matrix Admin CI
+
+permissions:
+  contents: read
+
+# The provisioning service, the admin SPA and the shared Matrix package are one
+# deployable unit and are not covered by any other workflow. `services/shared/**`
+# is included because the CLI in tools/matrix_provisioner imports its whole
+# provisioning flow from there — see the trigger in python-tools-ci.yml, which
+# runs the CLI's own suite against the same change.
+on:
+  push:
+    branches: ["**"]
+    paths:
+      - "services/matrix-provisioning-service/**"
+      - "services/matrix-admin/**"
+      - "services/shared/**"
+      - ".github/workflows/matrix-admin-ci.yml"
+  pull_request:
+    branches: [main]
+    paths:
+      - "services/matrix-provisioning-service/**"
+      - "services/matrix-admin/**"
+      - "services/shared/**"
+      - ".github/workflows/matrix-admin-ci.yml"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  provisioning-service:
+    name: Provisioning Service (test)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: services/matrix-provisioning-service
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.13"
+          cache: pip
+          cache-dependency-path: |
+            services/matrix-provisioning-service/requirements.txt
+            services/matrix-provisioning-service/requirements-test.txt
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+          pip install -r requirements-test.txt
+          pip install flake8 black isort ruff
+
+      # Same toolchain and settings as tools/matrix_provisioner, so the two
+      # Python trees in this repo are held to one standard.
+      - name: Lint (flake8 + isort + black)
+        working-directory: services
+        run: |
+          flake8 --config .flake8 matrix-provisioning-service/src \
+            matrix-provisioning-service/tests \
+            matrix-provisioning-service/conftest.py shared
+          isort --check-only --settings-path .isort.cfg \
+            matrix-provisioning-service/src matrix-provisioning-service/tests \
+            matrix-provisioning-service/conftest.py shared
+          black --check --line-length=100 matrix-provisioning-service/src \
+            matrix-provisioning-service/tests \
+            matrix-provisioning-service/conftest.py shared
+
+      # Narrow on purpose: Ruff is not this repo's configured linter, so only
+      # the checks flake8 does not cover are enforced — hardcoded credentials
+      # and unsorted `__all__`.
+      - name: Static analysis (ruff security subset)
+        working-directory: services
+        run: |
+          ruff check --select=S105,S106,S107,RUF022 \
+            matrix-provisioning-service/src matrix-provisioning-service/tests shared
+
+      - name: Test
+        # Covers the shared package too: the service imports it exactly as it
+        # does in Docker, so a change to shared/matrix breaks here first.
+        run: pytest tests/ -q --cov=src --cov=../shared --cov-report=term-missing
+
+  admin-spa:
+    name: Admin SPA (typecheck + test)
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: services/matrix-admin
+
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          persist-credentials: false
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: services/matrix-admin/package-lock.json
+
+      - name: Install dependencies
+        # Matches the Dockerfile: recharts still pins React 18 peers.
+        run: npm ci --legacy-peer-deps
+
+      - name: Typecheck
+        run: npx tsc --noEmit
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build

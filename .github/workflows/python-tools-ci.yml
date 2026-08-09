@@ -8,6 +8,9 @@ on:
     branches: ["**"]
     paths:
       - "tools/matrix_provisioner/**"
+      # The CLI imports its whole provisioning flow from here, so a change
+      # to the shared callee has to run the caller's tests.
+      - "services/shared/matrix/**"
       - "tool/task_agent_model_eval_judge.py"
       - "tool/task_agent_model_eval_judge_test.py"
       - "tool/pr_screenshot_publish.py"
@@ -17,6 +20,9 @@ on:
     branches: [main]
     paths:
       - "tools/matrix_provisioner/**"
+      # The CLI imports its whole provisioning flow from here, so a change
+      # to the shared callee has to run the caller's tests.
+      - "services/shared/matrix/**"
       - "tool/task_agent_model_eval_judge.py"
       - "tool/task_agent_model_eval_judge_test.py"
       - "tool/pr_screenshot_publish.py"

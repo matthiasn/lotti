@@ -1,0 +1,8 @@
+node_modules
+dist
+*.tsbuildinfo
+
+# The admin key is a real credential; a local env file must never be committed.
+.env
+.env.*
+!.env.example
