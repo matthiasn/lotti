@@ -99,7 +99,9 @@ tile and decodes the source through a device-pixel-ratio-sized
 `CoverResizeImage` instead of allocating the full photo or screenshot as an iOS
 texture. The decoder preserves the source aspect ratio and sizes the shorter
 edge for the square tile, so `BoxFit.cover` crops excess pixels without
-magnifying a fit-sized wide or tall thumbnail.
+magnifying a fit-sized wide or tall thumbnail. The longer decoded edge is capped
+at 4096 pixels so scrolling screenshots and other extreme aspect ratios cannot
+reintroduce an oversized texture through proportional scaling.
 
 ```mermaid
 flowchart TD

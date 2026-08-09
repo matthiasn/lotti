@@ -14,6 +14,8 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
 
+const _maxThumbnailDecodeDimension = 4096;
+
 /// Widget for selecting task images as AI reference inputs.
 ///
 /// Displays a grid of images linked to a task and allows the user to
@@ -460,18 +462,24 @@ class CoverResizeImageKey {
 }
 
 /// Calculates a proportional decode size that fully covers the target.
+///
+/// Extremely elongated sources are capped on their longer edge to keep the
+/// decoded bitmap within a safe texture and memory bound.
 ({int width, int height}) coverDecodeDimensions({
   required int intrinsicWidth,
   required int intrinsicHeight,
   required int targetWidth,
   required int targetHeight,
 }) {
+  final coverScale = math.max(
+    targetWidth / intrinsicWidth,
+    targetHeight / intrinsicHeight,
+  );
+  final boundedScale =
+      _maxThumbnailDecodeDimension / math.max(intrinsicWidth, intrinsicHeight);
   final scale = math.min(
     1,
-    math.max(
-      targetWidth / intrinsicWidth,
-      targetHeight / intrinsicHeight,
-    ),
+    math.min(coverScale, boundedScale),
   );
   return (
     width: (intrinsicWidth * scale).ceil(),
