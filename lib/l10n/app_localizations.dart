@@ -15210,8 +15210,8 @@ abstract class AppLocalizations {
   /// No description provided for @referenceImageSelectionSubtitle.
   ///
   /// In en, this message translates to:
-  /// **'Choose up to 5 images to guide the AI\'s visual style'**
-  String get referenceImageSelectionSubtitle;
+  /// **'Choose up to {maxImages} images to guide the AI\'s visual style'**
+  String referenceImageSelectionSubtitle(int maxImages);
 
   /// No description provided for @referenceImageSelectionTitle.
   ///

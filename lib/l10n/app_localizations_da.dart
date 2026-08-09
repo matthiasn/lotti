@@ -8953,8 +8953,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Kunne ikke indlæse billeder. Prøv venligst igen.';
 
   @override
-  String get referenceImageSelectionSubtitle =>
-      'Vælg op til 5 billeder for at styre AI\'ens visuelle stil';
+  String referenceImageSelectionSubtitle(int maxImages) {
+    return 'Vælg op til $maxImages billeder for at styre AI\'ens visuelle stil';
+  }
 
   @override
   String get referenceImageSelectionTitle => 'Vælg referencebilleder';

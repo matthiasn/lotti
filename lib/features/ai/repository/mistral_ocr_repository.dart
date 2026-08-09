@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'dart:developer' as developer;
 
 import 'package:http/http.dart' as http;
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
@@ -43,8 +44,7 @@ class MistralOcrRepository {
   /// chat completions. The caller also gates on `InferenceProviderType.mistral`,
   /// so this name check can't misfire on a same-named model from another
   /// provider.
-  static bool isMistralOcrModel(String model) =>
-      model.toLowerCase().contains('ocr');
+  static bool isMistralOcrModel(String model) => isMistralOcrModelId(model);
 
   /// Closes the HTTP client when this repository created it.
   ///

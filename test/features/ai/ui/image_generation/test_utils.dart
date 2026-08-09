@@ -11,13 +11,21 @@ class FakeReferenceImageSelectionController
     this._fixedState, {
     String taskId = '',
     this.processedImages = const [],
+    this.processedImagesFuture,
   }) : super(taskId);
 
   final ReferenceImageSelectionState _fixedState;
   final List<ProcessedReferenceImage> processedImages;
+  final Future<List<ProcessedReferenceImage>>? processedImagesFuture;
+
+  /// Number of times [processSelectedImages] was invoked.
+  int processSelectedImagesCallCount = 0;
 
   /// Every image id passed to [toggleImageSelection], in call order.
   final List<String> toggledImageIds = [];
+
+  /// The most recent caller-specific selection limit.
+  int? lastToggleMaxImages;
 
   /// The `taskId` the controller was last [build]-ed with, or `null` if the
   /// controller has not been built yet.
@@ -30,13 +38,18 @@ class FakeReferenceImageSelectionController
   }
 
   @override
-  void toggleImageSelection(String imageId) {
+  void toggleImageSelection(
+    String imageId, {
+    int maxImages = kMaxReferenceImages,
+  }) {
     toggledImageIds.add(imageId);
+    lastToggleMaxImages = maxImages;
   }
 
   @override
   Future<List<ProcessedReferenceImage>> processSelectedImages() async {
-    return processedImages;
+    processSelectedImagesCallCount++;
+    return processedImagesFuture ?? processedImages;
   }
 }
 

@@ -1925,7 +1925,7 @@ void main() {
       },
     );
 
-    test('successfully routes prompt generation skill to runner', () async {
+    test('routes selected images with prompt generation', () async {
       final skill =
           AiConfig.skill(
                 id: 'skill-prompt',
@@ -1963,6 +1963,7 @@ void main() {
           entryId: any(named: 'entryId'),
           automationResult: any(named: 'automationResult'),
           linkedTaskId: any(named: 'linkedTaskId'),
+          referenceImages: any(named: 'referenceImages'),
           overrideModelId: any(named: 'overrideModelId'),
           geminiThinkingMode: any(named: 'geminiThinkingMode'),
         ),
@@ -1977,12 +1978,19 @@ void main() {
       );
       containersToDispose.add(testContainer);
 
+      const referenceImages = [
+        ProcessedReferenceImage(
+          base64Data: 'coding-image',
+          mimeType: 'image/jpeg',
+        ),
+      ];
+
       await testContainer.read(
         triggerSkillProvider((
           entityId: 'audio-entry-2',
           skillId: 'skill-prompt',
           linkedTaskId: 'task-prompt',
-          referenceImages: null,
+          referenceImages: referenceImages,
           overrideModelId: null,
           geminiThinkingMode: null,
         )).future,
@@ -1993,6 +2001,7 @@ void main() {
           entryId: 'audio-entry-2',
           automationResult: any(named: 'automationResult'),
           linkedTaskId: 'task-prompt',
+          referenceImages: referenceImages,
           overrideModelId: any(named: 'overrideModelId'),
           geminiThinkingMode: any(named: 'geminiThinkingMode'),
         ),
@@ -2080,6 +2089,7 @@ void main() {
             entryId: any(named: 'entryId'),
             automationResult: any(named: 'automationResult'),
             linkedTaskId: any(named: 'linkedTaskId'),
+            referenceImages: any(named: 'referenceImages'),
             overrideModelId: any(named: 'overrideModelId'),
             geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
@@ -2112,6 +2122,7 @@ void main() {
             entryId: audioEntity.id,
             automationResult: any(named: 'automationResult'),
             linkedTaskId: linkedTask.id,
+            referenceImages: any(named: 'referenceImages'),
             overrideModelId: any(named: 'overrideModelId'),
             geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
@@ -2401,6 +2412,7 @@ void main() {
             entryId: any(named: 'entryId'),
             automationResult: any(named: 'automationResult'),
             linkedTaskId: any(named: 'linkedTaskId'),
+            referenceImages: any(named: 'referenceImages'),
             overrideModelId: any(named: 'overrideModelId'),
             geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),
@@ -2431,6 +2443,7 @@ void main() {
             entryId: 'entry-img-prompt',
             automationResult: any(named: 'automationResult'),
             linkedTaskId: 'task-img-prompt',
+            referenceImages: any(named: 'referenceImages'),
             overrideModelId: any(named: 'overrideModelId'),
             geminiThinkingMode: any(named: 'geminiThinkingMode'),
           ),

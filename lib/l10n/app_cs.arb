@@ -3666,7 +3666,7 @@
     }
   },
   "referenceImageLoadError": "Nepodařilo se načíst obrázky. Zkus to prosím znovu.",
-  "referenceImageSelectionSubtitle": "Vyber až 5 obrázků, které povedou vizuální styl AI",
+  "referenceImageSelectionSubtitle": "Vyber až {maxImages} obrázků, které pomohou AI určit vizuální styl",
   "referenceImageSelectionTitle": "Vyber referenční obrázky",
   "referenceImageSkip": "Přeskočit",
   "saveButton": "Uložit",

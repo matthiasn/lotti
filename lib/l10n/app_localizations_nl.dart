@@ -8974,8 +8974,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Kon afbeeldingen niet laden. Probeer het opnieuw.';
 
   @override
-  String get referenceImageSelectionSubtitle =>
-      'Kies maximaal 5 afbeeldingen om de visuele stijl van de AI te begeleiden';
+  String referenceImageSelectionSubtitle(int maxImages) {
+    return 'Kies maximaal $maxImages afbeeldingen om de visuele stijl van de AI te begeleiden';
+  }
 
   @override
   String get referenceImageSelectionTitle => 'Selecteer referentieafbeeldingen';

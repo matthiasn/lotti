@@ -4684,7 +4684,14 @@
     }
   },
   "referenceImageLoadError": "Failed to load images. Please try again.",
-  "referenceImageSelectionSubtitle": "Choose up to 5 images to guide the AI's visual style",
+  "referenceImageSelectionSubtitle": "Choose up to {maxImages} images to guide the AI's visual style",
+  "@referenceImageSelectionSubtitle": {
+    "placeholders": {
+      "maxImages": {
+        "type": "int"
+      }
+    }
+  },
   "referenceImageSelectionTitle": "Select Reference Images",
   "referenceImageSkip": "Skip",
   "saveButton": "Save",

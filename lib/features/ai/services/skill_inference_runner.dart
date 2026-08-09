@@ -31,6 +31,7 @@ import 'package:lotti/features/ai/state/image_generation_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_error_controller.dart';
 import 'package:lotti/features/ai/state/inference_status_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_event.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_identity_resolver.dart';
@@ -552,10 +553,14 @@ class SkillInferenceRunner {
   /// thinking model) to transform the entry's content (audio transcript or
   /// typed text) plus task context into a detailed prompt. The result is
   /// saved as an [AiResponseEntry] linked to the source entry.
+  /// When [referenceImages] is non-empty and the resolved target model still
+  /// supports image input, they are forwarded with the text as a multimodal
+  /// prompt-generation request.
   Future<void> runPromptGeneration({
     required String entryId,
     required AutomationResult automationResult,
     String? linkedTaskId,
+    List<ProcessedReferenceImage>? referenceImages,
     String? overrideModelId,
     GeminiThinkingMode? geminiThinkingMode,
   }) async {
@@ -620,7 +625,9 @@ class SkillInferenceRunner {
           linkedTasks: linkedTasks,
         );
 
-        // 5. Call inference with text-only (no audio/image upload).
+        // 5. Call inference, using the existing multimodal request path only
+        // when the user selected task images. Empty selection is deliberately
+        // identical to the historical text-only request.
         final start = DateTime.now();
         final responseId = uuid.v4();
         final attribution = await _beginAttribution(
@@ -637,17 +644,40 @@ class SkillInferenceRunner {
           taskId: linkedTaskId,
         );
         final impactCollector = InferenceImpactCollector();
-        final responseStream = _cloudRepository.generate(
-          promptResult.userMessage,
-          model: modelId,
-          temperature: null,
-          baseUrl: provider.baseUrl,
-          apiKey: provider.apiKey,
-          provider: provider,
-          systemMessage: promptResult.systemMessage,
-          geminiThinkingMode: effectiveThinkingMode,
-          impactCollector: impactCollector,
-        );
+        final selectedImages =
+            target.model != null &&
+                supportsChatImageInput(
+                  model: target.model!,
+                  provider: target.provider,
+                )
+            ? referenceImages ?? const []
+            : const <ProcessedReferenceImage>[];
+        final responseStream = selectedImages.isEmpty
+            ? _cloudRepository.generate(
+                promptResult.userMessage,
+                model: modelId,
+                temperature: null,
+                baseUrl: provider.baseUrl,
+                apiKey: provider.apiKey,
+                provider: provider,
+                systemMessage: promptResult.systemMessage,
+                geminiThinkingMode: effectiveThinkingMode,
+                impactCollector: impactCollector,
+              )
+            : _cloudRepository.generateWithImages(
+                promptResult.userMessage,
+                model: modelId,
+                temperature: null,
+                baseUrl: provider.baseUrl,
+                apiKey: provider.apiKey,
+                provider: provider,
+                systemMessage: promptResult.systemMessage,
+                images: selectedImages
+                    .map((image) => image.base64Data)
+                    .toList(growable: false),
+                geminiThinkingMode: effectiveThinkingMode,
+                impactCollector: impactCollector,
+              );
 
         // 6. Collect streaming response.
         final collected = await _collectStream(responseStream);

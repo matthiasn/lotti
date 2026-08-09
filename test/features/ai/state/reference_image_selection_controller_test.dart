@@ -375,6 +375,34 @@ void main() {
       expect(state.selectedImageIds.contains('img-6'), isFalse);
     });
 
+    test('toggleImageSelection accepts a caller-specific limit', () async {
+      const taskId = 'coding-task';
+      final images = [
+        for (var index = 1; index <= 11; index++) buildTestImage('img-$index'),
+      ];
+
+      when(
+        () => mockJournalRepo.getLinkedImagesForTask(taskId),
+      ).thenAnswer((_) async => images);
+      await waitForLoaded(taskId);
+
+      final controller = container.read(
+        referenceImageSelectionControllerProvider(taskId).notifier,
+      );
+      for (final image in images) {
+        controller.toggleImageSelection(
+          image.meta.id,
+          maxImages: kMaxCodingPromptImages,
+        );
+      }
+
+      final state = container.read(
+        referenceImageSelectionControllerProvider(taskId),
+      );
+      expect(state.selectedImageIds, hasLength(kMaxCodingPromptImages));
+      expect(state.selectedImageIds, isNot(contains('img-11')));
+    });
+
     test('different taskIds have independent state', () async {
       const taskId1 = 'task-1';
       const taskId2 = 'task-2';

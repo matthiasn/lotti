@@ -151,8 +151,54 @@ void main() {
         ),
       );
 
-      // Counter should show 1/3
+      // Counter uses the cover-art default when no limit is supplied.
       expect(find.text('1/$kMaxReferenceImages'), findsOneWidget);
+    });
+
+    testWidgets('renders a caller-specific limit in the copy and counter', (
+      tester,
+    ) async {
+      final stateWithImages = ReferenceImageSelectionState(
+        availableImages: [buildTestReferenceImage('img-1')],
+      );
+      final trackingController = FakeReferenceImageSelectionController(
+        stateWithImages,
+      );
+
+      await tester.pumpWidget(
+        RiverpodWidgetTestBench(
+          overrides: [
+            referenceImageSelectionControllerProvider(testTaskId).overrideWith(
+              () => trackingController,
+            ),
+          ],
+          child: ReferenceImageSelectionWidget(
+            taskId: testTaskId,
+            maxImages: kMaxCodingPromptImages,
+            onContinue: (_) {},
+            onSkip: () {},
+          ),
+        ),
+      );
+
+      expect(find.text('0/$kMaxCodingPromptImages'), findsOneWidget);
+      expect(
+        find.text(
+          "Choose up to $kMaxCodingPromptImages images to guide the AI's "
+          'visual style',
+        ),
+        findsOneWidget,
+      );
+
+      final imageTile = find.descendant(
+        of: find.byType(GridView),
+        matching: find.byType(GestureDetector),
+      );
+      await tester.tap(imageTile.first);
+      await tester.pump();
+
+      expect(trackingController.toggledImageIds, ['img-1']);
+      expect(trackingController.lastToggleMaxImages, kMaxCodingPromptImages);
     });
 
     testWidgets('shows Continue button', (tester) async {

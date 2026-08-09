@@ -205,6 +205,10 @@ void main() {
       expect(kMaxReferenceImages, 5);
     });
 
+    test('kMaxCodingPromptImages is 10', () {
+      expect(kMaxCodingPromptImages, 10);
+    });
+
     test('kMaxReferenceDimension is a positive integer', () {
       expect(kMaxReferenceDimension, greaterThan(0));
       expect(kMaxReferenceDimension, isA<int>());
@@ -213,6 +217,11 @@ void main() {
     test('kMaxReferenceImages is a positive integer', () {
       expect(kMaxReferenceImages, greaterThan(0));
       expect(kMaxReferenceImages, isA<int>());
+    });
+
+    test('kMaxCodingPromptImages is a positive integer', () {
+      expect(kMaxCodingPromptImages, greaterThan(0));
+      expect(kMaxCodingPromptImages, isA<int>());
     });
   });
 

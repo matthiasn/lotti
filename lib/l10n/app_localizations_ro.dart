@@ -9131,8 +9131,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încărcarea imaginilor a eșuat. Vă rugăm să încercați din nou.';
 
   @override
-  String get referenceImageSelectionSubtitle =>
-      'Alegeți până la 5 imagini pentru a ghida stilul vizual al IA';
+  String referenceImageSelectionSubtitle(int maxImages) {
+    return 'Alegeți până la $maxImages imagini pentru a ghida stilul vizual al IA';
+  }
 
   @override
   String get referenceImageSelectionTitle => 'Selectați imagini de referință';

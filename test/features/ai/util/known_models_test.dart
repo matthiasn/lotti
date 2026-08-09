@@ -1419,5 +1419,90 @@ void main() {
         );
       });
     });
+
+    group('chat capabilities', () {
+      final createdAt = DateTime(2025);
+      final mistralProvider =
+          AiConfig.inferenceProvider(
+                id: 'mistral-provider',
+                baseUrl: 'https://api.mistral.ai/v1',
+                apiKey: 'test-key',
+                name: 'Mistral',
+                createdAt: createdAt,
+                inferenceProviderType: InferenceProviderType.mistral,
+              )
+              as AiConfigInferenceProvider;
+      final openAiProvider =
+          AiConfig.inferenceProvider(
+                id: 'openai-provider',
+                baseUrl: 'https://example.com/v1',
+                apiKey: 'test-key',
+                name: 'Compatible API',
+                createdAt: createdAt,
+                inferenceProviderType: InferenceProviderType.openAi,
+              )
+              as AiConfigInferenceProvider;
+
+      AiConfigModel model(String providerModelId, List<Modality> modalities) {
+        return AiConfig.model(
+              id: providerModelId,
+              name: providerModelId,
+              providerModelId: providerModelId,
+              inferenceProviderId: mistralProvider.id,
+              createdAt: createdAt,
+              inputModalities: modalities,
+              outputModalities: const [Modality.text],
+              isReasoningModel: false,
+            )
+            as AiConfigModel;
+      }
+
+      test('dedicated Mistral OCR models are not chat-capable', () {
+        final ocr = model('mistral-ocr-latest', const [
+          Modality.text,
+          Modality.image,
+        ]);
+
+        expect(
+          supportsChatCompletions(model: ocr, provider: mistralProvider),
+          isFalse,
+        );
+        expect(
+          supportsChatImageInput(model: ocr, provider: mistralProvider),
+          isFalse,
+        );
+      });
+
+      test('vision chat support remains provider-aware and modality-gated', () {
+        final mistralVision = model('pixtral-large-latest', const [
+          Modality.text,
+          Modality.image,
+        ]);
+        final sameNamedCompatibleModel = model('custom-ocr-chat', const [
+          Modality.text,
+          Modality.image,
+        ]);
+        final textOnly = model('mistral-small-latest', const [Modality.text]);
+
+        expect(
+          supportsChatImageInput(
+            model: mistralVision,
+            provider: mistralProvider,
+          ),
+          isTrue,
+        );
+        expect(
+          supportsChatImageInput(
+            model: sameNamedCompatibleModel,
+            provider: openAiProvider,
+          ),
+          isTrue,
+        );
+        expect(
+          supportsChatImageInput(model: textOnly, provider: mistralProvider),
+          isFalse,
+        );
+      });
+    });
   });
 }

@@ -12,8 +12,11 @@ import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/image_generation/cover_art_skill_modal.dart';
+import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_modal.dart';
 import 'package:lotti/features/ai/ui/widgets/gemini_thinking_mode_picker_modal.dart';
 import 'package:lotti/features/ai/ui/widgets/inference_provider_model_picker_modal.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
+import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -308,6 +311,8 @@ class UnifiedAiModal {
   /// per-invocation override slot (configured in
   /// [_modelOverrideConfigs]), then fires the trigger with the user's
   /// selection threaded as `overrideModelId`.
+  /// Image-capable prompt-generation models then open the shared task-image
+  /// selector before the trigger is dispatched.
   ///
   /// Profile resolution mirrors [triggerSkillProvider]'s logic: linked
   /// task uses the task's profile, standalone entries fall back to
@@ -348,10 +353,6 @@ class UnifiedAiModal {
     // on-tap UI gesture.
     final repo = ref.read(aiConfigRepositoryProvider);
     final allConfigs = await repo.getConfigsByType(AiConfigType.model);
-    final modalityCapable = allConfigs
-        .whereType<AiConfigModel>()
-        .where((m) => m.inputModalities.contains(config.modality))
-        .toList();
     final providerConfigs = await repo.getConfigsByType(
       AiConfigType.inferenceProvider,
     );
@@ -360,6 +361,18 @@ class UnifiedAiModal {
           in providerConfigs.whereType<AiConfigInferenceProvider>())
         provider.id: provider,
     };
+    final modalityCapable = allConfigs
+        .whereType<AiConfigModel>()
+        .where((model) => model.inputModalities.contains(config.modality))
+        .where(
+          (model) =>
+              skill.skillType != SkillType.promptGeneration ||
+              supportsChatCompletions(
+                model: model,
+                provider: providersById[model.inferenceProviderId],
+              ),
+        )
+        .toList();
 
     // Match the profile's resolved slot to one of the offered models so the
     // picker can mark it default (exact AiConfigModel.id first, wire-level
@@ -430,6 +443,24 @@ class UnifiedAiModal {
     // the profile slot. Different id → forward as override.
     final overrideId = picked == defaultModelId ? null : picked;
 
+    List<ProcessedReferenceImage>? referenceImages;
+    if (skill.skillType == SkillType.promptGeneration &&
+        linkedTaskId != null &&
+        selectedModel != null &&
+        supportsChatImageInput(
+          model: selectedModel,
+          provider: selectedProvider,
+        ) &&
+        context.mounted) {
+      final selected = await ReferenceImageSelectionModal.show(
+        context: context,
+        taskId: linkedTaskId,
+        maxImages: kMaxCodingPromptImages,
+      );
+      if (selected == null) return;
+      referenceImages = selected.isEmpty ? null : selected;
+    }
+
     // Fire-and-forget via the captured container (not `ref`/`context`), so a
     // rebuilt or disposed entry card can't swallow the inference.
     unawaited(
@@ -438,7 +469,7 @@ class UnifiedAiModal {
           entityId: journalEntity.id,
           skillId: skill.id,
           linkedTaskId: linkedTaskId,
-          referenceImages: null,
+          referenceImages: referenceImages,
           overrideModelId: overrideId,
           geminiThinkingMode: geminiThinkingMode,
         )).future,

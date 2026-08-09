@@ -267,6 +267,7 @@ final triggerSkillProvider = FutureProvider.autoDispose
                 entryId: params.entityId,
                 automationResult: automationResult,
                 linkedTaskId: linkedTaskId,
+                referenceImages: params.referenceImages,
                 overrideModelId: params.overrideModelId,
                 geminiThinkingMode: params.geminiThinkingMode,
               );

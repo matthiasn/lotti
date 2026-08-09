@@ -173,12 +173,15 @@ class ReferenceImageSelectionController
     return coverArtImages;
   }
 
-  void toggleImageSelection(String imageId) {
+  void toggleImageSelection(
+    String imageId, {
+    int maxImages = kMaxReferenceImages,
+  }) {
     final current = Set<String>.from(state.selectedImageIds);
 
     if (current.contains(imageId)) {
       current.remove(imageId);
-    } else if (current.length < kMaxReferenceImages) {
+    } else if (current.length < maxImages) {
       current.add(imageId);
     }
 
