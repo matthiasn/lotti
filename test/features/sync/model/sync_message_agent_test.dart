@@ -176,6 +176,35 @@ void main() {
   });
 
   group('SyncAgentEntity descriptor-only (jsonPath)', () {
+    test('materializes an inline entity as nested JSON', () {
+      final entity = AgentDomainEntity.agent(
+        id: 'agent-1',
+        agentId: 'agent-1',
+        kind: 'task_agent',
+        displayName: 'Test',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: 'state-1',
+        config: const AgentConfig(),
+        createdAt: DateTime(2024, 3, 15),
+        updatedAt: DateTime(2024, 3, 15),
+        vectorClock: null,
+      );
+      final message = SyncMessage.agentEntity(
+        status: SyncEntryStatus.update,
+        agentEntity: entity,
+      );
+
+      final encodedEntity = message.toJson()['agentEntity'];
+
+      expect(encodedEntity, isA<Map<String, dynamic>>());
+      expect(
+        (encodedEntity! as Map<String, dynamic>)['runtimeType'],
+        'agent',
+      );
+    });
+
     test('round-trips descriptor-only message with jsonPath', () {
       const msg = SyncMessage.agentEntity(
         status: SyncEntryStatus.update,

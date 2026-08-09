@@ -491,7 +491,7 @@ SyncAgentEntity _$SyncAgentEntityFromJson(Map<String, dynamic> json) =>
 Map<String, dynamic> _$SyncAgentEntityToJson(SyncAgentEntity instance) =>
     <String, dynamic>{
       'status': _$SyncEntryStatusEnumMap[instance.status]!,
-      'agentEntity': instance.agentEntity,
+      'agentEntity': _agentDomainEntityToJson(instance.agentEntity),
       'jsonPath': instance.jsonPath,
       'attachmentEventId': instance.attachmentEventId,
       'originatingHostId': instance.originatingHostId,

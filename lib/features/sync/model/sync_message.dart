@@ -20,6 +20,13 @@ part 'sync_message.g.dart';
 /// `shouldSendJournalAttachments`.
 enum SyncEntryStatus { initial, update }
 
+/// Materializes the nested union before `json_serializable` writes a sync
+/// envelope. The agent union uses a guarded custom `fromJson` factory, so the
+/// generator cannot infer its generated `toJson` method on its own.
+Map<String, dynamic>? _agentDomainEntityToJson(
+  AgentDomainEntity? entity,
+) => entity?.toJson();
+
 /// A single entry in a batched backfill request.
 @freezed
 abstract class BackfillRequestEntry with _$BackfillRequestEntry {
@@ -344,7 +351,7 @@ sealed class SyncMessage with _$SyncMessage {
 
   const factory SyncMessage.agentEntity({
     required SyncEntryStatus status,
-    AgentDomainEntity? agentEntity,
+    @JsonKey(toJson: _agentDomainEntityToJson) AgentDomainEntity? agentEntity,
     String? jsonPath,
 
     /// Matrix event id of the exact JSON attachment generation referenced by
