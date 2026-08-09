@@ -263,24 +263,14 @@ final triggerSkillProvider = FutureProvider.autoDispose
               );
             case SkillType.promptGeneration:
             case SkillType.imagePromptGeneration:
-              if (params.referenceImages == null) {
-                await runner.runPromptGeneration(
-                  entryId: params.entityId,
-                  automationResult: automationResult,
-                  linkedTaskId: linkedTaskId,
-                  overrideModelId: params.overrideModelId,
-                  geminiThinkingMode: params.geminiThinkingMode,
-                );
-              } else {
-                await runner.runPromptGeneration(
-                  entryId: params.entityId,
-                  automationResult: automationResult,
-                  linkedTaskId: linkedTaskId,
-                  referenceImages: params.referenceImages,
-                  overrideModelId: params.overrideModelId,
-                  geminiThinkingMode: params.geminiThinkingMode,
-                );
-              }
+              await runner.runPromptGeneration(
+                entryId: params.entityId,
+                automationResult: automationResult,
+                linkedTaskId: linkedTaskId,
+                referenceImages: params.referenceImages,
+                overrideModelId: params.overrideModelId,
+                geminiThinkingMode: params.geminiThinkingMode,
+              );
             case SkillType.imageGeneration:
               if (linkedTaskId == null) {
                 throw StateError(

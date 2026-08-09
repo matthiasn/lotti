@@ -310,6 +310,8 @@ class UnifiedAiModal {
   /// per-invocation override slot (configured in
   /// [_modelOverrideConfigs]), then fires the trigger with the user's
   /// selection threaded as `overrideModelId`.
+  /// Image-capable prompt-generation models then open the shared task-image
+  /// selector before the trigger is dispatched.
   ///
   /// Profile resolution mirrors [triggerSkillProvider]'s logic: linked
   /// task uses the task's profile, standalone entries fall back to

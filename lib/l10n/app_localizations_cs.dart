@@ -9084,7 +9084,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String referenceImageSelectionSubtitle(int maxImages) {
-    return 'Vyber až $maxImages obrázků, které povedou vizuální styl AI';
+    return 'Vyber až $maxImages obrázků, které pomohou AI určit vizuální styl';
   }
 
   @override

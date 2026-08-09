@@ -552,6 +552,8 @@ class SkillInferenceRunner {
   /// thinking model) to transform the entry's content (audio transcript or
   /// typed text) plus task context into a detailed prompt. The result is
   /// saved as an [AiResponseEntry] linked to the source entry.
+  /// When [referenceImages] is non-empty, they are forwarded with the text as
+  /// a multimodal prompt-generation request.
   Future<void> runPromptGeneration({
     required String entryId,
     required AutomationResult automationResult,

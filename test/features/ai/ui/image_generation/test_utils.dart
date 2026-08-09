@@ -19,6 +19,9 @@ class FakeReferenceImageSelectionController
   /// Every image id passed to [toggleImageSelection], in call order.
   final List<String> toggledImageIds = [];
 
+  /// The most recent caller-specific selection limit.
+  int? lastToggleMaxImages;
+
   /// The `taskId` the controller was last [build]-ed with, or `null` if the
   /// controller has not been built yet.
   String? builtWithTaskId;
@@ -35,6 +38,7 @@ class FakeReferenceImageSelectionController
     int maxImages = kMaxReferenceImages,
   }) {
     toggledImageIds.add(imageId);
+    lastToggleMaxImages = maxImages;
   }
 
   @override

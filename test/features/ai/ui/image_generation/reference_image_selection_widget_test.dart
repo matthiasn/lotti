@@ -161,12 +161,15 @@ void main() {
       final stateWithImages = ReferenceImageSelectionState(
         availableImages: [buildTestReferenceImage('img-1')],
       );
+      final trackingController = FakeReferenceImageSelectionController(
+        stateWithImages,
+      );
 
       await tester.pumpWidget(
         RiverpodWidgetTestBench(
           overrides: [
             referenceImageSelectionControllerProvider(testTaskId).overrideWith(
-              () => FakeReferenceImageSelectionController(stateWithImages),
+              () => trackingController,
             ),
           ],
           child: ReferenceImageSelectionWidget(
@@ -186,6 +189,16 @@ void main() {
         ),
         findsOneWidget,
       );
+
+      final imageTile = find.descendant(
+        of: find.byType(GridView),
+        matching: find.byType(GestureDetector),
+      );
+      await tester.tap(imageTile.first);
+      await tester.pump();
+
+      expect(trackingController.toggledImageIds, ['img-1']);
+      expect(trackingController.lastToggleMaxImages, kMaxCodingPromptImages);
     });
 
     testWidgets('shows Continue button', (tester) async {
