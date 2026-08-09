@@ -29,6 +29,7 @@ import 'package:lotti/features/design_system/components/toasts/toast_messenger.d
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -1286,6 +1287,10 @@ class _MyBeamerAppState extends ConsumerState<MyBeamerApp> {
     ref
       ..listen(agentInitializationProvider, (_, _) {})
       ..listen(syncedAudioInferenceListenerProvider, (_, _) {})
+      // goalSignalSyncListenerProvider: run the deterministic goal tier
+      // (Phase A) when synced signals arrive — the orchestrator only
+      // listens locally (ADR 0054).
+      ..listen(goalSignalSyncListenerProvider, (_, _) {})
       ..watch(dayProcessingRuntimeProvider);
 
     final themingState = ref.watch(themingControllerProvider);

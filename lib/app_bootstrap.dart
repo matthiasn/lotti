@@ -19,6 +19,7 @@ import 'package:lotti/features/daily_os_next/agents/state/day_agent_workflow_pro
 import 'package:lotti/features/daily_os_next/ui/widgets/daily_os_inference_setup_sheet.dart';
 import 'package:lotti/features/demo/media/demo_media_asset.dart';
 import 'package:lotti/features/demo/media/demo_media_startup.dart';
+import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/profiles/model/profile.dart';
 import 'package:lotti/features/profiles/model/profile_context.dart';
 import 'package:lotti/features/profiles/repository/profile_registry.dart';
@@ -242,12 +243,20 @@ List<Override> buildProviderOverrides(ProfileContext context) {
     loggingServiceProvider.overrideWithValue(getIt<LoggingService>()),
     outboxServiceProvider.overrideWithValue(getIt<OutboxService>()),
     aiConfigRepositoryProvider.overrideWithValue(getIt<AiConfigRepository>()),
-    // Daily OS plugs its day agent into the shared runtime.
+    // Daily OS and Goals plug their agent kinds into the shared runtime.
+    // These are MERGES, not replacements: a kind missing from the map
+    // silently falls back to the task-agent workflow.
     agentWakeRunnersProvider.overrideWith(
-      (ref) => ref.watch(dayAgentWakeRunnersProvider),
+      (ref) => {
+        ...ref.watch(dayAgentWakeRunnersProvider),
+        ...ref.watch(goalAgentWakeRunnersProvider),
+      },
     ),
     agentRuntimeMaintenanceProvider.overrideWith(
-      (ref) => ref.watch(dailyOsRuntimeMaintenanceProvider),
+      (ref) => [
+        ...ref.watch(dailyOsRuntimeMaintenanceProvider),
+        ref.watch(goalRuntimeMaintenanceProvider),
+      ],
     ),
     promptLogWrapRenderersProvider.overrideWithValue(
       dayPromptLogWrapRenderers,

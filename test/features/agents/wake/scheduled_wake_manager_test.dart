@@ -289,6 +289,23 @@ void main() {
   }
 
   group('ScheduledWakeManager', () {
+    test('requestCheck runs a scan pass without start (the goal Phase A '
+        'escalation nudge)', () async {
+      when(
+        () => repository.getDueScheduledAgentStates(any()),
+      ).thenAnswer((_) async => []);
+      final manager = ScheduledWakeManager(
+        repository: repository,
+        orchestrator: orchestrator,
+        syncService: syncService,
+      );
+      addTearDown(manager.stop);
+
+      manager.requestCheck();
+      await untilCalled(() => repository.getDueScheduledWakeRecords(any()));
+      verify(() => repository.getDueScheduledWakeRecords(any())).called(1);
+    });
+
     test('a failed pass is contained and reported as runtime', () async {
       // The manager polls on a timer. A failing pass must not escape into the
       // timer callback — an uncaught error there would tear down the poll and
