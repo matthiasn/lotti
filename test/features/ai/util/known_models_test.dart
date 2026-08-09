@@ -1462,6 +1462,10 @@ void main() {
           Modality.text,
           Modality.image,
         ]);
+        final paddedOcr = model('  Mistral-OCR-Latest  ', const [
+          Modality.text,
+          Modality.image,
+        ]);
 
         expect(
           supportsChatCompletions(model: ocr, provider: mistralProvider),
@@ -1471,6 +1475,13 @@ void main() {
           supportsChatImageInput(model: ocr, provider: mistralProvider),
           isFalse,
         );
+        expect(
+          supportsChatCompletions(
+            model: paddedOcr,
+            provider: mistralProvider,
+          ),
+          isFalse,
+        );
       });
 
       test('vision chat support remains provider-aware and modality-gated', () {
@@ -1478,7 +1489,7 @@ void main() {
           Modality.text,
           Modality.image,
         ]);
-        final sameNamedCompatibleModel = model('custom-ocr-chat', const [
+        final embeddedOcrMistralModel = model('custom-ocr-chat', const [
           Modality.text,
           Modality.image,
         ]);
@@ -1493,7 +1504,14 @@ void main() {
         );
         expect(
           supportsChatImageInput(
-            model: sameNamedCompatibleModel,
+            model: embeddedOcrMistralModel,
+            provider: mistralProvider,
+          ),
+          isTrue,
+        );
+        expect(
+          supportsChatImageInput(
+            model: embeddedOcrMistralModel,
             provider: openAiProvider,
           ),
           isTrue,

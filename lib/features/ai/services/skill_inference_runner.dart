@@ -644,14 +644,28 @@ class SkillInferenceRunner {
           taskId: linkedTaskId,
         );
         final impactCollector = InferenceImpactCollector();
+        final requestedImageCount = referenceImages?.length ?? 0;
+        final resolvedModel = target.model;
         final selectedImages =
-            target.model != null &&
+            resolvedModel != null &&
                 supportsChatImageInput(
-                  model: target.model!,
+                  model: resolvedModel,
                   provider: target.provider,
                 )
             ? referenceImages ?? const []
             : const <ProcessedReferenceImage>[];
+        if (requestedImageCount > 0 && selectedImages.isEmpty) {
+          _loggingService.log(
+            LogDomain.ai,
+            resolvedModel == null
+                ? 'Dropping $requestedImageCount selected image(s) for '
+                      '$entryId: model metadata is unavailable for $modelId'
+                : 'Dropping $requestedImageCount selected image(s) for '
+                      '$entryId: resolved model $modelId does not accept '
+                      'chat images',
+            subDomain: 'runPromptGeneration',
+          );
+        }
         final responseStream = selectedImages.isEmpty
             ? _cloudRepository.generate(
                 promptResult.userMessage,
