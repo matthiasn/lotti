@@ -133,6 +133,12 @@ void main() {
     expect(subscription.matchEntityIds, {'gym-habit'});
   });
 
+  test('removeSignalSubscriptions drops the agent from the orchestrator', () {
+    when(() => orchestrator.removeSubscriptions(any())).thenReturn(null);
+    service.removeSignalSubscriptions(agentId);
+    verify(() => orchestrator.removeSubscriptions(agentId)).called(1);
+  });
+
   test(
     'a repeated create for an existing goal refuses to rewrite spec v1, '
     'and the guard runs INSIDE the creation transaction',

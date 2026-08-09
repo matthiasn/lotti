@@ -1,11 +1,45 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
+import 'package:lotti/features/sync/g_counter.dart';
 
 void main() {
+  GoalNudgeEntity goalNudge({
+    required GoalNudgeStatus status,
+    String id = 'n1',
+    List<GoalNudgeRating> ratings = const [],
+    GCounter visibleMs = const GCounter.empty(),
+    GCounter impressions = const GCounter.empty(),
+    int activationCount = 1,
+    DateTime? firstShownAt,
+    DateTime? lastShownAt,
+  }) =>
+      AgentDomainEntity.goalNudge(
+            id: id,
+            agentId: 'a1',
+            status: status,
+            brief: const GoalNudgeBrief(
+              headline: 'Your shoes filed a missing person report.',
+              tone: GoalNudgeTone.nudge,
+              animation: GoalBannerAnimation.pulse,
+            ),
+            briefDigest: 'digest-1',
+            createdAt: DateTime(2026, 8),
+            updatedAt: DateTime(2026, 8),
+            vectorClock: null,
+            ratings: ratings,
+            totalVisibleMs: visibleMs,
+            impressionCount: impressions,
+            activationCount: activationCount,
+            firstShownAt: firstShownAt,
+            lastShownAt: lastShownAt,
+          )
+          as GoalNudgeEntity;
+
   group('resolveConcurrentAgentEntityOverride', () {
     PlannerKnowledgeEntity knowledge({
       required KnowledgeStatus status,
@@ -362,6 +396,152 @@ void main() {
         },
         tags: 'glados',
       );
+    });
+  });
+
+  group('goal nudge — dismissal is terminal', () {
+    test('a concurrent dismissal beats any other status, both directions', () {
+      final dismissed = goalNudge(status: GoalNudgeStatus.dismissed);
+      for (final other in [
+        goalNudge(status: GoalNudgeStatus.active),
+        goalNudge(status: GoalNudgeStatus.retired),
+      ]) {
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: dismissed,
+            incoming: other,
+          ),
+          ConcurrentWinner.local,
+          reason: 'a re-activation must not revive a dismissed ad',
+        );
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: other,
+            incoming: dismissed,
+          ),
+          ConcurrentWinner.incoming,
+        );
+      }
+    });
+
+    test('same-dismissal-state conflicts defer to LWW (null)', () {
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: goalNudge(status: GoalNudgeStatus.active),
+          incoming: goalNudge(status: GoalNudgeStatus.retired),
+        ),
+        isNull,
+      );
+    });
+  });
+
+  group('mergeGoalNudgeAccumulators', () {
+    GoalNudgeRating rating(
+      int activation, {
+      int? value,
+      bool skipped = false,
+    }) => GoalNudgeRating(
+      activation: activation,
+      ratedAt: DateTime(2026, 8, activation),
+      rating: value,
+      skipped: skipped,
+    );
+
+    test('joins exposure counters, unions ratings and widens watermarks — '
+        "no device's outcome is ever lost", () {
+      final local = goalNudge(
+        status: GoalNudgeStatus.active,
+        visibleMs: const GCounter({'phone': 4000}),
+        impressions: const GCounter({'phone': 3}),
+        ratings: [rating(1, value: 5)],
+        activationCount: 2,
+        firstShownAt: DateTime(2026, 8),
+        lastShownAt: DateTime(2026, 8, 3),
+      );
+      final incoming = goalNudge(
+        status: GoalNudgeStatus.active,
+        visibleMs: const GCounter({'phone': 1000, 'desktop': 9000}),
+        impressions: const GCounter({'desktop': 7}),
+        ratings: [rating(1, value: 5), rating(2, skipped: true)],
+        activationCount: 3,
+        firstShownAt: DateTime(2026, 8, 2),
+        lastShownAt: DateTime(2026, 8, 5),
+      );
+
+      final merged = mergeGoalNudgeAccumulators(
+        winner: local,
+        local: local,
+        incoming: incoming,
+      );
+      expect(
+        merged.totalVisibleMs.byHost,
+        {'phone': 4000, 'desktop': 9000},
+        reason: 'element-wise max — the CRDT join',
+      );
+      expect(merged.impressionCount.value, 10);
+      expect(merged.ratings, [rating(1, value: 5), rating(2, skipped: true)]);
+      expect(merged.activationCount, 3);
+      expect(merged.firstShownAt, DateTime(2026, 8));
+      expect(merged.lastShownAt, DateTime(2026, 8, 5));
+    });
+
+    test('distinct ratings tied on activation and ratedAt still merge in '
+        'one deterministic order on both replicas', () {
+      final at = DateTime(2026, 8, 2, 9);
+      final skippedEntry = GoalNudgeRating(
+        activation: 1,
+        ratedAt: at,
+        skipped: true,
+      );
+      final rated = GoalNudgeRating(activation: 1, ratedAt: at, rating: 3);
+      final a = goalNudge(
+        status: GoalNudgeStatus.active,
+        ratings: [rated],
+      );
+      final b = goalNudge(
+        status: GoalNudgeStatus.active,
+        ratings: [skippedEntry],
+      );
+      final ab = mergeGoalNudgeAccumulators(winner: a, local: a, incoming: b);
+      final ba = mergeGoalNudgeAccumulators(winner: a, local: b, incoming: a);
+      expect(ab.ratings, hasLength(2));
+      expect(
+        ab.ratings,
+        ba.ratings,
+        reason: 'union order must not leak into the merged list',
+      );
+
+      // Same tie, differing only in the rating VALUE.
+      final low = GoalNudgeRating(activation: 2, ratedAt: at, rating: 2);
+      final high = GoalNudgeRating(activation: 2, ratedAt: at, rating: 5);
+      final c = goalNudge(status: GoalNudgeStatus.active, ratings: [low]);
+      final d = goalNudge(status: GoalNudgeStatus.active, ratings: [high]);
+      final cd = mergeGoalNudgeAccumulators(winner: c, local: c, incoming: d);
+      final dc = mergeGoalNudgeAccumulators(winner: c, local: d, incoming: c);
+      expect(cd.ratings, [low, high]);
+      expect(cd.ratings, dc.ratings);
+    });
+
+    test('is symmetric: swapping local/incoming converges on the same '
+        'accumulators', () {
+      final a = goalNudge(
+        status: GoalNudgeStatus.active,
+        visibleMs: const GCounter({'phone': 4000}),
+        ratings: [rating(1, value: 3)],
+      );
+      final b = goalNudge(
+        status: GoalNudgeStatus.retired,
+        visibleMs: const GCounter({'desktop': 2000}),
+        ratings: [rating(2, value: 5)],
+        activationCount: 2,
+        lastShownAt: DateTime(2026, 8, 4),
+      );
+      final ab = mergeGoalNudgeAccumulators(winner: a, local: a, incoming: b);
+      final ba = mergeGoalNudgeAccumulators(winner: a, local: b, incoming: a);
+      expect(ab.totalVisibleMs.byHost, ba.totalVisibleMs.byHost);
+      expect(ab.ratings, ba.ratings);
+      expect(ab.activationCount, ba.activationCount);
+      expect(ab.lastShownAt, ba.lastShownAt);
     });
   });
 }

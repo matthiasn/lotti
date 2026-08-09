@@ -4,12 +4,16 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/ai/model/ai_config.dart';
+import 'package:lotti/features/ai/repository/ai_config_repository.dart';
+import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
@@ -48,8 +52,16 @@ void main() {
     ).thenAnswer((_) async => []);
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
 
+    final aiConfigRepository = MockAiConfigRepository();
+    when(
+      () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => []);
     container = ProviderContainer(
       overrides: [
+        aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
+        cloudInferenceRepositoryProvider.overrideWithValue(
+          MockCloudInferenceRepository(),
+        ),
         journalDbProvider.overrideWithValue(journalDb),
         agentRepositoryProvider.overrideWithValue(repository),
         agentSyncServiceProvider.overrideWithValue(syncService),
@@ -61,6 +73,23 @@ void main() {
     );
     addTearDown(container.dispose);
   });
+
+  AgentIdentityEntity goalIdentity(String id) =>
+      AgentDomainEntity.agent(
+            id: id,
+            agentId: id,
+            kind: AgentKinds.goalAgent,
+            displayName: id,
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: '$id:state',
+            config: const AgentConfig(),
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+            vectorClock: null,
+          )
+          as AgentIdentityEntity;
 
   test('every goal provider constructs against the shared agent runtime', () {
     expect(container.read(goalSignalReaderProvider), isA<GoalSignalReader>());
@@ -104,6 +133,89 @@ void main() {
       threadId: 'thread-1',
     );
     expect(result.success, isTrue);
+  });
+
+  test('an escalation trigger token routes the wake to Phase B — proven '
+      'by it failing on the missing inference provider, which the €0 tier '
+      'never touches', () async {
+    const agentId = 'goal-b';
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v1',
+        agentId: agentId,
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Gym',
+        statement: 'x',
+        criteria: const GoalCriterion.habit(
+          criterionId: 'gym',
+          habitId: 'gym-habit',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 3,
+        ),
+        createdAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(
+      () => journalDb.getHabitCompletionsByHabitId(
+        habitId: any(named: 'habitId'),
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.observation,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+
+    final runner = container.read(
+      goalAgentWakeRunnersProvider,
+    )[AgentKinds.goalAgent]!;
+
+    // Phase B path: no AI model configs are registered, so the workflow
+    // aborts on provider resolution — an error Phase A cannot produce.
+    final phaseB = await runner(
+      agentIdentity: goalIdentity(agentId),
+      runKey: 'run-b',
+      triggerTokens: {goalEscalationWorkspaceKey('2026-08-09')},
+      threadId: 'thread-b',
+    );
+    expect(phaseB.success, isFalse);
+    expect(phaseB.error, contains('no inference provider'));
+
+    // The same wake without the escalation token stays on the €0 tier and
+    // succeeds without any inference plumbing.
+    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(
+      () => repository.getDueScheduledWakeRecords(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getDueScheduledAgentStates(any()),
+    ).thenAnswer((_) async => []);
+    final phaseA = await runner(
+      agentIdentity: goalIdentity(agentId),
+      runKey: 'run-a',
+      triggerTokens: const {'gym-habit'},
+      threadId: 'thread-a',
+    );
+    expect(phaseA.success, isTrue);
   });
 
   test('a local escalation nudges the scheduled-wake manager instead of '

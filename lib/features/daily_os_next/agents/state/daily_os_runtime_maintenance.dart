@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/daily_os_next/agents/service/day_agent_service.dart';
@@ -50,6 +51,11 @@ class DailyOsRuntimeMaintenance implements AgentRuntimeMaintenance {
       );
     }
   }
+
+  /// Day agents are minted locally per day; a synced-in identity needs no
+  /// runtime mirroring on this device.
+  @override
+  Future<void> onIdentityReceived(AgentIdentityEntity identity) async {}
 
   @override
   Future<void> restoreSubscriptions() => dayAgents.restoreSubscriptions();

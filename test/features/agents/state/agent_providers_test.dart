@@ -77,6 +77,9 @@ extension on WakeQueue {
 /// its own repair failures — so the runtime's own containment is only reachable
 /// from a double.
 class _ThrowingMaintenance implements AgentRuntimeMaintenance {
+  @override
+  Future<void> onIdentityReceived(AgentIdentityEntity identity) async {}
+
   int beforeCalls = 0;
 
   @override
@@ -92,6 +95,9 @@ class _ThrowingMaintenance implements AgentRuntimeMaintenance {
 /// A contributor that only records that it ran, to prove the loop continues
 /// past a failing predecessor.
 class _RecordingMaintenance implements AgentRuntimeMaintenance {
+  @override
+  Future<void> onIdentityReceived(AgentIdentityEntity identity) async {}
+
   int beforeCalls = 0;
 
   @override

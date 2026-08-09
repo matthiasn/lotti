@@ -99,6 +99,30 @@ class GoalRuntimeMaintenance implements AgentRuntimeMaintenance {
         .toList(growable: false);
   }
 
+  /// Mirrors a synced-in goal identity into the runtime mid-session: an
+  /// active goal subscribes to its signals immediately (previously it was
+  /// deaf until restart — the documented PR 2 limitation), a paused or
+  /// archived one is unsubscribed. Failures are contained: the sync apply
+  /// loop must never stall on one goal's bad spec.
+  @override
+  Future<void> onIdentityReceived(AgentIdentityEntity identity) async {
+    if (identity.kind != AgentKinds.goalAgent) return;
+    try {
+      if (identity.lifecycle != AgentLifecycle.active) {
+        _goalAgentService.removeSignalSubscriptions(identity.agentId);
+        return;
+      }
+      final criteria = await _headCriteria(identity.agentId);
+      if (criteria == null) return;
+      _goalAgentService.registerSignalSubscription(
+        identity.agentId,
+        criteria,
+      );
+    } catch (error, stackTrace) {
+      _log('onIdentityReceived', identity.agentId, error, stackTrace);
+    }
+  }
+
   Future<GoalCriterion?> _headCriteria(String agentId) async {
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
     if (head is! GoalSpecHeadEntity) return null;

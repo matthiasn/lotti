@@ -22,6 +22,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/agent_link.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/sync/agent_concurrent_resolver.dart';
 import 'package:lotti/features/agents/sync/agent_lww_timestamp.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -220,6 +221,12 @@ class SyncEventProcessor {
   /// remove subscriptions when an incoming sync message pauses or destroys
   /// an agent.
   WakeOrchestrator? wakeOrchestrator;
+
+  /// Runtime-maintenance contributors, injected alongside the orchestrator.
+  /// A synced-in agent identity is offered to each so its owning feature
+  /// can mirror runtime state (subscriptions) mid-session.
+  List<AgentRuntimeMaintenance> runtimeMaintenance =
+      const <AgentRuntimeMaintenance>[];
 
   void Function(SyncApplyDiagnostics diag)? applyObserver;
 

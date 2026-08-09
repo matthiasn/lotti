@@ -170,12 +170,24 @@ extension _AgentHandlers on SyncEventProcessor {
       // LWW winner) and bypasses the keep-local skip below; otherwise it returns
       // null and the standard dominance path applies (causal dominance already
       // implies counter-domination, so no merge is needed there).
-      final mergedState = resolvedEntity is AgentStateEntity
-          ? await _mergeConcurrentAgentState(
-              incoming: resolvedEntity,
-              prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
-            )
-          : null;
+      final AgentDomainEntity? mergedState;
+      if (resolvedEntity is AgentStateEntity) {
+        mergedState = await _mergeConcurrentAgentState(
+          incoming: resolvedEntity,
+          prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+        );
+      } else if (resolvedEntity is GoalNudgeEntity) {
+        // Goal nudges accumulate exposure counters and rating history
+        // across years of activations (ADR 0055); like the agent-state
+        // counters, a concurrent conflict must join them element-wise
+        // instead of letting whole-row LWW erase one device's outcomes.
+        mergedState = await _mergeConcurrentGoalNudge(
+          incoming: resolvedEntity,
+          prefetchedAgentEntitiesById: prefetchedAgentEntitiesById,
+        );
+      } else {
+        mergedState = null;
+      }
 
       if (mergedState == null &&
           await _localAgentEntityDominates(
@@ -265,6 +277,23 @@ extension _AgentHandlers on SyncEventProcessor {
               }
             }
           }
+        }
+        // Plug-in kinds (goal agents today): offer the identity to each
+        // registered runtime-maintenance contributor, so the owning
+        // feature mirrors its subscriptions without this file hard-coding
+        // another kind branch. Contributors contain their own failures.
+        await _offerIdentityToRuntimeMaintenance(appliedIdentity);
+      }
+      // Ordering: creation bundles emit the identity BEFORE its spec rows,
+      // so the identity-time mirror can find no criteria yet. When the
+      // spec head lands, offer the (already persisted) identity again —
+      // this is what makes a goal synced in mid-session actually live.
+      if (wakeOrchestrator != null && entityToApply is GoalSpecHeadEntity) {
+        final identity = await agentRepository!.getEntity(
+          entityToApply.agentId,
+        );
+        if (identity is AgentIdentityEntity) {
+          await _offerIdentityToRuntimeMaintenance(identity);
         }
       }
       _updateNotifications.notify(
@@ -431,6 +460,39 @@ extension _AgentHandlers on SyncEventProcessor {
     );
   }
 
+  /// Offers a synced-in identity to every runtime-maintenance contributor,
+  /// containing each contributor's failures (one feature's bad spec must
+  /// not stall the sync apply loop).
+  Future<void> _offerIdentityToRuntimeMaintenance(
+    AgentIdentityEntity identity,
+  ) async {
+    for (final maintenance in runtimeMaintenance) {
+      try {
+        await maintenance.onIdentityReceived(identity);
+      } catch (error, stackTrace) {
+        _loggingService.error(
+          LogDomain.sync,
+          error,
+          subDomain: 'processor.identityMirror',
+          message:
+              'runtime maintenance identity mirror failed for '
+              '${identity.agentId}',
+          stackTrace: stackTrace,
+        );
+      }
+    }
+  }
+
+  /// Local counterpart of an incoming entity: the prefetched bundle map
+  /// when the id was bulk-loaded (including a cached null), the repository
+  /// otherwise. One helper because five call sites carried this branch.
+  Future<AgentDomainEntity?> _localAgentEntityFor(
+    String id,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
+  ) async => (prefetchedAgentEntitiesById?.containsKey(id) ?? false)
+      ? prefetchedAgentEntitiesById![id]
+      : await agentRepository!.getEntity(id);
+
   Future<bool> _localAgentEntityDominates({
     required AgentDomainEntity incoming,
     required String? jsonPath,
@@ -439,9 +501,10 @@ extension _AgentHandlers on SyncEventProcessor {
     final incomingVc = incoming.vectorClock;
     if (incomingVc == null) return false;
 
-    final local = prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false
-        ? prefetchedAgentEntitiesById![incoming.id]
-        : await agentRepository!.getEntity(incoming.id);
+    final local = await _localAgentEntityFor(
+      incoming.id,
+      prefetchedAgentEntitiesById,
+    );
     final localVc = local?.vectorClock;
     if (local == null || localVc == null) return false;
 
@@ -477,10 +540,10 @@ extension _AgentHandlers on SyncEventProcessor {
     final incomingVc = incoming.vectorClock;
     if (incomingVc == null) return null;
 
-    final local =
-        (prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false)
-        ? prefetchedAgentEntitiesById![incoming.id]
-        : await agentRepository!.getEntity(incoming.id);
+    final local = await _localAgentEntityFor(
+      incoming.id,
+      prefetchedAgentEntitiesById,
+    );
     if (local is! AgentStateEntity) return null;
     final localVc = local.vectorClock;
     if (localVc == null) return null;
@@ -518,6 +581,61 @@ extension _AgentHandlers on SyncEventProcessor {
     return merged == winner ? null : merged;
   }
 
+  /// The [GoalNudgeEntity] analogue of [_mergeConcurrentAgentState]: on a
+  /// **concurrent** clock conflict, returns the nudge with exposure
+  /// counters joined, ratings unioned and watermarks widened via
+  /// [mergeGoalNudgeAccumulators], with non-accumulator fields from the
+  /// deterministic winner — which honours the dismissal-terminal override
+  /// before generic LWW, so a concurrent bookkeeping write can never
+  /// resurrect a dismissed ad. Returns null when clocks are missing or
+  /// not concurrent (causal dominance already carries the accumulators).
+  Future<GoalNudgeEntity?> _mergeConcurrentGoalNudge({
+    required GoalNudgeEntity incoming,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
+  }) async {
+    final incomingVc = incoming.vectorClock;
+    if (incomingVc == null) return null;
+
+    final local = await _localAgentEntityFor(
+      incoming.id,
+      prefetchedAgentEntitiesById,
+    );
+    if (local is! GoalNudgeEntity) return null;
+    final localVc = local.vectorClock;
+    if (localVc == null) return null;
+
+    final VclockStatus status;
+    try {
+      status = VectorClock.compare(localVc, incomingVc);
+    } catch (_) {
+      return null;
+    }
+    if (status != VclockStatus.concurrent) return null;
+
+    final overrideWinner = resolveConcurrentAgentEntityOverride(
+      local: local,
+      incoming: incoming,
+    );
+    final winnerSide =
+        overrideWinner ??
+        resolveConcurrent(
+          localVc: localVc,
+          incomingVc: incomingVc,
+          localUpdatedAt: local.effectiveUpdatedAt,
+          incomingUpdatedAt: incoming.effectiveUpdatedAt,
+        );
+    final winner = winnerSide == ConcurrentWinner.local ? local : incoming;
+
+    final merged = mergeGoalNudgeAccumulators(
+      winner: winner,
+      local: local,
+      incoming: incoming,
+    );
+    // As with agent state: only diverge from the standard whole-row path
+    // when the join actually recovers something the winner lacked.
+    return merged == winner ? null : merged;
+  }
+
   /// Overlays this device's local scheduling fields onto an [incoming]
   /// `AgentStateEntity` about to be applied from sync, so device-local
   /// scheduling (`nextWakeAt` / `sleepUntil` / `scheduledWakeAt`) is never
@@ -528,10 +646,10 @@ extension _AgentHandlers on SyncEventProcessor {
     required AgentStateEntity incoming,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
-    final local =
-        (prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false)
-        ? prefetchedAgentEntitiesById![incoming.id]
-        : await agentRepository!.getEntity(incoming.id);
+    final local = await _localAgentEntityFor(
+      incoming.id,
+      prefetchedAgentEntitiesById,
+    );
     if (local is! AgentStateEntity) return incoming;
     return incoming.copyWith(
       nextWakeAt: local.nextWakeAt,

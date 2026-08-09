@@ -313,7 +313,7 @@ class GoalAgentEvalStrategy extends ConversationStrategy {
   List<GoalAgentEvalToolCall> get toolCalls => List.unmodifiable(_toolCalls);
 
   static final Set<String> _knownToolNames = {
-    for (final tool in goalAgentEvalTools) tool.name,
+    for (final tool in goalAgentTools) tool.name,
   };
 
   @override
@@ -599,7 +599,7 @@ class GoalAgentInferenceEvalRunner {
     final strategy = GoalAgentEvalStrategy();
     final wakeRunKey = goalAgentEvalWakeRunKey(modelId, scenario.id);
     final conversationId = conversationRepository.createConversation(
-      systemMessage: goalAgentEvalSystemPrompt,
+      systemMessage: goalAgentSystemPrompt,
       maxTurns:
           maxTurnsPerExchange * (1 + scenario.followUpUserMessages.length),
     );
@@ -615,7 +615,7 @@ class GoalAgentInferenceEvalRunner {
           provider: provider,
           inferenceRepo: inferenceRepository,
           tools: [
-            for (final tool in goalAgentEvalTools)
+            for (final tool in goalAgentTools)
               ChatCompletionTool(
                 type: ChatCompletionToolType.function,
                 function: FunctionObject(

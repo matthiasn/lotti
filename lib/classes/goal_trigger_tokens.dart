@@ -27,3 +27,45 @@ String goalEscalationWorkspaceKey(String periodKey) =>
 bool isGoalEscalationWorkspace(String? workspaceKey) =>
     workspaceKey != null &&
     workspaceKey.startsWith('$goalEscalationWorkspacePrefix:');
+
+/// The escalation period encoded in a wake's trigger tokens, or null when
+/// the tokens carry no escalation marker.
+///
+/// The wake runner signature deliberately has no workspaceKey parameter
+/// (the day agent's `digest:` prefix precedent): an escalation wake
+/// carries its workspace key as a trigger token, and Phase B is entered
+/// exactly when this returns non-null. A cadence or signal wake returns
+/// null and stays on the €0 tier.
+String? goalEscalationPeriodFromTriggerTokens(Set<String> triggerTokens) {
+  for (final token in triggerTokens) {
+    if (isGoalEscalationWorkspace(token)) {
+      return token.substring(goalEscalationWorkspacePrefix.length + 1);
+    }
+  }
+  return null;
+}
+
+/// Prefix of the baseline token an escalation wake carries: the status
+/// that was PERSISTED BEFORE the transition that armed the wake.
+///
+/// Phase A writes the day's register (new status) and the escalation in
+/// one transaction, so Phase B cannot reconstruct the pre-write status
+/// from storage — a same-day second transition would read its own first
+/// write as the baseline and the change would vanish. Encoding it on the
+/// wake record preserves the exact transition that justified the spend.
+const goalEscalationBaselinePrefix = 'goal-baseline';
+
+/// The baseline token for a pre-transition status name.
+String goalEscalationBaselineToken(String statusName) =>
+    '$goalEscalationBaselinePrefix:$statusName';
+
+/// The pre-transition status name encoded in an escalation wake's trigger
+/// tokens, or null when none was recorded (first-ever evaluation).
+String? goalEscalationBaselineFromTriggerTokens(Set<String> triggerTokens) {
+  for (final token in triggerTokens) {
+    if (token.startsWith('$goalEscalationBaselinePrefix:')) {
+      return token.substring(goalEscalationBaselinePrefix.length + 1);
+    }
+  }
+  return null;
+}
