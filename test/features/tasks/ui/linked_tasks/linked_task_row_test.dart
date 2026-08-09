@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -49,6 +50,46 @@ void main() {
         expect(find.byType(SvgPicture), findsNothing);
       },
     );
+
+    testWidgets('renders the AI one-liner in accent ink with ellipsis', (
+      tester,
+    ) async {
+      const oneLiner =
+          'A deliberately long AI summary that cannot fit in this linked row';
+      await tester.pumpWidget(
+        WidgetTestBench(
+          overrides: [
+            taskOneLinerProvider.overrideWith(
+              (ref, taskId) async => oneLiner,
+            ),
+          ],
+          child: SizedBox(
+            width: 540,
+            child: LinkedTaskRow(
+              data: buildRowData(),
+              manageMode: false,
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      final richText = tester.widget<RichText>(
+        find.text(oneLiner, findRichText: true),
+      );
+      final rootSpan = richText.text as TextSpan;
+      final summarySpan = rootSpan.children!.first as TextSpan;
+      final context = tester.element(find.byType(LinkedTaskRow));
+
+      expect(summarySpan.text, oneLiner);
+      expect(
+        summarySpan.style?.color,
+        context.designTokens.colors.aiCard.accent,
+      );
+      expect(richText.maxLines, 1);
+      expect(richText.overflow, TextOverflow.ellipsis);
+    });
 
     testWidgets(
       'shows the plain chevron in manage mode when onUnlink is null',

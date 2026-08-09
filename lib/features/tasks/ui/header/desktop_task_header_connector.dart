@@ -18,6 +18,7 @@ import 'package:lotti/features/projects/repository/project_repository.dart';
 import 'package:lotti/features/projects/state/project_providers.dart';
 import 'package:lotti/features/projects/ui/widgets/project_selection_modal_content.dart';
 import 'package:lotti/features/tasks/state/task_blockers_controller.dart';
+import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/state/task_progress_controller.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header.dart';
 import 'package:lotti/features/tasks/ui/header/desktop_task_header_meta.dart';
@@ -65,8 +66,11 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
 
     final projectAsync = ref.watch(projectForTaskProvider(taskId));
     final project = projectAsync.asData?.value;
+    // `.value` preserves the established tagline while a background refresh
+    // reloads the provider, avoiding a one-line header reflow.
+    final oneLiner = ref.watch(taskOneLinerProvider(taskId)).value;
 
-    final data = _buildData(context, task, project);
+    final data = _buildData(context, task, project, oneLiner);
     final controller = ref.read(entryControllerProvider(taskId).notifier);
     final categoryId = task.meta.categoryId;
 
@@ -112,6 +116,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
     BuildContext context,
     Task task,
     ProjectEntry? project,
+    String? oneLiner,
   ) {
     final cache = getIt<EntitiesCacheService>();
     final categoryId = task.meta.categoryId;
@@ -161,6 +166,7 @@ class DesktopTaskHeaderConnector extends ConsumerWidget {
             ),
       category: category,
       dueDate: dueDate,
+      oneLiner: oneLiner,
       labels: labels,
     );
   }

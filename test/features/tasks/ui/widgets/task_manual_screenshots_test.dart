@@ -379,6 +379,26 @@ void main() {
         linkedTo: any(named: 'linkedTo'),
       ),
     ).thenAnswer((_) async => []);
+    when(
+      () => journalRepository.getTypedLinksForTaskIds(
+        {manualOrbitalHabitatTaskId},
+        linkTypes: any(named: 'linkTypes'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        EntryLink.basic(
+          id: 'link-habitat-feeder',
+          fromId: manualOrbitalHabitatTaskId,
+          toId: manualFishFeederTaskId,
+          createdAt: manualDemoNow.subtract(const Duration(days: 2)),
+          updatedAt: manualDemoNow.subtract(const Duration(days: 2)),
+          vectorClock: null,
+        ),
+      ],
+    );
+    when(
+      () => journalRepository.getJournalEntitiesByIds({manualFishFeederTaskId}),
+    ).thenAnswer((_) async => [world.fishFeederTask]);
 
     when(() => entitiesCache.sortedCategories).thenReturn([world.category]);
     when(() => entitiesCache.sortedLabels).thenReturn(world.labels);
@@ -604,6 +624,30 @@ void main() {
           find.text(
             _t('Pre-launch checks', 'Checks vor dem Start'),
           ),
+        );
+        _expectVisible(
+          tester,
+          device,
+          find
+              .text(
+                _t(
+                  'Pressure stable · 37 penguins accounted for',
+                  'Druck stabil · 37 Pinguine vollzählig',
+                ),
+              )
+              .last,
+        );
+        _expectVisible(
+          tester,
+          device,
+          find
+              .text(
+                _t(
+                  'Feeder calibration blocks the habitat demo',
+                  'Futterautomat-Kalibrierung blockiert die Habitat-Demo',
+                ),
+              )
+              .last,
         );
         await captureScreenshot(
           tester,

@@ -60,6 +60,7 @@ class DesktopTaskHeaderData {
     this.project,
     this.category,
     this.dueDate,
+    this.oneLiner,
     this.labels = const [],
   });
 
@@ -69,6 +70,7 @@ class DesktopTaskHeaderData {
   final DesktopTaskHeaderProject? project;
   final DesktopTaskHeaderCategory? category;
   final DesktopTaskHeaderDueDate? dueDate;
+  final String? oneLiner;
   final List<LabelDefinition> labels;
 }
 
@@ -80,7 +82,8 @@ class DesktopTaskHeaderData {
 ///    "where am I?" info out of the chip soup.
 /// 2. **Title** — heading-3 with an always-shown small edit pencil to its
 ///    right; tap toggles the inline editor.
-/// 3. **Meta row** — pill chips for the *actionable* metadata (priority, due,
+/// 3. **AI one-liner** — optional accent-colored task-agent context.
+/// 4. **Meta row** — pill chips for the *actionable* metadata (priority, due,
 ///    estimate, labels) followed by the status select pinned to the right
 ///    edge of the row.
 class DesktopTaskHeader extends StatefulWidget {
@@ -278,6 +281,18 @@ class _DesktopTaskHeaderState extends State<DesktopTaskHeader> {
             SizedBox(height: crumbGap),
           ],
           _buildTitleLine(context),
+          if (widget.data.oneLiner case final oneLiner?
+              when oneLiner.isNotEmpty) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Text(
+              oneLiner,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.aiCard.accent,
+              ),
+            ),
+          ],
           SizedBox(height: metaGap),
           MetaRow(
             priority: widget.data.priority,

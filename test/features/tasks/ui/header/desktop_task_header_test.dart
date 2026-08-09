@@ -98,6 +98,7 @@ LabelDefinition _label({
 
 DesktopTaskHeaderData _fixture({
   String title = 'Payment confirmation',
+  String? oneLiner,
   TaskPriority priority = TaskPriority.p1High,
   TaskStatus? status,
   DesktopTaskHeaderProject? project,
@@ -108,6 +109,7 @@ DesktopTaskHeaderData _fixture({
   final createdAt = DateTime.utc(2026);
   return DesktopTaskHeaderData(
     title: title,
+    oneLiner: oneLiner,
     priority: priority,
     status:
         status ??
@@ -166,6 +168,37 @@ String _priorityLabel(TaskPriority priority) => switch (priority) {
 
 void main() {
   group('DesktopTaskHeader — content + layout', () {
+    testWidgets('shows the AI one-liner between title and metadata', (
+      tester,
+    ) async {
+      const oneLiner = 'Settlement is ready for final verification';
+      await _pumpDesktop(
+        tester,
+        DesktopTaskHeader(
+          data: _fixture(oneLiner: oneLiner),
+          onTitleSaved: (_) {},
+        ),
+      );
+
+      final summary = tester.widget<Text>(find.text(oneLiner));
+      final context = tester.element(find.text(oneLiner));
+      expect(summary.style?.color, context.designTokens.colors.aiCard.accent);
+      expect(summary.maxLines, 1);
+      expect(summary.overflow, TextOverflow.ellipsis);
+
+      final textOrder = tester
+          .widgetList<Text>(find.byType(Text))
+          .map((text) => text.data)
+          .where(
+            (text) =>
+                text == 'Payment confirmation' ||
+                text == oneLiner ||
+                text == 'Open',
+          )
+          .toList();
+      expect(textOrder, ['Payment confirmation', oneLiner, 'Open']);
+    });
+
     testWidgets(
       'renders title, classification line, metadata line and no ellipsis',
       (tester) async {

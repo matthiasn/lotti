@@ -11,7 +11,7 @@ sources:
   - id: header
     resource: ../../../lib/features/tasks/ui/header
     title: Desktop task header
-    last_modified: 2026-08-03
+    last_modified: 2026-08-09
   - id: pages
     resource: ../../../lib/features/tasks/ui/pages
     title: TaskDetailsPage and TaskForm
@@ -114,9 +114,17 @@ text.
 # The header
 
 `DesktopTaskHeaderConnector` concentrates the whole metadata band. It watches
-`entryControllerProvider`, `projectForTaskProvider` and the labels stream, maps
-the task to an immutable `DesktopTaskHeaderData` plus a Riverpod-aware
-`estimateSlot`, and forwards callbacks to the existing modal pickers.
+`entryControllerProvider`, `projectForTaskProvider`, `taskOneLinerProvider` and
+the labels stream, maps the task to an immutable `DesktopTaskHeaderData` plus a
+Riverpod-aware `estimateSlot`, and forwards callbacks to the existing modal
+pickers. When the task agent has published a one-liner, the header renders it as
+a single ellipsized line directly between the title and metadata. Its ink is
+`aiCard.accent`, matching the AI summary card instead of neutral task metadata.
+
+Linked-task rows watch the same provider for the other task. Their compact text
+column becomes title plus one-line AI subtitle while the status remains on the
+trailing rail at the detail reading width; narrow rows fold the status into the
+subtitle line. Both paths ellipsize rather than widening the card.
 
 **Extended actions — share, speech modal — belong to the pinned app bar's
 `more_vert` button, not the header.** There is no ellipsis inside the header.

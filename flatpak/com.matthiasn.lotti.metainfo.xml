@@ -40,6 +40,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.6" date="2026-08-09">
+      <description>
+        <p>Changed: AI task summaries now look like AI content wherever you scan tasks. The agent's one-line take uses the AI accent in task lists, appears beneath linked task titles, and sits between the title and status pills on task details, so the same compact context is visible without opening the full AI summary card.</p>
+      </description>
+    </release>
     <release version="1.0.5" date="2026-08-07">
       <description>
         <p>Changed: the 1-on-1 with an agent now looks like one screen rather than several. The conversation home opened with a banner that repeated the page's own title, followed by a card headed "Current Proposal" in the state where no proposal exists, and a sentence printed twice on the same screen. It now leads with the one thing you can do, then what the agent has been doing since you last spoke, then what you decided last time, with past 1-on-1s visible without scrolling. The conversation itself no longer stretches its text the full width of a desktop window, the agent's replies are readable instead of sitting a shade above the background, and starting a session shows what is happening rather than a hairline spinner in the corner of an empty page. The wake-activity bars read as a chart rather than blurred lozenges, and their date labels thin out on a narrow screen instead of all shortening to "J…".</p>
