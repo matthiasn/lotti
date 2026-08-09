@@ -46,6 +46,57 @@ class _FakeReader extends GoalSignalReader {
   }) async => window;
 }
 
+GoalAgentWorkflow _offTrackWorkflow(
+  MockAgentRepository repository,
+  MockAgentSyncService syncService,
+  MockConversationRepository conversationRepository,
+  MockCloudInferenceRepository cloudInferenceRepository,
+  MockAiConfigRepository aiConfigRepository,
+) => GoalAgentWorkflow(
+  repository: repository,
+  syncService: syncService,
+  phaseA: GoalAgentPhaseA(
+    repository: repository,
+    syncService: syncService,
+    signalReader: _FakeReader(
+      GoalSignalWindow(
+        quantitativeDailySums: {
+          'cumulative_step_count': {
+            for (var day = 3; day <= 9; day++) DateTime.utc(2026, 8, day): 6000,
+          },
+        },
+      ),
+    ),
+  ),
+  conversationRepository: conversationRepository,
+  cloudInferenceRepository: cloudInferenceRepository,
+  aiConfigRepository: aiConfigRepository,
+);
+
+void _stubBadPrior(
+  MockAgentRepository repository,
+  String agentId,
+  DateTime now,
+) {
+  when(
+    () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+  ).thenAnswer(
+    (_) async => AgentDomainEntity.goalProgress(
+      id: goalProgressId(agentId, '2026-08-08'),
+      agentId: agentId,
+      periodKey: '2026-08-08',
+      trackStatus: GoalTrackStatus.atRisk,
+      attainment: 0.6,
+      dataCoverage: 1,
+      satisfied: false,
+      specVersionId: '$agentId:spec-v1',
+      createdAt: now,
+      updatedAt: now,
+      vectorClock: null,
+    ),
+  );
+}
+
 void main() {
   const agentId = 'goal-1';
   final now = DateTime(2026, 8, 9, 12);
@@ -895,6 +946,46 @@ void main() {
     () async {
       stubSpec();
       stubGlmResolution();
+      // The old period's register was computed under a superseded spec —
+      // the wake must be judged against THAT version, not today's head.
+      when(
+        () => repository.getEntity(goalProgressId(agentId, '2026-08-06')),
+      ).thenAnswer(
+        (_) async => AgentDomainEntity.goalProgress(
+          id: goalProgressId(agentId, '2026-08-06'),
+          agentId: agentId,
+          periodKey: '2026-08-06',
+          trackStatus: GoalTrackStatus.atRisk,
+          attainment: 0.6,
+          dataCoverage: 1,
+          satisfied: false,
+          specVersionId: '$agentId:spec-v0',
+          createdAt: DateTime(2026, 8, 6),
+          updatedAt: DateTime(2026, 8, 6),
+          vectorClock: null,
+        ),
+      );
+      when(() => repository.getEntity('$agentId:spec-v0')).thenAnswer(
+        (_) async => AgentDomainEntity.goalSpecVersion(
+          id: '$agentId:spec-v0',
+          agentId: agentId,
+          version: 0,
+          status: GoalSpecVersionStatus.superseded,
+          authoredBy: 'user',
+          title: 'Steps (original)',
+          statement: 'The ORIGINAL statement that armed this period.',
+          criteria: const GoalCriterion.metric(
+            criterionId: 'steps',
+            dataType: 'cumulative_step_count',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 8000,
+          ),
+          createdAt: DateTime(2026, 7),
+          vectorClock: null,
+        ),
+      );
+      String? factsSeen;
       conversationRepository.sendMessageDelegate =
           ({
             required conversationId,
@@ -907,6 +998,7 @@ void main() {
             temperature = 0.7,
             strategy,
           }) async {
+            factsSeen = message;
             await (strategy! as GoalAgentStrategy).processToolCalls(
               toolCalls: [
                 toolCall(GoalAgentToolNames.updateGoalReport, {
@@ -941,6 +1033,11 @@ void main() {
         nudge.triggerProgressId,
         goalProgressId(agentId, '2026-08-06'),
         reason: 'the ad is evidence for the period that armed the wake',
+      );
+      expect(
+        factsSeen,
+        contains('The ORIGINAL statement that armed this period.'),
+        reason: 'the period is judged against the spec that armed it',
       );
     },
   );
@@ -1062,7 +1159,13 @@ void main() {
     );
     expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
 
-    // Dedupe: two identical copies in one response → one row.
+    // Dedupe: the same copy as a RETIRED library entry → skipped (an
+    // in-response duplicate is already blocked by the fresh-active guard).
+    const sameWords = GoalNudgeBrief(
+      headline: 'Same words.',
+      tone: GoalNudgeTone.nudge,
+      animation: GoalBannerAnimation.pulse,
+    );
     await withClock(
       fixedClock,
       () async {
@@ -1071,13 +1174,26 @@ void main() {
             agentId,
             type: AgentEntityTypes.goalNudge,
           ),
-        ).thenAnswer((_) async => []);
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.goalNudge(
+                  id: 'ad-old-copy',
+                  agentId: agentId,
+                  status: GoalNudgeStatus.retired,
+                  brief: sameWords,
+                  briefDigest: goalBriefDigest(sameWords),
+                  createdAt: DateTime(2026, 8),
+                  updatedAt: DateTime(2026, 8),
+                  vectorClock: null,
+                )
+                as GoalNudgeEntity,
+          ],
+        );
         return workflow.persistOutputs(
           agentId: agentId,
           runKey: 'run-1',
           threadId: 'thread-1',
           strategy: await loaded([
-            {'headline': 'Same words.', 'tone': 'nudge', 'animation': 'pulse'},
             {'headline': 'Same words.', 'tone': 'nudge', 'animation': 'wave'},
           ]),
           derivation: derivation,
@@ -1085,7 +1201,7 @@ void main() {
         );
       },
     );
-    expect(upserts.whereType<GoalNudgeEntity>(), hasLength(1));
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
   });
 
   test('with consumption registered, a failed wake is terminalized as '
@@ -1543,44 +1659,14 @@ void main() {
     stubSpec();
     stubGlmResolution();
     // Bad week + a bad prior register row → grace exhausted → offTrack.
-    workflow = GoalAgentWorkflow(
-      repository: repository,
-      syncService: syncService,
-      phaseA: GoalAgentPhaseA(
-        repository: repository,
-        syncService: syncService,
-        signalReader: _FakeReader(
-          GoalSignalWindow(
-            quantitativeDailySums: {
-              'cumulative_step_count': {
-                for (var day = 3; day <= 9; day++)
-                  DateTime.utc(2026, 8, day): 6000,
-              },
-            },
-          ),
-        ),
-      ),
-      conversationRepository: conversationRepository,
-      cloudInferenceRepository: cloudInferenceRepository,
-      aiConfigRepository: aiConfigRepository,
+    workflow = _offTrackWorkflow(
+      repository,
+      syncService,
+      conversationRepository,
+      cloudInferenceRepository,
+      aiConfigRepository,
     );
-    when(
-      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
-    ).thenAnswer(
-      (_) async => AgentDomainEntity.goalProgress(
-        id: goalProgressId(agentId, '2026-08-08'),
-        agentId: agentId,
-        periodKey: '2026-08-08',
-        trackStatus: GoalTrackStatus.atRisk,
-        attainment: 0.6,
-        dataCoverage: 1,
-        satisfied: false,
-        specVersionId: '$agentId:spec-v1',
-        createdAt: now,
-        updatedAt: now,
-        vectorClock: null,
-      ),
-    );
+    _stubBadPrior(repository, agentId, now);
 
     conversationRepository.maxDelegateCalls = 3;
     final callTools = <List<String>>[];
@@ -1621,7 +1707,7 @@ void main() {
               manager: conversationManager,
             );
           }
-          return null;
+          return const InferenceUsage(inputTokens: 500, outputTokens: 50);
         };
 
     final result = await run();
@@ -1633,5 +1719,151 @@ void main() {
       reason: 'the retry restricts the surface to the ad tools',
     );
     expect(upserts.whereType<GoalNudgeEntity>(), hasLength(1));
+    final usage = upserts.whereType<WakeTokenUsageEntity>().single;
+    expect(usage.inputTokens, 1000, reason: 'primary + ad-retry merged');
+  });
+
+  test('a fresh active ad satisfies the P5 requirement — no forced ad '
+      'retry fires', () async {
+    stubSpec();
+    stubGlmResolution();
+    workflow = _offTrackWorkflow(
+      repository,
+      syncService,
+      conversationRepository,
+      cloudInferenceRepository,
+      aiConfigRepository,
+    );
+    _stubBadPrior(repository, agentId, now);
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.goalNudge(
+              id: 'ad-live',
+              agentId: agentId,
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'live',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-live',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+              activatedAt: now.subtract(const Duration(hours: 2)),
+            )
+            as GoalNudgeEntity,
+      ],
+    );
+    var calls = 0;
+    conversationRepository
+      ..maxDelegateCalls = 3
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            calls++;
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'offTrack',
+                  'oneLiner': 'Averaging 6k of 10k.',
+                  'tldr': 'The week slid under target.',
+                }),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+    final result = await run();
+    expect(result.success, isTrue);
+    expect(calls, 1, reason: 'the fresh active ad already satisfies P5');
+  });
+
+  test('a throwing forced-ad retry is contained — the wake still '
+      'persists its report', () async {
+    stubSpec();
+    stubGlmResolution();
+    workflow = _offTrackWorkflow(
+      repository,
+      syncService,
+      conversationRepository,
+      cloudInferenceRepository,
+      aiConfigRepository,
+    );
+    _stubBadPrior(repository, agentId, now);
+    var calls = 0;
+    conversationRepository
+      ..maxDelegateCalls = 3
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            calls++;
+            if (calls == 2) throw StateError('retry melted');
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'offTrack',
+                  'oneLiner': 'Averaging 6k of 10k.',
+                  'tldr': 'The week slid under target.',
+                }),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+    final result = await run();
+    expect(result.success, isTrue);
+    expect(calls, 2);
+    expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
+  });
+
+  test('a failing escalation re-arm is itself contained', () async {
+    stubSpec();
+    stubGlmResolution();
+    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
+      final entity = invocation.positionalArguments.first as AgentDomainEntity;
+      if (entity is ScheduledWakeEntity) throw StateError('db locked');
+      upserts.add(entity);
+    });
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          throw StateError('provider melted');
+        };
+    final result = await run();
+    expect(result.success, isFalse);
+    expect(result.error, contains('provider melted'));
   });
 }

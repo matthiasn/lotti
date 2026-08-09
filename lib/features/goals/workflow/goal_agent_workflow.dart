@@ -341,7 +341,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
         LogDomain.agentWorkflow,
         error,
         subDomain: 'goalPhaseB',
-        message: 'goal Phase B wake failed for $agentId',
+        message: 'goal Phase B wake failed',
         stackTrace: stackTrace,
       );
       if (recordConsumption) {
