@@ -6,25 +6,28 @@ import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/themes/theme.dart';
 import 'package:lotti/utils/image_utils.dart';
 
-/// Widget for selecting reference images to guide cover art generation.
+/// Widget for selecting task images as AI reference inputs.
 ///
 /// Displays a grid of images linked to a task and allows the user to
-/// select up to [kMaxReferenceImages] images as visual references.
+/// select up to [maxImages] images as visual references.
 class ReferenceImageSelectionWidget extends ConsumerStatefulWidget {
   const ReferenceImageSelectionWidget({
     required this.taskId,
     required this.onContinue,
     required this.onSkip,
+    this.maxImages = kMaxReferenceImages,
     super.key,
   });
 
   final String taskId;
   final void Function(List<ProcessedReferenceImage> images) onContinue;
   final VoidCallback onSkip;
+  final int maxImages;
 
   @override
   ConsumerState<ReferenceImageSelectionWidget> createState() =>
@@ -37,6 +40,8 @@ class _ReferenceImageSelectionWidgetState
 
   @override
   Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
     final state = ref.watch(
       referenceImageSelectionControllerProvider(widget.taskId),
     );
@@ -45,10 +50,10 @@ class _ReferenceImageSelectionWidgetState
     );
 
     if (state.isLoading) {
-      return const Center(
+      return Center(
         child: Padding(
-          padding: EdgeInsets.all(32),
-          child: CircularProgressIndicator(),
+          padding: EdgeInsets.all(spacing.step8),
+          child: const CircularProgressIndicator(),
         ),
       );
     }
@@ -57,24 +62,24 @@ class _ReferenceImageSelectionWidgetState
     if (state.errorCode != null) {
       return Center(
         child: Padding(
-          padding: const EdgeInsets.all(32),
+          padding: EdgeInsets.all(spacing.step8),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
                 Icons.error_outline_rounded,
-                size: 48,
+                size: IconSizes.xxxl,
                 color: context.colorScheme.error,
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: spacing.step5),
               Text(
                 _getLocalizedError(context, state.errorCode!),
                 textAlign: TextAlign.center,
-                style: context.textTheme.bodyMedium?.copyWith(
-                  color: context.colorScheme.onSurfaceVariant,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
-              const SizedBox(height: 16),
+              SizedBox(height: spacing.step5),
               DesignSystemButton(
                 label: context.messages.referenceImageSkip,
                 onPressed: widget.onSkip,
@@ -106,29 +111,31 @@ class _ReferenceImageSelectionWidgetState
         children: [
           // Header with count
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(spacing.step5),
             child: Row(
               children: [
                 Expanded(
                   child: Text(
                     context.messages.referenceImageSelectionTitle,
-                    style: context.textTheme.titleMedium,
+                    style: tokens.typography.styles.subtitle.subtitle2,
                   ),
                 ),
                 Container(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 10,
-                    vertical: 4,
+                  padding: EdgeInsets.symmetric(
+                    horizontal: spacing.step3,
+                    vertical: spacing.step1,
                   ),
                   decoration: BoxDecoration(
                     color: colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(12),
+                    borderRadius: BorderRadius.circular(
+                      tokens.radii.badgesPills,
+                    ),
                   ),
                   child: Text(
-                    '${state.selectionCount}/$kMaxReferenceImages',
-                    style: context.textTheme.bodyMedium?.copyWith(
+                    '${state.selectionCount}/${widget.maxImages}',
+                    style: tokens.typography.styles.body.bodyMedium.copyWith(
                       color: colorScheme.onPrimaryContainer,
-                      fontWeight: FontWeight.w600,
+                      fontWeight: tokens.typography.weight.semiBold,
                     ),
                   ),
                 ),
@@ -138,27 +145,29 @@ class _ReferenceImageSelectionWidgetState
 
           // Subtitle
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: spacing.step5),
             child: Text(
-              context.messages.referenceImageSelectionSubtitle,
-              style: context.textTheme.bodySmall?.copyWith(
-                color: colorScheme.onSurfaceVariant,
+              context.messages.referenceImageSelectionSubtitle(
+                widget.maxImages,
+              ),
+              style: tokens.typography.styles.body.bodySmall.copyWith(
+                color: tokens.colors.text.mediumEmphasis,
               ),
             ),
           ),
-          const SizedBox(height: 16),
+          SizedBox(height: spacing.step5),
 
           // Image grid — shrinkWrap so it works in unbounded height contexts
           // (e.g., inside modal sheets with scrollable content)
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
+            padding: EdgeInsets.symmetric(horizontal: spacing.step5),
             child: GridView.builder(
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
-              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                 crossAxisCount: 3,
-                crossAxisSpacing: 8,
-                mainAxisSpacing: 8,
+                crossAxisSpacing: spacing.step3,
+                mainAxisSpacing: spacing.step3,
               ),
               itemCount: state.availableImages.length,
               itemBuilder: (context, index) {
@@ -166,7 +175,8 @@ class _ReferenceImageSelectionWidgetState
                 final isSelected = state.selectedImageIds.contains(
                   image.meta.id,
                 );
-                final canSelect = state.canSelectMore || isSelected;
+                final canSelect =
+                    state.selectionCount < widget.maxImages || isSelected;
                 final isFromLinkedTask = state.linkedTaskImageIds.contains(
                   image.meta.id,
                 );
@@ -176,16 +186,19 @@ class _ReferenceImageSelectionWidgetState
                   isSelected: isSelected,
                   canSelect: canSelect,
                   isFromLinkedTask: isFromLinkedTask,
-                  onTap: () => controller.toggleImageSelection(image.meta.id),
+                  onTap: () => controller.toggleImageSelection(
+                    image.meta.id,
+                    maxImages: widget.maxImages,
+                  ),
                 );
               },
             ),
           ),
-          const SizedBox(height: 24),
+          SizedBox(height: spacing.step6),
 
           // Action button — always pinned at the bottom
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(spacing.step5),
             child: DesignSystemButton(
               label: state.selectionCount > 0
                   ? context.messages.referenceImageContinueWithCount(
@@ -226,21 +239,23 @@ class _ImageGridTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colorScheme = context.colorScheme;
+    final tokens = context.designTokens;
+    final spacing = tokens.spacing;
     final file = File(getFullImagePath(image));
 
     return GestureDetector(
       onTap: canSelect ? onTap : null,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
+        duration: MotionDurations.short4,
         decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(tokens.radii.m),
           border: Border.all(
             color: isSelected ? colorScheme.primary : Colors.transparent,
-            width: 3,
+            width: BorderWidths.emphasis,
           ),
         ),
         child: ClipRRect(
-          borderRadius: BorderRadius.circular(9),
+          borderRadius: BorderRadius.circular(tokens.radii.s),
           child: Stack(
             fit: StackFit.expand,
             children: [
@@ -258,23 +273,23 @@ class _ImageGridTile extends StatelessWidget {
               ),
               // Dimming overlay for non-selectable
               if (!canSelect)
-                Container(
-                  color: Colors.black54,
+                ColoredBox(
+                  color: colorScheme.scrim.withValues(alpha: 0.54),
                 ),
               // Selection indicator
               if (isSelected)
                 Positioned(
-                  top: 4,
-                  right: 4,
+                  top: spacing.step1,
+                  right: spacing.step1,
                   child: Container(
-                    padding: const EdgeInsets.all(4),
+                    padding: EdgeInsets.all(spacing.step1),
                     decoration: BoxDecoration(
                       color: colorScheme.primary,
                       shape: BoxShape.circle,
                     ),
                     child: Icon(
                       Icons.check,
-                      size: 16,
+                      size: IconSizes.s,
                       color: colorScheme.onPrimary,
                     ),
                   ),
@@ -282,21 +297,21 @@ class _ImageGridTile extends StatelessWidget {
               // Linked-task indicator
               if (isFromLinkedTask)
                 Positioned(
-                  bottom: 4,
-                  left: 4,
+                  bottom: spacing.step1,
+                  left: spacing.step1,
                   child: Tooltip(
                     message: context.messages.linkedTaskImageBadge,
                     child: Container(
-                      padding: const EdgeInsets.all(3),
+                      padding: EdgeInsets.all(spacing.step1),
                       decoration: BoxDecoration(
                         color: colorScheme.secondaryContainer.withValues(
                           alpha: 0.85,
                         ),
-                        borderRadius: BorderRadius.circular(6),
+                        borderRadius: BorderRadius.circular(tokens.radii.xs),
                       ),
                       child: Icon(
                         Icons.link_rounded,
-                        size: 14,
+                        size: IconSizes.xs,
                         color: colorScheme.onSecondaryContainer,
                       ),
                     ),

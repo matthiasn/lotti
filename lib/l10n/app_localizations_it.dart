@@ -9071,8 +9071,9 @@ class AppLocalizationsIt extends AppLocalizations {
       'Non ha caricato le immagini. Si prega di riprovare.';
 
   @override
-  String get referenceImageSelectionSubtitle =>
-      'Scegli fino a 5 immagini per guidare lo stile visivo dell\'AI';
+  String referenceImageSelectionSubtitle(int maxImages) {
+    return 'Scegli fino a $maxImages immagini per guidare lo stile visivo dell\'AI';
+  }
 
   @override
   String get referenceImageSelectionTitle =>

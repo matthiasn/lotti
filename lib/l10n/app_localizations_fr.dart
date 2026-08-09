@@ -9120,8 +9120,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Échec du chargement des images. Réessaie s\'il te plaît.';
 
   @override
-  String get referenceImageSelectionSubtitle =>
-      'Choisis jusqu\'à 5 images pour guider le style visuel de l\'IA';
+  String referenceImageSelectionSubtitle(int maxImages) {
+    return 'Choisis jusqu\'à $maxImages images pour guider le style visuel de l\'IA';
+  }
 
   @override
   String get referenceImageSelectionTitle =>

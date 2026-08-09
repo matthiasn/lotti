@@ -12,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   the same compact context is visible without opening the full AI summary card.
 
 ## [1.0.5]
+### Added
+- **Vision models can use task images when writing coding prompts.** Choosing an
+  image-capable model such as Kimi K3 now offers the task's attached images as
+  visual context, with up to ten selections. Text-only models keep the existing
+  one-step flow, and linked AI image analyses remain part of the written task
+  context as well.
+
 ### Changed
 - **The 1-on-1 with an agent now looks like one screen rather than several.**
   The conversation home opened with a banner that repeated the page's own title,

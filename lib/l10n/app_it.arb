@@ -4165,7 +4165,7 @@
     }
   },
   "referenceImageLoadError": "Non ha caricato le immagini. Si prega di riprovare.",
-  "referenceImageSelectionSubtitle": "Scegli fino a 5 immagini per guidare lo stile visivo dell'AI",
+  "referenceImageSelectionSubtitle": "Scegli fino a {maxImages} immagini per guidare lo stile visivo dell'AI",
   "referenceImageSelectionTitle": "Seleziona le immagini di riferimento",
   "referenceImageSkip": "Salta!",
   "saveButton": "Salva",

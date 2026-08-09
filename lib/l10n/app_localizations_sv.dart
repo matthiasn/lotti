@@ -8956,8 +8956,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Misslyckades med att ladda bilder. Försök igen, tack.';
 
   @override
-  String get referenceImageSelectionSubtitle =>
-      'Välj upp till 5 bilder för att styra AI:ns visuella stil';
+  String referenceImageSelectionSubtitle(int maxImages) {
+    return 'Välj upp till $maxImages bilder för att styra AI:ns visuella stil';
+  }
 
   @override
   String get referenceImageSelectionTitle => 'Välj referensbilder';

@@ -30,7 +30,10 @@ class FakeReferenceImageSelectionController
   }
 
   @override
-  void toggleImageSelection(String imageId) {
+  void toggleImageSelection(
+    String imageId, {
+    int maxImages = kMaxReferenceImages,
+  }) {
     toggledImageIds.add(imageId);
   }
 

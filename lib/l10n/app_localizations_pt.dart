@@ -9036,8 +9036,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Falha ao carregar imagens. Por favor, tente novamente.';
 
   @override
-  String get referenceImageSelectionSubtitle =>
-      'Escolha até 5 imagens para orientar o estilo visual da IA';
+  String referenceImageSelectionSubtitle(int maxImages) {
+    return 'Escolha até $maxImages imagens para orientar o estilo visual da IA';
+  }
 
   @override
   String get referenceImageSelectionTitle => 'Selecione imagens de referência';

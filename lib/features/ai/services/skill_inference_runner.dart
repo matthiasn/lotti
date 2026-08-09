@@ -556,6 +556,7 @@ class SkillInferenceRunner {
     required String entryId,
     required AutomationResult automationResult,
     String? linkedTaskId,
+    List<ProcessedReferenceImage>? referenceImages,
     String? overrideModelId,
     GeminiThinkingMode? geminiThinkingMode,
   }) async {
@@ -620,7 +621,9 @@ class SkillInferenceRunner {
           linkedTasks: linkedTasks,
         );
 
-        // 5. Call inference with text-only (no audio/image upload).
+        // 5. Call inference, using the existing multimodal request path only
+        // when the user selected task images. Empty selection is deliberately
+        // identical to the historical text-only request.
         final start = DateTime.now();
         final responseId = uuid.v4();
         final attribution = await _beginAttribution(
@@ -637,17 +640,33 @@ class SkillInferenceRunner {
           taskId: linkedTaskId,
         );
         final impactCollector = InferenceImpactCollector();
-        final responseStream = _cloudRepository.generate(
-          promptResult.userMessage,
-          model: modelId,
-          temperature: null,
-          baseUrl: provider.baseUrl,
-          apiKey: provider.apiKey,
-          provider: provider,
-          systemMessage: promptResult.systemMessage,
-          geminiThinkingMode: effectiveThinkingMode,
-          impactCollector: impactCollector,
-        );
+        final selectedImages = referenceImages ?? const [];
+        final responseStream = selectedImages.isEmpty
+            ? _cloudRepository.generate(
+                promptResult.userMessage,
+                model: modelId,
+                temperature: null,
+                baseUrl: provider.baseUrl,
+                apiKey: provider.apiKey,
+                provider: provider,
+                systemMessage: promptResult.systemMessage,
+                geminiThinkingMode: effectiveThinkingMode,
+                impactCollector: impactCollector,
+              )
+            : _cloudRepository.generateWithImages(
+                promptResult.userMessage,
+                model: modelId,
+                temperature: null,
+                baseUrl: provider.baseUrl,
+                apiKey: provider.apiKey,
+                provider: provider,
+                systemMessage: promptResult.systemMessage,
+                images: selectedImages
+                    .map((image) => image.base64Data)
+                    .toList(growable: false),
+                geminiThinkingMode: effectiveThinkingMode,
+                impactCollector: impactCollector,
+              );
 
         // 6. Collect streaming response.
         final collected = await _collectStream(responseStream);

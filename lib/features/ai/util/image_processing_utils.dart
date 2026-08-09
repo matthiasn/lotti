@@ -12,6 +12,12 @@ const int kMaxReferenceDimension = 2000;
 /// Maximum number of reference images allowed.
 const int kMaxReferenceImages = 5;
 
+/// Maximum number of task images accepted by coding-prompt generation.
+///
+/// Kept separate from [kMaxReferenceImages] because image-generation providers
+/// and vision-capable reasoning models may have different practical limits.
+const int kMaxCodingPromptImages = 10;
+
 /// Represents a processed reference image ready for API submission.
 class ProcessedReferenceImage {
   const ProcessedReferenceImage({

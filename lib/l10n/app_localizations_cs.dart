@@ -9083,8 +9083,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nepodařilo se načíst obrázky. Zkus to prosím znovu.';
 
   @override
-  String get referenceImageSelectionSubtitle =>
-      'Vyber až 5 obrázků, které povedou vizuální styl AI';
+  String referenceImageSelectionSubtitle(int maxImages) {
+    return 'Vyber až $maxImages obrázků, které povedou vizuální styl AI';
+  }
 
   @override
   String get referenceImageSelectionTitle => 'Vyber referenční obrázky';

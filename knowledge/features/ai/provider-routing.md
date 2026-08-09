@@ -45,6 +45,13 @@ unchanged.
 branched explicitly for an operation falls through to the compatibility client or
 throws `UnsupportedError`.
 
+Vision-capable coding prompts reuse `generateWithImages()`. The skill runner
+sends the system message normally and builds the user message as multipart text
+plus `data:image/jpeg;base64,...` image parts; this is the OpenAI-compatible
+vision shape used by Melious (including Kimi K3) and the generic fallback.
+With no selected images the runner stays on `generate()`, preserving the exact
+text-only request path.
+
 # Usage normalization
 
 Audio transcription responses are normalized into chat-completion stream chunks,

@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:io';
 
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -17,11 +18,14 @@ import 'package:lotti/features/ai/repository/ai_config_repository.dart'
     show AiConfigRepository;
 import 'package:lotti/features/ai/state/consts.dart';
 import 'package:lotti/features/ai/state/profile_automation_providers.dart';
+import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/state/settings/ai_config_by_type_controller.dart';
 import 'package:lotti/features/ai/state/skill_trigger_providers.dart';
 import 'package:lotti/features/ai/ui/unified_ai_popup_menu.dart';
 import 'package:lotti/features/ai/ui/unified_ai_skills_modal.dart';
+import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -30,6 +34,7 @@ import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 import '../test_utils.dart' show MockAiConfigByTypeController;
+import 'image_generation/test_utils.dart';
 
 void main() {
   late JournalEntity testTaskEntity;
@@ -47,6 +52,7 @@ void main() {
     // empty updateStream stub) in GetIt.
     final mocks = await setUpTestGetIt();
     mockJournalDb = mocks.journalDb;
+    getIt.registerSingleton<Directory>(Directory.systemTemp);
 
     // Mock JournalDb methods - linksFromId returns a Selectable
     when(
@@ -737,13 +743,15 @@ void main() {
       scrollController.dispose();
     });
 
-    testWidgets('closes modal after skill selection', (tester) async {
+    testWidgets('GLM 5.2 dispatches without showing the image selector', (
+      tester,
+    ) async {
       // Arrange
       final now = DateTime(2024, 3, 15, 10);
       final promptModel = _buildModel(
         id: 'prompt-model',
-        name: 'Prompt Model',
-        providerModelId: 'gpt-4o',
+        name: 'GLM 5.2',
+        providerModelId: 'glm-5.2',
         providerId: 'provider-openai',
         modality: Modality.text,
         t: now,
@@ -789,8 +797,93 @@ void main() {
 
       // Assert - Modal should be closed
       expect(find.byType(UnifiedAiSkillsList), findsNothing);
+      expect(find.text('Select Reference Images'), findsNothing);
       expect(capturedParams?.overrideModelId, promptModel.id);
+      expect(capturedParams?.referenceImages, isNull);
     });
+
+    testWidgets(
+      'Kimi K3 shows the shared 10-image selector and forwards its selection',
+      (tester) async {
+        final now = DateTime(2024, 3, 15, 10);
+        final kimiModel = _buildModel(
+          id: 'kimi-k3-model',
+          name: 'Kimi K3',
+          providerModelId: 'kimi-k3',
+          providerId: 'provider-melious',
+          modality: Modality.image,
+          t: now,
+        );
+        final provider = _buildProvider(
+          id: 'provider-melious',
+          name: 'Melious',
+          t: now,
+        );
+        const processedImages = [
+          ProcessedReferenceImage(
+            base64Data: 'kimi-reference',
+            mimeType: 'image/jpeg',
+          ),
+        ];
+        final selectionState = ReferenceImageSelectionState(
+          availableImages: [buildTestReferenceImage('task-image')],
+          selectedImageIds: const {'task-image'},
+        );
+        TriggerSkillParams? capturedParams;
+
+        await tester.pumpWidget(
+          buildTestWidget(
+            UnifiedAiPopUpMenu(
+              journalEntity: testTaskEntity,
+              linkedFromId: null,
+            ),
+            overrides: [
+              ..._baseOverrides(
+                entity: testTaskEntity,
+                skill: testSkills.last,
+                models: [kimiModel],
+                resolver: _NullProfileResolver(),
+                configs: [kimiModel, provider],
+              ),
+              referenceImageSelectionControllerProvider(
+                testTaskEntity.id,
+              ).overrideWith(
+                () => FakeReferenceImageSelectionController(
+                  selectionState,
+                  processedImages: processedImages,
+                ),
+              ),
+              triggerSkillProvider.overrideWith((ref, params) async {
+                capturedParams = params;
+              }),
+            ],
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        await tester.tap(find.byIcon(Icons.assistant_outlined));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+        await tester.tap(find.text('Prompt Generation Skill'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(find.text('Select Reference Images'), findsOneWidget);
+        expect(find.text('1/$kMaxCodingPromptImages'), findsOneWidget);
+        expect(capturedParams, isNull);
+
+        await tester.ensureVisible(find.text('Continue (1)'));
+        await tester.pump();
+        await tester.tap(find.text('Continue (1)'));
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        expect(capturedParams, isNotNull);
+        expect(capturedParams!.overrideModelId, kimiModel.id);
+        expect(capturedParams!.referenceImages, processedImages);
+      },
+    );
 
     testWidgets(
       'Gemini 3 prompt generation asks for thinking mode and forwards it',

@@ -4164,7 +4164,7 @@
     }
   },
   "referenceImageLoadError": "Kon afbeeldingen niet laden. Probeer het opnieuw.",
-  "referenceImageSelectionSubtitle": "Kies maximaal 5 afbeeldingen om de visuele stijl van de AI te begeleiden",
+  "referenceImageSelectionSubtitle": "Kies maximaal {maxImages} afbeeldingen om de visuele stijl van de AI te begeleiden",
   "referenceImageSelectionTitle": "Selecteer referentieafbeeldingen",
   "referenceImageSkip": "Overslaan",
   "saveButton": "Opslaan",

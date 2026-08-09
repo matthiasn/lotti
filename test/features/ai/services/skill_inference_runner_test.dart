@@ -2468,7 +2468,11 @@ void main() {
           ).thenAnswer((_) async => textEntry);
           when(
             () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-text'),
-          ).thenAnswer((_) async => '{"id": "task-text"}');
+          ).thenAnswer(
+            (_) async =>
+                '{"id":"task-text","logEntries":[{"entryType":"image",'
+                '"aiResponses":[{"text":"Linked visual analysis"}]}]}',
+          );
           when(
             () => mockAiInputRepo.buildLinkedTasksJson('task-text'),
           ).thenAnswer((_) async => '{"linked": []}');
@@ -2521,6 +2525,7 @@ void main() {
           final userMessage = captured.first as String;
           expect(userMessage, contains('**Entry Notes:**'));
           expect(userMessage, contains('Fix the **login** flow.'));
+          expect(userMessage, contains('Linked visual analysis'));
 
           final responseCaptured = verify(
             () => mockAiInputRepo.createAiResponseEntry(
@@ -2533,6 +2538,99 @@ void main() {
           // Coding prompt links to the parent task, not the source text entry.
           expect(responseCaptured[1], 'task-text');
           expect(responseCaptured[2], 'cat-text');
+        },
+      );
+
+      test(
+        'uses multimodal inference and forwards every selected task image',
+        () async {
+          final textEntry = makeTextEntry(
+            id: 'text-with-images',
+            markdown: 'Rebuild this interface.',
+            categoryId: 'cat-vision',
+          );
+          const images = [
+            ProcessedReferenceImage(
+              base64Data: 'first-image',
+              mimeType: 'image/jpeg',
+            ),
+            ProcessedReferenceImage(
+              base64Data: 'second-image',
+              mimeType: 'image/jpeg',
+            ),
+          ];
+
+          when(
+            () => mockAiInputRepo.getEntity('text-with-images'),
+          ).thenAnswer((_) async => textEntry);
+          when(
+            () => mockAiInputRepo.buildTaskDetailsJson(id: 'task-vision'),
+          ).thenAnswer((_) async => '{"id":"task-vision"}');
+          when(
+            () => mockAiInputRepo.buildLinkedTasksJson('task-vision'),
+          ).thenAnswer((_) async => '{"linked":[]}');
+          when(
+            () => mockCloudRepo.generateWithImages(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              images: any(named: 'images'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          ).thenAnswer(
+            (_) => Stream.value(
+              makeStreamChunk('## Summary\nUI\n\n## Prompt\nImplement it'),
+            ),
+          );
+          when(
+            () => mockAiInputRepo.createAiResponseEntry(
+              data: any(named: 'data'),
+              start: any(named: 'start'),
+              linkedId: any(named: 'linkedId'),
+              categoryId: any(named: 'categoryId'),
+            ),
+          ).thenAnswer((_) async => null);
+          stubLoggingEvent();
+
+          await runner.runPromptGeneration(
+            entryId: 'text-with-images',
+            automationResult: makePromptGenerationResult(),
+            linkedTaskId: 'task-vision',
+            referenceImages: images,
+          );
+
+          final capturedImages =
+              verify(
+                    () => mockCloudRepo.generateWithImages(
+                      any(),
+                      model: any(named: 'model'),
+                      temperature: any(named: 'temperature'),
+                      baseUrl: any(named: 'baseUrl'),
+                      apiKey: any(named: 'apiKey'),
+                      images: captureAny(named: 'images'),
+                      provider: any(named: 'provider'),
+                      systemMessage: any(named: 'systemMessage'),
+                      impactCollector: any(named: 'impactCollector'),
+                    ),
+                  ).captured.single
+                  as List<String>;
+          expect(capturedImages, ['first-image', 'second-image']);
+          verifyNever(
+            () => mockCloudRepo.generate(
+              any(),
+              model: any(named: 'model'),
+              temperature: any(named: 'temperature'),
+              baseUrl: any(named: 'baseUrl'),
+              apiKey: any(named: 'apiKey'),
+              provider: any(named: 'provider'),
+              systemMessage: any(named: 'systemMessage'),
+              impactCollector: any(named: 'impactCollector'),
+            ),
+          );
         },
       );
 

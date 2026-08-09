@@ -11,7 +11,15 @@ sources:
   - id: runner
     resource: ../../../lib/features/ai/services/skill_inference_runner.dart
     title: SkillInferenceRunner
-    last_modified: 2026-07-24
+    last_modified: 2026-08-09
+  - id: skill-modal
+    resource: ../../../lib/features/ai/ui/unified_ai_skills_modal.dart
+    title: Unified AI skills modal
+    last_modified: 2026-08-09
+  - id: image-selector
+    resource: ../../../lib/features/ai/ui/image_generation/reference_image_selection_widget.dart
+    title: Shared reference-image selector
+    last_modified: 2026-08-09
   - id: automation
     resource: ../../../lib/features/ai/services/profile_automation_service.dart
     title: ProfileAutomationService
@@ -71,6 +79,14 @@ to `runner.runPromptGeneration()`, which derives the persisted response type fro
 `skill.skillType.toResponseType`. When the caller passes no parent task id,
 `triggerSkillProvider` recovers one from the entry-link graph, preferring
 entry → task links and falling back to task → entry child links.
+
+For coding-prompt generation, the per-run model picker also inspects the chosen
+`AiConfigModel.inputModalities`. A model carrying `Modality.image` opens the
+same task-image selector used by cover-art generation, with the coding-specific
+`kMaxCodingPromptImages` limit (currently 10). A text-only model such as GLM 5.2
+dispatches immediately and never mounts the selector. Continuing with no
+selection keeps the historical `generate()` request; one or more selections
+route through `generateWithImages()` with the unchanged prompt text.
 
 ```mermaid
 flowchart TD
@@ -222,6 +238,10 @@ pill, while short summaries stay visible.
 `AiInputRepository.generate` nests them per image log entry as
 `aiResponses: [{model, generatedAt, text}]`, and the agent capture path emits one
 `image_analysis` log source per analysis.
+
+Coding prompts use `buildTaskDetailsJson`, so those nested linked analyses are
+part of the full-task JSON passed to `SkillPromptBuilder`; the analysis does not
+need to be copied back into `JournalImage.entryText` to reach the model.
 
 **After a task-linked analysis is stored**, `runImageAnalysis` marks every parent
 task of the image dirty — all tasks linking to it plus the resolved

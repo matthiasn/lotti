@@ -3659,7 +3659,7 @@
     }
   },
   "referenceImageLoadError": "Bilder konnten nicht geladen werden. Bitte versuche es erneut.",
-  "referenceImageSelectionSubtitle": "Wähle bis zu 5 Bilder, um den visuellen Stil der KI zu leiten",
+  "referenceImageSelectionSubtitle": "Wähle bis zu {maxImages} Bilder, um den visuellen Stil der KI zu leiten",
   "referenceImageSelectionTitle": "Referenzbilder auswählen",
   "referenceImageSkip": "Überspringen",
   "saveButton": "Speichern",

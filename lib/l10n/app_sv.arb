@@ -4165,7 +4165,7 @@
     }
   },
   "referenceImageLoadError": "Misslyckades med att ladda bilder. Försök igen, tack.",
-  "referenceImageSelectionSubtitle": "Välj upp till 5 bilder för att styra AI:ns visuella stil",
+  "referenceImageSelectionSubtitle": "Välj upp till {maxImages} bilder för att styra AI:ns visuella stil",
   "referenceImageSelectionTitle": "Välj referensbilder",
   "referenceImageSkip": "Hoppa över",
   "saveButton": "Spara",

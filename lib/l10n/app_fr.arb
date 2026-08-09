@@ -3659,7 +3659,7 @@
     }
   },
   "referenceImageLoadError": "Échec du chargement des images. Réessaie s'il te plaît.",
-  "referenceImageSelectionSubtitle": "Choisis jusqu'à 5 images pour guider le style visuel de l'IA",
+  "referenceImageSelectionSubtitle": "Choisis jusqu'à {maxImages} images pour guider le style visuel de l'IA",
   "referenceImageSelectionTitle": "Sélectionner des images de référence",
   "referenceImageSkip": "Passer",
   "saveButton": "Enregistrer",

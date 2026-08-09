@@ -8898,8 +8898,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Failed to load images. Please try again.';
 
   @override
-  String get referenceImageSelectionSubtitle =>
-      'Choose up to 5 images to guide the AI\'s visual style';
+  String referenceImageSelectionSubtitle(int maxImages) {
+    return 'Choose up to $maxImages images to guide the AI\'s visual style';
+  }
 
   @override
   String get referenceImageSelectionTitle => 'Select Reference Images';

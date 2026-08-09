@@ -4165,7 +4165,7 @@
     }
   },
   "referenceImageLoadError": "Kunne ikke indlæse billeder. Prøv venligst igen.",
-  "referenceImageSelectionSubtitle": "Vælg op til 5 billeder for at styre AI'ens visuelle stil",
+  "referenceImageSelectionSubtitle": "Vælg op til {maxImages} billeder for at styre AI'ens visuelle stil",
   "referenceImageSelectionTitle": "Vælg referencebilleder",
   "referenceImageSkip": "Spring over",
   "saveButton": "Gem",

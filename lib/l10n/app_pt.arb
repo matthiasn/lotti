@@ -4164,7 +4164,7 @@
     }
   },
   "referenceImageLoadError": "Falha ao carregar imagens. Por favor, tente novamente.",
-  "referenceImageSelectionSubtitle": "Escolha até 5 imagens para orientar o estilo visual da IA",
+  "referenceImageSelectionSubtitle": "Escolha até {maxImages} imagens para orientar o estilo visual da IA",
   "referenceImageSelectionTitle": "Selecione imagens de referência",
   "referenceImageSkip": "Pular",
   "saveButton": "Salvar",
