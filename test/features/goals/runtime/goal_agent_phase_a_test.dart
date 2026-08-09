@@ -313,7 +313,51 @@ void main() {
     );
     expect(escalation.workspaceKey, 'goal-escalation:2026-08-08');
     expect(escalation.scheduledAt.isUtc, isTrue);
+    // Period-derived, never wall-clock: every device arming this logical
+    // escalation must write the IDENTICAL deadline, or the concurrent
+    // resolver's later-deadline preference resurrects consumed wakes.
+    expect(escalation.scheduledAt, DateTime.utc(2026, 8, 8));
   });
+
+  test(
+    'the register and its escalation land in ONE transaction — a '
+    'transition acknowledged without escalation would be permanent',
+    () async {
+      stubSpec();
+      final order = <String>[];
+      final txnSyncService = _OrderRecordingSyncService(order);
+      when(() => txnSyncService.upsertEntity(any())).thenAnswer(
+        (invocation) async {
+          final entity =
+              invocation.positionalArguments.first as AgentDomainEntity;
+          if (entity is GoalProgressEntity) order.add('register');
+          if (entity is ScheduledWakeEntity &&
+              isGoalEscalationWorkspace(entity.workspaceKey)) {
+            order.add('escalation');
+          }
+        },
+      );
+      final atomic = GoalAgentPhaseA(
+        repository: repository,
+        syncService: txnSyncService,
+        signalReader: _FakeSignalReader(onTrackSignals()),
+      );
+      await withClock(
+        fixedClock,
+        () => atomic.execute(
+          agentIdentity: identity,
+          runKey: 'run-1',
+          triggerTokens: const {},
+          threadId: 'thread-1',
+        ),
+      );
+      expect(
+        order,
+        ['transaction', 'register', 'escalation'],
+        reason: 'both writes must happen inside the same transaction',
+      );
+    },
+  );
 
   test('the escalation callback nudges the wake manager exactly when an '
       'escalation is armed', () async {
@@ -489,4 +533,16 @@ void main() {
     expect(register.createdAt, created);
     expect(register.updatedAt, now);
   });
+}
+
+class _OrderRecordingSyncService extends MockAgentSyncService {
+  _OrderRecordingSyncService(this.order);
+
+  final List<String> order;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    order.add('transaction');
+    return action();
+  }
 }

@@ -129,15 +129,26 @@ class GoalSignalReader {
         // Same display normalization as `aggregateNone`: percentage types
         // store fractions (body fat 0.18) but chart — and target — as 18.
         final multiplier = dataType.contains('PERCENTAGE') ? 100 : 1;
-        final latestFromByDay = <DateTime, DateTime>{};
+        final latestByDay = <DateTime, ({DateTime from, String id})>{};
         for (final entity in entities) {
           entity.maybeMap(
             quantitative: (quant) {
               final day = GoalWindow.dayUtc(quant.data.dateFrom);
-              final currentFrom = latestFromByDay[day];
-              if (currentFrom == null ||
-                  quant.data.dateFrom.isAfter(currentFrom)) {
-                latestFromByDay[day] = quant.data.dateFrom;
+              final current = latestByDay[day];
+              // Identical timestamps are broken by entity id: the query
+              // orders by date_from only, so relying on return order
+              // would let replicas pick different daily values from the
+              // same journal and diverge their registers.
+              final wins =
+                  current == null ||
+                  quant.data.dateFrom.isAfter(current.from) ||
+                  (quant.data.dateFrom.isAtSameMomentAs(current.from) &&
+                      quant.meta.id.compareTo(current.id) > 0);
+              if (wins) {
+                latestByDay[day] = (
+                  from: quant.data.dateFrom,
+                  id: quant.meta.id,
+                );
                 byDay[day] = quant.data.value * multiplier;
               }
             },

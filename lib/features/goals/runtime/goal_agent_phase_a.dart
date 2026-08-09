@@ -128,18 +128,24 @@ class GoalAgentPhaseA {
       shortTermAttainment: shortTerm,
     );
 
-    await _upsertRegister(
-      agentId: agentId,
-      version: version,
-      evaluation: evaluation,
-      facts: facts,
-      now: now,
-      periodKey: periodKey,
-      existing: existingToday is GoalProgressEntity ? existingToday : null,
-    );
-
+    // One transaction: a register write acknowledging the transition
+    // without its escalation would be permanent — the next run reads the
+    // new status as previousStatus and never re-arms the missed wake.
+    await _syncService.runInTransaction(() async {
+      await _upsertRegister(
+        agentId: agentId,
+        version: version,
+        evaluation: evaluation,
+        facts: facts,
+        now: now,
+        periodKey: periodKey,
+        existing: existingToday is GoalProgressEntity ? existingToday : null,
+      );
+      if (facts.needsEscalation) {
+        await _armEscalation(agentId, now, periodKey);
+      }
+    });
     if (facts.needsEscalation) {
-      await _armEscalation(agentId, now, periodKey);
       _onEscalationArmed?.call();
     }
 
@@ -240,7 +246,11 @@ class GoalAgentPhaseA {
 /// → re-arming overwrites (LWW) instead of accumulating.
 AgentDomainEntity goalCadenceWake(String agentId, DateTime now) {
   final today = DateTime(now.year, now.month, now.day, goalCadenceHour);
-  final next = now.isBefore(today) ? today : today.add(const Duration(days: 1));
+  // Calendar components, not a Duration: adding 24 elapsed hours across a
+  // DST transition would shift the fixed local cadence hour.
+  final next = now.isBefore(today)
+      ? today
+      : DateTime(now.year, now.month, now.day + 1, goalCadenceHour);
   return AgentDomainEntity.scheduledWake(
     id: scheduledWakeRecordId(agentId, workspaceKey: goalCadenceWorkspaceKey),
     agentId: agentId,
@@ -254,9 +264,16 @@ AgentDomainEntity goalCadenceWake(String agentId, DateTime now) {
 }
 
 /// An escalation wake due immediately, scoped to its evaluation period
-/// (see `_armEscalation`). The deadline is stored in UTC: it is an
-/// absolute moment a failover peer in another timezone must read
-/// correctly, unlike the cadence's deliberately local fixed hour.
+/// (see `_armEscalation`).
+///
+/// The deadline is DERIVED FROM THE PERIOD (its UTC day key), not from
+/// the arming instant: every device arming the same logical
+/// `(agentId, periodKey)` escalation must write an identical deadline.
+/// A wall-clock `now` would differ per device, and the scheduled-wake
+/// concurrent resolver prefers the later deadline as a newer wake window
+/// — letting a partitioned peer's pending copy resurrect an escalation
+/// another device already consumed. Midnight UTC is always in the past
+/// for the day being evaluated, so the wake is immediately due.
 AgentDomainEntity goalEscalationWake(
   String agentId,
   DateTime now,
@@ -267,7 +284,7 @@ AgentDomainEntity goalEscalationWake(
     workspaceKey: goalEscalationWorkspaceKey(periodKey),
   ),
   agentId: agentId,
-  scheduledAt: now.toUtc(),
+  scheduledAt: GoalWindow.dayUtc(now),
   status: ScheduledWakeStatus.pending,
   reason: WakeReason.scheduled.name,
   updatedAt: now,
