@@ -292,6 +292,45 @@ void main() {
     });
   });
 
+  group('selfTargetedPendingChangeSetsProvider', () {
+    test('fetches change sets the agent targets at itself and deduplicates '
+        'them', () async {
+      final updateController = StreamController<Set<String>>.broadcast();
+      addTearDown(updateController.close);
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          agentUpdateStreamProvider(
+            'goal-1',
+          ).overrideWith((ref) => updateController.stream),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final older = makeTestChangeSet(
+        id: 'cs-old',
+        agentId: 'goal-1',
+        taskId: 'goal-1',
+        createdAt: DateTime(2026, 8, 9),
+      );
+      final newer = makeTestChangeSet(
+        id: 'cs-new',
+        agentId: 'goal-1',
+        taskId: 'goal-1',
+        createdAt: DateTime(2026, 8, 10),
+      );
+      when(
+        () => mockRepository.getPendingChangeSets('goal-1', taskId: 'goal-1'),
+      ).thenAnswer((_) async => [newer, older]);
+
+      final result = await container.read(
+        selfTargetedPendingChangeSetsProvider('goal-1').future,
+      );
+      // Identical pending items → the duplicate collapses to the newest.
+      expect(result, [newer]);
+    });
+  });
+
   group('eventPendingChangeSetsProvider', () {
     test('returns empty list when no agent exists for event', () async {
       final container = createEventAgentContainer(

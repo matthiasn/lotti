@@ -111,6 +111,18 @@ eventPendingChangeSetsProvider = FutureProvider.autoDispose
       return deduplicateChangeSets(sets);
     });
 
+/// Pending change sets an agent targets at ITSELF (`taskId == agentId`) —
+/// the shape self-owned agents (goal agents today) use for proposals like
+/// spec revisions, where the agent is the subject being changed.
+final FutureProviderFamily<List<AgentDomainEntity>, String>
+selfTargetedPendingChangeSetsProvider = FutureProvider.autoDispose
+    .family<List<AgentDomainEntity>, String>((ref, agentId) async {
+      ref.watch(agentUpdateStreamProvider(agentId));
+      final repo = ref.watch(agentRepositoryProvider);
+      final sets = await repo.getPendingChangeSets(agentId, taskId: agentId);
+      return deduplicateChangeSets(sets);
+    });
+
 /// Event-scoped confirmation service. Confirmed event-agent proposals
 /// (currently just `suggest_follow_up_task`) are applied via
 /// [EventToolDispatcher]; rejection only records the decision.

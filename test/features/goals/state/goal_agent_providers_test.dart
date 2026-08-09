@@ -10,7 +10,9 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
@@ -20,6 +22,8 @@ import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:mocktail/mocktail.dart';
 
@@ -66,6 +70,7 @@ void main() {
         agentRepositoryProvider.overrideWithValue(repository),
         agentSyncServiceProvider.overrideWithValue(syncService),
         agentServiceProvider.overrideWithValue(agentService),
+        labelsRepositoryProvider.overrideWithValue(MockLabelsRepository()),
         wakeOrchestratorProvider.overrideWithValue(MockWakeOrchestrator()),
         updateNotificationsProvider.overrideWithValue(updateNotifications),
         domainLoggerProvider.overrideWithValue(MockDomainLogger()),
@@ -314,4 +319,123 @@ void main() {
       await listed.future;
     },
   );
+
+  test('accepting a revision proposal end-to-end: decision persisted, v2 '
+      'minted, head moved, and the signal subscription re-registered from '
+      'the NEW criteria', () async {
+    const agentId = 'goal-rev';
+    final changeSet =
+        AgentDomainEntity.changeSet(
+              id: 'cs-1',
+              agentId: agentId,
+              taskId: agentId,
+              threadId: 'thread-1',
+              runKey: 'run-1',
+              status: ChangeSetStatus.pending,
+              items: const [
+                ChangeItem(
+                  toolName: GoalAgentToolNames.proposeGoalRevision,
+                  args: {
+                    'changes': {'targetValue': 8000},
+                    'rationale': 'ease off',
+                  },
+                  humanSummary: 'Lower the target to 8000',
+                ),
+              ],
+              createdAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as ChangeSetEntity;
+
+    final upserted = <AgentDomainEntity>[];
+    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
+      upserted.add(invocation.positionalArguments.first as AgentDomainEntity);
+    });
+    when(() => syncService.repository).thenReturn(repository);
+    final orchestrator =
+        container.read(wakeOrchestratorProvider) as MockWakeOrchestrator;
+    when(() => orchestrator.addSubscription(any())).thenReturn(null);
+
+    final headV1 =
+        AgentDomainEntity.goalSpecHead(
+              id: goalSpecHeadId(agentId),
+              agentId: agentId,
+              versionId: '$agentId:spec-v1',
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecHeadEntity;
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      // The confirmation hook re-reads the head AFTER the mint: serve the
+      // freshest head that has been written, v1 before.
+      (_) async =>
+          upserted.whereType<GoalSpecHeadEntity>().lastOrNull ?? headV1,
+    );
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v1',
+        agentId: agentId,
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Gym',
+        statement: 'x',
+        criteria: const GoalCriterion.habit(
+          criterionId: 'gym',
+          habitId: 'gym-habit',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 3,
+        ),
+        createdAt: DateTime(2026, 8),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
+      (_) async => upserted
+          .whereType<GoalSpecVersionEntity>()
+          .where((v) => v.id == '$agentId:spec-v2')
+          .lastOrNull,
+    );
+    when(() => repository.getEntity('cs-1')).thenAnswer((_) async => changeSet);
+
+    final service = container.read(goalChangeSetConfirmationServiceProvider);
+    // A habit goal can't take targetValue — use cadence instead so the
+    // revision is applicable.
+    final applicable = changeSet.copyWith(
+      items: const [
+        ChangeItem(
+          toolName: GoalAgentToolNames.proposeGoalRevision,
+          args: {
+            'changes': {'cadence': 4},
+            'rationale': 'step it up',
+          },
+          humanSummary: 'Raise the cadence to 4',
+        ),
+      ],
+    );
+    when(
+      () => repository.getEntity('cs-1'),
+    ).thenAnswer((_) async => applicable);
+
+    final result = await service.confirmItem(applicable, 0);
+    expect(result.success, isTrue, reason: result.errorMessage ?? '');
+    expect(result.mutatedEntityId, '$agentId:spec-v2');
+
+    final minted = upserted.whereType<GoalSpecVersionEntity>().singleWhere(
+      (v) => v.id == '$agentId:spec-v2',
+    );
+    expect((minted.criteria as GoalCriterionHabit).targetCount, 4);
+    final head = upserted.whereType<GoalSpecHeadEntity>().last;
+    expect(head.versionId, '$agentId:spec-v2');
+
+    final decision = upserted.whereType<ChangeDecisionEntity>().single;
+    expect(decision.verdict, ChangeDecisionVerdict.confirmed);
+
+    // The hook re-registered the subscription from the NEW criteria.
+    final subscription =
+        verify(() => orchestrator.addSubscription(captureAny())).captured.last
+            as AgentSubscription;
+    expect(subscription.agentId, agentId);
+    expect(subscription.matchEntityIds, {'gym-habit'});
+  });
 }

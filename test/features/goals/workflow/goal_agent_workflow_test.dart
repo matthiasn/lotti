@@ -1936,7 +1936,10 @@ void main() {
       ),
     ).thenAnswer((_) async => []);
 
-    Future<GoalAgentStrategy> creating(String headline) async {
+    Future<GoalAgentStrategy> creatingWithTagline(
+      String headline, [
+      String? tagline,
+    ]) async {
       final strategy = GoalAgentStrategy(
         syncService: syncService,
         agentId: agentId,
@@ -1948,6 +1951,7 @@ void main() {
         toolCalls: [
           toolCall(GoalAgentToolNames.createGoalAd, {
             'headline': headline,
+            'tagline': ?tagline,
             'tone': 'nudge',
             'animation': 'pulse',
           }),
@@ -1956,6 +1960,72 @@ void main() {
       );
       return strategy;
     }
+
+    Future<GoalAgentStrategy> creating(String headline) =>
+        creatingWithTagline(headline);
+
+    // insufficientData (default fake reader): the model's ad is refused —
+    // and a rerun of a retired library ad is refused the same way.
+    final retiredLibraryAd =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-lib',
+              agentId: agentId,
+              status: GoalNudgeStatus.retired,
+              brief: const GoalNudgeBrief(
+                headline: 'old',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-lib',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [retiredLibraryAd]);
+    final rerunning = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: agentId,
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-lib'},
+    );
+    await rerunning.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.rerunGoalAd, {
+          'adId': 'ad-lib',
+          'reason': 'bring it back',
+        }),
+      ],
+      manager: conversationManager,
+    );
+    await withClock(
+      fixedClock,
+      () async => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: rerunning,
+        derivation: await GoalAgentPhaseA(
+          repository: repository,
+          syncService: MockAgentSyncService(),
+          signalReader: _FakeReader(),
+        ).deriveWakeFacts(agentId: agentId, version: version!, now: now),
+        now: now,
+      ),
+    );
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => []);
 
     // insufficientData (default fake reader): the model's ad is refused.
     await withClock(
@@ -2007,8 +2077,9 @@ void main() {
         agentId: agentId,
         runKey: 'run-1',
         threadId: 'thread-1',
-        strategy: await creating(
+        strategy: await creatingWithTagline(
           'Lace up (id: 123e4567-e89b-12d3-a456-426614174000)',
+          'Six quiet days (123e4567-e89b-12d3-a456-426614174000)',
         ),
         derivation: atRisk,
         now: now,
@@ -2016,6 +2087,7 @@ void main() {
     );
     final nudge = upserts.whereType<GoalNudgeEntity>().single;
     expect(nudge.brief.headline, 'Lace up');
+    expect(nudge.brief.tagline, 'Six quiet days');
     expect(nudge.briefDigest, goalBriefDigest(nudge.brief));
   });
 

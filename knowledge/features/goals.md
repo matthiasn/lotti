@@ -150,9 +150,22 @@ flowchart TD
   don't count — the P14 swap stays legal), and for duplicate brief
   digests. Report prose passes `sanitizeAgentReportText`.
 - **The goal spec never mutates in a wake.** `propose_goal_revision`
-  lands as a pending ChangeSet for user approval (PR 4's flow mints the
-  version); ad state is validated in-conversation against the ids the
-  FACTS offered, and all outputs commit in one transaction.
+  lands as a pending ChangeSet for user approval; ad state is validated
+  in-conversation against the ids the FACTS offered, and all outputs
+  commit in one transaction.
+- **Revision is approval-gated and conservative.** Accepting the proposal
+  (`goalChangeSetConfirmationServiceProvider` → `GoalToolDispatcher` →
+  `GoalSpecRevisionService`) applies the changes to the criteria tree via
+  `applyGoalRevisionChanges` — which REJECTS anything ambiguous (two
+  candidate leaves and no name, unparseable period/cadence, free-form
+  `successCriteria` alone) rather than guessing — then supersedes the
+  current version, mints `v(n+1)` with full provenance (`authoredBy:
+  goal_agent`, `diffFromVersionId`, the proposal's rationale) and moves
+  the head in one transaction. Grace history resets naturally: Phase A's
+  prior-row streak breaks at the version change. After acceptance the
+  signal subscription re-registers from the NEW criteria; on other
+  devices the synced-in head triggers the same re-registration through
+  the sync processor's identity re-offer.
 - **Nudge accumulators are CRDTs.** Dismissal is terminal in the
   concurrent resolver, and exposure counters (per-host G-counters),
   rating histories and shown-at watermarks merge losslessly on concurrent

@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/ai/conversation/conversation_repository.dart';
@@ -10,8 +12,12 @@ import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
+import 'package:lotti/features/goals/workflow/goal_tool_dispatcher.dart';
+import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 
 /// Goal-agent runtime wiring (the Daily OS plug-in pattern: providers live
@@ -130,3 +136,49 @@ final goalSignalSyncListenerProvider = Provider<GoalSignalSyncListener>(
   },
   name: 'goalSignalSyncListenerProvider',
 );
+
+/// Revision minting for accepted `propose_goal_revision` proposals.
+final goalSpecRevisionServiceProvider = Provider<GoalSpecRevisionService>(
+  (ref) => GoalSpecRevisionService(
+    repository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+  ),
+  name: 'goalSpecRevisionServiceProvider',
+);
+
+/// Goal-scoped confirmation service: accepting a revision proposal mints
+/// the new spec version and moves the head via [GoalToolDispatcher];
+/// rejection only records the decision. After a confirmed revision the
+/// runtime re-registers the goal's signal subscriptions — the criteria
+/// may now reference different signals.
+final goalChangeSetConfirmationServiceProvider =
+    Provider<ChangeSetConfirmationService>(
+      (ref) => ChangeSetConfirmationService(
+        syncService: ref.watch(agentSyncServiceProvider),
+        toolDispatcher: GoalToolDispatcher(
+          revisionService: ref.watch(goalSpecRevisionServiceProvider),
+        ).dispatch,
+        labelsRepository: ref.watch(labelsRepositoryProvider),
+        domainLogger: ref.watch(domainLoggerProvider),
+        onConfirmedDecision:
+            ({required changeSet, required item, required decision}) async {
+              if (item.toolName != GoalAgentToolNames.proposeGoalRevision) {
+                return;
+              }
+              final repository = ref.read(agentRepositoryProvider);
+              final head = await repository.getEntity(
+                goalSpecHeadId(changeSet.agentId),
+              );
+              if (head is! GoalSpecHeadEntity) return;
+              final version = await repository.getEntity(head.versionId);
+              if (version is! GoalSpecVersionEntity) return;
+              ref
+                  .read(goalAgentServiceProvider)
+                  .registerSignalSubscription(
+                    changeSet.agentId,
+                    version.criteria,
+                  );
+            },
+      ),
+      name: 'goalChangeSetConfirmationServiceProvider',
+    );
