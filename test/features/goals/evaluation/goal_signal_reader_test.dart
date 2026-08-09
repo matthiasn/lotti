@@ -261,6 +261,51 @@ void main() {
     );
   });
 
+  test('percentage point samples are normalized to display units, '
+      'matching the chart', () async {
+    const bodyFat = GoalCriterion.metric(
+      criterionId: 'bf',
+      dataType: 'HealthDataType.BODY_FAT_PERCENTAGE',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.max,
+      target: 18,
+      direction: GoalDirection.atMost,
+    );
+    when(
+      () => journalDb.getQuantitativeByType(
+        type: 'HealthDataType.BODY_FAT_PERCENTAGE',
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        JournalEntity.quantitative(
+          meta: meta(DateTime(2026, 8, 8, 8)),
+          data: QuantitativeData.discreteQuantityData(
+            dateFrom: DateTime(2026, 8, 8, 8),
+            dateTo: DateTime(2026, 8, 8, 8),
+            // Stored as a fraction; the chart — and a user target of
+            // "18%" — read it ×100 (`aggregateNone` normalization).
+            value: 0.18,
+            dataType: 'HealthDataType.BODY_FAT_PERCENTAGE',
+            unit: '%',
+          ),
+        ),
+      ],
+    );
+
+    final window = await reader.read(criteria: bodyFat, reference: reference);
+    expect(
+      window
+          .quantitativeDailySums['HealthDataType.BODY_FAT_PERCENTAGE']![DateTime.utc(
+        2026,
+        8,
+        8,
+      )],
+      18,
+    );
+  });
+
   test('measurements sum per day', () async {
     const water = GoalCriterion.measurable(
       criterionId: 'water',

@@ -134,19 +134,41 @@ void main() {
   });
 
   test(
-    'a repeated create for an existing goal refuses to rewrite spec v1',
+    'a repeated create for an existing goal refuses to rewrite spec v1, '
+    'and the guard runs INSIDE the creation transaction',
     () async {
+      // Two concurrent creates for the same id must serialize on the
+      // transaction — a preflight read outside it would let both pass and
+      // the loser rewrite the immutable spec v1.
+      final order = <String>[];
+      final txnSyncService = _OrderRecordingSyncService(order);
+      when(() => txnSyncService.upsertEntity(any())).thenAnswer(
+        (invocation) async {
+          upserts.add(
+            invocation.positionalArguments.first as AgentDomainEntity,
+          );
+        },
+      );
+      final txnService = GoalAgentService(
+        agentService: agentService,
+        repository: repository,
+        syncService: txnSyncService,
+        orchestrator: orchestrator,
+      );
       when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
-        (_) async => AgentDomainEntity.goalSpecHead(
-          id: goalSpecHeadId(agentId),
-          agentId: agentId,
-          versionId: '$agentId:spec-v1',
-          updatedAt: DateTime(2026),
-          vectorClock: null,
-        ),
+        (_) async {
+          order.add('guard');
+          return AgentDomainEntity.goalSpecHead(
+            id: goalSpecHeadId(agentId),
+            agentId: agentId,
+            versionId: '$agentId:spec-v1',
+            updatedAt: DateTime(2026),
+            vectorClock: null,
+          );
+        },
       );
       await expectLater(
-        () => service.createGoalAgent(
+        () => txnService.createGoalAgent(
           title: 'Gym 3×/week',
           statement: 'x',
           criteria: criteria,
@@ -154,7 +176,28 @@ void main() {
         ),
         throwsStateError,
       );
+      expect(order, ['transaction', 'guard']);
       expect(upserts, isEmpty);
+      verifyNever(
+        () => agentService.createAgent(
+          kind: any(named: 'kind'),
+          displayName: any(named: 'displayName'),
+          config: any(named: 'config'),
+          agentId: any(named: 'agentId'),
+        ),
+      );
     },
   );
+}
+
+class _OrderRecordingSyncService extends MockAgentSyncService {
+  _OrderRecordingSyncService(this.order);
+
+  final List<String> order;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    order.add('transaction');
+    return action();
+  }
 }

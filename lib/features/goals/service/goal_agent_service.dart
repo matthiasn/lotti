@@ -54,16 +54,18 @@ class GoalAgentService {
     if (issues.isNotEmpty) {
       throw ArgumentError('Invalid goal criteria: ${issues.join('; ')}');
     }
-    if (agentId != null &&
-        await _repository.getEntity(goalSpecHeadId(agentId)) != null) {
-      throw StateError(
-        'goal $agentId already exists; spec v1 is immutable — revise via '
-        'a new version, never a repeated create',
-      );
-    }
-
     final now = clock.now();
     final identity = await _syncService.runInTransaction(() async {
+      // Inside the transaction, not a preflight: two concurrent creates
+      // for the same caller-supplied id must serialize here, so the loser
+      // sees the winner's head and cannot rewrite the immutable spec v1.
+      if (agentId != null &&
+          await _repository.getEntity(goalSpecHeadId(agentId)) != null) {
+        throw StateError(
+          'goal $agentId already exists; spec v1 is immutable — revise via '
+          'a new version, never a repeated create',
+        );
+      }
       final identity = await _agentService.createAgent(
         kind: AgentKinds.goalAgent,
         displayName: title,

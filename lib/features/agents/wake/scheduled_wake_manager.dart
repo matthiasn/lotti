@@ -114,7 +114,6 @@ class ScheduledWakeManager with AgentErrorLogging {
   /// generation belongs to a restarted manager, not to the pass in flight.
   int _rerunGeneration = 0;
 
-  /// Start periodic checking. Also immediately checks for missed wakes.
   /// Runs one scan pass now (single-flighted with the periodic timer).
   ///
   /// For callers that just persisted an immediately-due record — e.g. a
@@ -124,6 +123,7 @@ class ScheduledWakeManager with AgentErrorLogging {
     unawaited(_checkAndEnqueue());
   }
 
+  /// Start periodic checking. Also immediately checks for missed wakes.
   void start() {
     unawaited(_checkAndEnqueue());
 

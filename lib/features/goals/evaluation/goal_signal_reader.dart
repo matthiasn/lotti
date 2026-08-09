@@ -126,6 +126,9 @@ class GoalSignalReader {
     final byDay = <DateTime, num>{};
     switch (healthTypes[dataType]?.aggregationType) {
       case HealthAggregationType.none:
+        // Same display normalization as `aggregateNone`: percentage types
+        // store fractions (body fat 0.18) but chart — and target — as 18.
+        final multiplier = dataType.contains('PERCENTAGE') ? 100 : 1;
         final latestFromByDay = <DateTime, DateTime>{};
         for (final entity in entities) {
           entity.maybeMap(
@@ -135,7 +138,7 @@ class GoalSignalReader {
               if (currentFrom == null ||
                   quant.data.dateFrom.isAfter(currentFrom)) {
                 latestFromByDay[day] = quant.data.dateFrom;
-                byDay[day] = quant.data.value;
+                byDay[day] = quant.data.value * multiplier;
               }
             },
             orElse: () {},
