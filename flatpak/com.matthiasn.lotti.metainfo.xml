@@ -44,6 +44,8 @@
       <description>
         <p>Added: vision models can use task images when writing coding prompts. Choosing an image-capable model such as Kimi K3 now offers the task's attached images as visual context, with up to ten selections. Text-only models keep the existing one-step flow, and linked AI image analyses remain part of the written task context as well.</p>
         <p>Changed: AI task summaries now look like AI content wherever you scan tasks. The agent's one-line take uses the AI accent in task lists, appears beneath linked task titles, and sits between the title and status pills on task details, so the same compact context is visible without opening the full AI summary card.</p>
+        <p>Fixed: reference-image previews stay inside their picker tiles. Large task images are decoded at thumbnail size and clipped to each cell, preventing stale app content from appearing as extra rows while keeping the selected count intact.</p>
+        <p>Fixed: task taglines keep their useful context. Detail headers and linked-task rows now wrap full AI summaries and linked titles instead of cutting them off; linked rows rely on the status icon and its tooltip rather than repeating status as inline text.</p>
       </description>
     </release>
     <release version="1.0.5" date="2026-08-07">

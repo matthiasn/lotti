@@ -25,8 +25,16 @@ void main() {
     await getIt.reset();
   });
 
-  LinkedTaskRowData buildRowData({String? oneLiner}) => LinkedTaskRowData(
-    task: TestTaskFactory.create(id: 'other-task', title: 'Other Task'),
+  LinkedTaskRowData buildRowData({
+    String? oneLiner,
+    String title = 'Other Task',
+    TaskStatus? status,
+  }) => LinkedTaskRowData(
+    task: TestTaskFactory.create(
+      id: 'other-task',
+      title: title,
+      status: status,
+    ),
     oneLiner: oneLiner,
   );
 
@@ -51,51 +59,76 @@ void main() {
       },
     );
 
-    testWidgets('renders the AI one-liner in accent ink with ellipsis', (
-      tester,
-    ) async {
-      const oneLiner =
-          'A deliberately long AI summary that cannot fit in this linked row';
-      await tester.pumpWidget(
-        WidgetTestBench(
-          surfaceConstraints: const BoxConstraints.tightFor(
-            width: 500,
-            height: 800,
+    testWidgets(
+      'renders the complete title and AI one-liner without status text',
+      (
+        tester,
+      ) async {
+        const title =
+            'Show AI one-liner summaries in linked task rows and task list cards';
+        const oneLiner =
+            'PR #3866 merged — AI task taglines now preserve all of the context '
+            'needed to understand this linked task';
+        final createdAt = DateTime.utc(2026);
+        await tester.pumpWidget(
+          WidgetTestBench(
+            surfaceConstraints: const BoxConstraints.tightFor(
+              width: 390,
+              height: 800,
+            ),
+            child: LinkedTaskRow(
+              data: buildRowData(
+                title: title,
+                oneLiner: oneLiner,
+                status: TaskStatus.done(
+                  id: 'done',
+                  createdAt: createdAt,
+                  utcOffset: 0,
+                ),
+              ),
+              manageMode: false,
+            ),
           ),
-          child: LinkedTaskRow(
-            data: buildRowData(oneLiner: oneLiner),
-            manageMode: false,
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+
+        final oneLinerText = find.byWidgetPredicate(
+          (widget) =>
+              widget is RichText &&
+              widget.text.toPlainText().contains(oneLiner),
+        );
+        final richText = tester.widget<RichText>(oneLinerText);
+        final rootSpan = richText.text as TextSpan;
+        final summarySpan = rootSpan.children!.last as TextSpan;
+        final context = tester.element(find.byType(LinkedTaskRow));
+        final textPainter = TextPainter(
+          text: richText.text,
+          textDirection: TextDirection.ltr,
+          maxLines: richText.maxLines,
+        )..layout(maxWidth: tester.getSize(oneLinerText).width);
+        final titleText = tester.widget<Text>(find.text(title));
+
+        expect(summarySpan.text, oneLiner);
+        expect(rootSpan.toPlainText(), oneLiner);
+        expect(
+          summarySpan.style?.color,
+          context.designTokens.colors.aiCard.accent,
+        );
+        expect(titleText.maxLines, isNull);
+        expect(titleText.overflow, TextOverflow.clip);
+        expect(richText.maxLines, isNull);
+        expect(richText.overflow, TextOverflow.clip);
+        expect(textPainter.didExceedMaxLines, isFalse);
+        expect(find.text('Done'), findsNothing);
+        expect(
+          find.byWidgetPredicate(
+            (widget) => widget is Tooltip && widget.message == 'Done',
           ),
-        ),
-      );
-      await tester.pump();
-      await tester.pump(const Duration(milliseconds: 300));
-
-      final oneLinerText = find.byWidgetPredicate(
-        (widget) =>
-            widget is RichText && widget.text.toPlainText().contains(oneLiner),
-      );
-      final richText = tester.widget<RichText>(oneLinerText);
-      final rootSpan = richText.text as TextSpan;
-      final summarySpan = rootSpan.children!.last as TextSpan;
-      final context = tester.element(find.byType(LinkedTaskRow));
-      final textPainter = TextPainter(
-        text: richText.text,
-        textDirection: TextDirection.ltr,
-        maxLines: richText.maxLines,
-        ellipsis: '…',
-      )..layout(maxWidth: tester.getSize(oneLinerText).width);
-
-      expect(summarySpan.text, oneLiner);
-      expect(rootSpan.toPlainText(), 'Open · $oneLiner');
-      expect(
-        summarySpan.style?.color,
-        context.designTokens.colors.aiCard.accent,
-      );
-      expect(richText.maxLines, 1);
-      expect(richText.overflow, TextOverflow.ellipsis);
-      expect(textPainter.didExceedMaxLines, isTrue);
-    });
+          findsOneWidget,
+        );
+      },
+    );
 
     testWidgets(
       'shows the plain chevron in manage mode when onUnlink is null',
@@ -489,61 +522,36 @@ void main() {
     );
   });
 
-  group('LinkedTaskRow emphasis ladder', () {
-    /// The colour the status label is actually painted at, at a given row width.
-    ///
-    /// Asserted on the rendered ink rather than on which slot the label landed
-    /// in: the wide layout styles it directly while the narrow one inherits the
-    /// list item's subtitle style, so the same intent has two code paths and
-    /// only one of them was carrying the emphasis.
-    Future<Color?> statusInkAt(WidgetTester tester, double width) async {
-      await tester.pumpWidget(
-        WidgetTestBench(
-          // Align, not a bare SizedBox: the bench hands its child tight
-          // constraints, so a width set any other way is silently ignored and
-          // every case ends up measuring the same 800pt row.
-          child: Align(
-            alignment: Alignment.topLeft,
-            child: SizedBox(
-              width: width,
-              child: LinkedTaskRow(
-                data: buildRowData(),
-                manageMode: false,
+  group('LinkedTaskRow status affordance', () {
+    testWidgets(
+      'the status remains available from the icon tooltip without taking '
+      'inline space at narrow or wide widths',
+      (tester) async {
+        for (final width in [390.0, 720.0]) {
+          await tester.pumpWidget(
+            WidgetTestBench(
+              child: Align(
+                alignment: Alignment.topLeft,
+                child: SizedBox(
+                  width: width,
+                  child: LinkedTaskRow(
+                    data: buildRowData(),
+                    manageMode: false,
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      );
-      final richText = tester.widget<RichText>(
-        find.byWidgetPredicate(
-          (widget) =>
-              widget is RichText && widget.text.toPlainText().contains('Open'),
-        ),
-      );
-      // The span carrying the label, not the root: the narrow path overrides
-      // the colour on a child span, so reading the root style reports the
-      // inherited value the override exists to replace.
-      Color? ink;
-      richText.text.visitChildren((span) {
-        if (span is TextSpan && (span.text?.contains('Open') ?? false)) {
-          ink = span.style?.color ?? richText.text.style?.color;
+          );
+
+          expect(find.text('Open'), findsNothing, reason: 'width=$width');
+          expect(
+            find.byWidgetPredicate(
+              (widget) => widget is Tooltip && widget.message == 'Open',
+            ),
+            findsOneWidget,
+            reason: 'width=$width',
+          );
         }
-        return true;
-      });
-      return ink;
-    }
-
-    testWidgets(
-      'the status label sits below the section eyebrow at both widths, so the '
-      'narrow layout ranks the same three roles the wide one does',
-      (tester) async {
-        final narrow = await statusInkAt(tester, 390);
-        final wide = await statusInkAt(tester, 720);
-
-        expect(narrow, dsTokensLight.colors.text.lowEmphasis);
-        expect(wide, dsTokensLight.colors.text.lowEmphasis);
-        // ...and strictly below the eyebrow that groups it.
-        expect(narrow, isNot(dsTokensLight.colors.text.mediumEmphasis));
       },
     );
   });

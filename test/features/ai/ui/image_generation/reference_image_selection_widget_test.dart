@@ -284,7 +284,9 @@ void main() {
       expect(continueButton.onPressed, isNull);
     });
 
-    testWidgets('displays grid of images', (tester) async {
+    testWidgets('renders exactly one clipped, bounded tile per real image', (
+      tester,
+    ) async {
       final stateWithImages = ReferenceImageSelectionState(
         availableImages: [
           buildTestReferenceImage('img-1'),
@@ -308,8 +310,28 @@ void main() {
         ),
       );
 
-      // GridView should be present
       expect(find.byType(GridView), findsOneWidget);
+      final grid = find.byType(GridView);
+      final tiles = find.descendant(
+        of: grid,
+        matching: find.byType(GestureDetector),
+      );
+      expect(tiles, findsNWidgets(stateWithImages.availableImages.length));
+      expect(
+        find.descendant(of: tiles, matching: find.byType(ClipRect)),
+        findsNWidgets(stateWithImages.availableImages.length),
+      );
+      final images = tester.widgetList<Image>(
+        find.descendant(of: grid, matching: find.byType(Image)),
+      );
+      expect(images, hasLength(stateWithImages.availableImages.length));
+      for (final image in images) {
+        expect(image.image, isA<ResizeImage>());
+        final provider = image.image as ResizeImage;
+        expect(provider.policy, ResizeImagePolicy.fit);
+        expect(provider.width, isNotNull);
+        expect(provider.height, provider.width);
+      }
     });
 
     testWidgets('selection counter shows correct count', (tester) async {

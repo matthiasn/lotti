@@ -18,6 +18,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   task titles, and sits between the title and status pills on task details, so
   the same compact context is visible without opening the full AI summary card.
 
+### Fixed
+- **Reference-image previews stay inside their picker tiles.** Large task images
+  are decoded at thumbnail size and clipped to each cell, preventing stale app
+  content from appearing as extra rows while keeping the selected count intact.
+- **Task taglines keep their useful context.** Detail headers and linked-task
+  rows now wrap full AI summaries and linked titles instead of cutting them off;
+  linked rows rely on the status icon and its tooltip rather than repeating
+  status as inline text.
+
 ## [1.0.5]
 ### Changed
 - **The 1-on-1 with an agent now looks like one screen rather than several.**

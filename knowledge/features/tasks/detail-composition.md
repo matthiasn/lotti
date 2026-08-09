@@ -5,13 +5,17 @@ description: The band order on the detail page, the header's two lanes and edit 
 resource: ../../../lib/features/tasks/ui/header
 tags: [tasks, detail, header, scroll-stability, design-tokens]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-03T14:00:00Z }
+generated: { by: codex/gpt-5, at: 2026-08-09T22:06:53Z }
 stale_after: 2027-02-02
 sources:
   - id: header
     resource: ../../../lib/features/tasks/ui/header
     title: Desktop task header
-    last_modified: 2026-08-09
+    last_modified: 2026-08-10
+  - id: linked-task-row
+    resource: ../../../lib/features/tasks/ui/linked_tasks/linked_task_row.dart
+    title: Linked task row
+    last_modified: 2026-08-10
   - id: pages
     resource: ../../../lib/features/tasks/ui/pages
     title: TaskDetailsPage and TaskForm
@@ -118,7 +122,7 @@ text.
 the labels stream, maps the task to an immutable `DesktopTaskHeaderData` plus a
 Riverpod-aware `estimateSlot`, and forwards callbacks to the existing modal
 pickers. When the task agent has published a one-liner, the header renders it as
-a single ellipsized line directly between the title and metadata. Its ink is
+complete wrapping text directly between the title and metadata. Its ink is
 `aiCard.accent`, matching the AI summary card instead of neutral task metadata.
 
 `LinkedTasksWidget` resolves every linked task's one-liner through one
@@ -128,10 +132,10 @@ report refreshes the card without one query and stream subscription per row.
 When the linked-id set changes, the widget retains the last resolved taglines
 for ids that remain in the card while the new batch key loads; added rows can
 arrive without a subtitle, but established rows never flash back to empty.
-Each compact text column becomes title plus one-line AI subtitle while the
-status remains on the trailing rail at the detail reading width; narrow rows
-prefix the status before the ellipsized summary so it cannot disappear behind
-a long tagline.
+Each compact text column lets both the title and AI subtitle wrap to their full
+content. Status is carried once by the coloured leading glyph; its localized
+meaning is available from the glyph tooltip on hover or long press and remains
+part of the row's accessibility label, instead of consuming inline text space.
 
 **Extended actions — share, speech modal — belong to the pinned app bar's
 `more_vert` button, not the header.** There is no ellipsis inside the header.
@@ -207,9 +211,9 @@ The header body is Crumb → Title → AI one-liner → Meta:
 1. **Crumb** — `category / [project | No project]` separated by a literal `/`.
    No label chips here.
 2. **Title** — full width, tap to edit.
-3. **AI one-liner** — an optional, single-line AI-accent summary. It preserves
-   the last value during background refresh and truncates rather than widening
-   the header.
+3. **AI one-liner** — an optional, fully wrapping AI-accent summary. It
+   preserves the last value during background refresh and grows vertically
+   rather than truncating useful context.
 4. **Meta** — a two-lane column.
 
 **Without a category the crumb is one segment: `No category`.** A project is

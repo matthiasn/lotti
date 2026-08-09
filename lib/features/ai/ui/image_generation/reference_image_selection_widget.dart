@@ -257,68 +257,90 @@ class _ImageGridTile extends StatelessWidget {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(tokens.radii.s),
-          child: Stack(
-            fit: StackFit.expand,
-            children: [
-              // Image thumbnail
-              Image.file(
-                file,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) => ColoredBox(
-                  color: colorScheme.surfaceContainerHighest,
-                  child: Icon(
-                    Icons.broken_image_outlined,
-                    color: colorScheme.onSurfaceVariant,
+          child: ClipRect(
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                // Decode only the pixels this tile can display. Full-size
+                // screenshots and photos otherwise allocate oversized iOS
+                // textures for a tiny grid cell, which can surface stale
+                // texture fragments from previously rendered app content.
+                LayoutBuilder(
+                  builder: (context, constraints) {
+                    final devicePixelRatio = MediaQuery.devicePixelRatioOf(
+                      context,
+                    );
+                    final cacheExtent =
+                        (constraints.biggest.longestSide * devicePixelRatio)
+                            .ceil()
+                            .clamp(1, 10000);
+                    return Image(
+                      image: ResizeImage(
+                        FileImage(file),
+                        width: cacheExtent,
+                        height: cacheExtent,
+                        policy: ResizeImagePolicy.fit,
+                      ),
+                      fit: BoxFit.cover,
+                      gaplessPlayback: true,
+                      errorBuilder: (context, error, stackTrace) => ColoredBox(
+                        color: colorScheme.surfaceContainerHighest,
+                        child: Icon(
+                          Icons.broken_image_outlined,
+                          color: colorScheme.onSurfaceVariant,
+                        ),
+                      ),
+                    );
+                  },
+                ),
+                // Dimming overlay for non-selectable
+                if (!canSelect)
+                  ColoredBox(
+                    color: colorScheme.scrim.withValues(alpha: 0.54),
                   ),
-                ),
-              ),
-              // Dimming overlay for non-selectable
-              if (!canSelect)
-                ColoredBox(
-                  color: colorScheme.scrim.withValues(alpha: 0.54),
-                ),
-              // Selection indicator
-              if (isSelected)
-                Positioned(
-                  top: spacing.step1,
-                  right: spacing.step1,
-                  child: Container(
-                    padding: EdgeInsets.all(spacing.step1),
-                    decoration: BoxDecoration(
-                      color: colorScheme.primary,
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      Icons.check,
-                      size: IconSizes.s,
-                      color: colorScheme.onPrimary,
-                    ),
-                  ),
-                ),
-              // Linked-task indicator
-              if (isFromLinkedTask)
-                Positioned(
-                  bottom: spacing.step1,
-                  left: spacing.step1,
-                  child: Tooltip(
-                    message: context.messages.linkedTaskImageBadge,
+                // Selection indicator
+                if (isSelected)
+                  Positioned(
+                    top: spacing.step1,
+                    right: spacing.step1,
                     child: Container(
                       padding: EdgeInsets.all(spacing.step1),
                       decoration: BoxDecoration(
-                        color: colorScheme.secondaryContainer.withValues(
-                          alpha: 0.85,
-                        ),
-                        borderRadius: BorderRadius.circular(tokens.radii.xs),
+                        color: colorScheme.primary,
+                        shape: BoxShape.circle,
                       ),
                       child: Icon(
-                        Icons.link_rounded,
-                        size: IconSizes.xs,
-                        color: colorScheme.onSecondaryContainer,
+                        Icons.check,
+                        size: IconSizes.s,
+                        color: colorScheme.onPrimary,
                       ),
                     ),
                   ),
-                ),
-            ],
+                // Linked-task indicator
+                if (isFromLinkedTask)
+                  Positioned(
+                    bottom: spacing.step1,
+                    left: spacing.step1,
+                    child: Tooltip(
+                      message: context.messages.linkedTaskImageBadge,
+                      child: Container(
+                        padding: EdgeInsets.all(spacing.step1),
+                        decoration: BoxDecoration(
+                          color: colorScheme.secondaryContainer.withValues(
+                            alpha: 0.85,
+                          ),
+                          borderRadius: BorderRadius.circular(tokens.radii.xs),
+                        ),
+                        child: Icon(
+                          Icons.link_rounded,
+                          size: IconSizes.xs,
+                          color: colorScheme.onSecondaryContainer,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
           ),
         ),
       ),
