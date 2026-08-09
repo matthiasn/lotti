@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -149,6 +151,40 @@ void main() {
 
     await dispatcher.dispatchBatch({'some-task-id', 'HABIT_COMPLETION'});
     expect(phaseA.calls, isEmpty);
+  });
+
+  test('the listener pumps synced batches, starts once, and stops on '
+      'dispose', () async {
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [identity('goal-a', AgentKinds.goalAgent)]);
+    stubSpec('goal-a');
+
+    final controller = StreamController<Set<String>>.broadcast();
+    addTearDown(controller.close);
+    final updateNotifications = MockUpdateNotifications();
+    when(
+      () => updateNotifications.syncUpdateStream,
+    ).thenAnswer((_) => controller.stream);
+
+    final listener =
+        GoalSignalSyncListener(
+            updateNotifications: updateNotifications,
+            dispatcher: dispatcher,
+          )
+          ..start()
+          // A second start must not double-subscribe.
+          ..start();
+
+    controller.add({'cumulative_step_count'});
+    await Future<void>.delayed(Duration.zero);
+    await Future<void>.delayed(Duration.zero);
+    expect(phaseA.calls, hasLength(1));
+
+    await listener.dispose();
+    controller.add({'cumulative_step_count'});
+    await Future<void>.delayed(Duration.zero);
+    expect(phaseA.calls, hasLength(1), reason: 'disposed = deaf');
   });
 
   test(

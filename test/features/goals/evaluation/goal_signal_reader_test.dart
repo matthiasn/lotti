@@ -199,6 +199,9 @@ void main() {
           habit(DateTime(2026, 8, 3, 18), HabitCompletionType.success),
           habit(DateTime(2026, 8, 5, 18), HabitCompletionType.skip),
           habit(DateTime(2026, 8, 6, 18), HabitCompletionType.fail),
+          // Defensive: a stray non-habit entity in the result set is
+          // skipped, never counted.
+          measurement(DateTime(2026, 8, 4, 18), 1),
         ],
       );
 
@@ -259,23 +262,35 @@ void main() {
     },
   );
 
-  test('trigger tokens are exactly the leaf identifiers', () {
+  test('trigger tokens are exactly the leaf identifiers, through every '
+      'composite shape', () {
     const composite = GoalCriterion.allOf(
       criterionId: 'root',
       criteria: [
         stepsCriterion,
-        GoalCriterion.habit(
-          criterionId: 'gym',
-          habitId: 'gym-habit',
-          window: GoalWindow.calendarWeek(),
-          targetCount: 3,
+        GoalCriterion.anyOf(
+          criterionId: 'either',
+          criteria: [
+            GoalCriterion.habit(
+              criterionId: 'gym',
+              habitId: 'gym-habit',
+              window: GoalWindow.calendarWeek(),
+              targetCount: 3,
+            ),
+          ],
         ),
-        GoalCriterion.measurable(
-          criterionId: 'water',
-          dataTypeId: 'water-id',
-          window: GoalWindow.day(),
-          aggregation: GoalAggregation.sum,
-          target: 2000,
+        GoalCriterion.atLeastCount(
+          criterionId: 'some',
+          criteria: [
+            GoalCriterion.measurable(
+              criterionId: 'water',
+              dataTypeId: 'water-id',
+              window: GoalWindow.day(),
+              aggregation: GoalAggregation.sum,
+              target: 2000,
+            ),
+          ],
+          successes: 1,
         ),
       ],
     );
@@ -283,5 +298,70 @@ void main() {
       goalSignalTriggerTokens(composite),
       {'cumulative_step_count', 'gym-habit', 'water-id'},
     );
+  });
+
+  test('composite trees widen the query range across all leaf windows, and '
+      'stray entity types in a result set are ignored', () async {
+    const composite = GoalCriterion.anyOf(
+      criterionId: 'either',
+      criteria: [
+        stepsCriterion,
+        GoalCriterion.atLeastCount(
+          criterionId: 'some',
+          criteria: [
+            GoalCriterion.measurable(
+              criterionId: 'water',
+              dataTypeId: 'water-id',
+              window: GoalWindow.day(),
+              aggregation: GoalAggregation.sum,
+              target: 2000,
+            ),
+          ],
+          successes: 1,
+        ),
+      ],
+    );
+    // A habit completion arriving in a quantitative/measurable result set
+    // (defensive: the query filters by subtype, decode does not) must be
+    // skipped, not crash or count.
+    when(
+      () => journalDb.getMeasurementsByType(
+        type: 'water-id',
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        habit(DateTime(2026, 8, 8, 9), HabitCompletionType.success),
+        measurement(DateTime(2026, 8, 8, 9), 500),
+      ],
+    );
+    when(
+      () => journalDb.getQuantitativeByType(
+        type: 'cumulative_step_count',
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer(
+      (_) async => [measurement(DateTime(2026, 8, 8, 9), 500)],
+    );
+
+    final window = await reader.read(criteria: composite, reference: reference);
+    expect(
+      window.measurableDailySums['water-id']![DateTime.utc(2026, 8, 8)],
+      500,
+    );
+    expect(window.quantitativeDailySums['cumulative_step_count'], isEmpty);
+
+    // The rolling-7 leaf dominates the range: Jul 26 (window + one prior
+    // period), even though the other leaf is a single day.
+    final captured = verify(
+      () => journalDb.getMeasurementsByType(
+        type: 'water-id',
+        rangeStart: captureAny(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).captured;
+    expect(captured.single, DateTime(2026, 7, 26));
   });
 }

@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/services/domain_logging.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -131,6 +132,49 @@ void main() {
       goalSignalSubscriptionId('goal-b'),
     );
   });
+
+  test(
+    'a repository explosion in beforeWakeScan is contained and logged',
+    () async {
+      final logger = MockDomainLogger();
+      when(
+        () => logger.error(
+          any(),
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+          message: any(named: 'message'),
+        ),
+      ).thenReturn(null);
+      final loggingMaintenance = GoalRuntimeMaintenance(
+        agentService: agentService,
+        repository: repository,
+        syncService: syncService,
+        goalAgentService: GoalAgentService(
+          agentService: agentService,
+          syncService: syncService,
+          orchestrator: orchestrator,
+        ),
+        domainLogger: logger,
+      );
+      when(
+        () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+      ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+      when(() => repository.getEntity(any())).thenThrow(StateError('boom'));
+
+      await withClock(fixedClock, loggingMaintenance.beforeWakeScan);
+
+      verify(
+        () => logger.error(
+          LogDomain.agentRuntime,
+          any<Object>(),
+          stackTrace: any(named: 'stackTrace'),
+          subDomain: any(named: 'subDomain'),
+          message: any(named: 'message'),
+        ),
+      ).called(1);
+    },
+  );
 
   test('beforeWakeScan heals a missing cadence record', () async {
     when(

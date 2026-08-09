@@ -244,6 +244,33 @@ void main() {
     expect(register.trackStatus, GoalTrackStatus.offTrack);
   });
 
+  test(
+    'a passed target date resolves to achieved for a satisfied goal',
+    () async {
+      when(
+        () => repository.getEntity(goalSpecHeadId(agentId)),
+      ).thenAnswer((_) async => specHead);
+      when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+        (_) async => AgentDomainEntity.goalSpecVersion(
+          id: '$agentId:spec-v1',
+          agentId: agentId,
+          version: 1,
+          status: GoalSpecVersionStatus.active,
+          authoredBy: 'user',
+          title: 'Daily steps',
+          statement: 'Average 10,000 steps a day.',
+          criteria: criteria,
+          createdAt: DateTime(2026),
+          vectorClock: null,
+          targetDate: DateTime(2026, 8),
+        ),
+      );
+      await run(onTrackSignals());
+      final register = upserts.whereType<GoalProgressEntity>().single;
+      expect(register.trackStatus, GoalTrackStatus.achieved);
+    },
+  );
+
   test('re-running the same day preserves the register createdAt', () async {
     stubSpec();
     final created = DateTime(2026, 8, 8, 6);
