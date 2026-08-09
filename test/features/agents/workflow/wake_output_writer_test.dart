@@ -12,6 +12,8 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/sync/g_counter.dart';
+import 'package:lotti/get_it.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 import 'package:uuid/uuid.dart';
 
@@ -327,6 +329,25 @@ void main() {
       expect(result.reportContent, '# Status\nAll good.');
       expect(result.taskId, _taskId);
       expect(result.previousReportId, 'report-previous');
+    });
+
+    test('notifies task tagline providers after the report commits', () async {
+      when(
+        () => repo.getReportHead(_agentId, AgentReportScopes.current),
+      ).thenAnswer((_) async => null);
+      final notifications = MockUpdateNotifications();
+      getIt.registerSingleton<UpdateNotifications>(notifications);
+      addTearDown(() => getIt.unregister<UpdateNotifications>());
+
+      await run(reportContent: 'fresh report');
+
+      verify(
+        () => notifications.notifyUiOnly({
+          _agentId,
+          _taskId,
+          agentNotification,
+        }),
+      ).called(1);
     });
 
     test('mints a fresh head id when there is no existing head', () async {

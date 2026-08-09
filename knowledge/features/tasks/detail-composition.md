@@ -125,6 +125,9 @@ a single ellipsized line directly between the title and metadata. Its ink is
 `taskOneLinersProvider` batch and passes the results into both plain and typed
 rows. The batch watches the shared agent-update topic, so a local or synced
 report refreshes the card without one query and stream subscription per row.
+When the linked-id set changes, the widget retains the last resolved taglines
+for ids that remain in the card while the new batch key loads; added rows can
+arrive without a subtitle, but established rows never flash back to empty.
 Each compact text column becomes title plus one-line AI subtitle while the
 status remains on the trailing rail at the detail reading width; narrow rows
 prefix the status before the ellipsized summary so it cannot disappear behind
