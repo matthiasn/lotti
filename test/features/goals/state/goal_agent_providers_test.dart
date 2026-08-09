@@ -611,7 +611,7 @@ void main() {
         nudgeRow(
           'ad-stale',
           GoalNudgeStatus.active,
-          DateTime(2026, 8, 1),
+          DateTime(2026, 8),
         ).copyWith(staleAt: DateTime(2026, 8, 2)),
       ],
     );
