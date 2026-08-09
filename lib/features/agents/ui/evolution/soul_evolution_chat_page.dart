@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/soul_query_providers.dart';
-import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/soul_evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_composer_width.dart';
@@ -76,10 +75,7 @@ class _SoulEvolutionChatPageState extends ConsumerState<SoulEvolutionChatPage> {
   ) {
     // Nothing to converse with until the session exists — see the template
     // chat for why this state gets a page of its own.
-    final hasConversation = data.messages.any(
-      (m) => m is! EvolutionSystemMessage,
-    );
-    if (data.sessionId == null && !hasConversation) {
+    if (shouldShowSessionOpening(data)) {
       return const EvolutionSessionOpening();
     }
 

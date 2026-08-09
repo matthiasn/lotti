@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_data.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_session_opening.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -47,5 +49,72 @@ void main() {
       final page = tester.getCenter(find.byType(EvolutionSessionOpening));
       expect(hint.dx, closeTo(page.dx, 1));
     });
+  });
+
+  group('shouldShowSessionOpening', () {
+    final at = DateTime(2026, 6, 14, 10);
+
+    EvolutionChatData data({
+      String? sessionId,
+      List<EvolutionChatMessage> messages = const [],
+    }) => EvolutionChatData(sessionId: sessionId, messages: messages);
+
+    test('an empty, session-less state is the opening', () {
+      expect(shouldShowSessionOpening(data()), isTrue);
+    });
+
+    test('still the opening while only the starting note has arrived', () {
+      expect(
+        shouldShowSessionOpening(
+          data(
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'starting_session',
+                timestamp: at,
+              ),
+            ],
+          ),
+        ),
+        isTrue,
+      );
+    });
+
+    test('a live session is never the opening', () {
+      expect(shouldShowSessionOpening(data(sessionId: 's1')), isFalse);
+    });
+
+    test('anyone speaking ends the opening, even with no session id', () {
+      expect(
+        shouldShowSessionOpening(
+          data(
+            messages: [
+              EvolutionChatMessage.assistant(text: 'Hello', timestamp: at),
+            ],
+          ),
+        ),
+        isFalse,
+      );
+    });
+
+    for (final token in kTerminalSessionTokens) {
+      test('a "$token" note ends the opening — a start that failed leaves '
+          'sessionId null forever, and the opening state would hide the '
+          'localized error behind an indicator implying work in progress', () {
+        expect(
+          shouldShowSessionOpening(
+            data(
+              messages: [
+                EvolutionChatMessage.system(
+                  text: 'starting_session',
+                  timestamp: at,
+                ),
+                EvolutionChatMessage.system(text: token, timestamp: at),
+              ],
+            ),
+          ),
+          isFalse,
+        );
+      });
+    }
   });
 }

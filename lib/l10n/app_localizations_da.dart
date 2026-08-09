@@ -35,10 +35,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get addActionAddTask => 'Opgave';
 
   @override
-  String get addActionAddTimeRecording => 'Timerindtastning';
+  String get addActionAddTimer => 'Åbningstider';
 
   @override
-  String get addActionAddTimer => 'Åbningstider';
+  String get addActionAddTimeRecording => 'Timerindtastning';
 
   @override
   String get addActionCreateLinkedTask => 'Tilknyt en ny opgave';
@@ -667,6 +667,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentRitualSummaryWakesSinceLast => 'Våger siden sidste 1-til-1';
 
   @override
+  String get agentRitualTypingSemantics => 'Agenten skriver et svar';
+
+  @override
   String agentRitualWakesSinceLastCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -702,10 +705,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentSoulCoachingStyleLabel => 'Trænerstil';
 
   @override
-  String get agentSoulCreateTitle => 'Skab Sjæl';
+  String get agentSoulCreatedSuccess => 'Sjæl skabt';
 
   @override
-  String get agentSoulCreatedSuccess => 'Sjæl skabt';
+  String get agentSoulCreateTitle => 'Skab Sjæl';
 
   @override
   String get agentSoulDeleteConfirmBody =>
@@ -787,7 +790,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentSoulSelectTitle => 'Vælg sjæl';
 
   @override
+  String get agentSoulsEmptyFiltered => 'Ingen sjæle matcher dine filtre.';
+
+  @override
   String get agentSoulSettingsTab => 'Indstillinger';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Søg sjæle...';
+
+  @override
+  String get agentSoulsTitle => 'Sjæle';
 
   @override
   String get agentSoulToneBoundsLabel => 'Tonegrænser';
@@ -805,15 +817,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Taledirektivet';
-
-  @override
-  String get agentSoulsEmptyFiltered => 'Ingen sjæle matcher dine filtre.';
-
-  @override
-  String get agentSoulsSearchPlaceholder => 'Søg sjæle...';
-
-  @override
-  String get agentSoulsTitle => 'Sjæle';
 
   @override
   String get agentStateConsecutiveFailures => 'På hinanden følgende fejl';
@@ -1032,10 +1035,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentTemplateAssignedLabel => 'Skabelon';
 
   @override
-  String get agentTemplateCreateTitle => 'Opret skabelon';
+  String get agentTemplateCreatedSuccess => 'Skabelon oprettet';
 
   @override
-  String get agentTemplateCreatedSuccess => 'Skabelon oprettet';
+  String get agentTemplateCreateTitle => 'Opret skabelon';
 
   @override
   String get agentTemplateDeleteConfirm =>
@@ -1082,15 +1085,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentTemplateInstanceOpenTask => 'Åbn opgave';
 
   @override
-  String agentTemplateInstanceStarted(String date) {
-    return 'Startet den $date';
-  }
-
-  @override
   String get agentTemplateInstancesEmpty => 'Ingen instanser endnu.';
 
   @override
   String get agentTemplateInstancesHeading => 'Instanser';
+
+  @override
+  String agentTemplateInstanceStarted(String date) {
+    return 'Startet den $date';
+  }
 
   @override
   String get agentTemplateKindDayAgent => 'Dagagent';
@@ -1111,17 +1114,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentTemplateMetricsTotalWakes => 'Samlede våger';
 
   @override
+  String get agentTemplateNoneAssigned => 'Ingen skabelon tildelt';
+
+  @override
   String get agentTemplateNoTemplates =>
       'Ingen skabeloner tilgængelige. Opret først en i Indstillinger.';
 
   @override
-  String get agentTemplateNoVersions => 'Ingen versioner';
-
-  @override
-  String get agentTemplateNoneAssigned => 'Ingen skabelon tildelt';
-
-  @override
   String get agentTemplateNotFound => 'Skabelon ikke fundet';
+
+  @override
+  String get agentTemplateNoVersions => 'Ingen versioner';
 
   @override
   String get agentTemplateReportDirectiveHint =>
@@ -1151,7 +1154,23 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentTemplateSelectTitle => 'Vælg skabelon';
 
   @override
+  String get agentTemplatesEmptyFiltered =>
+      'Ingen skabeloner matcher dine filtre.';
+
+  @override
   String get agentTemplateSettingsTab => 'Indstillinger';
+
+  @override
+  String get agentTemplatesFilterSectionKind => 'Venlig';
+
+  @override
+  String get agentTemplatesGroupByKind => 'Venlig';
+
+  @override
+  String get agentTemplatesGroupNone => 'Alle';
+
+  @override
+  String get agentTemplatesSearchPlaceholder => 'Søg skabeloner...';
 
   @override
   String get agentTemplateStatsTab => 'Statistik';
@@ -1161,6 +1180,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentTemplateStatusArchived => 'Arkiveret';
+
+  @override
+  String get agentTemplatesTitle => 'Agent-skabeloner';
 
   @override
   String get agentTemplateSwitchHint =>
@@ -1176,25 +1198,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentTemplateVersionSaved => 'Ny version gemt';
-
-  @override
-  String get agentTemplatesEmptyFiltered =>
-      'Ingen skabeloner matcher dine filtre.';
-
-  @override
-  String get agentTemplatesFilterSectionKind => 'Venlig';
-
-  @override
-  String get agentTemplatesGroupByKind => 'Venlig';
-
-  @override
-  String get agentTemplatesGroupNone => 'Alle';
-
-  @override
-  String get agentTemplatesSearchPlaceholder => 'Søg skabeloner...';
-
-  @override
-  String get agentTemplatesTitle => 'Agent-skabeloner';
 
   @override
   String get agentThreadReportLabel => 'Rapport udarbejdet under denne våge';
@@ -1335,10 +1338,10 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
+  String get aiAttributionTokens => 'Tokens';
 
   @override
-  String get aiAttributionTokens => 'Tokens';
+  String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
 
   @override
   String get aiAttributionTrigger => 'Trigger';
@@ -1958,41 +1961,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'Vist på din udbyderliste';
 
   @override
-  String aiProviderConnectKeyHelperLink(String url) {
-    return 'Få en nøgle på $url';
-  }
-
-  @override
-  String get aiProviderConnectKeyHiddenLabel => 'Skjult';
-
-  @override
-  String get aiProviderConnectKeyPrivacyHint =>
-      'Din API-nøgle forlader aldrig din enhed.';
-
-  @override
-  String aiProviderConnectPageTitle(String providerName) {
-    return 'Forbind $providerName';
-  }
-
-  @override
-  String get aiProviderConnectSaveAndContinue => 'Gem & Fortsæt';
-
-  @override
-  String get aiProviderConnectSaveAsDraft => 'Gem som udkast';
-
-  @override
-  String get aiProviderConnectSavedAsDraftToast => 'Gemt som udkast';
-
-  @override
-  String get aiProviderConnectStepChoose => 'Vælg udbyder';
-
-  @override
-  String get aiProviderConnectStepConnect => 'Forbind';
-
-  @override
-  String get aiProviderConnectStepReview => 'Anmeldelse';
-
-  @override
   String get aiProviderConnectionCheckingLabel =>
       'Tjekker nøglen, lister tilgængelige modeller...';
 
@@ -2042,6 +2010,41 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get aiProviderConnectionVerifiedTitle => 'Forbindelse bekræftet';
+
+  @override
+  String aiProviderConnectKeyHelperLink(String url) {
+    return 'Få en nøgle på $url';
+  }
+
+  @override
+  String get aiProviderConnectKeyHiddenLabel => 'Skjult';
+
+  @override
+  String get aiProviderConnectKeyPrivacyHint =>
+      'Din API-nøgle forlader aldrig din enhed.';
+
+  @override
+  String aiProviderConnectPageTitle(String providerName) {
+    return 'Forbind $providerName';
+  }
+
+  @override
+  String get aiProviderConnectSaveAndContinue => 'Gem & Fortsæt';
+
+  @override
+  String get aiProviderConnectSaveAsDraft => 'Gem som udkast';
+
+  @override
+  String get aiProviderConnectSavedAsDraftToast => 'Gemt som udkast';
+
+  @override
+  String get aiProviderConnectStepChoose => 'Vælg udbyder';
+
+  @override
+  String get aiProviderConnectStepConnect => 'Forbind';
+
+  @override
+  String get aiProviderConnectStepReview => 'Anmeldelse';
 
   @override
   String get aiProviderDetailAddModelButton => 'Tilføj model';
@@ -2211,6 +2214,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Vis AI-fremskridt';
 
   @override
+  String get aiSettingsAddedLabel => 'Tilføjet';
+
+  @override
   String get aiSettingsAddModelButton => 'Tilføj model';
 
   @override
@@ -2228,9 +2234,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get aiSettingsAddProviderButton => 'Tilføj udbyder';
-
-  @override
-  String get aiSettingsAddedLabel => 'Tilføjet';
 
   @override
   String get aiSettingsAgentWakeConcurrencyDescription =>
@@ -2581,10 +2584,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get audioRecordingResume => 'Genoptag';
 
   @override
-  String get audioRecordingStop => 'Stop';
+  String get audioRecordings => 'Lydoptagelser';
 
   @override
-  String get audioRecordings => 'Lydoptagelser';
+  String get audioRecordingStop => 'Stop';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -3051,10 +3054,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checklistExportFailed => 'Eksporten mislykkedes';
 
   @override
-  String get checklistItemArchiveUndo => 'Fortryd';
+  String get checklistItemArchived => 'Arkiveret genstand';
 
   @override
-  String get checklistItemArchived => 'Arkiveret genstand';
+  String get checklistItemArchiveUndo => 'Fortryd';
 
   @override
   String get checklistItemDeleteCancel => 'Annuller';
@@ -3063,10 +3066,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Bekræft';
 
   @override
-  String get checklistItemDeleteWarning => 'Denne handling kan ikke gøres om.';
+  String get checklistItemDeleted => 'Genstanden slettet';
 
   @override
-  String get checklistItemDeleted => 'Genstanden slettet';
+  String get checklistItemDeleteWarning => 'Denne handling kan ikke gøres om.';
 
   @override
   String get checklistMarkdownCopied => 'Tjekliste kopieret som Markdown';
@@ -3508,10 +3511,23 @@ class AppLocalizationsDa extends AppLocalizations {
   String get conflictResolvedToast => 'Konflikten løst';
 
   @override
+  String get conflictsEmptyDescription =>
+      'Alt er synkroniseret lige nu. Løste genstande forbliver tilgængelige i det andet filter.';
+
+  @override
+  String get conflictsEmptyTitle => 'Ingen konflikter opdaget';
+
+  @override
   String get conflictSideFromSync => 'FRA SYNC';
 
   @override
   String get conflictSideThisDevice => 'DENNE ENHED';
+
+  @override
+  String get conflictsResolved => 'Løst';
+
+  @override
+  String get conflictsUnresolved => 'Uafklaret';
 
   @override
   String get conflictValueAbsent => 'Ikke sat';
@@ -3532,19 +3548,6 @@ class AppLocalizationsDa extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get conflictsEmptyDescription =>
-      'Alt er synkroniseret lige nu. Løste genstande forbliver tilgængelige i det andet filter.';
-
-  @override
-  String get conflictsEmptyTitle => 'Ingen konflikter opdaget';
-
-  @override
-  String get conflictsResolved => 'Løst';
-
-  @override
-  String get conflictsUnresolved => 'Uafklaret';
 
   @override
   String get contactUsDiscordLabel => 'Discord';
@@ -3934,6 +3937,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextCaptureRecordingSavedStatus => 'Recording saved';
 
   @override
+  String get dailyOsNextCapturesPanelTitle => 'Fangster';
+
+  @override
   String get dailyOsNextCaptureTranscribing => 'Transskriberer...';
 
   @override
@@ -3954,9 +3960,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureVoiceButtonStop => 'Stop med at lytte';
-
-  @override
-  String get dailyOsNextCapturesPanelTitle => 'Fangster';
 
   @override
   String get dailyOsNextCategoryFilterAll => 'Alle kategorier';
@@ -4542,31 +4545,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextStateRecurringMissed => 'Tilbagevendende · Missede';
 
   @override
-  String dailyOsNextTimeSpentEarlierSessions(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count tidligere sessioner',
-      one: '1 tidligere session',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get dailyOsNextTimeSpentShowLess => 'Vis mindre';
-
-  @override
-  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
-    return '$duration · $completedCount færdig';
-  }
-
-  @override
-  String get dailyOsNextTimeSpentTitle => 'I DAG INDTIL VIDERE';
-
-  @override
-  String get dailyOsNextTimeSpentTitlePast => 'TID BRUGT';
-
-  @override
   String get dailyOsNextTimelineActual => 'Nuværende';
 
   @override
@@ -4597,13 +4575,38 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextTimelineTracked => 'sporet';
 
   @override
+  String dailyOsNextTimeSpentEarlierSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tidligere sessioner',
+      one: '1 tidligere session',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentShowLess => 'Vis mindre';
+
+  @override
+  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
+    return '$duration · $completedCount færdig';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentTitle => 'I DAG INDTIL VIDERE';
+
+  @override
+  String get dailyOsNextTimeSpentTitlePast => 'TID BRUGT';
+
+  @override
   String get dailyOsNextTriageConfirmDefer => 'Udskudt';
 
   @override
-  String get dailyOsNextTriageConfirmDoNow => 'Færdig nu';
+  String get dailyOsNextTriageConfirmDone => 'Markeret som færdig';
 
   @override
-  String get dailyOsNextTriageConfirmDone => 'Markeret som færdig';
+  String get dailyOsNextTriageConfirmDoNow => 'Færdig nu';
 
   @override
   String get dailyOsNextTriageConfirmDrop => 'Droppet';
@@ -4615,10 +4618,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get dailyOsNextTriageDefer => 'Udsættelse';
 
   @override
-  String get dailyOsNextTriageDoNow => 'Gør det nu';
+  String get dailyOsNextTriageDone => 'Færdig';
 
   @override
-  String get dailyOsNextTriageDone => 'Færdig';
+  String get dailyOsNextTriageDoNow => 'Gør det nu';
 
   @override
   String get dailyOsNextTriageDrop => 'Drop';
@@ -5485,10 +5488,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get designSystemSpinnerSkeletonPulseLabel => 'Pulse';
 
   @override
-  String get designSystemSpinnerSkeletonWaveLabel => 'Bølge';
+  String get designSystemSpinnerSkeletonsTitle => 'Skeletter';
 
   @override
-  String get designSystemSpinnerSkeletonsTitle => 'Skeletter';
+  String get designSystemSpinnerSkeletonWaveLabel => 'Bølge';
 
   @override
   String get designSystemSpinnerSpinnersTitle => 'Spinnere';
@@ -5622,17 +5625,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get desktopEmptyStateSelectTask => 'Vælg en opgave for at se detaljer';
 
   @override
+  String deviceDeletedSuccess(String deviceName) {
+    return '$deviceName fjernet fra synkronisering';
+  }
+
+  @override
   String get deviceDeleteFailedGeneric =>
       'Enheden kunne ikke fjernes. Tjek din forbindelse, og prøv igen.';
 
   @override
   String deviceDeleteQuestion(String deviceName) {
     return 'Vil du fjerne $deviceName fra din synkroniseringskonto? Enheden logges ud og skal parres igen, før den kan synkronisere.';
-  }
-
-  @override
-  String deviceDeletedSuccess(String deviceName) {
-    return '$deviceName fjernet fra synkronisering';
   }
 
   @override
@@ -5974,23 +5977,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitPriorityLabel => 'Prioritet';
 
   @override
-  String get habitSectionOptionsTitle => 'Muligheder';
-
-  @override
-  String get habitSectionScheduleTitle => 'Tidsplan';
-
-  @override
-  String get habitShowAlertAtLabel => 'Vis alarm på';
-
-  @override
-  String get habitShowFromLabel => 'Udsendelse fra';
-
-  @override
-  String habitStreakDaysSemantic(int count) {
-    return '$count-dagsstime';
-  }
-
-  @override
   String get habitsAboveGoal => 'På banen';
 
   @override
@@ -6041,6 +6027,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get habitsDoneTodayLabel => 'Udført i dag';
 
   @override
+  String get habitSectionOptionsTitle => 'Muligheder';
+
+  @override
+  String get habitSectionScheduleTitle => 'Tidsplan';
+
+  @override
   String get habitsFilterAll => 'Alle';
 
   @override
@@ -6064,6 +6056,12 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get habitsHeatmapMore => 'Mere';
+
+  @override
+  String get habitShowAlertAtLabel => 'Vis alarm på';
+
+  @override
+  String get habitShowFromLabel => 'Udsendelse fra';
 
   @override
   String habitsLaggardHint(String habit, int kept, int active) {
@@ -6112,6 +6110,11 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String habitsToGoCount(int count) {
     return '$count til at tage af sted';
+  }
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    return '$count-dagsstime';
   }
 
   @override
@@ -6169,7 +6172,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get imagePromptGenerationFullPromptLabel => 'Fuld billedprompt:';
 
   @override
+  String get images => 'Billeder';
+
+  @override
   String get imageViewerDownloadFailed => 'Kunne ikke gemme billedet';
+
+  @override
+  String get imageViewerDownloadingTooltip => 'Gem billede';
 
   @override
   String get imageViewerDownloadPermissionDenied =>
@@ -6187,16 +6196,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get imageViewerDownloadTooltip => 'Download billede';
 
   @override
-  String get imageViewerDownloadingTooltip => 'Gem billede';
-
-  @override
   String get imageViewerNextTooltip => 'Næste billede';
 
   @override
   String get imageViewerPreviousTooltip => 'Forrige billede';
-
-  @override
-  String get images => 'Billeder';
 
   @override
   String get inactiveLabel => 'Inaktiv';
@@ -6283,9 +6286,15 @@ class AppLocalizationsDa extends AppLocalizations {
   String get inferenceProfileSelectProfile => 'Vælg en profil...';
 
   @override
+  String get inferenceProfilesEmpty => 'Ingen slutningsprofiler endnu';
+
+  @override
   String inferenceProfileSkillModelRequired(String slotName) {
     return 'Kræver at $slotName-modellen sættes';
   }
+
+  @override
+  String get inferenceProfileSkillsSection => 'Automatiserede færdigheder';
 
   @override
   String inferenceProfileSkillUsesModel(String slotName) {
@@ -6293,7 +6302,7 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get inferenceProfileSkillsSection => 'Automatiserede færdigheder';
+  String get inferenceProfilesTitle => 'Inferensprofiler';
 
   @override
   String get inferenceProfileThinking => 'Tænkning';
@@ -6309,12 +6318,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get inferenceProfileUnavailable => 'Inferensprofil ikke tilgængelig';
-
-  @override
-  String get inferenceProfilesEmpty => 'Ingen slutningsprofiler endnu';
-
-  @override
-  String get inferenceProfilesTitle => 'Inferensprofiler';
 
   @override
   String get inputDataTypeAudioFilesDescription => 'Brug lydfiler som input';
@@ -6577,13 +6580,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get journalEndDateLabel => 'Slutdato';
 
   @override
-  String get journalEndTimeLabel => 'Endetid';
-
-  @override
   String get journalEndsAnotherDayHint => 'Vælg en separat slutdato';
 
   @override
   String get journalEndsAnotherDayLabel => 'Slutter på en anden dag';
+
+  @override
+  String get journalEndTimeLabel => 'Endetid';
 
   @override
   String get journalEntryExpandLabel => 'Udvid opslag';
@@ -6611,12 +6614,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get journalHideMapHint => 'Skjul kort';
-
-  @override
-  String get journalLinkFromHint => 'Link fra';
-
-  @override
-  String get journalLinkToHint => 'Link til';
 
   @override
   String get journalLinkedEntriesActivityFilterAudio => 'Lyd';
@@ -6651,6 +6648,12 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get journalLinkedFromLabel => 'Linket fra:';
+
+  @override
+  String get journalLinkFromHint => 'Link fra';
+
+  @override
+  String get journalLinkToHint => 'Link til';
 
   @override
   String journalOvernightNextDay(String date) {
@@ -6936,13 +6939,13 @@ class AppLocalizationsDa extends AppLocalizations {
   String get knowledgeGraphFilterRelations => 'Relationer';
 
   @override
+  String get knowledgeGraphFilters => 'Filtre';
+
+  @override
   String get knowledgeGraphFilterTaskStatus => 'Opgavestatus';
 
   @override
   String get knowledgeGraphFilterTypes => 'Typer';
-
-  @override
-  String get knowledgeGraphFilters => 'Filtre';
 
   @override
   String get knowledgeGraphForward => 'Frem';
@@ -7026,10 +7029,10 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get knowledgeGraphRecentToOlder => 'nylige → ældre';
+  String get knowledgeGraphRecenter => 'Nyere';
 
   @override
-  String get knowledgeGraphRecenter => 'Nyere';
+  String get knowledgeGraphRecentToOlder => 'nylige → ældre';
 
   @override
   String get knowledgeGraphRelationAiSource => 'AI-kilde';
@@ -7089,10 +7092,6 @@ class AppLocalizationsDa extends AppLocalizations {
       'This would create a blocking cycle — choose a different task.';
 
   @override
-  String get linkCreateFailedMessage =>
-      'Couldn\'t create the link. Please try again.';
-
-  @override
   String linkCreatedMessage(String relation, String title) {
     return '$relation: $title';
   }
@@ -7101,7 +7100,30 @@ class AppLocalizationsDa extends AppLocalizations {
   String get linkCreatedUndo => 'Undo';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Couldn\'t create the link. Please try again.';
+
+  @override
   String get linkDirectionLabel => 'This task…';
+
+  @override
+  String get linkedTaskImageBadge => 'Fra linket opgave';
+
+  @override
+  String get linkedTasksBlockedBySectionTitle => 'Blocked by';
+
+  @override
+  String get linkedTasksEmptyAction => 'Link a task…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Forbind denne opgave med en anden opgave.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Muligheder for tilknyttede opgaver';
+
+  @override
+  String get linkedTasksTitle => 'Sammenkoblede opgaver';
 
   @override
   String get linkExistingTask => 'Link eksisterende opgave…';
@@ -7248,25 +7270,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get linkTaskButton => 'Link';
-
-  @override
-  String get linkedTaskImageBadge => 'Fra linket opgave';
-
-  @override
-  String get linkedTasksBlockedBySectionTitle => 'Blocked by';
-
-  @override
-  String get linkedTasksEmptyAction => 'Link a task…';
-
-  @override
-  String get linkedTasksEmptyHint =>
-      'Forbind denne opgave med en anden opgave.';
-
-  @override
-  String get linkedTasksMenuTooltip => 'Muligheder for tilknyttede opgaver';
-
-  @override
-  String get linkedTasksTitle => 'Sammenkoblede opgaver';
 
   @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
@@ -7478,6 +7481,20 @@ class AppLocalizationsDa extends AppLocalizations {
       'Udfyldte udbakke-varer ældre end 7 dage? Dette sletter allerede sendte rækker i chunks og kører VACUUM for at genvinde disken. Ventende og fejlposter gemmes.';
 
   @override
+  String get maintenanceRecreateFts5 => 'Genskab fuldtekstindeks';
+
+  @override
+  String get maintenanceRecreateFts5Confirm => 'Ja, genskab indekset';
+
+  @override
+  String get maintenanceRecreateFts5Description =>
+      'Genskab fuldtekst-søgeindeks';
+
+  @override
+  String get maintenanceRecreateFts5Message =>
+      'Er du sikker på, at du vil genskabe fuldtekstindekset? Det kan tage noget tid.';
+
+  @override
   String get maintenanceReSync => 'Beskedhistorik';
 
   @override
@@ -7552,20 +7569,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get maintenanceReSyncStart => 'Start';
-
-  @override
-  String get maintenanceRecreateFts5 => 'Genskab fuldtekstindeks';
-
-  @override
-  String get maintenanceRecreateFts5Confirm => 'Ja, genskab indekset';
-
-  @override
-  String get maintenanceRecreateFts5Description =>
-      'Genskab fuldtekst-søgeindeks';
-
-  @override
-  String get maintenanceRecreateFts5Message =>
-      'Er du sikker på, at du vil genskabe fuldtekstindekset? Det kan tage noget tid.';
 
   @override
   String get maintenanceSyncDefinitions =>
@@ -8577,11 +8580,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get projectRecommendationResolveTooltip => 'Mark besluttede sig';
 
   @override
+  String get projectRecommendationsTitle => 'Anbefalede næste skridt';
+
+  @override
   String get projectRecommendationUpdateError =>
       'Kunne ikke opdatere anbefalingen. Prøv venligst igen.';
 
   @override
-  String get projectRecommendationsTitle => 'Anbefalede næste skridt';
+  String get projectsFilterStatusLabel => 'Status:';
+
+  @override
+  String get projectsFilterTooltip => 'Filterprojekter';
 
   @override
   String get projectShowcaseAiReportTitle => 'AI-rapport';
@@ -8712,12 +8721,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get projectTitleRequired => 'Projekttitel kan ikke være tom';
-
-  @override
-  String get projectsFilterStatusLabel => 'Status:';
-
-  @override
-  String get projectsFilterTooltip => 'Filterprojekter';
 
   @override
   String get promptDefaultModelBadge => 'Default';
@@ -9422,10 +9425,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsCelebrationsReplay => 'Omkamp';
 
   @override
-  String get settingsCelebrationsResetToDefault => 'Nulstil til standard';
+  String get settingsCelebrationsResetToast => 'Stilnulstilling til standard';
 
   @override
-  String get settingsCelebrationsResetToast => 'Stilnulstilling til standard';
+  String get settingsCelebrationsResetToDefault => 'Nulstil til standard';
 
   @override
   String get settingsCelebrationsResetUndo => 'Fortryd';
@@ -9941,12 +9944,12 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsMatrixPreviousPage => 'Forrige side';
 
   @override
+  String get settingsMatrixSentMessagesLabel => 'Sendte beskeder:';
+
+  @override
   String settingsMatrixSentMessageType(String eventType) {
     return 'Sendt ($eventType)';
   }
-
-  @override
-  String get settingsMatrixSentMessagesLabel => 'Sendte beskeder:';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Start verifikation';
@@ -9993,9 +9996,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Gem';
 
   @override
-  String get settingsMeasurableUnitLabel => 'Enhedsforkortelse (valgfrit)';
-
-  @override
   String get settingsMeasurablesCreateTitle => 'Skab målbar';
 
   @override
@@ -10021,6 +10021,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get settingsMeasurablesTitle => 'Målbare ting';
+
+  @override
+  String get settingsMeasurableUnitLabel => 'Enhedsforkortelse (valgfrit)';
 
   @override
   String get settingsOnboardingActionSubtitle =>
@@ -10654,6 +10657,47 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncPairDiscardCode => 'De matcher ikke';
 
   @override
+  String get syncPairedFirstDeviceBody =>
+      'Det er den første på din konto. Tilføj en anden, når du har lyst — alt, hvad du skriver her, venter på den.';
+
+  @override
+  String get syncPairedFirstDeviceTitle =>
+      'Synkronisering er sat op på denne enhed';
+
+  @override
+  String get syncPairedSettingsStep =>
+      'Kategorier, vaner, dashboards og AI-opsætning — sendes fra din anden enhed, når emojierne matcher.';
+
+  @override
+  String get syncPairedSettingsStepFallback =>
+      'Hvis du lukkede den, skal du på den anden enhed åbne Indstillinger → Synkroniseringsindstillinger → Vedligeholdelse, køre indstillingssynkroniseringen og derefter vælge Beskedhistorik.';
+
+  @override
+  String get syncPairedSettingsStepTitle => 'Modtag dine indstillinger';
+
+  @override
+  String get syncPairedStepsLeft =>
+      'To trin tilbage, før denne enhed kan læse din dagbog.';
+
+  @override
+  String get syncPairedVerifyFallback =>
+      'Ingen emojis endnu? Tjek igen – eller åbn Enheder og start den derfra.';
+
+  @override
+  String get syncPairedVerifyStep =>
+      'Begge enheder viser om lidt syv emojier. Indtil de matcher, ser denne enhed kun krypteret tekst.';
+
+  @override
+  String get syncPairedVerifyStepDone =>
+      'Emojier stemmer – denne enhed kan læse dine noter';
+
+  @override
+  String get syncPairedVerifyStepTitle => 'Bekræft emojierne';
+
+  @override
+  String get syncPairedVerifyWaiting => 'Venter på, at emojierne dukker op…';
+
+  @override
   String get syncPairEnterManually => 'Indsæt koden i stedet';
 
   @override
@@ -10712,11 +10756,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get syncPairScanLink => 'Har du et kamera? Scan QR-koden i stedet';
 
   @override
-  String get syncPairScanTitle => 'Scan parringskoden';
-
-  @override
   String get syncPairScannerRejected =>
       'Det er den kode, du afviste. Scan koden, din egen enhed viser, eller indsæt den nedenfor.';
+
+  @override
+  String get syncPairScanTitle => 'Scan parringskoden';
 
   @override
   String get syncPairShowEmoji => 'Vis emojierne';
@@ -10724,47 +10768,6 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get syncPairWhereToFind =>
       'Den findes på din anden enhed under Tilføj enhed — kopiér den dér, og indsæt den her.';
-
-  @override
-  String get syncPairedFirstDeviceBody =>
-      'Det er den første på din konto. Tilføj en anden, når du har lyst — alt, hvad du skriver her, venter på den.';
-
-  @override
-  String get syncPairedFirstDeviceTitle =>
-      'Synkronisering er sat op på denne enhed';
-
-  @override
-  String get syncPairedSettingsStep =>
-      'Kategorier, vaner, dashboards og AI-opsætning — sendes fra din anden enhed, når emojierne matcher.';
-
-  @override
-  String get syncPairedSettingsStepFallback =>
-      'Hvis du lukkede den, skal du på den anden enhed åbne Indstillinger → Synkroniseringsindstillinger → Vedligeholdelse, køre indstillingssynkroniseringen og derefter vælge Beskedhistorik.';
-
-  @override
-  String get syncPairedSettingsStepTitle => 'Modtag dine indstillinger';
-
-  @override
-  String get syncPairedStepsLeft =>
-      'To trin tilbage, før denne enhed kan læse din dagbog.';
-
-  @override
-  String get syncPairedVerifyFallback =>
-      'Ingen emojis endnu? Tjek igen – eller åbn Enheder og start den derfra.';
-
-  @override
-  String get syncPairedVerifyStep =>
-      'Begge enheder viser om lidt syv emojier. Indtil de matcher, ser denne enhed kun krypteret tekst.';
-
-  @override
-  String get syncPairedVerifyStepDone =>
-      'Emojier stemmer – denne enhed kan læse dine noter';
-
-  @override
-  String get syncPairedVerifyStepTitle => 'Bekræft emojierne';
-
-  @override
-  String get syncPairedVerifyWaiting => 'Venter på, at emojierne dukker op…';
 
   @override
   String get syncPayloadAgentBundle => 'Agentbundt';
@@ -11061,15 +11064,15 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ingen kompatible tænkemodeller tilgængelige';
 
   @override
+  String get taskAgentNoProfilesAvailable =>
+      'Ingen profiler tilgængelige på denne enhed';
+
+  @override
   String get taskAgentNoProfileSelected => 'Ingen AI-opsætning';
 
   @override
   String get taskAgentNoProfileSelectedDescription =>
       'Vælg en gemt opsætning eller tænkemodel, før denne agent kan køre.';
-
-  @override
-  String get taskAgentNoProfilesAvailable =>
-      'Ingen profiler tilgængelige på denne enhed';
 
   @override
   String taskAgentProfileChangedToast(String profile) {
@@ -11464,6 +11467,40 @@ class AppLocalizationsDa extends AppLocalizations {
   String get taskPriorityUrgent => 'Hastende';
 
   @override
+  String get tasksAddLabelButton => 'Tilføj Label';
+
+  @override
+  String get tasksAgentFilterAll => 'Alle';
+
+  @override
+  String get tasksAgentFilterHasAgent => 'Har agent';
+
+  @override
+  String get tasksAgentFilterNoAgent => 'Ingen agent';
+
+  @override
+  String get tasksAgentFilterTitle => 'Agent';
+
+  @override
+  String tasksCompactFilterCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filtre',
+      one: '$count filter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksCompactHeaderExpandHint => 'Vis søgning og filtre';
+
+  @override
+  String tasksCompactSearchContext(String query) {
+    return '»$query«';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Vælg kategori';
 
   @override
@@ -11471,6 +11508,15 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get taskSetEstimateLabel => 'Tilføj estimat';
+
+  @override
+  String get tasksFilterApplyTitle => 'Påfør filter';
+
+  @override
+  String get tasksFilterClearAll => 'Ryd alt';
+
+  @override
+  String get tasksFilterTitle => 'Filteropgaver';
 
   @override
   String get taskShowcaseAudio => 'Lyd';
@@ -11530,85 +11576,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get taskShowcaseTodos => 'Alle';
-
-  @override
-  String get taskStatusAll => 'Alle';
-
-  @override
-  String get taskStatusBlocked => 'Blokeret';
-
-  @override
-  String get taskStatusDone => 'Færdig';
-
-  @override
-  String get taskStatusGroomed => 'Plejet';
-
-  @override
-  String get taskStatusInProgress => 'Under udvikling';
-
-  @override
-  String get taskStatusLabel => 'Status:';
-
-  @override
-  String get taskStatusOnHold => 'På pause';
-
-  @override
-  String get taskStatusOpen => 'Åben';
-
-  @override
-  String get taskStatusRejected => 'Afvist';
-
-  @override
-  String get taskTitleEmpty => 'Ingen titel';
-
-  @override
-  String get taskTitlePrompt => 'Giv opgaven et navn';
-
-  @override
-  String get taskUntitled => '(uden titel)';
-
-  @override
-  String get tasksAddLabelButton => 'Tilføj Label';
-
-  @override
-  String get tasksAgentFilterAll => 'Alle';
-
-  @override
-  String get tasksAgentFilterHasAgent => 'Har agent';
-
-  @override
-  String get tasksAgentFilterNoAgent => 'Ingen agent';
-
-  @override
-  String get tasksAgentFilterTitle => 'Agent';
-
-  @override
-  String tasksCompactFilterCount(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count filtre',
-      one: '$count filter',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get tasksCompactHeaderExpandHint => 'Vis søgning og filtre';
-
-  @override
-  String tasksCompactSearchContext(String query) {
-    return '»$query«';
-  }
-
-  @override
-  String get tasksFilterApplyTitle => 'Påfør filter';
-
-  @override
-  String get tasksFilterClearAll => 'Ryd alt';
-
-  @override
-  String get tasksFilterTitle => 'Filteropgaver';
 
   @override
   String get tasksLabelFilterAll => 'Alle';
@@ -11678,19 +11645,6 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Omdøb det gemte filter';
-
-  @override
-  String get tasksSavedFilterToastDeleted => 'Filter slettet';
-
-  @override
-  String tasksSavedFilterToastSaved(String name) {
-    return 'Gemt \'$name\'';
-  }
-
-  @override
-  String tasksSavedFilterToastUpdated(String name) {
-    return 'Opdateret \'$name\'';
-  }
 
   @override
   String get tasksSavedFiltersAllShort => 'Alle';
@@ -11830,6 +11784,19 @@ class AppLocalizationsDa extends AppLocalizations {
       'Opdater eksisterende filter';
 
   @override
+  String get tasksSavedFilterToastDeleted => 'Filter slettet';
+
+  @override
+  String tasksSavedFilterToastSaved(String name) {
+    return 'Gemt \'$name\'';
+  }
+
+  @override
+  String tasksSavedFilterToastUpdated(String name) {
+    return 'Opdateret \'$name\'';
+  }
+
+  @override
   String get tasksSearchModeLabel => 'Søgefunktion';
 
   @override
@@ -11849,6 +11816,42 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get tasksSortByPriority => 'Prioritet';
+
+  @override
+  String get taskStatusAll => 'Alle';
+
+  @override
+  String get taskStatusBlocked => 'Blokeret';
+
+  @override
+  String get taskStatusDone => 'Færdig';
+
+  @override
+  String get taskStatusGroomed => 'Plejet';
+
+  @override
+  String get taskStatusInProgress => 'Under udvikling';
+
+  @override
+  String get taskStatusLabel => 'Status:';
+
+  @override
+  String get taskStatusOnHold => 'På pause';
+
+  @override
+  String get taskStatusOpen => 'Åben';
+
+  @override
+  String get taskStatusRejected => 'Afvist';
+
+  @override
+  String get taskTitleEmpty => 'Ingen titel';
+
+  @override
+  String get taskTitlePrompt => 'Giv opgaven et navn';
+
+  @override
+  String get taskUntitled => '(uden titel)';
 
   @override
   String get thinkingDisclosureCopied => 'Begrundelse kopieret';

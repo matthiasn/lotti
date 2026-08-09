@@ -355,6 +355,37 @@ void main() {
       },
     );
 
+    testWidgets(
+      'the start card offered by the error branch still opens the chat — the '
+      'fallback has to be usable, not just visible',
+      (tester) async {
+        await tester.pumpWidget(
+          buildSubject(
+            mediaQueryData: phoneMediaQueryData.copyWith(
+              size: const Size(390, 2000),
+            ),
+            pendingOverride: () => throw Exception('pending failed'),
+            historyOverride: () => throw Exception('history failed'),
+          ),
+        );
+        await tester.pumpAndSettle();
+
+        final context = tester.element(find.byType(SoulEvolutionReviewPage));
+        await tester.tap(
+          find.text(
+            context.messages.agentSoulReviewStartAction,
+            skipOffstage: false,
+          ),
+        );
+        // Route transition; do not settle — the destination chat page is kept
+        // in a perpetual loading state.
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 350));
+
+        expect(find.byType(SoulEvolutionChatPage), findsOneWidget);
+      },
+    );
+
     // The pending provider's error branch falls back to _StartCard, with the
     // action enabled only when templates use the soul. The history provider is
     // also driven to an error so the pending AsyncValue reliably settles into
@@ -393,6 +424,19 @@ void main() {
             find.byType(DesignSystemButton, skipOffstage: false),
           );
           expect(button.onPressed, actionEnabled ? isNotNull : isNull);
+
+          // The count sits beside the button because zero templates is the
+          // reason the action is disabled — so it must survive the error
+          // branch too, not just the happy path.
+          expect(
+            find.text(
+              context.messages.agentSoulReviewTemplateCount(
+                templateIds.length,
+              ),
+              skipOffstage: false,
+            ),
+            templateIds.isEmpty ? findsNothing : findsOneWidget,
+          );
         },
       );
     }

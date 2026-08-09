@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 import '../../../../../widget_test_utils.dart';
 
@@ -16,8 +17,12 @@ List<double> dotOpacities(WidgetTester tester) => tester
     .toList();
 
 void main() {
-  Widget subject() => makeTestableWidgetNoScroll(
+  // Reduced motion is read through `MediaQuery.disableAnimationsOf`, so the
+  // tests drive it the way the widget actually observes it — a rebuild with a
+  // different MediaQuery is exactly what an OS toggle produces.
+  Widget subject({bool reduceMotion = false}) => makeTestableWidgetNoScroll(
     const Center(child: EvolutionTypingIndicator()),
+    mediaQueryData: MediaQueryData(disableAnimations: reduceMotion),
   );
 
   group('EvolutionTypingIndicator', () {
@@ -60,17 +65,63 @@ void main() {
       }
     });
 
+    testWidgets('announces itself to assistive technology, and hides the '
+        'decorative dots from it', (tester) async {
+      await tester.pumpWidget(subject());
+      await tester.pump();
+
+      final context = tester.element(find.byType(EvolutionTypingIndicator));
+      final handle = tester.ensureSemantics();
+
+      // Without this a screen reader hears nothing at all between sending a
+      // message and the reply arriving, with the composer disabled meanwhile.
+      final node = tester.getSemantics(
+        find.byType(EvolutionTypingIndicator).first,
+      );
+      expect(node.label, context.messages.agentRitualTypingSemantics);
+      expect(node.flagsCollection.isLiveRegion, isTrue);
+
+      // The dots themselves are decorative and must not be announced.
+      expect(node.childrenCount, 0);
+
+      handle.dispose();
+    });
+
+    testWidgets('starts pulsing when reduced motion is switched off while it '
+        'is on screen — a model can compose for minutes', (tester) async {
+      await tester.pumpWidget(subject(reduceMotion: true));
+      await tester.pump();
+      final parked = dotOpacities(tester);
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(dotOpacities(tester), parked);
+
+      await tester.pumpWidget(subject());
+      await tester.pump(const Duration(milliseconds: 300));
+
+      expect(dotOpacities(tester), isNot(parked));
+    });
+
+    testWidgets('stops when reduced motion is switched on mid-response — '
+        'sampling the flag once at mount would pulse on regardless', (
+      tester,
+    ) async {
+      await tester.pumpWidget(subject());
+      await tester.pump(const Duration(milliseconds: 300));
+
+      await tester.pumpWidget(subject(reduceMotion: true));
+      await tester.pump();
+      final parked = dotOpacities(tester);
+      await tester.pump(const Duration(milliseconds: 600));
+
+      expect(dotOpacities(tester), parked);
+      await tester.pumpAndSettle();
+    });
+
     testWidgets('holds still under reduced motion — a perpetual animation '
         'would otherwise pulse for as long as the agent is thinking', (
       tester,
     ) async {
-      tester.binding.platformDispatcher.accessibilityFeaturesTestValue =
-          const FakeAccessibilityFeatures(disableAnimations: true);
-      addTearDown(
-        tester.binding.platformDispatcher.clearAccessibilityFeaturesTestValue,
-      );
-
-      await tester.pumpWidget(subject());
+      await tester.pumpWidget(subject(reduceMotion: true));
       await tester.pump();
       final first = dotOpacities(tester);
 

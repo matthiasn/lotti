@@ -1,8 +1,36 @@
 import 'package:flutter/material.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_data.dart';
+import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_typing_indicator.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/cards/modern_icon_container.dart';
+
+/// System tokens that mean the session is over before it began. Both rituals
+/// emit these, and either one leaves `sessionId` null forever.
+const Set<String> kTerminalSessionTokens = {
+  'session_error',
+  'session_abandoned',
+};
+
+/// Whether the chat should show [EvolutionSessionOpening] rather than the
+/// transcript.
+///
+/// "No session yet" is not the same as "no session ever". When
+/// `startSession` fails, the notifier settles with a null `sessionId` and a
+/// `session_error` note — a gate that keyed only on the missing id showed the
+/// opening state permanently, hiding the localized failure behind an
+/// indicator that implied work was still in progress, with the composer
+/// disabled and no way out.
+bool shouldShowSessionOpening(EvolutionChatData data) {
+  if (data.sessionId != null) return false;
+  for (final message in data.messages) {
+    // Anyone actually speaking means there is a conversation to render.
+    if (message is! EvolutionSystemMessage) return false;
+    if (kTerminalSessionTokens.contains(message.text)) return false;
+  }
+  return true;
+}
 
 /// The first frame of a 1-on-1, shown while the session is being opened.
 ///

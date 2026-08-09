@@ -35,10 +35,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get addActionAddTask => 'Uppgift';
 
   @override
-  String get addActionAddTimeRecording => 'Lägg till tidsregistrering';
+  String get addActionAddTimer => 'Lägg till timer';
 
   @override
-  String get addActionAddTimer => 'Lägg till timer';
+  String get addActionAddTimeRecording => 'Lägg till tidsregistrering';
 
   @override
   String get addActionCreateLinkedTask => 'Länka en ny uppgift';
@@ -671,6 +671,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vakor sedan senaste en-mot-en-mötet';
 
   @override
+  String get agentRitualTypingSemantics => 'Agenten skriver ett svar';
+
+  @override
   String agentRitualWakesSinceLastCount(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
@@ -706,10 +709,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentSoulCoachingStyleLabel => 'Coachingstil';
 
   @override
-  String get agentSoulCreateTitle => 'Skapa själ';
+  String get agentSoulCreatedSuccess => 'Själ skapad';
 
   @override
-  String get agentSoulCreatedSuccess => 'Själ skapad';
+  String get agentSoulCreateTitle => 'Skapa själ';
 
   @override
   String get agentSoulDeleteConfirmBody =>
@@ -792,7 +795,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentSoulSelectTitle => 'Välj själ';
 
   @override
+  String get agentSoulsEmptyFiltered => 'Inga själar matchar dina filter.';
+
+  @override
   String get agentSoulSettingsTab => 'Inställningar';
+
+  @override
+  String get agentSoulsSearchPlaceholder => 'Sök själar...';
+
+  @override
+  String get agentSoulsTitle => 'Själar';
 
   @override
   String get agentSoulToneBoundsLabel => 'Tongränser';
@@ -810,15 +822,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentSoulVoiceDirectiveLabel => 'Röstdirektivet';
-
-  @override
-  String get agentSoulsEmptyFiltered => 'Inga själar matchar dina filter.';
-
-  @override
-  String get agentSoulsSearchPlaceholder => 'Sök själar...';
-
-  @override
-  String get agentSoulsTitle => 'Själar';
 
   @override
   String get agentStateConsecutiveFailures =>
@@ -1040,10 +1043,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTemplateAssignedLabel => 'Mall';
 
   @override
-  String get agentTemplateCreateTitle => 'Skapa mall';
+  String get agentTemplateCreatedSuccess => 'Mall skapad';
 
   @override
-  String get agentTemplateCreatedSuccess => 'Mall skapad';
+  String get agentTemplateCreateTitle => 'Skapa mall';
 
   @override
   String get agentTemplateDeleteConfirm =>
@@ -1090,15 +1093,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTemplateInstanceOpenTask => 'Öppna uppgift';
 
   @override
-  String agentTemplateInstanceStarted(String date) {
-    return 'Startad den $date';
-  }
-
-  @override
   String get agentTemplateInstancesEmpty => 'Inga instanser än.';
 
   @override
   String get agentTemplateInstancesHeading => 'Instanser';
+
+  @override
+  String agentTemplateInstanceStarted(String date) {
+    return 'Startad den $date';
+  }
 
   @override
   String get agentTemplateKindDayAgent => 'Dagagent';
@@ -1119,17 +1122,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTemplateMetricsTotalWakes => 'Totala vågor';
 
   @override
+  String get agentTemplateNoneAssigned => 'Ingen mall tilldelad';
+
+  @override
   String get agentTemplateNoTemplates =>
       'Inga mallar tillgängliga. Skapa en i Inställningar först.';
 
   @override
-  String get agentTemplateNoVersions => 'Inga versioner';
-
-  @override
-  String get agentTemplateNoneAssigned => 'Ingen mall tilldelad';
-
-  @override
   String get agentTemplateNotFound => 'Mall ej hittad';
+
+  @override
+  String get agentTemplateNoVersions => 'Inga versioner';
 
   @override
   String get agentTemplateReportDirectiveHint =>
@@ -1159,7 +1162,22 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTemplateSelectTitle => 'Välj mall';
 
   @override
+  String get agentTemplatesEmptyFiltered => 'Inga mallar matchar dina filter.';
+
+  @override
   String get agentTemplateSettingsTab => 'Inställningar';
+
+  @override
+  String get agentTemplatesFilterSectionKind => 'Typ';
+
+  @override
+  String get agentTemplatesGroupByKind => 'Typ';
+
+  @override
+  String get agentTemplatesGroupNone => 'Alla';
+
+  @override
+  String get agentTemplatesSearchPlaceholder => 'Sök mallar...';
 
   @override
   String get agentTemplateStatsTab => 'Statistik';
@@ -1169,6 +1187,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentTemplateStatusArchived => 'Arkiverad';
+
+  @override
+  String get agentTemplatesTitle => 'Agentmallar';
 
   @override
   String get agentTemplateSwitchHint =>
@@ -1184,24 +1205,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentTemplateVersionSaved => 'Ny version sparad';
-
-  @override
-  String get agentTemplatesEmptyFiltered => 'Inga mallar matchar dina filter.';
-
-  @override
-  String get agentTemplatesFilterSectionKind => 'Typ';
-
-  @override
-  String get agentTemplatesGroupByKind => 'Typ';
-
-  @override
-  String get agentTemplatesGroupNone => 'Alla';
-
-  @override
-  String get agentTemplatesSearchPlaceholder => 'Sök mallar...';
-
-  @override
-  String get agentTemplatesTitle => 'Agentmallar';
 
   @override
   String get agentThreadReportLabel => 'Rapport producerad under denna vaka';
@@ -1342,10 +1345,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
+  String get aiAttributionTokens => 'Tokens';
 
   @override
-  String get aiAttributionTokens => 'Tokens';
+  String get aiAttributionTokenUsageUnknown => 'Token usage unknown';
 
   @override
   String get aiAttributionTrigger => 'Trigger';
@@ -1965,41 +1968,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'Visas i din leverantörslista';
 
   @override
-  String aiProviderConnectKeyHelperLink(String url) {
-    return 'Skaffa en nyckel på $url';
-  }
-
-  @override
-  String get aiProviderConnectKeyHiddenLabel => 'Dold';
-
-  @override
-  String get aiProviderConnectKeyPrivacyHint =>
-      'Din API-nyckel lämnar aldrig din enhet.';
-
-  @override
-  String aiProviderConnectPageTitle(String providerName) {
-    return 'Koppla $providerName';
-  }
-
-  @override
-  String get aiProviderConnectSaveAndContinue => 'Spara & Fortsätt';
-
-  @override
-  String get aiProviderConnectSaveAsDraft => 'Spara som utkast';
-
-  @override
-  String get aiProviderConnectSavedAsDraftToast => 'Sparad som utkast';
-
-  @override
-  String get aiProviderConnectStepChoose => 'Välj leverantör';
-
-  @override
-  String get aiProviderConnectStepConnect => 'Koppla upp';
-
-  @override
-  String get aiProviderConnectStepReview => 'Granska';
-
-  @override
   String get aiProviderConnectionCheckingLabel =>
       'Kryssar i nyckeln, listar tillgängliga modeller...';
 
@@ -2049,6 +2017,41 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiProviderConnectionVerifiedTitle => 'Anslutning verifierad';
+
+  @override
+  String aiProviderConnectKeyHelperLink(String url) {
+    return 'Skaffa en nyckel på $url';
+  }
+
+  @override
+  String get aiProviderConnectKeyHiddenLabel => 'Dold';
+
+  @override
+  String get aiProviderConnectKeyPrivacyHint =>
+      'Din API-nyckel lämnar aldrig din enhet.';
+
+  @override
+  String aiProviderConnectPageTitle(String providerName) {
+    return 'Koppla $providerName';
+  }
+
+  @override
+  String get aiProviderConnectSaveAndContinue => 'Spara & Fortsätt';
+
+  @override
+  String get aiProviderConnectSaveAsDraft => 'Spara som utkast';
+
+  @override
+  String get aiProviderConnectSavedAsDraftToast => 'Sparad som utkast';
+
+  @override
+  String get aiProviderConnectStepChoose => 'Välj leverantör';
+
+  @override
+  String get aiProviderConnectStepConnect => 'Koppla upp';
+
+  @override
+  String get aiProviderConnectStepReview => 'Granska';
 
   @override
   String get aiProviderDetailAddModelButton => 'Lägg till modell';
@@ -2218,6 +2221,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get aiRunningActivityOpenProgress => 'Visa AI-framsteg';
 
   @override
+  String get aiSettingsAddedLabel => 'Tillagd';
+
+  @override
   String get aiSettingsAddModelButton => 'Lägg till modell';
 
   @override
@@ -2236,9 +2242,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get aiSettingsAddProviderButton => 'Lägg till leverantör';
-
-  @override
-  String get aiSettingsAddedLabel => 'Tillagd';
 
   @override
   String get aiSettingsAgentWakeConcurrencyDescription =>
@@ -2589,10 +2592,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get audioRecordingResume => 'Återuppta';
 
   @override
-  String get audioRecordingStop => 'Stoppa';
+  String get audioRecordings => 'Ljudinspelningar';
 
   @override
-  String get audioRecordings => 'Ljudinspelningar';
+  String get audioRecordingStop => 'Stoppa';
 
   @override
   String backfillAdvancedRecoveryActions(int count) {
@@ -3057,10 +3060,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checklistExportFailed => 'Exporten misslyckades';
 
   @override
-  String get checklistItemArchiveUndo => 'Ångra';
+  String get checklistItemArchived => 'Föremål arkiverat';
 
   @override
-  String get checklistItemArchived => 'Föremål arkiverat';
+  String get checklistItemArchiveUndo => 'Ångra';
 
   @override
   String get checklistItemDeleteCancel => 'Avbryt';
@@ -3069,11 +3072,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get checklistItemDeleteConfirm => 'Bekräfta';
 
   @override
-  String get checklistItemDeleteWarning =>
-      'Denna åtgärd kan inte göras ogjort.';
+  String get checklistItemDeleted => 'Föremål borttaget';
 
   @override
-  String get checklistItemDeleted => 'Föremål borttaget';
+  String get checklistItemDeleteWarning =>
+      'Denna åtgärd kan inte göras ogjort.';
 
   @override
   String get checklistMarkdownCopied => 'Checklista kopierad som Markdown';
@@ -3515,10 +3518,23 @@ class AppLocalizationsSv extends AppLocalizations {
   String get conflictResolvedToast => 'Konflikten löst';
 
   @override
+  String get conflictsEmptyDescription =>
+      'Allt är i synk just nu. Lösta föremål förblir tillgängliga i det andra filtret.';
+
+  @override
+  String get conflictsEmptyTitle => 'Inga konflikter upptäckta';
+
+  @override
   String get conflictSideFromSync => 'FRÅN SYNC';
 
   @override
   String get conflictSideThisDevice => 'DENNA APPARAT';
+
+  @override
+  String get conflictsResolved => 'Löst';
+
+  @override
+  String get conflictsUnresolved => 'olöst';
 
   @override
   String get conflictValueAbsent => 'Inte inställt';
@@ -3539,19 +3555,6 @@ class AppLocalizationsSv extends AppLocalizations {
     );
     return '$_temp0';
   }
-
-  @override
-  String get conflictsEmptyDescription =>
-      'Allt är i synk just nu. Lösta föremål förblir tillgängliga i det andra filtret.';
-
-  @override
-  String get conflictsEmptyTitle => 'Inga konflikter upptäckta';
-
-  @override
-  String get conflictsResolved => 'Löst';
-
-  @override
-  String get conflictsUnresolved => 'olöst';
 
   @override
   String get contactUsDiscordLabel => 'Discord';
@@ -3941,6 +3944,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextCaptureRecordingSavedStatus => 'Recording saved';
 
   @override
+  String get dailyOsNextCapturesPanelTitle => 'Fångster';
+
+  @override
   String get dailyOsNextCaptureTranscribing => 'Transkriberar...';
 
   @override
@@ -3961,9 +3967,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get dailyOsNextCaptureVoiceButtonStop => 'Sluta lyssna';
-
-  @override
-  String get dailyOsNextCapturesPanelTitle => 'Fångster';
 
   @override
   String get dailyOsNextCategoryFilterAll => 'Alla kategorier';
@@ -4545,31 +4548,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextStateRecurringMissed => 'Återkommande · Missade';
 
   @override
-  String dailyOsNextTimeSpentEarlierSessions(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count tidigare sessioner',
-      one: '1 tidigare session',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get dailyOsNextTimeSpentShowLess => 'Visa mindre';
-
-  @override
-  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
-    return '$duration · $completedCount klart';
-  }
-
-  @override
-  String get dailyOsNextTimeSpentTitle => 'IDAG HITTILLS';
-
-  @override
-  String get dailyOsNextTimeSpentTitlePast => 'TID SPENDERAD';
-
-  @override
   String get dailyOsNextTimelineActual => 'Nutid';
 
   @override
@@ -4601,13 +4579,38 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextTimelineTracked => 'spårade';
 
   @override
+  String dailyOsNextTimeSpentEarlierSessions(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count tidigare sessioner',
+      one: '1 tidigare session',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentShowLess => 'Visa mindre';
+
+  @override
+  String dailyOsNextTimeSpentSummary(String duration, int completedCount) {
+    return '$duration · $completedCount klart';
+  }
+
+  @override
+  String get dailyOsNextTimeSpentTitle => 'IDAG HITTILLS';
+
+  @override
+  String get dailyOsNextTimeSpentTitlePast => 'TID SPENDERAD';
+
+  @override
   String get dailyOsNextTriageConfirmDefer => 'Uppskjutet';
 
   @override
-  String get dailyOsNextTriageConfirmDoNow => 'Klart nu';
+  String get dailyOsNextTriageConfirmDone => 'Markerat klart';
 
   @override
-  String get dailyOsNextTriageConfirmDone => 'Markerat klart';
+  String get dailyOsNextTriageConfirmDoNow => 'Klart nu';
 
   @override
   String get dailyOsNextTriageConfirmDrop => 'Borttagen';
@@ -4619,10 +4622,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get dailyOsNextTriageDefer => 'Skjut upp';
 
   @override
-  String get dailyOsNextTriageDoNow => 'Gör det nu';
+  String get dailyOsNextTriageDone => 'Klart';
 
   @override
-  String get dailyOsNextTriageDone => 'Klart';
+  String get dailyOsNextTriageDoNow => 'Gör det nu';
 
   @override
   String get dailyOsNextTriageDrop => 'Släpp';
@@ -5488,10 +5491,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get designSystemSpinnerSkeletonPulseLabel => 'Puls';
 
   @override
-  String get designSystemSpinnerSkeletonWaveLabel => 'Wave';
+  String get designSystemSpinnerSkeletonsTitle => 'Skelett';
 
   @override
-  String get designSystemSpinnerSkeletonsTitle => 'Skelett';
+  String get designSystemSpinnerSkeletonWaveLabel => 'Wave';
 
   @override
   String get designSystemSpinnerSpinnersTitle => 'Spinners';
@@ -5626,17 +5629,17 @@ class AppLocalizationsSv extends AppLocalizations {
       'Välj en uppgift för att visa detaljer';
 
   @override
+  String deviceDeletedSuccess(String deviceName) {
+    return '$deviceName borttagen från synkronisering';
+  }
+
+  @override
   String get deviceDeleteFailedGeneric =>
       'Enheten kunde inte tas bort. Kontrollera din anslutning och försök igen.';
 
   @override
   String deviceDeleteQuestion(String deviceName) {
     return 'Ta bort $deviceName från ditt synkroniseringskonto? Enheten loggas ut och måste paras ihop igen innan den kan synkronisera.';
-  }
-
-  @override
-  String deviceDeletedSuccess(String deviceName) {
-    return '$deviceName borttagen från synkronisering';
   }
 
   @override
@@ -5978,23 +5981,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitPriorityLabel => 'Prioritet';
 
   @override
-  String get habitSectionOptionsTitle => 'Alternativ';
-
-  @override
-  String get habitSectionScheduleTitle => 'Schema';
-
-  @override
-  String get habitShowAlertAtLabel => 'Visa varning på';
-
-  @override
-  String get habitShowFromLabel => 'Visa från';
-
-  @override
-  String habitStreakDaysSemantic(int count) {
-    return '$count-dagssvit';
-  }
-
-  @override
   String get habitsAboveGoal => 'På banan';
 
   @override
@@ -6045,6 +6031,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get habitsDoneTodayLabel => 'Gjort idag';
 
   @override
+  String get habitSectionOptionsTitle => 'Alternativ';
+
+  @override
+  String get habitSectionScheduleTitle => 'Schema';
+
+  @override
   String get habitsFilterAll => 'alla';
 
   @override
@@ -6068,6 +6060,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get habitsHeatmapMore => 'Mer';
+
+  @override
+  String get habitShowAlertAtLabel => 'Visa varning på';
+
+  @override
+  String get habitShowFromLabel => 'Visa från';
 
   @override
   String habitsLaggardHint(String habit, int kept, int active) {
@@ -6116,6 +6114,11 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String habitsToGoCount(int count) {
     return '$count att gå';
+  }
+
+  @override
+  String habitStreakDaysSemantic(int count) {
+    return '$count-dagssvit';
   }
 
   @override
@@ -6173,7 +6176,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get imagePromptGenerationFullPromptLabel => 'Fullständig bildprompt:';
 
   @override
+  String get images => 'Bilder';
+
+  @override
   String get imageViewerDownloadFailed => 'Kunde inte spara bilden';
+
+  @override
+  String get imageViewerDownloadingTooltip => 'Spara bild';
 
   @override
   String get imageViewerDownloadPermissionDenied =>
@@ -6191,16 +6200,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get imageViewerDownloadTooltip => 'Ladda ner bild';
 
   @override
-  String get imageViewerDownloadingTooltip => 'Spara bild';
-
-  @override
   String get imageViewerNextTooltip => 'Nästa bild';
 
   @override
   String get imageViewerPreviousTooltip => 'Föregående bild';
-
-  @override
-  String get images => 'Bilder';
 
   @override
   String get inactiveLabel => 'Inaktiv';
@@ -6287,9 +6290,15 @@ class AppLocalizationsSv extends AppLocalizations {
   String get inferenceProfileSelectProfile => 'Välj en profil...';
 
   @override
+  String get inferenceProfilesEmpty => 'Inga inferensprofiler än';
+
+  @override
   String inferenceProfileSkillModelRequired(String slotName) {
     return 'Kräver att $slotName-modellen sätts';
   }
+
+  @override
+  String get inferenceProfileSkillsSection => 'Automatiserade färdigheter';
 
   @override
   String inferenceProfileSkillUsesModel(String slotName) {
@@ -6297,7 +6306,7 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get inferenceProfileSkillsSection => 'Automatiserade färdigheter';
+  String get inferenceProfilesTitle => 'Inferensprofiler';
 
   @override
   String get inferenceProfileThinking => 'Tänkande';
@@ -6313,12 +6322,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get inferenceProfileUnavailable => 'Inferensprofil ej tillgänglig';
-
-  @override
-  String get inferenceProfilesEmpty => 'Inga inferensprofiler än';
-
-  @override
-  String get inferenceProfilesTitle => 'Inferensprofiler';
 
   @override
   String get inputDataTypeAudioFilesDescription =>
@@ -6581,13 +6584,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get journalEndDateLabel => 'Slutdatum';
 
   @override
-  String get journalEndTimeLabel => 'Sluttid';
-
-  @override
   String get journalEndsAnotherDayHint => 'Välj ett separat slutdatum';
 
   @override
   String get journalEndsAnotherDayLabel => 'Slutar på en annan dag';
+
+  @override
+  String get journalEndTimeLabel => 'Sluttid';
 
   @override
   String get journalEntryExpandLabel => 'Expandera post';
@@ -6615,12 +6618,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get journalHideMapHint => 'Göm kartan';
-
-  @override
-  String get journalLinkFromHint => 'Länk från';
-
-  @override
-  String get journalLinkToHint => 'Länk till';
 
   @override
   String get journalLinkedEntriesActivityFilterAudio => 'Ljud';
@@ -6655,6 +6652,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get journalLinkedFromLabel => 'Länkad från:';
+
+  @override
+  String get journalLinkFromHint => 'Länk från';
+
+  @override
+  String get journalLinkToHint => 'Länk till';
 
   @override
   String journalOvernightNextDay(String date) {
@@ -6940,13 +6943,13 @@ class AppLocalizationsSv extends AppLocalizations {
   String get knowledgeGraphFilterRelations => 'Relationer';
 
   @override
+  String get knowledgeGraphFilters => 'Filter';
+
+  @override
   String get knowledgeGraphFilterTaskStatus => 'Uppgiftsstatus';
 
   @override
   String get knowledgeGraphFilterTypes => 'Typer';
-
-  @override
-  String get knowledgeGraphFilters => 'Filter';
 
   @override
   String get knowledgeGraphForward => 'Framåt';
@@ -7030,10 +7033,10 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get knowledgeGraphRecentToOlder => 'nyligen → äldre';
+  String get knowledgeGraphRecenter => 'Nyare';
 
   @override
-  String get knowledgeGraphRecenter => 'Nyare';
+  String get knowledgeGraphRecentToOlder => 'nyligen → äldre';
 
   @override
   String get knowledgeGraphRelationAiSource => 'AI-källa';
@@ -7093,10 +7096,6 @@ class AppLocalizationsSv extends AppLocalizations {
       'This would create a blocking cycle — choose a different task.';
 
   @override
-  String get linkCreateFailedMessage =>
-      'Couldn\'t create the link. Please try again.';
-
-  @override
   String linkCreatedMessage(String relation, String title) {
     return '$relation: $title';
   }
@@ -7105,7 +7104,30 @@ class AppLocalizationsSv extends AppLocalizations {
   String get linkCreatedUndo => 'Undo';
 
   @override
+  String get linkCreateFailedMessage =>
+      'Couldn\'t create the link. Please try again.';
+
+  @override
   String get linkDirectionLabel => 'This task…';
+
+  @override
+  String get linkedTaskImageBadge => 'Från länkad uppgift';
+
+  @override
+  String get linkedTasksBlockedBySectionTitle => 'Blocked by';
+
+  @override
+  String get linkedTasksEmptyAction => 'Link a task…';
+
+  @override
+  String get linkedTasksEmptyHint =>
+      'Koppla den här uppgiften till en annan uppgift.';
+
+  @override
+  String get linkedTasksMenuTooltip => 'Länkade uppgifter alternativ';
+
+  @override
+  String get linkedTasksTitle => 'Länkade uppgifter';
 
   @override
   String get linkExistingTask => 'Länka befintlig uppgift…';
@@ -7252,25 +7274,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get linkTaskButton => 'Link';
-
-  @override
-  String get linkedTaskImageBadge => 'Från länkad uppgift';
-
-  @override
-  String get linkedTasksBlockedBySectionTitle => 'Blocked by';
-
-  @override
-  String get linkedTasksEmptyAction => 'Link a task…';
-
-  @override
-  String get linkedTasksEmptyHint =>
-      'Koppla den här uppgiften till en annan uppgift.';
-
-  @override
-  String get linkedTasksMenuTooltip => 'Länkade uppgifter alternativ';
-
-  @override
-  String get linkedTasksTitle => 'Länkade uppgifter';
 
   @override
   String get logbookEmptyHint => 'Create your first entry to start journaling.';
@@ -7479,6 +7482,20 @@ class AppLocalizationsSv extends AppLocalizations {
       'Purge skickade ut utkorgsartiklar äldre än 7 dagar? Detta raderar redan skickade rader i bitar och kör VACUUM för att återta disken. Väntande och felposter sparas.';
 
   @override
+  String get maintenanceRecreateFts5 => 'Återskapa fulltextindex';
+
+  @override
+  String get maintenanceRecreateFts5Confirm => 'Ja, återskapa index';
+
+  @override
+  String get maintenanceRecreateFts5Description =>
+      'Återskapa fulltext-sökindex';
+
+  @override
+  String get maintenanceRecreateFts5Message =>
+      'Är du säker på att du vill återskapa fulltextindexet? Detta kan ta lite tid.';
+
+  @override
   String get maintenanceReSync => 'Meddelandehistorik';
 
   @override
@@ -7554,20 +7571,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get maintenanceReSyncStart => 'Start';
-
-  @override
-  String get maintenanceRecreateFts5 => 'Återskapa fulltextindex';
-
-  @override
-  String get maintenanceRecreateFts5Confirm => 'Ja, återskapa index';
-
-  @override
-  String get maintenanceRecreateFts5Description =>
-      'Återskapa fulltext-sökindex';
-
-  @override
-  String get maintenanceRecreateFts5Message =>
-      'Är du säker på att du vill återskapa fulltextindexet? Detta kan ta lite tid.';
 
   @override
   String get maintenanceSyncDefinitions =>
@@ -8581,11 +8584,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get projectRecommendationResolveTooltip => 'Mark bestämde sig';
 
   @override
+  String get projectRecommendationsTitle => 'Rekommenderade nästa steg';
+
+  @override
   String get projectRecommendationUpdateError =>
       'Kunde inte uppdatera rekommendationen. Försök igen, tack.';
 
   @override
-  String get projectRecommendationsTitle => 'Rekommenderade nästa steg';
+  String get projectsFilterStatusLabel => 'Status:';
+
+  @override
+  String get projectsFilterTooltip => 'Filtrera projekt';
 
   @override
   String get projectShowcaseAiReportTitle => 'AI-rapport';
@@ -8716,12 +8725,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get projectTitleRequired => 'Projekttiteln kan inte vara tom';
-
-  @override
-  String get projectsFilterStatusLabel => 'Status:';
-
-  @override
-  String get projectsFilterTooltip => 'Filtrera projekt';
 
   @override
   String get promptDefaultModelBadge => 'Standard';
@@ -9424,11 +9427,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsCelebrationsReplay => 'Omspel';
 
   @override
-  String get settingsCelebrationsResetToDefault => 'Återställ till standard';
-
-  @override
   String get settingsCelebrationsResetToast =>
       'Stilåterställning till standard';
+
+  @override
+  String get settingsCelebrationsResetToDefault => 'Återställ till standard';
 
   @override
   String get settingsCelebrationsResetUndo => 'Ångra';
@@ -9944,12 +9947,12 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsMatrixPreviousPage => 'Föregående sida';
 
   @override
+  String get settingsMatrixSentMessagesLabel => 'Skickade meddelanden:';
+
+  @override
   String settingsMatrixSentMessageType(String eventType) {
     return 'Skickad ($eventType)';
   }
-
-  @override
-  String get settingsMatrixSentMessagesLabel => 'Skickade meddelanden:';
 
   @override
   String get settingsMatrixStartVerificationLabel => 'Starta verifiering';
@@ -9996,9 +9999,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get settingsMeasurableSaveLabel => 'Spara';
 
   @override
-  String get settingsMeasurableUnitLabel => 'Enhetsförkortning (valfritt)';
-
-  @override
   String get settingsMeasurablesCreateTitle => 'Skapa mätbart';
 
   @override
@@ -10024,6 +10024,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get settingsMeasurablesTitle => 'Mätbara egenskaper';
+
+  @override
+  String get settingsMeasurableUnitLabel => 'Enhetsförkortning (valfritt)';
 
   @override
   String get settingsOnboardingActionSubtitle =>
@@ -10657,6 +10660,47 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncPairDiscardCode => 'De stämmer inte';
 
   @override
+  String get syncPairedFirstDeviceBody =>
+      'Det är den första på ditt konto. Lägg till en till när du vill — allt du skriver här väntar på den.';
+
+  @override
+  String get syncPairedFirstDeviceTitle =>
+      'Synkronisering är konfigurerad på den här enheten';
+
+  @override
+  String get syncPairedSettingsStep =>
+      'Kategorier, vanor, paneler och AI-konfiguration — skickas från din andra enhet efter att emojierna stämt.';
+
+  @override
+  String get syncPairedSettingsStepFallback =>
+      'Om du stängde den öppnar du på den andra enheten Inställningar → Synkroniseringsinställningar → Underhåll, kör inställningssynkroniseringen och väljer sedan Meddelandehistorik.';
+
+  @override
+  String get syncPairedSettingsStepTitle => 'Ta emot dina inställningar';
+
+  @override
+  String get syncPairedStepsLeft =>
+      'Två steg kvar innan den här enheten kan läsa din dagbok.';
+
+  @override
+  String get syncPairedVerifyFallback =>
+      'Inga emojier än? Kontrollera igen – eller öppna Enheter och starta därifrån.';
+
+  @override
+  String get syncPairedVerifyStep =>
+      'Båda enheterna visar strax sju emojier. Tills de stämmer ser den här enheten bara krypterad text.';
+
+  @override
+  String get syncPairedVerifyStepDone =>
+      'Emojier stämmer – den här enheten kan läsa dina anteckningar';
+
+  @override
+  String get syncPairedVerifyStepTitle => 'Bekräfta emojierna';
+
+  @override
+  String get syncPairedVerifyWaiting => 'Väntar på att emojierna ska dyka upp…';
+
+  @override
   String get syncPairEnterManually => 'Klistra in koden i stället';
 
   @override
@@ -10715,11 +10759,11 @@ class AppLocalizationsSv extends AppLocalizations {
   String get syncPairScanLink => 'Har du en kamera? Skanna QR-koden i stället';
 
   @override
-  String get syncPairScanTitle => 'Skanna parkopplingskoden';
-
-  @override
   String get syncPairScannerRejected =>
       'Det är koden du avvisade. Skanna den kod som din egen enhet visar, eller klistra in den nedan.';
+
+  @override
+  String get syncPairScanTitle => 'Skanna parkopplingskoden';
 
   @override
   String get syncPairShowEmoji => 'Visa emojierna';
@@ -10727,47 +10771,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get syncPairWhereToFind =>
       'Den finns på din andra enhet under Lägg till enhet — kopiera den där och klistra in den här.';
-
-  @override
-  String get syncPairedFirstDeviceBody =>
-      'Det är den första på ditt konto. Lägg till en till när du vill — allt du skriver här väntar på den.';
-
-  @override
-  String get syncPairedFirstDeviceTitle =>
-      'Synkronisering är konfigurerad på den här enheten';
-
-  @override
-  String get syncPairedSettingsStep =>
-      'Kategorier, vanor, paneler och AI-konfiguration — skickas från din andra enhet efter att emojierna stämt.';
-
-  @override
-  String get syncPairedSettingsStepFallback =>
-      'Om du stängde den öppnar du på den andra enheten Inställningar → Synkroniseringsinställningar → Underhåll, kör inställningssynkroniseringen och väljer sedan Meddelandehistorik.';
-
-  @override
-  String get syncPairedSettingsStepTitle => 'Ta emot dina inställningar';
-
-  @override
-  String get syncPairedStepsLeft =>
-      'Två steg kvar innan den här enheten kan läsa din dagbok.';
-
-  @override
-  String get syncPairedVerifyFallback =>
-      'Inga emojier än? Kontrollera igen – eller öppna Enheter och starta därifrån.';
-
-  @override
-  String get syncPairedVerifyStep =>
-      'Båda enheterna visar strax sju emojier. Tills de stämmer ser den här enheten bara krypterad text.';
-
-  @override
-  String get syncPairedVerifyStepDone =>
-      'Emojier stämmer – den här enheten kan läsa dina anteckningar';
-
-  @override
-  String get syncPairedVerifyStepTitle => 'Bekräfta emojierna';
-
-  @override
-  String get syncPairedVerifyWaiting => 'Väntar på att emojierna ska dyka upp…';
 
   @override
   String get syncPayloadAgentBundle => 'Agentbunt';
@@ -11064,15 +11067,15 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inga kompatibla tänkande modeller tillgängliga';
 
   @override
+  String get taskAgentNoProfilesAvailable =>
+      'Inga profiler tillgängliga på denna enhet';
+
+  @override
   String get taskAgentNoProfileSelected => 'Ingen AI-installation';
 
   @override
   String get taskAgentNoProfileSelectedDescription =>
       'Välj en sparad setup eller tänkmodell innan denna agent kan köras.';
-
-  @override
-  String get taskAgentNoProfilesAvailable =>
-      'Inga profiler tillgängliga på denna enhet';
 
   @override
   String taskAgentProfileChangedToast(String profile) {
@@ -11468,6 +11471,40 @@ class AppLocalizationsSv extends AppLocalizations {
   String get taskPriorityUrgent => 'Brådskande';
 
   @override
+  String get tasksAddLabelButton => 'Lägg till etikett';
+
+  @override
+  String get tasksAgentFilterAll => 'Alla';
+
+  @override
+  String get tasksAgentFilterHasAgent => 'Har agent';
+
+  @override
+  String get tasksAgentFilterNoAgent => 'Ingen agent';
+
+  @override
+  String get tasksAgentFilterTitle => 'Agent';
+
+  @override
+  String tasksCompactFilterCount(num count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count filter',
+      one: '$count filter',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get tasksCompactHeaderExpandHint => 'Visa sökfält och filter';
+
+  @override
+  String tasksCompactSearchContext(String query) {
+    return '”$query”';
+  }
+
+  @override
   String get taskSetCategoryLabel => 'Välj kategori';
 
   @override
@@ -11475,6 +11512,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get taskSetEstimateLabel => 'Lägg till uppskattning';
+
+  @override
+  String get tasksFilterApplyTitle => 'Använd filter';
+
+  @override
+  String get tasksFilterClearAll => 'Rensa allt';
+
+  @override
+  String get tasksFilterTitle => 'Filtrera uppgifter';
 
   @override
   String get taskShowcaseAudio => 'Ljud';
@@ -11534,85 +11580,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get taskShowcaseTodos => 'Alla';
-
-  @override
-  String get taskStatusAll => 'Alla';
-
-  @override
-  String get taskStatusBlocked => 'Blockerad';
-
-  @override
-  String get taskStatusDone => 'Klart';
-
-  @override
-  String get taskStatusGroomed => 'Välvårdad';
-
-  @override
-  String get taskStatusInProgress => 'Pågående';
-
-  @override
-  String get taskStatusLabel => 'Status:';
-
-  @override
-  String get taskStatusOnHold => 'På vänt';
-
-  @override
-  String get taskStatusOpen => 'Öppet';
-
-  @override
-  String get taskStatusRejected => 'Avvisad';
-
-  @override
-  String get taskTitleEmpty => 'Ingen titel';
-
-  @override
-  String get taskTitlePrompt => 'Ge uppgiften ett namn';
-
-  @override
-  String get taskUntitled => '(utan titel)';
-
-  @override
-  String get tasksAddLabelButton => 'Lägg till etikett';
-
-  @override
-  String get tasksAgentFilterAll => 'Alla';
-
-  @override
-  String get tasksAgentFilterHasAgent => 'Har agent';
-
-  @override
-  String get tasksAgentFilterNoAgent => 'Ingen agent';
-
-  @override
-  String get tasksAgentFilterTitle => 'Agent';
-
-  @override
-  String tasksCompactFilterCount(num count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: '$count filter',
-      one: '$count filter',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get tasksCompactHeaderExpandHint => 'Visa sökfält och filter';
-
-  @override
-  String tasksCompactSearchContext(String query) {
-    return '”$query”';
-  }
-
-  @override
-  String get tasksFilterApplyTitle => 'Använd filter';
-
-  @override
-  String get tasksFilterClearAll => 'Rensa allt';
-
-  @override
-  String get tasksFilterTitle => 'Filtrera uppgifter';
 
   @override
   String get tasksLabelFilterAll => 'Alla';
@@ -11684,19 +11651,6 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get tasksSavedFilterRenameSemantics => 'Byt namn på sparat filter';
-
-  @override
-  String get tasksSavedFilterToastDeleted => 'Filter borttaget';
-
-  @override
-  String tasksSavedFilterToastSaved(String name) {
-    return 'Filtret \'$name\' sparades';
-  }
-
-  @override
-  String tasksSavedFilterToastUpdated(String name) {
-    return 'Filtret \'$name\' uppdaterades';
-  }
 
   @override
   String get tasksSavedFiltersAllShort => 'Alla';
@@ -11836,6 +11790,19 @@ class AppLocalizationsSv extends AppLocalizations {
       'Uppdatera befintligt filter';
 
   @override
+  String get tasksSavedFilterToastDeleted => 'Filter borttaget';
+
+  @override
+  String tasksSavedFilterToastSaved(String name) {
+    return 'Filtret \'$name\' sparades';
+  }
+
+  @override
+  String tasksSavedFilterToastUpdated(String name) {
+    return 'Filtret \'$name\' uppdaterades';
+  }
+
+  @override
   String get tasksSearchModeLabel => 'Sökläge';
 
   @override
@@ -11855,6 +11822,42 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get tasksSortByPriority => 'Prioritet';
+
+  @override
+  String get taskStatusAll => 'Alla';
+
+  @override
+  String get taskStatusBlocked => 'Blockerad';
+
+  @override
+  String get taskStatusDone => 'Klart';
+
+  @override
+  String get taskStatusGroomed => 'Välvårdad';
+
+  @override
+  String get taskStatusInProgress => 'Pågående';
+
+  @override
+  String get taskStatusLabel => 'Status:';
+
+  @override
+  String get taskStatusOnHold => 'På vänt';
+
+  @override
+  String get taskStatusOpen => 'Öppet';
+
+  @override
+  String get taskStatusRejected => 'Avvisad';
+
+  @override
+  String get taskTitleEmpty => 'Ingen titel';
+
+  @override
+  String get taskTitlePrompt => 'Ge uppgiften ett namn';
+
+  @override
+  String get taskUntitled => '(utan titel)';
 
   @override
   String get thinkingDisclosureCopied => 'Motivering kopierad';

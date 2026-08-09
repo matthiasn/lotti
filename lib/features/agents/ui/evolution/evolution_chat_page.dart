@@ -3,7 +3,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/ritual_review_providers.dart';
-import 'package:lotti/features/agents/ui/evolution/evolution_chat_message.dart';
 import 'package:lotti/features/agents/ui/evolution/evolution_chat_state.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_composer_width.dart';
 import 'package:lotti/features/agents/ui/evolution/widgets/evolution_message_input.dart';
@@ -72,10 +71,9 @@ class _EvolutionChatPageState extends ConsumerState<EvolutionChatPage> {
 
   Widget _buildChat(BuildContext context, EvolutionChatData data) {
     // Until the session exists there is nothing to converse with, and the
-    // list would render a lone system line above an empty column. Show the
-    // opening state instead — it is the first thing anyone sees of this
-    // feature, and it used to be a 16px spinner beside a literal '...'.
-    if (data.sessionId == null && !_hasConversation(data)) {
+    // list would render a lone system line above an empty column. A failed
+    // start is *not* that state — see `shouldShowSessionOpening`.
+    if (shouldShowSessionOpening(data)) {
       return const EvolutionSessionOpening();
     }
 
@@ -88,11 +86,6 @@ class _EvolutionChatPageState extends ConsumerState<EvolutionChatPage> {
       ),
     );
   }
-
-  /// Whether anyone has actually said anything yet — system notes report on
-  /// the session rather than taking part in it.
-  bool _hasConversation(EvolutionChatData data) =>
-      data.messages.any((m) => m is! EvolutionSystemMessage);
 
   void _handleSend(String text) {
     ref

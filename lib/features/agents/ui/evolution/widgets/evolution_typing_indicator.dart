@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Three dots pulsing in sequence while the agent composes its turn.
 ///
@@ -31,9 +32,18 @@ class _EvolutionTypingIndicatorState extends State<EvolutionTypingIndicator>
       vsync: this,
       duration: EvolutionTypingIndicator.cycle,
     );
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
     // Respecting reduced motion is not optional for a perpetual animation:
-    // left running it would pulse for as long as the agent is thinking.
-    if (!WidgetsBinding.instance.disableAnimations) {
+    // left running it would pulse for as long as the agent is thinking. Read
+    // here rather than in initState so toggling the OS setting mid-response
+    // takes effect — a model can be composing for minutes.
+    if (MediaQuery.disableAnimationsOf(context)) {
+      if (_controller.isAnimating) _controller.stop();
+    } else if (!_controller.isAnimating) {
       _controller.repeat();
     }
   }
@@ -49,34 +59,43 @@ class _EvolutionTypingIndicatorState extends State<EvolutionTypingIndicator>
     final tokens = context.designTokens;
     final dotSize = tokens.spacing.step3;
 
-    return Padding(
-      padding: EdgeInsets.only(bottom: tokens.spacing.step5),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          for (var i = 0; i < _dotCount; i++)
-            Padding(
-              padding: EdgeInsets.only(
-                right: i == _dotCount - 1 ? 0 : tokens.spacing.step2,
-              ),
-              child: AnimatedBuilder(
-                animation: _controller,
-                builder: (context, _) {
-                  return Opacity(
-                    opacity: _opacityFor(i),
-                    child: Container(
-                      width: dotSize,
-                      height: dotSize,
-                      decoration: BoxDecoration(
-                        color: tokens.colors.text.mediumEmphasis,
-                        shape: BoxShape.circle,
-                      ),
-                    ),
-                  );
-                },
-              ),
-            ),
-        ],
+    // The dots carry no text, so without this a screen reader hears nothing
+    // between sending a message and the reply arriving — indistinguishable
+    // from a stuck chat, with the composer disabled meanwhile.
+    return Semantics(
+      liveRegion: true,
+      label: context.messages.agentRitualTypingSemantics,
+      child: ExcludeSemantics(
+        child: Padding(
+          padding: EdgeInsets.only(bottom: tokens.spacing.step5),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              for (var i = 0; i < _dotCount; i++)
+                Padding(
+                  padding: EdgeInsets.only(
+                    right: i == _dotCount - 1 ? 0 : tokens.spacing.step2,
+                  ),
+                  child: AnimatedBuilder(
+                    animation: _controller,
+                    builder: (context, _) {
+                      return Opacity(
+                        opacity: _opacityFor(i),
+                        child: Container(
+                          width: dotSize,
+                          height: dotSize,
+                          decoration: BoxDecoration(
+                            color: tokens.colors.text.mediumEmphasis,
+                            shape: BoxShape.circle,
+                          ),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+            ],
+          ),
+        ),
       ),
     );
   }

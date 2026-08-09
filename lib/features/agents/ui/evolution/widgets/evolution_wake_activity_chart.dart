@@ -33,7 +33,10 @@ class EvolutionWakeActivityChart extends StatelessWidget {
       builder: (context, constraints) => _buildChart(
         context,
         maxWakeCount: maxWakeCount,
-        labelIndexes: _labelIndexes(constraints.maxWidth),
+        labelIndexes: _labelIndexes(
+          constraints.maxWidth,
+          MediaQuery.textScalerOf(context).scale(1),
+        ),
       ),
     );
   }
@@ -41,8 +44,13 @@ class EvolutionWakeActivityChart extends StatelessWidget {
   /// Date labels are dropped rather than truncated as the column narrows: a
   /// phone fitted five of them only by ellipsising every one to "J…", which
   /// tells the reader nothing at all.
-  List<int> _labelIndexes(double width) {
-    const minWidthPerLabel = 72.0;
+  ///
+  /// [textScale] widens the nominal per-label budget so an accessibility text
+  /// size drops labels instead of squeezing them; the labels themselves also
+  /// ellipsise as a backstop, since the budget is a heuristic and localized
+  /// date formats vary in length.
+  List<int> _labelIndexes(double width, double textScale) {
+    final minWidthPerLabel = 72.0 * textScale;
     final affordable = width.isFinite ? (width / minWidthPerLabel).floor() : 5;
     final count = affordable.clamp(2, 5);
 
@@ -154,12 +162,19 @@ class EvolutionWakeActivityChart extends StatelessWidget {
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
+            // Flexible + ellipsis rather than bare Text: the count below is
+            // chosen from a nominal label width, which a large text scale or
+            // a long localized date can exceed. Shortening a label is a
+            // blemish; overflowing the row is a yellow-and-black stripe.
             for (final index in labelIndexes)
-              Text(
-                _labelFormat.format(buckets[index].date),
-                maxLines: 1,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
+              Flexible(
+                child: Text(
+                  _labelFormat.format(buckets[index].date),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
                 ),
               ),
           ],

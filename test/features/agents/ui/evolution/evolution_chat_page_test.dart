@@ -221,6 +221,38 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsNothing);
     });
 
+    testWidgets('a start that failed shows its error note rather than an '
+        'opening state that implies work is still in progress', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        buildSubject(
+          // Exactly what EvolutionChatState.build settles with when
+          // startSession returns null: no session id, ever.
+          chatStateBuilder: (_) async => EvolutionChatData(
+            messages: [
+              EvolutionChatMessage.system(
+                text: 'starting_session',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+              EvolutionChatMessage.system(
+                text: 'session_error',
+                timestamp: DateTime(2024, 3, 15),
+              ),
+            ],
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final context = tester.element(find.byType(EvolutionChatPage));
+      expect(
+        find.text(context.messages.agentEvolutionSessionError),
+        findsOneWidget,
+      );
+      expect(find.byType(EvolutionSessionOpening), findsNothing);
+    });
+
     testWidgets('shows error message when session fails', (tester) async {
       await tester.pumpWidget(
         buildSubject(

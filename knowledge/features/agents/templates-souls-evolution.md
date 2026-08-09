@@ -162,8 +162,11 @@ The home is **three blocks in one order** — what you can do now, what the agen
 has been doing since you last spoke, and what the two of you decided last time —
 and the first block is state-correct: a start card when nothing is pending, the
 proposal card when a session is waiting. There is deliberately no hero banner;
-the app bar carries the agent's own name, and the phrase *1-on-1* appears
-nowhere on the page.
+the app bar carries the agent's own name, so the bare string `1-on-1`
+(`agentRitualReviewTitle`) is not rendered on the home at all. The phrase still
+occurs inside labels that need it — *Start a 1-on-1*, *Past 1-on-1s*, *Wakes
+since last 1-on-1* — the removed repetition was the title being restated as
+decoration, not the words themselves.
 
 Both surfaces hold their content to `DetailContentWidth` so prose keeps one
 reading measure on a desktop window. The composer is the exception and uses
