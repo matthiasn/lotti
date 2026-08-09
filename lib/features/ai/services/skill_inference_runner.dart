@@ -644,6 +644,7 @@ class SkillInferenceRunner {
           taskId: linkedTaskId,
         );
         final impactCollector = InferenceImpactCollector();
+        final requestedImageCount = referenceImages?.length ?? 0;
         final selectedImages =
             target.model != null &&
                 supportsChatImageInput(
@@ -652,6 +653,14 @@ class SkillInferenceRunner {
                 )
             ? referenceImages ?? const []
             : const <ProcessedReferenceImage>[];
+        if (requestedImageCount > 0 && selectedImages.isEmpty) {
+          _loggingService.log(
+            LogDomain.ai,
+            'Dropping $requestedImageCount selected image(s) for $entryId: '
+            'resolved model $modelId does not accept chat images',
+            subDomain: 'runPromptGeneration',
+          );
+        }
         final responseStream = selectedImages.isEmpty
             ? _cloudRepository.generate(
                 promptResult.userMessage,

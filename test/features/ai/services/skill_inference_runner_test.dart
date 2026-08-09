@@ -2744,6 +2744,18 @@ void main() {
               impactCollector: any(named: 'impactCollector'),
             ),
           );
+          verify(
+            () => mockLoggingService.log(
+              LogDomain.ai,
+              any<String>(
+                that: allOf(
+                  contains('Dropping 1 selected image'),
+                  contains('models/gemini-flash'),
+                ),
+              ),
+              subDomain: 'runPromptGeneration',
+            ),
+          ).called(1);
         },
       );
 

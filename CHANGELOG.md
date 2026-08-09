@@ -5,13 +5,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ## [1.0.6]
-### Changed
-- **AI task summaries now look like AI content wherever you scan tasks.** The
-  agent's one-line take uses the AI accent in task lists, appears beneath linked
-  task titles, and sits between the title and status pills on task details, so
-  the same compact context is visible without opening the full AI summary card.
-
-## [1.0.5]
 ### Added
 - **Vision models can use task images when writing coding prompts.** Choosing an
   image-capable model such as Kimi K3 now offers the task's attached images as
@@ -19,6 +12,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   one-step flow, and linked AI image analyses remain part of the written task
   context as well.
 
+### Changed
+- **AI task summaries now look like AI content wherever you scan tasks.** The
+  agent's one-line take uses the AI accent in task lists, appears beneath linked
+  task titles, and sits between the title and status pills on task details, so
+  the same compact context is visible without opening the full AI summary card.
+
+## [1.0.5]
 ### Changed
 - **The 1-on-1 with an agent now looks like one screen rather than several.**
   The conversation home opened with a banner that repeated the page's own title,
