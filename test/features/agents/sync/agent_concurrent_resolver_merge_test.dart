@@ -510,6 +510,16 @@ void main() {
         ba.ratings,
         reason: 'union order must not leak into the merged list',
       );
+
+      // Same tie, differing only in the rating VALUE.
+      final low = GoalNudgeRating(activation: 2, ratedAt: at, rating: 2);
+      final high = GoalNudgeRating(activation: 2, ratedAt: at, rating: 5);
+      final c = goalNudge(status: GoalNudgeStatus.active, ratings: [low]);
+      final d = goalNudge(status: GoalNudgeStatus.active, ratings: [high]);
+      final cd = mergeGoalNudgeAccumulators(winner: c, local: c, incoming: d);
+      final dc = mergeGoalNudgeAccumulators(winner: c, local: d, incoming: c);
+      expect(cd.ratings, [low, high]);
+      expect(cd.ratings, dc.ratings);
     });
 
     test('is symmetric: swapping local/incoming converges on the same '

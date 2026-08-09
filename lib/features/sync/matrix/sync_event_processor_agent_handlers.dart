@@ -483,6 +483,16 @@ extension _AgentHandlers on SyncEventProcessor {
     }
   }
 
+  /// Local counterpart of an incoming entity: the prefetched bundle map
+  /// when the id was bulk-loaded (including a cached null), the repository
+  /// otherwise. One helper because five call sites carried this branch.
+  Future<AgentDomainEntity?> _localAgentEntityFor(
+    String id,
+    Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
+  ) async => (prefetchedAgentEntitiesById?.containsKey(id) ?? false)
+      ? prefetchedAgentEntitiesById![id]
+      : await agentRepository!.getEntity(id);
+
   Future<bool> _localAgentEntityDominates({
     required AgentDomainEntity incoming,
     required String? jsonPath,
@@ -491,9 +501,10 @@ extension _AgentHandlers on SyncEventProcessor {
     final incomingVc = incoming.vectorClock;
     if (incomingVc == null) return false;
 
-    final local = prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false
-        ? prefetchedAgentEntitiesById![incoming.id]
-        : await agentRepository!.getEntity(incoming.id);
+    final local = await _localAgentEntityFor(
+      incoming.id,
+      prefetchedAgentEntitiesById,
+    );
     final localVc = local?.vectorClock;
     if (local == null || localVc == null) return false;
 
@@ -529,10 +540,10 @@ extension _AgentHandlers on SyncEventProcessor {
     final incomingVc = incoming.vectorClock;
     if (incomingVc == null) return null;
 
-    final local =
-        (prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false)
-        ? prefetchedAgentEntitiesById![incoming.id]
-        : await agentRepository!.getEntity(incoming.id);
+    final local = await _localAgentEntityFor(
+      incoming.id,
+      prefetchedAgentEntitiesById,
+    );
     if (local is! AgentStateEntity) return null;
     final localVc = local.vectorClock;
     if (localVc == null) return null;
@@ -585,10 +596,10 @@ extension _AgentHandlers on SyncEventProcessor {
     final incomingVc = incoming.vectorClock;
     if (incomingVc == null) return null;
 
-    final local =
-        (prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false)
-        ? prefetchedAgentEntitiesById![incoming.id]
-        : await agentRepository!.getEntity(incoming.id);
+    final local = await _localAgentEntityFor(
+      incoming.id,
+      prefetchedAgentEntitiesById,
+    );
     if (local is! GoalNudgeEntity) return null;
     final localVc = local.vectorClock;
     if (localVc == null) return null;
@@ -635,10 +646,10 @@ extension _AgentHandlers on SyncEventProcessor {
     required AgentStateEntity incoming,
     Map<String, AgentDomainEntity?>? prefetchedAgentEntitiesById,
   }) async {
-    final local =
-        (prefetchedAgentEntitiesById?.containsKey(incoming.id) ?? false)
-        ? prefetchedAgentEntitiesById![incoming.id]
-        : await agentRepository!.getEntity(incoming.id);
+    final local = await _localAgentEntityFor(
+      incoming.id,
+      prefetchedAgentEntitiesById,
+    );
     if (local is! AgentStateEntity) return incoming;
     return incoming.copyWith(
       nextWakeAt: local.nextWakeAt,

@@ -982,20 +982,58 @@ void main() {
     ).deriveWakeFacts(agentId: agentId, version: version!, now: now);
 
     // Cooldown: the model ignored dismissalCooldownActive — persistence
-    // must still hold the 24h quiet contract.
+    // must still hold the 24h quiet contract, for creates AND reruns.
+    final logger = MockDomainLogger();
+    when(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    ).thenReturn(null);
+    final logged = GoalAgentWorkflow(
+      repository: repository,
+      syncService: syncService,
+      phaseA: GoalAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        signalReader: _FakeReader(),
+      ),
+      conversationRepository: conversationRepository,
+      cloudInferenceRepository: cloudInferenceRepository,
+      aiConfigRepository: aiConfigRepository,
+      domainLogger: logger,
+    );
+    final rerunning = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: agentId,
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-reusable'},
+    );
+    await rerunning.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.createGoalAd, {
+          'headline': 'Ignore the quiet.',
+          'tone': 'nudge',
+          'animation': 'pulse',
+        }, id: 'c0'),
+        toolCall(GoalAgentToolNames.rerunGoalAd, {
+          'adId': 'ad-reusable',
+          'reason': 'still great',
+        }, id: 'c1'),
+      ],
+      manager: conversationManager,
+    );
     await withClock(
       fixedClock,
-      () async => workflow.persistOutputs(
+      () async => logged.persistOutputs(
         agentId: agentId,
         runKey: 'run-1',
         threadId: 'thread-1',
-        strategy: await loaded([
-          {
-            'headline': 'Ignore the quiet.',
-            'tone': 'nudge',
-            'animation': 'pulse',
-          },
-        ]),
+        strategy: rerunning,
         derivation: derivation,
         nudges: [recentlyDismissed],
         now: now,
@@ -1020,5 +1058,180 @@ void main() {
       ),
     );
     expect(upserts.whereType<GoalNudgeEntity>(), hasLength(1));
+  });
+
+  test('with consumption registered, a failed wake is terminalized as '
+      'FAILED — no perpetually open session on the exception path', () async {
+    final attribution = MockAiAttributionService();
+    getIt
+      ..registerSingleton<AiInteractionCapture>(MockAiInteractionCapture())
+      ..registerSingleton<AiAttributionService>(attribution);
+    addTearDown(getIt.reset);
+    final closed = AiWorkAttribution(
+      id: 'attr-failed',
+      workType: AiWorkType.agentReport,
+      status: AiWorkStatus.failed,
+      initiator: const AiActorSnapshot(
+        type: AiActorType.agent,
+        id: agentId,
+        displayName: 'Steps goal',
+      ),
+      trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
+      startedAt: now,
+      completedAt: now,
+      vectorClock: null,
+    );
+    when(
+      () => attribution.prepareCompletion(
+        attributionId: any(named: 'attributionId'),
+        outputs: any(named: 'outputs'),
+        status: any(named: 'status'),
+        errorCode: any(named: 'errorCode'),
+        errorSummary: any(named: 'errorSummary'),
+      ),
+    ).thenAnswer((_) async => closed);
+    when(() => attribution.finalize(any())).thenAnswer((_) async {});
+
+    stubSpec();
+    stubGlmResolution();
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          throw StateError('provider melted');
+        };
+
+    final result = await run();
+    expect(result.success, isFalse);
+    verify(
+      () => attribution.prepareCompletion(
+        attributionId: any(named: 'attributionId'),
+        outputs: any(named: 'outputs'),
+        status: AiWorkStatus.failed,
+        errorCode: 'StateError',
+        errorSummary: any(named: 'errorSummary'),
+      ),
+    ).called(1);
+  });
+
+  test('a finalize failure is contained — the persisted wake still '
+      'succeeds and the session is left for recovery', () async {
+    final attribution = MockAiAttributionService();
+    getIt
+      ..registerSingleton<AiInteractionCapture>(MockAiInteractionCapture())
+      ..registerSingleton<AiAttributionService>(attribution);
+    addTearDown(getIt.reset);
+    final envelope = AiWorkAttribution(
+      id: 'attr-2',
+      workType: AiWorkType.agentReport,
+      status: AiWorkStatus.succeeded,
+      initiator: const AiActorSnapshot(
+        type: AiActorType.agent,
+        id: agentId,
+        displayName: 'Steps goal',
+      ),
+      trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
+      startedAt: now,
+      completedAt: now,
+      vectorClock: null,
+    );
+    when(
+      () => attribution.prepareCompletion(
+        attributionId: any(named: 'attributionId'),
+        outputs: any(named: 'outputs'),
+      ),
+    ).thenAnswer((_) async => envelope);
+    when(() => attribution.finalize(any())).thenThrow(StateError('db busy'));
+
+    stubSpec();
+    stubGlmResolution();
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          await (strategy! as GoalAgentStrategy).processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.updateGoalReport, {
+                'status': 'insufficientData',
+                'oneLiner': 'No data.',
+                'tldr': 'Quiet tracker.',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          return null;
+        };
+
+    final result = await run();
+    expect(result.success, isTrue);
+    expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
+  });
+
+  test("yesterday's register row feeds the FACTS baseline", () async {
+    stubSpec();
+    stubGlmResolution();
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+    ).thenAnswer(
+      (_) async => AgentDomainEntity.goalProgress(
+        id: goalProgressId(agentId, '2026-08-08'),
+        agentId: agentId,
+        periodKey: '2026-08-08',
+        trackStatus: GoalTrackStatus.onTrack,
+        attainment: 1,
+        dataCoverage: 1,
+        satisfied: true,
+        specVersionId: '$agentId:spec-v1',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      ),
+    );
+    String? factsSeen;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          factsSeen = message;
+          await (strategy! as GoalAgentStrategy).processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.updateGoalReport, {
+                'status': 'insufficientData',
+                'oneLiner': 'No data.',
+                'tldr': 'Quiet tracker.',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          return null;
+        };
+
+    final result = await run();
+    expect(result.success, isTrue);
+    expect(factsSeen, contains('"lastReportStatus": "onTrack"'));
   });
 }

@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart';
 import 'package:lotti/features/daily_os_next/agents/state/day_agent_providers.dart';
@@ -31,6 +34,30 @@ void main() {
   });
 
   group('beforeWakeScan', () {
+    test('a synced-in identity needs no runtime mirroring — the hook is a '
+        'documented no-op', () async {
+      await expectLater(
+        maintenance.onIdentityReceived(
+          AgentDomainEntity.agent(
+                id: 'day-1',
+                agentId: 'day-1',
+                kind: 'day_agent',
+                displayName: 'Day',
+                lifecycle: AgentLifecycle.active,
+                mode: AgentInteractionMode.autonomous,
+                allowedCategoryIds: const {},
+                currentStateId: 'day-1:state',
+                config: const AgentConfig(),
+                createdAt: DateTime(2026),
+                updatedAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as AgentIdentityEntity,
+        ),
+        completes,
+      );
+    });
+
     test('runs retirement and the digest repair, in that order', () async {
       when(dayAgents.retirePastDayAgents).thenAnswer((_) async => 2);
       when(dayAgents.ensureCoordinatorDigestWake).thenAnswer((_) async {});
