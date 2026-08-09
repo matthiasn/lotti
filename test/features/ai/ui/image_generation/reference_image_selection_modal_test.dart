@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/ai/state/reference_image_selection_controller.dart';
 import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_modal.dart';
+import 'package:lotti/features/ai/ui/image_generation/reference_image_selection_widget.dart';
 import 'package:lotti/features/ai/util/image_processing_utils.dart';
 import 'package:lotti/get_it.dart';
 
@@ -74,5 +75,42 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(result, processedImages);
+  });
+
+  testWidgets('returns an empty selection when the task has no images', (
+    tester,
+  ) async {
+    List<ProcessedReferenceImage>? result;
+
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        overrides: [
+          referenceImageSelectionControllerProvider(taskId).overrideWith(
+            () => FakeReferenceImageSelectionController(
+              const ReferenceImageSelectionState(),
+            ),
+          ),
+        ],
+        child: Builder(
+          builder: (context) => TextButton(
+            onPressed: () async {
+              result = await ReferenceImageSelectionModal.show(
+                context: context,
+                taskId: taskId,
+                maxImages: kMaxCodingPromptImages,
+              );
+            },
+            child: const Text('Open'),
+          ),
+        ),
+      ),
+    );
+
+    await tester.tap(find.text('Open'));
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(result, isEmpty);
+    expect(find.byType(ReferenceImageSelectionWidget), findsNothing);
   });
 }
