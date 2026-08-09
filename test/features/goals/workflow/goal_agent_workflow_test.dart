@@ -659,6 +659,7 @@ void main() {
         outputs: any(named: 'outputs'),
       ),
     ).thenAnswer((_) async => envelope);
+    when(() => attribution.finalize(any())).thenAnswer((_) async {});
 
     stubSpec();
     stubGlmResolution();
@@ -693,6 +694,72 @@ void main() {
     expect(conversationRepository.lastConsumptionWakeRunKey, 'run-1');
     final report = upserts.whereType<AgentReportEntity>().single;
     expect(report.provenance.keys, contains(aiAttributionProvenanceKey));
+    // The session must not stay open: the envelope is finalized after the
+    // transaction so consumption rollups see the wake as completed.
+    verify(() => attribution.finalize(envelope)).called(1);
+  });
+
+  test('a report-less wake with consumption registered is terminalized as '
+      'carrierless — no perpetually in-flight sessions', () async {
+    final attribution = MockAiAttributionService();
+    getIt
+      ..registerSingleton<AiInteractionCapture>(MockAiInteractionCapture())
+      ..registerSingleton<AiAttributionService>(attribution);
+    addTearDown(getIt.reset);
+    final closed = AiWorkAttribution(
+      id: 'attr-closed',
+      workType: AiWorkType.agentReport,
+      status: AiWorkStatus.partial,
+      initiator: const AiActorSnapshot(
+        type: AiActorType.agent,
+        id: agentId,
+        displayName: 'Steps goal',
+      ),
+      trigger: const AiTriggerSnapshot(type: AiTriggerType.automatic),
+      startedAt: now,
+      completedAt: now,
+      vectorClock: null,
+    );
+    when(
+      () => attribution.prepareCompletion(
+        attributionId: any(named: 'attributionId'),
+        outputs: any(named: 'outputs'),
+        status: any(named: 'status'),
+        errorCode: any(named: 'errorCode'),
+        errorSummary: any(named: 'errorSummary'),
+      ),
+    ).thenAnswer((_) async => closed);
+    when(() => attribution.finalize(any())).thenAnswer((_) async {});
+
+    stubSpec();
+    stubGlmResolution();
+    conversationRepository
+      ..maxDelegateCalls = 2
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async => null;
+
+    final result = await run();
+    expect(result.success, isTrue);
+    verify(
+      () => attribution.prepareCompletion(
+        attributionId: any(named: 'attributionId'),
+        outputs: any(named: 'outputs'),
+        status: AiWorkStatus.partial,
+        errorCode: 'output_carrier_unavailable',
+        errorSummary: any(named: 'errorSummary'),
+      ),
+    ).called(1);
+    verify(() => attribution.finalize(closed)).called(1);
   });
 
   test(
@@ -749,4 +816,209 @@ void main() {
       expect(upserts.whereType<AgentReportEntity>(), isEmpty);
     },
   );
+
+  test("Phase A's own register write cannot erase the transition: the "
+      'FACTS baseline is the prior day, so materialChange survives', () async {
+    stubSpec();
+    stubGlmResolution();
+    // Phase A already wrote today's row with the NEW status before arming
+    // this escalation — naive re-derivation would see no transition.
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-09')),
+    ).thenAnswer(
+      (_) async => AgentDomainEntity.goalProgress(
+        id: goalProgressId(agentId, '2026-08-09'),
+        agentId: agentId,
+        periodKey: '2026-08-09',
+        trackStatus: GoalTrackStatus.insufficientData,
+        attainment: 0,
+        dataCoverage: 0,
+        satisfied: false,
+        specVersionId: '$agentId:spec-v1',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      ),
+    );
+    String? factsSeen;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          factsSeen = message;
+          await (strategy! as GoalAgentStrategy).processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.updateGoalReport, {
+                'status': 'insufficientData',
+                'oneLiner': 'No data.',
+                'tldr': 'Quiet tracker.',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          return null;
+        };
+
+    final result = await run();
+    expect(result.success, isTrue);
+    expect(
+      factsSeen,
+      contains('"materialChangeSinceLastReport": true'),
+      reason: 'the transition that armed Phase B must reach the model',
+    );
+  });
+
+  test(
+    'a stale escalation evaluates ITS period, not the day it runs on',
+    () async {
+      stubSpec();
+      stubGlmResolution();
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'insufficientData',
+                  'oneLiner': 'No data.',
+                  'tldr': 'Quiet tracker.',
+                }, id: 'call-a'),
+                toolCall(GoalAgentToolNames.createGoalAd, {
+                  'headline': 'Late but not forgotten.',
+                  'tone': 'encourage',
+                  'animation': 'steady',
+                }, id: 'call-b'),
+              ],
+              manager: conversationManager,
+            );
+            return null;
+          };
+
+      final result = await withClock(
+        fixedClock,
+        () => workflow.execute(
+          agentIdentity: identity,
+          runKey: 'run-late',
+          // Armed three days ago; processed only now.
+          triggerTokens: const {'goal-escalation:2026-08-06'},
+          threadId: 'thread-late',
+        ),
+      );
+      expect(result.success, isTrue);
+      final nudge = upserts.whereType<GoalNudgeEntity>().single;
+      expect(
+        nudge.triggerProgressId,
+        goalProgressId(agentId, '2026-08-06'),
+        reason: 'the ad is evidence for the period that armed the wake',
+      );
+    },
+  );
+
+  test('persistOutputs: an active dismissal cooldown suppresses creates '
+      'and reruns; duplicate brief digests collapse to one row', () async {
+    final recentlyDismissed =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-quiet',
+              agentId: agentId,
+              status: GoalNudgeStatus.dismissed,
+              brief: const GoalNudgeBrief(
+                headline: 'dismissed',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-quiet',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+              dismissedAt: now.subtract(const Duration(hours: 2)),
+            )
+            as GoalNudgeEntity;
+
+    Future<GoalAgentStrategy> loaded(
+      List<Map<String, dynamic>> creations,
+    ) async {
+      final strategy = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: agentId,
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        knownAdIds: const {},
+      );
+      await strategy.processToolCalls(
+        toolCalls: [
+          for (final (i, args) in creations.indexed)
+            toolCall(GoalAgentToolNames.createGoalAd, args, id: 'c$i'),
+        ],
+        manager: conversationManager,
+      );
+      return strategy;
+    }
+
+    stubSpec();
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    final derivation = await GoalAgentPhaseA(
+      repository: repository,
+      syncService: MockAgentSyncService(),
+      signalReader: _FakeReader(),
+    ).deriveWakeFacts(agentId: agentId, version: version!, now: now);
+
+    // Cooldown: the model ignored dismissalCooldownActive — persistence
+    // must still hold the 24h quiet contract.
+    await withClock(
+      fixedClock,
+      () async => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: await loaded([
+          {
+            'headline': 'Ignore the quiet.',
+            'tone': 'nudge',
+            'animation': 'pulse',
+          },
+        ]),
+        derivation: derivation,
+        nudges: [recentlyDismissed],
+        now: now,
+      ),
+    );
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+
+    // Dedupe: two identical copies in one response → one row.
+    await withClock(
+      fixedClock,
+      () async => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: await loaded([
+          {'headline': 'Same words.', 'tone': 'nudge', 'animation': 'pulse'},
+          {'headline': 'Same words.', 'tone': 'nudge', 'animation': 'wave'},
+        ]),
+        derivation: derivation,
+        nudges: const [],
+        now: now,
+      ),
+    );
+    expect(upserts.whereType<GoalNudgeEntity>(), hasLength(1));
+  });
 }

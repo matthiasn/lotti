@@ -282,20 +282,18 @@ extension _AgentHandlers on SyncEventProcessor {
         // registered runtime-maintenance contributor, so the owning
         // feature mirrors its subscriptions without this file hard-coding
         // another kind branch. Contributors contain their own failures.
-        for (final maintenance in runtimeMaintenance) {
-          try {
-            await maintenance.onIdentityReceived(appliedIdentity);
-          } catch (error, stackTrace) {
-            _loggingService.error(
-              LogDomain.sync,
-              error,
-              subDomain: 'processor.identityMirror',
-              message:
-                  'runtime maintenance identity mirror failed for '
-                  '${appliedIdentity.agentId}',
-              stackTrace: stackTrace,
-            );
-          }
+        await _offerIdentityToRuntimeMaintenance(appliedIdentity);
+      }
+      // Ordering: creation bundles emit the identity BEFORE its spec rows,
+      // so the identity-time mirror can find no criteria yet. When the
+      // spec head lands, offer the (already persisted) identity again —
+      // this is what makes a goal synced in mid-session actually live.
+      if (wakeOrchestrator != null && entityToApply is GoalSpecHeadEntity) {
+        final identity = await agentRepository!.getEntity(
+          entityToApply.agentId,
+        );
+        if (identity is AgentIdentityEntity) {
+          await _offerIdentityToRuntimeMaintenance(identity);
         }
       }
       _updateNotifications.notify(
@@ -460,6 +458,29 @@ extension _AgentHandlers on SyncEventProcessor {
         matchEntityIds: {projectEntityUpdateNotification(link.toId)},
       ),
     );
+  }
+
+  /// Offers a synced-in identity to every runtime-maintenance contributor,
+  /// containing each contributor's failures (one feature's bad spec must
+  /// not stall the sync apply loop).
+  Future<void> _offerIdentityToRuntimeMaintenance(
+    AgentIdentityEntity identity,
+  ) async {
+    for (final maintenance in runtimeMaintenance) {
+      try {
+        await maintenance.onIdentityReceived(identity);
+      } catch (error, stackTrace) {
+        _loggingService.error(
+          LogDomain.sync,
+          error,
+          subDomain: 'processor.identityMirror',
+          message:
+              'runtime maintenance identity mirror failed for '
+              '${identity.agentId}',
+          stackTrace: stackTrace,
+        );
+      }
+    }
   }
 
   Future<bool> _localAgentEntityDominates({

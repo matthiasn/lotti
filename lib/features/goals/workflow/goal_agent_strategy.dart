@@ -41,6 +41,7 @@ class GoalAgentStrategy extends ConversationStrategy
     required this.threadId,
     required this.runKey,
     required this._knownAdIds,
+    this.expectedStatus,
   });
 
   @override
@@ -56,6 +57,11 @@ class GoalAgentStrategy extends ConversationStrategy
   /// may reference, so a hallucinated id fails in-conversation instead of
   /// corrupting the library.
   final Set<String> _knownAdIds;
+
+  /// The deterministic track status of this wake's FACTS. The contract
+  /// declares it authoritative, so a report claiming any other status is
+  /// rejected in-conversation instead of publishing a contradiction.
+  final GoalTrackStatus? expectedStatus;
 
   GoalTrackStatus? _reportStatus;
   String? _reportOneLiner;
@@ -171,6 +177,16 @@ class GoalAgentStrategy extends ConversationStrategy
             'Error: update_goal_report needs status (one of '
             '${goalTrackStatusNames.join('|')}), a non-empty oneLiner and '
             'a non-empty tldr.',
+      );
+      return;
+    }
+    if (expectedStatus != null && status != expectedStatus) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: the FACTS trackStatus is "${expectedStatus!.name}" and '
+            'it is authoritative — use it verbatim.',
       );
       return;
     }

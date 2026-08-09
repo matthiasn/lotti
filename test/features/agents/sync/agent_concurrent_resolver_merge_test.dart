@@ -485,6 +485,33 @@ void main() {
       expect(merged.lastShownAt, DateTime(2026, 8, 5));
     });
 
+    test('distinct ratings tied on activation and ratedAt still merge in '
+        'one deterministic order on both replicas', () {
+      final at = DateTime(2026, 8, 2, 9);
+      final skippedEntry = GoalNudgeRating(
+        activation: 1,
+        ratedAt: at,
+        skipped: true,
+      );
+      final rated = GoalNudgeRating(activation: 1, ratedAt: at, rating: 3);
+      final a = goalNudge(
+        status: GoalNudgeStatus.active,
+        ratings: [rated],
+      );
+      final b = goalNudge(
+        status: GoalNudgeStatus.active,
+        ratings: [skippedEntry],
+      );
+      final ab = mergeGoalNudgeAccumulators(winner: a, local: a, incoming: b);
+      final ba = mergeGoalNudgeAccumulators(winner: a, local: b, incoming: a);
+      expect(ab.ratings, hasLength(2));
+      expect(
+        ab.ratings,
+        ba.ratings,
+        reason: 'union order must not leak into the merged list',
+      );
+    });
+
     test('is symmetric: swapping local/incoming converges on the same '
         'accumulators', () {
       final a = goalNudge(

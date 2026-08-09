@@ -73,6 +73,40 @@ void main() {
     expect(strategy.reportContent, isNull);
   });
 
+  test('a report status contradicting the deterministic FACTS is '
+      'rejected — the computed status is authoritative', () async {
+    final gated = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+      expectedStatus: GoalTrackStatus.offTrack,
+    );
+    await gated.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {'status': 'onTrack', 'oneLiner': 'All good!', 'tldr': 'x'},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(gated.hasReport, isFalse);
+    expect(rejection(), contains('"offTrack"'));
+
+    await gated.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.updateGoalReport,
+          args: {'status': 'offTrack', 'oneLiner': 'Behind.', 'tldr': 'x'},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(gated.reportStatus, GoalTrackStatus.offTrack);
+  });
+
   test('a status outside the enum is rejected in-conversation, so the '
       'report stays unset for the forced retry', () async {
     await strategy.processToolCalls(

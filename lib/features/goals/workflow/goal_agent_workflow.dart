@@ -4,12 +4,15 @@ import 'package:clock/clock.dart';
 import 'package:crypto/crypto.dart' show sha1;
 import 'package:flutter/foundation.dart' show visibleForTesting;
 import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
+import 'package:lotti/features/agents/util/agent_error_logging.dart';
 import 'package:lotti/features/agents/util/inference_provider_resolver.dart';
 import 'package:lotti/features/agents/workflow/agent_system_prompt.dart';
 import 'package:lotti/features/agents/workflow/carrierless_attribution.dart';
@@ -24,11 +27,13 @@ import 'package:lotti/features/ai/repository/cloud_inference_wrapper.dart';
 import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
+import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_strategy.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
@@ -50,7 +55,7 @@ const goalObservationLookback = 12;
 /// against the graduated contract → persist every accumulated output in
 /// one transaction. A wake that produces no tool calls writes nothing but
 /// its thought — the €0-no-op discipline carried into the paid tier.
-class GoalAgentWorkflow {
+class GoalAgentWorkflow with AgentErrorLogging {
   GoalAgentWorkflow({
     required this._repository,
     required this._syncService,
@@ -70,6 +75,12 @@ class GoalAgentWorkflow {
   final AiConfigRepository _aiConfigRepository;
   final GoalFactsRenderer _factsRenderer;
   final DomainLogger? _domainLogger;
+
+  @override
+  DomainLogger? get domainLogger => _domainLogger;
+
+  @override
+  LogDomain get errorLogDomain => LogDomain.agentWorkflow;
 
   static const _uuid = Uuid();
 
@@ -94,10 +105,30 @@ class GoalAgentWorkflow {
       );
     }
 
+    // A late-processed escalation (offline device, poll across midnight)
+    // must evaluate the period that armed it, not the day it happens to
+    // run on — the wake record is period-scoped for exactly this reason.
+    final escalationPeriod = goalEscalationPeriodFromTriggerTokens(
+      triggerTokens,
+    );
+    final reference = _escalationReference(escalationPeriod, now);
     final derivation = await _phaseA.deriveWakeFacts(
       agentId: agentId,
       version: version,
-      now: now,
+      now: reference,
+    );
+    // Phase A persisted the transition's register row BEFORE arming this
+    // wake, so re-deriving sees the new status as previousStatus and the
+    // transition vanishes. The escalation's baseline is the last PRIOR
+    // day's status — restore it so the FACTS report the change that
+    // armed Phase B.
+    final facts = GoalWakeFacts(
+      trackStatus: derivation.facts.trackStatus,
+      previousStatus: derivation.priors.isEmpty
+          ? null
+          : derivation.priors.first.trackStatus,
+      evaluation: derivation.facts.evaluation,
+      shortTermAttainment: derivation.facts.shortTermAttainment,
     );
 
     final nudges = (await _repository.getEntitiesByAgentId(
@@ -106,9 +137,9 @@ class GoalAgentWorkflow {
     )).whereType<GoalNudgeEntity>().where((n) => n.deletedAt == null).toList();
     final observations = await _recentObservationTexts(agentId);
 
-    final facts = _factsRenderer.render(
+    final factsBlock = _factsRenderer.render(
       version: version,
-      facts: derivation.facts,
+      facts: facts,
       priorRegisters: derivation.priors,
       nudges: nudges,
       observations: observations,
@@ -135,7 +166,7 @@ class GoalAgentWorkflow {
       agentId: agentId,
       threadId: threadId,
       runKey: runKey,
-      text: facts,
+      text: factsBlock,
       now: now,
     );
 
@@ -152,6 +183,9 @@ class GoalAgentWorkflow {
       threadId: threadId,
       runKey: runKey,
       knownAdIds: knownAdIds,
+      // The deterministic status is authoritative: a report claiming
+      // anything else is rejected in-conversation.
+      expectedStatus: facts.trackStatus,
     );
 
     final tools = [
@@ -174,7 +208,7 @@ class GoalAgentWorkflow {
     try {
       var usage = await _conversationRepository.sendMessage(
         conversationId: conversationId,
-        message: facts,
+        message: factsBlock,
         model: resolved.modelId,
         provider: resolved.provider,
         inferenceRepo: inferenceRepo,
@@ -191,7 +225,7 @@ class GoalAgentWorkflow {
       // An escalation exists BECAUSE the status transitioned, so a report
       // is expected — one pinned retry, then accept the partial wake.
       // (Nothing else is ever forced: a no-op stays legal.)
-      if (derivation.facts.statusTransitioned && !strategy.hasReport) {
+      if (facts.statusTransitioned && !strategy.hasReport) {
         final retryUsage = await _forceReport(
           conversationId: conversationId,
           resolved: resolved,
@@ -217,7 +251,7 @@ class GoalAgentWorkflow {
             .firstOrNull,
       );
 
-      await persistOutputs(
+      final attributionFinalized = await persistOutputs(
         agentId: agentId,
         runKey: runKey,
         threadId: threadId,
@@ -226,6 +260,17 @@ class GoalAgentWorkflow {
         nudges: nudges,
         now: now,
       );
+      if (!attributionFinalized && recordConsumption) {
+        // No report → no output carrier: close the wake's attribution
+        // session explicitly or it looks perpetually in-flight in the
+        // consumption surfaces.
+        await finalizeCarrierlessAgentAttribution(
+          runKey: runKey,
+          logger: this,
+          status: AiWorkStatus.partial,
+          errorCode: 'output_carrier_unavailable',
+        );
+      }
 
       if (usage != null && usage.hasData) {
         await _syncService.upsertEntity(
@@ -254,8 +299,34 @@ class GoalAgentWorkflow {
         message: 'goal Phase B wake failed for $agentId',
         stackTrace: stackTrace,
       );
+      if (recordConsumption) {
+        await finalizeCarrierlessAgentAttribution(
+          runKey: runKey,
+          logger: this,
+          status: AiWorkStatus.failed,
+          errorCode: error.runtimeType.toString(),
+          errorSummary: error.toString(),
+        );
+      }
       return WakeResult(success: false, error: error.toString());
     }
+  }
+
+  /// The instant the derivation evaluates at: the escalation's encoded
+  /// day when that day is already over (evaluated at its last hour, so
+  /// the whole day's data is in range), otherwise now. Day keys are
+  /// lexically ordered, so a plain string compare detects a past period.
+  DateTime _escalationReference(String? periodKey, DateTime now) {
+    if (periodKey == null) return now;
+    final today = const GoalWindow.day().periodKey(now);
+    if (periodKey.compareTo(today) >= 0) return now;
+    final parts = periodKey.split('-');
+    if (parts.length != 3) return now;
+    final year = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final day = int.tryParse(parts[2]);
+    if (year == null || month == null || day == null) return now;
+    return DateTime(year, month, day, 23, 59, 59);
   }
 
   /// glm-5.2 on Melious is the validated default (the model the eval
@@ -406,8 +477,11 @@ class GoalAgentWorkflow {
   /// directly to pin the ad-state guards (dismissal-terminal defense,
   /// rerun-requires-retired) that the in-conversation validation makes
   /// hard to reach through the loop.
+  /// Returns whether the wake's attribution envelope was finalized (a
+  /// report existed and the projection landed) — the caller terminalizes
+  /// the session as carrierless otherwise.
   @visibleForTesting
-  Future<void> persistOutputs({
+  Future<bool> persistOutputs({
     required String agentId,
     required String runKey,
     required String threadId,
@@ -422,6 +496,7 @@ class GoalAgentWorkflow {
       runKey: runKey,
       reportId: reportId,
     );
+    var attributionFinalized = false;
 
     await _syncService.runInTransaction(() async {
       // Thought (final assistant prose — dialogue turns land here too).
@@ -504,7 +579,18 @@ class GoalAgentWorkflow {
         );
       }
 
+      // A fresh dismissal blocks ALL ad activity — the prompt says so,
+      // but the contract must hold against an imperfect model response,
+      // so it is re-checked at persistence time (ADR 0055's quiet rule).
+      final cooldownActive = _factsRenderer.dismissalCooldownActive(
+        nudges,
+        now,
+      );
       for (final action in strategy.rerunRequests) {
+        if (cooldownActive) {
+          logError('rerun suppressed: dismissal cooldown active');
+          continue;
+        }
         final nudge = byId[action.adId];
         if (nudge == null || nudge.status != GoalNudgeStatus.retired) {
           continue;
@@ -523,14 +609,28 @@ class GoalAgentWorkflow {
         );
       }
 
+      // Near-duplicate guard: the digest exists to stop the same copy
+      // accumulating rows — across the library and within one response.
+      final seenDigests = {
+        for (final nudge in nudges) nudge.briefDigest,
+      };
       for (final request in strategy.createdAds) {
+        if (cooldownActive) {
+          logError('ad creation suppressed: dismissal cooldown active');
+          continue;
+        }
+        final digest = goalBriefDigest(request.brief);
+        if (!seenDigests.add(digest)) {
+          logError('ad creation skipped: duplicate brief digest');
+          continue;
+        }
         await _syncService.upsertEntity(
           AgentDomainEntity.goalNudge(
             id: _uuid.v4(),
             agentId: agentId,
             status: GoalNudgeStatus.active,
             brief: request.brief,
-            briefDigest: goalBriefDigest(request.brief),
+            briefDigest: digest,
             createdAt: now,
             updatedAt: now,
             vectorClock: null,
@@ -606,6 +706,25 @@ class GoalAgentWorkflow {
         );
       }
     });
+
+    // Finalize AFTER the transaction: the projection must never describe
+    // a report the rolled-back transaction did not write. Contained — a
+    // bookkeeping failure must not fail a persisted wake; the session is
+    // recovered later rather than the wake reported broken.
+    if (attributionEnvelope != null) {
+      try {
+        await getIt<AiAttributionService>().finalize(attributionEnvelope);
+        attributionFinalized = true;
+      } catch (error, stackTrace) {
+        logError(
+          'report attribution projection remains pending for recovery',
+          error: error,
+          stackTrace: stackTrace,
+        );
+        attributionFinalized = true;
+      }
+    }
+    return attributionFinalized;
   }
 }
 

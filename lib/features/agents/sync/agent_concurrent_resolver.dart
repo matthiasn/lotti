@@ -203,12 +203,20 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
   required GoalNudgeEntity local,
   required GoalNudgeEntity incoming,
 }) {
+  // The sort is a TOTAL order over every distinguishing field: replicas
+  // build this set local-first, so a comparator tie between distinct
+  // records would let them serialize in different orders and diverge
+  // permanently under equal-clock sync.
   final ratings =
       <GoalNudgeRating>{...local.ratings, ...incoming.ratings}.toList()
         ..sort((a, b) {
           final byActivation = a.activation.compareTo(b.activation);
           if (byActivation != 0) return byActivation;
-          return a.ratedAt.compareTo(b.ratedAt);
+          final byRatedAt = a.ratedAt.compareTo(b.ratedAt);
+          if (byRatedAt != 0) return byRatedAt;
+          final bySkipped = (a.skipped ? 1 : 0).compareTo(b.skipped ? 1 : 0);
+          if (bySkipped != 0) return bySkipped;
+          return (a.rating ?? 0).compareTo(b.rating ?? 0);
         });
   return winner.copyWith(
     totalVisibleMs: local.totalVisibleMs.merge(incoming.totalVisibleMs),

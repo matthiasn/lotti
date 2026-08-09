@@ -2379,6 +2379,52 @@ void main() {
         verify(() => mockAgentRepo.upsertEntity(entity)).called(1);
       });
 
+      test('a synced-in goal spec head re-offers the identity — creation '
+          'bundles emit identity before spec', () async {
+        final seen = <String>[];
+        processor.runtimeMaintenance = [_RecordingMaintenance(seen)];
+        addTearDown(() => processor.runtimeMaintenance = const []);
+
+        final identity = AgentDomainEntity.agent(
+          id: 'goal-88',
+          agentId: 'goal-88',
+          kind: 'goal_agent',
+          displayName: 'Steps goal',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'state-1',
+          config: const AgentConfig(),
+          createdAt: DateTime(2026, 8),
+          updatedAt: DateTime(2026, 8),
+          vectorClock: null,
+        );
+        when(
+          () => mockAgentRepo.getEntity('goal-88'),
+        ).thenAnswer((_) async => identity);
+
+        final head = AgentDomainEntity.goalSpecHead(
+          id: 'goal_spec_head:goal-88',
+          agentId: 'goal-88',
+          versionId: 'goal-88:spec-v1',
+          updatedAt: DateTime(2026, 8),
+          vectorClock: null,
+        );
+        when(() => event.text).thenReturn(
+          encodeMessage(
+            SyncMessage.agentEntity(
+              agentEntity: head,
+              status: SyncEntryStatus.update,
+            ),
+          ),
+        );
+
+        await processor.process(event: event, journalDb: journalDb);
+
+        expect(seen, ['goal-88']);
+        verify(() => mockAgentRepo.upsertEntity(head)).called(1);
+      });
+
       test('removes subscriptions when agent is dormant', () async {
         final entity = AgentDomainEntity.agent(
           id: 'agent-dormant',
