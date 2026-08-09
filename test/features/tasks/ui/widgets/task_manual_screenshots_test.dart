@@ -1127,6 +1127,24 @@ Future<void> _pumpTaskSurface(
   final taskAgentState = _manualTaskAgentState(
     automaticUpdates: automaticUpdates,
   );
+  String oneLinerFor(String taskId) => switch (taskId) {
+    final id when id == manualOrbitalHabitatTaskId => _t(
+      'Pressure stable · 37 penguins accounted for',
+      'Druck stabil · 37 Pinguine vollzählig',
+    ),
+    final id when id == manualFishFeederTaskId => _t(
+      'Feeder calibration blocks the habitat demo',
+      'Futterautomat-Kalibrierung blockiert die Habitat-Demo',
+    ),
+    final id when id == manualSardineCargoTaskId => _t(
+      'Europa cold-chain manifest ready to reconcile',
+      'Europa-Kühlkettenmanifest bereit zum Abgleich',
+    ),
+    _ => _t(
+      'Awaiting an answer from orbital transport counsel',
+      'Warte auf Antwort der orbitalen Transportrechtsberatung',
+    ),
+  };
 
   await withClock(Clock.fixed(manualDemoNow), () async {
     await primeManualDemoCoverArt(
@@ -1165,23 +1183,12 @@ Future<void> _pumpTaskSurface(
               (ref, taskId) async => tasksById[taskId],
             ),
             taskOneLinerProvider.overrideWith(
-              (ref, taskId) async => switch (taskId) {
-                final id when id == manualOrbitalHabitatTaskId => _t(
-                  'Pressure stable · 37 penguins accounted for',
-                  'Druck stabil · 37 Pinguine vollzählig',
-                ),
-                final id when id == manualFishFeederTaskId => _t(
-                  'Feeder calibration blocks the habitat demo',
-                  'Futterautomat-Kalibrierung blockiert die Habitat-Demo',
-                ),
-                final id when id == manualSardineCargoTaskId => _t(
-                  'Europa cold-chain manifest ready to reconcile',
-                  'Europa-Kühlkettenmanifest bereit zum Abgleich',
-                ),
-                _ => _t(
-                  'Awaiting an answer from orbital transport counsel',
-                  'Warte auf Antwort der orbitalen Transportrechtsberatung',
-                ),
+              (ref, taskId) async => oneLinerFor(taskId),
+            ),
+            taskOneLinersProvider.overrideWith(
+              (ref, request) async => {
+                for (final taskId in request.taskIds)
+                  taskId: oneLinerFor(taskId),
               },
             ),
             hasAvailableSkillsProvider((

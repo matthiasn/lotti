@@ -15,6 +15,7 @@ import 'package:lotti/features/design_system/components/lists/design_system_list
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/linkable_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
+import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_tasks_widget.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
@@ -169,6 +170,7 @@ void main() {
     List<Override> extraOverrides = const [],
     List<EntryLink> extraTypedLinks = const [],
     List<Task> extraTypedTasks = const [],
+    Map<String, String> oneLinersByTaskId = const {},
     // Defaults to "the app has other tasks", the world every case below the
     // first-run ones lives in. False is the fresh-install state where the
     // card must not render at all.
@@ -190,6 +192,16 @@ void main() {
             manageMode
                 ? () => MockLinkedTasksControllerManageMode('task-main')
                 : LinkedTasksController.new,
+          ),
+          taskOneLinersProvider.overrideWith(
+            (ref, request) async {
+              final result = <String, String>{};
+              for (final taskId in request.taskIds) {
+                final oneLiner = oneLinersByTaskId[taskId];
+                if (oneLiner != null) result[taskId] = oneLiner;
+              }
+              return result;
+            },
           ),
           journalRepositoryProvider.overrideWithValue(journalRepo),
           ...extraOverrides,
@@ -279,6 +291,20 @@ void main() {
   });
 
   group('LinkedTasksWidget rendering', () {
+    testWidgets('passes one batched tagline result into the matching row', (
+      tester,
+    ) async {
+      await pumpWidget(
+        tester,
+        incoming: [],
+        outgoing: [buildTask(id: 'task-2', title: 'Linked task')],
+        oneLinersByTaskId: const {'task-2': 'Ready for final review'},
+      );
+
+      final row = tester.widget<LinkedTaskRow>(find.byType(LinkedTaskRow));
+      expect(row.data.oneLiner, 'Ready for final review');
+    });
+
     testWidgets(
       'the header sits nearer the content it labels than the card edge',
       (tester) async {

@@ -178,4 +178,91 @@ void main() {
       expect(result, 'Building REST API endpoints');
     });
   });
+
+  group('taskOneLinersProvider', () {
+    late MockAgentRepository mockRepository;
+
+    setUp(() {
+      mockRepository = MockAgentRepository();
+    });
+
+    ProviderContainer createContainer() {
+      final container = ProviderContainer(
+        overrides: [
+          agentRepositoryProvider.overrideWithValue(mockRepository),
+          agentUpdateStreamProvider.overrideWith(
+            (ref, agentId) => const Stream<Set<String>>.empty(),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+      return container;
+    }
+
+    test('de-duplicates and sorts IDs for a stable family key', () {
+      final first = TaskOneLinerRequest(
+        const ['task-b', 'task-a', 'task-b'],
+      );
+      final second = TaskOneLinerRequest(const ['task-a', 'task-b']);
+
+      expect(first.taskIds, ['task-a', 'task-b']);
+      expect(first, second);
+      expect(first.hashCode, second.hashCode);
+    });
+
+    test(
+      'fetches all task reports once and keeps non-empty taglines',
+      () async {
+        final request = TaskOneLinerRequest(const ['task-b', 'task-a']);
+        when(
+          () => mockRepository.getLatestTaskReportsForTaskIds([
+            'task-a',
+            'task-b',
+          ]),
+        ).thenAnswer(
+          (_) async => {
+            'task-a': AgentReportEntity(
+              id: 'report-a',
+              agentId: 'agent-a',
+              scope: 'current',
+              createdAt: DateTime(2024, 3, 15),
+              vectorClock: null,
+              oneLiner: '  Ready for review  ',
+            ),
+            'task-b': AgentReportEntity(
+              id: 'report-b',
+              agentId: 'agent-b',
+              scope: 'current',
+              createdAt: DateTime(2024, 3, 15),
+              vectorClock: null,
+              oneLiner: '   ',
+            ),
+          },
+        );
+
+        final result = await createContainer().read(
+          taskOneLinersProvider(request).future,
+        );
+
+        expect(result, const {'task-a': 'Ready for review'});
+        verify(
+          () => mockRepository.getLatestTaskReportsForTaskIds([
+            'task-a',
+            'task-b',
+          ]),
+        ).called(1);
+      },
+    );
+
+    test('an empty request performs no repository lookup', () async {
+      final result = await createContainer().read(
+        taskOneLinersProvider(TaskOneLinerRequest(const [])).future,
+      );
+
+      expect(result, isEmpty);
+      verifyNever(
+        () => mockRepository.getLatestTaskReportsForTaskIds(any()),
+      );
+    });
+  });
 }

@@ -267,9 +267,27 @@ extension _AgentHandlers on SyncEventProcessor {
           }
         }
       }
+      // Task-scoped report consumers subscribe to the task ID, not the agent
+      // ID. Resolve active task links so a report or report-head received from
+      // another device refreshes an already-open header and task list.
+      final reportTaskIds = <String>{};
+      if (resolvedEntity is AgentReportEntity ||
+          resolvedEntity is AgentReportHeadEntity) {
+        final taskLinks = await agentRepository!.getLinksFrom(
+          resolvedEntity.agentId,
+          type: 'agent_task',
+        );
+        reportTaskIds.addAll(
+          taskLinks
+              .whereType<AgentTaskLink>()
+              .where((link) => link.deletedAt == null)
+              .map((link) => link.toId),
+        );
+      }
       _updateNotifications.notify(
         {
           resolvedEntity.agentId,
+          ...reportTaskIds,
           // Include templateId so template-level aggregate providers
           // refresh when token usage or reports arrive from other devices.
           if (resolvedEntity is WakeTokenUsageEntity &&

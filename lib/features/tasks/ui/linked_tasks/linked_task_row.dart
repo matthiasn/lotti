@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/lists/design_system_list_item.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
 import 'package:lotti/features/tasks/ui/utils.dart';
 import 'package:lotti/features/tasks/util/task_navigation.dart';
@@ -57,9 +55,10 @@ const double _trailingStatusMinRowWidth = 520;
 /// Deliberately just the task — direction and relationship kind are stated by
 /// the section header the row sits under, never repeated per row.
 class LinkedTaskRowData {
-  const LinkedTaskRowData({required this.task});
+  const LinkedTaskRowData({required this.task, this.oneLiner});
 
   final Task task;
+  final String? oneLiner;
 }
 
 /// A single row in the linked-tasks card: status glyph, title, optional AI
@@ -67,7 +66,7 @@ class LinkedTaskRowData {
 /// buttons (manage mode, only for whichever of [onEdit]/[onUnlink] is
 /// supplied). Shared by the flat plain-link list and the typed relationship
 /// sections — one template for every row on the card.
-class LinkedTaskRow extends ConsumerWidget {
+class LinkedTaskRow extends StatelessWidget {
   const LinkedTaskRow({
     required this.data,
     required this.manageMode,
@@ -100,12 +99,10 @@ class LinkedTaskRow extends ConsumerWidget {
   final Future<int> Function()? onUnlink;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final task = data.task;
-    // Keep the last summary painted while its report refreshes so a database
-    // notification cannot collapse and re-expand the row.
-    final oneLiner = ref.watch(taskOneLinerProvider(task.id)).value;
+    final oneLiner = data.oneLiner;
     final hasOneLiner = oneLiner != null && oneLiner.isNotEmpty;
 
     final showActions = manageMode && (onEdit != null || onUnlink != null);
@@ -148,19 +145,19 @@ class LinkedTaskRow extends ConsumerWidget {
               : statusLabel,
           subtitleSpans: hasOneLiner
               ? [
+                  if (!wideEnoughForTrailingStatus)
+                    TextSpan(
+                      text: '$statusLabel · ',
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
                   TextSpan(
                     text: oneLiner,
                     style: tokens.typography.styles.others.caption.copyWith(
                       color: tokens.colors.aiCard.accent,
                     ),
                   ),
-                  if (!wideEnoughForTrailingStatus)
-                    TextSpan(
-                      text: ' · $statusLabel',
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
-                      ),
-                    ),
                 ]
               : null,
           // The list item's default subtitle ink is medium, which on the

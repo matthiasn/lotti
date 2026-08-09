@@ -14,6 +14,7 @@ import 'package:lotti/features/journal/state/entry_controller.dart';
 import 'package:lotti/features/tasks/state/linkable_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/linked_tasks_controller.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
+import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/edit_link_type_modal.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_created_feedback.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/link_task_modal.dart';
@@ -72,6 +73,17 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
     // have no links" CTA on the first open of every task that has some.
     final resolved = groupsAsync.hasValue || groupsAsync.hasError;
     final hasLinks = linkGroups.totalCount > 0;
+    final linkedTaskIds = [
+      ...linkGroups.flat.map((entry) => entry.task.meta.id),
+      ...linkGroups.typed.map((entry) => entry.task.meta.id),
+    ];
+    final oneLinersByTaskId =
+        ref
+            .watch(
+              taskOneLinersProvider(TaskOneLinerRequest(linkedTaskIds)),
+            )
+            .value ??
+        const {};
 
     // Nothing to link to, nothing to show. On a first-run install this card
     // was a bordered box teaching a relationship feature that could not be
@@ -84,7 +96,12 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
     if (!hasLinks && !canLink) return const SizedBox.shrink();
 
     final flatRows = linkGroups.flat
-        .map((entry) => LinkedTaskRowData(task: entry.task))
+        .map(
+          (entry) => LinkedTaskRowData(
+            task: entry.task,
+            oneLiner: oneLinersByTaskId[entry.task.meta.id],
+          ),
+        )
         .toList();
 
     final tokens = context.designTokens;
@@ -138,6 +155,7 @@ class _LinkedTasksWidgetState extends ConsumerState<LinkedTasksWidget> {
                   TaskRelationshipSections(
                     taskId: taskId,
                     manageMode: uiState.manageMode,
+                    oneLinersByTaskId: oneLinersByTaskId,
                   ),
                 if (linkGroups.typed.isNotEmpty && flatRows.isNotEmpty)
                   const DesignSystemDivider(),

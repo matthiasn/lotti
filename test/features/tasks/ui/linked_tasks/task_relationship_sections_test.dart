@@ -7,6 +7,7 @@ import 'package:lotti/features/design_system/components/buttons/design_system_bu
 import 'package:lotti/features/design_system/components/dropdowns/design_system_dropdown.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
 import 'package:lotti/features/tasks/state/task_link_groups_controller.dart';
+import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/task_relationship_sections.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/db_notification.dart';
@@ -58,6 +59,7 @@ void main() {
     WidgetTester tester,
     TaskLinkGroups groups, {
     bool manageMode = false,
+    Map<String, String> oneLinersByTaskId = const {},
   }) async {
     final journalRepo = MockJournalRepository();
     when(
@@ -87,6 +89,7 @@ void main() {
           child: TaskRelationshipSections(
             taskId: anchorTaskId,
             manageMode: manageMode,
+            oneLinersByTaskId: oneLinersByTaskId,
           ),
         ),
       ),
@@ -97,6 +100,29 @@ void main() {
   }
 
   group('TaskRelationshipSections', () {
+    testWidgets('passes the batched one-liner into its linked row', (
+      tester,
+    ) async {
+      await pumpSections(
+        tester,
+        TaskLinkGroups(
+          flat: const [],
+          typed: [
+            entry(
+              id: 'blocker',
+              title: 'Blocker Task',
+              kind: TaskLinkKind.blocks,
+              direction: TaskLinkDirection.incoming,
+            ),
+          ],
+        ),
+        oneLinersByTaskId: const {'blocker': 'Unblocks the launch review'},
+      );
+
+      final row = tester.widget<LinkedTaskRow>(find.byType(LinkedTaskRow));
+      expect(row.data.oneLiner, 'Unblocks the launch review');
+    });
+
     testWidgets('renders nothing when there are no typed relationships', (
       tester,
     ) async {

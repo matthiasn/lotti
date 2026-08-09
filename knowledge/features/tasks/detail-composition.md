@@ -121,10 +121,14 @@ pickers. When the task agent has published a one-liner, the header renders it as
 a single ellipsized line directly between the title and metadata. Its ink is
 `aiCard.accent`, matching the AI summary card instead of neutral task metadata.
 
-Linked-task rows watch the same provider for the other task. Their compact text
-column becomes title plus one-line AI subtitle while the status remains on the
-trailing rail at the detail reading width; narrow rows fold the status into the
-subtitle line. Both paths ellipsize rather than widening the card.
+`LinkedTasksWidget` resolves every linked task's one-liner through one
+`taskOneLinersProvider` batch and passes the results into both plain and typed
+rows. The batch watches the shared agent-update topic, so a local or synced
+report refreshes the card without one query and stream subscription per row.
+Each compact text column becomes title plus one-line AI subtitle while the
+status remains on the trailing rail at the detail reading width; narrow rows
+prefix the status before the ellipsized summary so it cannot disappear behind
+a long tagline.
 
 **Extended actions — share, speech modal — belong to the pinned app bar's
 `more_vert` button, not the header.** There is no ellipsis inside the header.
@@ -195,12 +199,15 @@ Three rules govern getting *out* of edit mode:
 
 ## The two-lane meta row
 
-The header body is Crumb → Title → Meta:
+The header body is Crumb → Title → AI one-liner → Meta:
 
 1. **Crumb** — `category / [project | No project]` separated by a literal `/`.
    No label chips here.
 2. **Title** — full width, tap to edit.
-3. **Meta** — a two-lane column.
+3. **AI one-liner** — an optional, single-line AI-accent summary. It preserves
+   the last value during background refresh and truncates rather than widening
+   the header.
+4. **Meta** — a two-lane column.
 
 **Without a category the crumb is one segment: `No category`.** A project is
 scoped to a category — `ProjectRepository.linkTaskToProject` refuses a

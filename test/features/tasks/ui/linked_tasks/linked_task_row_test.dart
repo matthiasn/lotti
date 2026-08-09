@@ -4,7 +4,6 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/tasks/state/task_one_liner_provider.dart';
 import 'package:lotti/features/tasks/ui/linked_tasks/linked_task_row.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -26,8 +25,9 @@ void main() {
     await getIt.reset();
   });
 
-  LinkedTaskRowData buildRowData() => LinkedTaskRowData(
+  LinkedTaskRowData buildRowData({String? oneLiner}) => LinkedTaskRowData(
     task: TestTaskFactory.create(id: 'other-task', title: 'Other Task'),
+    oneLiner: oneLiner,
   );
 
   group('LinkedTaskRow', () {
@@ -62,13 +62,8 @@ void main() {
             width: 500,
             height: 800,
           ),
-          overrides: [
-            taskOneLinerProvider.overrideWith(
-              (ref, taskId) async => oneLiner,
-            ),
-          ],
           child: LinkedTaskRow(
-            data: buildRowData(),
+            data: buildRowData(oneLiner: oneLiner),
             manageMode: false,
           ),
         ),
@@ -82,7 +77,7 @@ void main() {
       );
       final richText = tester.widget<RichText>(oneLinerText);
       final rootSpan = richText.text as TextSpan;
-      final summarySpan = rootSpan.children!.first as TextSpan;
+      final summarySpan = rootSpan.children!.last as TextSpan;
       final context = tester.element(find.byType(LinkedTaskRow));
       final textPainter = TextPainter(
         text: richText.text,
@@ -92,7 +87,7 @@ void main() {
       )..layout(maxWidth: tester.getSize(oneLinerText).width);
 
       expect(summarySpan.text, oneLiner);
-      expect(rootSpan.toPlainText(), '$oneLiner · Open');
+      expect(rootSpan.toPlainText(), 'Open · $oneLiner');
       expect(
         summarySpan.style?.color,
         context.designTokens.colors.aiCard.accent,
