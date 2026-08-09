@@ -637,18 +637,24 @@ void main() {
               )
               .last,
         );
-        _expectVisible(
-          tester,
-          device,
-          find
-              .text(
-                _t(
-                  'Feeder calibration blocks the habitat demo',
-                  'Futterautomat-Kalibrierung blockiert die Habitat-Demo',
-                ),
-              )
-              .last,
-        );
+        // The phone capture is intentionally anchored on the page header;
+        // its linked-task rows are below the viewport. The desktop capture
+        // scrolls the whole task form into view and therefore proves both AI
+        // subtitle surfaces in one frame.
+        if (!device.isPhone) {
+          _expectVisible(
+            tester,
+            device,
+            find
+                .text(
+                  _t(
+                    'Feeder calibration blocks the habitat demo',
+                    'Futterautomat-Kalibrierung blockiert die Habitat-Demo',
+                  ),
+                )
+                .last,
+          );
+        }
         await captureScreenshot(
           tester,
           'task_detail_${viewport}_$theme',
