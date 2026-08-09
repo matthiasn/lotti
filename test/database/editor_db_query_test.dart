@@ -399,7 +399,7 @@ void main() {
             'ON editor_drafts (created_at)',
           )
           ..execute('PRAGMA user_version = 1')
-          ..dispose();
+          ..close();
 
         final migratedDb = EditorDb(
           documentsDirectoryProvider: () async => tempDir,

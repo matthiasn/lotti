@@ -97,7 +97,7 @@ void main() {
             "VALUES ('mig-task', '{}', 0, 0, 0, 0, 'Task', 1, 'OPEN')",
           )
           ..execute('PRAGMA user_version = 18')
-          ..dispose();
+          ..close();
 
         // Create the default-named db file so the pre-migration backup (which
         // copies `journalDbFileName` from the docs dir) succeeds, covering the

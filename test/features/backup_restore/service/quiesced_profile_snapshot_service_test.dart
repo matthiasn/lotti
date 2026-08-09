@@ -48,7 +48,7 @@ void main() {
         reason: 'the fixture must exercise a database that was WAL-backed',
       );
     } finally {
-      database.dispose();
+      database.close();
     }
   }
 
@@ -472,7 +472,7 @@ void main() {
             'committed journal value',
           );
         } finally {
-          restoredJournal.dispose();
+          restoredJournal.close();
         }
 
         final manifestJson =
@@ -1216,7 +1216,7 @@ void main() {
                 try {
                   database.userVersion = 46;
                 } finally {
-                  database.dispose();
+                  database.close();
                 }
 
                 final manifestFile = File(
@@ -1270,7 +1270,7 @@ void main() {
         pageSize =
             database.select('PRAGMA page_size').single.values.single! as int;
       } finally {
-        database.dispose();
+        database.close();
       }
       final damagedBytes = journal.readAsBytesSync()..[pageSize] = 0;
       journal.writeAsBytesSync(damagedBytes, flush: true);

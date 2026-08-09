@@ -131,7 +131,7 @@ void main() {
         );
         insertV42Entry(sqlite, id: 'uncategorized', columnCategory: '');
         sqlite.execute('PRAGMA user_version = 42');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v43.db');
         addTearDown(db.close);

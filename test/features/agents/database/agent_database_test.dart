@@ -423,7 +423,7 @@ void main() {
 
         // Set schema version to 1
         rawDb.execute('PRAGMA user_version = 1');
-        rawDb.dispose();
+        rawDb.close();
 
         // Open with AgentDatabase to trigger v1→v2 migration
         final db = AgentDatabase(
@@ -541,7 +541,7 @@ void main() {
       ''');
 
       rawDb.execute('PRAGMA user_version = 2');
-      rawDb.dispose();
+      rawDb.close();
 
       // Open with AgentDatabase to trigger v2→v3 migration.
       final db = AgentDatabase(
@@ -689,7 +689,7 @@ void main() {
         ''');
 
       rawDb.execute('PRAGMA user_version = 2');
-      rawDb.dispose();
+      rawDb.close();
 
       // Migration should deduplicate before creating the index.
       final db = AgentDatabase(
@@ -795,7 +795,7 @@ void main() {
         ''');
 
       rawDb.execute('PRAGMA user_version = 3');
-      rawDb.dispose();
+      rawDb.close();
 
       final db = AgentDatabase(
         background: false,
@@ -925,7 +925,7 @@ void main() {
           ''');
 
         rawDb.execute('PRAGMA user_version = 4');
-        rawDb.dispose();
+        rawDb.close();
 
         final db = AgentDatabase(
           background: false,
@@ -1061,7 +1061,7 @@ void main() {
           ''');
 
         rawDb.execute('PRAGMA user_version = 5');
-        rawDb.dispose();
+        rawDb.close();
 
         final db = AgentDatabase(
           background: false,
@@ -1209,7 +1209,7 @@ void main() {
           )
         ''')
         ..execute('PRAGMA user_version = 8');
-      rawDb.dispose();
+      rawDb.close();
 
       final db = AgentDatabase(
         background: false,
@@ -1293,7 +1293,7 @@ void main() {
             'WHERE deleted_at IS NULL',
           )
           ..execute('PRAGMA user_version = 9');
-        rawDb.dispose();
+        rawDb.close();
 
         final db = AgentDatabase(
           background: false,
@@ -1432,7 +1432,7 @@ void main() {
             "'soul_assignment', 1, 1, '{}')",
           )
           ..execute('PRAGMA user_version = 10');
-        rawDb.dispose();
+        rawDb.close();
 
         final db = AgentDatabase(
           background: false,
@@ -1588,7 +1588,7 @@ void main() {
             )
           ''')
           ..execute('PRAGMA user_version = 12');
-        rawDb.dispose();
+        rawDb.close();
 
         final db = AgentDatabase(
           background: false,
@@ -1773,7 +1773,7 @@ void main() {
             )
           ''')
           ..execute('PRAGMA user_version = 13');
-        rawDb.dispose();
+        rawDb.close();
 
         final db = AgentDatabase(
           background: false,
@@ -1948,7 +1948,7 @@ void main() {
             )
           ''')
           ..execute('PRAGMA user_version = 14');
-        rawDb.dispose();
+        rawDb.close();
 
         final db = AgentDatabase(
           background: false,
@@ -2027,7 +2027,7 @@ void main() {
             )
           ''')
           ..execute('PRAGMA user_version = 15');
-        rawDb.dispose();
+        rawDb.close();
 
         final db = AgentDatabase(
           background: false,
@@ -2174,7 +2174,7 @@ void main() {
             ],
           )
           ..execute('PRAGMA user_version = 17')
-          ..dispose();
+          ..close();
 
         final db = AgentDatabase(
           background: false,
@@ -2283,7 +2283,7 @@ void main() {
         ..execute("INSERT INTO wake_run_log VALUES ('run-1', 1)")
         ..execute("INSERT INTO saga_log VALUES ('op-1', 'pending', 1, 1)")
         ..execute('PRAGMA user_version = 18')
-        ..dispose();
+        ..close();
 
       final db = AgentDatabase(
         background: false,

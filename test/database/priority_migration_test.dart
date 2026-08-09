@@ -73,7 +73,7 @@ void main() {
 
       // Set user_version to 28 to trigger v29 migration
       sqlite.execute('PRAGMA user_version = 28');
-      sqlite.dispose();
+      sqlite.close();
 
       // Open with Drift to run migration
       final db = JournalDb(overriddenFilename: 'test_v29_priority.db');
@@ -135,7 +135,7 @@ void main() {
       ''');
 
         sqlite.execute('PRAGMA user_version = 32');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(overriddenFilename: 'test_v33_due_idx.db');
         addTearDown(db.close);
@@ -168,7 +168,7 @@ void main() {
       createJournalTable(sqlite, version: 34);
 
       sqlite.execute('PRAGMA user_version = 34');
-      sqlite.dispose();
+      sqlite.close();
 
       final db = JournalDb(overriddenFilename: 'test_v35_task_date_idx.db');
       addTearDown(db.close);
@@ -213,7 +213,7 @@ void main() {
       ''');
 
         sqlite.execute('PRAGMA user_version = 34');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(
           overriddenFilename: 'test_v35_task_date_idx_existing.db',
@@ -246,7 +246,7 @@ void main() {
         createJournalTable(sqlite, version: 35);
 
         sqlite.execute('PRAGMA user_version = 35');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(
           overriddenFilename: 'test_v36_journal_browse_idx.db',
@@ -294,7 +294,7 @@ void main() {
       ''');
 
         sqlite.execute('PRAGMA user_version = 35');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(
           overriddenFilename: 'test_v36_journal_browse_idx_existing.db',
@@ -335,7 +335,7 @@ void main() {
       ''');
 
         sqlite.execute('PRAGMA user_version = 36');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(
           overriddenFilename: 'test_v37_task_index_rebuild.db',
@@ -429,7 +429,7 @@ void main() {
       ''');
 
         sqlite.execute('PRAGMA user_version = 36');
-        sqlite.dispose();
+        sqlite.close();
 
         final db = JournalDb(
           overriddenFilename: 'test_v37_labeled_idx_existing.db',

@@ -163,17 +163,17 @@ This file tells flatpak-flutter about plugins not in its built-in database.
 {
     "flutter_vodozemac": {
         "cargo_locks": [
-            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.6.0/rust"
+            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.7.1/rust"
         ],
         "extra_pubspecs": [
-            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.6.0/cargokit/build_tool"
+            ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.7.1/cargokit/build_tool"
         ],
         "manifest": {
             "sources": [
                 {
                     "type": "patch",
                     "path": "cargokit/run_build_tool.sh.patch",
-                    "dest": ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.6.0/cargokit"
+                    "dest": ".pub-cache/hosted/pub.dev/flutter_vodozemac-0.7.1/cargokit"
                 }
             ]
         }

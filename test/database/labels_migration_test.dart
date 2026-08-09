@@ -87,7 +87,7 @@ void main() {
       sqlite.execute('PRAGMA user_version = 25');
 
       // Close raw connection
-      sqlite.dispose();
+      sqlite.close();
 
       // Open with JournalDb to trigger migration
       final db = JournalDb(overriddenFilename: 'test_v26.db');
@@ -141,7 +141,7 @@ void main() {
 
         // Set schema version to 26 without creating label tables
         sqlite.execute('PRAGMA user_version = 26');
-        sqlite.dispose();
+        sqlite.close();
 
         // Open with JournalDb to trigger migration
         final db = JournalDb(overriddenFilename: 'test_v27.db');
@@ -216,7 +216,7 @@ void main() {
 
       // Set schema version to 27
       sqlite.execute('PRAGMA user_version = 27');
-      sqlite.dispose();
+      sqlite.close();
 
       // Open with JournalDb to trigger migration
       final db = JournalDb(overriddenFilename: 'test_v28.db');
@@ -253,7 +253,7 @@ void main() {
       createJournalTable(sqlite, version: 25);
       createLinkedEntriesTableWithBuggyIndex(sqlite);
       sqlite.execute('PRAGMA user_version = 25');
-      sqlite.dispose();
+      sqlite.close();
 
       // First migration
       var db = JournalDb(overriddenFilename: 'test_idempotent.db');
@@ -330,7 +330,7 @@ void main() {
 
       createLinkedEntriesTableWithBuggyIndex(sqlite);
       sqlite.execute('PRAGMA user_version = 27');
-      sqlite.dispose();
+      sqlite.close();
 
       // Open with JournalDb to trigger migration
       final db = JournalDb(overriddenFilename: 'test_preserve.db');
@@ -420,7 +420,7 @@ void main() {
       createJournalTable(sqlite, version: 25);
       createLinkedEntriesTableWithBuggyIndex(sqlite);
       sqlite.execute('PRAGMA user_version = 25');
-      sqlite.dispose();
+      sqlite.close();
 
       // Open with JournalDb to trigger migration
       final db = JournalDb(overriddenFilename: 'test_empty.db');
