@@ -70,7 +70,7 @@ flowchart TD
     EVAL --> REG[upsert goalProgress register\ngoal_progress:agent:evaluation-day\nrecompute, never accumulate]
     REG --> TRANS{status transitioned vs\nlast persisted status?}
     TRANS -- no --> DONE[return — the €0 no-op]
-    TRANS -- yes --> ESC[arm escalation wake\ngoal-escalation:periodKey,\nUTC deadline, lease-elected]
+    TRANS -- yes --> ESC[arm escalation wake\ngoal-escalation:periodKey,\nperiod-derived UTC deadline,\nlease-elected, same txn\nas the register]
     ESC --> NUDGE[nudge ScheduledWakeManager\nrequestCheck on arming device]
 ```
 
@@ -85,6 +85,14 @@ flowchart TD
 - **Transitions compare against the last persisted status** — today's own
   earlier row first, yesterday's otherwise — so an escalation wake that
   re-runs Phase A is a no-op, not a self-re-arming loop.
+- **The register and its escalation commit in one transaction.** A register
+  write acknowledging a transition without its escalation would be
+  permanent: the next run reads the new status as `previousStatus` and
+  never re-arms the missed Phase B wake. The escalation deadline is
+  derived from the period (its UTC day key), never from the arming
+  device's wall clock, so every device arming the same logical escalation
+  writes an identical record and the concurrent resolver's later-deadline
+  preference cannot resurrect a consumed wake.
 - **Grace history is a consecutive, same-spec-version streak**: prior-row
   collection stops at the first missing day and at the first row computed
   under a superseded spec version.

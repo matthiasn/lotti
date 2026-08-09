@@ -261,6 +261,54 @@ void main() {
     );
   });
 
+  test('identical point-sample timestamps break the tie by entity id, '
+      'independent of query return order', () async {
+    const weight = GoalCriterion.metric(
+      criterionId: 'weight',
+      dataType: 'HealthDataType.WEIGHT',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.max,
+      target: 80,
+      direction: GoalDirection.atMost,
+    );
+    final at = DateTime(2026, 8, 8, 7);
+    JournalEntity sample(String id, num value) => JournalEntity.quantitative(
+      meta: meta(at, id: id),
+      data: QuantitativeData.discreteQuantityData(
+        dateFrom: at,
+        dateTo: at,
+        value: value,
+        dataType: 'HealthDataType.WEIGHT',
+        unit: 'kg',
+      ),
+    );
+    final a = sample('id-a', 81.2);
+    final b = sample('id-b', 79.4);
+
+    for (final rows in [
+      [a, b],
+      [b, a],
+    ]) {
+      when(
+        () => journalDb.getQuantitativeByType(
+          type: 'HealthDataType.WEIGHT',
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => rows);
+      final window = await reader.read(criteria: weight, reference: reference);
+      expect(
+        window.quantitativeDailySums['HealthDataType.WEIGHT']![DateTime.utc(
+          2026,
+          8,
+          8,
+        )],
+        79.4,
+        reason: 'the greater id must win regardless of row order',
+      );
+    }
+  });
+
   test('percentage point samples are normalized to display units, '
       'matching the chart', () async {
     const bodyFat = GoalCriterion.metric(
