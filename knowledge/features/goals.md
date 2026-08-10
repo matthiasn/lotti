@@ -220,9 +220,10 @@ flowchart TD
   0.02 deadband — withheld when either register is insufficient-data, and only
   for rolling-window goals, since calendar/day windows reset attainment each
   period and a consecutive-register delta there is a boundary reset, not a
-  decline). Raw attainment percentages never reach the row — they stay in the
-  detail surfaces, and a report one-liner that leaks a percentage figure is
-  suppressed rather than rendered. A row whose per-agent
+  decline). The row shows a coarse chip rather than a raw attainment
+  percentage; the one-liner is the agent's own prose, so keeping percentages
+  out of it is a matter for the agent's instructions, not widget-level
+  filtering. A row whose per-agent
   health has not resolved shows no chip rather than a false "Not enough data",
   and the settled-empty state is a first-run explainer whose CTA is the sole
   creation affordance (the global FAB hides). The detail page

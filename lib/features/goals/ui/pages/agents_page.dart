@@ -143,18 +143,6 @@ class _FirstRunExplainer extends StatelessWidget {
   }
 }
 
-/// Matches a percentage figure like `64%`, `12.5 %` or the locale-formatted
-/// `12,5 %` (comma decimal separator).
-final _percentagePattern = RegExp(r'\d+(?:[.,]\d+)?\s*%');
-
-/// The list-summary contract is events-and-time language, never a percentage
-/// (handover 1c). Model-authored report one-liners are otherwise trusted
-/// prose; this is the display-side backstop that keeps a leaked figure off the
-/// row. The model prompt/`update_goal_report` contract is the real
-/// enforcement point.
-bool summaryHonorsNoPercentageContract(String summary) =>
-    !_percentagePattern.hasMatch(summary);
-
 class _GoalAgentRow extends ConsumerWidget {
   const _GoalAgentRow({required this.identity});
 
@@ -221,13 +209,12 @@ class _GoalAgentRow extends ConsumerWidget {
                           const _NeedsYouBadge(),
                       ],
                     ),
-                    // Executive summary: the agent's standing one-liner,
-                    // events-and-time language, one line, never a percentage.
-                    // A model-authored one-liner that leaks a figure like
-                    // "64% of target" is suppressed rather than rendered — the
-                    // redesign removed percentages from this surface.
-                    if (health?.reportOneLiner case final String oneLiner
-                        when summaryHonorsNoPercentageContract(oneLiner)) ...[
+                    // Executive summary: the agent's standing one-liner —
+                    // events-and-time language, one line. Keeping percentages
+                    // out is a matter for the agent's own instructions (and a
+                    // conversation with it), not something worth policing in
+                    // the widget.
+                    if (health?.reportOneLiner case final String oneLiner) ...[
                       SizedBox(height: tokens.spacing.step1),
                       Text(
                         oneLiner,

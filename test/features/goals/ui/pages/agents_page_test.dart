@@ -145,41 +145,34 @@ void main() {
     );
   });
 
-  testWidgets('a report one-liner that leaks a percentage is suppressed — the '
-      'row never renders a percentage on this surface', (tester) async {
+  testWidgets('the create FAB opens the creation flow, and a row opens that '
+      "agent's detail page", (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const AgentsPage(),
         overrides: [
           activeGoalAgentsProvider.overrideWith(
-            (ref) async => [
-              identity('goal-leak', 'Walk daily'),
-              identity('goal-clean', 'Sleep 8h'),
-            ],
+            (ref) async => [identity('goal-fit', 'Expedition fitness')],
           ),
-          goalAgentHealthProvider('goal-leak').overrideWith(
-            (ref) async => health(
-              trackStatus: GoalTrackStatus.offTrack,
-              // Locale comma decimal — must be caught too, not just `64%`.
-              reportOneLiner: 'Progress is 12,5 % of target this week.',
-            ),
-          ),
-          goalAgentHealthProvider('goal-clean').overrideWith(
-            (ref) async => health(
-              trackStatus: GoalTrackStatus.onTrack,
-              reportOneLiner: 'Seven solid nights running.',
-            ),
+          goalAgentHealthProvider('goal-fit').overrideWith(
+            (ref) async => health(trackStatus: GoalTrackStatus.onTrack),
           ),
         ],
       ),
     );
     await tester.pumpAndSettle();
-    // The leaked-percentage one-liner is withheld entirely — including the
-    // comma-decimal locale form...
-    expect(find.textContaining('12,5'), findsNothing);
-    expect(find.textContaining('% of target'), findsNothing);
-    // ...while a clean events-and-time one-liner still renders.
-    expect(find.text('Seven solid nights running.'), findsOneWidget);
+
+    await tester.tap(find.byType(FloatingActionButton));
+    await tester.pump();
+    expect(navigated, ['/agents/create']);
+
+    await tester.tap(find.text('Expedition fitness'));
+    await tester.pump();
+    expect(navigated, ['/agents/create', '/agents/details/goal-fit']);
   });
 
   testWidgets('the settled-empty first-run screen hides the global create FAB '

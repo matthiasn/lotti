@@ -1111,27 +1111,39 @@ void main() {
       return container.read(goalAgentHealthProvider(agentId).future);
     }
 
-    // allOf of two ROLLING children: the composite is sound → arrow up.
-    final rolling = await healthFor(
+    const rollingA = GoalCriterion.habit(
+      criterionId: 'a',
+      habitId: 'h-a',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 3,
+    );
+    const rollingB = GoalCriterion.habit(
+      criterionId: 'b',
+      habitId: 'h-b',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 3,
+    );
+
+    // Every composite flavour with all-rolling children is sound → arrow up.
+    // (Exercises the allOf / anyOf / atLeastCount arms of the soundness fold.)
+    for (final composite in <GoalCriterion>[
       const GoalCriterion.allOf(
         criterionId: 'root',
-        criteria: [
-          GoalCriterion.habit(
-            criterionId: 'a',
-            habitId: 'h-a',
-            window: GoalWindow.rollingDays(count: 7),
-            targetCount: 3,
-          ),
-          GoalCriterion.habit(
-            criterionId: 'b',
-            habitId: 'h-b',
-            window: GoalWindow.rollingDays(count: 7),
-            targetCount: 3,
-          ),
-        ],
+        criteria: [rollingA, rollingB],
       ),
-    );
-    expect(rolling.direction, GoalHealthDirection.up);
+      const GoalCriterion.anyOf(
+        criterionId: 'root',
+        criteria: [rollingA, rollingB],
+      ),
+      const GoalCriterion.atLeastCount(
+        criterionId: 'root',
+        successes: 1,
+        criteria: [rollingA, rollingB],
+      ),
+    ]) {
+      final rolling = await healthFor(composite);
+      expect(rolling.direction, GoalHealthDirection.up);
+    }
 
     // One CALENDAR child taints the composite → no arrow.
     final mixed = await healthFor(
