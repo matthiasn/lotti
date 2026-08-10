@@ -13,9 +13,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   awaits review. From there you can inspect an agent's interaction timeline,
   approve or reject its proposals, and create new goals: a daily-steps target
   or a routine watching one or more habits. When a goal genuinely slips, its
-  agent runs a small text banner on the day page and habits tab — animated,
-  dismissible (a dismissal quiets ads for the rest of the day), and rated per showing so the
-  agent learns which nudges actually help.
+  agent speaks up through a small text banner in a shell-level dock that rides
+  above the navigation — one rotating slot shared across the Tasks, DailyOS and
+  Habits tabs, coloured by the agent's tone so doing well reads at a glance,
+  dismissible (a dismissal quiets that goal for the rest of the day), and rated
+  per showing so the agent learns which nudges actually help.
 - **Vision models can use task images when writing coding prompts.** Choosing an
   image-capable model such as Kimi K3 now offers the task's attached images as
   visual context, with up to ten selections. Text-only models keep the existing

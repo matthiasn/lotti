@@ -31,7 +31,6 @@ import 'package:lotti/features/design_system/components/toasts/design_system_toa
 import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/goals/ui/goal_banner_strip.dart';
 import 'package:lotti/get_it.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/entities_cache_service.dart';
@@ -427,18 +426,9 @@ class _DayPageState extends ConsumerState<DayPage> {
                 child: KnowledgeNudge(),
               ),
             ),
-            // Goal ad banners: shrink to nothing on good days. A capped,
-            // self-scrolling box (the chart-multi-select idiom) keeps a
-            // short window or a large text scale from overflowing the
-            // fixed-height column, while the agenda below reclaims every
-            // pixel the banners don't actually use — a flex child would
-            // hold its allocation even while rendering nothing.
-            ConstrainedBox(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.sizeOf(context).height * 0.35,
-              ),
-              child: const SingleChildScrollView(child: GoalBannerStrip()),
-            ),
+            // Goal-agent voices now live in the shell-level dock (one
+            // rotating slot at the bottom of the content region), not
+            // in-page — the day page no longer mounts a banner strip.
             Expanded(
               // Rows meeting the fold dissolve instead of resting
               // razor-cut against the footer's glass edge.

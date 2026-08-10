@@ -1,88 +1,20 @@
-import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
-import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 
-/// How many banners a host surface shows at once: the newest render,
-/// the rest stay reachable on their goal's detail page.
-const goalBannerStripMaxVisible = 2;
-
-/// The banner mount: renders the newest active goal ads (bounded by
-/// [goalBannerStripMaxVisible]) and shrinks to nothing when there are
-/// none (the `KnowledgeNudge` contract — hosts mount it unconditionally).
+/// Measures visibility episodes for one banner: the stopwatch runs while
+/// the host tab is on screen (TickerMode — the app shell keeps inactive
+/// tabs mounted) AND the banner intersects its enclosing viewport, so
+/// scrolled-away time and pocket time never count. Rechecks happen on
+/// scroll events, app-lifecycle transitions and dependency changes, not
+/// per frame. Every visible→hidden transition flushes its own episode, so
+/// separate appearances never merge and persistence doesn't wait for
+/// disposal.
 ///
-/// Exposure accounting: an episode runs while the banner's TAB is the
-/// visible one (TickerMode — the app shell keeps inactive tabs mounted)
-/// AND the banner itself intersects its enclosing viewport; every
-/// visible→hidden transition (tab switch, scroll-out, unmount) flushes
-/// its own episode. Viewport checks run on scroll events, not per frame.
-class GoalBannerStrip extends ConsumerWidget {
-  const GoalBannerStrip({this.padded = true, super.key});
-
-  /// Whether the strip applies its own horizontal page padding (the day
-  /// page nudge column) or the host already pads (the habits sliver).
-  final bool padded;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tokens = context.designTokens;
-    // Retained data survives a failed background refresh (no-flash), but
-    // the staleness CONTRACT still binds at render time: the deadline
-    // timer's reload failing must not keep expired copy on screen.
-    final now = clock.now();
-    final locallyDismissed = ref.watch(locallyDismissedNudgeIdsProvider);
-    final entries = [
-      for (final entry
-          in ref.watch(activeGoalNudgesProvider).value ??
-              const <GoalBannerEntry>[])
-        if ((entry.nudge.staleAt == null ||
-                now.isBefore(entry.nudge.staleAt!)) &&
-            !locallyDismissed.contains(entry.nudge.id))
-          entry,
-    ];
-    if (entries.isEmpty) return const SizedBox.shrink();
-    return Padding(
-      padding: EdgeInsets.only(
-        left: padded ? tokens.spacing.step5 : 0,
-        right: padded ? tokens.spacing.step5 : 0,
-        // Card rhythm: hosts mount the strip flush against the previous
-        // surface (the habits summary card), and an empty strip already
-        // shrank to nothing above.
-        top: tokens.spacing.cardItemSpacing,
-        bottom: tokens.spacing.step3,
-      ),
-      child: Column(
-        children: [
-          // Bounded: the strip sits above non-scrolling page content, so
-          // an unbounded stack could overflow the viewport. The rest stay
-          // reachable on their goal's detail page.
-          for (final entry in entries.take(goalBannerStripMaxVisible))
-            Padding(
-              padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
-              child: GoalBannerExposureTracker(
-                key: ValueKey(
-                  '${entry.nudge.id}:${entry.nudge.activationCount}',
-                ),
-                nudgeId: entry.nudge.id,
-                child: GoalBannerCard(entry: entry),
-              ),
-            ),
-        ],
-      ),
-    );
-  }
-}
-
-/// Measures visibility episodes: the stopwatch runs while the host tab
-/// is on screen (TickerMode) AND the banner intersects its enclosing
-/// viewport — scrolled-away time on the habits page or the goal detail
-/// list never counts. Rechecks happen on scroll events and dependency
-/// changes, not per frame. Public because EVERY banner mount must
-/// account exposure the same way — the strips here and the uncapped
-/// list on the goal detail page.
+/// Shared by every banner surface: the shell dock (where a docked tenant
+/// is visible whenever the app is foregrounded) and the uncapped list on
+/// the goal detail page (where scroll position matters).
 class GoalBannerExposureTracker extends ConsumerStatefulWidget {
   const GoalBannerExposureTracker({
     required this.nudgeId,
@@ -180,8 +112,8 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker>
         position == null ||
         !position.hasPixels ||
         !position.hasViewportDimension) {
-      // No scrollable ancestor (the day page nudge column): mounted on a
-      // visible tab means on screen.
+      // No scrollable ancestor (the shell dock): mounted on a visible tab
+      // means on screen.
       return true;
     }
     final leadingEdge = viewport.getOffsetToReveal(box, 0).offset;

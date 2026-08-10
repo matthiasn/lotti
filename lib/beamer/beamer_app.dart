@@ -30,6 +30,7 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -738,22 +739,35 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           Expanded(
             child: KeyboardFocusRegion(
               debugLabel: 'app-content',
-              child: Stack(
+              // The goal-agent dock is docked at the bottom of the content
+              // region, beside (never under) the sidebar — one shared
+              // rotating slot for the agents' standing voices. It collapses
+              // to nothing when no goal is speaking, so it only occupies
+              // space when it has something to say (ADR 0058 / handover 1b).
+              child: Column(
                 children: [
-                  const IncomingVerificationWrapper(),
-                  IndexedStack(
-                    index: index,
-                    children: [
-                      for (var i = 0; i < beamerChildren.length; i++)
-                        TickerMode(
-                          enabled: i == index,
-                          child: ExcludeFocus(
-                            excluding: i != index,
-                            child: beamerChildren[i],
-                          ),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        const IncomingVerificationWrapper(),
+                        IndexedStack(
+                          index: index,
+                          children: [
+                            for (var i = 0; i < beamerChildren.length; i++)
+                              TickerMode(
+                                enabled: i == index,
+                                child: ExcludeFocus(
+                                  excluding: i != index,
+                                  child: beamerChildren[i],
+                                ),
+                              ),
+                          ],
                         ),
-                    ],
+                      ],
+                    ),
                   ),
+                  if (_showsGoalBannerDock(destinations[index].kind))
+                    const GoalBannerDock(compact: false),
                 ],
               ),
             ),
@@ -987,11 +1001,31 @@ class _AppScreenState extends ConsumerState<AppScreen> {
                 ],
               ),
             ),
+            // The goal-agent dock rides directly above the bottom bar —
+            // the mini-player position (handover 1b). It collapses when no
+            // goal is speaking, and the widget itself yields while the
+            // keyboard is up. Only on the main working tabs.
+            if (_showsGoalBannerDock(destinations[index].kind))
+              Positioned(
+                left: 0,
+                right: 0,
+                bottom: DesignSystemFiveSlotNavBar.barHeight(context),
+                child: const GoalBannerDock(compact: true),
+              ),
           ],
         ],
       ),
     );
   }
+
+  /// The goal-agent dock mounts on the main working tabs only — the surface
+  /// set from the design handover (Tasks, DailyOS, Habits). Settings and the
+  /// Logbook are deliberately excluded; goal detail shows its own goal's
+  /// banner uncycled instead.
+  static bool _showsGoalBannerDock(_AppNavigationDestinationKind kind) =>
+      kind == _AppNavigationDestinationKind.tasks ||
+      kind == _AppNavigationDestinationKind.dailyOs ||
+      kind == _AppNavigationDestinationKind.habits;
 
   List<_AppNavigationDestination> _buildNavigationDestinations({
     required BuildContext context,
