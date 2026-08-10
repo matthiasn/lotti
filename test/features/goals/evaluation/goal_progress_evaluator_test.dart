@@ -314,6 +314,25 @@ void main() {
       expect(leaf.satisfied, isFalse);
     });
 
+    test('a single-leaf goal lifts the leaf deficit/buffer to the evaluation '
+        'root — what the register persists and the list surfaces', () {
+      final behind = evaluator.evaluate(
+        gym,
+        days({d(4): 1, d(6): 1}),
+        saturday,
+      );
+      expect(behind.deficit, 1);
+      expect(behind.buffer, isNull);
+
+      final atRate = evaluator.evaluate(
+        gym,
+        days({d(4): 1, d(6): 1, d(8): 1}),
+        saturday,
+      );
+      expect(atRate.deficit, 0);
+      expect(atRate.buffer, 2);
+    });
+
     test('exactly at target: deficit 0, and buffer is days until the OLDEST '
         'success ages out — 0 when it sits on the window edge', () {
       // Successes on d(2) (the window start), d(4), d(6).

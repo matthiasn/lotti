@@ -29,6 +29,8 @@ class GoalProgressEvaluator {
       dataCoverage: root.coverage,
       results: results,
       paceFeasible: root.result.paceFeasible,
+      deficit: root.result.deficit,
+      buffer: root.result.buffer,
     );
   }
 

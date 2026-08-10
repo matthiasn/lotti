@@ -88,7 +88,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
             GoalCriterion.habit(
               criterionId: 'habit-$habitId',
               habitId: habitId,
-              window: const GoalWindow.calendarWeek(),
+              // Rolling 7-day window: the deficit/buffer health model (a
+              // continuous trailing count, no calendar-quota dead zone).
+              window: const GoalWindow.rollingDays(count: 7),
               targetCount: count,
             ),
         ];

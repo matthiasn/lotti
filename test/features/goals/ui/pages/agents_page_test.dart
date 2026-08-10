@@ -37,6 +37,8 @@ void main() {
     String? reportOneLiner,
     int pendingProposals = 0,
     GoalHealthDirection? direction,
+    int? deficit,
+    int? buffer,
   }) => (
     trackStatus: trackStatus,
     attainment: null,
@@ -44,6 +46,8 @@ void main() {
     pendingProposals: pendingProposals,
     spec: null,
     direction: direction,
+    deficit: deficit,
+    buffer: buffer,
   );
 
   testWidgets('the empty state is the first-run explainer, not a bare line', (
@@ -143,6 +147,40 @@ void main() {
       tester.widget<Icon>(find.byIcon(Icons.trending_up_rounded)).semanticLabel,
       'Trending up',
     );
+  });
+
+  testWidgets('a rolling-window goal shows a deterministic recovery hint when '
+      'behind, and a buffer hint when at rate', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const AgentsPage(),
+        overrides: [
+          activeGoalAgentsProvider.overrideWith(
+            (ref) async => [
+              identity('goal-behind', 'Stretch daily'),
+              identity('goal-rate', 'Walk daily'),
+            ],
+          ),
+          goalAgentHealthProvider('goal-behind').overrideWith(
+            (ref) async => health(
+              trackStatus: GoalTrackStatus.offTrack,
+              deficit: 3,
+            ),
+          ),
+          goalAgentHealthProvider('goal-rate').overrideWith(
+            (ref) async => health(
+              trackStatus: GoalTrackStatus.onTrack,
+              // At rate: deficit 0, one day of buffer before a success ages.
+              deficit: 0,
+              buffer: 1,
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('3 days to recover'), findsOneWidget);
+    expect(find.text('1 day of buffer'), findsOneWidget);
   });
 
   testWidgets('the create FAB opens the creation flow, and a row opens that '

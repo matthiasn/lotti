@@ -941,6 +941,11 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     List<GoalCriterionProgress> criterionResults,
     bool? paceFeasible,
     double? shortTermAttainment,
+    // Rolling-window habit goals: days-to-recovery and, at rate, the buffer
+    // before the oldest success ages out (see GoalEvaluation.deficit/buffer).
+    // Null for calendar windows, metric goals and composites.
+    int? deficit,
+    int? buffer,
     DateTime? deletedAt,
   }) = GoalProgressEntity;
 

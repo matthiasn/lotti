@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
@@ -152,6 +153,14 @@ void main() {
     expect(
       composite.criteria.whereType<GoalCriterionHabit>().every(
         (h) => h.targetCount == 3,
+      ),
+      isTrue,
+    );
+    // Habit leaves are built on a rolling 7-day window (the deficit/buffer
+    // health model), not a resetting calendar week.
+    expect(
+      composite.criteria.whereType<GoalCriterionHabit>().every(
+        (h) => h.window == const GoalWindow.rollingDays(count: 7),
       ),
       isTrue,
     );

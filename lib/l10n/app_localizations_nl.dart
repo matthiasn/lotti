@@ -6018,6 +6018,18 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagen buffer',
+      one: '1 dag buffer',
+      zero: 'Buffer loopt vandaag af',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get goalCoarseHealthBehind => 'Achterop';
 
   @override
@@ -6068,6 +6080,17 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Geef het doel een naam en minstens één criterium.';
+
+  @override
+  String goalDaysToRecover(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagen om te herstellen',
+      one: '1 dag om te herstellen',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalDetailHealthUnavailable =>

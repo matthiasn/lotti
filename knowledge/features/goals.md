@@ -223,7 +223,11 @@ flowchart TD
   decline). The row shows a coarse chip rather than a raw attainment
   percentage; the one-liner is the agent's own prose, so keeping percentages
   out of it is a matter for the agent's instructions, not widget-level
-  filtering. A row whose per-agent
+  filtering. Below the one-liner a rolling-window habit goal shows a
+  deterministic hint — days-to-recovery when behind (`deficit`) or the buffer
+  before the oldest success ages out when at rate (`buffer`) — lifted from the
+  root leaf to `GoalEvaluation`, persisted on the `goalProgress` register, and
+  surfaced through `goalAgentHealthProvider`. A row whose per-agent
   health has not resolved shows no chip rather than a false "Not enough data",
   and the settled-empty state is a first-run explainer whose CTA is the sole
   creation affordance (the global FAB hides). The detail page

@@ -3259,6 +3259,15 @@
       }
     }
   },
+  "goalBufferDays": "{count, plural, =0{Buffer runs out today} =1{1 day of buffer} other{{count} days of buffer}}",
+  "@goalBufferDays": {
+    "description": "Rolling-window goal at rate: days until the oldest success ages out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "goalCoarseHealthBehind": "Behind",
   "@goalCoarseHealthBehind": {
     "description": "Coarse goal-health chip label: behind and every remaining day matters"
@@ -3316,6 +3325,15 @@
   "goalCreateValidationMissing": "Give the goal a name and at least one criterion.",
   "@goalCreateValidationMissing": {
     "description": "Validation message on the goal creation form."
+  },
+  "goalDaysToRecover": "{count, plural, =1{1 day to recover} other{{count} days to recover}}",
+  "@goalDaysToRecover": {
+    "description": "Rolling-window goal behind target: days-to-recovery (creditable days needed).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "goalDetailHealthUnavailable": "Couldn't load this goal's health right now.",
   "goalDetailNoReport": "No report yet — the agent reports after its first meaningful change.",

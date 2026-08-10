@@ -95,6 +95,8 @@ class GoalEvaluation {
     required this.dataCoverage,
     required this.results,
     this.paceFeasible,
+    this.deficit,
+    this.buffer,
   });
 
   /// Overall progress 0..1 (composite fold of leaf ratios).
@@ -114,4 +116,16 @@ class GoalEvaluation {
 
   /// Combined pace feasibility (see [GoalCriterionResult.paceFeasible]).
   final bool? paceFeasible;
+
+  /// The root criterion's days-to-recovery, when the root is a rolling-window
+  /// habit leaf (see [GoalCriterionResult.deficit]). Null for composites,
+  /// metric leaves and calendar windows — the goal-level surfaces only lift a
+  /// single-leaf goal's deficit; a composite's per-leaf deficits stay in
+  /// [results].
+  final int? deficit;
+
+  /// The root criterion's buffer when at rate (see
+  /// [GoalCriterionResult.buffer]). Null under the same conditions as
+  /// [deficit].
+  final int? buffer;
 }

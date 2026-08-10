@@ -761,7 +761,12 @@ void main() {
         vectorClock: null,
       ),
     );
-    GoalProgressEntity register(String period, double attainment) =>
+    GoalProgressEntity register(
+      String period,
+      double attainment, {
+      int? deficit,
+      int? buffer,
+    }) =>
         AgentDomainEntity.goalProgress(
               id: goalProgressId(agentId, period),
               agentId: agentId,
@@ -776,12 +781,18 @@ void main() {
               createdAt: DateTime(2026, 8, 9),
               updatedAt: DateTime(2026, 8, 9),
               vectorClock: null,
+              deficit: deficit,
+              buffer: buffer,
             )
             as GoalProgressEntity;
     when(
       () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
     ).thenAnswer(
-      (_) async => [register('2026-08-08', 1), register('2026-08-09', 0.64)],
+      (_) async => [
+        register('2026-08-08', 1),
+        // The latest register carries the rolling-window deficit/buffer.
+        register('2026-08-09', 0.64, deficit: 2),
+      ],
     );
     when(
       () => repository.getLatestReport(agentId, 'current'),
@@ -831,6 +842,9 @@ void main() {
     expect(health.spec?.title, 'Steps');
     // Direction: latest 0.64 vs the prior 1.0 — a drop beyond the deadband.
     expect(health.direction, GoalHealthDirection.down);
+    // The latest register's rolling-window deficit/buffer reach the row.
+    expect(health.deficit, 2);
+    expect(health.buffer, isNull);
   });
 
   test('goalAgentHealthProvider reports no direction with a single register, '

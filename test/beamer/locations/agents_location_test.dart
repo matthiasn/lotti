@@ -146,6 +146,8 @@ void main() {
               pendingProposals: 0,
               spec: null,
               direction: null,
+              deficit: null,
+              buffer: null,
             ),
           ),
           selfTargetedPendingChangeSetsProvider(

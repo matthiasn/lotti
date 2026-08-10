@@ -6003,6 +6003,18 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagars marginal',
+      one: '1 dags marginal',
+      zero: 'Marginalen tar slut idag',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get goalCoarseHealthBehind => 'Ligger efter';
 
   @override
@@ -6052,6 +6064,17 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Ge målet ett namn och minst ett kriterium.';
+
+  @override
+  String goalDaysToRecover(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagar till återhämtning',
+      one: '1 dag till återhämtning',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalDetailHealthUnavailable =>

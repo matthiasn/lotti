@@ -166,6 +166,16 @@ class _GoalAgentRow extends ConsumerWidget {
         ? tokens.colors.text.lowEmphasis
         : goalCoarseHealthColor(coarse, tokens.colors);
     final direction = health?.direction;
+    // A deterministic, factual hint for rolling-window habit goals: the
+    // days-to-recovery when behind, or the buffer before the oldest success
+    // ages out when at rate. Distinct from the agent's prose one-liner —
+    // this is the evaluator's own arithmetic, in events-and-time language.
+    final recoveryHint = switch ((health?.deficit, health?.buffer)) {
+      (final int deficit, _) when deficit > 0 =>
+        context.messages.goalDaysToRecover(deficit),
+      (_, final int buffer) => context.messages.goalBufferDays(buffer),
+      _ => null,
+    };
     return Material(
       color: tokens.colors.surface.enabled,
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -222,6 +232,17 @@ class _GoalAgentRow extends ConsumerWidget {
                         overflow: TextOverflow.ellipsis,
                         style: tokens.typography.styles.body.bodySmall.copyWith(
                           color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                    ],
+                    if (recoveryHint != null) ...[
+                      SizedBox(height: tokens.spacing.step1),
+                      Text(
+                        recoveryHint,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
                         ),
                       ),
                     ],
