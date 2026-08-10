@@ -2792,6 +2792,7 @@
   "goalBannerSemanticLabel": "Målbanner för {goalTitle}",
   "goalCreateFailed": "Målet kunde inte sparas — försök igen.",
   "goalCreateHabitCountLabel": "Gånger per vecka (per vana)",
+  "goalCreateHabitCountRange": "Veckoantalet måste vara mellan 1 och 7.",
   "goalCreateHabitsLabel": "Vanor att följa",
   "goalCreateHabitsLoadFailed": "Det gick inte att läsa in dina vanor just nu — försök igen om en stund.",
   "goalCreateNameLabel": "Namn",

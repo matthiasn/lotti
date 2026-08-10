@@ -728,23 +728,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required GoalWakeDerivation derivation,
     required DateTime now,
   }) async {
-    // A revision approved while the model was thinking moves the head on
-    // — and NOTHING from this wake may then publish beside the revised
-    // goal: its report and banner describe the superseded target. The
-    // fence keys on the derivation snapshot's ACTIVE status: a stale
-    // escalation deliberately evaluates the superseded version that
-    // armed its period (its snapshot already says so) and stays exempt.
-    final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
-    if (derivation.version.status == GoalSpecVersionStatus.active &&
-        headNow is GoalSpecHeadEntity &&
-        headNow.versionId != derivation.version.id) {
-      logError(
-        'outputs fenced: spec head moved to ${headNow.versionId} while the '
-        'wake ran against ${derivation.version.id}',
-      );
-      return false;
-    }
-
     // RE-READ, never trust the pre-inference snapshot: the user may have
     // dismissed an ad while the model was thinking, and that dismissal's
     // cooldown must bind this wake's ad writes.
@@ -759,8 +742,25 @@ class GoalAgentWorkflow with AgentErrorLogging {
       reportId: reportId,
     );
     var attributionFinalized = false;
+    var fenced = false;
 
     await _syncService.runInTransaction(() async {
+      // A revision approved while the model was thinking moves the head
+      // on — and NOTHING from this wake may then publish beside the
+      // revised goal: its report and banner describe the superseded
+      // target. Checked INSIDE the output transaction so a revision
+      // committing between a pre-check and these writes cannot slip
+      // through. The fence keys on the derivation snapshot's ACTIVE
+      // status: a stale escalation deliberately evaluates the superseded
+      // version that armed its period and stays exempt.
+      final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
+      if (derivation.version.status == GoalSpecVersionStatus.active &&
+          headNow is GoalSpecHeadEntity &&
+          headNow.versionId != derivation.version.id) {
+        fenced = true;
+        return;
+      }
+
       // Thought (final assistant prose — dialogue turns land here too).
       final thought = strategy.finalResponse;
       if (thought != null) {
@@ -861,13 +861,21 @@ class GoalAgentWorkflow with AgentErrorLogging {
               modelRetired.contains(nudge.id)) {
             continue;
           }
+          // Re-read INSIDE the transaction: a dismissal that landed
+          // after the snapshot was taken is the user's quiet-window
+          // verdict and must not be overwritten with `retired`.
+          final fresh = await _repository.getEntity(nudge.id);
+          if (fresh is! GoalNudgeEntity ||
+              fresh.status != GoalNudgeStatus.active) {
+            continue;
+          }
           await _syncService.upsertEntity(
-            nudge.copyWith(
+            fresh.copyWith(
               status: GoalNudgeStatus.retired,
               retiredAt: now,
               updatedAt: now,
               provenance: {
-                ...nudge.provenance,
+                ...fresh.provenance,
                 'retireReason': 'status no longer permits ads',
               },
             ),
@@ -878,8 +886,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // Retire before create: a wake that swaps ads must never leave two
       // active ones if it dies between writes.
       for (final action in strategy.retireRequests) {
-        final nudge = byId[action.adId];
-        if (nudge == null || nudge.status == GoalNudgeStatus.dismissed) {
+        final snapshot = byId[action.adId];
+        if (snapshot == null) continue;
+        // Re-read INSIDE the transaction — a dismissal landing after the
+        // snapshot must survive (the user's quiet-window verdict).
+        final nudge = await _repository.getEntity(action.adId);
+        if (nudge is! GoalNudgeEntity ||
+            nudge.status == GoalNudgeStatus.dismissed) {
           continue;
         }
         await _syncService.upsertEntity(
@@ -1058,6 +1071,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
         );
       }
     });
+    if (fenced) {
+      logError(
+        'outputs fenced: spec head moved while the wake ran against '
+        '${derivation.version.id}',
+      );
+      return false;
+    }
 
     // Finalize AFTER the transaction: the projection must never describe
     // a report the rolled-back transaction did not write. Contained — a

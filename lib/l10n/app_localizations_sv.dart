@@ -5979,6 +5979,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalCreateHabitCountLabel => 'Gånger per vecka (per vana)';
 
   @override
+  String get goalCreateHabitCountRange =>
+      'Veckoantalet måste vara mellan 1 och 7.';
+
+  @override
   String get goalCreateHabitsLabel => 'Vanor att följa';
 
   @override

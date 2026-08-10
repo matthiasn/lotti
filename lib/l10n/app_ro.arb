@@ -2542,6 +2542,7 @@
   "goalBannerSemanticLabel": "Banner pentru obiectivul {goalTitle}",
   "goalCreateFailed": "Salvarea obiectivului a eșuat — vă rugăm să încercați din nou.",
   "goalCreateHabitCountLabel": "De câte ori pe săptămână (fiecare obicei)",
+  "goalCreateHabitCountRange": "Numărul săptămânal trebuie să fie între 1 și 7.",
   "goalCreateHabitsLabel": "Obiceiuri de urmărit",
   "goalCreateHabitsLoadFailed": "Obiceiurile dvs. nu au putut fi încărcate momentan — încercați din nou în scurt timp.",
   "goalCreateNameLabel": "Nume",

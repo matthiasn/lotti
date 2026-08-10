@@ -2542,6 +2542,7 @@
   "goalBannerSemanticLabel": "Bannière d’objectif pour {goalTitle}",
   "goalCreateFailed": "L’enregistrement de l’objectif a échoué — réessaie.",
   "goalCreateHabitCountLabel": "Fois par semaine (par habitude)",
+  "goalCreateHabitCountRange": "Le nombre hebdomadaire doit être compris entre 1 et 7.",
   "goalCreateHabitsLabel": "Habitudes à suivre",
   "goalCreateHabitsLoadFailed": "Impossible de charger tes habitudes pour le moment — réessaie dans un instant.",
   "goalCreateNameLabel": "Nom",

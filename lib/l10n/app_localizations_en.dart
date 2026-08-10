@@ -5946,6 +5946,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalCreateHabitCountLabel => 'Times per week (each habit)';
 
   @override
+  String get goalCreateHabitCountRange =>
+      'The weekly count must be between 1 and 7.';
+
+  @override
   String get goalCreateHabitsLabel => 'Habits to watch';
 
   @override

@@ -10265,6 +10265,12 @@ abstract class AppLocalizations {
   /// **'Times per week (each habit)'**
   String get goalCreateHabitCountLabel;
 
+  /// No description provided for @goalCreateHabitCountRange.
+  ///
+  /// In en, this message translates to:
+  /// **'The weekly count must be between 1 and 7.'**
+  String get goalCreateHabitCountRange;
+
   /// Label of the multi-select habit picker on the goal form.
   ///
   /// In en, this message translates to:

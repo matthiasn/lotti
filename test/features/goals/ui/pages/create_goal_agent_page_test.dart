@@ -289,4 +289,38 @@ void main() {
     await tester.pumpAndSettle();
     expect(navigated, ['/agents']);
   });
+
+  testWidgets('a weekly count above seven is rejected with its own message '
+      '— one success per day makes eight unsatisfiable', (tester) async {
+    tester.view.physicalSize = const Size(900, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Routine');
+    await tester.tap(find.text('Habit routine'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, '8');
+    await tester.tap(find.text('Gym'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create agent'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('The weekly count must be between 1 and 7.'),
+      findsOneWidget,
+    );
+    verifyNever(
+      () => service.createGoalAgent(
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
+  });
 }

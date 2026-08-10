@@ -2791,6 +2791,7 @@
   "goalBannerSemanticLabel": "Banner da meta {goalTitle}",
   "goalCreateFailed": "Não foi possível guardar a meta — tenta novamente.",
   "goalCreateHabitCountLabel": "Vezes por semana (cada hábito)",
+  "goalCreateHabitCountRange": "A contagem semanal deve ficar entre 1 e 7.",
   "goalCreateHabitsLabel": "Hábitos a acompanhar",
   "goalCreateHabitsLoadFailed": "Não foi possível carregar seus hábitos agora — tente novamente em instantes.",
   "goalCreateNameLabel": "Nome",

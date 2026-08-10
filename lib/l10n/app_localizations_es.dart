@@ -6053,6 +6053,10 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalCreateHabitCountLabel => 'Veces por semana (cada hábito)';
 
   @override
+  String get goalCreateHabitCountRange =>
+      'El número semanal debe estar entre 1 y 7.';
+
+  @override
   String get goalCreateHabitsLabel => 'Hábitos a seguir';
 
   @override

@@ -427,12 +427,17 @@ class _DayPageState extends ConsumerState<DayPage> {
                 child: KnowledgeNudge(),
               ),
             ),
-            // Goal ad banners: shrink to nothing on good days. Flexible +
-            // its own scroll keeps a short window or a large text scale
-            // from overflowing the fixed-height column — the banners
-            // yield to the agenda instead of painting over it.
-            const Flexible(
-              child: SingleChildScrollView(child: GoalBannerStrip()),
+            // Goal ad banners: shrink to nothing on good days. A capped,
+            // self-scrolling box (the chart-multi-select idiom) keeps a
+            // short window or a large text scale from overflowing the
+            // fixed-height column, while the agenda below reclaims every
+            // pixel the banners don't actually use — a flex child would
+            // hold its allocation even while rendering nothing.
+            ConstrainedBox(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.sizeOf(context).height * 0.35,
+              ),
+              child: const SingleChildScrollView(child: GoalBannerStrip()),
             ),
             Expanded(
               // Rows meeting the fold dissolve instead of resting

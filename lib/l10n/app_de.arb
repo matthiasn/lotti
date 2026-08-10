@@ -2542,6 +2542,7 @@
   "goalBannerSemanticLabel": "Ziel-Banner für {goalTitle}",
   "goalCreateFailed": "Das Ziel konnte nicht gespeichert werden — versuch es noch einmal.",
   "goalCreateHabitCountLabel": "Mal pro Woche (je Gewohnheit)",
+  "goalCreateHabitCountRange": "Die wöchentliche Anzahl muss zwischen 1 und 7 liegen.",
   "goalCreateHabitsLabel": "Zu beobachtende Gewohnheiten",
   "goalCreateHabitsLoadFailed": "Deine Gewohnheiten konnten gerade nicht geladen werden — versuch es gleich noch einmal.",
   "goalCreateNameLabel": "Name",

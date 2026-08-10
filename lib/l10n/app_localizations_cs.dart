@@ -6039,6 +6039,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCreateHabitCountLabel => 'Krát týdně (každý návyk)';
 
   @override
+  String get goalCreateHabitCountRange => 'Týdenní počet musí být mezi 1 a 7.';
+
+  @override
   String get goalCreateHabitsLabel => 'Sledované návyky';
 
   @override

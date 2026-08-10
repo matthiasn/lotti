@@ -2792,6 +2792,7 @@
   "goalBannerSemanticLabel": "Målbanner for {goalTitle}",
   "goalCreateFailed": "Målet kunne ikke gemmes — prøv igen.",
   "goalCreateHabitCountLabel": "Gange om ugen (pr. vane)",
+  "goalCreateHabitCountRange": "Det ugentlige antal skal være mellem 1 og 7.",
   "goalCreateHabitsLabel": "Vaner at følge",
   "goalCreateHabitsLoadFailed": "Kunne ikke indlæse dine vaner lige nu — prøv igen om lidt.",
   "goalCreateNameLabel": "Navn",

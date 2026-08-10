@@ -208,6 +208,13 @@ final goalChangeSetConfirmationServiceProvider =
                     changeSet.agentId,
                     version.criteria,
                   );
+              // The revision sweep superseded the old spec's banners, but
+              // the banner provider's per-agent stream dependency is
+              // registered after an async gap and cannot be relied on —
+              // refresh both surfaces explicitly.
+              ref
+                ..invalidate(activeGoalNudgesProvider)
+                ..invalidate(goalNudgeHistoryProvider);
             },
       ),
       name: 'goalChangeSetConfirmationServiceProvider',

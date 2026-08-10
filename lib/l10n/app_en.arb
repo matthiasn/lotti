@@ -3234,6 +3234,7 @@
   "@goalCreateHabitCountLabel": {
     "description": "Label of the per-habit weekly completion target."
   },
+  "goalCreateHabitCountRange": "The weekly count must be between 1 and 7.",
   "goalCreateHabitsLabel": "Habits to watch",
   "@goalCreateHabitsLabel": {
     "description": "Label of the multi-select habit picker on the goal form."

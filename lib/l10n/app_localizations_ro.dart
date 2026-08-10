@@ -6073,6 +6073,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'De câte ori pe săptămână (fiecare obicei)';
 
   @override
+  String get goalCreateHabitCountRange =>
+      'Numărul săptămânal trebuie să fie între 1 și 7.';
+
+  @override
   String get goalCreateHabitsLabel => 'Obiceiuri de urmărit';
 
   @override

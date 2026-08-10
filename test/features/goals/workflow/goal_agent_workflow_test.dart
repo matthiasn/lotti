@@ -491,6 +491,13 @@ void main() {
         nudgeRow('ad-active', GoalNudgeStatus.active),
       ],
     );
+    // The retire loops re-read each row inside the transaction.
+    when(() => repository.getEntity('ad-dismissed')).thenAnswer(
+      (_) async => nudgeRow('ad-dismissed', GoalNudgeStatus.dismissed),
+    );
+    when(() => repository.getEntity('ad-active')).thenAnswer(
+      (_) async => nudgeRow('ad-active', GoalNudgeStatus.active),
+    );
     await strategy.processToolCalls(
       toolCalls: [
         toolCall(GoalAgentToolNames.retireGoalAd, {
@@ -1188,6 +1195,22 @@ void main() {
         await repository.getEntity('$agentId:spec-v1')
             as GoalSpecVersionEntity?;
     final derivation = await _onTrackDerivation(repository, version!, now);
+    GoalNudgeEntity recoveryRow(String id, GoalNudgeStatus status) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: agentId,
+              status: status,
+              brief: const GoalNudgeBrief(
+                headline: 'Still on the couch?',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
     when(
       () => repository.getEntitiesByAgentId(
         agentId,
@@ -1195,22 +1218,17 @@ void main() {
       ),
     ).thenAnswer(
       (_) async => [
-        AgentDomainEntity.goalNudge(
-              id: 'ad-obsolete',
-              agentId: agentId,
-              status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
-                headline: 'Still on the couch?',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
-              ),
-              briefDigest: 'd',
-              createdAt: DateTime(2026, 8),
-              updatedAt: DateTime(2026, 8),
-              vectorClock: null,
-            )
-            as GoalNudgeEntity,
+        recoveryRow('ad-obsolete', GoalNudgeStatus.active),
+        // Snapshot says active, but the user dismissed while the model
+        // was thinking — the in-transaction re-read must protect it.
+        recoveryRow('ad-just-dismissed', GoalNudgeStatus.active),
       ],
+    );
+    when(() => repository.getEntity('ad-obsolete')).thenAnswer(
+      (_) async => recoveryRow('ad-obsolete', GoalNudgeStatus.active),
+    );
+    when(() => repository.getEntity('ad-just-dismissed')).thenAnswer(
+      (_) async => recoveryRow('ad-just-dismissed', GoalNudgeStatus.dismissed),
     );
     final strategy = GoalAgentStrategy(
       syncService: syncService,
@@ -1754,6 +1772,9 @@ void main() {
         type: AgentEntityTypes.goalNudge,
       ),
     ).thenAnswer((_) async => [activeRow('ad-live')]);
+    when(
+      () => repository.getEntity('ad-live'),
+    ).thenAnswer((_) async => activeRow('ad-live'));
 
     stubSpec();
     _stubBadPrior(repository, agentId, now);

@@ -2792,6 +2792,7 @@
   "goalBannerSemanticLabel": "Banner dell’obiettivo {goalTitle}",
   "goalCreateFailed": "Salvataggio dell’obiettivo non riuscito: riprova.",
   "goalCreateHabitCountLabel": "Volte a settimana (per abitudine)",
+  "goalCreateHabitCountRange": "Il conteggio settimanale deve essere compreso tra 1 e 7.",
   "goalCreateHabitsLabel": "Abitudini da seguire",
   "goalCreateHabitsLoadFailed": "Impossibile caricare le tue abitudini al momento: riprova tra un attimo.",
   "goalCreateNameLabel": "Nome",

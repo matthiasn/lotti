@@ -6032,6 +6032,10 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalCreateHabitCountLabel => 'Vezes por semana (cada hábito)';
 
   @override
+  String get goalCreateHabitCountRange =>
+      'A contagem semanal deve ficar entre 1 e 7.';
+
+  @override
   String get goalCreateHabitsLabel => 'Hábitos a acompanhar';
 
   @override

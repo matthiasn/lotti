@@ -58,7 +58,13 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         );
       case _GoalKind.habits:
         final count = int.tryParse(_habitCount.text.trim());
-        if (count == null || count < 1 || _selectedHabitIds.isEmpty) {
+        // At most 7: the signal reader collapses completions to one
+        // success per local day, so a calendar week can never observe
+        // more — a higher count would mint an unsatisfiable goal.
+        if (count == null ||
+            count < 1 ||
+            count > 7 ||
+            _selectedHabitIds.isEmpty) {
           return null;
         }
         final leaves = [
@@ -90,8 +96,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _selectedHabitIds.retainWhere(activeIds.contains);
     final criteria = _buildCriteria();
     if (name.isEmpty || criteria == null) {
+      final weeklyCount = int.tryParse(_habitCount.text.trim());
+      final countOutOfRange =
+          _kind == _GoalKind.habits &&
+          weeklyCount != null &&
+          (weeklyCount < 1 || weeklyCount > 7);
       setState(
-        () => _validation = context.messages.goalCreateValidationMissing,
+        () => _validation = countOutOfRange
+            ? context.messages.goalCreateHabitCountRange
+            : context.messages.goalCreateValidationMissing,
       );
       return;
     }
