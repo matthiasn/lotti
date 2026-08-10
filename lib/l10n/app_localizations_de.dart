@@ -717,14 +717,14 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get agentsFirstRunSpeaks =>
-      'Er meldet sich mit kurzen Bannern, dort wo du gerade bist. Weise eines ab und für den Rest des Tages ist Ruhe.';
+      'Er meldet sich mit kurzen Bannern, dort, wo du gerade bist. Weise eines ab, und für den Rest des Tages ist Ruhe.';
 
   @override
   String get agentsFirstRunTitle => 'Ein Agent pro Ziel';
 
   @override
   String get agentsFirstRunWatches =>
-      'Er beobachtet, worauf das Ziel beruht — Gewohnheits-Häkchen, Schrittzahlen. Nichts, was er nicht sehen kann, nichts, was du melden musst.';
+      'Er beobachtet, worauf das Ziel beruht — abgehakte Gewohnheiten, Schrittzahlen. Nichts, was er nicht sehen kann, nichts, was du melden musst.';
 
   @override
   String get agentSoulAntiSycophancyLabel => 'Anti-Speichelleckerei-Richtlinie';
@@ -6048,7 +6048,7 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalCoarseHealthNotEnoughData => 'Zu wenig Daten';
 
   @override
-  String get goalCoarseHealthRestarting => 'Neustart';
+  String get goalCoarseHealthRestarting => 'Startet neu';
 
   @override
   String get goalCreateFailed =>
@@ -6106,6 +6106,15 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'gerade eben';
+
+  @override
+  String get goalHealthTrendDown => 'Fällt ab';
+
+  @override
+  String get goalHealthTrendFlat => 'Bleibt stabil';
+
+  @override
+  String get goalHealthTrendUp => 'Steigt';
 
   @override
   String get goalNudgeStatusDismissed => 'Verworfen';

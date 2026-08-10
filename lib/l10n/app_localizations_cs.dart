@@ -701,25 +701,25 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentsFirstRunControl =>
-      'You can talk to it, correct it, retarget it, pause it, delete it.';
+      'Můžeš s ním mluvit, opravit ho, přesměrovat, pozastavit, smazat.';
 
   @override
   String get agentsFirstRunCost =>
-      'Runs on your models — typically fractions of a cent per day.';
+      'Běží na tvých modelech — obvykle zlomky centu za den.';
 
   @override
-  String get agentsFirstRunCta => 'Set an intention';
+  String get agentsFirstRunCta => 'Nastavit záměr';
 
   @override
   String get agentsFirstRunSpeaks =>
-      'It speaks in short banners, where you already are. Dismiss one and it\'s quiet for the rest of the day.';
+      'Ozývá se krátkými bannery tam, kde právě jsi. Jeden zavři a zbytek dne je klid.';
 
   @override
-  String get agentsFirstRunTitle => 'One agent per goal';
+  String get agentsFirstRunTitle => 'Jeden agent na cíl';
 
   @override
   String get agentsFirstRunWatches =>
-      'It watches what the goal depends on — habit check-offs, step counts. Nothing it can\'t see, nothing you have to report.';
+      'Sleduje, na čem cíl stojí — odškrtnuté návyky, počty kroků. Nic, co nevidí, nic, co musíš hlásit.';
 
   @override
   String get agentSoulAntiSycophancyLabel => 'Zásady proti pochlebování';
@@ -6063,16 +6063,16 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
-  String get goalCoarseHealthBehind => 'Behind';
+  String get goalCoarseHealthBehind => 'Pozadu';
 
   @override
-  String get goalCoarseHealthHealthy => 'Healthy';
+  String get goalCoarseHealthHealthy => 'V pořádku';
 
   @override
-  String get goalCoarseHealthNotEnoughData => 'Not enough data';
+  String get goalCoarseHealthNotEnoughData => 'Málo dat';
 
   @override
-  String get goalCoarseHealthRestarting => 'Restarting';
+  String get goalCoarseHealthRestarting => 'Začíná znovu';
 
   @override
   String get goalCreateFailed => 'Cíl se nepodařilo uložit — zkus to znovu.';
@@ -6128,6 +6128,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'právě teď';
+
+  @override
+  String get goalHealthTrendDown => 'Klesá';
+
+  @override
+  String get goalHealthTrendFlat => 'Drží se';
+
+  @override
+  String get goalHealthTrendUp => 'Roste';
 
   @override
   String get goalNudgeStatusDismissed => 'Odmítnuto';

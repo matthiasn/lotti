@@ -28,16 +28,23 @@ class AgentsPage extends ConsumerWidget {
     // blank sliver a loading pass gets.
     final identities = agents.value;
     final failedFirstLoad = identities == null && agents.hasError;
+    // On the settled-empty first-run screen the explainer's own CTA is the
+    // sole creation affordance — the global FAB would route to the same
+    // `/agents/create` and present the action twice.
+    final settledEmpty = identities != null && identities.isEmpty;
     return Scaffold(
-      floatingActionButton: DesignSystemBottomNavigationFabPadding(
-        child: FloatingActionButton.extended(
-          // Through NavService, not raw Beamer: keeps currentPath and the
-          // persisted last route in sync (restart restores this page).
-          onPressed: () => beamToNamed('/agents/create'),
-          label: Text(context.messages.agentsCreateGoal),
-          icon: const Icon(Icons.add_rounded),
-        ),
-      ),
+      floatingActionButton: settledEmpty
+          ? null
+          : DesignSystemBottomNavigationFabPadding(
+              child: FloatingActionButton.extended(
+                // Through NavService, not raw Beamer: keeps currentPath and
+                // the persisted last route in sync (restart restores this
+                // page).
+                onPressed: () => beamToNamed('/agents/create'),
+                label: Text(context.messages.agentsCreateGoal),
+                icon: const Icon(Icons.add_rounded),
+              ),
+            ),
       body: SafeArea(
         child: CustomScrollView(
           slivers: [
@@ -144,9 +151,20 @@ class _GoalAgentRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final health = ref.watch(goalAgentHealthProvider(identity.agentId)).value;
-    final coarse = coarseHealthOf(health?.trackStatus);
-    final color = goalCoarseHealthColor(coarse, tokens.colors);
+    final healthAsync = ref.watch(goalAgentHealthProvider(identity.agentId));
+    // Only a RESOLVED health record carries a verdict. While the per-agent
+    // health is still loading — or after a load error with no prior value —
+    // the row shows no health chip and a neutral persona hue, never a false
+    // "Not enough data" (a genuine data condition reserved for a resolved
+    // null status). Once a value has arrived, stale-while-revalidate keeps it
+    // through background refreshes and transient errors.
+    final health = healthAsync.value;
+    final coarse = healthAsync.hasValue
+        ? coarseHealthOf(health?.trackStatus)
+        : null;
+    final color = coarse == null
+        ? tokens.colors.text.lowEmphasis
+        : goalCoarseHealthColor(coarse, tokens.colors);
     final direction = health?.direction;
     return Material(
       color: tokens.colors.surface.enabled,
@@ -185,7 +203,8 @@ class _GoalAgentRow extends ConsumerWidget {
                                 color: tokens.colors.text.highEmphasis,
                               ),
                         ),
-                        GoalCoarseHealthChip(health: coarse),
+                        if (coarse != null)
+                          GoalCoarseHealthChip(health: coarse),
                         if ((health?.pendingProposals ?? 0) > 0)
                           const _NeedsYouBadge(),
                       ],
@@ -212,6 +231,12 @@ class _GoalAgentRow extends ConsumerWidget {
                   goalHealthDirectionIcon(direction),
                   size: tokens.spacing.step5,
                   color: color,
+                  // The arrow is the only trend signal in the row; without a
+                  // label a screen reader announces nothing for it.
+                  semanticLabel: goalHealthDirectionLabel(
+                    context.messages,
+                    direction,
+                  ),
                 ),
               ],
             ],

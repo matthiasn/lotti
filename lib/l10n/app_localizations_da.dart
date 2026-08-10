@@ -697,25 +697,25 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentsFirstRunControl =>
-      'You can talk to it, correct it, retarget it, pause it, delete it.';
+      'Du kan tale med den, rette den, ændre mål, sætte den på pause, slette den.';
 
   @override
   String get agentsFirstRunCost =>
-      'Runs on your models — typically fractions of a cent per day.';
+      'Kører på dine modeller — typisk brøkdele af en cent om dagen.';
 
   @override
-  String get agentsFirstRunCta => 'Set an intention';
+  String get agentsFirstRunCta => 'Sæt en intention';
 
   @override
   String get agentsFirstRunSpeaks =>
-      'It speaks in short banners, where you already are. Dismiss one and it\'s quiet for the rest of the day.';
+      'Den taler i korte bannere, dér hvor du allerede er. Afvis et, og resten af dagen er der ro.';
 
   @override
-  String get agentsFirstRunTitle => 'One agent per goal';
+  String get agentsFirstRunTitle => 'Én agent pr. mål';
 
   @override
   String get agentsFirstRunWatches =>
-      'It watches what the goal depends on — habit check-offs, step counts. Nothing it can\'t see, nothing you have to report.';
+      'Den holder øje med det, målet bygger på — afkrydsede vaner, skridttal. Intet, den ikke kan se, intet, du skal rapportere.';
 
   @override
   String get agentSoulAntiSycophancyLabel => 'Anti-smiskerpolitik';
@@ -5999,16 +5999,16 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
-  String get goalCoarseHealthBehind => 'Behind';
+  String get goalCoarseHealthBehind => 'Bagud';
 
   @override
-  String get goalCoarseHealthHealthy => 'Healthy';
+  String get goalCoarseHealthHealthy => 'Sund';
 
   @override
-  String get goalCoarseHealthNotEnoughData => 'Not enough data';
+  String get goalCoarseHealthNotEnoughData => 'For få data';
 
   @override
-  String get goalCoarseHealthRestarting => 'Restarting';
+  String get goalCoarseHealthRestarting => 'Starter forfra';
 
   @override
   String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
@@ -6065,6 +6065,15 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'lige nu';
+
+  @override
+  String get goalHealthTrendDown => 'Falder';
+
+  @override
+  String get goalHealthTrendFlat => 'Holder stabilt';
+
+  @override
+  String get goalHealthTrendUp => 'Stiger';
 
   @override
   String get goalNudgeStatusDismissed => 'Afvist';

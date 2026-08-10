@@ -6038,6 +6038,15 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalDockJustNow => 'just now';
 
   @override
+  String get goalHealthTrendDown => 'Trending down';
+
+  @override
+  String get goalHealthTrendFlat => 'Holding steady';
+
+  @override
+  String get goalHealthTrendUp => 'Trending up';
+
+  @override
   String get goalNudgeStatusDismissed => 'Dismissed';
 
   @override

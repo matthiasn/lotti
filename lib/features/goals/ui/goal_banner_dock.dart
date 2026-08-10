@@ -16,13 +16,39 @@ import 'package:lotti/services/nav_service.dart';
 /// cycle fully within a minute (design handover 1b).
 const goalBannerDockTenure = Duration(seconds: 15);
 
-/// Conservative clearance the compact (mobile) dock claims above the bottom
-/// bar when a goal is speaking — the shell reserves it in the overlay-height
-/// scope so page content and FABs never sit underneath (handover 1b's
-/// "72 px reserved lane"). A ceiling for the two-line headline + caption
-/// tenant, not the exact rendered height (which collapses to zero when no
-/// goal speaks).
-const goalBannerDockReservedHeight = 72.0;
+/// The two-line headline + one-line caption text block of the compact tenant
+/// at the 1.0 text scale — the term that grows with accessibility text. The
+/// figure is measured against the rendered `_DockTenant` (worst case: a
+/// headline that wraps to the full two lines) and guarded by
+/// `goal_banner_dock_test.dart`, which asserts the reserve covers the actual
+/// rendered dock at both 1× and 2×. The text scaler multiplies only this
+/// block; the chrome and the 48dp dismiss target are fixed.
+const _dockTenantTextBlockAtUnitScale = 60.0;
+
+/// Clearance the compact (mobile) dock claims above the bottom bar when a
+/// goal is speaking — the shell reserves it in the overlay-height scope so
+/// page content and FABs never sit underneath (handover 1b's reserved lane).
+///
+/// Derived from the dock's own design-system dimensions rather than a flat
+/// constant, and scale-aware: the tenant row is as tall as the taller of the
+/// [TapTargets.minimum] dismiss target and the text block (which grows with
+/// the accessibility text scaler), plus the fixed chrome — outer padding
+/// (`step3` both edges), the tenure strip (`step1`), and the tenant's own
+/// vertical padding (`step3` both edges). A pure `× scale` multiply of a base
+/// constant would under-clear at 1× (the fixed dismiss target already exceeds
+/// a small base) and mis-track at large scales; this tracks the rendered
+/// height instead. Collapses to zero reserve when no goal speaks (the caller
+/// only adds it while the dock is speaking).
+double goalBannerDockReservedHeight(BuildContext context) {
+  final tokens = context.designTokens;
+  final scaler = MediaQuery.textScalerOf(context);
+  final chrome =
+      tokens.spacing.step3 * 4 + // outer + tenant vertical padding, both edges
+      tokens.spacing.step1; // tenure strip
+  final scaledText = scaler.scale(_dockTenantTextBlockAtUnitScale);
+  final row = scaledText > TapTargets.minimum ? scaledText : TapTargets.minimum;
+  return chrome + row;
+}
 
 /// The dock — one rotating slot for the agents' standing voices, the
 /// "now playing" bar of the goal feature (design handover 1b).

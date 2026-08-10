@@ -698,25 +698,25 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentsFirstRunControl =>
-      'You can talk to it, correct it, retarget it, pause it, delete it.';
+      'Je kunt met hem praten, hem corrigeren, opnieuw richten, pauzeren, verwijderen.';
 
   @override
   String get agentsFirstRunCost =>
-      'Runs on your models — typically fractions of a cent per day.';
+      'Draait op jouw modellen — meestal fracties van een cent per dag.';
 
   @override
-  String get agentsFirstRunCta => 'Set an intention';
+  String get agentsFirstRunCta => 'Stel een intentie in';
 
   @override
   String get agentsFirstRunSpeaks =>
-      'It speaks in short banners, where you already are. Dismiss one and it\'s quiet for the rest of the day.';
+      'Hij spreekt in korte banners, waar je al bent. Wijs er een af en de rest van de dag is het stil.';
 
   @override
-  String get agentsFirstRunTitle => 'One agent per goal';
+  String get agentsFirstRunTitle => 'Eén agent per doel';
 
   @override
   String get agentsFirstRunWatches =>
-      'It watches what the goal depends on — habit check-offs, step counts. Nothing it can\'t see, nothing you have to report.';
+      'Hij let op waar het doel van afhangt — afgevinkte gewoonten, stappen. Niets wat hij niet kan zien, niets wat je hoeft te melden.';
 
   @override
   String get agentSoulAntiSycophancyLabel => 'Antisycophancybeleid';
@@ -6018,16 +6018,16 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
-  String get goalCoarseHealthBehind => 'Behind';
+  String get goalCoarseHealthBehind => 'Achterop';
 
   @override
-  String get goalCoarseHealthHealthy => 'Healthy';
+  String get goalCoarseHealthHealthy => 'Gezond';
 
   @override
-  String get goalCoarseHealthNotEnoughData => 'Not enough data';
+  String get goalCoarseHealthNotEnoughData => 'Te weinig gegevens';
 
   @override
-  String get goalCoarseHealthRestarting => 'Restarting';
+  String get goalCoarseHealthRestarting => 'Begint opnieuw';
 
   @override
   String get goalCreateFailed =>
@@ -6085,6 +6085,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'zojuist';
+
+  @override
+  String get goalHealthTrendDown => 'Daalt';
+
+  @override
+  String get goalHealthTrendFlat => 'Blijft stabiel';
+
+  @override
+  String get goalHealthTrendUp => 'Stijgt';
 
   @override
   String get goalNudgeStatusDismissed => 'Weggeveegd';

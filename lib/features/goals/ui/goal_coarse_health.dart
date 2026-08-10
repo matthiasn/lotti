@@ -47,6 +47,18 @@ IconData goalHealthDirectionIcon(GoalHealthDirection direction) =>
       GoalHealthDirection.down => Icons.trending_down_rounded,
     };
 
+/// The screen-reader label for a trend direction — the arrow is otherwise the
+/// row's only signal that attainment is rising, holding, or falling, and it
+/// carries no text a screen reader can announce on its own.
+String goalHealthDirectionLabel(
+  AppLocalizations messages,
+  GoalHealthDirection direction,
+) => switch (direction) {
+  GoalHealthDirection.up => messages.goalHealthTrendUp,
+  GoalHealthDirection.flat => messages.goalHealthTrendFlat,
+  GoalHealthDirection.down => messages.goalHealthTrendDown,
+};
+
 /// The coarse-health chip: a small tinted pill, the only place a list row
 /// names health. Colour + label both derive from [health].
 class GoalCoarseHealthChip extends StatelessWidget {
@@ -69,7 +81,13 @@ class GoalCoarseHealthChip extends StatelessWidget {
       ),
       child: Text(
         goalCoarseHealthLabel(context.messages, health),
-        style: tokens.typography.styles.others.caption.copyWith(color: color),
+        // The hue lives in the fill; the label reads in high-emphasis text so
+        // the 12px caption clears the 4.5:1 contrast floor over a wash of the
+        // same hue in both themes (a full-hue caption over its own wash fails
+        // it for success/warning/restarting in the light theme).
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: tokens.colors.text.highEmphasis,
+        ),
       ),
     );
   }

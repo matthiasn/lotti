@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -119,6 +121,72 @@ void main() {
     // Direction arrows: down for the slipping goal, up for the healthy one.
     expect(find.byIcon(Icons.trending_down_rounded), findsOneWidget);
     expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
+
+    // The arrows carry screen-reader labels — otherwise the only trend
+    // signal in the row is inaccessible. (The row's InkWell merges child
+    // semantics, so assert the Icon's own label rather than a standalone
+    // semantics node.)
+    expect(
+      tester
+          .widget<Icon>(find.byIcon(Icons.trending_down_rounded))
+          .semanticLabel,
+      'Trending down',
+    );
+    expect(
+      tester.widget<Icon>(find.byIcon(Icons.trending_up_rounded)).semanticLabel,
+      'Trending up',
+    );
+  });
+
+  testWidgets('the settled-empty first-run screen hides the global create FAB '
+      '— the explainer CTA is the sole creation affordance', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const AgentsPage(),
+        overrides: [
+          activeGoalAgentsProvider.overrideWith((ref) async => []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(FloatingActionButton), findsNothing);
+    // The explainer's own CTA remains the single way in.
+    expect(find.text('Set an intention'), findsOneWidget);
+  });
+
+  testWidgets('a row whose health has not resolved yet shows no health chip '
+      '(never a false "Not enough data") while the name still renders', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const AgentsPage(),
+        overrides: [
+          activeGoalAgentsProvider.overrideWith(
+            (ref) async => [identity('goal-x', 'Stretch daily')],
+          ),
+          // A health load that never completes — the row is settled, its
+          // health is not.
+          goalAgentHealthProvider('goal-x').overrideWith(
+            (ref) => Completer<GoalAgentHealth>().future,
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Stretch daily'), findsOneWidget);
+    for (final label in [
+      'Healthy',
+      'Behind',
+      'Restarting',
+      'Not enough data',
+    ]) {
+      expect(
+        find.text(label),
+        findsNothing,
+        reason: 'an unresolved row must not assert a verdict',
+      );
+    }
   });
 
   testWidgets('recovering reads Restarting (never a failure), and a goal '

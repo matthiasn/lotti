@@ -3331,6 +3331,18 @@
   "@goalDockJustNow": {
     "description": "Freshness marker on the goal dock caption when a completion acknowledgment just took the slot"
   },
+  "goalHealthTrendDown": "Trending down",
+  "@goalHealthTrendDown": {
+    "description": "Screen-reader label for the falling trend arrow on a goal-agent list row."
+  },
+  "goalHealthTrendFlat": "Holding steady",
+  "@goalHealthTrendFlat": {
+    "description": "Screen-reader label for the flat trend arrow on a goal-agent list row."
+  },
+  "goalHealthTrendUp": "Trending up",
+  "@goalHealthTrendUp": {
+    "description": "Screen-reader label for the rising trend arrow on a goal-agent list row."
+  },
   "goalNudgeStatusDismissed": "Dismissed",
   "goalNudgeStatusExpired": "Expired",
   "goalNudgeStatusRetired": "Retired",

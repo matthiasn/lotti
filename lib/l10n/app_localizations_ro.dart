@@ -707,25 +707,25 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentsFirstRunControl =>
-      'You can talk to it, correct it, retarget it, pause it, delete it.';
+      'Puteți vorbi cu el, îl puteți corecta, reorienta, întrerupe, șterge.';
 
   @override
   String get agentsFirstRunCost =>
-      'Runs on your models — typically fractions of a cent per day.';
+      'Rulează pe modelele dumneavoastră — de obicei fracțiuni de cent pe zi.';
 
   @override
-  String get agentsFirstRunCta => 'Set an intention';
+  String get agentsFirstRunCta => 'Stabiliți o intenție';
 
   @override
   String get agentsFirstRunSpeaks =>
-      'It speaks in short banners, where you already are. Dismiss one and it\'s quiet for the rest of the day.';
+      'Vorbește prin bannere scurte, acolo unde vă aflați deja. Respingeți unul și va tăcea pentru tot restul zilei.';
 
   @override
-  String get agentsFirstRunTitle => 'One agent per goal';
+  String get agentsFirstRunTitle => 'Un agent per obiectiv';
 
   @override
   String get agentsFirstRunWatches =>
-      'It watches what the goal depends on — habit check-offs, step counts. Nothing it can\'t see, nothing you have to report.';
+      'Urmărește ceea ce depinde obiectivul — obiceiuri bifate, numărul de pași. Nimic ce nu poate vedea, nimic ce trebuie să raportați.';
 
   @override
   String get agentSoulAntiSycophancyLabel => 'Politica anti-lingușire';
@@ -6096,16 +6096,16 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
-  String get goalCoarseHealthBehind => 'Behind';
+  String get goalCoarseHealthBehind => 'În urmă';
 
   @override
-  String get goalCoarseHealthHealthy => 'Healthy';
+  String get goalCoarseHealthHealthy => 'Sănătos';
 
   @override
-  String get goalCoarseHealthNotEnoughData => 'Not enough data';
+  String get goalCoarseHealthNotEnoughData => 'Date insuficiente';
 
   @override
-  String get goalCoarseHealthRestarting => 'Restarting';
+  String get goalCoarseHealthRestarting => 'Reîncepe';
 
   @override
   String get goalCreateFailed =>
@@ -6164,6 +6164,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'chiar acum';
+
+  @override
+  String get goalHealthTrendDown => 'În scădere';
+
+  @override
+  String get goalHealthTrendFlat => 'Se menține';
+
+  @override
+  String get goalHealthTrendUp => 'În creștere';
 
   @override
   String get goalNudgeStatusDismissed => 'Respins';

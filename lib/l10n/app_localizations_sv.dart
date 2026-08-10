@@ -701,25 +701,25 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentsFirstRunControl =>
-      'You can talk to it, correct it, retarget it, pause it, delete it.';
+      'Du kan prata med den, rätta den, styra om den, pausa den, radera den.';
 
   @override
   String get agentsFirstRunCost =>
-      'Runs on your models — typically fractions of a cent per day.';
+      'Körs på dina modeller — oftast bråkdelar av ett öre per dag.';
 
   @override
-  String get agentsFirstRunCta => 'Set an intention';
+  String get agentsFirstRunCta => 'Sätt en avsikt';
 
   @override
   String get agentsFirstRunSpeaks =>
-      'It speaks in short banners, where you already are. Dismiss one and it\'s quiet for the rest of the day.';
+      'Den hörs i korta banners, där du redan är. Avfärda en så är det tyst resten av dagen.';
 
   @override
-  String get agentsFirstRunTitle => 'One agent per goal';
+  String get agentsFirstRunTitle => 'En agent per mål';
 
   @override
   String get agentsFirstRunWatches =>
-      'It watches what the goal depends on — habit check-offs, step counts. Nothing it can\'t see, nothing you have to report.';
+      'Den håller koll på det målet bygger på — bockade vanor, stegräkning. Inget den inte kan se, inget du behöver rapportera.';
 
   @override
   String get agentSoulAntiSycophancyLabel => 'Anti-smygningspolitik';
@@ -6003,16 +6003,16 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
-  String get goalCoarseHealthBehind => 'Behind';
+  String get goalCoarseHealthBehind => 'Ligger efter';
 
   @override
-  String get goalCoarseHealthHealthy => 'Healthy';
+  String get goalCoarseHealthHealthy => 'I form';
 
   @override
-  String get goalCoarseHealthNotEnoughData => 'Not enough data';
+  String get goalCoarseHealthNotEnoughData => 'För lite data';
 
   @override
-  String get goalCoarseHealthRestarting => 'Restarting';
+  String get goalCoarseHealthRestarting => 'Börjar om';
 
   @override
   String get goalCreateFailed => 'Målet kunde inte sparas — försök igen.';
@@ -6069,6 +6069,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'just nu';
+
+  @override
+  String get goalHealthTrendDown => 'Minskar';
+
+  @override
+  String get goalHealthTrendFlat => 'Håller sig stabil';
+
+  @override
+  String get goalHealthTrendUp => 'Ökar';
 
   @override
   String get goalNudgeStatusDismissed => 'Avfärdad';

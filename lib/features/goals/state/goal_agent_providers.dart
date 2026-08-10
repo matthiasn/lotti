@@ -509,9 +509,14 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
       // Direction: the latest register's attainment against the one before
       // it (registers are most-recent-first, same-spec-scoped above). A
       // small deadband keeps noise from flickering the arrow; null until
-      // there are two registers to compare.
+      // there are two registers to compare. Withheld when EITHER register is
+      // insufficient-data: attainment is not a judgeable signal there, and a
+      // downward arrow beside "Not enough data" would guilt-trip over a gap
+      // the policy says must not be judged.
       GoalHealthDirection? direction;
-      if (registers.length >= 2) {
+      if (registers.length >= 2 &&
+          registers[0].trackStatus != GoalTrackStatus.insufficientData &&
+          registers[1].trackStatus != GoalTrackStatus.insufficientData) {
         const deadband = 0.02;
         final delta = registers[0].attainment - registers[1].attainment;
         direction = delta > deadband

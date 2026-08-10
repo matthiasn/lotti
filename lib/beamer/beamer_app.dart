@@ -1234,7 +1234,12 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
         }
         // The dock rides ABOVE the indicator row in the same overlay
         // column, so its lane adds to the row's height.
-        if (goalDockSpeaking) height += goalBannerDockReservedHeight;
+        // The reserved lane is derived from the dock's own DS dimensions and
+        // is scale-aware (the tenant's copy grows with accessibility text),
+        // so content and FABs clear the dock at every text scale.
+        if (goalDockSpeaking) {
+          height += goalBannerDockReservedHeight(context);
+        }
         return DesignSystemBottomNavigationOverlayHeight(
           height: height,
           child: child,

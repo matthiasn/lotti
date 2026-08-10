@@ -905,6 +905,86 @@ void main() {
     expect(health.direction, GoalHealthDirection.flat);
   });
 
+  test(
+    'goalAgentHealthProvider withholds the trend arrow when either '
+    'register is insufficient-data — no downward judgment over a gap',
+    () async {
+      const agentId = 'goal-gap';
+      when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+        (_) async => AgentDomainEntity.goalSpecHead(
+          id: goalSpecHeadId(agentId),
+          agentId: agentId,
+          versionId: '$agentId:spec-v1',
+          updatedAt: DateTime(2026),
+          vectorClock: null,
+        ),
+      );
+      when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+        (_) async => AgentDomainEntity.goalSpecVersion(
+          id: '$agentId:spec-v1',
+          agentId: agentId,
+          version: 1,
+          status: GoalSpecVersionStatus.active,
+          authoredBy: 'user',
+          title: 'Steps',
+          statement: 'Average 10,000 steps per day.',
+          criteria: const GoalCriterion.metric(
+            criterionId: 'steps',
+            dataType: 'cumulative_step_count',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 10000,
+          ),
+          createdAt: DateTime(2026),
+          vectorClock: null,
+        ),
+      );
+      GoalProgressEntity register(
+        String period,
+        double attainment,
+        GoalTrackStatus status,
+      ) =>
+          AgentDomainEntity.goalProgress(
+                id: goalProgressId(agentId, period),
+                agentId: agentId,
+                periodKey: period,
+                trackStatus: status,
+                attainment: attainment,
+                dataCoverage: status == GoalTrackStatus.insufficientData
+                    ? 0.1
+                    : 1,
+                satisfied: false,
+                specVersionId: '$agentId:spec-v1',
+                createdAt: DateTime(2026, 8, 9),
+                updatedAt: DateTime(2026, 8, 9),
+                vectorClock: null,
+              )
+              as GoalProgressEntity;
+      when(
+        () => repository.getLatestReport(agentId, 'current'),
+      ).thenAnswer((_) async => null);
+      when(
+        () => repository.getPendingChangeSets(agentId, taskId: agentId),
+      ).thenAnswer((_) async => []);
+
+      // Latest register is insufficient-data. Even though its attainment is a
+      // full point below the prior register — which WOULD read as a steep
+      // decline — no arrow is emitted: the gap must not be judged.
+      when(
+        () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+      ).thenAnswer(
+        (_) async => [
+          register('2026-08-09', 0, GoalTrackStatus.insufficientData),
+          register('2026-08-08', 1, GoalTrackStatus.onTrack),
+        ],
+      );
+      final health = await container.read(
+        goalAgentHealthProvider(agentId).future,
+      );
+      expect(health.direction, isNull);
+    },
+  );
+
   test('a failing exposure flush is contained and logged — never an '
       'uncaught async error from a disposed banner', () async {
     when(

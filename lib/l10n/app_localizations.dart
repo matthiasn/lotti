@@ -10427,6 +10427,24 @@ abstract class AppLocalizations {
   /// **'just now'**
   String get goalDockJustNow;
 
+  /// Screen-reader label for the falling trend arrow on a goal-agent list row.
+  ///
+  /// In en, this message translates to:
+  /// **'Trending down'**
+  String get goalHealthTrendDown;
+
+  /// Screen-reader label for the flat trend arrow on a goal-agent list row.
+  ///
+  /// In en, this message translates to:
+  /// **'Holding steady'**
+  String get goalHealthTrendFlat;
+
+  /// Screen-reader label for the rising trend arrow on a goal-agent list row.
+  ///
+  /// In en, this message translates to:
+  /// **'Trending up'**
+  String get goalHealthTrendUp;
+
   /// No description provided for @goalNudgeStatusDismissed.
   ///
   /// In en, this message translates to:
