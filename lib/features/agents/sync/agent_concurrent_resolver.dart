@@ -128,22 +128,36 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
           ? ConcurrentWinner.local
           : ConcurrentWinner.incoming;
     }
-    // Other terminal states dominate concurrent NON-advancing writes too:
+    // The HIGHER activation is the newer run: its lifecycle metadata
+    // (activatedAt, staleAt, runKey) must win whole-row selection, or a
+    // peer's bookkeeping write for the PREVIOUS activation could win LWW
+    // and stamp the fresh rerun with the old deadline. This also covers
+    // genuine reactivation beating a same-spec terminal write.
+    if (local.activationCount != incoming.activationCount) {
+      return local.activationCount > incoming.activationCount
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
+    }
+    // Same activation: terminal states dominate concurrent live writes —
     // a device that retired/expired/superseded the ad must not lose to a
     // stale exposure flush or rating that copied the old `active` row.
-    // A genuine reactivation is recognizable — it ADVANCES the
-    // activation count — and beats a same-count terminal write.
     final localTerminal = _terminalNudgeStatuses.contains(local.status);
     final incomingTerminal = _terminalNudgeStatuses.contains(incoming.status);
     if (localTerminal != incomingTerminal) {
-      final terminal = localTerminal ? local : incoming;
-      final live = localTerminal ? incoming : local;
-      if (live.activationCount > terminal.activationCount) {
-        return localTerminal
-            ? ConcurrentWinner.incoming
-            : ConcurrentWinner.local;
-      }
       return localTerminal ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+    }
+    // Among terminal outcomes, supersession is the spec itself moving on
+    // and must stay monotonic across replicas: a concurrent old-spec
+    // retirement would otherwise put the banner back into the reuse
+    // library under the revised goal.
+    final localSuperseded = local.status == GoalNudgeStatus.superseded;
+    final incomingSuperseded = incoming.status == GoalNudgeStatus.superseded;
+    if (localTerminal &&
+        incomingTerminal &&
+        localSuperseded != incomingSuperseded) {
+      return localSuperseded
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
     }
     return null;
   }

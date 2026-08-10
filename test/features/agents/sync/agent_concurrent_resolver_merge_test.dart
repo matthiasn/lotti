@@ -485,6 +485,53 @@ void main() {
         isNull,
       );
     });
+
+    test('supersession dominates a concurrent retirement — the revision '
+        'sweep stays monotonic, the reuse library stays clean', () {
+      final superseded = goalNudge(status: GoalNudgeStatus.superseded);
+      final retired = goalNudge(status: GoalNudgeStatus.retired);
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: superseded,
+          incoming: retired,
+        ),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: retired,
+          incoming: superseded,
+        ),
+        ConcurrentWinner.incoming,
+      );
+    });
+
+    test('the higher activation wins whole-row selection — a bookkeeping '
+        'write for the PREVIOUS run cannot stamp the rerun with its old '
+        'deadline', () {
+      final rerun = goalNudge(
+        status: GoalNudgeStatus.active,
+        activationCount: 3,
+      );
+      final staleBookkeeping = goalNudge(
+        status: GoalNudgeStatus.active,
+        activationCount: 2,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: rerun,
+          incoming: staleBookkeeping,
+        ),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: staleBookkeeping,
+          incoming: rerun,
+        ),
+        ConcurrentWinner.incoming,
+      );
+    });
   });
 
   group('mergeGoalNudgeAccumulators', () {
