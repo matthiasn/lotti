@@ -1025,6 +1025,44 @@ void main() {
     });
   });
 
+  test('goalNudgeHistoryProvider lists only terminal outcomes, newest '
+      'first — pipeline rows and failures stay internal', () async {
+    GoalNudgeEntity row(String id, GoalNudgeStatus status, int day) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-h',
+              status: status,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, day),
+              updatedAt: DateTime(2026, 8, day),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId('goal-h', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        row('ad-dismissed', GoalNudgeStatus.dismissed, 3),
+        row('ad-retired', GoalNudgeStatus.retired, 5),
+        row('ad-active', GoalNudgeStatus.active, 6),
+        row('ad-draft', GoalNudgeStatus.draft, 7),
+        row('ad-failed', GoalNudgeStatus.failed, 8),
+      ],
+    );
+    final history = await container.read(
+      goalNudgeHistoryProvider('goal-h').future,
+    );
+    expect(
+      [for (final n in history) n.id],
+      ['ad-retired', 'ad-dismissed'],
+    );
+  });
+
   test('activeGoalAgentsProvider lists only goal-kind identities', () async {
     when(
       () => agentService.listAgents(lifecycle: AgentLifecycle.active),

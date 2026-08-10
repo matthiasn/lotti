@@ -6061,6 +6061,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interakce';
 
   @override
+  String get goalNudgeStatusDismissed => 'Odmítnuto';
+
+  @override
+  String get goalNudgeStatusExpired => 'Vypršelo';
+
+  @override
+  String get goalNudgeStatusRetired => 'Staženo';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Nahrazeno';
+
+  @override
   String get goalPendingProposalBadge => 'Návrh čeká na posouzení';
 
   @override

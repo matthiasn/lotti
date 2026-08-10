@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -8,6 +9,7 @@ import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_banner_strip.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// One goal agent: health header, active banners (including any that the
@@ -28,9 +30,12 @@ class GoalAgentDetailPage extends ConsumerWidget {
     // Stale-while-revalidate: `.value` keeps the last render across
     // background reloads; only a load that has never produced data gets
     // the spinner. An errored load must not claim "no report yet".
+    // Back pops through NavService so currentPath and the persisted
+    // route return to the Agents root instead of pinning this child.
+    final backToList = BackButton(onPressed: () => beamToNamed('/agents'));
     if (!healthAsync.hasValue && !healthAsync.hasError) {
       return Scaffold(
-        appBar: AppBar(title: const Text('')),
+        appBar: AppBar(leading: backToList, title: const Text('')),
         body: const Center(child: CircularProgressIndicator()),
       );
     }
@@ -43,7 +48,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
         if (entry.nudge.agentId == agentId) entry,
     ];
     return Scaffold(
-      appBar: AppBar(title: Text(spec?.title ?? '')),
+      appBar: AppBar(leading: backToList, title: Text(spec?.title ?? '')),
       body: SafeArea(
         child: ListView(
           // The mobile shell keeps the bottom navigation overlaid on agents
@@ -130,6 +135,39 @@ class GoalAgentDetailPage extends ConsumerWidget {
               ),
             ),
             SizedBox(height: tokens.spacing.step3),
+            // Past ads stay part of the durable history (ADR 0055): once
+            // dismissed/retired/expired/superseded they leave the banner
+            // list, so the timeline is where their outcomes remain
+            // browsable.
+            for (final past
+                in ref.watch(goalNudgeHistoryProvider(agentId)).value ??
+                    const <GoalNudgeEntity>[]) ...[
+              Padding(
+                padding: EdgeInsets.only(bottom: tokens.spacing.step2),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        past.brief.headline,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                    Text(
+                      goalNudgeStatusLabel(context, past.status),
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
             AgentConversationLog(agentId: agentId),
           ],
         ),

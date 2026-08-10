@@ -334,6 +334,31 @@ final goalNudgeExposureFlushProvider = Provider<GoalNudgeInteractionsFlush>(
   name: 'goalNudgeExposureFlushProvider',
 );
 
+/// The goal's PAST ads — every terminal nudge, newest outcome first —
+/// for the detail page's durable interaction history (ADR 0055: past
+/// ads and their outcomes remain browsable; only `draft`/`ready`
+/// pipeline rows and generation failures stay internal).
+final FutureProviderFamily<List<GoalNudgeEntity>, String>
+goalNudgeHistoryProvider = FutureProvider.autoDispose
+    .family<List<GoalNudgeEntity>, String>((ref, agentId) async {
+      ref.watch(agentUpdateStreamProvider(agentId));
+      final repository = ref.watch(agentRepositoryProvider);
+      const shown = {
+        GoalNudgeStatus.dismissed,
+        GoalNudgeStatus.retired,
+        GoalNudgeStatus.expired,
+        GoalNudgeStatus.superseded,
+      };
+      return (await repository.getEntitiesByAgentId(
+            agentId,
+            type: AgentEntityTypes.goalNudge,
+          ))
+          .whereType<GoalNudgeEntity>()
+          .where((n) => n.deletedAt == null && shown.contains(n.status))
+          .toList()
+        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+    }, name: 'goalNudgeHistoryProvider');
+
 /// Health-at-a-glance for one goal agent: the latest register verdict,
 /// the standing report's one-liner, and whether a revision proposal
 /// waits for review.

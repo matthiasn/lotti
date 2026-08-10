@@ -6075,6 +6075,18 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interacciones';
 
   @override
+  String get goalNudgeStatusDismissed => 'Descartado';
+
+  @override
+  String get goalNudgeStatusExpired => 'Caducado';
+
+  @override
+  String get goalNudgeStatusRetired => 'Retirado';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Reemplazado';
+
+  @override
   String get goalPendingProposalBadge => 'Propuesta pendiente';
 
   @override

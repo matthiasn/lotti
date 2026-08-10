@@ -192,4 +192,29 @@ void main() {
     await tester.pumpAndSettle();
     expect(exposures, hasLength(2));
   });
+
+  testWidgets('backgrounding the app flushes the episode — pocket time '
+      'never counts as exposure', (tester) async {
+    final sameOverrides = overrides([
+      (nudge: nudge(), goalTitle: 'Move more'),
+    ]);
+    await tester.pumpWidget(
+      makeTestableWidget(const GoalBannerStrip(), overrides: sameOverrides),
+    );
+    await tester.pumpAndSettle();
+    expect(exposures, isEmpty);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    expect(exposures, hasLength(1), reason: 'leaving resumed flushes');
+
+    // Resuming starts a fresh episode, flushed on unmount as usual.
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.pumpWidget(
+      makeTestableWidget(const SizedBox.shrink(), overrides: sameOverrides),
+    );
+    await tester.pumpAndSettle();
+    expect(exposures, hasLength(2));
+  });
 }

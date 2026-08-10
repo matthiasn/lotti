@@ -6001,6 +6001,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interaktioner';
 
   @override
+  String get goalNudgeStatusDismissed => 'Avfärdad';
+
+  @override
+  String get goalNudgeStatusExpired => 'Utgången';
+
+  @override
+  String get goalNudgeStatusRetired => 'Tillbakadragen';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Ersatt';
+
+  @override
   String get goalPendingProposalBadge => 'Förslag väntar';
 
   @override

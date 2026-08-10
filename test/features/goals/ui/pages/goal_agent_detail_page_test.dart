@@ -219,4 +219,53 @@ void main() {
     expect(find.text('The stairs filed a complaint.'), findsOneWidget);
     expect(find.text('Sleep is a skill too.'), findsNothing);
   });
+
+  testWidgets('past ads stay browsable in the timeline with their localized '
+      'outcome', (tester) async {
+    final past =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-past',
+              agentId: 'goal-1',
+              status: GoalNudgeStatus.dismissed,
+              brief: const GoalNudgeBrief(
+                headline: 'Six days of quiet soles.',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+            ),
+          ),
+          goalNudgeHistoryProvider(
+            'goal-1',
+          ).overrideWith((ref) async => [past]),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Six days of quiet soles.'), findsOneWidget);
+    expect(find.text('Dismissed'), findsOneWidget);
+  });
 }

@@ -10313,6 +10313,30 @@ abstract class AppLocalizations {
   /// **'Interactions'**
   String get goalDetailTimelineTitle;
 
+  /// No description provided for @goalNudgeStatusDismissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismissed'**
+  String get goalNudgeStatusDismissed;
+
+  /// No description provided for @goalNudgeStatusExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Expired'**
+  String get goalNudgeStatusExpired;
+
+  /// No description provided for @goalNudgeStatusRetired.
+  ///
+  /// In en, this message translates to:
+  /// **'Retired'**
+  String get goalNudgeStatusRetired;
+
+  /// No description provided for @goalNudgeStatusSuperseded.
+  ///
+  /// In en, this message translates to:
+  /// **'Superseded'**
+  String get goalNudgeStatusSuperseded;
+
   /// Badge on an agent card when a revision proposal is pending.
   ///
   /// In en, this message translates to:

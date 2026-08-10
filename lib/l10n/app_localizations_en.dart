@@ -5968,6 +5968,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interactions';
 
   @override
+  String get goalNudgeStatusDismissed => 'Dismissed';
+
+  @override
+  String get goalNudgeStatusExpired => 'Expired';
+
+  @override
+  String get goalNudgeStatusRetired => 'Retired';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Superseded';
+
+  @override
   String get goalPendingProposalBadge => 'Proposal awaiting review';
 
   @override

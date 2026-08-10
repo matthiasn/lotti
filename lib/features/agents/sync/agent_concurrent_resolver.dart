@@ -123,11 +123,39 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     // write on another device — a fresh dismissal is a request for quiet.
     final localDismissed = local.status == GoalNudgeStatus.dismissed;
     final incomingDismissed = incoming.status == GoalNudgeStatus.dismissed;
-    if (localDismissed == incomingDismissed) return null;
-    return localDismissed ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+    if (localDismissed != incomingDismissed) {
+      return localDismissed
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
+    }
+    // Other terminal states dominate concurrent NON-advancing writes too:
+    // a device that retired/expired/superseded the ad must not lose to a
+    // stale exposure flush or rating that copied the old `active` row.
+    // A genuine reactivation is recognizable — it ADVANCES the
+    // activation count — and beats a same-count terminal write.
+    final localTerminal = _terminalNudgeStatuses.contains(local.status);
+    final incomingTerminal = _terminalNudgeStatuses.contains(incoming.status);
+    if (localTerminal != incomingTerminal) {
+      final terminal = localTerminal ? local : incoming;
+      final live = localTerminal ? incoming : local;
+      if (live.activationCount > terminal.activationCount) {
+        return localTerminal
+            ? ConcurrentWinner.incoming
+            : ConcurrentWinner.local;
+      }
+      return localTerminal ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+    }
+    return null;
   }
   return null;
 }
+
+const Set<GoalNudgeStatus> _terminalNudgeStatuses = {
+  GoalNudgeStatus.retired,
+  GoalNudgeStatus.expired,
+  GoalNudgeStatus.superseded,
+  GoalNudgeStatus.failed,
+};
 
 /// A total, replica-independent ordering of two vector clocks. Compares each
 /// host's counter (0 when a host is absent) in sorted host order and returns
@@ -194,10 +222,12 @@ AgentStateEntity mergeAgentStateCounters({
 /// vanish — and those accumulate across YEARS of activations (ADR 0055's
 /// labeled library), so losing one side is permanent damage, not noise.
 ///
-/// Ratings are append-only, keyed by activation index: the union keeps
-/// one entry per `(activation, ratedAt, rating, skipped)` tuple, ordered
-/// by activation then ratedAt, so both replicas converge on the identical
-/// list regardless of arrival order. Pure: same inputs → same result.
+/// Ratings converge to ONE OUTCOME PER ACTIVATION (the ADR 0055
+/// contract): the union is sorted by a total order (activation, ratedAt,
+/// skipped, rating) and collapsed to the first entry per activation, so
+/// two devices rating the same run before syncing keep the EARLIEST
+/// outcome on both — deterministic, and a run is never counted twice in
+/// reuse means or wear-out trajectories. Pure: same inputs → same result.
 GoalNudgeEntity mergeGoalNudgeAccumulators({
   required GoalNudgeEntity winner,
   required GoalNudgeEntity local,
@@ -218,10 +248,17 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
           if (bySkipped != 0) return bySkipped;
           return (a.rating ?? 0).compareTo(b.rating ?? 0);
         });
+  final onePerActivation = <GoalNudgeRating>[];
+  for (final rating in ratings) {
+    if (onePerActivation.isEmpty ||
+        onePerActivation.last.activation != rating.activation) {
+      onePerActivation.add(rating);
+    }
+  }
   return winner.copyWith(
     totalVisibleMs: local.totalVisibleMs.merge(incoming.totalVisibleMs),
     impressionCount: local.impressionCount.merge(incoming.impressionCount),
-    ratings: ratings,
+    ratings: onePerActivation,
     activationCount: local.activationCount > incoming.activationCount
         ? local.activationCount
         : incoming.activationCount,

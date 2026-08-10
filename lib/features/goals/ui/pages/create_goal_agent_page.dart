@@ -141,7 +141,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     // the user for a database failure.
     final habitsFailed = habitsAsync.hasError && habitsAsync.value == null;
     return Scaffold(
-      appBar: AppBar(title: Text(messages.agentsCreateGoal)),
+      // Back through NavService: the persisted route must return to the
+      // Agents root, not pin the creation form.
+      appBar: AppBar(
+        leading: BackButton(onPressed: () => beamToNamed('/agents')),
+        title: Text(messages.agentsCreateGoal),
+      ),
       body: SafeArea(
         child: ListView(
           // The mobile shell keeps the bottom navigation overlaid on agents

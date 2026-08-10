@@ -6095,6 +6095,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interacțiuni';
 
   @override
+  String get goalNudgeStatusDismissed => 'Respins';
+
+  @override
+  String get goalNudgeStatusExpired => 'Expirat';
+
+  @override
+  String get goalNudgeStatusRetired => 'Retras';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Înlocuit';
+
+  @override
   String get goalPendingProposalBadge => 'Propunere în așteptarea evaluării';
 
   @override

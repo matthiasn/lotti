@@ -81,10 +81,26 @@ class GoalBannerExposureTracker extends ConsumerStatefulWidget {
       _ExposureTrackerState();
 }
 
-class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker> {
+class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker>
+    with WidgetsBindingObserver {
   final Stopwatch _visible = Stopwatch();
   GoalNudgeInteractionsFlush? _flush;
   ScrollPosition? _position;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    // Backgrounding or locking the device leaves both TickerMode and the
+    // viewport check true — hours of pocket time must not count as
+    // visible exposure. Leaving `resumed` flushes the episode; resuming
+    // starts a fresh one if the banner is still on screen.
+    _recheck();
+  }
 
   @override
   void didChangeDependencies() {
@@ -126,7 +142,11 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker> {
   /// visible→hidden transition flushes its own episode, so separate
   /// appearances never merge and persistence doesn't wait for disposal.
   void _recheck() {
-    final visible = TickerMode.valuesOf(context).enabled && _inViewport();
+    final lifecycle = WidgetsBinding.instance.lifecycleState;
+    final appForeground =
+        lifecycle == null || lifecycle == AppLifecycleState.resumed;
+    final visible =
+        appForeground && TickerMode.valuesOf(context).enabled && _inViewport();
     if (visible) {
       if (!_visible.isRunning) _visible.start();
     } else if (_visible.isRunning) {
@@ -162,6 +182,7 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _position?.removeListener(_recheck);
     _flushEpisode();
     super.dispose();

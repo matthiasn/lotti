@@ -424,11 +424,63 @@ void main() {
       }
     });
 
-    test('same-dismissal-state conflicts defer to LWW (null)', () {
+    test('a terminal status beats a concurrent NON-advancing live write — '
+        'a stale exposure flush cannot revive a retired ad', () {
+      for (final terminalStatus in [
+        GoalNudgeStatus.retired,
+        GoalNudgeStatus.expired,
+        GoalNudgeStatus.superseded,
+        GoalNudgeStatus.failed,
+      ]) {
+        final terminal = goalNudge(status: terminalStatus);
+        final staleActive = goalNudge(status: GoalNudgeStatus.active);
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: terminal,
+            incoming: staleActive,
+          ),
+          ConcurrentWinner.local,
+          reason: '$terminalStatus must dominate same-activation bookkeeping',
+        );
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: staleActive,
+            incoming: terminal,
+          ),
+          ConcurrentWinner.incoming,
+        );
+      }
+    });
+
+    test('a genuine reactivation — the activation count ADVANCED — beats a '
+        'concurrent terminal write', () {
+      final retired = goalNudge(status: GoalNudgeStatus.retired);
+      final rerun = goalNudge(
+        status: GoalNudgeStatus.active,
+        activationCount: 2,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(local: retired, incoming: rerun),
+        ConcurrentWinner.incoming,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(local: rerun, incoming: retired),
+        ConcurrentWinner.local,
+      );
+    });
+
+    test('two terminal (or two live) statuses defer to LWW (null)', () {
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: goalNudge(status: GoalNudgeStatus.retired),
+          incoming: goalNudge(status: GoalNudgeStatus.expired),
+        ),
+        isNull,
+      );
       expect(
         resolveConcurrentAgentEntityOverride(
           local: goalNudge(status: GoalNudgeStatus.active),
-          incoming: goalNudge(status: GoalNudgeStatus.retired),
+          incoming: goalNudge(status: GoalNudgeStatus.ready),
         ),
         isNull,
       );
@@ -485,40 +537,43 @@ void main() {
       expect(merged.lastShownAt, DateTime(2026, 8, 5));
     });
 
-    test('distinct ratings tied on activation and ratedAt still merge in '
-        'one deterministic order on both replicas', () {
-      final at = DateTime(2026, 8, 2, 9);
+    test('concurrent outcomes for ONE activation collapse to a single '
+        'deterministic entry on both replicas — a run is never counted '
+        'twice', () {
       final skippedEntry = GoalNudgeRating(
         activation: 1,
-        ratedAt: at,
+        ratedAt: DateTime(2026, 8, 2, 9),
         skipped: true,
       );
-      final rated = GoalNudgeRating(activation: 1, ratedAt: at, rating: 3);
-      final a = goalNudge(
-        status: GoalNudgeStatus.active,
-        ratings: [rated],
+      final rated = GoalNudgeRating(
+        activation: 1,
+        ratedAt: DateTime(2026, 8, 2, 10),
+        rating: 3,
       );
+      final a = goalNudge(status: GoalNudgeStatus.active, ratings: [rated]);
       final b = goalNudge(
         status: GoalNudgeStatus.active,
         ratings: [skippedEntry],
       );
       final ab = mergeGoalNudgeAccumulators(winner: a, local: a, incoming: b);
       final ba = mergeGoalNudgeAccumulators(winner: a, local: b, incoming: a);
-      expect(ab.ratings, hasLength(2));
       expect(
         ab.ratings,
-        ba.ratings,
-        reason: 'union order must not leak into the merged list',
+        [skippedEntry],
+        reason: 'the EARLIEST outcome wins — one per activation',
       );
+      expect(ab.ratings, ba.ratings);
 
-      // Same tie, differing only in the rating VALUE.
+      // A full tie (same instant) breaks on the remaining total order:
+      // skipped=false sorts first, then the lower rating value.
+      final at = DateTime(2026, 8, 2, 9);
       final low = GoalNudgeRating(activation: 2, ratedAt: at, rating: 2);
       final high = GoalNudgeRating(activation: 2, ratedAt: at, rating: 5);
       final c = goalNudge(status: GoalNudgeStatus.active, ratings: [low]);
       final d = goalNudge(status: GoalNudgeStatus.active, ratings: [high]);
       final cd = mergeGoalNudgeAccumulators(winner: c, local: c, incoming: d);
       final dc = mergeGoalNudgeAccumulators(winner: c, local: d, incoming: c);
-      expect(cd.ratings, [low, high]);
+      expect(cd.ratings, [low]);
       expect(cd.ratings, dc.ratings);
     });
 

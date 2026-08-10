@@ -5997,6 +5997,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interaktioner';
 
   @override
+  String get goalNudgeStatusDismissed => 'Afvist';
+
+  @override
+  String get goalNudgeStatusExpired => 'Udløbet';
+
+  @override
+  String get goalNudgeStatusRetired => 'Trukket tilbage';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Erstattet';
+
+  @override
   String get goalPendingProposalBadge => 'Forslag afventer';
 
   @override

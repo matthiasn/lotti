@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -57,3 +58,17 @@ class GoalStatusChip extends StatelessWidget {
     );
   }
 }
+
+/// The user-facing label for a PAST ad's outcome in the detail timeline.
+/// Pipeline states (`draft`/`ready`/`active`/`failed`) never render here.
+String goalNudgeStatusLabel(BuildContext context, GoalNudgeStatus status) =>
+    switch (status) {
+      GoalNudgeStatus.dismissed => context.messages.goalNudgeStatusDismissed,
+      GoalNudgeStatus.retired => context.messages.goalNudgeStatusRetired,
+      GoalNudgeStatus.expired => context.messages.goalNudgeStatusExpired,
+      GoalNudgeStatus.superseded => context.messages.goalNudgeStatusSuperseded,
+      GoalNudgeStatus.draft ||
+      GoalNudgeStatus.ready ||
+      GoalNudgeStatus.active ||
+      GoalNudgeStatus.failed => '',
+    };

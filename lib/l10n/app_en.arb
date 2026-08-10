@@ -3251,6 +3251,10 @@
   "@goalDetailTimelineTitle": {
     "description": "Section title of the agent detail interaction timeline."
   },
+  "goalNudgeStatusDismissed": "Dismissed",
+  "goalNudgeStatusExpired": "Expired",
+  "goalNudgeStatusRetired": "Retired",
+  "goalNudgeStatusSuperseded": "Superseded",
   "goalPendingProposalBadge": "Proposal awaiting review",
   "@goalPendingProposalBadge": {
     "description": "Badge on an agent card when a revision proposal is pending."
