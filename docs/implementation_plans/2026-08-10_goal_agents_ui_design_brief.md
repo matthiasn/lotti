@@ -74,28 +74,63 @@ the `app-screenshots` skill. Images are never committed to this repo.
 
 ## 3. Vocabulary the design has to express
 
-Status is being reworked in parallel (see §8). The design should express these
-states, in this vocabulary:
+Status is being reworked in parallel (see §8). Habit goals are evaluated over
+a **rolling window** — the trailing 7 days including today — never a calendar
+quota. A calendar week has two dead zones where effort stops mattering: once
+the target is arithmetically unreachable ("why walk on Saturday?") and once it
+is already met ("done till Monday"). A rolling window has neither: every
+action enters the window and counts for exactly seven days.
 
-| State | Meaning | Frequency |
+Two small numbers drive everything:
+
+- **deficit** = target − successes-in-window. Because at most one success per
+  day is creditable, the deficit IS the days-to-recovery: no state is ever
+  more than `target` days from healthy. "Haven't walked in a week" means
+  "three walking days from whole", not "this week is lost".
+- **buffer** = when at target, days until the oldest success ages out — the
+  internal direction signal that tells the agent *today* is worth mentioning.
+
+**The voice speaks in events and time; the UI speaks in numbers.** Deficit
+and buffer decide *when* the agent speaks and *how warmly* — they never enter
+a sentence as state. Ledger-talk ("you're at three", "2 of 3", "keeps you at
+three") assumes the reader tracks a running count against a threshold; nobody
+does. What is natural is observation and recency: "you've walked three times
+in the past week" (a trailing-week observation IS the rolling window, in
+ordinary English), "it's been five days since a walk", "a walk today keeps
+the momentum going". Counts as facts about what the user did are fine; counts
+as position-against-target belong to the chip and the progress grid. When the
+window slides and the count drops overnight, the grid shows a day slipping
+off the edge — the explanation is visual, not verbal.
+
+The health vocabulary the design expresses:
+
+| State | Meaning | Copy register |
 |---|---|---|
-| **On track** | Keeping up or better | Most of the time |
-| **Slipping** | Required daily rate just turned upward — still fully recoverable | Common, early, recoverable |
-| **At risk** | Every remaining day must land | Occasional |
-| **Off track** | Arithmetically out of road for this period | Rare |
-| **Achieved** | Target met for the period | Weekly-ish |
-| **Not enough data** | Signals too sparse to judge | Early days, broken imports |
+| **Healthy** | At rate (deficit 0, comfortable buffer) | celebrate / quiet confidence |
+| **Aging out** | At rate, but the oldest success expires imminently | gentle nudge |
+| **One away** | Deficit 1 | nudge — "one walk from whole" |
+| **Behind** | Deficit 2 … target−1 | firmer — "two days of walks gets you back" |
+| **Restarting** | Deficit = target (empty window) | **encourage** — a beginning, not a verdict |
+| **Not enough data** | Signals too sparse to judge | honest silence |
 
-The underlying number is a **required rate**: `remaining ÷ creditable days
-left`. For "3× per week" it starts at 0.43. Do the habit and it falls; miss a
-day and it rises; at 1.0 every remaining day must land; above 1.0 the period is
-arithmetically gone. It has **two consumers**: the status shown on chips and
-lists, and the **register the agent writes its banner in** (encourage → nudge →
-at-risk → honest reset / celebrate). One source of truth, two voices.
+Note the wrap-around: the *worst* state maps to the warmest register. There is
+no configuration of the numbers in which action is pointless, so the banner
+can always truthfully say "do it today and the number moves" — the property a
+quota model structurally cannot provide. There is no "off track" state.
 
-Note that percentage-of-target is actively misleading mid-period: 22% on a
-Monday morning is a good week, not a bad one. A design that shows *direction*
-(rate falling vs rising) tells the truth better than any static percentage.
+Chips and list labels use only the coarse states — Healthy / Behind /
+Restarting / Not enough data. The finer gradations ("aging out", deficit
+counts) drive copy and the progress grid, never labels: a chip that says
+"Aging out" is the same mechanism-leak as a banner that explains it.
+
+Deficit and buffer have **two consumers**: the health shown on chips and
+lists, and the register the agent writes in. One source of truth, two voices.
+Percentage-of-target is banned from surfaces: it is misleading mid-window and
+implies failure while the user is fine. Show distance-to-healthy and
+direction instead.
+
+(Metric goals — average steps over a rolling week — already live in this
+frame; this section brings habit routines into the same one.)
 
 A second input runs alongside the rate: per-habit **reliability** — the
 habit's success record over trailing periods. It decides which habit earns the
@@ -159,6 +194,13 @@ Grouped by user job. Every surface needs phone and desktop, light and dark.
    disclosure for the mechanical parts (window, target, which habits count).
    Two goal shapes exist today and more will follow — the shape picker needs
    room to grow, and tier-4 goals need the honest-refusal path designed.
+   **Counts are per habit**: gym 2× while morning exercises run 5× under the
+   same goal. The criterion model already carries a target per habit leaf —
+   the current form's single shared "times per week (each habit)" field is a
+   flattening artifact, not a constraint. One rolling window per goal;
+   per-habit counts within it. (Knock-on for §5.F: an agent-proposed cadence
+   revision must name WHICH habit it retargets, and the approval card must
+   show it — "Gym: 2× → 3×, others unchanged".)
 4. **Edit a goal.** Same material, in an editing posture. Renaming,
    retargeting, changing the window, adding or removing watched habits. Needs
    to communicate that editing starts a new version of the goal rather than
@@ -183,24 +225,30 @@ Grouped by user job. Every surface needs phone and desktop, light and dark.
 ### D. The voice — banners
 
 This is the product. It is what a user experiences day to day, and under the
-voice model it is a **standing presence during an active period**, not an
-occasional alarm. The canonical weekly arc for a "3× per week" goal:
+voice model it is a **standing presence**, not an occasional alarm. The
+canonical arc for a "3× per week (rolling)" goal:
 
-| Moment | Situation | Register | Copy shape |
+| Moment | Numbers (internal) | Register | Copy shape |
 |---|---|---|---|
-| Monday morning | fresh period | encourage | "Fresh week — nine sessions on the board. Take the first one today." |
-| Monday evening | strong day one | encourage/celebrate | "Two down on day one." |
-| Wednesday close | one habit untouched | nudge | "Four days left; the walks haven't started." |
-| Friday close | rate at 1.0 | at-risk | "Three walks, three days. All of them or it isn't." |
-| Saturday | rate above 1.0 | honest reset | "This week's gone for walks — Monday isn't." |
-| Sunday, target met | achieved | celebrate | An actual celebration. |
+| Empty window | deficit 3 | encourage | "Quiet week for walks — today's a good day to restart." |
+| After a check-off | deficit 2, moving | celebrate/encourage | "Back out there. Keep it going tomorrow." |
+| At rate | deficit 0 | quiet confidence | "Three walks this past week. That's the rhythm." |
+| Oldest success expiring | deficit 0, buffer 0 | gentle nudge | "A walk today keeps the momentum going." |
+| One short | deficit 1 | nudge | "It's been a few days — room for a walk today?" |
+| Sustained streak | weeks at rate | celebrate | "Three steady weeks of walking." (weekly recap rhythm) |
+
+The numbers column is internal — it selects the row, it never appears in the
+words (§3: events and time in the voice, numbers in the UI). Every row can
+truthfully imply "today's action matters" — there is no dead-week state.
 
 The *current* banner supersedes the previous one — one standing message per
 goal, refreshed at meaningful moments, never a pile of stale alarms. The
 refresh rhythm is asymmetric: **a completion is acknowledged within seconds**
 (the check-off → fresh-copy loop is the feature's best moment), **a miss is
-judged only at day close** (a day isn't missed until it ends), and period
-boundaries open and close the week's arc.
+judged only at day close** (a day isn't missed until it ends — and under the
+rolling window a "miss" is really a success aging out, §3). Status is rolling,
+but *ritual* keeps a weekly beat: a Monday kickoff and a weekly recap are
+rhythm moments for the voice, not arithmetic boundaries.
 
 **The arc is a skeleton, not a script.** The banner is an editorial product:
 the agent says the *one most useful thing*, never an enumeration of everything
@@ -354,20 +402,28 @@ content that changes underneath the user while they are looking at it.
 
 ## 8. Being fixed in parallel — not design's problem
 
-- Status currently computes attainment against a full period's target with no
-  regard for elapsed time, so a good Monday reports "at risk" and every habit
-  reads "behind". Being replaced with the required-rate model in §3.
+- Habit goals currently evaluate against a Mon–Sun calendar quota, computing
+  attainment against the full week's target with no regard for elapsed time —
+  a good Monday reports "at risk", every habit reads "behind", and a bad week
+  ends in an "arithmetically impossible" dead zone that advises against
+  exercising. Being replaced with the rolling-window deficit/buffer model of
+  §3 (the create form's habit shape moves to rolling-7; calendar-scoped
+  existing goals get migrated).
 - Banner eligibility is currently gated on the status ladder and, for at-risk
   goals, on three weeks of declining attainment — so a banner cannot fire in a
   goal's first week at all. Being replaced by the voice model: a standing
-  banner whose register follows the required rate; the trouble-gating layer is
-  deleted, not recalibrated.
+  banner whose register follows deficit and buffer; the trouble-gating layer
+  is deleted, not recalibrated.
 - The agent is passed habit identifiers rather than habit names, so its reports
   say "Habit 1 / Habit 2 / Habit 3" instead of "Morning walk".
+- A habit check-off used to sit behind the wake system's 120-second coalescing
+  window before the agent even recomputed; signal wakes now dispatch
+  immediately (fixed 2026-08-10), so design may assume the numbers react to a
+  tap in seconds.
 
-Design should assume these are correct: statuses are truthful, the agent speaks
-at the week's rhythm in the right register, and it can name the things it is
-watching.
+Design should assume these are correct: health is truthful and always
+actionable, the agent speaks in the right register within seconds of a
+completion, and it can name the things it is watching.
 
 ## 9. Open questions for design to answer
 
