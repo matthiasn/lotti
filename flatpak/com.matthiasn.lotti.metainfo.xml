@@ -44,6 +44,7 @@
       <description>
         <p>Added: vision models can use task images when writing coding prompts. Choosing an image-capable model such as Kimi K3 now offers the task's attached images as visual context, with up to ten selections. Text-only models keep the existing one-step flow, and linked AI image analyses remain part of the written task context as well.</p>
         <p>Changed: AI task summaries now look like AI content wherever you scan tasks. The agent's one-line take uses the AI accent in task lists, appears beneath linked task titles, and sits between the title and status pills on task details, so the same compact context is visible without opening the full AI summary card.</p>
+        <p>Added: experimental goal agents — a flag-gated Agents tab with per-goal health at a glance, proposal approval, goal creation, and dismissible rated text banners on the day and habits pages when a goal slips.</p>
       </description>
     </release>
     <release version="1.0.5" date="2026-08-07">
@@ -1108,7 +1109,6 @@
       <description>
           <p>Task detail header rebuilt against the desktop Figma:</p>
           <ul>
-          <li>Experimental goal agents: a flag-gated Agents tab with per-goal health, proposal approval, goal creation, and dismissible rated text banners on the day and habits pages when a goal slips.</li>
               <li>New DesktopTaskHeader replaces the pinned title sliver and legacy TaskHeaderMetaCard, with an inline capsule-style multi-line title editor and three explicit rows for title, classification, and metadata.</li>
               <li>Figma priority / status / project / due-date / work-category chips; estimate chip with live progress bar and overtime styling; assigned-label chips with a leading color dot.</li>
               <li>Subdued placeholder chips for every empty state ("No project", "unassigned" category, "No due date", "Add Label") open the corresponding picker when tapped.</li>

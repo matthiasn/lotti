@@ -271,6 +271,23 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
           a.nudge.activatedAt ?? a.nudge.createdAt,
         ),
       );
+      // The staleness deadline is honoured without an agent notification:
+      // `now` was sampled once above, so a banner served before its
+      // `staleAt` would otherwise keep rendering until some unrelated
+      // event recomputed this provider. Re-evaluate at the earliest
+      // deadline still ahead of us.
+      final nextDeadline = entries
+          .map((e) => e.nudge.staleAt)
+          .whereType<DateTime>()
+          .where((t) => t.isAfter(clock.now()))
+          .fold<DateTime?>(null, (a, b) => a == null || b.isBefore(a) ? b : a);
+      if (nextDeadline != null) {
+        final timer = Timer(
+          nextDeadline.difference(clock.now()),
+          ref.invalidateSelf,
+        );
+        ref.onDispose(timer.cancel);
+      }
       return entries;
     }, name: 'activeGoalNudgesProvider');
 
@@ -322,9 +339,10 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
       final repository = ref.watch(agentRepositoryProvider);
 
       final head = await repository.getEntity(goalSpecHeadId(agentId));
-      final spec = head is GoalSpecHeadEntity
+      final specEntity = head is GoalSpecHeadEntity
           ? await repository.getEntity(head.versionId)
           : null;
+      final spec = specEntity is GoalSpecVersionEntity ? specEntity : null;
 
       final registers =
           (await repository.getEntitiesByAgentId(
@@ -332,7 +350,15 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
                 type: AgentEntityTypes.goalProgress,
               ))
               .whereType<GoalProgressEntity>()
-              .where((row) => row.deletedAt == null)
+              .where(
+                // Only the active spec version's registers count: after a
+                // revision is approved, showing the PREVIOUS goal's verdict
+                // beside the new statement would misreport health until
+                // Phase A writes the first register for the new version.
+                (row) =>
+                    row.deletedAt == null &&
+                    (spec == null || row.specVersionId == spec.id),
+              )
               .toList()
             ..sort((a, b) => b.periodKey.compareTo(a.periodKey));
       final latest = registers.firstOrNull;
@@ -352,6 +378,6 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
         attainment: latest?.attainment,
         reportOneLiner: report?.oneLiner,
         pendingProposals: pending.length,
-        spec: spec is GoalSpecVersionEntity ? spec : null,
+        spec: spec,
       );
     }, name: 'goalAgentHealthProvider');

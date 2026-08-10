@@ -32,9 +32,16 @@ agent runtime (merged in `app_bootstrap.dart`). Persistence entities live
 on `AgentDomainEntity` (`goalSpecVersion`/`goalSpecHead`/`goalProgress`/
 `goalNudge`) with `GoalSpecValidator` gating every decode path.
 
-The LLM tier (Phase B), the banner surface (procedural text banners,
-ADR 0058), and the conversation UI follow in later increments; the plan of
-record is `docs/implementation_plans/2026-08-08_goal_agents_design.md`.
+The LLM tier (Phase B) runs too: `workflow/` holds the lease-elected
+escalation workflow, its code-owned contract, the tool dispatcher, and the
+revision flow that turns an approved `propose_goal_revision` change set
+into a new spec version. The visible layer shipped behind the
+`enable_agents_page` flag: procedural text banners (ADR 0058) on the day
+and habits pages (`ui/goal_banner_*`), and an Agents tab (`ui/pages/`)
+with per-goal health at a glance, proposal approval, a detail timeline,
+and goal creation. The two-way goal conversation is the remaining
+increment; the plan of record is
+`docs/implementation_plans/2026-08-08_goal_agents_design.md`.
 
 Runtime map: [knowledge/features/goals.md](../../../knowledge/features/goals.md).
 

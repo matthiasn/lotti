@@ -9,6 +9,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// The dogfooding creation form: a steps goal (daily average over a
 /// rolling week) or a habit routine watching ONE OR MORE habits, each
@@ -124,7 +125,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       appBar: AppBar(title: Text(messages.agentsCreateGoal)),
       body: SafeArea(
         child: ListView(
-          padding: EdgeInsets.all(tokens.spacing.step5),
+          // The mobile shell keeps the bottom navigation overlaid on agents
+          // subroutes, so the trailing Create button must clear it.
+          padding: EdgeInsets.fromLTRB(
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+            tokens.spacing.step5,
+            tokens.spacing.step5 +
+                DesignSystemBottomNavigationBar.occupiedHeight(context),
+          ),
           children: [
             TextField(
               controller: _name,

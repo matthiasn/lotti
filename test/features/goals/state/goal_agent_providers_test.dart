@@ -1,5 +1,7 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -769,6 +771,158 @@ void main() {
     expect(health.trackStatus, isNull);
     expect(health.spec, isNull);
     expect(health.pendingProposals, 0);
+  });
+
+  test('health ignores progress registers written for superseded spec '
+      'versions', () async {
+    const agentId = 'goal-rev';
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v2',
+        updatedAt: DateTime(2026, 8, 10),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v2',
+        agentId: agentId,
+        version: 2,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Steps, revised',
+        statement: 'Average 8,000 steps per day.',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 8000,
+        ),
+        createdAt: DateTime(2026, 8, 10),
+        vectorClock: null,
+      ),
+    );
+    GoalProgressEntity register({
+      required String period,
+      required String specVersionId,
+      required double attainment,
+      required GoalTrackStatus trackStatus,
+    }) =>
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: trackStatus,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: false,
+              specVersionId: specVersionId,
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer(
+      (_) async => [
+        // The OLD goal's verdict has the newest period key — without the
+        // spec-version filter it would win and misreport the revised goal.
+        register(
+          period: '2026-08-10',
+          specVersionId: '$agentId:spec-v1',
+          attainment: 0.2,
+          trackStatus: GoalTrackStatus.offTrack,
+        ),
+        register(
+          period: '2026-08-09',
+          specVersionId: '$agentId:spec-v2',
+          attainment: 0.9,
+          trackStatus: GoalTrackStatus.onTrack,
+        ),
+      ],
+    );
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
+
+    final health = await container.read(
+      goalAgentHealthProvider(agentId).future,
+    );
+    expect(health.trackStatus, GoalTrackStatus.onTrack);
+    expect(health.attainment, 0.9);
+    expect(health.spec?.version, 2);
+  });
+
+  test('a rendered banner is re-evaluated at its staleness deadline, with '
+      'no agent notification needed', () {
+    final start = DateTime(2026, 8, 10, 12);
+    fakeAsync((async) {
+      withClock(Clock(() => start.add(async.elapsed)), () {
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+        when(
+          () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.goalNudge(
+                  id: 'ad-deadline',
+                  agentId: 'goal-a',
+                  status: GoalNudgeStatus.active,
+                  brief: const GoalNudgeBrief(
+                    headline: 'h',
+                    tone: GoalNudgeTone.nudge,
+                    animation: GoalBannerAnimation.steady,
+                  ),
+                  briefDigest: 'd',
+                  createdAt: start,
+                  updatedAt: start,
+                  vectorClock: null,
+                  staleAt: start.add(const Duration(hours: 1)),
+                )
+                as GoalNudgeEntity,
+          ],
+        );
+
+        // Keep the flag and the banner provider alive: the deadline timer
+        // dies with the provider on autodispose.
+        final flagSub = container.listen(
+          configFlagProvider(enableAgentsPageFlag),
+          (_, _) {},
+        );
+        addTearDown(flagSub.close);
+        final sub = container.listen(activeGoalNudgesProvider, (_, _) {});
+        addTearDown(sub.close);
+        async
+          ..flushMicrotasks()
+          // The flag stream's first value lands on the event queue, and
+          // the gated provider rebuilds behind it.
+          ..elapse(const Duration(milliseconds: 1))
+          ..flushMicrotasks();
+        expect(
+          container.read(activeGoalNudgesProvider).value,
+          hasLength(1),
+          reason: 'fresh banner renders',
+        );
+
+        // Nothing else happens — the deadline alone must remove it.
+        async
+          ..elapse(const Duration(hours: 1, seconds: 1))
+          ..flushMicrotasks();
+        expect(
+          container.read(activeGoalNudgesProvider).value,
+          isEmpty,
+          reason: 'the staleness contract holds without an external event',
+        );
+      });
+    });
   });
 
   test('activeGoalAgentsProvider lists only goal-kind identities', () async {
