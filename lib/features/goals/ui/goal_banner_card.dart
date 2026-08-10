@@ -29,89 +29,96 @@ class GoalBannerCard extends ConsumerWidget {
 
     return Semantics(
       label: context.messages.goalBannerSemanticLabel(entry.goalTitle),
-      child: Material(
-        color: style.fill,
-        borderRadius: BorderRadius.circular(tokens.radii.m),
-        child: InkWell(
+      // Swipe-away is the second dismissal gesture ADR 0055 specifies
+      // (alongside the X); both write the same terminal verdict.
+      child: Dismissible(
+        key: ValueKey('goal-banner-${entry.nudge.id}'),
+        onDismissed: (_) => _dismiss(ref),
+        child: Material(
+          color: style.fill,
           borderRadius: BorderRadius.circular(tokens.radii.m),
-          onTap: ratingDue ? () => _showRatingSheet(context, ref) : null,
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.cardPadding),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: tokens.spacing.step1,
-                  height: tokens.spacing.step9,
-                  decoration: BoxDecoration(
-                    color: style.accent,
-                    borderRadius: BorderRadius.circular(tokens.radii.xs),
+          child: InkWell(
+            borderRadius: BorderRadius.circular(tokens.radii.m),
+            onTap: ratingDue ? () => _showRatingSheet(context, ref) : null,
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spacing.cardPadding),
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Container(
+                    width: tokens.spacing.step1,
+                    height: tokens.spacing.step9,
+                    decoration: BoxDecoration(
+                      color: style.accent,
+                      borderRadius: BorderRadius.circular(tokens.radii.xs),
+                    ),
                   ),
-                ),
-                SizedBox(width: tokens.spacing.cardItemSpacing),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GoalBannerAnimatedText(
-                        text: brief.headline,
-                        animation: brief.animation,
-                        style: tokens.typography.styles.body.bodyLarge.copyWith(
-                          color: tokens.colors.text.highEmphasis,
-                        ),
-                      ),
-                      if (brief.tagline != null) ...[
-                        SizedBox(height: tokens.spacing.step1),
-                        Text(
-                          brief.tagline!,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.body.bodySmall
+                  SizedBox(width: tokens.spacing.cardItemSpacing),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        GoalBannerAnimatedText(
+                          text: brief.headline,
+                          animation: brief.animation,
+                          style: tokens.typography.styles.body.bodyLarge
                               .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
+                                color: tokens.colors.text.highEmphasis,
                               ),
                         ),
-                      ],
-                      SizedBox(height: tokens.spacing.step2),
-                      Row(
-                        children: [
-                          if (brief.cta != null)
-                            Flexible(
-                              child: Text(
-                                brief.cta!,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                style: tokens.typography.styles.body.bodySmall
-                                    .copyWith(color: style.accent),
-                              ),
-                            ),
-                          SizedBox(width: tokens.spacing.step2),
-                          Expanded(
-                            child: Text(
-                              entry.goalTitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              textAlign: TextAlign.end,
-                              style: tokens.typography.styles.others.caption
-                                  .copyWith(
-                                    color: tokens.colors.text.lowEmphasis,
-                                  ),
-                            ),
+                        if (brief.tagline != null) ...[
+                          SizedBox(height: tokens.spacing.step1),
+                          Text(
+                            brief.tagline!,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                            style: tokens.typography.styles.body.bodySmall
+                                .copyWith(
+                                  color: tokens.colors.text.mediumEmphasis,
+                                ),
                           ),
                         ],
-                      ),
-                    ],
+                        SizedBox(height: tokens.spacing.step2),
+                        Row(
+                          children: [
+                            if (brief.cta != null)
+                              Flexible(
+                                child: Text(
+                                  brief.cta!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: tokens.typography.styles.body.bodySmall
+                                      .copyWith(color: style.accent),
+                                ),
+                              ),
+                            SizedBox(width: tokens.spacing.step2),
+                            Expanded(
+                              child: Text(
+                                entry.goalTitle,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                textAlign: TextAlign.end,
+                                style: tokens.typography.styles.others.caption
+                                    .copyWith(
+                                      color: tokens.colors.text.lowEmphasis,
+                                    ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
                   ),
-                ),
-                IconButton(
-                  onPressed: () => _dismiss(ref),
-                  tooltip: context.messages.goalBannerDismissTooltip,
-                  icon: Icon(
-                    Icons.close_rounded,
-                    color: tokens.colors.text.lowEmphasis,
+                  IconButton(
+                    onPressed: () => _dismiss(ref),
+                    tooltip: context.messages.goalBannerDismissTooltip,
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

@@ -312,8 +312,23 @@ typedef GoalNudgeInteractionsFlush =
 final goalNudgeExposureFlushProvider = Provider<GoalNudgeInteractionsFlush>(
   (ref) {
     final interactions = ref.watch(goalNudgeInteractionsProvider);
+    final logger = ref.watch(domainLoggerProvider);
     return (nudgeId, visibleFor) {
-      unawaited(interactions.recordExposure(nudgeId, visibleFor: visibleFor));
+      // The dispose path cannot await this, so a persistence failure must
+      // be contained here — logged, never an uncaught async error.
+      unawaited(
+        interactions.recordExposure(nudgeId, visibleFor: visibleFor).catchError(
+          (Object e, StackTrace st) {
+            logger.error(
+              LogDomain.agentRuntime,
+              e,
+              stackTrace: st,
+              subDomain: 'goalNudgeExposure',
+              message: 'exposure flush for $nudgeId was not persisted',
+            );
+          },
+        ),
+      );
     };
   },
   name: 'goalNudgeExposureFlushProvider',

@@ -744,6 +744,39 @@ void main() {
     expect(health.spec?.title, 'Steps');
   });
 
+  test('a failing exposure flush is contained and logged — never an '
+      'uncaught async error from a disposed banner', () async {
+    when(
+      () => repository.getEntity('ad-err'),
+    ).thenAnswer((_) async => throw StateError('db closed mid-dispose'));
+    final logger = container.read(domainLoggerProvider) as MockDomainLogger;
+    when(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    ).thenReturn(null);
+
+    container.read(goalNudgeExposureFlushProvider)(
+      'ad-err',
+      const Duration(seconds: 1),
+    );
+    await pumpEventQueue();
+
+    verify(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'goalNudgeExposure',
+        message: any(named: 'message', that: contains('ad-err')),
+      ),
+    ).called(1);
+  });
+
   test('the exposure flush provider forwards to the interactions service '
       'fire-and-forget', () async {
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});

@@ -163,8 +163,17 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
 
   Widget _waveWords() {
     final words = widget.text.split(' ');
+    // The gap between bobbing words is the style's own space glyph,
+    // measured under the ambient scaler — typography-derived, not an ad
+    // hoc visual constant (the design system has no token for a font's
+    // word gap).
+    final spacePainter = TextPainter(
+      text: TextSpan(text: ' ', style: widget.style),
+      textDirection: Directionality.of(context),
+      textScaler: MediaQuery.textScalerOf(context),
+    )..layout();
     return Wrap(
-      spacing: (widget.style.fontSize ?? 14) * 0.28,
+      spacing: spacePainter.width,
       children: [
         for (final (i, word) in words.indexed)
           Transform.translate(

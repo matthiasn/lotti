@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -195,6 +197,55 @@ void main() {
     await tester.tap(find.text('Create agent'));
     await tester.pumpAndSettle();
 
+    final leaf = captured! as GoalCriterionHabit;
+    expect(leaf.habitId, 'h-gym');
+  });
+
+  testWidgets('a habit deactivated by sync after being ticked is pruned '
+      'from the created goal', (tester) async {
+    tester.view.physicalSize = const Size(900, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final habitsController = StreamController<List<HabitDefinition>>();
+    addTearDown(habitsController.close);
+    when(
+      habitsRepository.watchHabitDefinitions,
+    ).thenAnswer((_) => habitsController.stream);
+    GoalCriterion? captured;
+    when(
+      () => service.createGoalAgent(
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((invocation) async {
+      captured = invocation.namedArguments[#criteria] as GoalCriterion;
+      throw StateError('stop before navigation');
+    });
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    habitsController.add([_habit('h-gym', 'Gym'), _habit('h-run', 'Run')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Routine');
+    await tester.tap(find.text('Habit routine'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Gym'));
+    await tester.tap(find.text('Run'));
+    await tester.pumpAndSettle();
+
+    // Sync pauses the Run habit while the form is still open.
+    habitsController.add([_habit('h-gym', 'Gym')]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create agent'));
+    await tester.pumpAndSettle();
+
+    // The stale selection is reconciled: only the still-active habit
+    // reaches the goal, as a single leaf rather than a composite.
     final leaf = captured! as GoalCriterionHabit;
     expect(leaf.habitId, 'h-gym');
   });

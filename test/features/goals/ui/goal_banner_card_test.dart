@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
@@ -75,6 +76,19 @@ void main() {
       'the quiet window', (tester) async {
     await pumpCard(tester);
     await tester.tap(find.byTooltip('Dismiss'));
+    await tester.pumpAndSettle();
+    verify(
+      () => interactions.dismiss('ad-1', forActivation: 1),
+    ).called(1);
+  });
+
+  testWidgets('swiping the banner away dismisses it — the second gesture '
+      'ADR 0055 specifies', (tester) async {
+    await pumpCard(tester);
+    await tester.drag(
+      find.byType(Dismissible),
+      const Offset(600, 0),
+    );
     await tester.pumpAndSettle();
     verify(
       () => interactions.dismiss('ad-1', forActivation: 1),

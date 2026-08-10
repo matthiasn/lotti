@@ -78,6 +78,16 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
 
   Future<void> _create() async {
     final name = _name.text.trim();
+    // A habit paused or deleted by sync after being ticked loses its
+    // checkbox but would silently stay in the selection — reconcile
+    // against the CURRENT active set before building criteria.
+    final activeIds = {
+      for (final habit
+          in ref.read(_habitDefinitionsProvider).value ??
+              const <HabitDefinition>[])
+        habit.id,
+    };
+    _selectedHabitIds.retainWhere(activeIds.contains);
     final criteria = _buildCriteria();
     if (name.isEmpty || criteria == null) {
       setState(
