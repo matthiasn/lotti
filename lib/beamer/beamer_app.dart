@@ -947,6 +947,11 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           // indicators never cover scroll content or floating actions.
           _MobileNavOverlayHeightScope(
             navBarVisible: showBottomNav,
+            // The goal-agent dock rides in the same bottom overlay on the
+            // main working tabs; reserve its lane so page content and FABs
+            // clear it when a goal is speaking.
+            goalDockAllowed:
+                showBottomNav && _showsGoalBannerDock(destinations[index].kind),
             child: IndexedStack(
               index: index,
               children: [
@@ -1168,10 +1173,18 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 class _MobileNavOverlayHeightScope extends ConsumerWidget {
   const _MobileNavOverlayHeightScope({
     required this.navBarVisible,
+    required this.goalDockAllowed,
     required this.child,
   });
 
   final bool navBarVisible;
+
+  /// Whether the goal-agent dock may mount on this tab (a main working tab
+  /// with the bar visible). Its lane is reserved only when it is ALSO
+  /// speaking (there is an active nudge), so a collapsed dock reserves
+  /// nothing.
+  final bool goalDockAllowed;
+
   final Widget child;
 
   @override
@@ -1194,6 +1207,14 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
       audioIndicatorVisible = false;
     }
 
+    // The dock speaks only when there is at least one active nudge; a
+    // collapsed dock reserves no lane. Approximated by "any active nudge
+    // exists" — an over-reserve while a nudge is stale/dismissed is
+    // harmless (a little extra bottom clearance), an under-reserve is not.
+    final goalDockSpeaking =
+        goalDockAllowed &&
+        (ref.watch(activeGoalNudgesProvider).value?.isNotEmpty ?? false);
+
     return StreamBuilder<JournalEntity?>(
       stream: getIt<TimeService>().getStream(),
       builder: (context, snapshot) {
@@ -1211,6 +1232,9 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
             audioIndicatorVisible ? context.designTokens.spacing.step6 : 0,
           );
         }
+        // The dock rides ABOVE the indicator row in the same overlay
+        // column, so its lane adds to the row's height.
+        if (goalDockSpeaking) height += goalBannerDockReservedHeight;
         return DesignSystemBottomNavigationOverlayHeight(
           height: height,
           child: child,

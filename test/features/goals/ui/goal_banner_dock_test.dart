@@ -280,23 +280,27 @@ void main() {
     expect(find.text('Second voice, refreshed'), findsOneWidget);
   });
 
-  testWidgets('a second tenant arriving beside a lone one restarts the '
-      'idle cycle', (tester) async {
+  testWidgets('a second tenant arriving beside a lone one takes the slot '
+      '(a fresh voice) and the cycle then rotates', (tester) async {
     await pumpDock(tester, [entry(id: 'a', headline: 'First voice')]);
     // Lone tenant: the tenure clock is stopped.
     await tester.pump(goalBannerDockTenure * 2);
     expect(find.text('First voice'), findsOneWidget);
 
-    // A second voice appears — the current tenant is still present, but the
-    // cycle must resume now that there is somewhere to rotate to.
+    // A second voice appears: a banner arriving after the dock is already
+    // rotating is a fresh voice — it jumps the slot immediately.
     notifier(tester).entries = [
       entry(id: 'a', headline: 'First voice'),
       entry(id: 'b', headline: 'Second voice'),
     ];
     await tester.pump();
-    await tester.pump(goalBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('Second voice'), findsOneWidget);
+
+    // The cycle resumed: one tenure later it rotates on to the other tenant.
+    await tester.pump(goalBannerDockTenure);
+    await settleTransition(tester);
+    expect(find.text('First voice'), findsOneWidget);
   });
 
   testWidgets('a cancelled touch releases the pause', (tester) async {

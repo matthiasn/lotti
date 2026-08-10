@@ -16,6 +16,14 @@ import 'package:lotti/services/nav_service.dart';
 /// cycle fully within a minute (design handover 1b).
 const goalBannerDockTenure = Duration(seconds: 15);
 
+/// Conservative clearance the compact (mobile) dock claims above the bottom
+/// bar when a goal is speaking — the shell reserves it in the overlay-height
+/// scope so page content and FABs never sit underneath (handover 1b's
+/// "72 px reserved lane"). A ceiling for the two-line headline + caption
+/// tenant, not the exact rendered height (which collapses to zero when no
+/// goal speaks).
+const goalBannerDockReservedHeight = 72.0;
+
 /// The dock — one rotating slot for the agents' standing voices, the
 /// "now playing" bar of the goal feature (design handover 1b).
 ///
