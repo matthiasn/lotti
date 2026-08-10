@@ -1,11 +1,16 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -104,5 +109,110 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Seven for seven. Keep coasting.'), findsOneWidget);
     expect(find.textContaining('No report yet'), findsNothing);
+  });
+
+  testWidgets('the initial health load shows a spinner, not the no-report '
+      'hint', (tester) async {
+    final never = Completer<GoalAgentHealth>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          goalAgentHealthProvider(
+            'goal-1',
+          ).overrideWith((ref) => never.future),
+        ],
+      ),
+    );
+    await tester.pump();
+    expect(find.byType(CircularProgressIndicator), findsOneWidget);
+    expect(find.textContaining('No report yet'), findsNothing);
+  });
+
+  testWidgets('a failed health load says so instead of claiming there is '
+      'no report', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          goalAgentHealthProvider(
+            'goal-1',
+          ).overrideWith((ref) async => throw StateError('db gone')),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text("Couldn't load this goal's health right now."),
+      findsOneWidget,
+    );
+    expect(find.textContaining('No report yet'), findsNothing);
+  });
+
+  testWidgets("the goal's active banners render here uncapped — only its "
+      'own', (tester) async {
+    GoalBannerEntry entry(String agentId, String headline) => (
+      nudge:
+          AgentDomainEntity.goalNudge(
+                id: 'ad-$agentId-$headline',
+                agentId: agentId,
+                status: GoalNudgeStatus.active,
+                brief: GoalNudgeBrief(
+                  headline: headline,
+                  tone: GoalNudgeTone.nudge,
+                  animation: GoalBannerAnimation.steady,
+                ),
+                briefDigest: 'd',
+                createdAt: DateTime(2026, 8, 10),
+                updatedAt: DateTime(2026, 8, 10),
+                vectorClock: null,
+              )
+              as GoalNudgeEntity,
+      goalTitle: agentId,
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.offTrack,
+              attainment: 0.4,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+            ),
+          ),
+          activeGoalNudgesProvider.overrideWith(
+            (ref) async => [
+              entry('goal-1', 'Shoes miss you.'),
+              entry('goal-1', 'Third day on the couch.'),
+              entry('goal-1', 'The stairs filed a complaint.'),
+              entry('goal-2', 'Sleep is a skill too.'),
+            ],
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    // All three of THIS goal's banners — more than the host strips'
+    // two-visible cap — and none of the other goal's.
+    expect(find.byType(GoalBannerCard), findsNWidgets(3));
+    expect(find.text('The stairs filed a complaint.'), findsOneWidget);
+    expect(find.text('Sleep is a skill too.'), findsNothing);
   });
 }

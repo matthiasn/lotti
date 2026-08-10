@@ -3154,6 +3154,13 @@ class AppLocalizationsDa extends AppLocalizations {
       'Guid førstegangsbrugere af Daily OS gennem en rigtig check-in, der gør tale til en opgave og en dagsplan.';
 
   @override
+  String get configFlagEnableAgentsPage => 'Aktivér agenter-siden';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Vis agenter-siden i hovednavigationen. Følg dine målagenters tilstand med et blik, og kig ind til hver enkelt.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Aktiver AI-streaming til opgavehandlinger';
 
@@ -5937,6 +5944,9 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
+
+  @override
   String get goalCreateHabitCountLabel => 'Gange om ugen (pr. vane)';
 
   @override
@@ -5963,6 +5973,10 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Giv målet et navn og mindst ét kriterium.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Kunne ikke indlæse dette måls tilstand lige nu.';
 
   @override
   String get goalDetailNoReport =>
@@ -12026,7 +12040,4 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Spring over';
-
-  @override
-  String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
 }

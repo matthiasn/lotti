@@ -3196,6 +3196,13 @@ class AppLocalizationsEs extends AppLocalizations {
       'Guía a los nuevos usuarios de Daily OS por un check-in real que convierte tu voz en una tarea y un plan del día.';
 
   @override
+  String get configFlagEnableAgentsPage => 'Habilitar página Agentes';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Mostrar la página Agentes en la navegación principal. Sigue la salud de tus agentes de objetivos de un vistazo y pasa a ver cada uno.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Habilitar streaming de IA para acciones de tareas';
 
@@ -6014,6 +6021,10 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get goalCreateFailed =>
+      'No se pudo guardar el objetivo; inténtalo de nuevo.';
+
+  @override
   String get goalCreateHabitCountLabel => 'Veces por semana (cada hábito)';
 
   @override
@@ -6040,6 +6051,10 @@ class AppLocalizationsEs extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Dale un nombre al objetivo y al menos un criterio.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'No se pudo cargar el estado de este objetivo ahora mismo.';
 
   @override
   String get goalDetailNoReport =>
@@ -12201,8 +12216,4 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omitir';
-
-  @override
-  String get goalCreateFailed =>
-      'No se pudo guardar el objetivo; inténtalo de nuevo.';
 }

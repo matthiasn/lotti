@@ -3196,6 +3196,13 @@ class AppLocalizationsCs extends AppLocalizations {
       'Proveď nové uživatele Daily OS skutečným check-inem, který promění řeč v úkol a plán dne.';
 
   @override
+  String get configFlagEnableAgentsPage => 'Povolit stránku Agenti';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Zobrazí stránku Agenti v hlavní navigaci. Sleduj zdraví svých agentů cílů na první pohled a nahlédni ke každému z nich.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Povolit AI streamování pro akce úkolů';
 
@@ -6001,6 +6008,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalCreateFailed => 'Cíl se nepodařilo uložit — zkus to znovu.';
+
+  @override
   String get goalCreateHabitCountLabel => 'Krát týdně (každý návyk)';
 
   @override
@@ -6027,6 +6037,10 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Pojmenuj cíl a zadej alespoň jedno kritérium.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Zdraví tohoto cíle se teď nepodařilo načíst.';
 
   @override
   String get goalDetailNoReport =>
@@ -12169,7 +12183,4 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Přeskočit';
-
-  @override
-  String get goalCreateFailed => 'Cíl se nepodařilo uložit — zkus to znovu.';
 }

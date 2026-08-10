@@ -3206,6 +3206,13 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ghidați utilizatorii noi Daily OS printr-un check-in real care transformă vocea într-o sarcină și un plan de zi.';
 
   @override
+  String get configFlagEnableAgentsPage => 'Activați pagina Agenți';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Afișează pagina Agenți în navigarea principală. Urmăriți dintr-o privire starea agenților dvs. de obiective și verificați fiecare agent.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Activați transmiterea în flux AI pentru acțiunile legate de sarcini';
 
@@ -6032,6 +6039,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalCreateFailed =>
+      'Salvarea obiectivului a eșuat — vă rugăm să încercați din nou.';
+
+  @override
   String get goalCreateHabitCountLabel =>
       'De câte ori pe săptămână (fiecare obicei)';
 
@@ -6059,6 +6070,10 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Dați obiectivului un nume și cel puțin un criteriu.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Starea acestui obiectiv nu a putut fi încărcată momentan.';
 
   @override
   String get goalDetailNoReport =>
@@ -12251,8 +12266,4 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Omite';
-
-  @override
-  String get goalCreateFailed =>
-      'Salvarea obiectivului a eșuat — vă rugăm să încercați din nou.';
 }

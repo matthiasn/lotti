@@ -3138,6 +3138,13 @@ class AppLocalizationsEn extends AppLocalizations {
       'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.';
 
   @override
+  String get configFlagEnableAgentsPage => 'Enable Agents page';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Show the Agents page in the main navigation. Follow your goal agents\' health at a glance and check in on each one.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Enable AI streaming for task actions';
 
@@ -5909,6 +5916,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalCreateFailed => 'Saving the goal failed — please try again.';
+
+  @override
   String get goalCreateHabitCountLabel => 'Times per week (each habit)';
 
   @override
@@ -5935,6 +5945,10 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Give the goal a name and at least one criterion.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Couldn\'t load this goal\'s health right now.';
 
   @override
   String get goalDetailNoReport =>
@@ -11942,9 +11956,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Skip';
-
-  @override
-  String get goalCreateFailed => 'Saving the goal failed — please try again.';
 }
 
 /// The translations for English, as used in the United Kingdom (`en_GB`).
@@ -12157,6 +12168,9 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String goalBannerSemanticLabel(String goalTitle) {
     return 'Goal banner for $goalTitle';
   }
+
+  @override
+  String get goalCreateFailed => 'Saving the goal failed — please try again.';
 
   @override
   String get goalCreateHabitCountLabel => 'Times per week (each habit)';
@@ -12473,7 +12487,4 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   @override
   String get settingsSyncConflictsSubtitle =>
       'Resolve synchronisation conflicts to ensure data consistency';
-
-  @override
-  String get goalCreateFailed => 'Saving the goal failed — please try again.';
 }

@@ -3161,6 +3161,13 @@ class AppLocalizationsSv extends AppLocalizations {
       'Vägled förstagångsanvändare av Daily OS genom en riktig avstämning som förvandlar tal till en uppgift och en dagsplan.';
 
   @override
+  String get configFlagEnableAgentsPage => 'Aktivera agenter-sidan';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Visa sidan Agenter i huvudnavigeringen. Följ dina målagenters hälsa med en blick och titta in hos var och en.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Aktivera AI-strömning för uppgiftsåtgärder';
 
@@ -5941,6 +5948,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalCreateFailed => 'Målet kunde inte sparas — försök igen.';
+
+  @override
   String get goalCreateHabitCountLabel => 'Gånger per vecka (per vana)';
 
   @override
@@ -5967,6 +5977,10 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Ge målet ett namn och minst ett kriterium.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Det gick inte att läsa in målets hälsa just nu.';
 
   @override
   String get goalDetailNoReport =>
@@ -12032,7 +12046,4 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Hoppa över';
-
-  @override
-  String get goalCreateFailed => 'Målet kunde inte sparas — försök igen.';
 }

@@ -827,6 +827,11 @@ void main() {
               status: false,
             ),
             const ConfigFlag(
+              name: enableAgentsPageFlag,
+              description: 'Enable Agents page?',
+              status: false,
+            ),
+            const ConfigFlag(
               name: enableSessionRatingsFlag,
               description: 'Enable Session Ratings?',
               status: false,
@@ -888,6 +893,12 @@ void main() {
         icon: Icons.dashboard_rounded,
       ),
       (
+        name: enableAgentsPageFlag,
+        description: 'Enable Agents page?',
+        status: false,
+        icon: Icons.psychology_outlined,
+      ),
+      (
         name: enableSessionRatingsFlag,
         description: 'Enable Session Ratings?',
         status: false,
@@ -945,6 +956,10 @@ void main() {
             enableDashboardsPageFlag => (
               context.messages.configFlagEnableDashboardsPage,
               context.messages.configFlagEnableDashboardsPageDescription,
+            ),
+            enableAgentsPageFlag => (
+              context.messages.configFlagEnableAgentsPage,
+              context.messages.configFlagEnableAgentsPageDescription,
             ),
             enableSessionRatingsFlag => (
               context.messages.configFlagEnableSessionRatings,

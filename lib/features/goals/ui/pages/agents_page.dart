@@ -39,7 +39,17 @@ class AgentsPage extends ConsumerWidget {
               title: Text(context.messages.agentsPageTitle),
             ),
             SliverPadding(
-              padding: EdgeInsets.all(tokens.spacing.step5),
+              // The last card must clear the overlaid bottom navigation
+              // plus the lifted FAB's footprint (the projects-list
+              // clearance idiom).
+              padding: EdgeInsets.fromLTRB(
+                tokens.spacing.step5,
+                tokens.spacing.step5,
+                tokens.spacing.step5,
+                tokens.spacing.step5 +
+                    DesignSystemBottomNavigationBar.occupiedHeight(context) +
+                    tokens.spacing.step12,
+              ),
               sliver: switch (identities) {
                 null => const SliverToBoxAdapter(child: SizedBox.shrink()),
                 [] => SliverToBoxAdapter(

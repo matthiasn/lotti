@@ -3199,6 +3199,13 @@ class AppLocalizationsFr extends AppLocalizations {
       'Accompagne les nouveaux utilisateurs de Daily OS dans un vrai point de situation qui transforme ta voix en tâche et en plan de journée.';
 
   @override
+  String get configFlagEnableAgentsPage => 'Activer la page Agents';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Afficher la page Agents dans la navigation principale. Suis la santé de tes agents d\'objectifs en un coup d\'œil et va voir chacun d\'eux.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Activer le streaming IA pour les actions liées aux tâches';
 
@@ -6028,6 +6035,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get goalCreateFailed =>
+      'L’enregistrement de l’objectif a échoué — réessaie.';
+
+  @override
   String get goalCreateHabitCountLabel => 'Fois par semaine (par habitude)';
 
   @override
@@ -6054,6 +6065,10 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Donne un nom à l’objectif et au moins un critère.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Impossible de charger l\'état de cet objectif pour le moment.';
 
   @override
   String get goalDetailNoReport =>
@@ -12243,8 +12258,4 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Ignorer';
-
-  @override
-  String get goalCreateFailed =>
-      'L’enregistrement de l’objectif a échoué — réessaie.';
 }

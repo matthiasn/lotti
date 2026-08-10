@@ -5376,6 +5376,18 @@ abstract class AppLocalizations {
   /// **'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.'**
   String get configFlagDailyOsOnboardingEnabledDescription;
 
+  /// No description provided for @configFlagEnableAgentsPage.
+  ///
+  /// In en, this message translates to:
+  /// **'Enable Agents page'**
+  String get configFlagEnableAgentsPage;
+
+  /// No description provided for @configFlagEnableAgentsPageDescription.
+  ///
+  /// In en, this message translates to:
+  /// **'Show the Agents page in the main navigation. Follow your goal agents\' health at a glance and check in on each one.'**
+  String get configFlagEnableAgentsPageDescription;
+
   /// No description provided for @configFlagEnableAiStreaming.
   ///
   /// In en, this message translates to:
@@ -10205,6 +10217,12 @@ abstract class AppLocalizations {
   /// **'Goal banner for {goalTitle}'**
   String goalBannerSemanticLabel(String goalTitle);
 
+  /// Shown when persisting a new goal agent throws (validation already passed).
+  ///
+  /// In en, this message translates to:
+  /// **'Saving the goal failed — please try again.'**
+  String get goalCreateFailed;
+
   /// Label of the per-habit weekly completion target.
   ///
   /// In en, this message translates to:
@@ -10258,6 +10276,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Give the goal a name and at least one criterion.'**
   String get goalCreateValidationMissing;
+
+  /// No description provided for @goalDetailHealthUnavailable.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this goal\'s health right now.'**
+  String get goalDetailHealthUnavailable;
 
   /// Placeholder when a goal agent has not written a report yet.
   ///
@@ -20450,12 +20474,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Skip'**
   String get whatsNewSkipButton;
-
-  /// Shown when persisting a new goal agent throws (validation already passed).
-  ///
-  /// In en, this message translates to:
-  /// **'Saving the goal failed — please try again.'**
-  String get goalCreateFailed;
 }
 
 class _AppLocalizationsDelegate

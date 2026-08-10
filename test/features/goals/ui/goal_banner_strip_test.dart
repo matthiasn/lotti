@@ -108,8 +108,8 @@ void main() {
     expect(exposures.single.$1, 'ad-1');
   });
 
-  testWidgets('at most two banners render — the rest wait their turn on '
-      'the Agents tab', (tester) async {
+  testWidgets('at most two banners render — the rest stay reachable on '
+      "their goal's detail page", (tester) async {
     await tester.pumpWidget(
       makeTestableWidget(
         const GoalBannerStrip(),

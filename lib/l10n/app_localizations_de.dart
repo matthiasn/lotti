@@ -3179,6 +3179,13 @@ class AppLocalizationsDe extends AppLocalizations {
       'Führe neue Daily-OS-Nutzer durch ein echtes Check-in, das Sprache in eine Aufgabe und einen Tagesplan verwandelt.';
 
   @override
+  String get configFlagEnableAgentsPage => 'Seite Agenten aktivieren';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Zeigt die Agenten-Seite in der Hauptnavigation an. Behalte den Zustand deiner Ziel-Agenten auf einen Blick im Auge und schau bei jedem einzelnen vorbei.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'AI-Streaming für Aufgabenaktionen aktivieren';
 
@@ -5976,6 +5983,10 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String get goalCreateFailed =>
+      'Das Ziel konnte nicht gespeichert werden — versuch es noch einmal.';
+
+  @override
   String get goalCreateHabitCountLabel => 'Mal pro Woche (je Gewohnheit)';
 
   @override
@@ -6002,6 +6013,10 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Gib dem Ziel einen Namen und mindestens ein Kriterium.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Der Zustand dieses Ziels konnte gerade nicht geladen werden.';
 
   @override
   String get goalDetailNoReport =>
@@ -12106,8 +12121,4 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Überspringen';
-
-  @override
-  String get goalCreateFailed =>
-      'Das Ziel konnte nicht gespeichert werden — versuch es noch einmal.';
 }

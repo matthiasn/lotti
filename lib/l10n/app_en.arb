@@ -1882,6 +1882,8 @@
   "configFlagAttemptEmbeddingDescription": "When enabled, the app will attempt to generate embeddings for your entries to improve search and related content suggestions.",
   "configFlagDailyOsOnboardingEnabled": "Daily OS walkthrough",
   "configFlagDailyOsOnboardingEnabledDescription": "Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.",
+  "configFlagEnableAgentsPage": "Enable Agents page",
+  "configFlagEnableAgentsPageDescription": "Show the Agents page in the main navigation. Follow your goal agents' health at a glance and check in on each one.",
   "configFlagEnableAiStreaming": "Enable AI streaming for task actions",
   "configFlagEnableAiStreamingDescription": "Stream AI responses for task-related actions. Turn off to buffer responses and keep the UI smoother.",
   "configFlagEnableAiSummaryTts": "AI summary playback",
@@ -3237,6 +3239,7 @@
   "@goalCreateValidationMissing": {
     "description": "Validation message on the goal creation form."
   },
+  "goalDetailHealthUnavailable": "Couldn't load this goal's health right now.",
   "goalDetailNoReport": "No report yet — the agent reports after its first meaningful change.",
   "@goalDetailNoReport": {
     "description": "Placeholder when a goal agent has not written a report yet."

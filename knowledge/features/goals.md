@@ -186,14 +186,19 @@ flowchart TD
   mounts shrink to nothing without an active ad. Dismissal is terminal
   and quiets ads for the rest of the local day; tapping opens the per-activation
   rating prompt (one outcome per activation, skips count); exposure is
-  measured mount-to-unmount and flushed as one episode into the per-host
-  G-counters.
+  measured in tab-visible episodes — the tracker's stopwatch runs while
+  `TickerMode` reports the host tab on screen, and every visible→hidden
+  transition (and unmount) flushes its own episode into the per-host
+  G-counters, so returning to a tab starts a new episode. Writes per
+  nudge are serialized in `GoalNudgeInteractions` so a rapid
+  flush/dismiss pair cannot lose an update to a stale read.
 - **The Agents tab** (`enable_agents_page` flag, `/agents`): one card per
   goal agent with health at a glance (latest register verdict +
   attainment, report one-liner, pending-proposal badge); the detail page
-  carries the revision-approval card
-  (`ChangeSetSummaryCard.selfTargeted`) and the read-only interaction
-  timeline (`AgentConversationLog`). Creation supports a steps goal or a
+  carries the goal's active banners (uncapped — ads the host strips'
+  two-visible limit holds back stay reachable here), the
+  revision-approval card (`ChangeSetSummaryCard.selfTargeted`) and the
+  read-only interaction timeline (`AgentConversationLog`). Creation supports a steps goal or a
   MULTI-habit routine (`allOf` composite).
 - **Interaction writes bypass the notifier by design** (they go through
   the sync service): the banner handlers invalidate

@@ -111,4 +111,75 @@ void main() {
     expect(tester.hasRunningAnimations, isFalse);
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('runaway copy is capped at two ellipsized lines', (
+    tester,
+  ) async {
+    final longCopy = 'Your inner couch potato is winning ' * 12;
+    for (final animation in const [
+      GoalBannerAnimation.steady,
+      GoalBannerAnimation.pulse,
+      GoalBannerAnimation.glitch,
+    ]) {
+      await tester.pumpWidget(
+        makeTestableWidget(
+          SizedBox(
+            width: 300,
+            child: GoalBannerAnimatedText(
+              text: longCopy,
+              animation: animation,
+              style: const TextStyle(fontSize: 16),
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      final text = tester.widget<Text>(
+        find.descendant(
+          of: find.byType(GoalBannerAnimatedText),
+          matching: find.text(longCopy),
+        ),
+      );
+      expect(text.maxLines, 2, reason: '$animation caps the headline');
+      expect(
+        text.overflow,
+        TextOverflow.ellipsis,
+        reason: '$animation ellipsizes',
+      );
+    }
+  });
+
+  testWidgets('wave degrades to the bounded steady text when the copy '
+      'would exceed the line cap', (tester) async {
+    final longCopy = 'Your inner couch potato is winning ' * 12;
+    await tester.pumpWidget(
+      makeTestableWidget(
+        SizedBox(
+          width: 300,
+          child: GoalBannerAnimatedText(
+            text: longCopy,
+            animation: GoalBannerAnimation.wave,
+            style: const TextStyle(fontSize: 16),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    // No per-word Wrap: the copy renders as one capped Text instead of
+    // bobbing off the card.
+    expect(
+      find.descendant(
+        of: find.byType(GoalBannerAnimatedText),
+        matching: find.byType(Wrap),
+      ),
+      findsNothing,
+    );
+    final text = tester.widget<Text>(
+      find.descendant(
+        of: find.byType(GoalBannerAnimatedText),
+        matching: find.text(longCopy),
+      ),
+    );
+    expect(text.maxLines, 2);
+  });
 }

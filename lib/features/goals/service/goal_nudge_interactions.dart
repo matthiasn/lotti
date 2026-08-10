@@ -20,6 +20,22 @@ class GoalNudgeInteractions {
   final AgentRepository _repository;
   final AgentSyncService _syncService;
 
+  /// Per-nudge write queue: every mutation here is a read-modify-write of
+  /// the whole row, and the exposure flushes are fire-and-forget — two
+  /// overlapping calls would both read the same snapshot and the later
+  /// upsert would silently drop the earlier increment (or a dismissal).
+  final Map<String, Future<void>> _writeTail = {};
+
+  Future<void> _serialized(String nudgeId, Future<void> Function() write) {
+    final tail = (_writeTail[nudgeId] ?? Future<void>.value()).then(
+      (_) => write(),
+    );
+    // The stored tail must never fail, or every later write would rethrow
+    // the same error; the caller's future still carries it.
+    _writeTail[nudgeId] = tail.catchError((Object _) {});
+    return tail;
+  }
+
   /// Whether the rating prompt is due: exactly one outcome per activation
   /// (a skip counts — the prompt never nags twice for the same run).
   static bool ratingDue(GoalNudgeEntity nudge) =>
@@ -29,7 +45,7 @@ class GoalNudgeInteractions {
   /// Dismisses an active ad — the terminal user verdict (the resolver
   /// keeps it terminal against concurrent writes) and the start of the
   /// same-day quiet window Phase B enforces.
-  Future<void> dismiss(String nudgeId) async {
+  Future<void> dismiss(String nudgeId) => _serialized(nudgeId, () async {
     final nudge = await _repository.getEntity(nudgeId);
     if (nudge is! GoalNudgeEntity) return;
     if (nudge.status != GoalNudgeStatus.active) return;
@@ -41,7 +57,7 @@ class GoalNudgeInteractions {
         updatedAt: now,
       ),
     );
-  }
+  });
 
   /// Records the rating-prompt outcome — [rating] 1..5, or a skip — for
   /// [forActivation] (the activation the user actually SAW; defaults to
@@ -55,7 +71,7 @@ class GoalNudgeInteractions {
     int? rating,
     bool skipped = false,
     int? forActivation,
-  }) async {
+  }) {
     assert(
       skipped != (rating != null),
       'exactly one of rating/skipped per outcome',
@@ -63,25 +79,27 @@ class GoalNudgeInteractions {
     if (rating != null && (rating < 1 || rating > 5)) {
       throw ArgumentError.value(rating, 'rating', 'must be 1..5');
     }
-    final nudge = await _repository.getEntity(nudgeId);
-    if (nudge is! GoalNudgeEntity) return;
-    final activation = forActivation ?? nudge.activationCount;
-    if (activation != nudge.activationCount) return;
-    if (nudge.ratings.any((r) => r.activation == activation)) return;
-    await _syncService.upsertEntity(
-      nudge.copyWith(
-        ratings: [
-          ...nudge.ratings,
-          GoalNudgeRating(
-            activation: activation,
-            ratedAt: clock.now(),
-            rating: rating,
-            skipped: skipped,
-          ),
-        ],
-        updatedAt: clock.now(),
-      ),
-    );
+    return _serialized(nudgeId, () async {
+      final nudge = await _repository.getEntity(nudgeId);
+      if (nudge is! GoalNudgeEntity) return;
+      final activation = forActivation ?? nudge.activationCount;
+      if (activation != nudge.activationCount) return;
+      if (nudge.ratings.any((r) => r.activation == activation)) return;
+      await _syncService.upsertEntity(
+        nudge.copyWith(
+          ratings: [
+            ...nudge.ratings,
+            GoalNudgeRating(
+              activation: activation,
+              ratedAt: clock.now(),
+              rating: rating,
+              skipped: skipped,
+            ),
+          ],
+          updatedAt: clock.now(),
+        ),
+      );
+    });
   }
 
   /// Accounts one visibility episode: [visibleFor] accumulates into this
@@ -91,23 +109,25 @@ class GoalNudgeInteractions {
   Future<void> recordExposure(
     String nudgeId, {
     required Duration visibleFor,
-  }) async {
-    if (visibleFor <= Duration.zero) return;
-    final nudge = await _repository.getEntity(nudgeId);
-    if (nudge is! GoalNudgeEntity) return;
-    final host = await _syncService.localHost();
-    final now = clock.now();
-    await _syncService.upsertEntity(
-      nudge.copyWith(
-        totalVisibleMs: nudge.totalVisibleMs.increment(
-          host,
-          visibleFor.inMilliseconds,
+  }) {
+    if (visibleFor <= Duration.zero) return Future.value();
+    return _serialized(nudgeId, () async {
+      final nudge = await _repository.getEntity(nudgeId);
+      if (nudge is! GoalNudgeEntity) return;
+      final host = await _syncService.localHost();
+      final now = clock.now();
+      await _syncService.upsertEntity(
+        nudge.copyWith(
+          totalVisibleMs: nudge.totalVisibleMs.increment(
+            host,
+            visibleFor.inMilliseconds,
+          ),
+          impressionCount: nudge.impressionCount.increment(host),
+          firstShownAt: nudge.firstShownAt ?? now,
+          lastShownAt: now,
+          updatedAt: now,
         ),
-        impressionCount: nudge.impressionCount.increment(host),
-        firstShownAt: nudge.firstShownAt ?? now,
-        lastShownAt: now,
-        updatedAt: now,
-      ),
-    );
+      );
+    });
   }
 }

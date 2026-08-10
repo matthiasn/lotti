@@ -3164,6 +3164,13 @@ class AppLocalizationsNl extends AppLocalizations {
       'Begeleid de eerste keer Dagelijkse OS gebruikers door een echte check-in die spraak verandert in een taak en een dagplan.';
 
   @override
+  String get configFlagEnableAgentsPage => 'Agenten-pagina inschakelen';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Toon de Agenten-pagina in de hoofdnavigatie. Volg in één oogopslag de gezondheid van je doel-agenten en kijk bij elk van hen binnen.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'AI-streaming inschakelen voor taakacties';
 
@@ -5955,6 +5962,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalCreateFailed =>
+      'Het doel kon niet worden opgeslagen — probeer het opnieuw.';
+
+  @override
   String get goalCreateHabitCountLabel => 'Keer per week (per gewoonte)';
 
   @override
@@ -5981,6 +5992,10 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Geef het doel een naam en minstens één criterium.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'De gezondheid van dit doel kon nu niet worden geladen.';
 
   @override
   String get goalDetailNoReport =>
@@ -12065,8 +12080,4 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Overslaan';
-
-  @override
-  String get goalCreateFailed =>
-      'Het doel kon niet worden opgeslagen — probeer het opnieuw.';
 }

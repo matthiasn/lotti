@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
@@ -158,6 +160,49 @@ void main() {
     test('zero or negative visibility writes nothing', () async {
       await interactions.recordExposure('ad-1', visibleFor: Duration.zero);
       expect(upserts, isEmpty);
+    });
+
+    test('overlapping writes serialize per nudge — the second read sees '
+        'the first increment instead of a stale snapshot', () async {
+      // The repository serves the LAST upserted row, so a serialized
+      // second call reads the first call's counters. The gate holds the
+      // first write open across the second call's start: unserialized,
+      // the second read would see the seed row and the increments would
+      // collapse to the last write.
+      var current = nudge();
+      final gate = Completer<void>();
+      when(() => repository.getEntity('ad-1')).thenAnswer(
+        (_) async => current,
+      );
+      when(
+        () => syncService.upsertEntity(any()),
+      ).thenAnswer((invocation) async {
+        await gate.future;
+        current = invocation.positionalArguments.first as GoalNudgeEntity;
+        upserts.add(current);
+      });
+
+      await withClock(fixedClock, () async {
+        // Fire-and-forget, like the banner tracker's flushes.
+        final first = interactions.recordExposure(
+          'ad-1',
+          visibleFor: const Duration(seconds: 2),
+        );
+        final second = interactions.recordExposure(
+          'ad-1',
+          visibleFor: const Duration(seconds: 3),
+        );
+        // Let both calls progress as far as the gate allows before it
+        // opens — this is the window where a stale read would happen.
+        await Future<void>.delayed(Duration.zero);
+        await Future<void>.delayed(Duration.zero);
+        gate.complete();
+        await Future.wait([first, second]);
+      });
+
+      final written = upserts.whereType<GoalNudgeEntity>().last;
+      expect(written.totalVisibleMs.byHost, {'test-host': 5000});
+      expect(written.impressionCount.byHost, {'test-host': 2});
     });
   });
 

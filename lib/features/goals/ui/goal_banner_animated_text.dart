@@ -49,6 +49,12 @@ abstract final class _GoalBannerMotion {
   /// horizontal displacement in logical pixels.
   static const glitchActiveFraction = 0.06;
   static const glitchMaxOffset = 2.0;
+
+  /// Model copy is unbounded, banner hosts are not: every preset caps the
+  /// headline at this many lines (marquee stays single-line by design),
+  /// so a runaway headline or large text scaling can never overflow a
+  /// fixed-height host like the day page.
+  static const maxLines = 2;
 }
 
 class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
@@ -88,12 +94,12 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
   Widget build(BuildContext context) {
     if (MediaQuery.disableAnimationsOf(context) ||
         widget.animation == GoalBannerAnimation.steady) {
-      return Text(widget.text, style: widget.style);
+      return _capped(widget.text);
     }
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) => switch (widget.animation) {
-        GoalBannerAnimation.steady => Text(widget.text, style: widget.style),
+        GoalBannerAnimation.steady => _capped(widget.text),
         GoalBannerAnimation.typewriter => _typewriter(),
         GoalBannerAnimation.pulse => _pulse(),
         GoalBannerAnimation.wave => _wave(),
@@ -102,6 +108,14 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
       },
     );
   }
+
+  /// The bounded headline every preset builds on.
+  Widget _capped(String text) => Text(
+    text,
+    style: widget.style,
+    maxLines: _GoalBannerMotion.maxLines,
+    overflow: TextOverflow.ellipsis,
+  );
 
   /// Characters appear over the reveal fraction of the cycle, then hold.
   /// Grapheme-cluster stepping: model copy can carry emoji and composed
@@ -114,8 +128,8 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
     // Reserve the full size so the banner never reflows while typing.
     return Stack(
       children: [
-        Opacity(opacity: 0, child: Text(widget.text, style: widget.style)),
-        Text(graphemes.take(count).toString(), style: widget.style),
+        Opacity(opacity: 0, child: _capped(widget.text)),
+        _capped(graphemes.take(count).toString()),
       ],
     );
   }
@@ -125,12 +139,29 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
     const floor = _GoalBannerMotion.pulseFloorOpacity;
     return Opacity(
       opacity: floor + (1 - floor) * ((phase + 1) / 2),
-      child: Text(widget.text, style: widget.style),
+      child: _capped(widget.text),
     );
   }
 
-  /// Per-word vertical bob, phase-shifted along the line.
+  /// Per-word vertical bob, phase-shifted along the line. A `Wrap` of
+  /// words cannot ellipsize, so copy that would exceed the line cap
+  /// renders as the bounded steady text instead of bobbing off the card.
   Widget _wave() {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final painter = TextPainter(
+          text: TextSpan(text: widget.text, style: widget.style),
+          maxLines: _GoalBannerMotion.maxLines,
+          textDirection: Directionality.of(context),
+          textScaler: MediaQuery.textScalerOf(context),
+        )..layout(maxWidth: constraints.maxWidth);
+        if (painter.didExceedMaxLines) return _capped(widget.text);
+        return _waveWords();
+      },
+    );
+  }
+
+  Widget _waveWords() {
     final words = widget.text.split(' ');
     return Wrap(
       spacing: (widget.style.fontSize ?? 14) * 0.28,
@@ -203,7 +234,7 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
         : 0.0;
     return Transform.translate(
       offset: Offset(dx, 0),
-      child: Text(widget.text, style: widget.style),
+      child: _capped(widget.text),
     );
   }
 }

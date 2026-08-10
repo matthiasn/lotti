@@ -3185,6 +3185,13 @@ class AppLocalizationsPt extends AppLocalizations {
       'Oriente os usuários iniciantes do Daily OS através de um check-in real que transforma a fala em uma tarefa e um plano diário.';
 
   @override
+  String get configFlagEnableAgentsPage => 'Ativar página Agentes';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Mostre a página Agentes na navegação principal. Acompanhe a saúde dos seus agentes de metas num relance e confira cada um deles.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Habilite o streaming de IA para ações de tarefas';
 
@@ -5993,6 +6000,10 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get goalCreateFailed =>
+      'Não foi possível guardar a meta — tenta novamente.';
+
+  @override
   String get goalCreateHabitCountLabel => 'Vezes por semana (cada hábito)';
 
   @override
@@ -6019,6 +6030,10 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Dá um nome à meta e pelo menos um critério.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Não foi possível carregar a saúde desta meta agora.';
 
   @override
   String get goalDetailNoReport =>
@@ -12136,8 +12151,4 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Pular';
-
-  @override
-  String get goalCreateFailed =>
-      'Não foi possível guardar a meta — tenta novamente.';
 }

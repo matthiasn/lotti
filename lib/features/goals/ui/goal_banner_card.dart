@@ -64,6 +64,8 @@ class GoalBannerCard extends ConsumerWidget {
                         SizedBox(height: tokens.spacing.step1),
                         Text(
                           brief.tagline!,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
                           style: tokens.typography.styles.body.bodySmall
                               .copyWith(
                                 color: tokens.colors.text.mediumEmphasis,

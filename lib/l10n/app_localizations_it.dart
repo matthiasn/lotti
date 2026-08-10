@@ -3197,6 +3197,13 @@ class AppLocalizationsIt extends AppLocalizations {
       'Guidare gli utenti del sistema operativo giornaliero di prima volta attraverso un check-in reale che trasforma il discorso in un compito e un piano di giorno.';
 
   @override
+  String get configFlagEnableAgentsPage => 'Attivare la pagina Agenti';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Mostra la pagina Agenti nella navigazione principale. Segui a colpo d\'occhio lo stato dei tuoi agenti degli obiettivi e dai un\'occhiata a ciascuno.';
+
+  @override
   String get configFlagEnableAiStreaming =>
       'Attiva lo streaming AI per le azioni di attività';
 
@@ -6008,6 +6015,10 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get goalCreateFailed =>
+      'Salvataggio dell’obiettivo non riuscito: riprova.';
+
+  @override
   String get goalCreateHabitCountLabel => 'Volte a settimana (per abitudine)';
 
   @override
@@ -6034,6 +6045,10 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Dai un nome all’obiettivo e almeno un criterio.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Impossibile caricare lo stato di questo obiettivo al momento.';
 
   @override
   String get goalDetailNoReport =>
@@ -12186,8 +12201,4 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get whatsNewSkipButton => 'Salta!';
-
-  @override
-  String get goalCreateFailed =>
-      'Salvataggio dell’obiettivo non riuscito: riprova.';
 }
