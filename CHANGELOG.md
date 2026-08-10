@@ -14,7 +14,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   approve or reject its proposals, and create new goals: a daily-steps target
   or a routine watching one or more habits. When a goal genuinely slips, its
   agent speaks up through a small text banner in a shell-level dock that rides
-  above the navigation — one rotating slot shared across the Tasks, DailyOS and
+  above the navigation — one rotating slot shared across the Tasks, Daily OS and
   Habits tabs, coloured by the agent's tone so doing well reads at a glance,
   dismissible (a dismissal quiets that goal for the rest of the day), and rated
   per showing so the agent learns which nudges actually help.

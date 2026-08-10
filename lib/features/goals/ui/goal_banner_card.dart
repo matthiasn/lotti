@@ -93,8 +93,8 @@ class GoalBannerCard extends ConsumerWidget {
                         // rating is due, but its SLOT always does — the
                         // header never reflows when the star goes.
                         SizedBox(
-                          width: tokens.spacing.step8,
-                          height: tokens.spacing.step8,
+                          width: TapTargets.minimum,
+                          height: TapTargets.minimum,
                           child: ratingDue
                               ? IconButton(
                                   onPressed: () => showGoalBannerRatingSheet(
@@ -113,8 +113,8 @@ class GoalBannerCard extends ConsumerWidget {
                               : null,
                         ),
                         SizedBox(
-                          width: tokens.spacing.step8,
-                          height: tokens.spacing.step8,
+                          width: TapTargets.minimum,
+                          height: TapTargets.minimum,
                           child: IconButton(
                             onPressed: () =>
                                 dismissGoalBanner(context, ref, entry),

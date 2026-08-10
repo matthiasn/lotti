@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -186,6 +187,35 @@ void main() {
     expect(find.text('Second voice'), findsOneWidget);
   });
 
+  testWidgets('mouse hover pauses the cycle and moving away resumes it', (
+    tester,
+  ) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ]);
+    final gesture = await tester.createGesture(kind: PointerDeviceKind.mouse);
+    // Enter from outside so the MouseRegion sees an enter transition.
+    await gesture.addPointer(location: Offset.zero);
+    addTearDown(gesture.removePointer);
+    await tester.pump();
+    await gesture.moveTo(tester.getCenter(find.text('First voice')));
+    await tester.pump();
+
+    await tester.pump(goalBannerDockTenure * 2);
+    expect(
+      find.text('First voice'),
+      findsOneWidget,
+      reason: 'the cycle holds while hovered',
+    );
+
+    await gesture.moveTo(Offset.zero);
+    await tester.pump();
+    await tester.pump(goalBannerDockTenure);
+    await settleTransition(tester);
+    expect(find.text('Second voice'), findsOneWidget);
+  });
+
   testWidgets('a fresh banner arriving mid-rotation jumps the queue and '
       'carries the just-now marker', (tester) async {
     await pumpDock(tester, [
@@ -255,6 +285,126 @@ void main() {
     expect(find.byTooltip('Dismiss'), findsNothing);
   });
 
+  testWidgets('removing the middle tenant advances to its SUCCESSOR, not '
+      'back to the first — no rewind', (tester) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+      entry(id: 'c', headline: 'Third voice'),
+    ]);
+
+    // Advance to the middle tenant (b).
+    await tester.pump(goalBannerDockTenure);
+    await settleTransition(tester);
+    expect(find.text('Second voice'), findsOneWidget);
+
+    // b leaves (expired/superseded elsewhere): the dock must show c, the
+    // successor — showing 'a' again would replay a banner just moved past.
+    notifier(tester).entries = [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'c', headline: 'Third voice'),
+    ];
+    await tester.pump();
+    await settleTransition(tester);
+    expect(find.text('Third voice'), findsOneWidget);
+    expect(find.text('First voice'), findsNothing);
+  });
+
+  testWidgets('backgrounding the app pauses the cycle; resuming restarts '
+      'it', (tester) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ]);
+    expect(find.text('First voice'), findsOneWidget);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.paused);
+    await tester.pump();
+    // Held across two tenures while backgrounded — a rotation nobody can
+    // see is wasted motion.
+    await tester.pump(goalBannerDockTenure * 2);
+    expect(find.text('First voice'), findsOneWidget);
+
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.pump(goalBannerDockTenure);
+    await settleTransition(tester);
+    expect(find.text('Second voice'), findsOneWidget);
+  });
+
+  testWidgets('the desktop dock renders the CTA pill and the rating star '
+      'when an outcome is due, and rating opens the sheet', (tester) async {
+    when(
+      () => interactions.recordRating(
+        any(),
+        rating: any(named: 'rating'),
+        skipped: any(named: 'skipped'),
+        forActivation: any(named: 'forActivation'),
+      ),
+    ).thenAnswer((_) async {});
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice', cta: 'Log a walk'),
+    ]);
+    expect(find.text('Log a walk'), findsOneWidget);
+    expect(find.byTooltip('Rate this banner'), findsOneWidget);
+
+    await tester.tap(find.byTooltip('Rate this banner'));
+    await tester.pumpAndSettle();
+    expect(find.text('How was this banner?'), findsOneWidget);
+  });
+
+  testWidgets('tapping the desktop dock CTA opens the goal', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice', cta: 'Log a walk'),
+    ]);
+    await tester.tap(find.text('Log a walk'));
+    await tester.pump();
+    expect(navigated, ['/agents/details/goal-a']);
+  });
+
+  testWidgets('swiping the compact dock dismisses the tenant', (tester) async {
+    await pumpDock(
+      tester,
+      [entry(id: 'a', headline: 'First voice')],
+      compact: true,
+    );
+    await tester.drag(find.byType(Dismissible), const Offset(600, 0));
+    await tester.pumpAndSettle();
+    verify(() => interactions.dismiss('a', forActivation: 1)).called(1);
+  });
+
+  testWidgets('an entry past its staleAt never takes the slot', (
+    tester,
+  ) async {
+    await pumpDock(tester, [
+      (
+        nudge:
+            AgentDomainEntity.goalNudge(
+                  id: 'stale',
+                  agentId: 'goal-stale',
+                  status: GoalNudgeStatus.active,
+                  brief: const GoalNudgeBrief(
+                    headline: 'Stale voice',
+                    tone: GoalNudgeTone.nudge,
+                    animation: GoalBannerAnimation.steady,
+                  ),
+                  briefDigest: 'stale',
+                  staleAt: DateTime.utc(2000),
+                  createdAt: DateTime(2026, 8, 9),
+                  updatedAt: DateTime(2026, 8, 9),
+                  vectorClock: null,
+                )
+                as GoalNudgeEntity,
+        goalTitle: 'Move more',
+      ),
+      entry(id: 'fresh', headline: 'Fresh voice'),
+    ]);
+    expect(find.text('Fresh voice'), findsOneWidget);
+    expect(find.text('Stale voice'), findsNothing);
+  });
+
   testWidgets('zero tenants render nothing at all', (tester) async {
     await pumpDock(tester, const []);
     expect(find.byTooltip('Dismiss'), findsNothing);
@@ -264,12 +414,17 @@ void main() {
     _TestEntries.initial = [entry(id: 'a', headline: 'First voice')];
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        const MediaQuery(
-          data: MediaQueryData(
-            viewInsets: EdgeInsets.only(bottom: 280),
-          ),
-          child: Scaffold(
-            bottomNavigationBar: GoalBannerDock(compact: true),
+        Builder(
+          // copyWith the ambient MediaQuery: a bare MediaQueryData would
+          // reset size/padding for the subtree, changing what the dock
+          // lays out against.
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(
+              viewInsets: const EdgeInsets.only(bottom: 280),
+            ),
+            child: const Scaffold(
+              bottomNavigationBar: GoalBannerDock(compact: true),
+            ),
           ),
         ),
         overrides: overrides(),
@@ -299,10 +454,12 @@ void main() {
     ];
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        const MediaQuery(
-          data: MediaQueryData(disableAnimations: true),
-          child: Scaffold(
-            bottomNavigationBar: GoalBannerDock(compact: false),
+        Builder(
+          builder: (context) => MediaQuery(
+            data: MediaQuery.of(context).copyWith(disableAnimations: true),
+            child: const Scaffold(
+              bottomNavigationBar: GoalBannerDock(compact: false),
+            ),
           ),
         ),
         overrides: overrides(),

@@ -48,11 +48,16 @@ class GoalBannerDock extends ConsumerStatefulWidget {
 }
 
 class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
-    with SingleTickerProviderStateMixin {
+    with SingleTickerProviderStateMixin, WidgetsBindingObserver {
   late final AnimationController _tenure = AnimationController(
     vsync: this,
     duration: goalBannerDockTenure,
   );
+
+  /// The cycle pauses while the app is not foregrounded — a rotation the
+  /// user cannot see is wasted motion, and it would desync from the
+  /// exposure tracker (which already stops metering off-screen).
+  bool _backgrounded = false;
 
   String? _currentId;
 
@@ -64,17 +69,24 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
   /// queue exactly like new banners: fresh copy is an acknowledgment).
   final Map<String, int> _seenActivations = {};
 
+  /// The last rendered tenant order, so that when the current tenant leaves
+  /// (dismissed, expired, superseded) the dock advances to its SUCCESSOR
+  /// rather than rewinding to the first entry.
+  List<String> _lastOrder = const [];
+
   bool _hovered = false;
   bool _touched = false;
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     _tenure.addStatusListener((status) {
       if (status == AnimationStatus.completed) {
         // Post-frame: the completion tick can arrive during another
-        // animated widget's layout (AnimatedSize) — a synchronous setState
-        // here would re-dirty a render object inside its own performLayout.
+        // animated widget's layout (the collapse SizeTransition) — a
+        // synchronous setState here would re-dirty a render object inside
+        // its own performLayout.
         WidgetsBinding.instance.addPostFrameCallback((_) {
           if (mounted) _advance();
         });
@@ -83,7 +95,22 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
   }
 
   @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    final backgrounded = state != AppLifecycleState.resumed;
+    if (backgrounded == _backgrounded) return;
+    _backgrounded = backgrounded;
+    if (backgrounded) {
+      _tenure.stop();
+    } else if (!_hovered &&
+        !_touched &&
+        _visible(ref.read(activeGoalNudgesProvider).value).length > 1) {
+      _tenure.forward();
+    }
+  }
+
+  @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _tenure.dispose();
     super.dispose();
   }
@@ -118,7 +145,7 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
 
   void _restartTenure(int tenantCount) {
     _tenure.reset();
-    if (tenantCount > 1 && !_hovered && !_touched) {
+    if (tenantCount > 1 && !_hovered && !_touched && !_backgrounded) {
       _tenure.forward();
     }
   }
@@ -163,9 +190,11 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     }
     final stillPresent = entries.any((e) => e.nudge.id == _currentId);
     if (!stillPresent) {
-      // The tenant left (dismissed here or elsewhere): the next voice
-      // slides in immediately.
-      _currentId = entries.first.nudge.id;
+      // The tenant left (dismissed here or elsewhere): advance to its
+      // SUCCESSOR in the last rendered order, not back to the first entry
+      // — rewinding would replay a banner the user just moved past.
+      _currentId =
+          _successorOf(_currentId, entries)?.nudge.id ?? entries.first.nudge.id;
       _jumpedId = null;
       _restartTenure(entries.length);
     } else if (entries.length > 1 &&
@@ -178,12 +207,31 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     }
   }
 
+  /// The entry after [removedId] in the last rendered order, skipping any
+  /// that also left, and never landing back on [removedId] — the tenant
+  /// that would have been next had the current one simply advanced.
+  GoalBannerEntry? _successorOf(
+    String? removedId,
+    List<GoalBannerEntry> entries,
+  ) {
+    final from = _lastOrder.indexOf(removedId ?? '');
+    if (from < 0) return null;
+    for (var step = 1; step <= _lastOrder.length; step++) {
+      final candidateId = _lastOrder[(from + step) % _lastOrder.length];
+      if (candidateId == removedId) break;
+      final match = entries.where((e) => e.nudge.id == candidateId);
+      if (match.isNotEmpty) return match.first;
+    }
+    return null;
+  }
+
   void _setPaused({bool? hovered, bool? touched}) {
     _hovered = hovered ?? _hovered;
     _touched = touched ?? _touched;
     if (_hovered || _touched) {
       _tenure.stop();
     } else if (!_tenure.isAnimating &&
+        !_backgrounded &&
         _visible(ref.read(activeGoalNudgesProvider).value).length > 1) {
       _tenure.forward();
     }
@@ -221,6 +269,10 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
 
     final reduceMotion = MediaQuery.disableAnimationsOf(context);
 
+    // Remember the rendered order so the NEXT reconcile, when the current
+    // tenant leaves, advances to its successor rather than rewinding.
+    _lastOrder = [for (final e in entries) e.nudge.id];
+
     // Zero tenants (or the keyboard needs the space): collapse entirely.
     // The quiet IS the dismissal feedback.
     //
@@ -231,8 +283,8 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     // empty box via a SizeTransition it owns, with no such reentrancy.
     return AnimatedSwitcher(
       duration: reduceMotion ? Duration.zero : MotionDurations.medium1,
-      switchInCurve: Curves.easeOutCubic,
-      switchOutCurve: Curves.easeInCubic,
+      switchInCurve: MotionCurves.emphasizedDecelerate,
+      switchOutCurve: MotionCurves.standard,
       transitionBuilder: (child, animation) => SizeTransition(
         sizeFactor: animation,
         alignment: Alignment.topCenter,
@@ -315,7 +367,8 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
                     // Only meaningful with someone waiting in the queue. A
                     // CustomPaint (repaint-only) rather than a
                     // FractionallySizedBox — a per-tick relayout inside the
-                    // enclosing AnimatedSize would re-dirty it mid-layout.
+                    // collapse AnimatedSwitcher's SizeTransition would
+                    // re-dirty it mid-layout.
                     SizedBox(
                       height: tokens.spacing.step1,
                       width: double.infinity,
@@ -332,8 +385,8 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
                       duration: reduceMotion
                           ? Duration.zero
                           : MotionDurations.medium1,
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
+                      switchInCurve: MotionCurves.emphasizedDecelerate,
+                      switchOutCurve: MotionCurves.standard,
                       transitionBuilder: (child, animation) => reduceMotion
                           // Crossfade under reduced motion; slide-up is
                           // the standard transition between tenants.
@@ -392,8 +445,9 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
 }
 
 /// Paints the tenure progress fill left-to-right. Repaints on every tick of
-/// [progress] without triggering a relayout — the enclosing [AnimatedSize]
-/// must never be re-dirtied inside its own layout pass.
+/// [progress] without triggering a relayout — the collapse
+/// AnimatedSwitcher's SizeTransition must never be re-dirtied inside its own
+/// layout pass.
 class _TenurePainter extends CustomPainter {
   _TenurePainter({required this.progress, required this.color})
     : super(repaint: progress);
@@ -485,17 +539,22 @@ class _DockTenant extends ConsumerWidget {
               ),
               if (!compact && brief.cta != null) ...[
                 SizedBox(width: tokens.spacing.step3),
-                GoalBannerCtaPill(
-                  label: brief.cta!,
-                  style: style,
-                  onTap: () =>
-                      beamToNamed('/agents/details/${entry.nudge.agentId}'),
+                // Flexible so a long CTA is bounded by the row and its own
+                // ellipsis actually engages — a bare Row child would be
+                // measured at full intrinsic width and overflow the dock.
+                Flexible(
+                  child: GoalBannerCtaPill(
+                    label: brief.cta!,
+                    style: style,
+                    onTap: () =>
+                        beamToNamed('/agents/details/${entry.nudge.agentId}'),
+                  ),
                 ),
               ],
               if (!compact)
                 SizedBox(
-                  width: tokens.spacing.step8,
-                  height: tokens.spacing.step8,
+                  width: TapTargets.minimum,
+                  height: TapTargets.minimum,
                   child: ratingDue
                       ? IconButton(
                           onPressed: onRate,
@@ -509,8 +568,8 @@ class _DockTenant extends ConsumerWidget {
                       : null,
                 ),
               SizedBox(
-                width: tokens.spacing.step8,
-                height: tokens.spacing.step8,
+                width: TapTargets.minimum,
+                height: TapTargets.minimum,
                 child: IconButton(
                   onPressed: onDismiss,
                   tooltip: context.messages.goalBannerDismissTooltip,

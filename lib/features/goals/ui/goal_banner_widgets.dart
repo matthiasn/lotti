@@ -32,8 +32,12 @@ class GoalBannerPersonaChip extends StatelessWidget {
       ),
       child: Text(
         monogram,
+        // High-emphasis, not the raw accent: the accent as 12px text over
+        // its own 22% wash drops below the 4.5:1 contrast floor on light
+        // accents (e.g. warning). The chip keeps its accent identity
+        // through the wash; the glyph stays readable in both themes.
         style: tokens.typography.styles.others.overline.copyWith(
-          color: style.accent,
+          color: tokens.colors.text.highEmphasis,
         ),
       ),
     );
@@ -73,8 +77,11 @@ class GoalBannerCtaPill extends StatelessWidget {
             label,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
+            // High-emphasis over the accent wash — same contrast reason as
+            // the persona monogram. The pill reads as accent through its
+            // fill; the label stays legible on light accents.
             style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-              color: style.accent,
+              color: tokens.colors.text.highEmphasis,
             ),
           ),
         ),

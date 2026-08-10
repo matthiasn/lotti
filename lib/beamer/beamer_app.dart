@@ -976,6 +976,15 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             // running timer or recording must stay visible inside settings
             // definition surfaces. When the bar slides away they animate
             // down to the bottom safe-area edge in the same motion.
+            //
+            // The goal-agent dock (mini-player, handover 1b) shares this
+            // overlay column so the two never collide: the dock rides ABOVE
+            // the indicator row, which is zero-height when nothing is
+            // recording — so an idle dock sits directly above the bar, and
+            // a live recording pushes the dock up instead of vanishing
+            // under it. The dock only mounts on the main working tabs, and
+            // only when the bar is not sliding away (settings/project
+            // detail routes carry neither).
             AnimatedPositioned(
               duration: reduceMotion
                   ? Duration.zero
@@ -986,32 +995,29 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               bottom: slideNavAway
                   ? MediaQuery.paddingOf(context).bottom
                   : DesignSystemFiveSlotNavBar.barHeight(context),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const TimeRecordingIndicator(),
-                  // Audio indicator is omitted on Flatpak builds (MediaKit
-                  // compatibility issues). Spacer lives inside the same
-                  // conditional so it doesn't dangle when only the time
-                  // indicator is visible.
-                  if (!_isRunningInFlatpak()) ...[
-                    const SizedBox(width: 4),
-                    const AudioRecordingIndicator(),
-                  ],
+                  if (!slideNavAway &&
+                      _showsGoalBannerDock(destinations[index].kind))
+                    const GoalBannerDock(compact: true),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const TimeRecordingIndicator(),
+                      // Audio indicator is omitted on Flatpak builds (MediaKit
+                      // compatibility issues). Spacer lives inside the same
+                      // conditional so it doesn't dangle when only the time
+                      // indicator is visible.
+                      if (!_isRunningInFlatpak()) ...[
+                        const SizedBox(width: 4),
+                        const AudioRecordingIndicator(),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
-            // The goal-agent dock rides directly above the bottom bar —
-            // the mini-player position (handover 1b). It collapses when no
-            // goal is speaking, and the widget itself yields while the
-            // keyboard is up. Only on the main working tabs.
-            if (_showsGoalBannerDock(destinations[index].kind))
-              Positioned(
-                left: 0,
-                right: 0,
-                bottom: DesignSystemFiveSlotNavBar.barHeight(context),
-                child: const GoalBannerDock(compact: true),
-              ),
           ],
         ],
       ),
