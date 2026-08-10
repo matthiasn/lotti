@@ -6058,7 +6058,7 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalCoarseHealthBehind => 'Atrasado';
 
   @override
-  String get goalCoarseHealthHealthy => 'Em forma';
+  String get goalCoarseHealthHealthy => 'Saudável';
 
   @override
   String get goalCoarseHealthNotEnoughData => 'Dados insuficientes';

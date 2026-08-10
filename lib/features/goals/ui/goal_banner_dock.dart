@@ -16,38 +16,56 @@ import 'package:lotti/services/nav_service.dart';
 /// cycle fully within a minute (design handover 1b).
 const goalBannerDockTenure = Duration(seconds: 15);
 
-/// The two-line headline + one-line caption text block of the compact tenant
-/// at the 1.0 text scale — the term that grows with accessibility text. The
-/// figure is measured against the rendered `_DockTenant` (worst case: a
-/// headline that wraps to the full two lines) and guarded by
-/// `goal_banner_dock_test.dart`, which asserts the reserve covers the actual
-/// rendered dock at both 1× and 2×. The text scaler multiplies only this
-/// block; the chrome and the 48dp dismiss target are fixed.
-const _dockTenantTextBlockAtUnitScale = 60.0;
+/// Height of [lines] lines rendered in [style] at [scaler] — measured from
+/// the actual text metrics so the dock reserve tracks the real typography
+/// rather than a magic constant.
+double _textBlockHeight(TextStyle style, int lines, TextScaler scaler) {
+  final painter = TextPainter(
+    text: TextSpan(text: 'Xg', style: style),
+    textDirection: TextDirection.ltr,
+    textScaler: scaler,
+    maxLines: 1,
+  )..layout();
+  return painter.height * lines;
+}
 
 /// Clearance the compact (mobile) dock claims above the bottom bar when a
 /// goal is speaking — the shell reserves it in the overlay-height scope so
 /// page content and FABs never sit underneath (handover 1b's reserved lane).
 ///
-/// Derived from the dock's own design-system dimensions rather than a flat
-/// constant, and scale-aware: the tenant row is as tall as the taller of the
-/// [TapTargets.minimum] dismiss target and the text block (which grows with
-/// the accessibility text scaler), plus the fixed chrome — outer padding
-/// (`step3` both edges), the tenure strip (`step1`), and the tenant's own
-/// vertical padding (`step3` both edges). A pure `× scale` multiply of a base
-/// constant would under-clear at 1× (the fixed dismiss target already exceeds
-/// a small base) and mis-track at large scales; this tracks the rendered
-/// height instead. Collapses to zero reserve when no goal speaks (the caller
-/// only adds it while the dock is speaking).
+/// Derived entirely from the dock's own design-system dimensions and text
+/// styles, and scale-aware. The tenant row is as tall as the taller of the
+/// [TapTargets.minimum] dismiss target and the copy block — the headline
+/// (`subtitle2`, up to two lines) plus the caption (one line), measured from
+/// the real text metrics at the current [MediaQuery.textScalerOf] so it grows
+/// correctly with accessibility text. Around it sits the fixed chrome — outer
+/// padding (`step3` both edges), the tenure strip (`step1`), the tenant's own
+/// vertical padding (`step3` both edges) — and the multi-tenant dot-row footer
+/// (`step2` dot + `step2` bottom padding), always included so a two-plus-goal
+/// dock never under-clears. `goal_banner_dock_test.dart` asserts the reserve
+/// covers the actual rendered dock at 1× and 2×, single- and multi-tenant.
+/// Collapses to zero reserve when no goal speaks (the caller only adds it
+/// while the dock is speaking).
 double goalBannerDockReservedHeight(BuildContext context) {
   final tokens = context.designTokens;
+  final spacing = tokens.spacing;
   final scaler = MediaQuery.textScalerOf(context);
   final chrome =
-      tokens.spacing.step3 * 4 + // outer + tenant vertical padding, both edges
-      tokens.spacing.step1; // tenure strip
-  final scaledText = scaler.scale(_dockTenantTextBlockAtUnitScale);
-  final row = scaledText > TapTargets.minimum ? scaledText : TapTargets.minimum;
-  return chrome + row;
+      spacing.step3 * 4 + // outer + tenant vertical padding, both edges
+      spacing.step1; // tenure strip
+  final footer = spacing.step2 * 2; // dot row + its bottom padding
+  final textBlock =
+      _textBlockHeight(
+        tokens.typography.styles.subtitle.subtitle2,
+        2,
+        scaler,
+      ) +
+      _textBlockHeight(tokens.typography.styles.others.caption, 1, scaler);
+  final row = textBlock > TapTargets.minimum ? textBlock : TapTargets.minimum;
+  // A `step1` cushion absorbs sub-pixel rounding between the sample-glyph
+  // measurement and the rendered headline's own metrics (the test pins the
+  // reserve to the real rendered dock, so this stays honest, not padding).
+  return chrome + footer + row + spacing.step1;
 }
 
 /// The dock — one rotating slot for the agents' standing voices, the

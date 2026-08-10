@@ -9,9 +9,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Goal agents get their first visible surface (experimental).** Behind the
   new `enable_agents_page` flag, an Agents tab lists every running goal agent
   with its health at a glance — a coarse health chip (Healthy, Behind,
-  Restarting or Not enough data) and a trend arrow rather than a raw
-  percentage, the agent's latest one-line report and a badge when a
-  goal-change proposal awaits review. From there you can inspect an agent's interaction timeline,
+  Restarting or Not enough data) and, once two health readings exist, a trend
+  arrow rather than a raw percentage, the agent's latest one-line report and a
+  badge when a goal-change proposal awaits review. From there you can inspect an agent's interaction timeline,
   approve or reject its proposals, and create new goals: a daily-steps target
   or a routine watching one or more habits. When a goal genuinely slips, its
   agent speaks up through a small text banner in a shell-level dock that rides

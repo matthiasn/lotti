@@ -1211,8 +1211,14 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
     // collapsed dock reserves no lane. Approximated by "any active nudge
     // exists" — an over-reserve while a nudge is stale/dismissed is
     // harmless (a little extra bottom clearance), an under-reserve is not.
+    // The compact dock renders its empty child while the keyboard is up
+    // (`GoalBannerDock` yields to it), so the reserve must drop to zero then —
+    // otherwise it would push scroll clearance and FABs an extra lane above
+    // the keyboard for the whole editing session. Mirror that collapse here.
+    final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
     final goalDockSpeaking =
         goalDockAllowed &&
+        !keyboardUp &&
         (ref.watch(activeGoalNudgesProvider).value?.isNotEmpty ?? false);
 
     return StreamBuilder<JournalEntity?>(

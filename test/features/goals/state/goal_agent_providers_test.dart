@@ -985,6 +985,177 @@ void main() {
     },
   );
 
+  test('goalAgentHealthProvider emits no trend for a calendar-window goal — '
+      'attainment resets each period, so a consecutive-register delta is a '
+      'boundary reset, not a decline', () async {
+    const agentId = 'goal-cal';
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v1',
+        agentId: agentId,
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Gym',
+        statement: 'Gym three times a week.',
+        // Calendar week: attainment is within-week and resets Monday.
+        criteria: const GoalCriterion.habit(
+          criterionId: 'gym',
+          habitId: 'habit-gym',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 3,
+        ),
+        createdAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    GoalProgressEntity register(String period, double attainment) =>
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: attainment >= 1,
+              specVersionId: '$agentId:spec-v1',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
+
+    // Last week finished at 1.0; this week is on pace with one of three at
+    // 0.33. Raw subtraction would read "down" — but it is a fresh period.
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer(
+      (_) async => [register('2026-W33', 0.33), register('2026-W32', 1)],
+    );
+    final health = await container.read(
+      goalAgentHealthProvider(agentId).future,
+    );
+    expect(health.direction, isNull);
+  });
+
+  test('goalAgentHealthProvider emits a trend for a composite goal only when '
+      'every child window is rolling', () async {
+    const agentId = 'goal-comp';
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    GoalProgressEntity register(String period, double attainment) =>
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: true,
+              specVersionId: '$agentId:spec-v1',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer(
+      (_) async => [register('2026-08-09', 0.9), register('2026-08-08', 0.6)],
+    );
+
+    Future<GoalAgentHealth> healthFor(GoalCriterion criteria) {
+      when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+        (_) async => AgentDomainEntity.goalSpecVersion(
+          id: '$agentId:spec-v1',
+          agentId: agentId,
+          version: 1,
+          status: GoalSpecVersionStatus.active,
+          authoredBy: 'user',
+          title: 'Combined',
+          statement: 'Two habits.',
+          criteria: criteria,
+          createdAt: DateTime(2026),
+          vectorClock: null,
+        ),
+      );
+      container.invalidate(goalAgentHealthProvider(agentId));
+      return container.read(goalAgentHealthProvider(agentId).future);
+    }
+
+    // allOf of two ROLLING children: the composite is sound → arrow up.
+    final rolling = await healthFor(
+      const GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'a',
+            habitId: 'h-a',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'b',
+            habitId: 'h-b',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+        ],
+      ),
+    );
+    expect(rolling.direction, GoalHealthDirection.up);
+
+    // One CALENDAR child taints the composite → no arrow.
+    final mixed = await healthFor(
+      const GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'a',
+            habitId: 'h-a',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'b',
+            habitId: 'h-b',
+            window: GoalWindow.calendarWeek(),
+            targetCount: 3,
+          ),
+        ],
+      ),
+    );
+    expect(mixed.direction, isNull);
+  });
+
   test('a failing exposure flush is contained and logged — never an '
       'uncaught async error from a disposed banner', () async {
     when(

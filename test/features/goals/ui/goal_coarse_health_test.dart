@@ -48,9 +48,21 @@ void main() {
       },
     );
 
-    test('every GoalTrackStatus is mapped (no orphan enum value)', () {
-      for (final s in GoalTrackStatus.values) {
-        expect(coarseHealthOf(s), isA<GoalCoarseHealth>());
+    test('the full mapping is exhaustive and intentional — a new status '
+        'cannot slip through without an explicit bucket', () {
+      const expected = {
+        GoalTrackStatus.onTrack: GoalCoarseHealth.healthy,
+        GoalTrackStatus.achieved: GoalCoarseHealth.healthy,
+        GoalTrackStatus.atRisk: GoalCoarseHealth.behind,
+        GoalTrackStatus.offTrack: GoalCoarseHealth.behind,
+        GoalTrackStatus.recovering: GoalCoarseHealth.restarting,
+        GoalTrackStatus.insufficientData: GoalCoarseHealth.notEnoughData,
+      };
+      // Guards against a new GoalTrackStatus being added without deciding its
+      // coarse bucket here.
+      expect(expected.keys.toSet(), GoalTrackStatus.values.toSet());
+      for (final MapEntry(key: status, value: bucket) in expected.entries) {
+        expect(coarseHealthOf(status), bucket, reason: '$status');
       }
     });
   });

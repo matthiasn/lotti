@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/agents_page.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -115,8 +116,14 @@ void main() {
     expect(find.text('Seven solid nights running.'), findsOneWidget);
     expect(find.textContaining('% of target'), findsNothing);
 
-    // Needs-you badge on the goal with a pending proposal.
+    // Needs-you badge on the goal with a pending proposal — its caption reads
+    // in the alert's `ink` foreground, not the raw hue (contrast floor).
     expect(find.text('Proposal awaiting review'), findsOneWidget);
+    final tokens = resolveTestTheme().extension<DsTokens>()!;
+    expect(
+      tester.widget<Text>(find.text('Proposal awaiting review')).style?.color,
+      tokens.colors.alert.info.ink,
+    );
 
     // Direction arrows: down for the slipping goal, up for the healthy one.
     expect(find.byIcon(Icons.trending_down_rounded), findsOneWidget);
@@ -136,6 +143,41 @@ void main() {
       tester.widget<Icon>(find.byIcon(Icons.trending_up_rounded)).semanticLabel,
       'Trending up',
     );
+  });
+
+  testWidgets('a report one-liner that leaks a percentage is suppressed — the '
+      'row never renders a percentage on this surface', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const AgentsPage(),
+        overrides: [
+          activeGoalAgentsProvider.overrideWith(
+            (ref) async => [
+              identity('goal-leak', 'Walk daily'),
+              identity('goal-clean', 'Sleep 8h'),
+            ],
+          ),
+          goalAgentHealthProvider('goal-leak').overrideWith(
+            (ref) async => health(
+              trackStatus: GoalTrackStatus.offTrack,
+              reportOneLiner: 'You are at 64% of target this week.',
+            ),
+          ),
+          goalAgentHealthProvider('goal-clean').overrideWith(
+            (ref) async => health(
+              trackStatus: GoalTrackStatus.onTrack,
+              reportOneLiner: 'Seven solid nights running.',
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    // The leaked-percentage one-liner is withheld entirely...
+    expect(find.textContaining('64%'), findsNothing);
+    expect(find.textContaining('% of target'), findsNothing);
+    // ...while a clean events-and-time one-liner still renders.
+    expect(find.text('Seven solid nights running.'), findsOneWidget);
   });
 
   testWidgets('the settled-empty first-run screen hides the global create FAB '

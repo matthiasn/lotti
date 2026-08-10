@@ -716,7 +716,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get agentsFirstRunSpeaks =>
-      'Habla con pancartas breves, donde ya estás. Descarta una y quedará en silencio el resto del día.';
+      'Habla con avisos breves, donde ya estás. Descarta uno y quedará en silencio el resto del día.';
 
   @override
   String get agentsFirstRunTitle => 'Un agente por objetivo';

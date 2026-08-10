@@ -143,6 +143,17 @@ class _FirstRunExplainer extends StatelessWidget {
   }
 }
 
+/// Matches a percentage figure like `64%` or `12.5 %`.
+final _percentagePattern = RegExp(r'\d+(\.\d+)?\s*%');
+
+/// The list-summary contract is events-and-time language, never a percentage
+/// (handover 1c). Model-authored report one-liners are otherwise trusted
+/// prose; this is the display-side backstop that keeps a leaked figure off the
+/// row. The model prompt/`update_goal_report` contract is the real
+/// enforcement point.
+bool summaryHonorsNoPercentageContract(String summary) =>
+    !_percentagePattern.hasMatch(summary);
+
 class _GoalAgentRow extends ConsumerWidget {
   const _GoalAgentRow({required this.identity});
 
@@ -211,7 +222,11 @@ class _GoalAgentRow extends ConsumerWidget {
                     ),
                     // Executive summary: the agent's standing one-liner,
                     // events-and-time language, one line, never a percentage.
-                    if (health?.reportOneLiner case final String oneLiner) ...[
+                    // A model-authored one-liner that leaks a figure like
+                    // "64% of target" is suppressed rather than rendered — the
+                    // redesign removed percentages from this surface.
+                    if (health?.reportOneLiner case final String oneLiner
+                        when summaryHonorsNoPercentageContract(oneLiner)) ...[
                       SizedBox(height: tokens.spacing.step1),
                       Text(
                         oneLiner,
@@ -254,19 +269,24 @@ class _NeedsYouBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final color = tokens.colors.alert.info.defaultColor;
+    final info = tokens.colors.alert.info;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step3,
         vertical: tokens.spacing.step1,
       ),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: SurfaceAlphas.washChip),
+        color: info.defaultColor.withValues(alpha: SurfaceAlphas.washChip),
         borderRadius: BorderRadius.circular(tokens.radii.s),
       ),
+      // The `ink` token is the design system's foreground for this alert's
+      // wash; the full hue as caption text fails the 4.5:1 floor over its own
+      // 22% wash (the same failure fixed on the coarse-health chip).
       child: Text(
         context.messages.goalPendingProposalBadge,
-        style: tokens.typography.styles.others.caption.copyWith(color: color),
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: info.ink,
+        ),
       ),
     );
   }

@@ -708,11 +708,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Körs på dina modeller — oftast bråkdelar av ett öre per dag.';
 
   @override
-  String get agentsFirstRunCta => 'Sätt en avsikt';
+  String get agentsFirstRunCta => 'Ange en avsikt';
 
   @override
   String get agentsFirstRunSpeaks =>
-      'Den hörs i korta banners, där du redan är. Avfärda en så är det tyst resten av dagen.';
+      'Den visas i korta banners, där du redan är. Avfärda en så är det tyst resten av dagen.';
 
   @override
   String get agentsFirstRunTitle => 'En agent per mål';

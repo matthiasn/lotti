@@ -2798,7 +2798,7 @@
   "goalBannerRatingTitle": "O que achaste deste banner?",
   "goalBannerSemanticLabel": "Banner da meta {goalTitle}",
   "goalCoarseHealthBehind": "Atrasado",
-  "goalCoarseHealthHealthy": "Em forma",
+  "goalCoarseHealthHealthy": "Saudável",
   "goalCoarseHealthNotEnoughData": "Dados insuficientes",
   "goalCoarseHealthRestarting": "A recomeçar",
   "goalCreateFailed": "Não foi possível guardar a meta — tenta novamente.",

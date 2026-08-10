@@ -216,9 +216,13 @@ flowchart TD
   Behind / Restarting / Not enough data; `recovering` reads Restarting, never
   a failure), the report one-liner, a pending-proposal badge and a trend
   arrow (`GoalHealthDirection`, computed in `goalAgentHealthProvider` from the
-  two most-recent registers' attainment with a 0.02 deadband, withheld when
-  either register is insufficient-data). Raw attainment percentages never
-  reach the row — they stay in the detail surfaces. A row whose per-agent
+  two most-recent non-deleted registers for the ACTIVE spec version with a
+  0.02 deadband — withheld when either register is insufficient-data, and only
+  for rolling-window goals, since calendar/day windows reset attainment each
+  period and a consecutive-register delta there is a boundary reset, not a
+  decline). Raw attainment percentages never reach the row — they stay in the
+  detail surfaces, and a report one-liner that leaks a percentage figure is
+  suppressed rather than rendered. A row whose per-agent
   health has not resolved shows no chip rather than a false "Not enough data",
   and the settled-empty state is a first-run explainer whose CTA is the sole
   creation affordance (the global FAB hides). The detail page

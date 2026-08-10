@@ -140,22 +140,33 @@ void main() {
   });
 
   testWidgets('the reserved lane covers the rendered compact dock at every '
-      'text scale — including the two-line worst case', (tester) async {
-    // A headline long enough to wrap to the compact dock's full two lines:
-    // the tallest tenant the reserve must clear.
-    final tallEntry = entry(
-      id: 'a',
-      headline:
-          'A deliberately long standing headline that wraps to two '
-          'full lines on a narrow phone dock so we size the tallest case',
-    );
+      'text scale — two-line headline AND the multi-tenant dot row', (
+    tester,
+  ) async {
+    // Two active goals (so the dot-row footer renders), each with a headline
+    // long enough to wrap to the compact dock's full two lines: the tallest
+    // dock the reserve must clear.
+    List<GoalBannerEntry> tallEntries() => [
+      entry(
+        id: 'a',
+        headline:
+            'A deliberately long standing headline that wraps to two '
+            'full lines on a narrow phone dock so we size the tallest case',
+      ),
+      entry(
+        id: 'b',
+        headline:
+            'A second equally long standing headline that also wraps '
+            'to two full lines on the same narrow phone dock',
+      ),
+    ];
 
     /// Renders the dock at [scaler] and returns (rendered height, the reserve
     /// the shell would compute from the same context).
     Future<(double rendered, double reserved)> measure(
       TextScaler scaler,
     ) async {
-      _TestEntries.initial = [tallEntry];
+      _TestEntries.initial = tallEntries();
       late double reserved;
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(

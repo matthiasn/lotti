@@ -3,9 +3,11 @@ import 'dart:async';
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -447,6 +449,22 @@ typedef GoalAgentHealth = ({
   GoalHealthDirection? direction,
 });
 
+/// Whether comparing consecutive period registers' attainment is a sound
+/// trend signal for [criterion]. Only rolling windows accumulate continuously;
+/// day, calendar-week and calendar-month windows reset attainment at each
+/// period boundary, so a consecutive-register delta there is a period reset,
+/// not a decline. Composites require every child to be sound.
+bool _attainmentTrendIsSound(GoalCriterion criterion) => switch (criterion) {
+  GoalCriterionMetric(:final window) ||
+  GoalCriterionMeasurable(:final window) ||
+  GoalCriterionHabit(:final window) => window is GoalWindowRollingDays,
+  GoalCriterionAllOf(:final criteria) ||
+  GoalCriterionAnyOf(:final criteria) ||
+  GoalCriterionAtLeastCount(:final criteria) => criteria.every(
+    _attainmentTrendIsSound,
+  ),
+};
+
 final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
     FutureProvider.autoDispose.family<GoalAgentHealth, String>((
       ref,
@@ -507,14 +525,22 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
       );
 
       // Direction: the latest register's attainment against the one before
-      // it (registers are most-recent-first, same-spec-scoped above). A
-      // small deadband keeps noise from flickering the arrow; null until
-      // there are two registers to compare. Withheld when EITHER register is
-      // insufficient-data: attainment is not a judgeable signal there, and a
-      // downward arrow beside "Not enough data" would guilt-trip over a gap
-      // the policy says must not be judged.
+      // it (registers are the two most-recent non-deleted registers for the
+      // ACTIVE spec version, filtered above). A small deadband keeps noise
+      // from flickering the arrow; null until there are two to compare.
+      //
+      // Withheld when EITHER register is insufficient-data (attainment is not
+      // judgeable there — a downward arrow beside "Not enough data" would
+      // guilt-trip over a gap the policy says must not be judged), and only
+      // computed when the goal's windows accumulate continuously. Calendar
+      // and day windows RESET attainment each period, so subtracting
+      // consecutive registers would emit a false decline at every boundary
+      // (a weekly goal finishing at 1.0 then on-pace Monday at 0.33 is not
+      // "down"); only rolling windows carry a sound cross-register trend.
       GoalHealthDirection? direction;
       if (registers.length >= 2 &&
+          spec != null &&
+          _attainmentTrendIsSound(spec.criteria) &&
           registers[0].trackStatus != GoalTrackStatus.insufficientData &&
           registers[1].trackStatus != GoalTrackStatus.insufficientData) {
         const deadband = 0.02;

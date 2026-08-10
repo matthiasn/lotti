@@ -725,7 +725,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentsFirstRunWatches =>
-      'Urmărește ceea ce depinde obiectivul — obiceiuri bifate, numărul de pași. Nimic ce nu poate vedea, nimic ce trebuie să raportați.';
+      'Urmărește lucrurile de care depinde obiectivul — obiceiuri bifate, numărul de pași. Nimic ce nu poate vedea, nimic ce trebuie să raportați.';
 
   @override
   String get agentSoulAntiSycophancyLabel => 'Politica anti-lingușire';
@@ -6105,7 +6105,7 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalCoarseHealthNotEnoughData => 'Date insuficiente';
 
   @override
-  String get goalCoarseHealthRestarting => 'Reîncepe';
+  String get goalCoarseHealthRestarting => 'Se repornește';
 
   @override
   String get goalCreateFailed =>
