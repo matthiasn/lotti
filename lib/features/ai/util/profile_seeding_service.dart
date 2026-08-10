@@ -24,7 +24,21 @@ const profileLocalGemmaId = 'profile-local-gemma-001';
 const profileLocalGemmaPowerId = 'profile-local-gemma-power-001';
 
 /// Current bundled-default generation for the Melious inference profile.
-const meliousProfileSeedGeneration = 1;
+///
+/// Each generation has a *frozen* constant below and its own one-shot
+/// migration, so a profile stranded at generation 0 chains forward through
+/// every generation in a single [ProfileSeedingService.upgradeExisting] pass.
+/// Bumping this alone would retarget the older migrations' guards and stamps
+/// along with it, which is exactly how a one-shot migration stops being one.
+const int meliousProfileSeedGeneration = meliousProfileSeedGeneration2;
+
+/// Generation 1: Qwen thinking, GLM 5.2 high-end, Mistral vision, Voxtral
+/// transcription, Flux 2 Klein 9B image generation.
+const meliousProfileSeedGeneration1 = 1;
+
+/// Generation 2: GLM 5.2 thinking, Kimi K3 high-end *and* vision, Whisper
+/// Large v3 transcription, Flux 2 Klein 9B image generation.
+const meliousProfileSeedGeneration2 = 2;
 
 const _logTag = 'ProfileSeedingService';
 const _localPowerName = 'Local Power (oMLX)';
@@ -226,8 +240,10 @@ class ProfileSeedingService {
   /// old Local Power seed from Ollama to oMLX, migrates untouched Melious image
   /// generation and transcription to the Flux 2 Klein 9B and Whisper Large v3
   /// defaults, moves untouched Melious profiles to Qwen thinking, GLM 5.2
-  /// high-end, and Voxtral transcription defaults, then backfills default
-  /// skill assignments only for default profiles whose assignments are empty.
+  /// high-end, and Voxtral transcription defaults (generation 1), then moves
+  /// untouched generation-1 Melious profiles to GLM 5.2 thinking, Kimi K3
+  /// high-end and vision, and Whisper Large v3 transcription (generation 2).
+  /// Default skill assignments are deliberately not backfilled.
   ///
   /// Runs at startup (after the model backfill) and again after a provider is
   /// created or re-verified mid-session (`runFtueSetupForType`, provider
@@ -255,7 +271,18 @@ class ProfileSeedingService {
     for (final config in configs.whereType<AiConfigInferenceProfile>()) {
       final template = templatesById[config.id];
       var upgraded = _withMigratedLegacyLocalPowerSeed(config, models);
-      if (template != null && config.isDefault) {
+      // The repair heals a dangling slot to the *current* template's value,
+      // which is only the right answer once the profile has reached the
+      // current generation. Healing a Melious profile that is still mid-
+      // migration writes a generation-2 value into a generation-0 or -1
+      // shape, and the migrations — which recognise exact shapes — then read
+      // that as a user edit and strand the remaining legacy slots. The
+      // pending migration supersedes the repair, so skip it and let the next
+      // pass heal once the generation matches the template.
+      final meliousMigrationPending =
+          config.id == profileMeliousId &&
+          config.seedGeneration < meliousProfileSeedGeneration;
+      if (template != null && config.isDefault && !meliousMigrationPending) {
         upgraded = _withRepairedDanglingDefaultSlots(
           upgraded,
           template,
@@ -272,6 +299,10 @@ class ProfileSeedingService {
         meliousModels,
       );
       upgraded = _withUpgradedMeliousDefaults(upgraded, meliousModels);
+      upgraded = _withUpgradedMeliousGeneration2Defaults(
+        upgraded,
+        meliousModels,
+      );
       upgraded = _withResolvedModelConfigIds(
         upgraded,
         models,
@@ -445,11 +476,15 @@ class ProfileSeedingService {
     List<AiConfigModel> models,
   ) {
     if (profile.id != profileMeliousId ||
-        profile.seedGeneration >= meliousProfileSeedGeneration) {
+        profile.seedGeneration >= meliousProfileSeedGeneration1) {
       return profile;
     }
     if (!_isUntouchedMeliousDefaultProfile(profile, models)) {
-      return profile.copyWith(seedGeneration: meliousProfileSeedGeneration);
+      // Same rule as generation 2: a slot that cannot be matched because its
+      // row is missing is not evidence of a user edit, and this stamp is
+      // permanent. Defer the decision rather than freeze the wrong one.
+      if (!_meliousLegacyShapeSourcesResolve(models)) return profile;
+      return profile.copyWith(seedGeneration: meliousProfileSeedGeneration1);
     }
 
     final currentTargetsAvailable = [
@@ -488,19 +523,171 @@ class ProfileSeedingService {
       );
     }
     return currentTargetsAvailable
-        ? upgraded.copyWith(seedGeneration: meliousProfileSeedGeneration)
+        ? upgraded.copyWith(seedGeneration: meliousProfileSeedGeneration1)
         : upgraded;
   }
 
-  /// Whether [profile] still carries only seeded Melious defaults — every
-  /// slot matches a known default generation and no user-authored metadata
-  /// (name, description, flags, pinned host) has been changed.
+  /// Moves an untouched generation-1 Melious profile to the generation-2 seed
+  /// targets: GLM 5.2 in the thinking slot (was Qwen3.5 122B A10B), Kimi K3 in
+  /// both the high-end thinking slot (was GLM 5.2) and the image-recognition
+  /// slot (was Mistral Small 4 119B Instruct), and Whisper Large v3 in the
+  /// transcription slot (was Voxtral Small 24B). Image generation already
+  /// points at Flux 2 Klein 9B and does not move.
+  ///
+  /// Runs after [_withUpgradedMeliousDefaults] so a profile stranded at
+  /// generation 0 chains through generation 1 and lands here in the same pass.
+  /// It requires generation 1 to have actually *completed*, though: that pass
+  /// defers without stamping when its own targets are missing, and may have
+  /// moved some slots already. Acting on that half-moved shape would fail the
+  /// exact-shape check below and stamp generation 2 over a profile that never
+  /// reached either generation — terminally, since the stamp is never undone.
+  /// A user who deleted one Melious model row is enough to reach that state:
+  /// model deletion is a tombstone, so the backfill will not recreate the row
+  /// and this pass cannot see it.
+  ///
+  /// Deliberately **atomic**: the move happens only once every generation-2
+  /// target resolves to a Melious-owned model row, and is otherwise deferred
+  /// whole. Moving slots one at a time as their rows appeared would leave the
+  /// profile in a shape that is neither generation 1 nor generation 2, and the
+  /// next pass — which recognises only the exact generation-1 shape — would
+  /// read that as a user edit and stamp it forward with the remaining slots
+  /// never migrated.
+  static AiConfigInferenceProfile _withUpgradedMeliousGeneration2Defaults(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    if (profile.id != profileMeliousId ||
+        profile.seedGeneration < meliousProfileSeedGeneration1 ||
+        profile.seedGeneration >= meliousProfileSeedGeneration2) {
+      return profile;
+    }
+    if (!_isUntouchedMeliousGeneration1Profile(profile, models)) {
+      // "Not the generation-1 shape" has two very different causes: the user
+      // rewired a slot, or a source row is temporarily missing so the slot
+      // cannot be matched at all. Only the first is a decision worth
+      // recording, and the stamp is permanent — so when the evidence is
+      // incomplete, decide nothing and look again next pass.
+      if (!_meliousGeneration1ShapeSourcesResolve(models)) return profile;
+      return profile.copyWith(seedGeneration: meliousProfileSeedGeneration2);
+    }
+
+    final targetsAvailable = [
+      meliousGlm52ModelId,
+      meliousKimiK3ModelId,
+      meliousWhisperLargeV3ModelId,
+      meliousFlux2Klein9BModelId,
+    ].every((modelId) => _slotResolvesToModelRow(modelId, models));
+    if (!targetsAvailable) return profile;
+
+    return profile.copyWith(
+      thinkingModelId: meliousGlm52ModelId,
+      thinkingHighEndModelId: meliousKimiK3ModelId,
+      imageRecognitionModelId: meliousKimiK3ModelId,
+      transcriptionModelId: meliousWhisperLargeV3ModelId,
+      seedGeneration: meliousProfileSeedGeneration2,
+    );
+  }
+
+  /// Whether every model row the Melious seed-shape checks read is present.
+  ///
+  /// The shape predicates match a slot by looking its row up in [models], so a
+  /// deleted row makes an untouched slot look rewired. Deletion is a tombstone
+  /// — `backfillNewModels()` reads the row as present and never recreates it,
+  /// while this pass reads without `includeDeleted` and cannot see it — so the
+  /// two disagree by design, and a migration must not mistake that
+  /// disagreement for a user's choice.
+  ///
+  /// Each generation guards on exactly the rows *its own* predicate consults,
+  /// not on the whole catalog and not on each other's: deleting a model that
+  /// generation's shape never mentions — MiniMax, or Whisper Turbo for a
+  /// generation-1 profile — is no reason to stall its migration. Legacy
+  /// provider-native values such as the old Flux 2 dev id are matched as plain
+  /// strings and need no row, so they are absent from both lists.
+  static bool _meliousLegacyShapeSourcesResolve(List<AiConfigModel> models) {
+    return const [
+      meliousQwen35122BA10BModelId,
+      meliousGlm52ModelId,
+      meliousMistralSmall4119BInstructModelId,
+      meliousDeepseekV4ProModelId,
+      meliousVoxtralSmall24B2507ModelId,
+      meliousWhisperLargeV3ModelId,
+      meliousWhisperLargeV3TurboModelId,
+      meliousFlux2Klein9BModelId,
+    ].every((modelId) => _slotResolvesToModelRow(modelId, models));
+  }
+
+  /// The generation-1 counterpart of [_meliousLegacyShapeSourcesResolve].
+  static bool _meliousGeneration1ShapeSourcesResolve(
+    List<AiConfigModel> models,
+  ) {
+    return const [
+      meliousQwen35122BA10BModelId,
+      meliousGlm52ModelId,
+      meliousMistralSmall4119BInstructModelId,
+      meliousVoxtralSmall24B2507ModelId,
+      meliousFlux2Klein9BModelId,
+    ].every((modelId) => _slotResolvesToModelRow(modelId, models));
+  }
+
+  /// Whether [profile] still carries exactly the generation-1 Melious seed —
+  /// every slot on its generation-1 default and no user-authored metadata
+  /// (name, description, flags, pinned host) changed.
+  ///
+  /// Deliberately exact rather than "default or legacy": anything that is not
+  /// precisely the generation-1 shape is a user choice, and the generation-2
+  /// migration must leave it alone.
+  static bool _isUntouchedMeliousGeneration1Profile(
+    AiConfigInferenceProfile profile,
+    List<AiConfigModel> models,
+  ) {
+    return profile.id == profileMeliousId &&
+        profile.seedGeneration < meliousProfileSeedGeneration2 &&
+        profile.name == 'Melious.ai' &&
+        profile.description == null &&
+        _slotMatchesProviderModelId(
+          profile.thinkingModelId,
+          meliousQwen35122BA10BModelId,
+          models,
+        ) &&
+        _slotMatchesProviderModelId(
+          profile.thinkingHighEndModelId,
+          meliousGlm52ModelId,
+          models,
+        ) &&
+        _slotMatchesProviderModelId(
+          profile.imageRecognitionModelId,
+          meliousMistralSmall4119BInstructModelId,
+          models,
+        ) &&
+        _slotMatchesProviderModelId(
+          profile.transcriptionModelId,
+          meliousVoxtralSmall24B2507ModelId,
+          models,
+        ) &&
+        _slotMatchesProviderModelId(
+          profile.imageGenerationModelId,
+          meliousFlux2Klein9BModelId,
+          models,
+        ) &&
+        profile.isDefault &&
+        !profile.desktopOnly &&
+        profile.pinnedHostId == null;
+  }
+
+  /// Whether [profile] still carries only pre-generation-1 seeded Melious
+  /// defaults — every slot matches a known legacy default and no user-authored
+  /// metadata (name, description, flags, pinned host) has been changed.
+  ///
+  /// Guards on generation 1 specifically, not on the moving current
+  /// generation: a profile that already reached generation 1 is the
+  /// generation-2 migration's business, and the legacy Whisper and Flux
+  /// upgrades gated on this predicate must not reconsider it.
   static bool _isUntouchedMeliousDefaultProfile(
     AiConfigInferenceProfile profile,
     List<AiConfigModel> models,
   ) {
     return profile.id == profileMeliousId &&
-        profile.seedGeneration < meliousProfileSeedGeneration &&
+        profile.seedGeneration < meliousProfileSeedGeneration1 &&
         profile.name == 'Melious.ai' &&
         profile.description == null &&
         _meliousThinkingSlotMatchesDefaultOrLegacy(
@@ -948,10 +1135,10 @@ class ProfileSeedingService {
     AiConfigInferenceProfile(
       id: profileMeliousId,
       name: 'Melious.ai',
-      thinkingModelId: meliousQwen35122BA10BModelId,
-      thinkingHighEndModelId: meliousGlm52ModelId,
-      imageRecognitionModelId: meliousMistralSmall4119BInstructModelId,
-      transcriptionModelId: meliousVoxtralSmall24B2507ModelId,
+      thinkingModelId: meliousGlm52ModelId,
+      thinkingHighEndModelId: meliousKimiK3ModelId,
+      imageRecognitionModelId: meliousKimiK3ModelId,
+      transcriptionModelId: meliousWhisperLargeV3ModelId,
       imageGenerationModelId: meliousFlux2Klein9BModelId,
       skillAssignments: _defaultSkillAssignments,
       isDefault: true,

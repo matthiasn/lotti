@@ -117,20 +117,32 @@ void main() {
       await tester.pump();
 
       expect(result, isNotNull);
-      expect(result!.modelsCreated, 7);
+      expect(result!.modelsCreated, 8);
       expect(result!.modelsVerified, 0);
       expect(result!.categoryCreated, isTrue);
+      final createdProviderModelIds = saved
+          .whereType<AiConfigModel>()
+          .map((model) => model.providerModelId)
+          .toList();
       expect(
-        saved.whereType<AiConfigModel>().map((model) => model.providerModelId),
+        createdProviderModelIds,
         containsAll([
           meliousQwen35122BA10BModelId,
           meliousMistralSmall4119BInstructModelId,
           meliousGlm52ModelId,
+          meliousKimiK3ModelId,
           meliousFlux2Klein9BModelId,
           meliousVoxtralSmall24B2507ModelId,
           meliousWhisperLargeV3ModelId,
           meliousWhisperLargeV3TurboModelId,
         ]),
+      );
+      expect(
+        createdProviderModelIds.toSet(),
+        hasLength(createdProviderModelIds.length),
+        reason:
+            'the install list snapshots existing rows once, so a repeated '
+            'provider model id would silently create two rows for it',
       );
       verify(
         () => mockCategoryRepository.createCategory(
@@ -162,6 +174,12 @@ void main() {
           id: 'advanced',
           name: 'GLM 5.2',
           providerModelId: meliousGlm52ModelId,
+          inferenceProviderId: meliousProvider.id,
+        ),
+        AiTestDataFactory.createTestModel(
+          id: 'kimi-k3',
+          name: 'Kimi K3',
+          providerModelId: meliousKimiK3ModelId,
           inferenceProviderId: meliousProvider.id,
         ),
         AiTestDataFactory.createTestModel(
@@ -228,7 +246,7 @@ void main() {
 
       expect(result, isNotNull);
       expect(result!.modelsCreated, 0);
-      expect(result!.modelsVerified, 7);
+      expect(result!.modelsVerified, 8);
       expect(result!.categoryCreated, isFalse);
       verifyNever(() => mockRepository.saveConfig(any()));
     });
