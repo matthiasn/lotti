@@ -692,6 +692,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentRunningIndicator => 'Esecuzione';
 
   @override
+  String get agentsCreateGoal => 'Nuovo agente obiettivo';
+
+  @override
   String get agentSessionProgressTitle => 'Progressi di sessione';
 
   @override
@@ -830,6 +833,17 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentSoulVoiceDirectiveLabel => 'Direttiva della voce';
 
   @override
+  String get agentsPageEmpty =>
+      'Ancora nessun agente obiettivo. Creane uno e seguirà i tuoi progressi in silenzio.';
+
+  @override
+  String get agentsPageLoadFailed =>
+      'Impossibile caricare i tuoi agenti al momento.';
+
+  @override
+  String get agentsPageTitle => 'Agenti';
+
+  @override
   String get agentStateConsecutiveFailures => 'Fallimenti consecutivi';
 
   @override
@@ -901,6 +915,26 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String agentSummaryFollowUpTask(Object title) {
     return 'Attività di follow-up: $title';
+  }
+
+  @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Cambia la cadenza a $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Cambia il periodo a $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'si applica a $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Cambia l\'obiettivo a $value';
   }
 
   @override
@@ -1248,6 +1282,10 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Sveglia';
+
+  @override
+  String get agentToolGoalRevisionLabel =>
+      'Proposta di revisione dell\'obiettivo';
 
   @override
   String get aggregationDailyAvg => 'Media giornaliera';
@@ -3185,6 +3223,13 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Guidare gli utenti del sistema operativo giornaliero di prima volta attraverso un check-in reale che trasforma il discorso in un compito e un piano di giorno.';
+
+  @override
+  String get configFlagEnableAgentsPage => 'Attivare la pagina Agenti';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Mostra la pagina Agenti nella navigazione principale. Segui a colpo d\'occhio lo stato dei tuoi agenti degli obiettivi e dai un\'occhiata a ciascuno.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -5977,6 +6022,134 @@ class AppLocalizationsIt extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Crea immagine dalla descrizione vocale';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% dell’obiettivo';
+  }
+
+  @override
+  String get goalBannerActionFailed =>
+      'Non è stato salvato: riprova per favore.';
+
+  @override
+  String get goalBannerDismissTooltip => 'Ignora';
+
+  @override
+  String get goalBannerRateTooltip => 'Valuta questo banner';
+
+  @override
+  String get goalBannerRatingSkip => 'Salta';
+
+  @override
+  String get goalBannerRatingTitle => 'Com’era questo banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Banner dell’obiettivo $goalTitle';
+  }
+
+  @override
+  String get goalCreateFailed =>
+      'Salvataggio dell’obiettivo non riuscito: riprova.';
+
+  @override
+  String get goalCreateHabitCountLabel => 'Volte a settimana (per abitudine)';
+
+  @override
+  String get goalCreateHabitCountRange =>
+      'Il conteggio settimanale deve essere compreso tra 1 e 7.';
+
+  @override
+  String get goalCreateHabitsLabel => 'Abitudini da seguire';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Impossibile caricare le tue abitudini al momento: riprova tra un attimo.';
+
+  @override
+  String get goalCreateNameLabel => 'Nome';
+
+  @override
+  String get goalCreateSaveButton => 'Crea agente';
+
+  @override
+  String get goalCreateStatementLabel => 'Enunciato dell’obiettivo';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Passi medi al giorno';
+
+  @override
+  String get goalCreateTypeHabits => 'Routine di abitudini';
+
+  @override
+  String get goalCreateTypeSteps => 'Passi giornalieri (settimana mobile)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Dai un nome all’obiettivo e almeno un criterio.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Impossibile caricare lo stato di questo obiettivo al momento.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Ancora nessun report: l’agente riferirà al primo cambiamento rilevante.';
+
+  @override
+  String get goalDetailNotFound =>
+      'Questo agente dell\'obiettivo non esiste più.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interazioni';
+
+  @override
+  String get goalNudgeStatusDismissed => 'Ignorato';
+
+  @override
+  String get goalNudgeStatusExpired => 'Scaduto';
+
+  @override
+  String get goalNudgeStatusRetired => 'Ritirato';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Sostituito';
+
+  @override
+  String get goalPendingProposalBadge => 'Proposta in attesa';
+
+  @override
+  String get goalStatusAchieved => 'Raggiunto';
+
+  @override
+  String get goalStatusAtRisk => 'A rischio';
+
+  @override
+  String get goalStatusInsufficientData => 'Nessun dato';
+
+  @override
+  String get goalStatusOffTrack => 'Fuori rotta';
+
+  @override
+  String get goalStatusOnTrack => 'In linea';
+
+  @override
+  String get goalStatusRecovering => 'In ripresa';
+
+  @override
+  String get goalWindowCalendarMonth => 'mese di calendario';
+
+  @override
+  String get goalWindowCalendarWeek => 'settimana di calendario';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return '$count giorni mobili';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'un singolo giorno';
 
   @override
   String get goMenuTitle => 'Vai.';

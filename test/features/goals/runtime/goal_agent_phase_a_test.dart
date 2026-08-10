@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -108,6 +109,12 @@ void main() {
     syncService = MockAgentSyncService();
     upserts = [];
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.getEntitiesByAgentId(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => []);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
@@ -131,6 +138,150 @@ void main() {
       threadId: 'thread-1',
     ),
   );
+
+  test('an active ad past its staleAt is expired by the wake — the '
+      "clock's verdict lands on the row, stamped with the deadline", () async {
+    stubSpec();
+    GoalNudgeEntity nudgeRow(String id, {DateTime? staleAt}) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: agentId,
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, 5),
+              updatedAt: DateTime(2026, 8, 5),
+              vectorClock: null,
+              staleAt: staleAt,
+            )
+            as GoalNudgeEntity;
+    final deadline = DateTime(2026, 8, 7, 9);
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        nudgeRow('ad-overdue', staleAt: deadline),
+        nudgeRow('ad-fresh', staleAt: DateTime(2026, 8, 20)),
+        nudgeRow('ad-open-ended'),
+      ],
+    );
+
+    await run(onTrackSignals());
+
+    final expired = upserts.whereType<GoalNudgeEntity>().toList();
+    expect(expired, hasLength(1));
+    expect(expired.single.id, 'ad-overdue');
+    expect(expired.single.status, GoalNudgeStatus.expired);
+    expect(
+      expired.single.expiredAt,
+      deadline.toUtc(),
+      reason:
+          'the deadline itself, not this device wall clock — '
+          'every sweeping device writes the identical verdict',
+    );
+  });
+
+  test('a revision landing mid-wake fences the register AND the '
+      'escalation — no v1 row overwrites the day under v2', () async {
+    stubSpec();
+    // First head read (wake start) serves v1; the in-transaction
+    // re-read sees the revision's v2.
+    var headReads = 0;
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer((
+      _,
+    ) async {
+      headReads++;
+      return AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: headReads == 1 ? '$agentId:spec-v1' : '$agentId:spec-v2',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      );
+    });
+
+    final result = await run(onTrackSignals());
+    expect(result.success, isTrue);
+    expect(
+      upserts.whereType<GoalProgressEntity>(),
+      isEmpty,
+      reason: 'the fenced transaction must write neither register…',
+    );
+    expect(
+      upserts.whereType<ScheduledWakeEntity>().where(
+        (w) => w.workspaceKey?.startsWith('goal-escalation') ?? false,
+      ),
+      isEmpty,
+      reason: '…nor escalation (the spec-agnostic cadence re-arm may stay)',
+    );
+  });
+
+  test('a late-synced banner from a superseded spec is swept to '
+      'superseded on the next wake — but only when its origin version is '
+      'PRESENT and terminal', () async {
+    stubSpec();
+    when(() => repository.getEntity('$agentId:spec-v0')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v0',
+        agentId: agentId,
+        version: 0,
+        status: GoalSpecVersionStatus.superseded,
+        authoredBy: 'user',
+        title: 'Old',
+        statement: 'x',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 9000,
+        ),
+        createdAt: DateTime(2026, 7),
+        vectorClock: null,
+      ),
+    );
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.goalNudge(
+              id: 'ad-foreign-spec',
+              agentId: agentId,
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8, 5),
+              updatedAt: DateTime(2026, 8, 5),
+              vectorClock: null,
+              provenance: const {'specVersionId': '$agentId:spec-v0'},
+            )
+            as GoalNudgeEntity,
+      ],
+    );
+
+    await run(onTrackSignals());
+
+    final swept = upserts.whereType<GoalNudgeEntity>().single;
+    expect(swept.id, 'ad-foreign-spec');
+    expect(swept.status, GoalNudgeStatus.superseded);
+
+    // Partial sync: a NEW spec's banner arriving before that spec's head
+    // (origin version unresolvable) is left alone, not destroyed.
+    upserts.clear();
+    when(
+      () => repository.getEntity('$agentId:spec-v0'),
+    ).thenAnswer((_) async => null);
+    await run(onTrackSignals());
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+  });
 
   test('a goal without a spec head is a clean no-op', () async {
     final result = await run(onTrackSignals());
@@ -387,7 +538,9 @@ void main() {
       );
       expect(
         order,
-        ['transaction', 'register', 'escalation'],
+        // The first transaction is the (empty) staleness sweep; the
+        // register and its escalation share the SECOND.
+        ['transaction', 'transaction', 'register', 'escalation'],
         reason: 'both writes must happen inside the same transaction',
       );
     },

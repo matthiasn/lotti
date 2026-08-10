@@ -107,25 +107,70 @@ GoalRevisionResult applyGoalRevisionChanges({
 
   if (cadence != null) {
     final habits = _habitLeaves(revised);
-    if (habits.length != 1) {
-      return GoalRevisionRejected(
-        habits.isEmpty
-            ? 'the goal has no habit criterion for a cadence change'
-            : 'the goal has ${habits.length} habit criteria — the proposal '
-                  'must identify which one',
+    if (habits.isEmpty) {
+      return const GoalRevisionRejected(
+        'the goal has no habit criterion for a cadence change',
       );
     }
-    final count = _parseCadenceCount(cadence);
+    // Multi-habit routines (the creation form's allOf) bind through the
+    // proposal's identifier — criterionId or habitId via `metric`.
+    final habit = habits.length == 1
+        ? habits.single
+        : _resolveHabitLeaf(habits, changes['metric']);
+    if (habit == null) {
+      return GoalRevisionRejected(
+        'the goal has ${habits.length} habit criteria — the proposal '
+        'must identify which one (criterionId or habitId via "metric")',
+      );
+    }
+    final count = parseGoalCadenceCount(cadence);
     if (count == null) {
       return GoalRevisionRejected(
         'unrecognized cadence "$cadence" — expected a positive count like '
         '"3" or "3 times per week"',
       );
     }
-    final before = habits.single.targetCount;
+    // A phrase that NAMES a unit must name the window it will actually
+    // be evaluated against: silently applying "3 times per month" to a
+    // weekly habit would triple what the user thinks they approved.
+    final statedUnit = _cadenceUnit(cadence);
+    if (statedUnit != null) {
+      final windowUnit = switch (habit.window) {
+        GoalWindowDay() => 'day',
+        GoalWindowCalendarWeek() => 'week',
+        GoalWindowCalendarMonth() => 'month',
+        GoalWindowRollingDays() => null,
+      };
+      if (windowUnit == null || statedUnit != windowUnit) {
+        return GoalRevisionRejected(
+          'the cadence names "per $statedUnit" but the habit is evaluated '
+          'per ${windowUnit ?? 'rolling window'} — propose the count per '
+          "${windowUnit ?? 'window'} instead (moving a habit's window is "
+          'not a supported revision)',
+        );
+      }
+    }
+    // The signal reader counts at most ONE success per local day, so a
+    // count beyond the window's day capacity mints a goal that can never
+    // succeed (the creation form enforces the same bound).
+    final capacity = switch (habit.window) {
+      GoalWindowDay() => 1,
+      GoalWindowRollingDays(:final count) => count,
+      GoalWindowCalendarWeek() => 7,
+      // The guaranteed minimum: a 29+ target would be unsatisfiable
+      // every February.
+      GoalWindowCalendarMonth() => 28,
+    };
+    if (count > capacity) {
+      return GoalRevisionRejected(
+        'cadence $count exceeds the window capacity of $capacity — one '
+        'success per day is the most the signals can observe',
+      );
+    }
+    final before = habit.targetCount;
     revised = _mapLeaf(
       revised,
-      habits.single.criterionId,
+      habit.criterionId,
       (c) => c is GoalCriterionHabit ? c.copyWith(targetCount: count) : c,
     );
     summaries.add('cadence: $before → $count per window');
@@ -146,49 +191,6 @@ GoalRevisionResult applyGoalRevisionChanges({
     );
   }
   return GoalRevisionApplied(criteria: revised, changeSummaries: summaries);
-}
-
-/// Parses the FACTS window vocabulary into a [GoalWindow].
-GoalWindow? parseGoalWindowPhrase(String phrase) {
-  final normalized = phrase.toLowerCase().trim();
-  if (RegExp(r'^(per\s+)?day(\b|$)').hasMatch(normalized) ||
-      normalized == 'daily') {
-    return const GoalWindow.day();
-  }
-  final rolling = RegExp(r'rolling\s+(\d+)\s+days?').firstMatch(normalized);
-  if (rolling != null) {
-    // tryParse: model-authored digits can overflow a 64-bit int, and this
-    // parser's contract is null for unusable input, never a throw.
-    final count = int.tryParse(rolling.group(1)!);
-    return count != null && count > 0
-        ? GoalWindow.rollingDays(count: count)
-        : null;
-  }
-  if (normalized.contains('calendar week') ||
-      normalized == 'week' ||
-      normalized == 'weekly') {
-    return const GoalWindow.calendarWeek();
-  }
-  if (normalized.contains('calendar month') ||
-      normalized == 'month' ||
-      normalized == 'monthly') {
-    return const GoalWindow.calendarMonth();
-  }
-  return null;
-}
-
-int? _parseCadenceCount(Object? cadence) {
-  if (cadence is num) {
-    return cadence % 1 == 0 && cadence > 0 ? cadence.toInt() : null;
-  }
-  // Anchored end to end: '3.5' or '3 bananas' must reject, not silently
-  // truncate to 3 — this runs on the approval-time mutation path.
-  final match = RegExp(
-    r'^\s*(\d+)\s*(x|times(\s+per\s+\w+)?)?\s*$',
-  ).firstMatch('$cadence');
-  if (match == null) return null;
-  final count = int.tryParse(match.group(1)!);
-  return count != null && count > 0 ? count : null;
 }
 
 /// The single metric/measurable leaf a quantitative change binds to, or
@@ -273,4 +275,32 @@ GoalCriterion _mapLeaf(
     ),
     _ => node,
   };
+}
+
+/// The habit leaf a cadence change binds to when the goal has several —
+/// matched on criterionId or habitId, null when unidentified/ambiguous.
+GoalCriterionHabit? _resolveHabitLeaf(
+  List<GoalCriterionHabit> habits,
+  Object? identifier,
+) {
+  if (identifier is! String || identifier.isEmpty) return null;
+  final needle = identifier.toLowerCase();
+  final matches = habits
+      .where(
+        (h) =>
+            h.criterionId.toLowerCase() == needle ||
+            h.habitId.toLowerCase() == needle,
+      )
+      .toList();
+  return matches.length == 1 ? matches.single : null;
+}
+
+/// The unit word a cadence phrase names ("3 times per week" → "week"),
+/// or null when the phrase is bare ("3", "3x", "3 times").
+String? _cadenceUnit(Object? cadence) {
+  final match = RegExp(
+    r'per\s+(\w+)',
+    caseSensitive: false,
+  ).firstMatch('$cadence');
+  return match?.group(1)?.toLowerCase();
 }

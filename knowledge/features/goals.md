@@ -59,8 +59,9 @@ every wake; Phase B is the lease-elected LLM tier that consumes the
 escalation wakes Phase A arms, speaking the contract that was validated
 in the eval harness *before* this runtime existed (the prompt and tool
 definitions live in `goal_agent_contract.dart` and the eval suite imports
-them — one artifact, zero drift). The banner surface (ADR 0058) and the
-goal chat are later increments.
+them — one artifact, zero drift). The banner surface and the Agents tab
+shipped with PR 5; the two-way goal chat is the remaining increment (the
+detail page's timeline is the same durable history chat will project).
 
 ## Runtime flow
 
@@ -145,7 +146,7 @@ flowchart TD
   the period.
 - **Ad contracts are enforced at persistence, not just in the prompt.**
   `persistOutputs` re-reads the nudge rows (a dismissal during inference
-  must count), and suppresses creates/re-runs during the 24h dismissal
+  must count), and suppresses creates/re-runs during the same-day dismissal
   cooldown, while a fresh active ad exists (ads retired in the same wake
   don't count — the P14 swap stays legal), and for duplicate brief
   digests. Report prose passes `sanitizeAgentReportText`.
@@ -173,6 +174,42 @@ flowchart TD
 - **Calendar arithmetic is component-based** (`DateTime(y, m, d ± n)`),
   never `Duration` math, so DST transitions cannot shift the cadence hour,
   skip a prior-day register key, or truncate a 25-hour day's query range.
+
+## The visible layer (PR 5)
+
+- **Banners** (`ui/goal_banner_*.dart`): procedural text banners per
+  ADR 0058 — model-authored copy, code-owned animation presets (all
+  degrade to plain text under reduced motion) and accent presets bound to
+  EXISTING design-system tokens (`aiCard.accent`, `alert.info/warning`,
+  `interactive.enabled`, `decorative`, with `SurfaceAlphas.tint` fills).
+  Mounted on the Daily OS day page nudge stack and the habits tab; both
+  mounts shrink to nothing without an active ad. Tapping a banner opens
+  its goal's detail page (the banner→conversation flow); the star button
+  — rendered only while an outcome is due — opens the per-activation
+  rating prompt (one outcome per activation, skips count). Dismissal (X
+  or swipe) is terminal and quiets ads for the rest of the local day.
+  Exposure is measured in visibility episodes gated on THREE signals —
+  the tracker's stopwatch runs only while the app lifecycle is
+  `resumed`, `TickerMode` reports the host tab on screen, AND the banner
+  intersects its enclosing viewport (rechecked on scroll events,
+  lifecycle changes and post-rebuild frames, never per frame; hosts
+  without a scrollable use the other two signals alone). Every
+  visible→hidden transition — backgrounding, tab switch, scroll-out,
+  unmount — flushes its own episode into the per-host G-counters, so
+  returning starts a new episode. Writes per nudge are serialized in
+  `GoalNudgeInteractions` so a rapid flush/dismiss pair cannot lose an
+  update to a stale read.
+- **The Agents tab** (`enable_agents_page` flag, `/agents`): one card per
+  goal agent with health at a glance (latest register verdict +
+  attainment, report one-liner, pending-proposal badge); the detail page
+  carries the goal's active banners (uncapped — ads the host strips'
+  two-visible limit holds back stay reachable here), the
+  revision-approval card (`ChangeSetSummaryCard.selfTargeted`) and the
+  read-only interaction timeline (`AgentConversationLog`). Creation supports a steps goal or a
+  MULTI-habit routine (`allOf` composite).
+- **Interaction writes bypass the notifier by design** (they go through
+  the sync service): the banner handlers invalidate
+  `activeGoalNudgesProvider` after dismiss/rate.
 
 ## Gotchas
 

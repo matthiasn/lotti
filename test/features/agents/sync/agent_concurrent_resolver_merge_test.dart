@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -399,6 +400,66 @@ void main() {
     });
   });
 
+  group('goal progress — the newer spec version wins the shared row', () {
+    GoalProgressEntity register(String specVersionId) =>
+        AgentDomainEntity.goalProgress(
+              id: 'goal_progress:goal-1:2026-08-10',
+              agentId: 'goal-1',
+              periodKey: '2026-08-10',
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1,
+              dataCoverage: 1,
+              satisfied: true,
+              specVersionId: specVersionId,
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+
+    test('an offline v1 evaluation cannot replace the v2 row by LWW', () {
+      final v1 = register('goal-1:spec-v1');
+      final v2 = register('goal-1:spec-v2-9f2c1a08');
+      expect(
+        resolveConcurrentAgentEntityOverride(local: v2, incoming: v1),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(local: v1, incoming: v2),
+        ConcurrentWinner.incoming,
+      );
+    });
+
+    test('same-ordinal DIFFERENT ids pick a stable lexicographic winner — '
+        'replicas agree, and the next tick recomputes under the real '
+        'head', () {
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: register('goal-1:spec-v2-aa'),
+          incoming: register('goal-1:spec-v2-bb'),
+        ),
+        ConcurrentWinner.incoming,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: register('goal-1:spec-v2-bb'),
+          incoming: register('goal-1:spec-v2-aa'),
+        ),
+        ConcurrentWinner.local,
+      );
+    });
+
+    test('identical spec ids defer to LWW (null)', () {
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: register('goal-1:spec-v2-aa'),
+          incoming: register('goal-1:spec-v2-aa'),
+        ),
+        isNull,
+      );
+    });
+  });
+
   group('goal nudge — dismissal is terminal', () {
     test('a concurrent dismissal beats any other status, both directions', () {
       final dismissed = goalNudge(status: GoalNudgeStatus.dismissed);
@@ -424,13 +485,136 @@ void main() {
       }
     });
 
-    test('same-dismissal-state conflicts defer to LWW (null)', () {
+    test('a terminal status beats a concurrent NON-advancing live write — '
+        'a stale exposure flush cannot revive a retired ad', () {
+      for (final terminalStatus in [
+        GoalNudgeStatus.retired,
+        GoalNudgeStatus.expired,
+        GoalNudgeStatus.superseded,
+        GoalNudgeStatus.failed,
+      ]) {
+        final terminal = goalNudge(status: terminalStatus);
+        final staleActive = goalNudge(status: GoalNudgeStatus.active);
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: terminal,
+            incoming: staleActive,
+          ),
+          ConcurrentWinner.local,
+          reason: '$terminalStatus must dominate same-activation bookkeeping',
+        );
+        expect(
+          resolveConcurrentAgentEntityOverride(
+            local: staleActive,
+            incoming: terminal,
+          ),
+          ConcurrentWinner.incoming,
+        );
+      }
+    });
+
+    test('a genuine reactivation — the activation count ADVANCED — beats a '
+        'concurrent terminal write', () {
+      final retired = goalNudge(status: GoalNudgeStatus.retired);
+      final rerun = goalNudge(
+        status: GoalNudgeStatus.active,
+        activationCount: 2,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(local: retired, incoming: rerun),
+        ConcurrentWinner.incoming,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(local: rerun, incoming: retired),
+        ConcurrentWinner.local,
+      );
+    });
+
+    test('two terminal (or two live) statuses defer to LWW (null)', () {
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: goalNudge(status: GoalNudgeStatus.retired),
+          incoming: goalNudge(status: GoalNudgeStatus.expired),
+        ),
+        isNull,
+      );
       expect(
         resolveConcurrentAgentEntityOverride(
           local: goalNudge(status: GoalNudgeStatus.active),
-          incoming: goalNudge(status: GoalNudgeStatus.retired),
+          incoming: goalNudge(status: GoalNudgeStatus.ready),
         ),
         isNull,
+      );
+    });
+
+    test('supersession dominates a concurrent retirement — the revision '
+        'sweep stays monotonic, the reuse library stays clean', () {
+      final superseded = goalNudge(status: GoalNudgeStatus.superseded);
+      final retired = goalNudge(status: GoalNudgeStatus.retired);
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: superseded,
+          incoming: retired,
+        ),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: retired,
+          incoming: superseded,
+        ),
+        ConcurrentWinner.incoming,
+      );
+    });
+
+    test('supersession outranks even a HIGHER activation — an offline '
+        'old-spec rerun cannot resurrect the banner beside the revised '
+        'goal', () {
+      final swept = goalNudge(status: GoalNudgeStatus.superseded);
+      final offlineRerun = goalNudge(
+        status: GoalNudgeStatus.active,
+        activationCount: 3,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: swept,
+          incoming: offlineRerun,
+        ),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: offlineRerun,
+          incoming: swept,
+        ),
+        ConcurrentWinner.incoming,
+      );
+    });
+
+    test('the higher activation wins whole-row selection — a bookkeeping '
+        'write for the PREVIOUS run cannot stamp the rerun with its old '
+        'deadline', () {
+      final rerun = goalNudge(
+        status: GoalNudgeStatus.active,
+        activationCount: 3,
+      );
+      final staleBookkeeping = goalNudge(
+        status: GoalNudgeStatus.active,
+        activationCount: 2,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: rerun,
+          incoming: staleBookkeeping,
+        ),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: staleBookkeeping,
+          incoming: rerun,
+        ),
+        ConcurrentWinner.incoming,
       );
     });
   });
@@ -485,40 +669,43 @@ void main() {
       expect(merged.lastShownAt, DateTime(2026, 8, 5));
     });
 
-    test('distinct ratings tied on activation and ratedAt still merge in '
-        'one deterministic order on both replicas', () {
-      final at = DateTime(2026, 8, 2, 9);
+    test('concurrent outcomes for ONE activation collapse to a single '
+        'deterministic entry on both replicas — a run is never counted '
+        'twice', () {
       final skippedEntry = GoalNudgeRating(
         activation: 1,
-        ratedAt: at,
+        ratedAt: DateTime(2026, 8, 2, 9),
         skipped: true,
       );
-      final rated = GoalNudgeRating(activation: 1, ratedAt: at, rating: 3);
-      final a = goalNudge(
-        status: GoalNudgeStatus.active,
-        ratings: [rated],
+      final rated = GoalNudgeRating(
+        activation: 1,
+        ratedAt: DateTime(2026, 8, 2, 10),
+        rating: 3,
       );
+      final a = goalNudge(status: GoalNudgeStatus.active, ratings: [rated]);
       final b = goalNudge(
         status: GoalNudgeStatus.active,
         ratings: [skippedEntry],
       );
       final ab = mergeGoalNudgeAccumulators(winner: a, local: a, incoming: b);
       final ba = mergeGoalNudgeAccumulators(winner: a, local: b, incoming: a);
-      expect(ab.ratings, hasLength(2));
       expect(
         ab.ratings,
-        ba.ratings,
-        reason: 'union order must not leak into the merged list',
+        [skippedEntry],
+        reason: 'the EARLIEST outcome wins — one per activation',
       );
+      expect(ab.ratings, ba.ratings);
 
-      // Same tie, differing only in the rating VALUE.
+      // A full tie (same instant) breaks on the remaining total order:
+      // skipped=false sorts first, then the lower rating value.
+      final at = DateTime(2026, 8, 2, 9);
       final low = GoalNudgeRating(activation: 2, ratedAt: at, rating: 2);
       final high = GoalNudgeRating(activation: 2, ratedAt: at, rating: 5);
       final c = goalNudge(status: GoalNudgeStatus.active, ratings: [low]);
       final d = goalNudge(status: GoalNudgeStatus.active, ratings: [high]);
       final cd = mergeGoalNudgeAccumulators(winner: c, local: c, incoming: d);
       final dc = mergeGoalNudgeAccumulators(winner: c, local: d, incoming: c);
-      expect(cd.ratings, [low, high]);
+      expect(cd.ratings, [low]);
       expect(cd.ratings, dc.ratings);
     });
 

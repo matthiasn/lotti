@@ -38,15 +38,23 @@ routing to be tempted by.
    wrong banner that lingers is treated as a defect of the contract, not of the model.
 
 4. **Respect mechanics, not budget mechanics.** Dismissing an ad suppresses new ads for that
-   goal for 24 h (wake-fact enforced). Near-identical regeneration is prevented by a
-   `briefDigest` dedupe key. There are **no spending caps** (cost policy is
+   goal for 24 h (wake-fact enforced). *Amended 2026-08-09 (maintainer decision during the
+   visible-layer build): the suppression window is the **rest of the local calendar day**, not
+   a rolling 24 h — "not today" should not silence most of tomorrow after an evening dismissal.
+   Enforced via the repo's DST-safe day key (`GoalWindow.dayUtc`).* Near-identical regeneration
+   is prevented by a `briefDigest` dedupe key. There are **no spending caps** (cost policy is
    monitoring-per-goal, ADR 0054 Decision 8); these mechanics exist so the channel stays
    respectful, which is what keeps it effective.
 
 5. **Quiet-by-default surfaces.** The banner widget renders nothing when no active ad exists
    (the `KnowledgeNudge` contract). v1 mounts: the Daily OS day page nudge stack and the habits
    tab; multiple active ads render as a manual-swipe carousel with position dots (no
-   auto-advance; reduced-motion respected). An app-shell structural band (the demo-banner
+   auto-advance; reduced-motion respected). *Amended 2026-08-10: the carousel was specified for
+   ADR-0055-era fixed-height IMAGE cards. With ADR 0058's pivot to compact procedural text
+   banners, multiple ads render as a bounded vertical stack (at most two visible; the rest stay
+   reachable on the goal's detail page) — a swipe carousel over variable-height text rows would
+   hide the second ad behind a gesture without saving meaningful space. Revisit if banners ever
+   regain fixed-height media.* An app-shell structural band (the demo-banner
    pattern) is documented as an escalation surface and deliberately not built in v1.
 
 6. **Tap opens the conversation; dismissal is explicit.** Tapping the ad opens the goal agent's

@@ -688,6 +688,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentRunningIndicator => 'Löpning';
 
   @override
+  String get agentsCreateGoal => 'Ny målagent';
+
+  @override
   String get agentSessionProgressTitle => 'Sessionens framsteg';
 
   @override
@@ -824,6 +827,17 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentSoulVoiceDirectiveLabel => 'Röstdirektivet';
 
   @override
+  String get agentsPageEmpty =>
+      'Inga målagenter ännu. Skapa en så följer den tyst dina framsteg.';
+
+  @override
+  String get agentsPageLoadFailed =>
+      'Det gick inte att läsa in dina agenter just nu.';
+
+  @override
+  String get agentsPageTitle => 'Agenter';
+
+  @override
   String get agentStateConsecutiveFailures =>
       'På varandra följande misslyckanden';
 
@@ -896,6 +910,26 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String agentSummaryFollowUpTask(Object title) {
     return 'Uppföljningsuppgift: $title';
+  }
+
+  @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Ändra frekvensen till $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Ändra perioden till $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'gäller $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Ändra målet till $value';
   }
 
   @override
@@ -1240,6 +1274,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Vakor';
+
+  @override
+  String get agentToolGoalRevisionLabel => 'Förslag på måljustering';
 
   @override
   String get aggregationDailyAvg => 'Dagligt genomsnitt';
@@ -3149,6 +3186,13 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Vägled förstagångsanvändare av Daily OS genom en riktig avstämning som förvandlar tal till en uppgift och en dagsplan.';
+
+  @override
+  String get configFlagEnableAgentsPage => 'Aktivera agenter-sidan';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Visa sidan Agenter i huvudnavigeringen. Följ dina målagenters hälsa med en blick och titta in hos var och en.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -5910,6 +5954,131 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get generateCoverArtSubtitle => 'Skapa bild från röstbeskrivning';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent % av målet';
+  }
+
+  @override
+  String get goalBannerActionFailed => 'Det sparades inte — försök igen.';
+
+  @override
+  String get goalBannerDismissTooltip => 'Avfärda';
+
+  @override
+  String get goalBannerRateTooltip => 'Betygsätt den här bannern';
+
+  @override
+  String get goalBannerRatingSkip => 'Hoppa över';
+
+  @override
+  String get goalBannerRatingTitle => 'Vad tyckte du om den här bannern?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Målbanner för $goalTitle';
+  }
+
+  @override
+  String get goalCreateFailed => 'Målet kunde inte sparas — försök igen.';
+
+  @override
+  String get goalCreateHabitCountLabel => 'Gånger per vecka (per vana)';
+
+  @override
+  String get goalCreateHabitCountRange =>
+      'Veckoantalet måste vara mellan 1 och 7.';
+
+  @override
+  String get goalCreateHabitsLabel => 'Vanor att följa';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Det gick inte att läsa in dina vanor just nu — försök igen om en stund.';
+
+  @override
+  String get goalCreateNameLabel => 'Namn';
+
+  @override
+  String get goalCreateSaveButton => 'Skapa agent';
+
+  @override
+  String get goalCreateStatementLabel => 'Målbeskrivning';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Genomsnittliga steg per dag';
+
+  @override
+  String get goalCreateTypeHabits => 'Vanerutin';
+
+  @override
+  String get goalCreateTypeSteps => 'Dagliga steg (rullande vecka)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Ge målet ett namn och minst ett kriterium.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Det gick inte att läsa in målets hälsa just nu.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Ingen rapport ännu — agenten rapporterar efter den första relevanta förändringen.';
+
+  @override
+  String get goalDetailNotFound => 'Den här målagenten finns inte längre.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interaktioner';
+
+  @override
+  String get goalNudgeStatusDismissed => 'Avfärdad';
+
+  @override
+  String get goalNudgeStatusExpired => 'Utgången';
+
+  @override
+  String get goalNudgeStatusRetired => 'Tillbakadragen';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Ersatt';
+
+  @override
+  String get goalPendingProposalBadge => 'Förslag väntar';
+
+  @override
+  String get goalStatusAchieved => 'Uppnått';
+
+  @override
+  String get goalStatusAtRisk => 'I riskzonen';
+
+  @override
+  String get goalStatusInsufficientData => 'Inga data';
+
+  @override
+  String get goalStatusOffTrack => 'Ur kurs';
+
+  @override
+  String get goalStatusOnTrack => 'På rätt spår';
+
+  @override
+  String get goalStatusRecovering => 'På väg tillbaka';
+
+  @override
+  String get goalWindowCalendarMonth => 'kalendermånad';
+
+  @override
+  String get goalWindowCalendarWeek => 'kalendervecka';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'rullande $count dagar';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'en enda dag';
 
   @override
   String get goMenuTitle => 'Gå';

@@ -2,9 +2,11 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -36,6 +38,12 @@ void main() {
     syncService = MockAgentSyncService();
     upserts = [];
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.getEntitiesByAgentId(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => []);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
@@ -86,7 +94,7 @@ void main() {
 
     expect(outcome, isA<GoalSpecRevisionMinted>());
     final minted = (outcome as GoalSpecRevisionMinted).version;
-    expect(minted.id, '$agentId:spec-v2');
+    expect(minted.id, startsWith('$agentId:spec-v2-'));
     expect(minted.version, 2);
     expect(minted.status, GoalSpecVersionStatus.active);
     expect(minted.authoredBy, AgentKinds.goalAgent);
@@ -106,8 +114,110 @@ void main() {
     expect(superseded.status, GoalSpecVersionStatus.superseded);
     final head = upserts.whereType<GoalSpecHeadEntity>().single;
     expect(head.id, goalSpecHeadId(agentId));
-    expect(head.versionId, '$agentId:spec-v2');
+    expect(head.versionId, minted.id);
     expect(head.updatedAt, now);
+  });
+
+  test("a minted revision supersedes the old spec's live nudges — the "
+      'revised goal never runs beside advice for the superseded one', () async {
+    stubSpec();
+    GoalNudgeEntity nudgeRow(String id, GoalNudgeStatus status) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: agentId,
+              status: status,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        nudgeRow('ad-active', GoalNudgeStatus.active),
+        nudgeRow('ad-ready', GoalNudgeStatus.ready),
+        nudgeRow('ad-dismissed', GoalNudgeStatus.dismissed),
+        nudgeRow('ad-retired', GoalNudgeStatus.retired),
+      ],
+    );
+
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromProposal(
+        agentId: agentId,
+        changes: {'targetValue': 8000},
+        rationale: 'ease off',
+      ),
+    );
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+
+    final nudgeWrites = upserts.whereType<GoalNudgeEntity>().toList();
+    expect(
+      {for (final n in nudgeWrites) n.id: n.status},
+      {
+        'ad-active': GoalNudgeStatus.superseded,
+        'ad-ready': GoalNudgeStatus.superseded,
+        // Retired rows are the reuse library — a top-rated old-goal ad
+        // must not be re-activated beside the revised statement.
+        'ad-retired': GoalNudgeStatus.superseded,
+      },
+      reason:
+          'live and reusable nudges move with the spec; the user '
+          'verdict (dismissed) stays history',
+    );
+  });
+
+  test('approval consumes pending old-spec escalations — a stale wake '
+      'must not later spend inference against the revised register', () async {
+    stubSpec();
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'scheduledWake'),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.scheduledWake(
+              id: 'scheduled_wake:$agentId:goal-escalation:2026-08-10',
+              agentId: agentId,
+              scheduledAt: DateTime(2026, 8, 10, 9),
+              status: ScheduledWakeStatus.pending,
+              reason: 'scheduled',
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+              workspaceKey: 'goal-escalation:2026-08-10',
+            )
+            as ScheduledWakeEntity,
+        AgentDomainEntity.scheduledWake(
+              id: 'scheduled_wake:$agentId:goal-cadence',
+              agentId: agentId,
+              scheduledAt: DateTime(2026, 8, 11, 6),
+              status: ScheduledWakeStatus.pending,
+              reason: 'scheduled',
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+              workspaceKey: 'goal-cadence',
+            )
+            as ScheduledWakeEntity,
+      ],
+    );
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromProposal(
+        agentId: agentId,
+        changes: {'targetValue': 8000},
+        rationale: 'ease off',
+      ),
+    );
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    final consumed = upserts.whereType<ScheduledWakeEntity>().toList();
+    expect(consumed, hasLength(1));
+    expect(consumed.single.workspaceKey, 'goal-escalation:2026-08-10');
+    expect(consumed.single.status, ScheduledWakeStatus.consumed);
   });
 
   test('refusals: missing head, dangling head, inapplicable changes — '
@@ -228,12 +338,13 @@ void main() {
     );
     expect(
       (outcome as GoalSpecRevisionMinted).version.id,
-      '$agentId:spec-v5',
+      startsWith('$agentId:spec-v5-'),
     );
+    expect(outcome.version.version, 5);
   });
 
-  test('reads happen INSIDE the transaction, and a successor id that '
-      'already exists refuses instead of overwriting provenance', () async {
+  test('reads happen INSIDE the transaction, and successor ids carry a '
+      'collision-proof suffix', () async {
     final order = <String>[];
     final txnSyncService = _OrderRecordingSyncService(order);
     when(() => txnSyncService.upsertEntity(any())).thenAnswer((
@@ -258,36 +369,23 @@ void main() {
         vectorClock: null,
       );
     });
-    // The successor already exists: a concurrent acceptance won.
-    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
-      (_) async => AgentDomainEntity.goalSpecVersion(
-        id: '$agentId:spec-v2',
-        agentId: agentId,
-        version: 2,
-        status: GoalSpecVersionStatus.active,
-        authoredBy: AgentKinds.goalAgent,
-        title: 'Steps',
-        statement: 'x',
-        criteria: criteria,
-        createdAt: DateTime(2026, 8, 10, 8),
-        vectorClock: null,
-      ),
-    );
-
     final outcome = await txnService.reviseFromProposal(
       agentId: agentId,
       changes: {'targetValue': 8000},
       rationale: 'r',
     );
-    expect(
-      (outcome as GoalSpecRevisionRefused).reason,
-      contains('concurrent revision already minted'),
-    );
-    expect(upserts, isEmpty);
+    expect(outcome, isA<GoalSpecRevisionMinted>());
     expect(
       order.first,
       'transaction',
       reason: 'the head read must be serialized by the transaction',
+    );
+    // Successor ids carry a random suffix: two disconnected replicas
+    // minting the same version NUMBER can never collide on the row id,
+    // so neither user-approved revision is swallowed by LWW.
+    expect(
+      (outcome as GoalSpecRevisionMinted).version.id,
+      startsWith('$agentId:spec-v2-'),
     );
   });
 
@@ -316,10 +414,14 @@ void main() {
               )
               as GoalSpecHeadEntity,
     );
-    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
-      (_) async => upserts
+    when(
+      () => repository.getEntity(
+        any(that: startsWith('$agentId:spec-v2')),
+      ),
+    ).thenAnswer(
+      (invocation) async => upserts
           .whereType<GoalSpecVersionEntity>()
-          .where((v) => v.id == '$agentId:spec-v2')
+          .where((v) => v.id == invocation.positionalArguments.first)
           .lastOrNull,
     );
 
@@ -334,7 +436,7 @@ void main() {
     expect(outcome, isA<GoalSpecRevisionMinted>());
     expect(
       (outcome as GoalSpecRevisionMinted).version.id,
-      '$agentId:spec-v2',
+      startsWith('$agentId:spec-v2-'),
     );
   });
 }

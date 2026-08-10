@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
@@ -72,6 +73,10 @@ String? localizedChangeSummary(
   TaskAgentToolNames.updateRunningTimer =>
     messages.agentSummaryUpdateRunningTimer(_trimmed(args['summary'])),
   TaskAgentToolNames.updateTimeEntry => _updateTimeEntry(messages, args),
+
+  // The literal spelling, not GoalAgentToolNames: `features/agents`
+  // must not import goals (the plug-in direction the arch test pins).
+  'propose_goal_revision' => _goalRevision(messages, args),
 
   ProjectAgentToolNames.recommendNextSteps => _recommendNextSteps(
     messages,
@@ -432,3 +437,91 @@ String _string(Object? value, {String fallback = ''}) =>
     value?.toString() ?? fallback;
 
 String _trimmed(Object? value) => value is String ? value.trim() : '';
+
+/// A goal revision proposal, rebuilt from its structured `changes` map —
+/// the persisted humanSummary is English whatever the locale.
+String? _goalRevision(AppLocalizations messages, Map<String, dynamic> args) {
+  final changes = args['changes'];
+  if (changes is! Map) return null;
+  // The metric identifier scopes the fields it actually BINDS: target
+  // and window resolve through it by contract; cadence resolves through
+  // it only when no quantitative field claimed it (a combined proposal's
+  // cadence binds to the goal's habit leaf instead).
+  final metricRaw = changes['metric'];
+  final metric = metricRaw is String && metricRaw.trim().isNotEmpty
+      ? metricRaw.trim()
+      : null;
+  final quantitativeChange =
+      changes['targetValue'] != null || changes['period'] != null;
+  String scoped(String part, {required bool binds}) => metric != null && binds
+      ? '$part (${messages.agentSummaryGoalRevisionScope(metric)})'
+      : part;
+  final parts = <String>[
+    if (changes['targetValue'] != null)
+      scoped(
+        messages.agentSummaryGoalRevisionTarget(
+          _localizedTarget(messages, changes['targetValue']),
+        ),
+        binds: true,
+      ),
+    if (changes['period'] != null)
+      scoped(
+        messages.agentSummaryGoalRevisionPeriod(
+          _localizedWindow(messages, '${changes['period']}'),
+        ),
+        binds: true,
+      ),
+    if (changes['cadence'] != null)
+      scoped(
+        messages.agentSummaryGoalRevisionCadence(
+          _localizedCadence(changes['cadence']),
+        ),
+        binds: !quantitativeChange,
+      ),
+  ];
+  if (parts.isEmpty) return null;
+  final summary = parts.join(' · ');
+  // The agent's WHY is the heart of the approval decision. Rationale is
+  // model-authored content (generated, not localized — the banner-copy
+  // rule); only the sentence structure around it is ours.
+  final rationale = args['rationale'];
+  return rationale is String && rationale.trim().isNotEmpty
+      ? '$summary — ${rationale.trim()}'
+      : summary;
+}
+
+/// Numeric targets follow the reader's decimal/grouping conventions
+/// ("7,5" in German); a malformed value passes through verbatim.
+String _localizedTarget(AppLocalizations messages, Object? value) {
+  final number = value is num ? value : num.tryParse('$value');
+  if (number == null) return '$value';
+  // Lossless: the gate must never describe a different target than the
+  // one approval persists. Fraction digits follow the value's own
+  // shortest representation; exponent-notation extremes fall back to
+  // that representation verbatim rather than rounding to 0.
+  final plain = number.toString();
+  if (plain.contains('e') || plain.contains('E')) return plain;
+  final fractionDigits = plain.contains('.') ? plain.split('.').last.length : 0;
+  final format = NumberFormat.decimalPattern(messages.localeName)
+    ..maximumFractionDigits = fractionDigits;
+  return format.format(number);
+}
+
+/// The model's window phrase ("rolling 14 days") re-rendered in the
+/// reader's language; an unparseable phrase passes through verbatim —
+/// still better than hiding the proposal.
+String _localizedWindow(AppLocalizations messages, String phrase) =>
+    switch (parseGoalWindowPhrase(phrase)) {
+      GoalWindowDay() => messages.goalWindowSingleDay,
+      GoalWindowRollingDays(:final count) => messages.goalWindowRollingDays(
+        count,
+      ),
+      GoalWindowCalendarWeek() => messages.goalWindowCalendarWeek,
+      GoalWindowCalendarMonth() => messages.goalWindowCalendarMonth,
+      null => phrase,
+    };
+
+/// "4 times per week" → "4"; digits are locale-neutral, the surrounding
+/// sentence carries the language.
+String _localizedCadence(Object? cadence) =>
+    parseGoalCadenceCount(cadence)?.toString() ?? '$cadence';

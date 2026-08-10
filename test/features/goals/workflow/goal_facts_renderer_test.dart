@@ -222,8 +222,8 @@ void main() {
     expect(reusable.first['timesRun'], 3);
   });
 
-  test('a dismissal within 24h raises the cooldown flag; an old one does '
-      'not', () {
+  test('a dismissal quiets the rest of ITS calendar day; yesterday does '
+      'not carry over', () {
     bool cooldown(DateTime dismissedAt) =>
         ((renderedJson(
                       nudges: [
@@ -237,8 +237,12 @@ void main() {
                     <String, dynamic>{})
                 as Map<String, dynamic>)['dismissalCooldownActive']
             as bool;
-    expect(cooldown(now.subtract(const Duration(hours: 3))), isTrue);
-    expect(cooldown(now.subtract(const Duration(hours: 30))), isFalse);
+    // Same local day (test clock is 2026-08-09 12:00): quiet.
+    expect(cooldown(DateTime(2026, 8, 9, 8)), isTrue);
+    expect(cooldown(DateTime(2026, 8, 9, 23, 30)), isTrue);
+    // Late last night — a rolling 24h would still be quiet; a new day
+    // must not be.
+    expect(cooldown(DateTime(2026, 8, 8, 23)), isFalse);
   });
 
   test('trend worsening needs three strictly declining points', () {

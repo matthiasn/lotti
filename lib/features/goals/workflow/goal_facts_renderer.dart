@@ -7,10 +7,10 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 
-/// How long after a dismissal all ad activity stays blocked — the "fresh
-/// dismissal is a request for quiet" contract the prompt enforces via
-/// `dismissalCooldownActive` (ADR 0055).
-const goalDismissalCooldown = Duration(hours: 24);
+// The dismissal quiet window is the REST OF THE LOCAL CALENDAR DAY (see
+// `GoalFactsRenderer.dismissalCooldownActive`): a rolling duration would
+// let an evening dismissal silence the whole next day too, while "not
+// today" matches how the user actually meant the gesture.
 
 /// Ads younger than this count as `fresh` in FACTS, which is what blocks a
 /// second ad in the same situation (policy row P6).
@@ -112,12 +112,19 @@ class GoalFactsRenderer {
         priorAttainments[0] < priorAttainments[1];
   }
 
-  /// A fresh dismissal blocks all ad activity for [goalDismissalCooldown].
+  /// A dismissal blocks all ad activity for the rest of that LOCAL
+  /// calendar day — "not today", not a rolling 24h (which would let an
+  /// evening dismissal silence the whole next day too). Calendar-day
+  /// comparison via [GoalWindow.dayUtc], the repo's DST-safe day key.
   bool dismissalCooldownActive(List<GoalNudgeEntity> nudges, DateTime now) =>
       nudges.any(
         (n) =>
             n.dismissedAt != null &&
-            now.difference(n.dismissedAt!) < goalDismissalCooldown,
+            // toLocal: the instant persists as UTC; "not today" means the
+            // READING device's calendar day (older local-stamped rows
+            // pass through toLocal unchanged).
+            GoalWindow.dayUtc(n.dismissedAt!.toLocal()) ==
+                GoalWindow.dayUtc(now),
       );
 
   /// Retired ads whose mean rating clears [goalReusableMinMeanRating],

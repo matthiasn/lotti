@@ -1,4 +1,5 @@
 import 'package:beamer/beamer.dart';
+import 'package:lotti/beamer/locations/agents_location.dart';
 import 'package:lotti/beamer/locations/calendar_location.dart';
 import 'package:lotti/beamer/locations/dashboards_location.dart';
 import 'package:lotti/beamer/locations/events_location.dart';
@@ -102,6 +103,18 @@ final settingsBeamerDelegate = BeamerDelegate(
   locationBuilder: (routeInformation, _) {
     if (routeInformation.uri.path.contains('settings')) {
       return SettingsLocation(routeInformation);
+    }
+    return NotFound(path: routeInformation.uri.path);
+  },
+);
+
+final agentsBeamerDelegate = BeamerDelegate(
+  initialPath: '/agents',
+  updateParent: false,
+  updateFromParent: false,
+  locationBuilder: (routeInformation, _) {
+    if (routeInformation.uri.path.contains('agents')) {
+      return AgentsLocation(routeInformation);
     }
     return NotFound(path: routeInformation.uri.path);
   },

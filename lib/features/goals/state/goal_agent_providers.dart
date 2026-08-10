@@ -1,7 +1,15 @@
+import 'dart:async';
+
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
@@ -12,6 +20,7 @@ import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
@@ -19,7 +28,9 @@ import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/db_notification.dart' show agentNotification;
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/utils/consts.dart';
 
 /// Goal-agent runtime wiring (the Daily OS plug-in pattern: providers live
 /// in the owning feature; `features/agents` never imports goals).
@@ -119,6 +130,10 @@ final goalSignalSyncDispatcherProvider = Provider<GoalSignalSyncDispatcher>(
     repository: ref.watch(agentRepositoryProvider),
     phaseA: ref.watch(goalAgentPhaseAProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    // A synced-batch Phase A run persists new attainment without any UI
+    // notification — surface it to the health projections.
+    onAgentEvaluated: (agentId) =>
+        ref.read(updateNotificationsProvider).notify({agentId}),
   ),
   name: 'goalSignalSyncDispatcherProvider',
 );
@@ -197,7 +212,302 @@ final goalChangeSetConfirmationServiceProvider =
                     changeSet.agentId,
                     version.criteria,
                   );
+              // One immediate deterministic evaluation over the data that
+              // already exists — revised health must not stay blank until
+              // tomorrow's cadence tick (the creation-time behavior).
+              ref
+                  .read(wakeOrchestratorProvider)
+                  .enqueueManualWake(
+                    agentId: changeSet.agentId,
+                    reason: 'goal revision approved',
+                  );
+              // The revision sweep superseded the old spec's banners, but
+              // the banner provider's per-agent stream dependency is
+              // registered after an async gap and cannot be relied on —
+              // refresh both surfaces explicitly.
+              ref
+                ..invalidate(activeGoalNudgesProvider)
+                ..invalidate(goalNudgeHistoryProvider);
             },
       ),
       name: 'goalChangeSetConfirmationServiceProvider',
     );
+
+/// The user's side of the ad contract: dismiss, rate, account exposure.
+final goalNudgeInteractionsProvider = Provider<GoalNudgeInteractions>(
+  (ref) => GoalNudgeInteractions(
+    repository: ref.watch(agentRepositoryProvider),
+    syncService: ref.watch(agentSyncServiceProvider),
+  ),
+  name: 'goalNudgeInteractionsProvider',
+);
+
+/// One live goal banner: the nudge plus the goal it advertises for.
+typedef GoalBannerEntry = ({GoalNudgeEntity nudge, String goalTitle});
+
+/// The ACTIVE banners across all active goal agents, newest first.
+///
+/// Watches the agent-level notification token so wake writes refresh it;
+/// interaction writes go through the sync service (which deliberately
+/// does not notify), so the UI handlers invalidate this provider after
+/// dismiss/rate.
+final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
+    FutureProvider.autoDispose<List<GoalBannerEntry>>((ref) async {
+      // The banner mounts are unconditional on their host pages, so the
+      // rollout flag gates HERE: agents off → no banners, even for ads
+      // that synced in from a device that has the feature enabled.
+      final agentsEnabled =
+          ref.watch(configFlagProvider(enableAgentsPageFlag)).value ?? false;
+      if (!agentsEnabled) return const [];
+      ref.watch(agentUpdateStreamProvider(agentNotification));
+      final agents = await ref
+          .watch(agentServiceProvider)
+          .listAgents(lifecycle: AgentLifecycle.active);
+      final repository = ref.watch(agentRepositoryProvider);
+      final entries = <GoalBannerEntry>[];
+      for (final identity in agents) {
+        if (identity.kind != AgentKinds.goalAgent) continue;
+        ref.watch(agentUpdateStreamProvider(identity.agentId));
+        final now = clock.now();
+        // A banner created under a superseded spec can sync in AFTER the
+        // revision sweep ran — its own provenance is the fence (Phase A
+        // also sweeps it to `superseded` on the next wake).
+        final head = await repository.getEntity(
+          goalSpecHeadId(identity.agentId),
+        );
+        // The head must RESOLVE: a dangling pointer (partial sync) is
+        // not a live spec, and a tagged banner validated against it
+        // would render with no goal statement behind it.
+        final headVersion = head is GoalSpecHeadEntity
+            ? await repository.getEntity(head.versionId)
+            : null;
+        final activeVersionId = headVersion is GoalSpecVersionEntity
+            ? headVersion.id
+            : null;
+        final nudges =
+            (await repository.getEntitiesByAgentId(
+              identity.agentId,
+              type: AgentEntityTypes.goalNudge,
+            )).whereType<GoalNudgeEntity>().where(
+              // Staleness is a contract, not a hope (ADR 0055): an ad
+              // past its deadline stops RENDERING immediately, even
+              // though only a later Phase B wake retires the row.
+              (n) {
+                final origin = n.provenance['specVersionId'];
+                return n.deletedAt == null &&
+                    n.status == GoalNudgeStatus.active &&
+                    (n.staleAt == null || now.isBefore(n.staleAt!)) &&
+                    // A spec-tagged banner needs a live head to validate
+                    // against — a missing/dangling head must not admit
+                    // copy that has no goal statement behind it. Only
+                    // untagged legacy rows pass without one.
+                    (origin is! String ||
+                        (activeVersionId != null && origin == activeVersionId));
+              },
+            );
+        for (final nudge in nudges) {
+          entries.add((nudge: nudge, goalTitle: identity.displayName));
+        }
+      }
+      entries.sort(
+        (a, b) => (b.nudge.activatedAt ?? b.nudge.createdAt).compareTo(
+          a.nudge.activatedAt ?? a.nudge.createdAt,
+        ),
+      );
+      // The staleness deadline is honoured without an agent notification:
+      // `now` was sampled once above, so a banner served before its
+      // `staleAt` would otherwise keep rendering until some unrelated
+      // event recomputed this provider. Re-evaluate at the earliest
+      // deadline still ahead of us.
+      final nextDeadline = entries
+          .map((e) => e.nudge.staleAt)
+          .whereType<DateTime>()
+          .where((t) => t.isAfter(clock.now()))
+          .fold<DateTime?>(null, (a, b) => a == null || b.isBefore(a) ? b : a);
+      if (nextDeadline != null) {
+        final timer = Timer(
+          nextDeadline.difference(clock.now()),
+          ref.invalidateSelf,
+        );
+        ref.onDispose(timer.cancel);
+      }
+      return entries;
+    }, name: 'activeGoalNudgesProvider');
+
+/// The active goal agents, for the settings list and approval surface.
+final FutureProvider<List<AgentIdentityEntity>> activeGoalAgentsProvider =
+    FutureProvider.autoDispose<List<AgentIdentityEntity>>((ref) async {
+      ref.watch(agentUpdateStreamProvider(agentNotification));
+      final agents = await ref
+          .watch(agentServiceProvider)
+          .listAgents(lifecycle: AgentLifecycle.active);
+      return [
+        for (final identity in agents)
+          if (identity.kind == AgentKinds.goalAgent) identity,
+      ];
+    }, name: 'activeGoalAgentsProvider');
+
+/// Nudge ids dismissed THIS session whose provider refresh may still be
+/// in flight (or may have failed): both banner surfaces subtract these
+/// at render time, so the X always visibly works even when the fallible
+/// reload behind it does not. New provider loads drop the rows anyway
+/// (the durable status is already terminal).
+class LocallyDismissedNudgeIds extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => const {};
+
+  void add(String id) => state = {...state, id};
+}
+
+final NotifierProvider<LocallyDismissedNudgeIds, Set<String>>
+locallyDismissedNudgeIdsProvider =
+    NotifierProvider<LocallyDismissedNudgeIds, Set<String>>(
+      LocallyDismissedNudgeIds.new,
+      name: 'locallyDismissedNudgeIdsProvider',
+    );
+
+/// Fire-and-forget exposure flush, captured by the banner's tracker
+/// while its element is live and safe to call from `dispose`.
+typedef GoalNudgeInteractionsFlush =
+    void Function(String nudgeId, Duration visibleFor);
+
+final goalNudgeExposureFlushProvider = Provider<GoalNudgeInteractionsFlush>(
+  (ref) {
+    final interactions = ref.watch(goalNudgeInteractionsProvider);
+    final logger = ref.watch(domainLoggerProvider);
+    return (nudgeId, visibleFor) {
+      // The dispose path cannot await this, so a persistence failure must
+      // be contained here — logged, never an uncaught async error.
+      unawaited(
+        interactions.recordExposure(nudgeId, visibleFor: visibleFor).catchError(
+          (Object e, StackTrace st) {
+            logger.error(
+              LogDomain.agentRuntime,
+              e,
+              stackTrace: st,
+              subDomain: 'goalNudgeExposure',
+              message: 'exposure flush for $nudgeId was not persisted',
+            );
+          },
+        ),
+      );
+    };
+  },
+  name: 'goalNudgeExposureFlushProvider',
+);
+
+/// The goal's PAST ads — every terminal nudge, newest outcome first —
+/// for the detail page's durable interaction history (ADR 0055: past
+/// ads and their outcomes remain browsable; only `draft`/`ready`
+/// pipeline rows and generation failures stay internal).
+final FutureProviderFamily<List<GoalNudgeEntity>, String>
+goalNudgeHistoryProvider = FutureProvider.autoDispose
+    .family<List<GoalNudgeEntity>, String>((ref, agentId) async {
+      ref.watch(agentUpdateStreamProvider(agentId));
+      final repository = ref.watch(agentRepositoryProvider);
+      const shown = {
+        GoalNudgeStatus.dismissed,
+        GoalNudgeStatus.retired,
+        GoalNudgeStatus.expired,
+        GoalNudgeStatus.superseded,
+      };
+      // The timestamp of the CURRENT terminal state: a reactivated row
+      // keeps its old retiredAt, so null-coalescing across all stamps
+      // would file a re-expired banner under its first retirement.
+      // updatedAt is mutable bookkeeping (exposure flushes bump it) and
+      // only a legacy fallback.
+      DateTime outcomeAt(GoalNudgeEntity n) => switch (n.status) {
+        GoalNudgeStatus.dismissed => n.dismissedAt ?? n.updatedAt,
+        GoalNudgeStatus.retired => n.retiredAt ?? n.updatedAt,
+        GoalNudgeStatus.expired => n.expiredAt ?? n.updatedAt,
+        GoalNudgeStatus.superseded => n.supersededAt ?? n.updatedAt,
+        _ => n.updatedAt,
+      };
+      return (await repository.getEntitiesByAgentId(
+            agentId,
+            type: AgentEntityTypes.goalNudge,
+          ))
+          .whereType<GoalNudgeEntity>()
+          .where((n) => n.deletedAt == null && shown.contains(n.status))
+          .toList()
+        ..sort((a, b) => outcomeAt(b).compareTo(outcomeAt(a)));
+    }, name: 'goalNudgeHistoryProvider');
+
+/// Health-at-a-glance for one goal agent: the latest register verdict,
+/// the standing report's one-liner, and whether a revision proposal
+/// waits for review.
+typedef GoalAgentHealth = ({
+  GoalTrackStatus? trackStatus,
+  double? attainment,
+  String? reportOneLiner,
+  int pendingProposals,
+  GoalSpecVersionEntity? spec,
+});
+
+final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
+    FutureProvider.autoDispose.family<GoalAgentHealth, String>((
+      ref,
+      agentId,
+    ) async {
+      ref.watch(agentUpdateStreamProvider(agentId));
+      final repository = ref.watch(agentRepositoryProvider);
+
+      final head = await repository.getEntity(goalSpecHeadId(agentId));
+      final specEntity = head is GoalSpecHeadEntity
+          ? await repository.getEntity(head.versionId)
+          : null;
+      final spec = specEntity is GoalSpecVersionEntity ? specEntity : null;
+
+      final registers =
+          (await repository.getEntitiesByAgentId(
+                agentId,
+                type: AgentEntityTypes.goalProgress,
+              ))
+              .whereType<GoalProgressEntity>()
+              .where(
+                // Only the active spec version's registers count: after a
+                // revision is approved, showing the PREVIOUS goal's verdict
+                // beside the new statement would misreport health until
+                // Phase A writes the first register for the new version.
+                // No live spec (partial sync, dangling head) withholds
+                // health entirely — stale attainment beside a blank goal
+                // statement would misreport worse than an empty card.
+                (row) =>
+                    row.deletedAt == null &&
+                    spec != null &&
+                    row.specVersionId == spec.id,
+              )
+              .toList()
+            ..sort((a, b) => b.periodKey.compareTo(a.periodKey));
+      final latest = registers.firstOrNull;
+
+      final latestReport = await repository.getLatestReport(
+        agentId,
+        AgentReportScopes.current,
+      );
+      // A standing report for a SUPERSEDED spec version must not caption
+      // the revised statement. Scoped by the report's own spec-version
+      // provenance (clock-skew-proof); reports predating that field fall
+      // back to the mint-time comparison.
+      final reportSpecId = latestReport?.provenance['specVersionId'];
+      final reportMatchesSpec =
+          latestReport != null &&
+          spec != null &&
+          (reportSpecId is String
+              ? reportSpecId == spec.id
+              : !latestReport.createdAt.isBefore(spec.createdAt));
+      final report = reportMatchesSpec ? latestReport : null;
+
+      final pending = await repository.getPendingChangeSets(
+        agentId,
+        taskId: agentId,
+      );
+
+      return (
+        trackStatus: latest?.trackStatus,
+        attainment: latest?.attainment,
+        reportOneLiner: report?.oneLiner,
+        pendingProposals: pending.length,
+        spec: spec,
+      );
+    }, name: 'goalAgentHealthProvider');

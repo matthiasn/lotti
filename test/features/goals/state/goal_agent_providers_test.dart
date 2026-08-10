@@ -1,11 +1,15 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
+import 'package:fake_async/fake_async.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/database/state/config_flag_provider.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -25,6 +29,7 @@ import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -38,6 +43,7 @@ void main() {
   late MockAgentRepository repository;
   late MockAgentSyncService syncService;
   late MockJournalDb journalDb;
+  late MockUpdateNotifications updateNotifications;
   late ProviderContainer container;
 
   setUp(() {
@@ -47,7 +53,8 @@ void main() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     journalDb = MockJournalDb();
-    final updateNotifications = MockUpdateNotifications();
+    updateNotifications = MockUpdateNotifications();
+    when(() => updateNotifications.notify(any())).thenReturn(null);
     when(
       () => updateNotifications.syncUpdateStream,
     ).thenAnswer((_) => syncStream.stream);
@@ -55,6 +62,12 @@ void main() {
       () => agentService.listAgents(lifecycle: AgentLifecycle.active),
     ).thenAnswer((_) async => []);
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.getEntitiesByAgentId(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => []);
 
     final aiConfigRepository = MockAiConfigRepository();
     when(
@@ -63,6 +76,10 @@ void main() {
     container = ProviderContainer(
       overrides: [
         aiConfigRepositoryProvider.overrideWithValue(aiConfigRepository),
+        // The banner provider is gated on the agents rollout flag.
+        configFlagProvider(
+          enableAgentsPageFlag,
+        ).overrideWith((ref) => Stream.value(true)),
         cloudInferenceRepositoryProvider.overrideWithValue(
           MockCloudInferenceRepository(),
         ),
@@ -320,6 +337,72 @@ void main() {
     },
   );
 
+  test('a successful synced-batch evaluation notifies the UI for exactly '
+      'the evaluated agent — the health projections have no other way to '
+      'learn about it', () async {
+    const agentId = 'goal-sync';
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [goalIdentity(agentId)]);
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v1',
+        agentId: agentId,
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Gym',
+        statement: 'x',
+        criteria: const GoalCriterion.habit(
+          criterionId: 'gym',
+          habitId: 'gym-habit',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 3,
+        ),
+        createdAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(
+      () => journalDb.getHabitCompletionsByHabitId(
+        habitId: any(named: 'habitId'),
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.observation,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(
+      () => repository.getDueScheduledWakeRecords(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getDueScheduledAgentStates(any()),
+    ).thenAnswer((_) async => []);
+
+    final dispatcher = container.read(goalSignalSyncDispatcherProvider);
+    await dispatcher.dispatchBatch({'gym-habit'});
+
+    verify(() => updateNotifications.notify({agentId})).called(1);
+  });
+
   test('accepting a revision proposal end-to-end: decision persisted, v2 '
       'minted, head moved, and the signal subscription re-registered from '
       'the NEW criteria', () async {
@@ -355,6 +438,12 @@ void main() {
     final orchestrator =
         container.read(wakeOrchestratorProvider) as MockWakeOrchestrator;
     when(() => orchestrator.addSubscription(any())).thenReturn(null);
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+      ),
+    ).thenReturn('run-revision');
 
     final headV1 =
         AgentDomainEntity.goalSpecHead(
@@ -390,10 +479,14 @@ void main() {
         vectorClock: null,
       ),
     );
-    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
-      (_) async => upserted
+    when(
+      () => repository.getEntity(
+        any(that: startsWith('$agentId:spec-v2')),
+      ),
+    ).thenAnswer(
+      (invocation) async => upserted
           .whereType<GoalSpecVersionEntity>()
-          .where((v) => v.id == '$agentId:spec-v2')
+          .where((v) => v.id == invocation.positionalArguments.first)
           .lastOrNull,
     );
     when(() => repository.getEntity('cs-1')).thenAnswer((_) async => changeSet);
@@ -419,17 +512,26 @@ void main() {
 
     final result = await service.confirmItem(applicable, 0);
     expect(result.success, isTrue, reason: result.errorMessage ?? '');
-    expect(result.mutatedEntityId, '$agentId:spec-v2');
+    expect(result.mutatedEntityId, startsWith('$agentId:spec-v2-'));
 
     final minted = upserted.whereType<GoalSpecVersionEntity>().singleWhere(
-      (v) => v.id == '$agentId:spec-v2',
+      (v) => v.version == 2,
     );
     expect((minted.criteria as GoalCriterionHabit).targetCount, 4);
     final head = upserted.whereType<GoalSpecHeadEntity>().last;
-    expect(head.versionId, '$agentId:spec-v2');
+    expect(head.versionId, minted.id);
 
     final decision = upserted.whereType<ChangeDecisionEntity>().single;
     expect(decision.verdict, ChangeDecisionVerdict.confirmed);
+
+    // The approved revision is evaluated immediately — no blank health
+    // until tomorrow's cadence tick.
+    verify(
+      () => orchestrator.enqueueManualWake(
+        agentId: agentId,
+        reason: any(named: 'reason'),
+      ),
+    ).called(1);
 
     // The hook re-registered the subscription from the NEW criteria.
     final subscription =
@@ -537,5 +639,760 @@ void main() {
       ),
     ).called(1);
     verifyNever(() => orchestrator.addSubscription(any()));
+  });
+
+  test('activeGoalNudgesProvider surfaces only ACTIVE ads of goal agents, '
+      'newest first, with the goal title attached', () async {
+    GoalNudgeEntity nudgeRow(
+      String id,
+      GoalNudgeStatus status,
+      DateTime activatedAt,
+    ) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-a',
+              status: status,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+              activatedAt: activatedAt,
+            )
+            as GoalNudgeEntity;
+
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [
+        goalIdentity('goal-a'),
+        AgentDomainEntity.agent(
+              id: 'task-1',
+              agentId: 'task-1',
+              kind: AgentKinds.taskAgent,
+              displayName: 'task',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: 'task-1:state',
+              config: const AgentConfig(),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity,
+      ],
+    );
+    when(
+      () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        nudgeRow('ad-old', GoalNudgeStatus.active, DateTime(2026, 8, 8)),
+        nudgeRow('ad-new', GoalNudgeStatus.active, DateTime(2026, 8, 10)),
+        nudgeRow('ad-gone', GoalNudgeStatus.dismissed, DateTime(2026, 8, 9)),
+      ],
+    );
+
+    // Warm the rollout flag and KEEP it alive: the gate reads the
+    // stream's latest value, and an autodisposed flag provider would be
+    // torn down between reads.
+    final flagSub = container.listen(
+      configFlagProvider(enableAgentsPageFlag),
+      (_, _) {},
+    );
+    addTearDown(flagSub.close);
+    await container.read(configFlagProvider(enableAgentsPageFlag).future);
+    final entries = await container.read(activeGoalNudgesProvider.future);
+    expect(
+      [for (final entry in entries) entry.nudge.id],
+      ['ad-new', 'ad-old'],
+    );
+    expect(entries.first.goalTitle, 'goal-a');
+
+    // An ad past its staleAt stops rendering even while still `active`.
+    when(
+      () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        nudgeRow(
+          'ad-stale',
+          GoalNudgeStatus.active,
+          DateTime(2026, 8),
+        ).copyWith(staleAt: DateTime(2026, 8, 2)),
+      ],
+    );
+    container.invalidate(activeGoalNudgesProvider);
+    expect(await container.read(activeGoalNudgesProvider.future), isEmpty);
+  });
+
+  test('goalAgentHealthProvider assembles the latest register verdict, '
+      'the report one-liner and the pending-proposal count', () async {
+    const agentId = 'goal-h';
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v1',
+        agentId: agentId,
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Steps',
+        statement: 'Average 10,000 steps per day.',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 10000,
+        ),
+        createdAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    GoalProgressEntity register(String period, double attainment) =>
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: attainment >= 0.8
+                  ? GoalTrackStatus.onTrack
+                  : GoalTrackStatus.atRisk,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: attainment >= 1,
+              specVersionId: '$agentId:spec-v1',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer(
+      (_) async => [register('2026-08-08', 1), register('2026-08-09', 0.64)],
+    );
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'r1',
+                agentId: agentId,
+                scope: 'current',
+                createdAt: DateTime(2026, 8, 9),
+                vectorClock: null,
+                content: 'body',
+                oneLiner: 'Averaging 6.4k of 10k.',
+              )
+              as AgentReportEntity,
+    );
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.changeSet(
+              id: 'cs',
+              agentId: agentId,
+              taskId: agentId,
+              threadId: 't',
+              runKey: 'r',
+              status: ChangeSetStatus.pending,
+              items: const [],
+              createdAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as ChangeSetEntity,
+      ],
+    );
+
+    final health = await container.read(
+      goalAgentHealthProvider(agentId).future,
+    );
+    expect(
+      health.trackStatus,
+      GoalTrackStatus.atRisk,
+      reason: 'the LATEST period wins, not the best one',
+    );
+    expect(health.attainment, 0.64);
+    expect(health.reportOneLiner, 'Averaging 6.4k of 10k.');
+    expect(health.pendingProposals, 1);
+    expect(health.spec?.title, 'Steps');
+  });
+
+  test('a failing exposure flush is contained and logged — never an '
+      'uncaught async error from a disposed banner', () async {
+    when(
+      () => repository.getEntity('ad-err'),
+    ).thenAnswer((_) async => throw StateError('db closed mid-dispose'));
+    final logger = container.read(domainLoggerProvider) as MockDomainLogger;
+    when(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: any(named: 'subDomain'),
+        message: any(named: 'message'),
+      ),
+    ).thenReturn(null);
+
+    container.read(goalNudgeExposureFlushProvider)(
+      'ad-err',
+      const Duration(seconds: 1),
+    );
+    await pumpEventQueue();
+
+    verify(
+      () => logger.error(
+        any(),
+        any<Object>(),
+        stackTrace: any(named: 'stackTrace'),
+        subDomain: 'goalNudgeExposure',
+        message: any(named: 'message', that: contains('ad-err')),
+      ),
+    ).called(1);
+  });
+
+  test('the exposure flush provider forwards to the interactions service '
+      'fire-and-forget', () async {
+    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(() => repository.getEntity('ad-x')).thenAnswer((_) async => null);
+    container.read(goalNudgeExposureFlushProvider)(
+      'ad-x',
+      const Duration(seconds: 2),
+    );
+    // Unknown id is a no-op inside the service — the provider's job is
+    // only to bridge the sync call into a void signature.
+    await container
+        .read(goalNudgeInteractionsProvider)
+        .recordExposure('ad-x', visibleFor: const Duration(seconds: 2));
+    verify(() => repository.getEntity('ad-x')).called(greaterThan(0));
+  });
+
+  test('health for a goal without a spec head reports nulls instead of '
+      'throwing', () async {
+    when(
+      () => repository.getEntitiesByAgentId('goal-z', type: 'goalProgress'),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getLatestReport('goal-z', 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets('goal-z', taskId: 'goal-z'),
+    ).thenAnswer((_) async => []);
+    final health = await container.read(
+      goalAgentHealthProvider('goal-z').future,
+    );
+    expect(health.trackStatus, isNull);
+    expect(health.spec, isNull);
+    expect(health.pendingProposals, 0);
+  });
+
+  test('a standing report older than the active spec version is withheld '
+      '— its one-liner describes the superseded goal', () async {
+    const agentId = 'goal-old-report';
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v2',
+        updatedAt: DateTime(2026, 8, 10),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v2',
+        agentId: agentId,
+        version: 2,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Steps, revised',
+        statement: 'Average 8,000 steps per day.',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 8000,
+        ),
+        createdAt: DateTime(2026, 8, 10, 9),
+        vectorClock: null,
+      ),
+    );
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'r-old',
+                agentId: agentId,
+                scope: 'current',
+                createdAt: DateTime(2026, 8, 9),
+                vectorClock: null,
+                content: 'body',
+                oneLiner: 'Chasing 10k — two days behind.',
+              )
+              as AgentReportEntity,
+    );
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
+
+    final health = await container.read(
+      goalAgentHealthProvider(agentId).future,
+    );
+    expect(
+      health.reportOneLiner,
+      isNull,
+      reason: 'the old goal report must not caption the revised goal',
+    );
+
+    // Spec-version provenance outranks the timestamp: a v2 report with a
+    // skewed EARLIER clock still shows.
+    when(() => repository.getLatestReport(agentId, 'current')).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'r-v2-skewed',
+                agentId: agentId,
+                scope: 'current',
+                createdAt: DateTime(2026, 8, 8),
+                vectorClock: null,
+                content: 'body',
+                oneLiner: 'Fresh verdict, slow clock.',
+                provenance: const {'specVersionId': '$agentId:spec-v2'},
+              )
+              as AgentReportEntity,
+    );
+    container.invalidate(goalAgentHealthProvider(agentId));
+    final skewed = await container.read(
+      goalAgentHealthProvider(agentId).future,
+    );
+    expect(skewed.reportOneLiner, 'Fresh verdict, slow clock.');
+  });
+
+  test('health ignores progress registers written for superseded spec '
+      'versions', () async {
+    const agentId = 'goal-rev';
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v2',
+        updatedAt: DateTime(2026, 8, 10),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v2',
+        agentId: agentId,
+        version: 2,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Steps, revised',
+        statement: 'Average 8,000 steps per day.',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 8000,
+        ),
+        createdAt: DateTime(2026, 8, 10),
+        vectorClock: null,
+      ),
+    );
+    GoalProgressEntity register({
+      required String period,
+      required String specVersionId,
+      required double attainment,
+      required GoalTrackStatus trackStatus,
+    }) =>
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: trackStatus,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: false,
+              specVersionId: specVersionId,
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer(
+      (_) async => [
+        // The OLD goal's verdict has the newest period key — without the
+        // spec-version filter it would win and misreport the revised goal.
+        register(
+          period: '2026-08-10',
+          specVersionId: '$agentId:spec-v1',
+          attainment: 0.2,
+          trackStatus: GoalTrackStatus.offTrack,
+        ),
+        register(
+          period: '2026-08-09',
+          specVersionId: '$agentId:spec-v2',
+          attainment: 0.9,
+          trackStatus: GoalTrackStatus.onTrack,
+        ),
+      ],
+    );
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
+
+    final health = await container.read(
+      goalAgentHealthProvider(agentId).future,
+    );
+    expect(health.trackStatus, GoalTrackStatus.onTrack);
+    expect(health.attainment, 0.9);
+    expect(health.spec?.version, 2);
+  });
+
+  test('a rendered banner is re-evaluated at its staleness deadline, with '
+      'no agent notification needed', () {
+    final start = DateTime(2026, 8, 10, 12);
+    fakeAsync((async) {
+      withClock(Clock(() => start.add(async.elapsed)), () {
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+        when(
+          () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.goalNudge(
+                  id: 'ad-deadline',
+                  agentId: 'goal-a',
+                  status: GoalNudgeStatus.active,
+                  brief: const GoalNudgeBrief(
+                    headline: 'h',
+                    tone: GoalNudgeTone.nudge,
+                    animation: GoalBannerAnimation.steady,
+                  ),
+                  briefDigest: 'd',
+                  createdAt: start,
+                  updatedAt: start,
+                  vectorClock: null,
+                  staleAt: start.add(const Duration(hours: 1)),
+                )
+                as GoalNudgeEntity,
+          ],
+        );
+
+        // Keep the flag and the banner provider alive: the deadline timer
+        // dies with the provider on autodispose.
+        final flagSub = container.listen(
+          configFlagProvider(enableAgentsPageFlag),
+          (_, _) {},
+        );
+        addTearDown(flagSub.close);
+        final sub = container.listen(activeGoalNudgesProvider, (_, _) {});
+        addTearDown(sub.close);
+        async
+          ..flushMicrotasks()
+          // The flag stream's first value lands on the event queue, and
+          // the gated provider rebuilds behind it.
+          ..elapse(const Duration(milliseconds: 1))
+          ..flushMicrotasks();
+        expect(
+          container.read(activeGoalNudgesProvider).value,
+          hasLength(1),
+          reason: 'fresh banner renders',
+        );
+
+        // Nothing else happens — the deadline alone must remove it.
+        async
+          ..elapse(const Duration(hours: 1, seconds: 1))
+          ..flushMicrotasks();
+        expect(
+          container.read(activeGoalNudgesProvider).value,
+          isEmpty,
+          reason: 'the staleness contract holds without an external event',
+        );
+      });
+    });
+  });
+
+  test('a late-synced banner from a superseded spec version is fenced by '
+      'its own provenance', () async {
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+    when(() => repository.getEntity(goalSpecHeadId('goal-a'))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId('goal-a'),
+        agentId: 'goal-a',
+        versionId: 'goal-a:spec-v2-aa',
+        updatedAt: DateTime(2026, 8, 10),
+        vectorClock: null,
+      ),
+    );
+    // The head must RESOLVE — a dangling pointer is not a live spec.
+    when(() => repository.getEntity('goal-a:spec-v2-aa')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: 'goal-a:spec-v2-aa',
+        agentId: 'goal-a',
+        version: 2,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Steps',
+        statement: 'x',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 8000,
+        ),
+        createdAt: DateTime(2026, 8, 10),
+        vectorClock: null,
+      ),
+    );
+    GoalNudgeEntity row(String id, Map<String, String> provenance) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-a',
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+              provenance: provenance,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        row('ad-old-spec', {'specVersionId': 'goal-a:spec-v1'}),
+        row('ad-current', {'specVersionId': 'goal-a:spec-v2-aa'}),
+        row('ad-legacy', const {}),
+      ],
+    );
+
+    final flagSub = container.listen(
+      configFlagProvider(enableAgentsPageFlag),
+      (_, _) {},
+    );
+    addTearDown(flagSub.close);
+    await container.read(configFlagProvider(enableAgentsPageFlag).future);
+    final entries = await container.read(activeGoalNudgesProvider.future);
+    expect(
+      {for (final e in entries) e.nudge.id},
+      {'ad-current', 'ad-legacy'},
+      reason:
+          'the old-spec banner is fenced; legacy rows without the '
+          'field still render',
+    );
+
+    // With NO live head, tagged banners have nothing to validate against
+    // and are hidden; only the untagged legacy row remains.
+    when(
+      () => repository.getEntity(goalSpecHeadId('goal-a')),
+    ).thenAnswer((_) async => null);
+    container.invalidate(activeGoalNudgesProvider);
+    final headless = await container.read(activeGoalNudgesProvider.future);
+    expect(
+      {for (final e in headless) e.nudge.id},
+      {'ad-legacy'},
+    );
+  });
+
+  test('goalNudgeHistoryProvider lists only terminal outcomes, newest '
+      'first — pipeline rows and failures stay internal', () async {
+    GoalNudgeEntity row(String id, GoalNudgeStatus status, int day) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-h',
+              status: status,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, day),
+              updatedAt: DateTime(2026, 8, day),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId('goal-h', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        row('ad-dismissed', GoalNudgeStatus.dismissed, 3),
+        row('ad-retired', GoalNudgeStatus.retired, 5),
+        row('ad-active', GoalNudgeStatus.active, 6),
+        row('ad-draft', GoalNudgeStatus.draft, 7),
+        row('ad-failed', GoalNudgeStatus.failed, 8),
+      ],
+    );
+    final history = await container.read(
+      goalNudgeHistoryProvider('goal-h').future,
+    );
+    expect(
+      [for (final n in history) n.id],
+      ['ad-retired', 'ad-dismissed'],
+    );
+  });
+
+  test('goalNudgeHistoryProvider orders expired/superseded rows by their '
+      'OWN outcome stamp, falling back to updatedAt when the stamp is '
+      'missing — proves each switch arm, not just the sort', () async {
+    GoalNudgeEntity row({
+      required String id,
+      required GoalNudgeStatus status,
+      required DateTime updatedAt,
+      DateTime? expiredAt,
+      DateTime? supersededAt,
+    }) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-h2',
+              status: status,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8),
+              updatedAt: updatedAt,
+              vectorClock: null,
+              expiredAt: expiredAt,
+              supersededAt: supersededAt,
+            )
+            as GoalNudgeEntity;
+
+    when(
+      () => repository.getEntitiesByAgentId('goal-h2', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        // expiredAt PRESENT but far in the past — updatedAt (bumped by a
+        // later exposure flush) must NOT leak in; the expiredAt arm wins.
+        row(
+          id: 'ad-expired-stamped',
+          status: GoalNudgeStatus.expired,
+          updatedAt: DateTime(2026, 8, 20),
+          expiredAt: DateTime(2026, 8, 5),
+        ),
+        // expiredAt MISSING — falls back to updatedAt, landing it ahead of
+        // the stamped row above.
+        row(
+          id: 'ad-expired-fallback',
+          status: GoalNudgeStatus.expired,
+          updatedAt: DateTime(2026, 8, 12),
+        ),
+        // supersededAt PRESENT, older than its updatedAt.
+        row(
+          id: 'ad-superseded-stamped',
+          status: GoalNudgeStatus.superseded,
+          updatedAt: DateTime(2026, 8, 18),
+          supersededAt: DateTime(2026, 8, 3),
+        ),
+        // supersededAt MISSING — falls back to updatedAt, the newest of
+        // all four.
+        row(
+          id: 'ad-superseded-fallback',
+          status: GoalNudgeStatus.superseded,
+          updatedAt: DateTime(2026, 8, 25),
+        ),
+      ],
+    );
+
+    final history = await container.read(
+      goalNudgeHistoryProvider('goal-h2').future,
+    );
+    // Newest outcomeAt first: 08-25 (superseded, updatedAt fallback),
+    // 08-12 (expired, updatedAt fallback), 08-05 (expired, expiredAt
+    // stamp), 08-03 (superseded, supersededAt stamp) — each status's own
+    // stamp is honored over its (later) updatedAt, and each fallback
+    // reads updatedAt only when its own stamp is null.
+    expect(
+      [for (final n in history) n.id],
+      [
+        'ad-superseded-fallback',
+        'ad-expired-fallback',
+        'ad-expired-stamped',
+        'ad-superseded-stamped',
+      ],
+    );
+  });
+
+  test('activeGoalAgentsProvider lists only goal-kind identities', () async {
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [
+        goalIdentity('goal-a'),
+        AgentDomainEntity.agent(
+              id: 'task-1',
+              agentId: 'task-1',
+              kind: AgentKinds.taskAgent,
+              displayName: 'task',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: 'task-1:state',
+              config: const AgentConfig(),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity,
+      ],
+    );
+    final agents = await container.read(activeGoalAgentsProvider.future);
+    expect([for (final a in agents) a.agentId], ['goal-a']);
+  });
+
+  test('the banner provider returns nothing while the rollout flag is '
+      'off', () async {
+    final gated = ProviderContainer(
+      overrides: [
+        configFlagProvider(
+          enableAgentsPageFlag,
+        ).overrideWith((ref) => Stream.value(false)),
+        agentServiceProvider.overrideWithValue(agentService),
+        agentRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
+    addTearDown(gated.dispose);
+    final flagSub = gated.listen(
+      configFlagProvider(enableAgentsPageFlag),
+      (_, _) {},
+    );
+    addTearDown(flagSub.close);
+    await gated.read(configFlagProvider(enableAgentsPageFlag).future);
+    expect(await gated.read(activeGoalNudgesProvider.future), isEmpty);
+    verifyNever(
+      () => agentService.listAgents(lifecycle: any(named: 'lifecycle')),
+    );
   });
 }

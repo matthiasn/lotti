@@ -1893,6 +1893,9 @@ GoalNudgeEntity _$GoalNudgeEntityFromJson(Map<String, dynamic> json) =>
       expiredAt: json['expiredAt'] == null
           ? null
           : DateTime.parse(json['expiredAt'] as String),
+      supersededAt: json['supersededAt'] == null
+          ? null
+          : DateTime.parse(json['supersededAt'] as String),
       activationCount: (json['activationCount'] as num?)?.toInt() ?? 1,
       ratings:
           (json['ratings'] as List<dynamic>?)
@@ -1945,6 +1948,7 @@ Map<String, dynamic> _$GoalNudgeEntityToJson(GoalNudgeEntity instance) =>
       'dismissedAt': instance.dismissedAt?.toIso8601String(),
       'retiredAt': instance.retiredAt?.toIso8601String(),
       'expiredAt': instance.expiredAt?.toIso8601String(),
+      'supersededAt': instance.supersededAt?.toIso8601String(),
       'activationCount': instance.activationCount,
       'ratings': instance.ratings,
       'totalVisibleMsByHost': instance.totalVisibleMs,

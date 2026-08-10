@@ -171,6 +171,7 @@ class _NavFlagBench {
         enableHabitsPageFlag => habits.stream,
         enableDashboardsPageFlag => dashboards.stream,
         enableEventsFlag => events.stream,
+        enableAgentsPageFlag => agents.stream,
         _ => Stream<bool>.value(false),
       };
     });
@@ -186,6 +187,7 @@ class _NavFlagBench {
   final habits = StreamController<bool>.broadcast(sync: true);
   final dashboards = StreamController<bool>.broadcast(sync: true);
   final events = StreamController<bool>.broadcast(sync: true);
+  final agents = StreamController<bool>.broadcast(sync: true);
   late final NavService navService;
 
   /// Emits the five optional-tab flags at once; the Events flag stays off so
@@ -197,6 +199,7 @@ class _NavFlagBench {
     habits.add(enabled);
     dashboards.add(enabled);
     events.add(false);
+    agents.add(false);
   }
 
   Future<void> dispose() async {
@@ -207,6 +210,7 @@ class _NavFlagBench {
       habits.close(),
       dashboards.close(),
       events.close(),
+      agents.close(),
     ]);
   }
 }
@@ -376,6 +380,7 @@ void main() {
         bench.habits.add(scenario.habits);
         bench.dashboards.add(scenario.dashboards);
         bench.events.add(false);
+        bench.agents.add(false);
         await pumpEventQueue();
 
         final expectedDelegates = [
@@ -524,6 +529,15 @@ void main() {
       );
       final id = await getIdFromSavedRoute();
       expect(id, '123e4567-e89b-12d3-a456-426614174000');
+    });
+
+    test('getIdFromSavedRoute yields NO creation context on agents routes '
+        '— the UUID there is an agent, not a journal parent', () async {
+      await settingsDb.saveSettingsItem(
+        lastRouteKey,
+        '/agents/details/123e4567-e89b-12d3-a456-426614174000',
+      );
+      expect(await getIdFromSavedRoute(), isNull);
     });
 
     group('desktop selected entry id', () {
@@ -682,6 +696,7 @@ void main() {
         bench.habits.add(false);
         bench.dashboards.add(false);
         bench.events.add(true);
+        bench.agents.add(false);
         await pumpEventQueue();
 
         expect(bench.navService.isEventsPageEnabled, isTrue);
@@ -822,6 +837,35 @@ void main() {
       );
     });
 
+    group('agents tab flag', () {
+      test('enable_agents_page shows the tab between dashboards and journal, '
+          'and disabling it falls back to tasks', () async {
+        final bench = _NavFlagBench();
+        final navService = bench.navService;
+        bench.emitAll(enabled: true);
+        bench.agents.add(true);
+
+        // The getter mirrors the config flag stream directly, independent
+        // of the delegate list it also drives.
+        expect(navService.isAgentsPageEnabled, isTrue);
+        expect(
+          navService.beamerDelegates.indexOf(navService.agentsDelegate),
+          navService.beamerDelegates.indexOf(navService.dashboardsDelegate) + 1,
+        );
+
+        navService.setPath('/agents/details/goal-1');
+        expect(navService.currentPath, '/agents/details/goal-1');
+
+        bench.agents.add(false);
+        expect(navService.isAgentsPageEnabled, isFalse);
+        expect(
+          navService.beamerDelegates.contains(navService.agentsDelegate),
+          isFalse,
+        );
+        expect(navService.currentPath, '/tasks');
+      });
+    });
+
     group('_handleNavigationFlagsUpdated fallback', () {
       test(
         'falls back to tasks when current path becomes unreachable after '
@@ -840,6 +884,7 @@ void main() {
             sync: true,
           );
           final eventsController = StreamController<bool>.broadcast(sync: true);
+          final agentsController = StreamController<bool>.broadcast(sync: true);
 
           when(
             () => localJournalDb.watchConfigFlag(any()),
@@ -851,6 +896,7 @@ void main() {
               enableDashboardsPageFlag => dashboardsController.stream,
               enableDailyOsPageFlag => dailyOsController.stream,
               enableEventsFlag => eventsController.stream,
+              enableAgentsPageFlag => agentsController.stream,
               _ => Stream<bool>.value(false),
             };
           });
@@ -867,6 +913,7 @@ void main() {
               dashboardsController.close(),
               dailyOsController.close(),
               eventsController.close(),
+              agentsController.close(),
             ]);
           });
 
@@ -876,6 +923,7 @@ void main() {
           dashboardsController.add(true);
           dailyOsController.add(true);
           eventsController.add(false);
+          agentsController.add(false);
 
           navService.beamToNamed('/habits');
           expect(navService.currentPath, '/habits');

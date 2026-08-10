@@ -117,17 +117,92 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     if (byCreated == 0) return null;
     return byCreated < 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
   }
+  if (local is GoalProgressEntity && incoming is GoalProgressEntity) {
+    // Registers are keyed by (agent, period) only, so an offline v1
+    // evaluation and a v2 evaluation of the same day collide on one row.
+    // The row computed under the NEWER spec version wins — timestamp LWW
+    // could otherwise let the superseded evaluation hide current health.
+    final localVersion = _specVersionNumber(local.specVersionId);
+    final incomingVersion = _specVersionNumber(incoming.specVersionId);
+    if (localVersion != null &&
+        incomingVersion != null &&
+        localVersion != incomingVersion) {
+      return localVersion > incomingVersion
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
+    }
+    // Disconnected approvals mint the same ordinal under different ids
+    // (spec-v2-aaaa vs spec-v2-bbbb). Neither is knowably the standing
+    // head from here, but replicas MUST agree; the lexicographic pick is
+    // stable and symmetric, and the next Phase A tick recomputes the
+    // register under the actual head anyway (recompute-never-accumulate).
+    if (local.specVersionId != incoming.specVersionId) {
+      return local.specVersionId.compareTo(incoming.specVersionId) > 0
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
+    }
+    return null;
+  }
   if (local is GoalNudgeEntity && incoming is GoalNudgeEntity) {
     // Dismissal is terminal (ADR 0055): the user's "stop showing me this"
     // must not be revived by a concurrent re-activation or bookkeeping
     // write on another device — a fresh dismissal is a request for quiet.
     final localDismissed = local.status == GoalNudgeStatus.dismissed;
     final incomingDismissed = incoming.status == GoalNudgeStatus.dismissed;
-    if (localDismissed == incomingDismissed) return null;
-    return localDismissed ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+    if (localDismissed != incomingDismissed) {
+      return localDismissed
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
+    }
+    // Supersession is the spec itself moving on and outranks EVERYTHING
+    // below, including a higher activation: an offline rerun of an
+    // old-spec banner must not resurrect it beside the revised goal.
+    // (Only revision sweeps write `superseded`, and superseded rows can
+    // never re-enter the rerun path, so this cannot mask a legitimate
+    // same-spec reactivation.)
+    final localSuperseded = local.status == GoalNudgeStatus.superseded;
+    final incomingSuperseded = incoming.status == GoalNudgeStatus.superseded;
+    if (localSuperseded != incomingSuperseded) {
+      return localSuperseded
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
+    }
+    // The HIGHER activation is the newer run: its lifecycle metadata
+    // (activatedAt, staleAt, runKey) must win whole-row selection, or a
+    // peer's bookkeeping write for the PREVIOUS activation could win LWW
+    // and stamp the fresh rerun with the old deadline. This also covers
+    // genuine reactivation beating a same-spec terminal write.
+    if (local.activationCount != incoming.activationCount) {
+      return local.activationCount > incoming.activationCount
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
+    }
+    // Same activation: terminal states dominate concurrent live writes —
+    // a device that retired/expired/superseded the ad must not lose to a
+    // stale exposure flush or rating that copied the old `active` row.
+    final localTerminal = _terminalNudgeStatuses.contains(local.status);
+    final incomingTerminal = _terminalNudgeStatuses.contains(incoming.status);
+    if (localTerminal != incomingTerminal) {
+      return localTerminal ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+    }
+    return null;
   }
   return null;
 }
+
+/// The ordinal in a spec version id (`agent:spec-v3-9f2c1a08` → 3), or
+/// null for foreign id shapes — those fall back to LWW.
+int? _specVersionNumber(String specVersionId) {
+  final match = RegExp(r'spec-v(\d+)').firstMatch(specVersionId);
+  return match == null ? null : int.tryParse(match.group(1)!);
+}
+
+const Set<GoalNudgeStatus> _terminalNudgeStatuses = {
+  GoalNudgeStatus.retired,
+  GoalNudgeStatus.expired,
+  GoalNudgeStatus.superseded,
+  GoalNudgeStatus.failed,
+};
 
 /// A total, replica-independent ordering of two vector clocks. Compares each
 /// host's counter (0 when a host is absent) in sorted host order and returns
@@ -194,10 +269,12 @@ AgentStateEntity mergeAgentStateCounters({
 /// vanish — and those accumulate across YEARS of activations (ADR 0055's
 /// labeled library), so losing one side is permanent damage, not noise.
 ///
-/// Ratings are append-only, keyed by activation index: the union keeps
-/// one entry per `(activation, ratedAt, rating, skipped)` tuple, ordered
-/// by activation then ratedAt, so both replicas converge on the identical
-/// list regardless of arrival order. Pure: same inputs → same result.
+/// Ratings converge to ONE OUTCOME PER ACTIVATION (the ADR 0055
+/// contract): the union is sorted by a total order (activation, ratedAt,
+/// skipped, rating) and collapsed to the first entry per activation, so
+/// two devices rating the same run before syncing keep the EARLIEST
+/// outcome on both — deterministic, and a run is never counted twice in
+/// reuse means or wear-out trajectories. Pure: same inputs → same result.
 GoalNudgeEntity mergeGoalNudgeAccumulators({
   required GoalNudgeEntity winner,
   required GoalNudgeEntity local,
@@ -218,10 +295,22 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
           if (bySkipped != 0) return bySkipped;
           return (a.rating ?? 0).compareTo(b.rating ?? 0);
         });
+  final onePerActivation = <GoalNudgeRating>[];
+  for (final rating in ratings) {
+    if (onePerActivation.isEmpty ||
+        onePerActivation.last.activation != rating.activation) {
+      onePerActivation.add(rating);
+    }
+  }
   return winner.copyWith(
+    // The merged row observed BOTH branches, so its clock must be their
+    // join: keeping only the winner's clock would let that device's next
+    // (pre-merge) write causally dominate and overwrite the other
+    // branch's accumulators through the ordinary non-concurrent path.
+    vectorClock: VectorClock.merge(local.vectorClock, incoming.vectorClock),
     totalVisibleMs: local.totalVisibleMs.merge(incoming.totalVisibleMs),
     impressionCount: local.impressionCount.merge(incoming.impressionCount),
-    ratings: ratings,
+    ratings: onePerActivation,
     activationCount: local.activationCount > incoming.activationCount
         ? local.activationCount
         : incoming.activationCount,

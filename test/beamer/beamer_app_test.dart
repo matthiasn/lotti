@@ -711,6 +711,51 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('the flag-gated Agents destination appears in the desktop '
+        'sidebar when enabled', (tester) async {
+      final mockNavService = MockNavService()..agentsPageEnabled = true;
+      await _stubNavService(
+        mockNavService,
+        indexStream: const Stream<int>.empty(),
+        isProjectsEnabled: () => false,
+        isDailyOsEnabled: () => true,
+        isHabitsEnabled: () => true,
+        isDashboardsEnabled: () => true,
+      );
+      final agentsDelegate = await _createEmptyDelegate('/agents');
+      when(() => mockNavService.agentsDelegate).thenReturn(agentsDelegate);
+      await _registerAppScreenGetIt(mockNavService);
+      addTearDown(tearDownTestGetIt);
+
+      await _pumpAppScreen(
+        tester,
+        navService: mockNavService,
+        viewportSize: _desktopViewportSize,
+      );
+
+      expect(
+        find.byWidgetPredicate(
+          (w) =>
+              w is Icon &&
+              (w.icon == Icons.psychology_outlined ||
+                  w.icon == Icons.psychology_rounded),
+        ),
+        findsWidgets,
+      );
+      // The agents tab is mounted but not active, so its Beamer child sits
+      // offstage in the shell's IndexedStack.
+      expect(
+        find.byWidgetPredicate(
+          (w) => w is Beamer && w.routerDelegate == agentsDelegate,
+          skipOffstage: false,
+        ),
+        findsOneWidget,
+      );
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
     testWidgets(
       'routes Projects into the More sheet after a flag-driven nav update',
       (tester) async {

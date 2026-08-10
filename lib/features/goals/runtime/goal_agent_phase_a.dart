@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
@@ -77,6 +78,7 @@ class GoalAgentPhaseA {
     }
 
     await _rearmCadence(agentId, now);
+    await _expireStaleNudges(agentId, now, activeVersionId: version.id);
 
     final startDate = version.startDate;
     if (startDate != null &&
@@ -99,7 +101,20 @@ class GoalAgentPhaseA {
     // One transaction: a register write acknowledging the transition
     // without its escalation would be permanent — the next run reads the
     // new status as previousStatus and never re-arms the missed wake.
+    var fenced = false;
     await _syncService.runInTransaction(() async {
+      // A revision committing after this wake read the head must fence
+      // BOTH writes: a v1 register would overwrite the day's row under
+      // the new spec, and a v1 escalation would arm an old-target Phase
+      // B wake after the revision's sweep already cleaned up.
+      final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
+      // A MISSING head means the goal was hard-deleted mid-wake:
+      // recreating the register or an escalation would sync rows back
+      // out after the user requested permanent deletion.
+      if (headNow is! GoalSpecHeadEntity || headNow.versionId != version.id) {
+        fenced = true;
+        return;
+      }
       await _upsertRegister(
         agentId: agentId,
         version: version,
@@ -113,11 +128,80 @@ class GoalAgentPhaseA {
         await _armEscalation(agentId, now, periodKey, facts.previousStatus);
       }
     });
-    if (facts.needsEscalation) {
+    if (facts.needsEscalation && !fenced) {
       _onEscalationArmed?.call();
     }
 
     return const WakeResult(success: true);
+  }
+
+  /// The render-side staleness filter hides an overdue ad immediately,
+  /// but the ROW must record the clock's terminal verdict too — else it
+  /// sits `active` forever, out of terminal history, and every later
+  /// wake re-reads it as a live ad. Deterministic and idempotent:
+  /// `expiredAt` is the deadline itself (not this device's wall clock),
+  /// and the resolver's terminal dominance makes concurrent sweeps
+  /// converge.
+  Future<void> _expireStaleNudges(
+    String agentId,
+    DateTime now, {
+    required String activeVersionId,
+  }) async {
+    // Read and write in ONE transaction: a dismissal landing between a
+    // pre-read and the expiry write would be erased by the stale
+    // snapshot — and a same-host overwrite carries a newer vector clock,
+    // so the concurrent resolver could never recover the quiet-window
+    // verdict.
+    await _syncService.runInTransaction(() async {
+      // Re-read the head HERE: a revision committing after this wake's
+      // version load would otherwise make the sweep judge a fresh
+      // new-spec banner as foreign and terminally supersede it.
+      final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
+      if (headNow is GoalSpecHeadEntity &&
+          headNow.versionId != activeVersionId) {
+        return;
+      }
+      final nudges = (await _repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      )).whereType<GoalNudgeEntity>();
+      for (final nudge in nudges) {
+        if (nudge.deletedAt != null || nudge.status != GoalNudgeStatus.active) {
+          continue;
+        }
+        // A banner that synced in AFTER the revision sweep carries the
+        // superseded spec in its provenance — sweep it here, the same
+        // deterministic maintenance that expires overdue rows. Only when
+        // its origin version is PRESENT and itself superseded: partial
+        // sync can deliver a NEW spec's banner before that spec's head,
+        // and terminally superseding valid copy would be unrecoverable
+        // (the provider already hides mismatches until the head lands).
+        final originVersion = nudge.provenance['specVersionId'];
+        if (originVersion is String && originVersion != activeVersionId) {
+          final origin = await _repository.getEntity(originVersion);
+          if (origin is GoalSpecVersionEntity &&
+              origin.status == GoalSpecVersionStatus.superseded) {
+            await _syncService.upsertEntity(
+              nudge.copyWith(
+                status: GoalNudgeStatus.superseded,
+                supersededAt: now.toUtc(),
+                updatedAt: now,
+              ),
+            );
+          }
+          continue;
+        }
+        final staleAt = nudge.staleAt;
+        if (staleAt == null || staleAt.isAfter(now)) continue;
+        await _syncService.upsertEntity(
+          nudge.copyWith(
+            status: GoalNudgeStatus.expired,
+            expiredAt: staleAt.toUtc(),
+            updatedAt: now,
+          ),
+        );
+      }
+    });
   }
 
   /// One deterministic derivation pass: signals → evaluation → policy →

@@ -145,8 +145,13 @@ void main() {
         routeInformation,
         null,
       );
+      final agentsLocation = agentsBeamerDelegate.locationBuilder(
+        routeInformation,
+        null,
+      );
 
       expect(habitsLocation, isA<NotFound>());
+      expect(agentsLocation, isA<NotFound>());
       expect(eventsLocation, isA<NotFound>());
       expect(projectsLocation, isA<NotFound>());
       expect(dashboardsLocation, isA<NotFound>());

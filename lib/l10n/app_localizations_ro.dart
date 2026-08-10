@@ -694,6 +694,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentRunningIndicator => 'În execuție';
 
   @override
+  String get agentsCreateGoal => 'Agent de obiectiv nou';
+
+  @override
   String get agentSessionProgressTitle => 'Progresul sesiunii';
 
   @override
@@ -831,6 +834,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSoulVoiceDirectiveLabel => 'Directivă vocală';
 
   @override
+  String get agentsPageEmpty =>
+      'Încă nu există agenți de obiective. Creați unul și vă va urmări discret progresul.';
+
+  @override
+  String get agentsPageLoadFailed =>
+      'Agenții dvs. nu au putut fi încărcați momentan.';
+
+  @override
+  String get agentsPageTitle => 'Agenți';
+
+  @override
   String get agentStateConsecutiveFailures => 'Eșecuri consecutive';
 
   @override
@@ -902,6 +916,26 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String agentSummaryFollowUpTask(Object title) {
     return 'Sarcină ulterioară: $title';
+  }
+
+  @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Schimbați cadența la $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Schimbați perioada la $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'se aplică la $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Schimbați ținta la $value';
   }
 
   @override
@@ -1250,6 +1284,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Treziri';
+
+  @override
+  String get agentToolGoalRevisionLabel =>
+      'Propunere de revizuire a obiectivului';
 
   @override
   String get aggregationDailyAvg => 'Medie zilnică';
@@ -3194,6 +3232,13 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Ghidați utilizatorii noi Daily OS printr-un check-in real care transformă vocea într-o sarcină și un plan de zi.';
+
+  @override
+  String get configFlagEnableAgentsPage => 'Activați pagina Agenți';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Afișează pagina Agenți în navigarea principală. Urmăriți dintr-o privire starea agenților dvs. de obiective și verificați fiecare agent.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -6001,6 +6046,134 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Creează imagine din descrierea vocală';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% din obiectiv';
+  }
+
+  @override
+  String get goalBannerActionFailed =>
+      'Nu s-a salvat — vă rugăm să încercați din nou.';
+
+  @override
+  String get goalBannerDismissTooltip => 'Închideți';
+
+  @override
+  String get goalBannerRateTooltip => 'Evaluați acest banner';
+
+  @override
+  String get goalBannerRatingSkip => 'Omiteți';
+
+  @override
+  String get goalBannerRatingTitle => 'Cum vi s-a părut acest banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Banner pentru obiectivul $goalTitle';
+  }
+
+  @override
+  String get goalCreateFailed =>
+      'Salvarea obiectivului a eșuat — vă rugăm să încercați din nou.';
+
+  @override
+  String get goalCreateHabitCountLabel =>
+      'De câte ori pe săptămână (fiecare obicei)';
+
+  @override
+  String get goalCreateHabitCountRange =>
+      'Numărul săptămânal trebuie să fie între 1 și 7.';
+
+  @override
+  String get goalCreateHabitsLabel => 'Obiceiuri de urmărit';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Obiceiurile dvs. nu au putut fi încărcate momentan — încercați din nou în scurt timp.';
+
+  @override
+  String get goalCreateNameLabel => 'Nume';
+
+  @override
+  String get goalCreateSaveButton => 'Creați agentul';
+
+  @override
+  String get goalCreateStatementLabel => 'Enunțul obiectivului';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Media pașilor pe zi';
+
+  @override
+  String get goalCreateTypeHabits => 'Rutină de obiceiuri';
+
+  @override
+  String get goalCreateTypeSteps => 'Pași zilnici (săptămână glisantă)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Dați obiectivului un nume și cel puțin un criteriu.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Starea acestui obiectiv nu a putut fi încărcată momentan.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Încă nu există raport — agentul va raporta după prima schimbare relevantă.';
+
+  @override
+  String get goalDetailNotFound => 'Acest agent de obiectiv nu mai există.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interacțiuni';
+
+  @override
+  String get goalNudgeStatusDismissed => 'Respins';
+
+  @override
+  String get goalNudgeStatusExpired => 'Expirat';
+
+  @override
+  String get goalNudgeStatusRetired => 'Retras';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Înlocuit';
+
+  @override
+  String get goalPendingProposalBadge => 'Propunere în așteptarea evaluării';
+
+  @override
+  String get goalStatusAchieved => 'Atins';
+
+  @override
+  String get goalStatusAtRisk => 'În pericol';
+
+  @override
+  String get goalStatusInsufficientData => 'Fără date';
+
+  @override
+  String get goalStatusOffTrack => 'Deviat de la obiectiv';
+
+  @override
+  String get goalStatusOnTrack => 'Pe drumul cel bun';
+
+  @override
+  String get goalStatusRecovering => 'În revenire';
+
+  @override
+  String get goalWindowCalendarMonth => 'lună calendaristică';
+
+  @override
+  String get goalWindowCalendarWeek => 'săptămână calendaristică';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'ultimele $count zile';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'o singură zi';
 
   @override
   String get goMenuTitle => 'Navigare';

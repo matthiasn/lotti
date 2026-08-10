@@ -691,6 +691,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentRunningIndicator => 'Correndo';
 
   @override
+  String get agentsCreateGoal => 'Novo agente de meta';
+
+  @override
   String get agentSessionProgressTitle => 'Progresso da sessão';
 
   @override
@@ -827,6 +830,17 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentSoulVoiceDirectiveLabel => 'Diretiva de Voz';
 
   @override
+  String get agentsPageEmpty =>
+      'Ainda não há agentes de metas. Cria um e ele acompanha o teu progresso discretamente.';
+
+  @override
+  String get agentsPageLoadFailed =>
+      'Não foi possível carregar seus agentes agora.';
+
+  @override
+  String get agentsPageTitle => 'Agentes';
+
+  @override
   String get agentStateConsecutiveFailures => 'Falhas consecutivas';
 
   @override
@@ -898,6 +912,26 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String agentSummaryFollowUpTask(Object title) {
     return 'Tarefa de acompanhamento: $title';
+  }
+
+  @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Alterar a cadência para $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Alterar o período para $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'aplica-se a $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Alterar a meta para $value';
   }
 
   @override
@@ -1244,6 +1278,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Acorda';
+
+  @override
+  String get agentToolGoalRevisionLabel => 'Proposta de revisão da meta';
 
   @override
   String get aggregationDailyAvg => 'Média diária';
@@ -3173,6 +3210,13 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Oriente os usuários iniciantes do Daily OS através de um check-in real que transforma a fala em uma tarefa e um plano diário.';
+
+  @override
+  String get configFlagEnableAgentsPage => 'Ativar página Agentes';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Mostre a página Agentes na navegação principal. Acompanhe a saúde dos seus agentes de metas num relance e confira cada um deles.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -5962,6 +6006,132 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Criar imagem a partir da descrição de voz';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% da meta';
+  }
+
+  @override
+  String get goalBannerActionFailed => 'Isso não foi salvo — tente novamente.';
+
+  @override
+  String get goalBannerDismissTooltip => 'Dispensar';
+
+  @override
+  String get goalBannerRateTooltip => 'Avaliar este banner';
+
+  @override
+  String get goalBannerRatingSkip => 'Ignorar';
+
+  @override
+  String get goalBannerRatingTitle => 'O que achaste deste banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Banner da meta $goalTitle';
+  }
+
+  @override
+  String get goalCreateFailed =>
+      'Não foi possível guardar a meta — tenta novamente.';
+
+  @override
+  String get goalCreateHabitCountLabel => 'Vezes por semana (cada hábito)';
+
+  @override
+  String get goalCreateHabitCountRange =>
+      'A contagem semanal deve ficar entre 1 e 7.';
+
+  @override
+  String get goalCreateHabitsLabel => 'Hábitos a acompanhar';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Não foi possível carregar seus hábitos agora — tente novamente em instantes.';
+
+  @override
+  String get goalCreateNameLabel => 'Nome';
+
+  @override
+  String get goalCreateSaveButton => 'Criar agente';
+
+  @override
+  String get goalCreateStatementLabel => 'Descrição da meta';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Média de passos por dia';
+
+  @override
+  String get goalCreateTypeHabits => 'Rotina de hábitos';
+
+  @override
+  String get goalCreateTypeSteps => 'Passos diários (semana móvel)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Dá um nome à meta e pelo menos um critério.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Não foi possível carregar a saúde desta meta agora.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Ainda sem relatório — o agente reporta após a primeira mudança relevante.';
+
+  @override
+  String get goalDetailNotFound => 'Este agente de meta não existe mais.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interações';
+
+  @override
+  String get goalNudgeStatusDismissed => 'Dispensado';
+
+  @override
+  String get goalNudgeStatusExpired => 'Expirado';
+
+  @override
+  String get goalNudgeStatusRetired => 'Retirado';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Substituído';
+
+  @override
+  String get goalPendingProposalBadge => 'Proposta a aguardar revisão';
+
+  @override
+  String get goalStatusAchieved => 'Alcançado';
+
+  @override
+  String get goalStatusAtRisk => 'Em risco';
+
+  @override
+  String get goalStatusInsufficientData => 'Sem dados';
+
+  @override
+  String get goalStatusOffTrack => 'Fora do caminho';
+
+  @override
+  String get goalStatusOnTrack => 'No bom caminho';
+
+  @override
+  String get goalStatusRecovering => 'A recuperar';
+
+  @override
+  String get goalWindowCalendarMonth => 'mês de calendário';
+
+  @override
+  String get goalWindowCalendarWeek => 'semana de calendário';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return '$count dias corridos';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'um único dia';
 
   @override
   String get goMenuTitle => 'Vá';

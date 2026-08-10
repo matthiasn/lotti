@@ -688,6 +688,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentRunningIndicator => 'Běží';
 
   @override
+  String get agentsCreateGoal => 'Nový cílový agent';
+
+  @override
   String get agentSessionProgressTitle => 'Průběh relace';
 
   @override
@@ -822,6 +825,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSoulVoiceDirectiveLabel => 'Hlasová direktiva';
 
   @override
+  String get agentsPageEmpty =>
+      'Zatím žádní cíloví agenti. Vytvoř jednoho a bude tiše sledovat tvůj pokrok.';
+
+  @override
+  String get agentsPageLoadFailed => 'Agenty se teď nepodařilo načíst.';
+
+  @override
+  String get agentsPageTitle => 'Agenti';
+
+  @override
   String get agentStateConsecutiveFailures => 'Po sobě jdoucí selhání';
 
   @override
@@ -893,6 +906,26 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String agentSummaryFollowUpTask(Object title) {
     return 'Navazující úkol: $title';
+  }
+
+  @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Změnit frekvenci na $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Změnit období na $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'platí pro $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Změnit cíl na $value';
   }
 
   @override
@@ -1242,6 +1275,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Probuzení';
+
+  @override
+  String get agentToolGoalRevisionLabel => 'Návrh úpravy cíle';
 
   @override
   String get aggregationDailyAvg => 'Denní průměr';
@@ -3184,6 +3220,13 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Proveď nové uživatele Daily OS skutečným check-inem, který promění řeč v úkol a plán dne.';
+
+  @override
+  String get configFlagEnableAgentsPage => 'Povolit stránku Agenti';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Zobrazí stránku Agenti v hlavní navigaci. Sleduj zdraví svých agentů cílů na první pohled a nahlédni ke každému z nich.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -5970,6 +6013,131 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get generateCoverArtSubtitle => 'Vytvořit obrázek z hlasového popisu';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent % cíle';
+  }
+
+  @override
+  String get goalBannerActionFailed =>
+      'To se neuložilo — zkus to prosím znovu.';
+
+  @override
+  String get goalBannerDismissTooltip => 'Zavřít';
+
+  @override
+  String get goalBannerRateTooltip => 'Ohodnotit tento banner';
+
+  @override
+  String get goalBannerRatingSkip => 'Přeskočit';
+
+  @override
+  String get goalBannerRatingTitle => 'Jaký byl tento banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Banner cíle $goalTitle';
+  }
+
+  @override
+  String get goalCreateFailed => 'Cíl se nepodařilo uložit — zkus to znovu.';
+
+  @override
+  String get goalCreateHabitCountLabel => 'Krát týdně (každý návyk)';
+
+  @override
+  String get goalCreateHabitCountRange => 'Týdenní počet musí být mezi 1 a 7.';
+
+  @override
+  String get goalCreateHabitsLabel => 'Sledované návyky';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Návyky se teď nepodařilo načíst — zkus to za chvíli znovu.';
+
+  @override
+  String get goalCreateNameLabel => 'Název';
+
+  @override
+  String get goalCreateSaveButton => 'Vytvořit agenta';
+
+  @override
+  String get goalCreateStatementLabel => 'Znění cíle';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Průměr kroků za den';
+
+  @override
+  String get goalCreateTypeHabits => 'Rutina návyků';
+
+  @override
+  String get goalCreateTypeSteps => 'Denní kroky (klouzavý týden)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Pojmenuj cíl a zadej alespoň jedno kritérium.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Zdraví tohoto cíle se teď nepodařilo načíst.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Zatím žádná zpráva — agent se ozve po první podstatné změně.';
+
+  @override
+  String get goalDetailNotFound => 'Tento agent cíle už neexistuje.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interakce';
+
+  @override
+  String get goalNudgeStatusDismissed => 'Odmítnuto';
+
+  @override
+  String get goalNudgeStatusExpired => 'Vypršelo';
+
+  @override
+  String get goalNudgeStatusRetired => 'Staženo';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Nahrazeno';
+
+  @override
+  String get goalPendingProposalBadge => 'Návrh čeká na posouzení';
+
+  @override
+  String get goalStatusAchieved => 'Splněno';
+
+  @override
+  String get goalStatusAtRisk => 'Ohroženo';
+
+  @override
+  String get goalStatusInsufficientData => 'Bez dat';
+
+  @override
+  String get goalStatusOffTrack => 'Mimo kurz';
+
+  @override
+  String get goalStatusOnTrack => 'Na dobré cestě';
+
+  @override
+  String get goalStatusRecovering => 'Zotavuje se';
+
+  @override
+  String get goalWindowCalendarMonth => 'kalendářní měsíc';
+
+  @override
+  String get goalWindowCalendarWeek => 'kalendářní týden';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'posledních $count dní';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'jeden den';
 
   @override
   String get goMenuTitle => 'Přejít';

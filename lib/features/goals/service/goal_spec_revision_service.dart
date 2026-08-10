@@ -1,11 +1,14 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/goals/service/goal_revision_apply.dart';
+import 'package:uuid/uuid.dart';
 
 /// The outcome of a user-approved goal revision.
 sealed class GoalSpecRevisionOutcome {
@@ -47,6 +50,7 @@ class GoalSpecRevisionService {
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
+  static const _uuid = Uuid();
 
   Future<GoalSpecRevisionOutcome> reviseFromProposal({
     required String agentId,
@@ -128,16 +132,14 @@ class GoalSpecRevisionService {
     }
 
     final nextVersion = current.version + 1;
-    final versionId = '$agentId:spec-v$nextVersion';
-    final existing = await _repository.getEntity(versionId);
-    if (existing != null) {
-      // The successor id already exists: another acceptance won the race
-      // within this id space. Refuse rather than overwrite provenance.
-      return GoalSpecRevisionRefused(
-        'a concurrent revision already minted $versionId — re-approve '
-        'against the new head if the change is still wanted',
-      );
-    }
+    // The id carries a random suffix: two DISCONNECTED replicas approving
+    // different proposals both mint a v$nextVersion, and deterministic
+    // ids would collide — generic LWW would then silently swallow one
+    // explicit user approval, provenance and all. Unique ids keep both
+    // rows; the head's own LWW picks the standing one and the other
+    // stays in history.
+    final versionId =
+        '$agentId:spec-v$nextVersion-${_uuid.v4().substring(0, 8)}';
     final minted =
         AgentDomainEntity.goalSpecVersion(
               id: versionId,
@@ -165,6 +167,55 @@ class GoalSpecRevisionService {
     await _syncService.upsertEntity(
       head.copyWith(versionId: versionId, updatedAt: now),
     );
+
+    // Ads pitched for the superseded goal must not keep running beside
+    // the revised statement until their own staleAt: every nudge that
+    // has not reached a terminal state moves to `superseded` with the
+    // spec (ADR 0055 — the agent retires, the clock expires, the USER
+    // dismisses; a revision is the spec itself moving on). `retired`
+    // rows move too: they are the reuse library (`reusableTopRated`),
+    // and a top-rated ad written for the old target must not be
+    // re-activated beside the revised statement on a later wake.
+    final nudges = (await _repository.getEntitiesByAgentId(
+      agentId,
+      type: AgentEntityTypes.goalNudge,
+    )).whereType<GoalNudgeEntity>();
+    for (final nudge in nudges) {
+      if (nudge.deletedAt != null) continue;
+      const affected = {
+        GoalNudgeStatus.draft,
+        GoalNudgeStatus.ready,
+        GoalNudgeStatus.active,
+        GoalNudgeStatus.retired,
+      };
+      if (!affected.contains(nudge.status)) continue;
+      await _syncService.upsertEntity(
+        nudge.copyWith(
+          status: GoalNudgeStatus.superseded,
+          supersededAt: now.toUtc(),
+          updatedAt: now,
+        ),
+      );
+    }
+
+    // Pending escalations were armed under the OLD spec: left alone they
+    // would later resolve against the revised register and spend
+    // inference on a transition the new goal never made. The immediate
+    // post-approval evaluation re-arms anything genuinely due.
+    final wakes = (await _repository.getEntitiesByAgentId(
+      agentId,
+      type: AgentEntityTypes.scheduledWake,
+    )).whereType<ScheduledWakeEntity>();
+    for (final wake in wakes) {
+      if (wake.deletedAt != null ||
+          wake.status != ScheduledWakeStatus.pending ||
+          !(wake.workspaceKey?.startsWith('goal-escalation') ?? false)) {
+        continue;
+      }
+      await _syncService.upsertEntity(
+        wake.copyWith(status: ScheduledWakeStatus.consumed, consumedAt: now),
+      );
+    }
 
     return GoalSpecRevisionMinted(
       version: minted,

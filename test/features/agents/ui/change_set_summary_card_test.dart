@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
+import 'package:lotti/features/agents/service/change_set_confirmation_service.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/tools/agent_tool_executor.dart';
@@ -543,6 +545,62 @@ void main() {
 
       verify(() => mockConfirmationService.confirmItem(changeSet, 0)).called(1);
       verify(() => mockUpdateNotifications.notify({'agent-001'})).called(1);
+    });
+  });
+
+  group('ChangeSetSummaryCard.selfTargeted', () {
+    testWidgets('a goal revision proposal renders and confirms through '
+        'the injected confirmation provider', (tester) async {
+      final changeSet = makeTestChangeSet(
+        agentId: 'goal-001',
+        taskId: 'goal-001',
+        items: const [
+          ChangeItem(
+            toolName: 'propose_goal_revision',
+            args: {
+              'changes': {'targetValue': 8000},
+              'rationale': 'ease off',
+            },
+            humanSummary: 'Lower the target to 8000',
+          ),
+        ],
+      );
+      when(() => mockConfirmationService.confirmItem(any(), any())).thenAnswer(
+        (_) async => const ToolExecutionResult(success: true, output: 'Done'),
+      );
+      final injectedProvider = Provider<ChangeSetConfirmationService>(
+        (ref) => mockConfirmationService,
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetWithScaffold(
+          ChangeSetSummaryCard.selfTargeted(
+            agentId: 'goal-001',
+            confirmationProvider: injectedProvider,
+          ),
+          overrides: [
+            selfTargetedPendingChangeSetsProvider(
+              'goal-001',
+            ).overrideWith((ref) async => [changeSet]),
+            updateNotificationsProvider.overrideWithValue(
+              mockUpdateNotifications,
+            ),
+          ],
+        ),
+      );
+      await _pumpUi(tester);
+
+      expect(
+        find.text('Change the target to 8,000 — ease off'),
+        findsOneWidget,
+      );
+
+      await tester.drag(
+        find.text('Change the target to 8,000 — ease off'),
+        const Offset(300, 0),
+      );
+      await _pumpUi(tester);
+      verify(() => mockConfirmationService.confirmItem(changeSet, 0)).called(1);
     });
   });
 }

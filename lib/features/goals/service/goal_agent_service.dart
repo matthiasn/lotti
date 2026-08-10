@@ -55,58 +55,90 @@ class GoalAgentService {
       throw ArgumentError('Invalid goal criteria: ${issues.join('; ')}');
     }
     final now = clock.now();
-    final identity = await _syncService.runInTransaction(() async {
-      // Inside the transaction, not a preflight: two concurrent creates
-      // for the same caller-supplied id must serialize here, so the loser
-      // sees the winner's head and cannot rewrite the immutable spec v1.
-      if (agentId != null &&
-          await _repository.getEntity(goalSpecHeadId(agentId)) != null) {
-        throw StateError(
-          'goal $agentId already exists; spec v1 is immutable — revise via '
-          'a new version, never a repeated create',
+    AgentIdentityEntity? created;
+    AgentIdentityEntity identity;
+    try {
+      identity = await _syncService.runInTransaction(() async {
+        // Inside the transaction, not a preflight: two concurrent creates
+        // for the same caller-supplied id must serialize here, so the loser
+        // sees the winner's head and cannot rewrite the immutable spec v1.
+        if (agentId != null &&
+            await _repository.getEntity(goalSpecHeadId(agentId)) != null) {
+          throw StateError(
+            'goal $agentId already exists; spec v1 is immutable — revise via '
+            'a new version, never a repeated create',
+          );
+        }
+        final identity = await _agentService.createAgent(
+          kind: AgentKinds.goalAgent,
+          displayName: title,
+          config: const AgentConfig(),
+          agentId: agentId,
         );
+        final versionId = '${identity.agentId}:spec-v1';
+        await _syncService.upsertEntity(
+          AgentDomainEntity.goalSpecVersion(
+            id: versionId,
+            agentId: identity.agentId,
+            version: 1,
+            status: GoalSpecVersionStatus.active,
+            authoredBy: 'user',
+            title: title,
+            statement: statement,
+            criteria: criteria,
+            createdAt: now,
+            vectorClock: null,
+            startDate: startDate,
+            targetDate: targetDate,
+            rationale: rationale,
+          ),
+        );
+        await _syncService.upsertEntity(
+          AgentDomainEntity.goalSpecHead(
+            id: goalSpecHeadId(identity.agentId),
+            agentId: identity.agentId,
+            versionId: versionId,
+            updatedAt: now,
+            vectorClock: null,
+          ),
+        );
+        // First cadence tick — recurrence by re-arm starts here.
+        await _syncService.upsertEntity(
+          goalCadenceWake(identity.agentId, now),
+        );
+        created = identity;
+        return identity;
+      });
+    } catch (error) {
+      // The database transaction can be durable even when a deferred
+      // post-commit step (the sync outbox flush) rethrows. If this
+      // call's goal is already persisted, reporting failure would
+      // re-enable the Create button and a retry would mint a DUPLICATE
+      // agent under a fresh random id. A failure BEFORE the writes
+      // finished leaves nothing to reconcile.
+      final finished = created;
+      if (finished == null) rethrow;
+      final head = await _repository.getEntity(
+        goalSpecHeadId(finished.agentId),
+      );
+      if (head is! GoalSpecHeadEntity) rethrow;
+      final version = await _repository.getEntity(head.versionId);
+      if (version is GoalSpecVersionEntity && version.createdAt == now) {
+        identity = finished;
+      } else {
+        rethrow;
       }
-      final identity = await _agentService.createAgent(
-        kind: AgentKinds.goalAgent,
-        displayName: title,
-        config: const AgentConfig(),
-        agentId: agentId,
-      );
-      final versionId = '${identity.agentId}:spec-v1';
-      await _syncService.upsertEntity(
-        AgentDomainEntity.goalSpecVersion(
-          id: versionId,
-          agentId: identity.agentId,
-          version: 1,
-          status: GoalSpecVersionStatus.active,
-          authoredBy: 'user',
-          title: title,
-          statement: statement,
-          criteria: criteria,
-          createdAt: now,
-          vectorClock: null,
-          startDate: startDate,
-          targetDate: targetDate,
-          rationale: rationale,
-        ),
-      );
-      await _syncService.upsertEntity(
-        AgentDomainEntity.goalSpecHead(
-          id: goalSpecHeadId(identity.agentId),
-          agentId: identity.agentId,
-          versionId: versionId,
-          updatedAt: now,
-          vectorClock: null,
-        ),
-      );
-      // First cadence tick — recurrence by re-arm starts here.
-      await _syncService.upsertEntity(
-        goalCadenceWake(identity.agentId, now),
-      );
-      return identity;
-    });
+    }
 
     registerSignalSubscription(identity.agentId, criteria);
+    // One immediate deterministic evaluation: a goal created after the
+    // cadence hour would otherwise show no register or health for up to
+    // a day if its signals never change (the subscription only fires on
+    // NEW writes). Phase A over existing journal data is €0.
+    _orchestrator.enqueueManualWake(
+      agentId: identity.agentId,
+      reason: 'goal created',
+    );
     return identity;
   }
 

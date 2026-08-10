@@ -26,12 +26,18 @@ class GoalSignalSyncDispatcher {
     required this._repository,
     required this._phaseA,
     this._domainLogger,
+    this._onAgentEvaluated,
   });
 
   final AgentService _agentService;
   final AgentRepository _repository;
   final GoalAgentPhaseA _phaseA;
   final DomainLogger? _domainLogger;
+
+  /// Phase A writes go through the sync service, which emits no UI
+  /// notification — the health projections would otherwise show stale
+  /// attainment until an unrelated event.
+  final void Function(String agentId)? _onAgentEvaluated;
 
   /// Per-agent single flight: a burst of synced batches must not stack
   /// concurrent evaluations of the same goal.
@@ -66,6 +72,7 @@ class GoalSignalSyncDispatcher {
           triggerTokens: matched,
           threadId: runKey,
         );
+        _onAgentEvaluated?.call(identity.agentId);
       } catch (error, stackTrace) {
         _log(
           'goal signal sync dispatch failed for one agent',
@@ -95,7 +102,38 @@ class GoalSignalSyncDispatcher {
     if (head is! GoalSpecHeadEntity) return const {};
     final version = await _repository.getEntity(head.versionId);
     if (version is! GoalSpecVersionEntity) return const {};
-    return goalSignalTriggerTokens(version.criteria).intersection(tokens);
+    return {
+      // A synced HEAD is itself a signal: after disconnected approvals
+      // settle, the register may have resolved to the other version —
+      // one immediate €0 recompute realigns health with the standing
+      // spec instead of waiting for the next cadence tick.
+      if (tokens.contains(goalSpecHeadId(agentId))) goalSpecHeadId(agentId),
+      // The head-dominance path in the sync processor returns before
+      // emitting the head id (only agent-level tokens arrive), so a
+      // batch touching this agent also forces a recompute whenever the
+      // freshest register disagrees with the standing head.
+      if (tokens.contains(agentId) &&
+          await _registerMisaligned(agentId, version.id))
+        goalSpecHeadId(agentId),
+      ...goalSignalTriggerTokens(version.criteria).intersection(tokens),
+    };
+  }
+
+  /// Whether the newest progress register was computed under a version
+  /// other than the standing head — the split-brain residue one €0
+  /// recompute repairs.
+  Future<bool> _registerMisaligned(String agentId, String versionId) async {
+    final registers =
+        (await _repository.getEntitiesByAgentId(
+              agentId,
+              type: AgentEntityTypes.goalProgress,
+            ))
+            .whereType<GoalProgressEntity>()
+            .where((row) => row.deletedAt == null)
+            .toList()
+          ..sort((a, b) => b.periodKey.compareTo(a.periodKey));
+    final latest = registers.firstOrNull;
+    return latest != null && latest.specVersionId != versionId;
   }
 }
 

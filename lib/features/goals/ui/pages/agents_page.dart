@@ -1,0 +1,174 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/ui/goal_status_chip.dart';
+import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
+import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
+
+/// The flag-gated Agents tab: every running goal agent with its health
+/// at a glance — track status, attainment, the standing report's
+/// one-liner and a pending-proposal badge — plus creation.
+class AgentsPage extends ConsumerWidget {
+  const AgentsPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final agents = ref.watch(activeGoalAgentsProvider);
+    // Stale-while-revalidate: background wake/sync notifications reload
+    // the provider constantly; the established list must never flash
+    // away (the repo's no-flash rule). Empty state only on a SETTLED
+    // empty value; a failed FIRST load says so instead of rendering the
+    // blank sliver a loading pass gets.
+    final identities = agents.value;
+    final failedFirstLoad = identities == null && agents.hasError;
+    return Scaffold(
+      floatingActionButton: DesignSystemBottomNavigationFabPadding(
+        child: FloatingActionButton.extended(
+          // Through NavService, not raw Beamer: keeps currentPath and the
+          // persisted last route in sync (restart restores this page).
+          onPressed: () => beamToNamed('/agents/create'),
+          label: Text(context.messages.agentsCreateGoal),
+          icon: const Icon(Icons.add_rounded),
+        ),
+      ),
+      body: SafeArea(
+        child: CustomScrollView(
+          slivers: [
+            SliverAppBar(
+              pinned: true,
+              title: Text(context.messages.agentsPageTitle),
+            ),
+            SliverPadding(
+              // The last card must clear the overlaid bottom navigation
+              // plus the lifted FAB's footprint (the projects-list
+              // clearance idiom).
+              padding: EdgeInsets.fromLTRB(
+                tokens.spacing.step5,
+                tokens.spacing.step5,
+                tokens.spacing.step5,
+                tokens.spacing.step5 +
+                    DesignSystemBottomNavigationBar.occupiedHeight(context) +
+                    tokens.spacing.step12,
+              ),
+              sliver: switch (identities) {
+                null when failedFirstLoad => SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
+                    child: Text(
+                      context.messages.agentsPageLoadFailed,
+                      textAlign: TextAlign.center,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ),
+                ),
+                null => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                [] => SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
+                    child: Text(
+                      context.messages.agentsPageEmpty,
+                      textAlign: TextAlign.center,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ),
+                ),
+                final list => SliverList.separated(
+                  itemCount: list.length,
+                  separatorBuilder: (_, _) =>
+                      SizedBox(height: tokens.spacing.cardItemSpacing),
+                  itemBuilder: (context, index) =>
+                      _GoalAgentCard(identity: list[index]),
+                ),
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GoalAgentCard extends ConsumerWidget {
+  const _GoalAgentCard({required this.identity});
+
+  final AgentIdentityEntity identity;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final health = ref.watch(goalAgentHealthProvider(identity.agentId)).value;
+    final attainment = health?.attainment;
+    return Material(
+      color: tokens.colors.surface.enabled,
+      borderRadius: BorderRadius.circular(tokens.radii.m),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(tokens.radii.m),
+        onTap: () => beamToNamed('/agents/details/${identity.agentId}'),
+        child: Padding(
+          padding: EdgeInsets.all(tokens.spacing.cardPadding),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Wrap, not Row: a long localized status chip under a large
+              // text scale folds below the title instead of overflowing.
+              Wrap(
+                spacing: tokens.spacing.step3,
+                runSpacing: tokens.spacing.step1,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  Text(
+                    identity.displayName,
+                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                  if (health?.trackStatus != null)
+                    GoalStatusChip(status: health!.trackStatus!),
+                ],
+              ),
+              if (attainment != null) ...[
+                SizedBox(height: tokens.spacing.step2),
+                Text(
+                  context.messages.goalAttainmentLabel(
+                    (attainment * 100).round(),
+                  ),
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ],
+              if (health?.reportOneLiner != null) ...[
+                SizedBox(height: tokens.spacing.step1),
+                Text(
+                  health!.reportOneLiner!,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+              ],
+              if ((health?.pendingProposals ?? 0) > 0) ...[
+                SizedBox(height: tokens.spacing.step2),
+                Text(
+                  context.messages.goalPendingProposalBadge,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.alert.info.defaultColor,
+                  ),
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}

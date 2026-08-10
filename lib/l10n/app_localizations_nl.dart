@@ -685,6 +685,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentRunningIndicator => 'Uitvoeren';
 
   @override
+  String get agentsCreateGoal => 'Nieuwe doelagent';
+
+  @override
   String get agentSessionProgressTitle => 'Voortgang van de zitting';
 
   @override
@@ -821,6 +824,17 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentSoulVoiceDirectiveLabel => 'Spraakrichtlijn';
 
   @override
+  String get agentsPageEmpty =>
+      'Nog geen doelagenten. Maak er een aan en hij volgt stilletjes je voortgang.';
+
+  @override
+  String get agentsPageLoadFailed =>
+      'Je agenten konden nu niet worden geladen.';
+
+  @override
+  String get agentsPageTitle => 'Agenten';
+
+  @override
   String get agentStateConsecutiveFailures => 'Consecutieve storingen';
 
   @override
@@ -892,6 +906,26 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String agentSummaryFollowUpTask(Object title) {
     return 'Vervolgtaak: $title';
+  }
+
+  @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Frequentie wijzigen naar $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Periode wijzigen naar $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'geldt voor $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Doel wijzigen naar $value';
   }
 
   @override
@@ -1238,6 +1272,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Wakker worden';
+
+  @override
+  String get agentToolGoalRevisionLabel => 'Voorstel tot doelherziening';
 
   @override
   String get aggregationDailyAvg => 'Daggemiddelde';
@@ -3152,6 +3189,13 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Begeleid de eerste keer Dagelijkse OS gebruikers door een echte check-in die spraak verandert in een taak en een dagplan.';
+
+  @override
+  String get configFlagEnableAgentsPage => 'Agentenpagina inschakelen';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Toon de agentenpagina in de hoofdnavigatie. Volg in één oogopslag de gezondheid van je doelagenten en kijk bij elk van hen binnen.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -5924,6 +5968,133 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Afbeelding aanmaken van spraakbeschrijving';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% van het doel';
+  }
+
+  @override
+  String get goalBannerActionFailed =>
+      'Dat is niet opgeslagen — probeer het opnieuw.';
+
+  @override
+  String get goalBannerDismissTooltip => 'Verbergen';
+
+  @override
+  String get goalBannerRateTooltip => 'Beoordeel deze banner';
+
+  @override
+  String get goalBannerRatingSkip => 'Overslaan';
+
+  @override
+  String get goalBannerRatingTitle => 'Wat vond je van deze banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Doelbanner voor $goalTitle';
+  }
+
+  @override
+  String get goalCreateFailed =>
+      'Het doel kon niet worden opgeslagen — probeer het opnieuw.';
+
+  @override
+  String get goalCreateHabitCountLabel => 'Keer per week (per gewoonte)';
+
+  @override
+  String get goalCreateHabitCountRange =>
+      'Het wekelijkse aantal moet tussen 1 en 7 liggen.';
+
+  @override
+  String get goalCreateHabitsLabel => 'Te volgen gewoontes';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Je gewoontes konden nu niet worden geladen — probeer het zo opnieuw.';
+
+  @override
+  String get goalCreateNameLabel => 'Naam';
+
+  @override
+  String get goalCreateSaveButton => 'Agent aanmaken';
+
+  @override
+  String get goalCreateStatementLabel => 'Doelomschrijving';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Gemiddeld aantal stappen per dag';
+
+  @override
+  String get goalCreateTypeHabits => 'Gewoonteroutine';
+
+  @override
+  String get goalCreateTypeSteps => 'Dagelijkse stappen (lopende week)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Geef het doel een naam en minstens één criterium.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'De gezondheid van dit doel kon nu niet worden geladen.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Nog geen rapport — de agent rapporteert na de eerste relevante verandering.';
+
+  @override
+  String get goalDetailNotFound => 'Deze doel-agent bestaat niet meer.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interacties';
+
+  @override
+  String get goalNudgeStatusDismissed => 'Weggeveegd';
+
+  @override
+  String get goalNudgeStatusExpired => 'Verlopen';
+
+  @override
+  String get goalNudgeStatusRetired => 'Teruggetrokken';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Vervangen';
+
+  @override
+  String get goalPendingProposalBadge => 'Voorstel wacht op beoordeling';
+
+  @override
+  String get goalStatusAchieved => 'Behaald';
+
+  @override
+  String get goalStatusAtRisk => 'Risico';
+
+  @override
+  String get goalStatusInsufficientData => 'Geen gegevens';
+
+  @override
+  String get goalStatusOffTrack => 'Uit koers';
+
+  @override
+  String get goalStatusOnTrack => 'Op koers';
+
+  @override
+  String get goalStatusRecovering => 'Herstellend';
+
+  @override
+  String get goalWindowCalendarMonth => 'kalendermaand';
+
+  @override
+  String get goalWindowCalendarWeek => 'kalenderweek';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'voortschrijdende $count dagen';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'één dag';
 
   @override
   String get goMenuTitle => 'Ga';

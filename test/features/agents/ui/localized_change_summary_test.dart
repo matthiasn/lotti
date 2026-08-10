@@ -761,4 +761,124 @@ void main() {
       expect(localizedRelationSentence(de, blocks, '"A"'), contains('"A"'));
     });
   });
+
+  group('goal revision proposals', () {
+    test('the structured changes render localized, joined and in order', () {
+      final args = {
+        'changes': {'targetValue': 8000, 'cadence': 4},
+        'rationale': 'ease off',
+      };
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', args),
+        'Change the target to 8,000 · Change the cadence to 4 — ease off',
+      );
+      expect(
+        localizedChangeSummary(de, 'propose_goal_revision', args),
+        'Zielwert auf 8.000 ändern · Häufigkeit auf 4 ändern — ease off',
+      );
+    });
+
+    test('tiny fractional targets keep their precision at the gate', () {
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'targetValue': 0.0001},
+        }),
+        'Change the target to 0.0001',
+      );
+      // Beyond any fixed fraction cap: falls back to the value's own
+      // representation rather than rounding a nonzero target to 0.
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'targetValue': 0.00000000001},
+        }),
+        'Change the target to 1e-11',
+      );
+    });
+
+    test('an empty or malformed changes map falls back to the persisted '
+        'summary (null)', () {
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': <String, dynamic>{},
+        }),
+        isNull,
+      );
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': 'not a map',
+        }),
+        isNull,
+      );
+    });
+
+    test('a present metric scopes the target it binds', () {
+      // metric is a non-empty string, so the target part gets the
+      // "applies to {metric}" suffix appended by scoped().
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'metric': 'steps', 'targetValue': 5000},
+        }),
+        'Change the target to 5,000 (applies to steps)',
+      );
+    });
+
+    test('a blank or absent metric leaves the part unscoped', () {
+      // Blank (whitespace-only) is treated the same as absent: scoped()
+      // must fall to the bare part, not append an empty scope suffix.
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'metric': '   ', 'targetValue': 5000},
+        }),
+        'Change the target to 5,000',
+      );
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'targetValue': 5000},
+        }),
+        'Change the target to 5,000',
+      );
+    });
+
+    test('a period change renders the localized window, scoped by metric', () {
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'metric': 'steps', 'period': 'rolling 14 days'},
+        }),
+        'Change the window to rolling 14 days (applies to steps)',
+      );
+    });
+
+    test('a non-numeric, unparseable target passes through verbatim', () {
+      // Neither `num` nor parseable by `num.tryParse` — must not throw, and
+      // must not silently disappear, because it is still evidence of what
+      // the model actually asked for.
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'targetValue': 'a lot more'},
+        }),
+        'Change the target to a lot more',
+      );
+    });
+
+    test('every _localizedWindow branch renders its own phrase', () {
+      // Exercises every arm of parseGoalWindowPhrase's result, plus the
+      // verbatim passthrough for a phrase the parser rejects outright.
+      const cases = {
+        'day': 'Change the window to a single day',
+        'rolling 14 days': 'Change the window to rolling 14 days',
+        'calendar week': 'Change the window to calendar week',
+        'calendar month': 'Change the window to calendar month',
+        'once in a blue moon': 'Change the window to once in a blue moon',
+      };
+      for (final MapEntry(key: phrase, value: expected) in cases.entries) {
+        expect(
+          localizedChangeSummary(en, 'propose_goal_revision', {
+            'changes': {'period': phrase},
+          }),
+          expected,
+          reason: phrase,
+        );
+      }
+    });
+  });
 }

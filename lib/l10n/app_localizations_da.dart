@@ -684,6 +684,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentRunningIndicator => 'Løb';
 
   @override
+  String get agentsCreateGoal => 'Ny målagent';
+
+  @override
   String get agentSessionProgressTitle => 'Sessionens fremskridt';
 
   @override
@@ -819,6 +822,16 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentSoulVoiceDirectiveLabel => 'Taledirektivet';
 
   @override
+  String get agentsPageEmpty =>
+      'Ingen målagenter endnu. Opret en, så følger den stille dine fremskridt.';
+
+  @override
+  String get agentsPageLoadFailed => 'Kunne ikke indlæse dine agenter lige nu.';
+
+  @override
+  String get agentsPageTitle => 'Agenter';
+
+  @override
   String get agentStateConsecutiveFailures => 'På hinanden følgende fejl';
 
   @override
@@ -890,6 +903,26 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String agentSummaryFollowUpTask(Object title) {
     return 'Opfølgningsopgave: $title';
+  }
+
+  @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Ændr kadencen til $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Ændr perioden til $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'gælder for $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Ændr målet til $value';
   }
 
   @override
@@ -1233,6 +1266,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Våger';
+
+  @override
+  String get agentToolGoalRevisionLabel => 'Forslag til måljustering';
 
   @override
   String get aggregationDailyAvg => 'Dagligt gennemsnit';
@@ -3142,6 +3178,13 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Guid førstegangsbrugere af Daily OS gennem en rigtig check-in, der gør tale til en opgave og en dagsplan.';
+
+  @override
+  String get configFlagEnableAgentsPage => 'Aktivér agenter-siden';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Vis agenter-siden i hovednavigationen. Følg dine målagenters tilstand med et blik, og kig ind til hver enkelt.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -5906,6 +5949,132 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get generateCoverArtSubtitle =>
       'Opret billede ud fra stemmebeskrivelse';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent % af målet';
+  }
+
+  @override
+  String get goalBannerActionFailed =>
+      'Det blev ikke gemt — prøv venligst igen.';
+
+  @override
+  String get goalBannerDismissTooltip => 'Afvis';
+
+  @override
+  String get goalBannerRateTooltip => 'Bedøm dette banner';
+
+  @override
+  String get goalBannerRatingSkip => 'Spring over';
+
+  @override
+  String get goalBannerRatingTitle => 'Hvordan var dette banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Målbanner for $goalTitle';
+  }
+
+  @override
+  String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
+
+  @override
+  String get goalCreateHabitCountLabel => 'Gange om ugen (pr. vane)';
+
+  @override
+  String get goalCreateHabitCountRange =>
+      'Det ugentlige antal skal være mellem 1 og 7.';
+
+  @override
+  String get goalCreateHabitsLabel => 'Vaner at følge';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Kunne ikke indlæse dine vaner lige nu — prøv igen om lidt.';
+
+  @override
+  String get goalCreateNameLabel => 'Navn';
+
+  @override
+  String get goalCreateSaveButton => 'Opret agent';
+
+  @override
+  String get goalCreateStatementLabel => 'Målsætning';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Gennemsnitlige skridt pr. dag';
+
+  @override
+  String get goalCreateTypeHabits => 'Vanerutine';
+
+  @override
+  String get goalCreateTypeSteps => 'Daglige skridt (rullende uge)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Giv målet et navn og mindst ét kriterium.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Kunne ikke indlæse dette måls tilstand lige nu.';
+
+  @override
+  String get goalDetailNoReport =>
+      'Ingen rapport endnu — agenten rapporterer efter den første relevante ændring.';
+
+  @override
+  String get goalDetailNotFound => 'Denne målagent findes ikke længere.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interaktioner';
+
+  @override
+  String get goalNudgeStatusDismissed => 'Afvist';
+
+  @override
+  String get goalNudgeStatusExpired => 'Udløbet';
+
+  @override
+  String get goalNudgeStatusRetired => 'Trukket tilbage';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Erstattet';
+
+  @override
+  String get goalPendingProposalBadge => 'Forslag afventer';
+
+  @override
+  String get goalStatusAchieved => 'Opnået';
+
+  @override
+  String get goalStatusAtRisk => 'I fare';
+
+  @override
+  String get goalStatusInsufficientData => 'Ingen data';
+
+  @override
+  String get goalStatusOffTrack => 'Ude af kurs';
+
+  @override
+  String get goalStatusOnTrack => 'På sporet';
+
+  @override
+  String get goalStatusRecovering => 'På vej tilbage';
+
+  @override
+  String get goalWindowCalendarMonth => 'kalendermåned';
+
+  @override
+  String get goalWindowCalendarWeek => 'kalenderuge';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'løbende $count dage';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'en enkelt dag';
 
   @override
   String get goMenuTitle => 'Gå';

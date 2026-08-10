@@ -128,6 +128,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
         if (armed is GoalSpecVersionEntity) version = armed;
       }
     }
+    // Disconnected same-ordinal approvals can leave TWO active version
+    // rows while the head names only one. A wake resolved onto the
+    // non-head active version would pay for inference the transactional
+    // fence then discards — no-op here, before any message or model
+    // spend. (Superseded versions pass: the stale-escalation path is
+    // deliberate and report-only.)
+    if (version.status == GoalSpecVersionStatus.active &&
+        version.id != head.versionId) {
+      return const WakeResult(success: true);
+    }
     final derivation = await _phaseA.deriveWakeFacts(
       agentId: agentId,
       version: version,
@@ -156,10 +166,22 @@ class GoalAgentWorkflow with AgentErrorLogging {
       shortTermAttainment: derivation.facts.shortTermAttainment,
     );
 
-    final nudges = (await _repository.getEntitiesByAgentId(
-      agentId,
-      type: AgentEntityTypes.goalNudge,
-    )).whereType<GoalNudgeEntity>().where((n) => n.deletedAt == null).toList();
+    // Spec-scoped like the persistence snapshot: an old-spec fresh
+    // active must not convince _adRequired that the current goal is
+    // covered, and an old-spec retired row must not be offered for
+    // rerun. Dismissals pass — the quiet window binds the goal.
+    final nudges =
+        (await _repository.getEntitiesByAgentId(
+              agentId,
+              type: AgentEntityTypes.goalNudge,
+            ))
+            .whereType<GoalNudgeEntity>()
+            .where(
+              (n) =>
+                  n.deletedAt == null &&
+                  _specScopedRow(n, (version! as GoalSpecVersionEntity).id),
+            )
+            .toList();
     final observations = await _recentObservationTexts(agentId);
 
     final factsBlock = _factsRenderer.render(
@@ -310,6 +332,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
         strategy: strategy,
         derivation: derivation,
         now: now,
+        escalationBaseline: goalEscalationBaselineFromTriggerTokens(
+          triggerTokens,
+        ),
       );
       outputsCommitted = true;
       if (!attributionFinalized && recordConsumption) {
@@ -423,6 +448,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
         stackTrace: stackTrace,
       );
     }
+  }
+
+  /// Whether a nudge row belongs in THIS wake's view: rows from another
+  /// spec version are invisible (they neither count as fresh actives nor
+  /// enter the reuse pool), except dismissals — the user's quiet window
+  /// binds the whole goal. Legacy rows without provenance pass.
+  bool _specScopedRow(GoalNudgeEntity nudge, String versionId) {
+    if (nudge.status == GoalNudgeStatus.dismissed) return true;
+    final origin = nudge.provenance['specVersionId'];
+    return origin == null || origin == versionId;
   }
 
   /// Whether the deterministic facts permit ad activity at all: offTrack
@@ -727,23 +762,61 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required GoalAgentStrategy strategy,
     required GoalWakeDerivation derivation,
     required DateTime now,
+    String? escalationBaseline,
   }) async {
-    // RE-READ, never trust the pre-inference snapshot: the user may have
-    // dismissed an ad while the model was thinking, and that dismissal's
-    // cooldown must bind this wake's ad writes.
-    final nudges = (await _repository.getEntitiesByAgentId(
-      agentId,
-      type: AgentEntityTypes.goalNudge,
-    )).whereType<GoalNudgeEntity>().where((n) => n.deletedAt == null).toList();
-    final byId = {for (final nudge in nudges) nudge.id: nudge};
     final reportId = strategy.hasReport ? _uuid.v4() : null;
     final attributionEnvelope = await prepareAgentReportAttribution(
       runKey: runKey,
       reportId: reportId,
     );
     var attributionFinalized = false;
+    var fenced = false;
 
     await _syncService.runInTransaction(() async {
+      // A revision approved while the model was thinking moves the head
+      // on — and NOTHING from this wake may then publish beside the
+      // revised goal: its report and banner describe the superseded
+      // target. Checked INSIDE the output transaction so a revision
+      // committing between a pre-check and these writes cannot slip
+      // through. The fence keys on the derivation snapshot's ACTIVE
+      // status: a stale escalation deliberately evaluates the superseded
+      // version that armed its period and stays exempt.
+      final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
+      if (headNow is! GoalSpecHeadEntity) {
+        // The goal was DELETED while the model ran: recreating messages,
+        // reports or banners here would resurrect rows for a hard-deleted
+        // agent and sync them out after the deletion.
+        fenced = true;
+        return;
+      }
+      if (derivation.version.status == GoalSpecVersionStatus.active &&
+          headNow.versionId != derivation.version.id) {
+        fenced = true;
+        return;
+      }
+
+      // RE-READ inside the transaction, never trust the pre-inference
+      // snapshot: the user may have dismissed an ad while the model was
+      // thinking, and that dismissal must bind EVERY guard below — the
+      // retire skips, the cooldown, and the fresh-active check alike.
+      // Scoped to THIS wake's spec: a superseded-spec banner syncing in
+      // late must not satisfy the fresh-active guard and suppress the
+      // current goal's banner (dismissals stay visible regardless — the
+      // quiet window is the goal's, not one spec version's).
+      final allRows =
+          (await _repository.getEntitiesByAgentId(
+                agentId,
+                type: AgentEntityTypes.goalNudge,
+              ))
+              .whereType<GoalNudgeEntity>()
+              .where((n) => n.deletedAt == null)
+              .toList();
+      final nudges = [
+        for (final nudge in allRows)
+          if (_specScopedRow(nudge, derivation.version.id)) nudge,
+      ];
+      final byId = {for (final nudge in nudges) nudge.id: nudge};
+
       // Thought (final assistant prose — dialogue turns land here too).
       final thought = strategy.finalResponse;
       if (thought != null) {
@@ -790,6 +863,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
             provenance: <String, Object?>{
               'trackStatus': strategy.reportStatus!.name,
               'periodKey': derivation.periodKey,
+              'specVersionId': derivation.version.id,
               if (attributionEnvelope != null)
                 aiAttributionProvenanceKey: attributionEnvelope.toJson(),
             },
@@ -808,9 +882,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
           AgentReportScopes.current,
         );
         final publishedPeriod = published?.provenance['periodKey'];
+        // A superseded-spec wake keeps its report ROW as history but
+        // never advances the shared head: same-period LWW would let a
+        // delayed v1 escalation hide v2's standing report behind a
+        // spec-provenance filter until v2 publishes again.
         final headMayAdvance =
-            publishedPeriod is! String ||
-            derivation.periodKey.compareTo(publishedPeriod) >= 0;
+            derivation.version.status == GoalSpecVersionStatus.active &&
+            (publishedPeriod is! String ||
+                derivation.periodKey.compareTo(publishedPeriod) >= 0);
         if (headMayAdvance) {
           await _syncService.upsertEntity(
             AgentDomainEntity.agentReportHead(
@@ -830,17 +909,59 @@ class GoalAgentWorkflow with AgentErrorLogging {
         }
       }
 
+      // Deterministic recovery retire: when the authoritative status no
+      // longer permits ads (back on track, recovering, data gap), every
+      // still-active ad is retired HERE — the obsolete chiding banner
+      // must not depend on the model remembering retire_goal_ad, nor
+      // run out its 72 h staleAt.
+      // A superseded-spec wake owns none of the CURRENT banners: its
+      // historical facts must neither retire nor rerun rows that may
+      // belong to the revised goal (creates stay — they are evidence for
+      // the wake's own period, and a fresh current banner already blocks
+      // them via the fresh-active guard).
+      final staleSpecWake =
+          derivation.version.status != GoalSpecVersionStatus.active;
+      if (!staleSpecWake &&
+          !_adsEligible(derivation.facts, derivation.priors)) {
+        final modelRetired = {
+          for (final action in strategy.retireRequests) action.adId,
+        };
+        for (final nudge in nudges) {
+          if (nudge.status != GoalNudgeStatus.active ||
+              modelRetired.contains(nudge.id)) {
+            continue;
+          }
+          await _syncService.upsertEntity(
+            nudge.copyWith(
+              status: GoalNudgeStatus.retired,
+              retiredAt: now.toUtc(),
+              updatedAt: now,
+              provenance: {
+                ...nudge.provenance,
+                'retireReason': 'status no longer permits ads',
+              },
+            ),
+          );
+        }
+      }
+
       // Retire before create: a wake that swaps ads must never leave two
       // active ones if it dies between writes.
       for (final action in strategy.retireRequests) {
+        if (staleSpecWake) break;
+        // The in-transaction snapshot is the consistent view: only a row
+        // that is STILL active retires — a dismissal (the user's
+        // quiet-window verdict) or a Phase A expiry that landed first
+        // survives; rewriting expired→retired would feed the clock-expired
+        // ad back into the reuse library.
         final nudge = byId[action.adId];
-        if (nudge == null || nudge.status == GoalNudgeStatus.dismissed) {
+        if (nudge == null || nudge.status != GoalNudgeStatus.active) {
           continue;
         }
         await _syncService.upsertEntity(
           nudge.copyWith(
             status: GoalNudgeStatus.retired,
-            retiredAt: now,
+            retiredAt: now.toUtc(),
             updatedAt: now,
             provenance: {...nudge.provenance, 'retireReason': action.reason},
           ),
@@ -870,6 +991,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
             now.difference(n.activatedAt ?? n.createdAt) < goalAdFreshFor,
       );
       for (final action in strategy.rerunRequests) {
+        if (staleSpecWake) {
+          logError('rerun suppressed: the wake ran under a superseded spec');
+          continue;
+        }
         if (!adsEligible) {
           logError('rerun suppressed: status does not permit ads');
           continue;
@@ -891,8 +1016,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
           nudge.copyWith(
             status: GoalNudgeStatus.active,
             activationCount: nudge.activationCount + 1,
-            activatedAt: now,
-            staleAt: now.add(goalAdLifetime),
+            activatedAt: now.toUtc(),
+            staleAt: now.toUtc().add(goalAdLifetime),
             updatedAt: now,
             runKey: runKey,
             threadId: threadId,
@@ -906,7 +1031,29 @@ class GoalAgentWorkflow with AgentErrorLogging {
       final seenDigests = {
         for (final nudge in nudges) nudge.briefDigest,
       };
+      // The creation id derives from the LOGICAL escalation — its period
+      // plus the ARMING baseline carried on the wake's trigger tokens —
+      // never from locally observed row counts (which differ across
+      // partitions) nor from the re-derived previousStatus (which is
+      // post-register and would collide when the same status recurs in
+      // one day). Duplicate executions of one escalation share both and
+      // converge; a same-day recurrence carries a different baseline.
+      // Period + arming baseline + originating spec version: duplicate
+      // executions of one escalation converge (identical everything), a
+      // same-day recurrence differs by baseline, and a same-day REVISION
+      // producing the same baseline differs by spec — so the skip below
+      // can never starve the revised goal of its required banner.
+      final creationId =
+          'goal_nudge:$agentId:${derivation.periodKey}:'
+          '${escalationBaseline ?? derivation.facts.previousStatus?.name ?? 'first'}:'
+          '${derivation.version.id}';
       for (final request in strategy.createdAds) {
+        if (staleSpecWake) {
+          logError(
+            'ad creation suppressed: the wake ran under a superseded spec',
+          );
+          break;
+        }
         if (!adsEligible) {
           logError('ad creation suppressed: status does not permit ads');
           continue;
@@ -927,23 +1074,41 @@ class GoalAgentWorkflow with AgentErrorLogging {
           logError('ad creation skipped: duplicate brief digest');
           continue;
         }
+        if (allRows.any((n) => n.id == creationId)) {
+          // The SAME transition recurring within one day (offTrack →
+          // recover → offTrack) maps to one id — skipping preserves the
+          // earlier banner's outcome, ratings and counters, and one
+          // banner per identical daily transition is the respectful
+          // ceiling anyway (the digest/cooldown spirit).
+          logError(
+            'ad creation skipped: this transition already produced '
+            "today's banner",
+          );
+          continue;
+        }
         freshActiveExists = true;
         await _syncService.upsertEntity(
           AgentDomainEntity.goalNudge(
-            id: _uuid.v4(),
+            id: creationId,
             agentId: agentId,
             status: GoalNudgeStatus.active,
             brief: brief,
             briefDigest: digest,
-            createdAt: now,
-            updatedAt: now,
+            // UTC throughout: local instants serialize without an offset
+            // and would shift the 72 h lifetime and freshness checks by
+            // the zone difference on a syncing peer.
+            createdAt: now.toUtc(),
+            updatedAt: now.toUtc(),
             vectorClock: null,
             runKey: runKey,
             threadId: threadId,
             triggerProgressId: goalProgressId(agentId, derivation.periodKey),
             reasonSummary: request.reasonSummary,
-            staleAt: now.add(goalAdLifetime),
-            activatedAt: now,
+            staleAt: now.toUtc().add(goalAdLifetime),
+            activatedAt: now.toUtc(),
+            // The originating spec version: a banner syncing in AFTER
+            // the revision sweep carries its own fencing evidence.
+            provenance: {'specVersionId': derivation.version.id},
           ),
         );
       }
@@ -980,7 +1145,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
       // Revision proposals: ChangeSet-gated — the goal spec NEVER mutates
       // here; PR 4's approval flow mints the new version on accept.
-      if (strategy.revisionProposals.isNotEmpty) {
+      if (staleSpecWake && strategy.revisionProposals.isNotEmpty) {
+        logError(
+          'revision proposal suppressed: the wake ran under a superseded '
+          'spec — approving it would distort the newer goal',
+        );
+      }
+      if (!staleSpecWake && strategy.revisionProposals.isNotEmpty) {
         await _syncService.upsertEntity(
           AgentDomainEntity.changeSet(
             id: _uuid.v4(),
@@ -1013,6 +1184,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
         );
       }
     });
+    if (fenced) {
+      logError(
+        'outputs fenced: spec head moved while the wake ran against '
+        '${derivation.version.id}',
+      );
+      return false;
+    }
 
     // Finalize AFTER the transaction: the projection must never describe
     // a report the rolled-back transaction did not write. Contained — a

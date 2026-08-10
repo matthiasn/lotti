@@ -680,6 +680,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentRunningIndicator => 'Running';
 
   @override
+  String get agentsCreateGoal => 'New goal agent';
+
+  @override
   String get agentSessionProgressTitle => 'Session Progress';
 
   @override
@@ -814,6 +817,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentSoulVoiceDirectiveLabel => 'Voice Directive';
 
   @override
+  String get agentsPageEmpty =>
+      'No goal agents yet. Create one and it will quietly watch your progress.';
+
+  @override
+  String get agentsPageLoadFailed => 'Couldn\'t load your agents right now.';
+
+  @override
+  String get agentsPageTitle => 'Agents';
+
+  @override
   String get agentStateConsecutiveFailures => 'Consecutive failures';
 
   @override
@@ -885,6 +898,26 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String agentSummaryFollowUpTask(Object title) {
     return 'Follow-up task: $title';
+  }
+
+  @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Change the cadence to $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Change the window to $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'applies to $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Change the target to $value';
   }
 
   @override
@@ -1227,6 +1260,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get agentTokenUsageWakeCount => 'Wakes';
+
+  @override
+  String get agentToolGoalRevisionLabel => 'Goal revision proposal';
 
   @override
   String get aggregationDailyAvg => 'Daily average';
@@ -3126,6 +3162,13 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get configFlagDailyOsOnboardingEnabledDescription =>
       'Guide first-time Daily OS users through a real check-in that turns speech into a task and a day plan.';
+
+  @override
+  String get configFlagEnableAgentsPage => 'Enable Agents page';
+
+  @override
+  String get configFlagEnableAgentsPageDescription =>
+      'Show the Agents page in the main navigation. Follow your goal agents\' health at a glance and check in on each one.';
 
   @override
   String get configFlagEnableAiStreaming =>
@@ -5878,6 +5921,131 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get generateCoverArtSubtitle => 'Create image from voice description';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% of target';
+  }
+
+  @override
+  String get goalBannerActionFailed => 'That didn\'t save — please try again.';
+
+  @override
+  String get goalBannerDismissTooltip => 'Dismiss';
+
+  @override
+  String get goalBannerRateTooltip => 'Rate this banner';
+
+  @override
+  String get goalBannerRatingSkip => 'Skip';
+
+  @override
+  String get goalBannerRatingTitle => 'How was this banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Goal banner for $goalTitle';
+  }
+
+  @override
+  String get goalCreateFailed => 'Saving the goal failed — please try again.';
+
+  @override
+  String get goalCreateHabitCountLabel => 'Times per week (each habit)';
+
+  @override
+  String get goalCreateHabitCountRange =>
+      'The weekly count must be between 1 and 7.';
+
+  @override
+  String get goalCreateHabitsLabel => 'Habits to watch';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Couldn\'t load your habits right now — try again in a moment.';
+
+  @override
+  String get goalCreateNameLabel => 'Name';
+
+  @override
+  String get goalCreateSaveButton => 'Create agent';
+
+  @override
+  String get goalCreateStatementLabel => 'Goal statement';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Average steps per day';
+
+  @override
+  String get goalCreateTypeHabits => 'Habit routine';
+
+  @override
+  String get goalCreateTypeSteps => 'Daily steps (rolling week)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Give the goal a name and at least one criterion.';
+
+  @override
+  String get goalDetailHealthUnavailable =>
+      'Couldn\'t load this goal\'s health right now.';
+
+  @override
+  String get goalDetailNoReport =>
+      'No report yet — the agent reports after its first meaningful change.';
+
+  @override
+  String get goalDetailNotFound => 'This goal agent no longer exists.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interactions';
+
+  @override
+  String get goalNudgeStatusDismissed => 'Dismissed';
+
+  @override
+  String get goalNudgeStatusExpired => 'Expired';
+
+  @override
+  String get goalNudgeStatusRetired => 'Retired';
+
+  @override
+  String get goalNudgeStatusSuperseded => 'Superseded';
+
+  @override
+  String get goalPendingProposalBadge => 'Proposal awaiting review';
+
+  @override
+  String get goalStatusAchieved => 'Achieved';
+
+  @override
+  String get goalStatusAtRisk => 'At risk';
+
+  @override
+  String get goalStatusInsufficientData => 'No data';
+
+  @override
+  String get goalStatusOffTrack => 'Off track';
+
+  @override
+  String get goalStatusOnTrack => 'On track';
+
+  @override
+  String get goalStatusRecovering => 'Recovering';
+
+  @override
+  String get goalWindowCalendarMonth => 'calendar month';
+
+  @override
+  String get goalWindowCalendarWeek => 'calendar week';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'rolling $count days';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'a single day';
 
   @override
   String get goMenuTitle => 'Go';
@@ -11867,6 +12035,16 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
   String get agentControlsReanalyzeButton => 'Re-analyse';
 
   @override
+  String get agentsCreateGoal => 'New goal agent';
+
+  @override
+  String get agentsPageEmpty =>
+      'No goal agents yet. Create one and it will quietly watch your progress.';
+
+  @override
+  String get agentsPageTitle => 'Agents';
+
+  @override
   String get aiSetupWizardCreatesOptimized =>
       'Creates optimised models, prompts, and a test category';
 
@@ -12040,6 +12218,84 @@ class AppLocalizationsEnGb extends AppLocalizationsEn {
 
   @override
   String get fileMenuTitle => 'File';
+
+  @override
+  String goalAttainmentLabel(int percent) {
+    return '$percent% of target';
+  }
+
+  @override
+  String get goalBannerDismissTooltip => 'Dismiss';
+
+  @override
+  String get goalBannerRatingSkip => 'Skip';
+
+  @override
+  String get goalBannerRatingTitle => 'How was this banner?';
+
+  @override
+  String goalBannerSemanticLabel(String goalTitle) {
+    return 'Goal banner for $goalTitle';
+  }
+
+  @override
+  String get goalCreateFailed => 'Saving the goal failed — please try again.';
+
+  @override
+  String get goalCreateHabitCountLabel => 'Times per week (each habit)';
+
+  @override
+  String get goalCreateHabitsLabel => 'Habits to watch';
+
+  @override
+  String get goalCreateNameLabel => 'Name';
+
+  @override
+  String get goalCreateSaveButton => 'Create agent';
+
+  @override
+  String get goalCreateStatementLabel => 'Goal statement';
+
+  @override
+  String get goalCreateStepsTargetLabel => 'Average steps per day';
+
+  @override
+  String get goalCreateTypeHabits => 'Habit routine';
+
+  @override
+  String get goalCreateTypeSteps => 'Daily steps (rolling week)';
+
+  @override
+  String get goalCreateValidationMissing =>
+      'Give the goal a name and at least one criterion.';
+
+  @override
+  String get goalDetailNoReport =>
+      'No report yet — the agent reports after its first meaningful change.';
+
+  @override
+  String get goalDetailTimelineTitle => 'Interactions';
+
+  @override
+  String get goalPendingProposalBadge => 'Proposal awaiting review';
+
+  @override
+  String get goalStatusAchieved => 'Achieved';
+
+  @override
+  String get goalStatusAtRisk => 'At risk';
+
+  @override
+  String get goalStatusInsufficientData => 'No data';
+
+  @override
+  String get goalStatusOffTrack => 'Off track';
+
+  @override
+  String get goalStatusOnTrack => 'On track';
+
+  @override
+  String get goalStatusRecovering => 'Recovering';
 
   @override
   String get habitActiveFromLabel => 'Start date';

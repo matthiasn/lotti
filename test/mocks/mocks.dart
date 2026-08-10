@@ -108,6 +108,8 @@ import 'package:lotti/features/daily_os_next/services/day_processing_outbox_repo
 import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dart';
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
+import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -689,7 +691,16 @@ class MockAudioRecorder extends Mock implements record.AudioRecorder {}
 class MockAudioTranscriptionService extends Mock
     implements AudioTranscriptionService {}
 
-class MockNavService extends Mock implements NavService {}
+class MockNavService extends Mock implements NavService {
+  /// Concrete default (mutable) so the many app-shell tests that predate
+  /// the agents tab don't each need a stub; a test exercising the tab
+  /// flips [agentsPageEnabled] instead of `when()` (which cannot stub a
+  /// concrete member).
+  bool agentsPageEnabled = false;
+
+  @override
+  bool get isAgentsPageEnabled => agentsPageEnabled;
+}
 
 class MockWindowService extends Mock implements WindowService {}
 
@@ -1195,6 +1206,10 @@ class MockAiInputRepository extends Mock implements AiInputRepository {}
 class MockTaskSummaryResolver extends Mock implements TaskSummaryResolver {}
 
 class MockHabitsRepository extends Mock implements HabitsRepository {}
+
+class MockGoalAgentService extends Mock implements GoalAgentService {}
+
+class MockGoalNudgeInteractions extends Mock implements GoalNudgeInteractions {}
 
 class MockRatingRepository extends Mock implements RatingRepository {}
 
