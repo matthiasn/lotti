@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/agents_page.dart';
+import 'package:lotti/services/nav_service.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -58,6 +59,14 @@ void main() {
     // The cost-honesty line and the CTA are part of the explainer.
     expect(find.textContaining('fractions of a cent'), findsOneWidget);
     expect(find.text('Set an intention'), findsOneWidget);
+
+    // The CTA opens the creation flow.
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await tester.tap(find.text('Set an intention'));
+    await tester.pump();
+    expect(navigated, ['/agents/create']);
   });
 
   testWidgets('a row shows the coarse health chip, the executive summary '
