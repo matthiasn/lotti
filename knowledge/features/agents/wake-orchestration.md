@@ -5,7 +5,7 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-08-10T16:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-10T14:30:00Z }
 stale_after: 2026-10-12
 sources:
   - id: wake

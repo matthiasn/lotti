@@ -472,6 +472,57 @@ void main() {
       });
     });
 
+    group('batch deadline decision', () {
+      test('two digest-deferred subscriptions of one agent coalesce to a '
+          'single morning deadline — and neither dispatches early', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+
+          // Both subscriptions keep the default deferPropagatedMatches and
+          // match only propagated tokens, so each requests the next-06:00
+          // slot; the second request exercises the keep-the-earlier
+          // tie-break in the post-loop decision.
+          orchestrator
+            ..addSubscription(makeSub(matchEntityIds: {'entity-1'}))
+            ..addSubscription(
+              makeSub(id: 'sub-2', matchEntityIds: {'entity-1', 'entity-2'}),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          emitTokens(async, controller, {
+            propagatedNotification('entity-1'),
+            propagatedNotification('entity-2'),
+          });
+
+          // The short window passing proves the morning slot won — a fast
+          // deadline here would mean the digest policy was dropped in the
+          // post-loop coalescing.
+          async
+            ..elapse(WakeOrchestrator.throttleWindow * 2)
+            ..flushMicrotasks();
+          expect(executionCount, 0);
+
+          // Past the morning slot the single coalesced job drains once.
+          async
+            ..elapse(const Duration(hours: 25))
+            ..flushMicrotasks();
+          expect(executionCount, 1);
+
+          controller.close();
+        });
+      });
+    });
+
     group('throttle gate', () {
       glados.Glados(
         glados.any.pendingWakeRestoreScenario,
