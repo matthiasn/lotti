@@ -335,4 +335,61 @@ void main() {
     );
     expect(ok, isA<GoalRevisionApplied>());
   });
+
+  test('a multi-habit routine binds a cadence change through the metric '
+      'identifier; without one it stays rejected', () {
+    const routine = GoalCriterion.allOf(
+      criterionId: 'routine',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'habit-gym',
+          habitId: 'gym-id',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 3,
+        ),
+        GoalCriterion.habit(
+          criterionId: 'habit-run',
+          habitId: 'run-id',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 3,
+        ),
+      ],
+    );
+
+    final resolved = applyGoalRevisionChanges(
+      criteria: routine,
+      changes: {'cadence': 4, 'metric': 'habit-run'},
+    );
+    final revised = (resolved as GoalRevisionApplied).criteria;
+    final leaves = (revised as GoalCriterionAllOf).criteria
+        .whereType<GoalCriterionHabit>()
+        .toList();
+    expect(
+      leaves.singleWhere((h) => h.criterionId == 'habit-run').targetCount,
+      4,
+    );
+    expect(
+      leaves.singleWhere((h) => h.criterionId == 'habit-gym').targetCount,
+      3,
+      reason: 'only the identified habit changes',
+    );
+
+    // habitId works as the identifier too.
+    expect(
+      applyGoalRevisionChanges(
+        criteria: routine,
+        changes: {'cadence': 4, 'metric': 'gym-id'},
+      ),
+      isA<GoalRevisionApplied>(),
+    );
+
+    final ambiguous = applyGoalRevisionChanges(
+      criteria: routine,
+      changes: {'cadence': 4},
+    );
+    expect(
+      (ambiguous as GoalRevisionRejected).reason,
+      contains('must identify which one'),
+    );
+  });
 }

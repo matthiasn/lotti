@@ -107,12 +107,20 @@ GoalRevisionResult applyGoalRevisionChanges({
 
   if (cadence != null) {
     final habits = _habitLeaves(revised);
-    if (habits.length != 1) {
+    if (habits.isEmpty) {
+      return const GoalRevisionRejected(
+        'the goal has no habit criterion for a cadence change',
+      );
+    }
+    // Multi-habit routines (the creation form's allOf) bind through the
+    // proposal's identifier — criterionId or habitId via `metric`.
+    final habit = habits.length == 1
+        ? habits.single
+        : _resolveHabitLeaf(habits, changes['metric']);
+    if (habit == null) {
       return GoalRevisionRejected(
-        habits.isEmpty
-            ? 'the goal has no habit criterion for a cadence change'
-            : 'the goal has ${habits.length} habit criteria — the proposal '
-                  'must identify which one',
+        'the goal has ${habits.length} habit criteria — the proposal '
+        'must identify which one (criterionId or habitId via "metric")',
       );
     }
     final count = parseGoalCadenceCount(cadence);
@@ -125,7 +133,7 @@ GoalRevisionResult applyGoalRevisionChanges({
     // The signal reader counts at most ONE success per local day, so a
     // count beyond the window's day capacity mints a goal that can never
     // succeed (the creation form enforces the same bound).
-    final capacity = switch (habits.single.window) {
+    final capacity = switch (habit.window) {
       GoalWindowDay() => 1,
       GoalWindowRollingDays(:final count) => count,
       GoalWindowCalendarWeek() => 7,
@@ -139,10 +147,10 @@ GoalRevisionResult applyGoalRevisionChanges({
         'success per day is the most the signals can observe',
       );
     }
-    final before = habits.single.targetCount;
+    final before = habit.targetCount;
     revised = _mapLeaf(
       revised,
-      habits.single.criterionId,
+      habit.criterionId,
       (c) => c is GoalCriterionHabit ? c.copyWith(targetCount: count) : c,
     );
     summaries.add('cadence: $before → $count per window');
@@ -247,4 +255,22 @@ GoalCriterion _mapLeaf(
     ),
     _ => node,
   };
+}
+
+/// The habit leaf a cadence change binds to when the goal has several —
+/// matched on criterionId or habitId, null when unidentified/ambiguous.
+GoalCriterionHabit? _resolveHabitLeaf(
+  List<GoalCriterionHabit> habits,
+  Object? identifier,
+) {
+  if (identifier is! String || identifier.isEmpty) return null;
+  final needle = identifier.toLowerCase();
+  final matches = habits
+      .where(
+        (h) =>
+            h.criterionId.toLowerCase() == needle ||
+            h.habitId.toLowerCase() == needle,
+      )
+      .toList();
+  return matches.length == 1 ? matches.single : null;
 }

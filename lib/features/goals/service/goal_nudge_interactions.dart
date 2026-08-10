@@ -20,6 +20,15 @@ class GoalNudgeInteractions {
   final AgentRepository _repository;
   final AgentSyncService _syncService;
 
+  /// The host key is immutable for the install — cached so the exposure
+  /// read-modify-write has NO await between reading the row and writing
+  /// it back (a sync application landing in such a window would be
+  /// overwritten by the stale snapshot, resurrecting a dismissed ad).
+  String? _hostCache;
+
+  Future<String> _localHost() async =>
+      _hostCache ??= await _syncService.localHost();
+
   /// Per-nudge write queue: every mutation here is a read-modify-write of
   /// the whole row, and the exposure flushes are fire-and-forget — two
   /// overlapping calls would both read the same snapshot and the later
@@ -119,9 +128,12 @@ class GoalNudgeInteractions {
   }) {
     if (visibleFor <= Duration.zero) return Future.value();
     return _serialized(nudgeId, () async {
+      // Host FIRST: after the row read there must be no await before the
+      // write, or a synced terminal state landing in the gap would be
+      // clobbered by this bookkeeping upsert.
+      final host = await _localHost();
       final nudge = await _repository.getEntity(nudgeId);
       if (nudge is! GoalNudgeEntity) return;
-      final host = await _syncService.localHost();
       final now = clock.now();
       // The flush arrives at the END of the episode; the banner became
       // visible one episode-length earlier. Stamping `now` would push

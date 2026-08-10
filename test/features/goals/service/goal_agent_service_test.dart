@@ -194,6 +194,45 @@ void main() {
       );
     },
   );
+  test('a post-commit sync failure is reconciled: the goal is durable, so '
+      'the creation reports success instead of inviting a duplicate '
+      'retry', () async {
+    final failing = _CommitThenThrowSyncService();
+    final failUpserts = <AgentDomainEntity>[];
+    when(() => failing.upsertEntity(any())).thenAnswer((invocation) async {
+      failUpserts.add(
+        invocation.positionalArguments.first as AgentDomainEntity,
+      );
+    });
+    final reconciling = GoalAgentService(
+      agentService: agentService,
+      repository: repository,
+      syncService: failing,
+      orchestrator: orchestrator,
+    );
+    // After the durable writes, the repository serves the committed rows.
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => failUpserts.whereType<GoalSpecHeadEntity>().lastOrNull,
+    );
+    when(
+      () => repository.getEntity('$agentId:spec-v1'),
+    ).thenAnswer(
+      (_) async => failUpserts.whereType<GoalSpecVersionEntity>().lastOrNull,
+    );
+
+    final identity = await reconciling.createGoalAgent(
+      title: 'Gym 3×/week',
+      statement: 'x',
+      criteria: criteria,
+      agentId: agentId,
+    );
+    expect(identity.agentId, agentId);
+    expect(
+      failUpserts.whereType<GoalSpecHeadEntity>(),
+      hasLength(1),
+      reason: 'exactly one goal exists — no duplicate mint on retry',
+    );
+  });
 }
 
 class _OrderRecordingSyncService extends MockAgentSyncService {
@@ -205,5 +244,15 @@ class _OrderRecordingSyncService extends MockAgentSyncService {
   Future<T> runInTransaction<T>(Future<T> Function() action) {
     order.add('transaction');
     return action();
+  }
+}
+
+/// Runs the transaction body (writes land) and THEN throws — the durable
+/// commit + failed outbox flush shape.
+class _CommitThenThrowSyncService extends MockAgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    await action();
+    throw StateError('outbox flush failed');
   }
 }

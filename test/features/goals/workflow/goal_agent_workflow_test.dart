@@ -1111,11 +1111,12 @@ void main() {
         ),
       );
       expect(result.success, isTrue);
-      final nudge = upserts.whereType<GoalNudgeEntity>().single;
       expect(
-        nudge.triggerProgressId,
-        goalProgressId(agentId, '2026-08-06'),
-        reason: 'the ad is evidence for the period that armed the wake',
+        upserts.whereType<GoalNudgeEntity>(),
+        isEmpty,
+        reason:
+            'a superseded-spec wake records history, never a new '
+            'banner beside the revised goal',
       );
       expect(
         factsSeen,

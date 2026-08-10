@@ -982,6 +982,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
         for (final nudge in nudges) nudge.briefDigest,
       };
       for (final request in strategy.createdAds) {
+        if (staleSpecWake) {
+          logError(
+            'ad creation suppressed: the wake ran under a superseded spec',
+          );
+          break;
+        }
         if (!adsEligible) {
           logError('ad creation suppressed: status does not permit ads');
           continue;
