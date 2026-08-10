@@ -6125,6 +6125,20 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalStatusRecovering => 'In ripresa';
 
   @override
+  String get goalWindowCalendarMonth => 'mese di calendario';
+
+  @override
+  String get goalWindowCalendarWeek => 'settimana di calendario';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return '$count giorni mobili';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'un singolo giorno';
+
+  @override
   String get goMenuTitle => 'Vai.';
 
   @override

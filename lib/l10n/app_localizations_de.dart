@@ -6093,6 +6093,20 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalStatusRecovering => 'Auf dem Weg zurück';
 
   @override
+  String get goalWindowCalendarMonth => 'Kalendermonat';
+
+  @override
+  String get goalWindowCalendarWeek => 'Kalenderwoche';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'rollierende $count Tage';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'ein einzelner Tag';
+
+  @override
   String get goMenuTitle => 'Gehe zu';
 
   @override

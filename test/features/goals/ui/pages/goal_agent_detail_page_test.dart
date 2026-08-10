@@ -270,14 +270,16 @@ void main() {
     expect(find.text('Dismissed'), findsOneWidget);
   });
 
-  testWidgets('system back routes through NavService — the persisted route '
-      'returns to the Agents root, not this detail child', (tester) async {
+  testWidgets('a completed system-back pop persists the Agents root '
+      'through NavService — and canPop stays true for the iOS gesture', (
+    tester,
+  ) async {
     final navigated = <String>[];
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        const GoalAgentDetailPage(agentId: 'goal-1'),
+        const SizedBox.shrink(),
         overrides: [
           goalAgentHealthProvider('goal-1').overrideWith(
             (ref) async => (
@@ -298,7 +300,23 @@ void main() {
         ],
       ),
     );
+    // Stacked like the real Agents delegate stacks the detail page.
+    unawaited(
+      tester
+          .state<NavigatorState>(find.byType(Navigator))
+          .push(
+            MaterialPageRoute<void>(
+              builder: (_) => const GoalAgentDetailPage(agentId: 'goal-1'),
+            ),
+          ),
+    );
     await tester.pumpAndSettle();
+    final popScope =
+        tester.widget(
+              find.byWidgetPredicate((w) => w is PopScope),
+            )
+            as PopScope;
+    expect(popScope.canPop, isTrue, reason: 'false kills the iOS gesture');
 
     await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();
     await tester.pumpAndSettle();

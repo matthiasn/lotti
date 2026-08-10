@@ -137,14 +137,18 @@ void main() {
     );
   }
 
+  late List<String> evaluated;
+
   setUp(() {
     agentService = MockAgentService();
     repository = MockAgentRepository();
     phaseA = _RecordingPhaseA();
+    evaluated = [];
     dispatcher = GoalSignalSyncDispatcher(
       agentService: agentService,
       repository: repository,
       phaseA: phaseA,
+      onAgentEvaluated: evaluated.add,
     );
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
   });
@@ -168,6 +172,11 @@ void main() {
     expect(phaseA.calls, hasLength(1));
     expect(phaseA.calls.single.$1, 'goal-a');
     expect(phaseA.calls.single.$2, {'cumulative_step_count'});
+    expect(
+      evaluated,
+      ['goal-a'],
+      reason: 'health projections must hear about the silent Phase A write',
+    );
   });
 
   test('a batch with no goal signals dispatches nothing', () async {

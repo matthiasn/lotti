@@ -6150,6 +6150,20 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalStatusRecovering => 'În revenire';
 
   @override
+  String get goalWindowCalendarMonth => 'lună calendaristică';
+
+  @override
+  String get goalWindowCalendarWeek => 'săptămână calendaristică';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'ultimele $count zile';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'o singură zi';
+
+  @override
   String get goMenuTitle => 'Navigare';
 
   @override

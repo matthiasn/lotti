@@ -115,7 +115,7 @@ GoalRevisionResult applyGoalRevisionChanges({
                   'must identify which one',
       );
     }
-    final count = _parseCadenceCount(cadence);
+    final count = parseGoalCadenceCount(cadence);
     if (count == null) {
       return GoalRevisionRejected(
         'unrecognized cadence "$cadence" — expected a positive count like '
@@ -146,49 +146,6 @@ GoalRevisionResult applyGoalRevisionChanges({
     );
   }
   return GoalRevisionApplied(criteria: revised, changeSummaries: summaries);
-}
-
-/// Parses the FACTS window vocabulary into a [GoalWindow].
-GoalWindow? parseGoalWindowPhrase(String phrase) {
-  final normalized = phrase.toLowerCase().trim();
-  if (RegExp(r'^(per\s+)?day(\b|$)').hasMatch(normalized) ||
-      normalized == 'daily') {
-    return const GoalWindow.day();
-  }
-  final rolling = RegExp(r'rolling\s+(\d+)\s+days?').firstMatch(normalized);
-  if (rolling != null) {
-    // tryParse: model-authored digits can overflow a 64-bit int, and this
-    // parser's contract is null for unusable input, never a throw.
-    final count = int.tryParse(rolling.group(1)!);
-    return count != null && count > 0
-        ? GoalWindow.rollingDays(count: count)
-        : null;
-  }
-  if (normalized.contains('calendar week') ||
-      normalized == 'week' ||
-      normalized == 'weekly') {
-    return const GoalWindow.calendarWeek();
-  }
-  if (normalized.contains('calendar month') ||
-      normalized == 'month' ||
-      normalized == 'monthly') {
-    return const GoalWindow.calendarMonth();
-  }
-  return null;
-}
-
-int? _parseCadenceCount(Object? cadence) {
-  if (cadence is num) {
-    return cadence % 1 == 0 && cadence > 0 ? cadence.toInt() : null;
-  }
-  // Anchored end to end: '3.5' or '3 bananas' must reject, not silently
-  // truncate to 3 — this runs on the approval-time mutation path.
-  final match = RegExp(
-    r'^\s*(\d+)\s*(x|times(\s+per\s+\w+)?)?\s*$',
-  ).firstMatch('$cadence');
-  if (match == null) return null;
-  final count = int.tryParse(match.group(1)!);
-  return count != null && count > 0 ? count : null;
 }
 
 /// The single metric/measurable leaf a quantitative change binds to, or

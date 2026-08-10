@@ -157,9 +157,16 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     // through NavService so the persisted route returns to the Agents
     // root, not the creation form.
     return PopScope(
-      canPop: false,
+      // canPop stays TRUE: false would disable the iOS swipe-back
+      // gesture entirely. The route pops normally; the completed pop
+      // then persists the Agents root through NavService.
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) beamToNamed('/agents');
+        if (!didPop) return;
+        // Post-frame: the pop is mid-router-update — persisting the root
+        // synchronously would re-enter the delegate while it notifies.
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => beamToNamed('/agents'),
+        );
       },
       child: Scaffold(
         // Back through NavService: the persisted route must return to the

@@ -456,6 +456,10 @@ Future<String?> getIdFromSavedRoute() async {
     caseSensitive: false,
   );
   final route = await getIt<NavService>().getSavedRoute();
+  // Agents routes carry an AGENT id: no journal parent exists there, so
+  // a global create command must start unlinked instead of pointing a
+  // new entry at a goal agent.
+  if ('$route'.startsWith('/agents')) return null;
   return regExp.firstMatch('$route')?.group(0);
 }
 

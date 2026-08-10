@@ -130,6 +130,10 @@ final goalSignalSyncDispatcherProvider = Provider<GoalSignalSyncDispatcher>(
     repository: ref.watch(agentRepositoryProvider),
     phaseA: ref.watch(goalAgentPhaseAProvider),
     domainLogger: ref.watch(domainLoggerProvider),
+    // A synced-batch Phase A run persists new attainment without any UI
+    // notification — surface it to the health projections.
+    onAgentEvaluated: (agentId) =>
+        ref.read(updateNotificationsProvider).notify({agentId}),
   ),
   name: 'goalSignalSyncDispatcherProvider',
 );
@@ -414,15 +418,18 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
         agentId,
         AgentReportScopes.current,
       );
-      // A standing report written BEFORE the active spec version was
-      // minted describes the superseded goal — showing its one-liner
-      // beside the revised statement would misreport, so it is withheld
-      // until the revised goal's first report lands.
-      final report =
+      // A standing report for a SUPERSEDED spec version must not caption
+      // the revised statement. Scoped by the report's own spec-version
+      // provenance (clock-skew-proof); reports predating that field fall
+      // back to the mint-time comparison.
+      final reportSpecId = latestReport?.provenance['specVersionId'];
+      final reportMatchesSpec =
           latestReport != null &&
-              (spec == null || !latestReport.createdAt.isBefore(spec.createdAt))
-          ? latestReport
-          : null;
+          (spec == null ||
+              (reportSpecId is String
+                  ? reportSpecId == spec.id
+                  : !latestReport.createdAt.isBefore(spec.createdAt)));
+      final report = reportMatchesSpec ? latestReport : null;
 
       final pending = await repository.getPendingChangeSets(
         agentId,

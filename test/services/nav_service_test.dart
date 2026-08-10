@@ -531,6 +531,15 @@ void main() {
       expect(id, '123e4567-e89b-12d3-a456-426614174000');
     });
 
+    test('getIdFromSavedRoute yields NO creation context on agents routes '
+        '— the UUID there is an agent, not a journal parent', () async {
+      await settingsDb.saveSettingsItem(
+        lastRouteKey,
+        '/agents/details/123e4567-e89b-12d3-a456-426614174000',
+      );
+      expect(await getIdFromSavedRoute(), isNull);
+    });
+
     group('desktop selected entry id', () {
       test('starts unselected and notifies logbook listeners on change', () {
         final navService = getIt<NavService>();

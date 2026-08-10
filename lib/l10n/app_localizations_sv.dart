@@ -6056,6 +6056,20 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalStatusRecovering => 'På väg tillbaka';
 
   @override
+  String get goalWindowCalendarMonth => 'kalendermånad';
+
+  @override
+  String get goalWindowCalendarWeek => 'kalendervecka';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'rullande $count dagar';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'en enda dag';
+
+  @override
   String get goMenuTitle => 'Gå';
 
   @override

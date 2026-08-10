@@ -3309,6 +3309,17 @@
   "@goalStatusRecovering": {
     "description": "Goal track status chip: climbing back after being behind."
   },
+  "goalWindowCalendarMonth": "calendar month",
+  "goalWindowCalendarWeek": "calendar week",
+  "goalWindowRollingDays": "rolling {count} days",
+  "@goalWindowRollingDays": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalWindowSingleDay": "a single day",
   "goMenuTitle": "Go",
   "habitActiveFromLabel": "Start date",
   "habitActiveSwitchDescription": "Shown on the Habits page",

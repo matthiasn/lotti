@@ -6023,6 +6023,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalStatusRecovering => 'Recovering';
 
   @override
+  String get goalWindowCalendarMonth => 'calendar month';
+
+  @override
+  String get goalWindowCalendarWeek => 'calendar week';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'rolling $count days';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'a single day';
+
+  @override
   String get goMenuTitle => 'Go';
 
   @override

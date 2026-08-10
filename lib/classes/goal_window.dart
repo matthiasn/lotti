@@ -124,3 +124,48 @@ sealed class GoalWindow with _$GoalWindow {
 
   static String _pad4(int value) => value.toString().padLeft(4, '0');
 }
+
+/// Parses the FACTS window vocabulary into a [GoalWindow].
+GoalWindow? parseGoalWindowPhrase(String phrase) {
+  final normalized = phrase.toLowerCase().trim();
+  if (RegExp(r'^(per\s+)?day(\b|$)').hasMatch(normalized) ||
+      normalized == 'daily') {
+    return const GoalWindow.day();
+  }
+  final rolling = RegExp(r'rolling\s+(\d+)\s+days?').firstMatch(normalized);
+  if (rolling != null) {
+    // tryParse: model-authored digits can overflow a 64-bit int, and this
+    // parser's contract is null for unusable input, never a throw.
+    final count = int.tryParse(rolling.group(1)!);
+    return count != null && count > 0
+        ? GoalWindow.rollingDays(count: count)
+        : null;
+  }
+  if (normalized.contains('calendar week') ||
+      normalized == 'week' ||
+      normalized == 'weekly') {
+    return const GoalWindow.calendarWeek();
+  }
+  if (normalized.contains('calendar month') ||
+      normalized == 'month' ||
+      normalized == 'monthly') {
+    return const GoalWindow.calendarMonth();
+  }
+  return null;
+}
+
+/// Parses the FACTS cadence vocabulary ("3", "3 times per week") into a
+/// positive integer count — null for anything else, never a throw.
+int? parseGoalCadenceCount(Object? cadence) {
+  if (cadence is num) {
+    return cadence % 1 == 0 && cadence > 0 ? cadence.toInt() : null;
+  }
+  // Anchored end to end: '3.5' or '3 bananas' must reject, not silently
+  // truncate to 3 — this runs on the approval-time mutation path.
+  final match = RegExp(
+    r'^\s*(\d+)\s*(x|times(\s+per\s+\w+)?)?\s*$',
+  ).firstMatch('$cadence');
+  if (match == null) return null;
+  final count = int.tryParse(match.group(1)!);
+  return count != null && count > 0 ? count : null;
+}

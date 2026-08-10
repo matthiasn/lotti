@@ -6109,6 +6109,20 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalStatusRecovering => 'A recuperar';
 
   @override
+  String get goalWindowCalendarMonth => 'mês de calendário';
+
+  @override
+  String get goalWindowCalendarWeek => 'semana de calendário';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return '$count dias corridos';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'um único dia';
+
+  @override
   String get goMenuTitle => 'Vá';
 
   @override

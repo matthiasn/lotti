@@ -6072,6 +6072,20 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalStatusRecovering => 'Herstellend';
 
   @override
+  String get goalWindowCalendarMonth => 'kalendermaand';
+
+  @override
+  String get goalWindowCalendarWeek => 'kalenderweek';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'voortschrijdende $count dagen';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'één dag';
+
+  @override
   String get goMenuTitle => 'Ga';
 
   @override

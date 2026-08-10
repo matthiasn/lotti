@@ -10409,6 +10409,30 @@ abstract class AppLocalizations {
   /// **'Recovering'**
   String get goalStatusRecovering;
 
+  /// No description provided for @goalWindowCalendarMonth.
+  ///
+  /// In en, this message translates to:
+  /// **'calendar month'**
+  String get goalWindowCalendarMonth;
+
+  /// No description provided for @goalWindowCalendarWeek.
+  ///
+  /// In en, this message translates to:
+  /// **'calendar week'**
+  String get goalWindowCalendarWeek;
+
+  /// No description provided for @goalWindowRollingDays.
+  ///
+  /// In en, this message translates to:
+  /// **'rolling {count} days'**
+  String goalWindowRollingDays(int count);
+
+  /// No description provided for @goalWindowSingleDay.
+  ///
+  /// In en, this message translates to:
+  /// **'a single day'**
+  String get goalWindowSingleDay;
+
   /// No description provided for @goMenuTitle.
   ///
   /// In en, this message translates to:

@@ -273,16 +273,25 @@ void main() {
     expect(find.byType(CheckboxListTile), findsNothing);
   });
 
-  testWidgets('system back routes through NavService back to the Agents '
-      'root', (tester) async {
+  testWidgets('a completed system-back pop persists the Agents root '
+      'through NavService', (tester) async {
     final navigated = <String>[];
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        const CreateGoalAgentPage(),
+        const SizedBox.shrink(),
         overrides: overrides(),
       ),
+    );
+    unawaited(
+      tester
+          .state<NavigatorState>(find.byType(Navigator))
+          .push(
+            MaterialPageRoute<void>(
+              builder: (_) => const CreateGoalAgentPage(),
+            ),
+          ),
     );
     await tester.pumpAndSettle();
     await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();

@@ -871,6 +871,28 @@ void main() {
       isNull,
       reason: 'the old goal report must not caption the revised goal',
     );
+
+    // Spec-version provenance outranks the timestamp: a v2 report with a
+    // skewed EARLIER clock still shows.
+    when(() => repository.getLatestReport(agentId, 'current')).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'r-v2-skewed',
+                agentId: agentId,
+                scope: 'current',
+                createdAt: DateTime(2026, 8, 8),
+                vectorClock: null,
+                content: 'body',
+                oneLiner: 'Fresh verdict, slow clock.',
+                provenance: const {'specVersionId': '$agentId:spec-v2'},
+              )
+              as AgentReportEntity,
+    );
+    container.invalidate(goalAgentHealthProvider(agentId));
+    final skewed = await container.read(
+      goalAgentHealthProvider(agentId).future,
+    );
+    expect(skewed.reportOneLiner, 'Fresh verdict, slow clock.');
   });
 
   test('health ignores progress registers written for superseded spec '

@@ -6115,6 +6115,20 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalStatusRecovering => 'Zotavuje se';
 
   @override
+  String get goalWindowCalendarMonth => 'kalendářní měsíc';
+
+  @override
+  String get goalWindowCalendarWeek => 'kalendářní týden';
+
+  @override
+  String goalWindowRollingDays(int count) {
+    return 'posledních $count dní';
+  }
+
+  @override
+  String get goalWindowSingleDay => 'jeden den';
+
+  @override
   String get goMenuTitle => 'Přejít';
 
   @override

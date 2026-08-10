@@ -807,6 +807,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
             provenance: <String, Object?>{
               'trackStatus': strategy.reportStatus!.name,
               'periodKey': derivation.periodKey,
+              'specVersionId': derivation.version.id,
               if (attributionEnvelope != null)
                 aiAttributionProvenanceKey: attributionEnvelope.toJson(),
             },
@@ -888,11 +889,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
       for (final action in strategy.retireRequests) {
         final snapshot = byId[action.adId];
         if (snapshot == null) continue;
-        // Re-read INSIDE the transaction — a dismissal landing after the
-        // snapshot must survive (the user's quiet-window verdict).
+        // Re-read INSIDE the transaction — a dismissal (the user's
+        // quiet-window verdict) or a Phase A expiry landing after the
+        // snapshot must survive: rewriting expired→retired would feed
+        // the clock-expired ad back into the reuse library.
         final nudge = await _repository.getEntity(action.adId);
         if (nudge is! GoalNudgeEntity ||
-            nudge.status == GoalNudgeStatus.dismissed) {
+            nudge.status != GoalNudgeStatus.active) {
           continue;
         }
         await _syncService.upsertEntity(

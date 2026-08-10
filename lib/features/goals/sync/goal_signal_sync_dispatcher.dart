@@ -26,12 +26,18 @@ class GoalSignalSyncDispatcher {
     required this._repository,
     required this._phaseA,
     this._domainLogger,
+    this._onAgentEvaluated,
   });
 
   final AgentService _agentService;
   final AgentRepository _repository;
   final GoalAgentPhaseA _phaseA;
   final DomainLogger? _domainLogger;
+
+  /// Phase A writes go through the sync service, which emits no UI
+  /// notification — the health projections would otherwise show stale
+  /// attainment until an unrelated event.
+  final void Function(String agentId)? _onAgentEvaluated;
 
   /// Per-agent single flight: a burst of synced batches must not stack
   /// concurrent evaluations of the same goal.
@@ -66,6 +72,7 @@ class GoalSignalSyncDispatcher {
           triggerTokens: matched,
           threadId: runKey,
         );
+        _onAgentEvaluated?.call(identity.agentId);
       } catch (error, stackTrace) {
         _log(
           'goal signal sync dispatch failed for one agent',

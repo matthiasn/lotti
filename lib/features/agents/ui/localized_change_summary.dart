@@ -1,5 +1,6 @@
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entry_link.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/time_entry_datetime.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 import 'package:lotti/features/agents/tools/event_tool_definitions.dart';
@@ -446,10 +447,33 @@ String? _goalRevision(AppLocalizations messages, Map<String, dynamic> args) {
     if (changes['targetValue'] != null)
       messages.agentSummaryGoalRevisionTarget('${changes['targetValue']}'),
     if (changes['period'] != null)
-      messages.agentSummaryGoalRevisionPeriod('${changes['period']}'),
+      messages.agentSummaryGoalRevisionPeriod(
+        _localizedWindow(messages, '${changes['period']}'),
+      ),
     if (changes['cadence'] != null)
-      messages.agentSummaryGoalRevisionCadence('${changes['cadence']}'),
+      messages.agentSummaryGoalRevisionCadence(
+        _localizedCadence(changes['cadence']),
+      ),
   ];
   if (parts.isEmpty) return null;
   return parts.join(' · ');
 }
+
+/// The model's window phrase ("rolling 14 days") re-rendered in the
+/// reader's language; an unparseable phrase passes through verbatim —
+/// still better than hiding the proposal.
+String _localizedWindow(AppLocalizations messages, String phrase) =>
+    switch (parseGoalWindowPhrase(phrase)) {
+      GoalWindowDay() => messages.goalWindowSingleDay,
+      GoalWindowRollingDays(:final count) => messages.goalWindowRollingDays(
+        count,
+      ),
+      GoalWindowCalendarWeek() => messages.goalWindowCalendarWeek,
+      GoalWindowCalendarMonth() => messages.goalWindowCalendarMonth,
+      null => phrase,
+    };
+
+/// "4 times per week" → "4"; digits are locale-neutral, the surrounding
+/// sentence carries the language.
+String _localizedCadence(Object? cadence) =>
+    parseGoalCadenceCount(cadence)?.toString() ?? '$cadence';

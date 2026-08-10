@@ -35,9 +35,16 @@ class GoalAgentDetailPage extends ConsumerWidget {
     // return to the Agents root instead of pinning this child.
     final backToList = BackButton(onPressed: () => beamToNamed('/agents'));
     Widget popSafe(Widget child) => PopScope(
-      canPop: false,
+      // canPop stays TRUE: false would disable the iOS swipe-back
+      // gesture entirely. The route pops normally; the completed pop
+      // then persists the Agents root through NavService.
       onPopInvokedWithResult: (didPop, _) {
-        if (!didPop) beamToNamed('/agents');
+        if (!didPop) return;
+        // Post-frame: the pop is mid-router-update — persisting the root
+        // synchronously would re-enter the delegate while it notifies.
+        WidgetsBinding.instance.addPostFrameCallback(
+          (_) => beamToNamed('/agents'),
+        );
       },
       child: child,
     );
