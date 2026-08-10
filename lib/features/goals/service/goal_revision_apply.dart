@@ -130,6 +130,25 @@ GoalRevisionResult applyGoalRevisionChanges({
         '"3" or "3 times per week"',
       );
     }
+    // A phrase that NAMES a unit must name the window it will actually
+    // be evaluated against: silently applying "3 times per month" to a
+    // weekly habit would triple what the user thinks they approved.
+    final statedUnit = _cadenceUnit(cadence);
+    if (statedUnit != null) {
+      final windowUnit = switch (habit.window) {
+        GoalWindowDay() => 'day',
+        GoalWindowCalendarWeek() => 'week',
+        GoalWindowCalendarMonth() => 'month',
+        GoalWindowRollingDays() => null,
+      };
+      if (windowUnit == null || statedUnit != windowUnit) {
+        return GoalRevisionRejected(
+          'the cadence names "per $statedUnit" but the habit is evaluated '
+          'per ${windowUnit ?? 'rolling window'} — propose a period change '
+          'together with the count to move the window',
+        );
+      }
+    }
     // The signal reader counts at most ONE success per local day, so a
     // count beyond the window's day capacity mints a goal that can never
     // succeed (the creation form enforces the same bound).
@@ -273,4 +292,14 @@ GoalCriterionHabit? _resolveHabitLeaf(
       )
       .toList();
   return matches.length == 1 ? matches.single : null;
+}
+
+/// The unit word a cadence phrase names ("3 times per week" → "week"),
+/// or null when the phrase is bare ("3", "3x", "3 times").
+String? _cadenceUnit(Object? cadence) {
+  final match = RegExp(
+    r'per\s+(\w+)',
+    caseSensitive: false,
+  ).firstMatch('$cadence');
+  return match?.group(1)?.toLowerCase();
 }

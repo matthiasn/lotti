@@ -392,4 +392,35 @@ void main() {
       contains('must identify which one'),
     );
   });
+
+  test('a cadence naming a unit other than the habit window is rejected — '
+      '"per month" must not silently apply weekly', () {
+    const weekly = GoalCriterion.habit(
+      criterionId: 'gym',
+      habitId: 'gym-habit',
+      window: GoalWindow.calendarWeek(),
+      targetCount: 3,
+    );
+    final mismatch = applyGoalRevisionChanges(
+      criteria: weekly,
+      changes: {'cadence': '3 times per month'},
+    );
+    expect(
+      (mismatch as GoalRevisionRejected).reason,
+      contains('names "per month" but the habit is evaluated per week'),
+    );
+
+    // A matching unit and a bare count both pass.
+    expect(
+      applyGoalRevisionChanges(
+        criteria: weekly,
+        changes: {'cadence': '4 times per week'},
+      ),
+      isA<GoalRevisionApplied>(),
+    );
+    expect(
+      applyGoalRevisionChanges(criteria: weekly, changes: {'cadence': 4}),
+      isA<GoalRevisionApplied>(),
+    );
+  });
 }

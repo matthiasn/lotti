@@ -62,22 +62,36 @@ class GoalNudgeInteractions {
   /// silencing a run the user never looked at (the rating path's guard).
   Future<void> dismiss(String nudgeId, {int? forActivation}) => _serialized(
     nudgeId,
-    () => _syncService.runInTransaction(() async {
-      final nudge = await _repository.getEntity(nudgeId);
-      if (nudge is! GoalNudgeEntity) return;
-      if (nudge.status != GoalNudgeStatus.active) return;
-      if (forActivation != null && forActivation != nudge.activationCount) {
-        return;
+    () async {
+      try {
+        await _syncService.runInTransaction(() async {
+          final nudge = await _repository.getEntity(nudgeId);
+          if (nudge is! GoalNudgeEntity) return;
+          if (nudge.status != GoalNudgeStatus.active) return;
+          if (forActivation != null && forActivation != nudge.activationCount) {
+            return;
+          }
+          final now = clock.now();
+          await _syncService.upsertEntity(
+            nudge.copyWith(
+              status: GoalNudgeStatus.dismissed,
+              dismissedAt: now,
+              updatedAt: now,
+            ),
+          );
+        });
+      } catch (error) {
+        // The database commit can be durable when a deferred outbox
+        // enqueue rethrows. An already-dismissed row IS the requested
+        // outcome — reporting failure would snap the banner back.
+        final fresh = await _repository.getEntity(nudgeId);
+        if (fresh is GoalNudgeEntity &&
+            fresh.status == GoalNudgeStatus.dismissed) {
+          return;
+        }
+        rethrow;
       }
-      final now = clock.now();
-      await _syncService.upsertEntity(
-        nudge.copyWith(
-          status: GoalNudgeStatus.dismissed,
-          dismissedAt: now,
-          updatedAt: now,
-        ),
-      );
-    }),
+    },
   );
 
   /// Records the rating-prompt outcome — [rating] 1..5, or a skip — for
@@ -100,30 +114,42 @@ class GoalNudgeInteractions {
     if (rating != null && (rating < 1 || rating > 5)) {
       throw ArgumentError.value(rating, 'rating', 'must be 1..5');
     }
-    return _serialized(
-      nudgeId,
-      () => _syncService.runInTransaction(() async {
-        final nudge = await _repository.getEntity(nudgeId);
-        if (nudge is! GoalNudgeEntity) return;
-        final activation = forActivation ?? nudge.activationCount;
-        if (activation != nudge.activationCount) return;
-        if (nudge.ratings.any((r) => r.activation == activation)) return;
-        await _syncService.upsertEntity(
-          nudge.copyWith(
-            ratings: [
-              ...nudge.ratings,
-              GoalNudgeRating(
-                activation: activation,
-                ratedAt: clock.now(),
-                rating: rating,
-                skipped: skipped,
-              ),
-            ],
-            updatedAt: clock.now(),
-          ),
-        );
-      }),
-    );
+    return _serialized(nudgeId, () async {
+      try {
+        await _syncService.runInTransaction(() async {
+          final nudge = await _repository.getEntity(nudgeId);
+          if (nudge is! GoalNudgeEntity) return;
+          final activation = forActivation ?? nudge.activationCount;
+          if (activation != nudge.activationCount) return;
+          if (nudge.ratings.any((r) => r.activation == activation)) return;
+          await _syncService.upsertEntity(
+            nudge.copyWith(
+              ratings: [
+                ...nudge.ratings,
+                GoalNudgeRating(
+                  activation: activation,
+                  ratedAt: clock.now(),
+                  rating: rating,
+                  skipped: skipped,
+                ),
+              ],
+              updatedAt: clock.now(),
+            ),
+          );
+        });
+      } catch (error) {
+        // Same durable-commit shape as dismissal: an outcome already on
+        // the row is success, and "please try again" would prompt a
+        // duplicate attempt the one-per-activation guard silently drops.
+        final fresh = await _repository.getEntity(nudgeId);
+        if (fresh is GoalNudgeEntity &&
+            forActivation != null &&
+            fresh.ratings.any((r) => r.activation == forActivation)) {
+          return;
+        }
+        rethrow;
+      }
+    });
   }
 
   /// Accounts one visibility episode: [visibleFor] accumulates into this

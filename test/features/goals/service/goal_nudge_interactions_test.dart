@@ -90,6 +90,30 @@ void main() {
       );
     });
 
+    test(
+      'a dismissal whose commit was durable but whose sync enqueue '
+      'threw is reported as SUCCESS — the banner must not snap back',
+      () async {
+        var persisted = nudge();
+        final throwing = _CommitThenThrowSyncService();
+        when(() => throwing.upsertEntity(any())).thenAnswer((invocation) async {
+          persisted = invocation.positionalArguments.first as GoalNudgeEntity;
+        });
+        when(
+          () => repository.getEntity('ad-1'),
+        ).thenAnswer((_) async => persisted);
+        final reconciling = GoalNudgeInteractions(
+          repository: repository,
+          syncService: throwing,
+        );
+        await withClock(
+          fixedClock,
+          () => reconciling.dismiss('ad-1', forActivation: 1),
+        );
+        expect(persisted.status, GoalNudgeStatus.dismissed);
+      },
+    );
+
     test('non-active ads and unknown ids are no-ops', () async {
       when(() => repository.getEntity('ad-1')).thenAnswer(
         (_) async => nudge(status: GoalNudgeStatus.retired),
@@ -137,6 +161,27 @@ void main() {
       expect(rerun.ratings, hasLength(2));
       expect(rerun.ratings.last.activation, 2);
       expect(rerun.ratings.last.skipped, isTrue);
+    });
+
+    test('a rating whose commit was durable but whose sync enqueue threw '
+        'is reported as SUCCESS — no misleading retry notice', () async {
+      var persisted = nudge();
+      final throwing = _CommitThenThrowSyncService();
+      when(() => throwing.upsertEntity(any())).thenAnswer((invocation) async {
+        persisted = invocation.positionalArguments.first as GoalNudgeEntity;
+      });
+      when(
+        () => repository.getEntity('ad-1'),
+      ).thenAnswer((_) async => persisted);
+      final reconciling = GoalNudgeInteractions(
+        repository: repository,
+        syncService: throwing,
+      );
+      await withClock(
+        fixedClock,
+        () => reconciling.recordRating('ad-1', rating: 4, forActivation: 1),
+      );
+      expect(persisted.ratings.single.rating, 4);
     });
 
     test('out-of-contract ratings throw before any read', () async {
@@ -278,4 +323,14 @@ void main() {
       isFalse,
     );
   });
+}
+
+/// Runs the transaction body (writes land) and THEN throws — the durable
+/// commit + failed outbox flush shape.
+class _CommitThenThrowSyncService extends MockAgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    await action();
+    throw StateError('outbox flush failed');
+  }
 }
