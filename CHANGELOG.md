@@ -14,9 +14,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   badge when a goal-change proposal awaits review. A habit routine is judged on
   a rolling seven-day window rather than a resetting calendar week, so a row can
   tell you plainly how many days it needs to recover — or how much buffer it has
-  in hand. From there you can inspect an agent's interaction timeline,
-  approve or reject its proposals, and create new goals: a daily-steps target
-  or a routine watching one or more habits. When a goal genuinely slips, its
+  in hand. From there you can inspect the same rolling week as a day-by-day
+  grid, see which habits the agent is watching, approve or reject its
+  proposals, delete a goal, and create new goals: a daily-steps target or a
+  routine watching one or more habits. Goal conversations are durable rather
+  than session-bound: phones open a pushed chat page, desktop keeps it beside
+  the goal detail, drafts survive navigation, and failed turns can be retried
+  without losing the user's message. When a goal genuinely slips, its
   agent speaks up through a small text banner in a shell-level dock that rides
   above the navigation — one rotating slot shared across the Tasks, Daily OS and
   Habits tabs, coloured by the agent's tone so doing well reads at a glance,

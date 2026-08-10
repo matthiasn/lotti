@@ -142,6 +142,12 @@ class GoalAgentService {
     return identity;
   }
 
+  /// Retires a goal agent through the shared synced lifecycle transition.
+  /// Owned goal rows stay available for audit, while the destroyed identity
+  /// disappears from active surfaces and no longer receives wake signals.
+  Future<bool> deleteGoalAgent(String agentId) =>
+      _agentService.destroyAgent(agentId);
+
   /// Drops the agent's runtime subscriptions (paused/archived goals must
   /// stop waking on signals; a re-activation re-registers).
   void removeSignalSubscriptions(String agentId) =>

@@ -10,6 +10,7 @@ library;
 
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 
 /// Tool names of the goal-agent surface, `<verb>_goal_<noun>` throughout —
@@ -17,6 +18,7 @@ import 'package:lotti/features/agents/tools/agent_tool_registry.dart';
 /// set_/update_ mix in the task-agent registry produced exactly that
 /// failure; see `taskAgentToolAliases`).
 class GoalAgentToolNames {
+  static const String replyToUser = AgentConversationToolNames.replyToUser;
   static const updateGoalReport = 'update_goal_report';
   static const createGoalAd = 'create_goal_ad';
   static const rerunGoalAd = 'rerun_goal_ad';
@@ -48,8 +50,8 @@ status, and never invent values for data gaps — when the status is
 insufficientData, say the data is missing; do not guess and do not chide.
 
 Act in this order of precedence:
-1. Unanswered user message: answer it first, in plain text. When asked,
-   restate goal and criteria exactly as given in the FACTS.
+1. Unanswered user message: answer it first by calling reply_to_user exactly
+   once. When asked, restate goal and criteria exactly as given in the FACTS.
 2. Goal-change requests: restate the current goal, then call
    propose_goal_revision exactly once with the requested change. A vague
    musing is not a request — ask one clarifying question instead. Never
@@ -110,6 +112,23 @@ final List<String> goalBannerAccentNames = [
 ];
 
 final List<AgentToolDefinition> goalAgentTools = [
+  const AgentToolDefinition(
+    name: GoalAgentToolNames.replyToUser,
+    description:
+        'Send the visible answer to the pending user message. Call exactly '
+        'once when FACTS contain a PENDING USER MESSAGE; never use it for '
+        'internal reasoning or scheduled status work.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'message': {
+          'type': 'string',
+          'description': 'The complete concise reply shown to the user.',
+        },
+      },
+      'required': ['message'],
+    },
+  ),
   AgentToolDefinition(
     name: GoalAgentToolNames.updateGoalReport,
     description:

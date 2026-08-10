@@ -1,8 +1,11 @@
 # Reusable Chat Interface — Requirements (Phase 4)
 
-- Status: Requirements only, 2026-08-08 — **nothing here is built in the
-  kickoff session.** This document exists so the goal chat and the
-  evolution chat converge on one component instead of a third ad-hoc chat.
+- Status: First goal-chat slice shipped 2026-08-11. The shared component now
+  projects the newest fifty durable user/reply rows, retains per-agent drafts,
+  sends through a `userMessage` wake, renders whole-turn waiting and inline
+  retry, and lives as a pushed phone page / desktop peer pane. Voice,
+  compound-cursor paging, search, inline nudge cards, epoch expansion and the
+  evolution-chat migration remain open requirements below.
 - Consumers, in adoption order: **goal chat** (new), **evolution chat**
   (migrates), future eval-review / day-agent surfaces.
 - Grounding: today the only real chat is `EvolutionChatPage`

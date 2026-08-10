@@ -6109,6 +6109,44 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String goalChatEmpty(String agentName) {
+    return 'Începeți o conversație cu $agentName.';
+  }
+
+  @override
+  String get goalChatFailed => 'Mesajul nu a fost trimis.';
+
+  @override
+  String get goalChatHistoryError =>
+      'Această conversație nu poate fi încărcată acum.';
+
+  @override
+  String goalChatMessageSemantics(String author, String time, String message) {
+    return '$author, $time: $message';
+  }
+
+  @override
+  String get goalChatPageTitle => 'Conversație';
+
+  @override
+  String goalChatPlaceholder(String agentName) {
+    return 'Vorbiți cu $agentName…';
+  }
+
+  @override
+  String goalChatResponding(String agentName) {
+    return '$agentName răspunde…';
+  }
+
+  @override
+  String goalChatTalkTo(String agentName) {
+    return 'Vorbiți cu $agentName';
+  }
+
+  @override
+  String get goalChatYou => 'Dvs.';
+
+  @override
   String get goalCoarseHealthBehind => 'În urmă';
 
   @override
@@ -6174,6 +6212,19 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalDeleteConfirmButton => 'Ștergeți obiectivul';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Aceasta retrage agentul de obiectiv și îl elimină din lista dvs. de pe toate dispozitivele. Nu poate fi anulată.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Ștergeți acest obiectiv?';
+
+  @override
+  String get goalDeleteMenuItem => 'Ștergeți obiectivul';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Starea acestui obiectiv nu a putut fi încărcată momentan.';
 
@@ -6185,7 +6236,17 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDetailNotFound => 'Acest agent de obiectiv nu mai există.';
 
   @override
+  String get goalDetailSayingTitle => 'Ce spune agentul dvs.';
+
+  @override
   String get goalDetailTimelineTitle => 'Interacțiuni';
+
+  @override
+  String get goalDetailWatchingSignals =>
+      'Semnale: obiceiuri bifate, vizibile în câteva secunde. Agentul dvs. nu vede nimic din ce nu bifați.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Urmărește';
 
   @override
   String get goalDockJustNow => 'chiar acum';
@@ -6213,6 +6274,55 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalPendingProposalBadge => 'Propunere în așteptarea evaluării';
+
+  @override
+  String get goalProgressAgesOut => 'iese în această seară';
+
+  @override
+  String get goalProgressAtRate => 'în ritm';
+
+  @override
+  String get goalProgressCaption =>
+      'ultimele 7 zile · glisează la miezul nopții';
+
+  @override
+  String goalProgressCompactSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de zile reușite în intervalul de șapte zile',
+      few: '$count zile reușite în intervalul de șapte zile',
+      one: '1 zi reușită în intervalul de șapte zile',
+      zero: 'Nicio zi reușită în intervalul de șapte zile',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String goalProgressDaysToHealthy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de zile până la sănătos',
+      few: '$count zile până la sănătos',
+      one: '1 zi până la sănătos',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalProgressDone => 'realizat';
+
+  @override
+  String goalProgressHabitTarget(int count) {
+    return '$count× în 7 zile';
+  }
+
+  @override
+  String get goalProgressTitle => 'Această săptămână glisantă';
+
+  @override
+  String get goalProgressToday => 'astăzi';
 
   @override
   String get goalStatusAchieved => 'Atins';

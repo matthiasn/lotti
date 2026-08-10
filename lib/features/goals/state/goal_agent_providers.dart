@@ -22,6 +22,7 @@ import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
@@ -64,6 +65,14 @@ final goalAgentServiceProvider = Provider<GoalAgentService>(
   name: 'goalAgentServiceProvider',
 );
 
+final goalChatServiceProvider = Provider<GoalChatService>(
+  (ref) => GoalChatService(
+    ref.watch(agentSyncServiceProvider),
+    ref.watch(wakeOrchestratorProvider),
+  ),
+  name: 'goalChatServiceProvider',
+);
+
 final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
   (ref) => GoalAgentWorkflow(
     repository: ref.watch(agentRepositoryProvider),
@@ -93,23 +102,39 @@ final goalAgentWakeRunnersProvider = Provider<Map<String, AgentWakeRunner>>(
           required runKey,
           required triggerTokens,
           required threadId,
-        }) => goalEscalationPeriodFromTriggerTokens(triggerTokens) != null
-        ? ref
-              .read(goalAgentWorkflowProvider)
-              .execute(
-                agentIdentity: agentIdentity,
-                runKey: runKey,
-                triggerTokens: triggerTokens,
-                threadId: threadId,
-              )
-        : ref
-              .read(goalAgentPhaseAProvider)
-              .execute(
-                agentIdentity: agentIdentity,
-                runKey: runKey,
-                triggerTokens: triggerTokens,
-                threadId: threadId,
-              ),
+        }) {
+          final chatMessageId = goalChatMessageIdFromTriggerTokens(
+            triggerTokens,
+          );
+          if (chatMessageId != null) {
+            return ref
+                .read(goalAgentWorkflowProvider)
+                .executeUserMessage(
+                  agentIdentity: agentIdentity,
+                  runKey: runKey,
+                  triggerTokens: triggerTokens,
+                  threadId: threadId,
+                  messageId: chatMessageId,
+                );
+          }
+          return goalEscalationPeriodFromTriggerTokens(triggerTokens) != null
+              ? ref
+                    .read(goalAgentWorkflowProvider)
+                    .execute(
+                      agentIdentity: agentIdentity,
+                      runKey: runKey,
+                      triggerTokens: triggerTokens,
+                      threadId: threadId,
+                    )
+              : ref
+                    .read(goalAgentPhaseAProvider)
+                    .execute(
+                      agentIdentity: agentIdentity,
+                      runKey: runKey,
+                      triggerTokens: triggerTokens,
+                      threadId: threadId,
+                    );
+        },
   },
   name: 'goalAgentWakeRunnersProvider',
 );

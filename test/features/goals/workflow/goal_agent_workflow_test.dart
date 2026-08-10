@@ -405,6 +405,87 @@ void main() {
     expect(usage.inputTokens, 900);
   });
 
+  test('a durable user-message wake injects the source turn and persists only '
+      'the visible reply carrier', () async {
+    stubSpec();
+    stubGlmResolution();
+    final source = AgentDomainEntity.agentMessage(
+      id: 'message-1',
+      agentId: agentId,
+      threadId: 'message-1',
+      kind: AgentMessageKind.user,
+      createdAt: now,
+      vectorClock: null,
+      contentEntryId: 'payload-1',
+      metadata: const AgentMessageMetadata(),
+    );
+    when(
+      () => repository.getEntity('message-1'),
+    ).thenAnswer((_) async => source);
+    when(() => repository.getEntity('payload-1')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'payload-1',
+        agentId: agentId,
+        createdAt: now,
+        vectorClock: null,
+        content: const {'text': 'How am I doing?'},
+      ),
+    );
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          expect(message, contains('PENDING USER MESSAGE:\nHow am I doing?'));
+          await (strategy! as GoalAgentStrategy).processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.replyToUser, {
+                'message': 'You need one more strong day to recover.',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          return null;
+        };
+
+    final result = await withClock(
+      fixedClock,
+      () => workflow.executeUserMessage(
+        agentIdentity: identity,
+        runKey: 'chat-run',
+        triggerTokens: const {'goal-chat-message:message-1'},
+        threadId: 'chat-run',
+        messageId: 'message-1',
+      ),
+    );
+
+    expect(result.success, isTrue);
+    expect(
+      upserts.whereType<AgentMessageEntity>().where(
+        (message) => message.kind == AgentMessageKind.user,
+      ),
+      isEmpty,
+      reason: 'the source user turn was already durable before the wake',
+    );
+    final reply = upserts.whereType<AgentMessageEntity>().singleWhere(
+      (message) =>
+          message.metadata.toolName == AgentConversationToolNames.replyToUser &&
+          message.contentEntryId != null,
+    );
+    expect(reply.kind, AgentMessageKind.action);
+    final payload = upserts.whereType<AgentMessagePayloadEntity>().singleWhere(
+      (payload) => payload.id == reply.contentEntryId,
+    );
+    expect(payload.content['text'], 'You need one more strong day to recover.');
+  });
+
   test('a first-evaluation wake that ends without a report gets exactly one '
       'pinned update_goal_report retry', () async {
     stubSpec();

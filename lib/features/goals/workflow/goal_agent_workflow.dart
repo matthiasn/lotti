@@ -86,11 +86,51 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
   static const _uuid = Uuid();
 
+  /// Resolves the durable source turn selected by the wake token, then runs
+  /// the same fact-grounded workflow as an escalation with that message at
+  /// the top of its priority order.
+  Future<WakeResult> executeUserMessage({
+    required AgentIdentityEntity agentIdentity,
+    required String runKey,
+    required Set<String> triggerTokens,
+    required String threadId,
+    required String messageId,
+  }) async {
+    final message = await _repository.getEntity(messageId);
+    if (message is! AgentMessageEntity ||
+        message.agentId != agentIdentity.agentId ||
+        message.kind != AgentMessageKind.user ||
+        message.contentEntryId == null) {
+      return const WakeResult(
+        success: false,
+        error: 'goal chat source message is unavailable',
+      );
+    }
+    final payload = await _repository.getEntity(message.contentEntryId!);
+    final text = payload is AgentMessagePayloadEntity
+        ? payload.content['text']
+        : null;
+    if (text is! String || text.trim().isEmpty) {
+      return const WakeResult(
+        success: false,
+        error: 'goal chat source payload is unavailable',
+      );
+    }
+    return execute(
+      agentIdentity: agentIdentity,
+      runKey: runKey,
+      triggerTokens: triggerTokens,
+      threadId: threadId,
+      pendingUserMessage: text.trim(),
+    );
+  }
+
   Future<WakeResult> execute({
     required AgentIdentityEntity agentIdentity,
     required String runKey,
     required Set<String> triggerTokens,
     required String threadId,
+    String? pendingUserMessage,
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
@@ -184,13 +224,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
             .toList();
     final observations = await _recentObservationTexts(agentId);
 
-    final factsBlock = _factsRenderer.render(
+    final renderedFacts = _factsRenderer.render(
       version: version,
       facts: facts,
       priorRegisters: derivation.priors,
       nudges: nudges,
       observations: observations,
     );
+    final factsBlock = pendingUserMessage == null
+        ? renderedFacts
+        : '$renderedFacts\n\nPENDING USER MESSAGE:\n$pendingUserMessage';
 
     final resolved = await _resolveModel(agentIdentity);
     if (resolved == null) {
@@ -214,13 +257,15 @@ class GoalAgentWorkflow with AgentErrorLogging {
       maxTurns: agentIdentity.config.maxTurnsPerWake,
     );
 
-    await _persistUserMessage(
-      agentId: agentId,
-      threadId: threadId,
-      runKey: runKey,
-      text: factsBlock,
-      now: now,
-    );
+    if (pendingUserMessage == null) {
+      await _persistUserMessage(
+        agentId: agentId,
+        threadId: threadId,
+        runKey: runKey,
+        text: factsBlock,
+        now: now,
+      );
+    }
 
     // The ids retire/rerun may legally reference: exactly what the FACTS
     // block offered (active ads + the reusable library).
@@ -335,6 +380,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
         escalationBaseline: goalEscalationBaselineFromTriggerTokens(
           triggerTokens,
         ),
+        replyToUser: pendingUserMessage != null,
       );
       outputsCommitted = true;
       if (!attributionFinalized && recordConsumption) {
@@ -763,6 +809,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required GoalWakeDerivation derivation,
     required DateTime now,
     String? escalationBaseline,
+    bool replyToUser = false,
   }) async {
     final reportId = strategy.hasReport ? _uuid.v4() : null;
     final attributionEnvelope = await prepareAgentReportAttribution(
@@ -817,9 +864,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
       ];
       final byId = {for (final nudge in nudges) nudge.id: nudge};
 
-      // Thought (final assistant prose — dialogue turns land here too).
-      final thought = strategy.finalResponse;
-      if (thought != null) {
+      // Interactive replies are explicit reply_to_user action rows so the
+      // durable chat projection can whitelist them without exposing thoughts.
+      // Plain final prose remains a compatibility fallback for models that
+      // answer before observing the new tool contract.
+      final assistantText = replyToUser
+          ? strategy.replyToUser ?? strategy.finalResponse
+          : strategy.finalResponse;
+      if (assistantText != null) {
         final payloadId = _uuid.v4();
         await _syncService.upsertEntity(
           AgentDomainEntity.agentMessagePayload(
@@ -827,7 +879,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
             agentId: agentId,
             createdAt: now,
             vectorClock: null,
-            content: <String, Object?>{'text': thought},
+            content: <String, Object?>{'text': assistantText},
           ),
         );
         await _syncService.upsertEntity(
@@ -835,11 +887,18 @@ class GoalAgentWorkflow with AgentErrorLogging {
             id: _uuid.v4(),
             agentId: agentId,
             threadId: threadId,
-            kind: AgentMessageKind.thought,
+            kind: replyToUser
+                ? AgentMessageKind.action
+                : AgentMessageKind.thought,
             createdAt: now,
             vectorClock: null,
             contentEntryId: payloadId,
-            metadata: AgentMessageMetadata(runKey: runKey),
+            metadata: AgentMessageMetadata(
+              runKey: runKey,
+              toolName: replyToUser
+                  ? AgentConversationToolNames.replyToUser
+                  : null,
+            ),
           ),
         );
       }

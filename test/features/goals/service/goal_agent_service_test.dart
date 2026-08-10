@@ -253,6 +253,28 @@ void main() {
       reason: 'exactly one goal exists — no duplicate mint on retry',
     );
   });
+
+  group('deleteGoalAgent', () {
+    test('retires the goal through the shared destroyed lifecycle', () async {
+      when(
+        () => agentService.destroyAgent(agentId),
+      ).thenAnswer((_) async => true);
+
+      expect(await service.deleteGoalAgent(agentId), isTrue);
+
+      verify(() => agentService.destroyAgent(agentId)).called(1);
+    });
+
+    test('reports when no goal matched the id', () async {
+      when(
+        () => agentService.destroyAgent('missing'),
+      ).thenAnswer((_) async => false);
+
+      expect(await service.deleteGoalAgent('missing'), isFalse);
+
+      verify(() => agentService.destroyAgent('missing')).called(1);
+    });
+  });
 }
 
 class _OrderRecordingSyncService extends MockAgentSyncService {

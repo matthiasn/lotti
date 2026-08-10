@@ -1,6 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 
 void main() {
@@ -10,10 +11,12 @@ void main() {
     expect(goalAgentSystemPrompt.length, lessThan(3200));
   });
 
-  test('the tool surface is the six-tool contract with uniform naming', () {
+  test('the tool surface includes the shared reply carrier and six goal '
+      'tools', () {
     expect(
       [for (final tool in goalAgentTools) tool.name],
       [
+        GoalAgentToolNames.replyToUser,
         GoalAgentToolNames.updateGoalReport,
         GoalAgentToolNames.createGoalAd,
         GoalAgentToolNames.rerunGoalAd,
@@ -23,7 +26,12 @@ void main() {
       ],
     );
     for (final tool in goalAgentTools) {
-      expect(tool.name, matches(RegExp(r'^[a-z]+_goal_[a-z_]+$')));
+      expect(
+        tool.name,
+        tool.name == GoalAgentToolNames.replyToUser
+            ? AgentConversationToolNames.replyToUser
+            : matches(RegExp(r'^[a-z]+_goal_[a-z_]+$')),
+      );
     }
   });
 

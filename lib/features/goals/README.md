@@ -35,12 +35,18 @@ on `AgentDomainEntity` (`goalSpecVersion`/`goalSpecHead`/`goalProgress`/
 The LLM tier (Phase B) runs too: `workflow/` holds the lease-elected
 escalation workflow, its code-owned contract, the tool dispatcher, and the
 revision flow that turns an approved `propose_goal_revision` change set
-into a new spec version. The visible layer shipped behind the
+into a new spec version. User-authored chat turns take the same fact-grounded
+workflow through a throttle-bypassing manual wake: `GoalChatService` persists
+the source turn before enqueueing, and the workflow persists the answer as a
+`reply_to_user` action that the shared bounded chat projection can display
+without exposing thoughts or tool bookkeeping. The visible layer shipped behind the
 `enable_agents_page` flag: procedural text banners (ADR 0058) on the day
 and habits pages (`ui/goal_banner_*`), and an Agents tab (`ui/pages/`)
-with per-goal health at a glance, proposal approval, a detail timeline,
-and goal creation. The two-way goal conversation is the remaining
-increment; the plan of record is
+with per-goal health at a glance, deterministic rolling-window progress,
+proposal approval, goal creation/deletion, and durable conversation as a
+pushed phone page or desktop peer pane. Voice, paging beyond the newest fifty
+visible turns, search, and inline nudge cards remain later conversation
+increments; the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.
 
 Runtime map: [knowledge/features/goals.md](../../../knowledge/features/goals.md).

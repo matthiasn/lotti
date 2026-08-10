@@ -59,9 +59,9 @@ every wake; Phase B is the lease-elected LLM tier that consumes the
 escalation wakes Phase A arms, speaking the contract that was validated
 in the eval harness *before* this runtime existed (the prompt and tool
 definitions live in `goal_agent_contract.dart` and the eval suite imports
-them — one artifact, zero drift). The banner surface and the Agents tab
-shipped with PR 5; the two-way goal chat is the remaining increment (the
-detail page's timeline is the same durable history chat will project).
+them — one artifact, zero drift). The banner surface, Agents tab, rolling
+progress detail, and the first durable two-way chat slice are visible behind
+the rollout flag.
 
 ## Runtime flow
 
@@ -71,6 +71,8 @@ flowchart TD
         SIG[localUpdateStream signals\nleaf dataTypes, habitIds,\nmeasurable ids] --> ORCH[WakeOrchestrator\nsubscription match]
         SYNC[syncUpdateStream] --> DISP[GoalSignalSyncDispatcher]
         CAD[cadence ScheduledWakeEntity\nworkspace goal-cadence,\ndaily at 06:00 local] --> MGR[ScheduledWakeManager]
+        CHAT[Goal chat composer] --> STORE[persist user message + payload]
+        STORE --> USERWAKE[manual userMessage wake\nmessage id trigger token]
     end
     ORCH --> PA[GoalAgentPhaseA.execute]
     DISP --> PA
@@ -87,9 +89,10 @@ flowchart TD
     NUDGE --> ROUTE{escalation trigger token\non the wake?}
     ROUTE -- no --> PA
     ROUTE -- yes --> PB[GoalAgentWorkflow — Phase B\nsame derivation as Phase A]
+    USERWAKE --> PB
     PB --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone]
-    FACTS --> CONV[one bounded conversation\nglm-5.2 default, profile override,\ntemperature 0, 6-tool contract]
-    CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet]
+    FACTS --> CONV[one bounded conversation\nglm-5.2 default, profile override,\ntemperature 0, 7-tool contract]
+    CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
 ```
 
 ## Invariants
@@ -121,12 +124,14 @@ flowchart TD
   success-only counting, and day keys re-stamp the local calendar date as
   midnight UTC. The goal agent must never disagree with the chart the
   user is looking at.
-- **Phase B is reachable only through the lease.** Sync-received signals
-  run Phase A directly (the orchestrator deliberately listens local-only);
-  anything LLM-worthy becomes a `goal-escalation:<periodKey>` scheduled
-  wake whose lease election picks exactly one device. The wake-runner
-  signature carries no workspace key, so the escalation record stores its
-  workspace key as a trigger token and the runner routes on it.
+- **Automatic Phase B is reachable only through the lease; direct chat is an
+  explicit user wake.** Sync-received signals run Phase A directly (the
+  orchestrator deliberately listens local-only); automatic LLM-worthy work
+  becomes a `goal-escalation:<periodKey>` scheduled wake whose lease election
+  picks exactly one device. A durable source chat turn instead carries a
+  `goal-chat-message:<messageId>` trigger on a manual `userMessage` wake. The
+  source exists before enqueue, the wake bypasses throttling, and no chat UI
+  owns an inference loop.
 - **Phase B re-derives, never trusts.** The workflow calls the same
   `deriveWakeFacts` Phase A used to arm the escalation and renders every
   number into the FACTS block; the prompt forbids the model to recompute.
@@ -230,11 +235,21 @@ flowchart TD
   surfaced through `goalAgentHealthProvider`. A row whose per-agent
   health has not resolved shows no chip rather than a false "Not enough data",
   and the settled-empty state is a first-run explainer whose CTA is the sole
-  creation affordance (the global FAB hides). The detail page
-  carries the goal's active banners (uncapped, rendered inline), the
-  revision-approval card (`ChangeSetSummaryCard.selfTargeted`) and the
-  read-only interaction timeline (`AgentConversationLog`). Creation supports a steps goal or a
-  MULTI-habit routine (`allOf` composite).
+  creation affordance (the global FAB hides). When a spec is available,
+  `goalAgentProgressViewProvider` reads the evaluator's daily aggregates and
+  adds a seven-cell compact strip to the list. The detail page expands the
+  same source into a rolling habit/metric grid, reliability tail and explicit
+  Watching section; it also carries active banners and the revision-approval
+  card (`ChangeSetSummaryCard.selfTargeted`). Mobile opens durable conversation
+  at `/agents/details/:agentId/chat`; desktop renders the same
+  `GoalAgentChatPane` beside detail. `agentChatProjectionProvider` bounds the
+  initial read at fifty rows and shows only durable user messages and
+  content-bearing `reply_to_user` actions; thoughts and tool bookkeeping never
+  enter the visible history. Draft state is keep-alive per agent, waiting comes
+  from the wake completion, and failure keeps the source turn available for
+  retry. Creation supports a steps goal or a MULTI-habit routine (`allOf`
+  composite); deletion soft-retires the whole agent through
+  `GoalAgentService.deleteGoalAgent`.
 - **Interaction writes bypass the notifier by design** (they go through
   the sync service): the banner handlers invalidate
   `activeGoalNudgesProvider` after dismiss/rate.

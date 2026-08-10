@@ -53,6 +53,35 @@ void main() {
           ).captured.last)
           as String;
 
+  test('reply_to_user captures exactly one visible answer', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.replyToUser,
+          args: {'message': 'You are one gym visit from being back on pace.'},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(
+      strategy.replyToUser,
+      'You are one gym visit from being back on pace.',
+    );
+
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          id: 'call-2',
+          name: GoalAgentToolNames.replyToUser,
+          args: {'message': 'A second answer.'},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(strategy.replyToUser, isNot('A second answer.'));
+    expect(rejection(), contains('at most once'));
+  });
+
   test('update_goal_report accumulates the validated report', () async {
     await strategy.processToolCalls(
       toolCalls: [

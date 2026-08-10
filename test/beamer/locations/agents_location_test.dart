@@ -10,11 +10,13 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/agents_page.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
+import 'package:lotti/features/goals/ui/pages/goal_agent_chat_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -54,7 +56,7 @@ void main() {
       );
     }
 
-    test('pathPatterns cover list, create and detail', () {
+    test('pathPatterns cover list, create, detail and chat', () {
       final location = AgentsLocation(
         RouteInformation(uri: Uri.parse('/agents')),
       );
@@ -62,6 +64,7 @@ void main() {
         '/agents',
         '/agents/create',
         '/agents/details/:agentId',
+        '/agents/details/:agentId/chat',
       ]);
     });
 
@@ -91,6 +94,18 @@ void main() {
       expect(pages, hasLength(2));
       final detail = pages.last.child as GoalAgentDetailPage;
       expect(detail.agentId, 'goal-1');
+    });
+
+    testWidgets('a chat path keeps detail beneath the pushed conversation', (
+      tester,
+    ) async {
+      final pages = await pagesFor(tester, '/agents/details/goal-1/chat', {
+        'agentId': 'goal-1',
+      });
+      expect(pages, hasLength(3));
+      final chat = pages.last.child as GoalAgentChatPage;
+      expect(chat.agentId, 'goal-1');
+      expect(pages.last.title, 'Conversation');
     });
   });
 
@@ -159,6 +174,9 @@ void main() {
           agentReportHistoryProvider(
             'goal-fit',
           ).overrideWith((ref) async => []),
+          agentChatProjectionProvider(
+            'goal-fit',
+          ).overrideWith((ref) async => const []),
           goalAgentServiceProvider.overrideWithValue(service),
           habitsRepositoryProvider.overrideWithValue(habitsRepository),
         ],
@@ -193,7 +211,24 @@ void main() {
       await tester.tap(find.text('Expedition fitness'));
       await tester.pumpAndSettle();
       expect(find.byType(GoalAgentDetailPage), findsOneWidget);
-      expect(find.text('Interactions'), findsOneWidget);
+      expect(find.text('Talk to Expedition fitness'), findsOneWidget);
+    });
+
+    testWidgets('the detail CTA opens the durable conversation page', (
+      tester,
+    ) async {
+      await tester.pumpWidget(app());
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Expedition fitness'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Talk to Expedition fitness'));
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GoalAgentChatPage), findsOneWidget);
+      expect(
+        find.text('Start a conversation with Expedition fitness.'),
+        findsOneWidget,
+      );
     });
 
     testWidgets('the FAB opens creation, and a successful create returns '

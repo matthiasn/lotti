@@ -68,6 +68,7 @@ class GoalAgentStrategy extends ConversationStrategy
   String? _reportTldr;
   String? _reportContent;
   String? _finalResponse;
+  String? _replyToUser;
   final _createdAds = <GoalAdRequest>[];
   final _rerunRequests = <GoalAdAction>[];
   final _retireRequests = <GoalAdAction>[];
@@ -79,6 +80,7 @@ class GoalAgentStrategy extends ConversationStrategy
   String? get reportTldr => _reportTldr;
   String? get reportContent => _reportContent;
   String? get finalResponse => _finalResponse;
+  String? get replyToUser => _replyToUser;
   bool get hasReport => _reportStatus != null;
   List<GoalAdRequest> get createdAds => List.unmodifiable(_createdAds);
   List<GoalAdAction> get rerunRequests => List.unmodifiable(_rerunRequests);
@@ -125,6 +127,8 @@ class GoalAgentStrategy extends ConversationStrategy
       await recordActionMessage(toolName: toolName);
 
       switch (toolName) {
+        case GoalAgentToolNames.replyToUser:
+          await _handleReplyToUser(call, args, manager);
         case GoalAgentToolNames.updateGoalReport:
           await _handleUpdateReport(call, args, manager);
         case GoalAgentToolNames.createGoalAd:
@@ -196,6 +200,32 @@ class GoalAgentStrategy extends ConversationStrategy
     final content = _trimmed(args['content']);
     _reportContent = content.isEmpty ? null : content;
     await _accept(call, manager, 'Goal report updated.');
+  }
+
+  Future<void> _handleReplyToUser(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    final message = _trimmed(args['message']);
+    if (message.isEmpty) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error: 'Error: reply_to_user needs a non-empty message.',
+      );
+      return;
+    }
+    if (_replyToUser != null) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error: 'Error: reply_to_user may be called at most once per wake.',
+      );
+      return;
+    }
+    _replyToUser = message;
+    await _accept(call, manager, 'Reply delivered.');
   }
 
   Future<void> _handleCreateAd(

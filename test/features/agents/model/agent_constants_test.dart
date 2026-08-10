@@ -22,6 +22,13 @@ void main() {
     });
   });
 
+  test('the visible conversation carrier keeps its durable tool name', () {
+    expect(
+      AgentConversationToolNames.replyToUser,
+      equals('reply_to_user'),
+    );
+  });
+
   group('AgentLinkTypes', () {
     test('agentProject constant has expected value', () {
       expect(AgentLinkTypes.agentProject, equals('agent_project'));

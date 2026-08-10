@@ -24,6 +24,7 @@ import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
@@ -117,6 +118,7 @@ void main() {
     expect(container.read(goalSignalReaderProvider), isA<GoalSignalReader>());
     expect(container.read(goalAgentPhaseAProvider), isA<GoalAgentPhaseA>());
     expect(container.read(goalAgentServiceProvider), isA<GoalAgentService>());
+    expect(container.read(goalChatServiceProvider), isA<GoalChatService>());
     expect(
       container.read(goalRuntimeMaintenanceProvider),
       isA<GoalRuntimeMaintenance>(),
@@ -156,6 +158,24 @@ void main() {
     );
     expect(result.success, isTrue);
   });
+
+  test(
+    'a chat-message trigger routes to the durable user-message workflow',
+    () async {
+      final runner = container.read(
+        goalAgentWakeRunnersProvider,
+      )[AgentKinds.goalAgent]!;
+      final result = await runner(
+        agentIdentity: goalIdentity('goal-chat'),
+        runKey: 'chat-run',
+        triggerTokens: const {'goal-chat-message:missing'},
+        threadId: 'chat-run',
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('source message is unavailable'));
+    },
+  );
 
   test('an escalation trigger token routes the wake to Phase B — proven '
       'by it failing on the missing inference provider, which the €0 tier '

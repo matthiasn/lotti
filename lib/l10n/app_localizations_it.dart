@@ -6084,6 +6084,44 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String goalChatEmpty(String agentName) {
+    return 'Inizia una conversazione con $agentName.';
+  }
+
+  @override
+  String get goalChatFailed => 'Il messaggio non è stato inviato.';
+
+  @override
+  String get goalChatHistoryError =>
+      'Impossibile caricare questa conversazione ora.';
+
+  @override
+  String goalChatMessageSemantics(String author, String time, String message) {
+    return '$author, $time: $message';
+  }
+
+  @override
+  String get goalChatPageTitle => 'Conversazione';
+
+  @override
+  String goalChatPlaceholder(String agentName) {
+    return 'Parla con $agentName…';
+  }
+
+  @override
+  String goalChatResponding(String agentName) {
+    return '$agentName sta rispondendo…';
+  }
+
+  @override
+  String goalChatTalkTo(String agentName) {
+    return 'Parla con $agentName';
+  }
+
+  @override
+  String get goalChatYou => 'Tu';
+
+  @override
   String get goalCoarseHealthBehind => 'In ritardo';
 
   @override
@@ -6146,6 +6184,19 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get goalDeleteConfirmButton => 'Elimina obiettivo';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Questo ritira l’agente dell’obiettivo e lo rimuove dalla tua lista su tutti i dispositivi. Non è reversibile.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Eliminare questo obiettivo?';
+
+  @override
+  String get goalDeleteMenuItem => 'Elimina obiettivo';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Impossibile caricare lo stato di questo obiettivo al momento.';
 
@@ -6158,7 +6209,17 @@ class AppLocalizationsIt extends AppLocalizations {
       'Questo agente dell\'obiettivo non esiste più.';
 
   @override
+  String get goalDetailSayingTitle => 'Cosa dice il tuo agente';
+
+  @override
   String get goalDetailTimelineTitle => 'Interazioni';
+
+  @override
+  String get goalDetailWatchingSignals =>
+      'Segnali: abitudini spuntate, visibili in pochi secondi. L’agente non vede nulla che non spunti.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Osserva';
 
   @override
   String get goalDockJustNow => 'proprio ora';
@@ -6186,6 +6247,52 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalPendingProposalBadge => 'Proposta in attesa';
+
+  @override
+  String get goalProgressAgesOut => 'esce stasera';
+
+  @override
+  String get goalProgressAtRate => 'al ritmo';
+
+  @override
+  String get goalProgressCaption => 'ultimi 7 giorni · scorre a mezzanotte';
+
+  @override
+  String goalProgressCompactSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count giorni riusciti nella finestra di sette giorni',
+      one: '1 giorno riuscito nella finestra di sette giorni',
+      zero: 'Nessun giorno riuscito nella finestra di sette giorni',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String goalProgressDaysToHealthy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count giorni per essere in forma',
+      one: '1 giorno per essere in forma',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalProgressDone => 'fatto';
+
+  @override
+  String goalProgressHabitTarget(int count) {
+    return '$count× ogni 7 giorni';
+  }
+
+  @override
+  String get goalProgressTitle => 'Questa settimana mobile';
+
+  @override
+  String get goalProgressToday => 'oggi';
 
   @override
   String get goalStatusAchieved => 'Raggiunto';

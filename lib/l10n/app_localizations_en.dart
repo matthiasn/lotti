@@ -5982,6 +5982,44 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String goalChatEmpty(String agentName) {
+    return 'Start a conversation with $agentName.';
+  }
+
+  @override
+  String get goalChatFailed => 'That didn\'t send.';
+
+  @override
+  String get goalChatHistoryError =>
+      'Couldn\'t load this conversation right now.';
+
+  @override
+  String goalChatMessageSemantics(String author, String time, String message) {
+    return '$author, $time: $message';
+  }
+
+  @override
+  String get goalChatPageTitle => 'Conversation';
+
+  @override
+  String goalChatPlaceholder(String agentName) {
+    return 'Talk to $agentName…';
+  }
+
+  @override
+  String goalChatResponding(String agentName) {
+    return '$agentName is replying…';
+  }
+
+  @override
+  String goalChatTalkTo(String agentName) {
+    return 'Talk to $agentName';
+  }
+
+  @override
+  String get goalChatYou => 'You';
+
+  @override
   String get goalCoarseHealthBehind => 'Behind';
 
   @override
@@ -6043,6 +6081,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalDeleteConfirmButton => 'Delete goal';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'This retires the goal agent and removes it from your list on every device. This can\'t be undone.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Delete this goal?';
+
+  @override
+  String get goalDeleteMenuItem => 'Delete goal';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Couldn\'t load this goal\'s health right now.';
 
@@ -6054,7 +6105,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalDetailNotFound => 'This goal agent no longer exists.';
 
   @override
+  String get goalDetailSayingTitle => 'What your agent is saying';
+
+  @override
   String get goalDetailTimelineTitle => 'Interactions';
+
+  @override
+  String get goalDetailWatchingSignals =>
+      'Signals: habit check-offs, seen within seconds. Your agent can\'t see anything you don\'t check off.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Watching';
 
   @override
   String get goalDockJustNow => 'just now';
@@ -6082,6 +6143,52 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalPendingProposalBadge => 'Proposal awaiting review';
+
+  @override
+  String get goalProgressAgesOut => 'ages out tonight';
+
+  @override
+  String get goalProgressAtRate => 'at rate';
+
+  @override
+  String get goalProgressCaption => 'trailing 7 days · slides at midnight';
+
+  @override
+  String goalProgressCompactSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count successful days in the trailing seven-day window',
+      one: '1 successful day in the trailing seven-day window',
+      zero: 'No successful days in the trailing seven-day window',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String goalProgressDaysToHealthy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days to healthy',
+      one: '1 day to healthy',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalProgressDone => 'done';
+
+  @override
+  String goalProgressHabitTarget(int count) {
+    return '$count× per 7 days';
+  }
+
+  @override
+  String get goalProgressTitle => 'This rolling week';
+
+  @override
+  String get goalProgressToday => 'today';
 
   @override
   String get goalStatusAchieved => 'Achieved';

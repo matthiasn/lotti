@@ -119,6 +119,7 @@ List<String> numberTerms(int value) {
 
 /// All tool names — used to forbid everything for the no-op scenario.
 const List<String> _allGoalToolNames = [
+  GoalAgentToolNames.replyToUser,
   GoalAgentToolNames.updateGoalReport,
   GoalAgentToolNames.createGoalAd,
   GoalAgentToolNames.rerunGoalAd,

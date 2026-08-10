@@ -3268,6 +3268,61 @@
       }
     }
   },
+  "goalChatEmpty": "Start a conversation with {agentName}.",
+  "@goalChatEmpty": {
+    "description": "Empty-state invitation in a goal-agent conversation.",
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalChatFailed": "That didn't send.",
+  "goalChatHistoryError": "Couldn't load this conversation right now.",
+  "goalChatMessageSemantics": "{author}, {time}: {message}",
+  "@goalChatMessageSemantics": {
+    "description": "Accessible label for one durable chat bubble.",
+    "placeholders": {
+      "author": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "message": {
+        "type": "String"
+      }
+    }
+  },
+  "goalChatPageTitle": "Conversation",
+  "goalChatPlaceholder": "Talk to {agentName}…",
+  "@goalChatPlaceholder": {
+    "description": "Composer hint in a goal-agent conversation.",
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalChatResponding": "{agentName} is replying…",
+  "@goalChatResponding": {
+    "description": "Waiting state while a goal-agent wake is in flight.",
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalChatTalkTo": "Talk to {agentName}",
+  "@goalChatTalkTo": {
+    "description": "Button that opens a goal-agent conversation.",
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalChatYou": "You",
   "goalCoarseHealthBehind": "Behind",
   "@goalCoarseHealthBehind": {
     "description": "Coarse goal-health chip label: behind and every remaining day matters"
@@ -3335,16 +3390,35 @@
       }
     }
   },
+  "goalDeleteConfirmButton": "Delete goal",
+  "@goalDeleteConfirmButton": {
+    "description": "Confirm button in the delete-goal confirmation dialog."
+  },
+  "goalDeleteDialogContent": "This retires the goal agent and removes it from your list on every device. This can't be undone.",
+  "@goalDeleteDialogContent": {
+    "description": "Body of the confirmation dialog shown before deleting a goal agent."
+  },
+  "goalDeleteDialogTitle": "Delete this goal?",
+  "@goalDeleteDialogTitle": {
+    "description": "Title of the confirmation dialog shown before deleting a goal agent."
+  },
+  "goalDeleteMenuItem": "Delete goal",
+  "@goalDeleteMenuItem": {
+    "description": "Overflow menu item on the goal detail page that starts deleting the goal agent."
+  },
   "goalDetailHealthUnavailable": "Couldn't load this goal's health right now.",
   "goalDetailNoReport": "No report yet — the agent reports after its first meaningful change.",
   "@goalDetailNoReport": {
     "description": "Placeholder when a goal agent has not written a report yet."
   },
   "goalDetailNotFound": "This goal agent no longer exists.",
+  "goalDetailSayingTitle": "What your agent is saying",
   "goalDetailTimelineTitle": "Interactions",
   "@goalDetailTimelineTitle": {
     "description": "Section title of the agent detail interaction timeline."
   },
+  "goalDetailWatchingSignals": "Signals: habit check-offs, seen within seconds. Your agent can't see anything you don't check off.",
+  "goalDetailWatchingTitle": "Watching",
   "goalDockJustNow": "just now",
   "@goalDockJustNow": {
     "description": "Freshness marker on the goal dock caption when a completion acknowledgment just took the slot"
@@ -3369,6 +3443,39 @@
   "@goalPendingProposalBadge": {
     "description": "Badge on an agent card when a revision proposal is pending."
   },
+  "goalProgressAgesOut": "ages out tonight",
+  "goalProgressAtRate": "at rate",
+  "goalProgressCaption": "trailing 7 days · slides at midnight",
+  "goalProgressCompactSemantics": "{count, plural, =0{No successful days in the trailing seven-day window} =1{1 successful day in the trailing seven-day window} other{{count} successful days in the trailing seven-day window}}",
+  "@goalProgressCompactSemantics": {
+    "description": "Screen-reader summary of the compact seven-day progress strip.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalProgressDaysToHealthy": "{count, plural, =1{1 day to healthy} other{{count} days to healthy}}",
+  "@goalProgressDaysToHealthy": {
+    "description": "Habit progress row note: creditable days needed to reach the healthy state.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalProgressDone": "done",
+  "goalProgressHabitTarget": "{count}× per 7 days",
+  "@goalProgressHabitTarget": {
+    "description": "Target caption for one habit in a rolling seven-day goal.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalProgressTitle": "This rolling week",
+  "goalProgressToday": "today",
   "goalStatusAchieved": "Achieved",
   "@goalStatusAchieved": {
     "description": "Goal track status chip: target date passed with criteria met."

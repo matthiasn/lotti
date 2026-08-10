@@ -13,12 +13,16 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -38,7 +42,7 @@ void main() {
             vectorClock: null,
           )
           as AgentIdentityEntity;
-  testWidgets('renders the health header, statement, no-report hint and '
+  testWidgets('renders the health header and no-report hint without an empty '
       'timeline section', (tester) async {
     final spec =
         AgentDomainEntity.goalSpecVersion(
@@ -80,6 +84,22 @@ void main() {
               buffer: null,
             ),
           ),
+          goalAgentProgressViewProvider('goal-1').overrideWith(
+            (ref) async => GoalProgressView(
+              today: DateTime.utc(2026, 8, 11),
+              metric: GoalMetricProgressView(
+                name: 'Daily steps',
+                target: 10000,
+                days: [
+                  for (var day = 5; day <= 11; day++)
+                    GoalProgressDay(
+                      day: DateTime.utc(2026, 8, day),
+                      value: day.isEven ? 11000 : 7000,
+                    ),
+                ],
+              ),
+            ),
+          ),
           selfTargetedPendingChangeSetsProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
@@ -92,19 +112,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    expect(find.text('Move more'), findsOneWidget);
-    expect(find.text('At risk'), findsOneWidget);
-    // Wrap, not Row: the header must fold under large text scales.
+    // App bar + detail header both carry the goal name.
+    expect(find.text('Move more'), findsNWidgets(2));
+    // Runtime atRisk collapses to the handover's coarse Behind vocabulary,
+    // and the detail surface never displays a percentage.
+    expect(find.text('Behind'), findsOneWidget);
+    expect(find.text('At risk'), findsNothing);
+    expect(find.textContaining('% of target'), findsNothing);
+    expect(find.text('This rolling week'), findsOneWidget);
+    expect(find.text('Daily steps'), findsOneWidget);
     expect(
-      find.ancestor(
-        of: find.text('At risk'),
-        matching: find.byType(Wrap),
+      find.textContaining(
+        'Average 10,000 steps per day over a rolling week.',
       ),
-      findsWidgets,
-    );
-    expect(find.text('64% of target'), findsOneWidget);
-    expect(
-      find.text('Average 10,000 steps per day over a rolling week.'),
       findsOneWidget,
     );
     expect(
@@ -114,7 +134,7 @@ void main() {
       ),
       findsOneWidget,
     );
-    expect(find.text('Interactions'), findsOneWidget);
+    expect(find.text('Interactions'), findsNothing);
   });
 
   testWidgets('a standing report renders its one-liner instead of the '
@@ -432,7 +452,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.text('Six days of quiet soles.'), findsOneWidget);
+    expect(find.textContaining('Six days of quiet soles.'), findsOneWidget);
     expect(find.text('Dismissed'), findsOneWidget);
   });
 
@@ -492,6 +512,66 @@ void main() {
 
     await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();
     await tester.pumpAndSettle();
+    expect(navigated, ['/agents']);
+  });
+
+  testWidgets('confirming delete retires the goal and returns to the list', (
+    tester,
+  ) async {
+    final service = MockGoalAgentService();
+    when(
+      () => service.deleteGoalAgent('goal-1'),
+    ).thenAnswer((_) async => true);
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          goalAgentServiceProvider.overrideWithValue(service),
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete goal'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Delete this goal?'), findsOneWidget);
+    verifyNever(() => service.deleteGoalAgent(any()));
+
+    await tester.tap(
+      find.widgetWithText(DesignSystemButton, 'Delete goal'),
+    );
+    await tester.pumpAndSettle();
+
+    verify(() => service.deleteGoalAgent('goal-1')).called(1);
     expect(navigated, ['/agents']);
   });
 
