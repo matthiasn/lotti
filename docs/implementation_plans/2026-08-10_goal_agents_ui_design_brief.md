@@ -296,7 +296,7 @@ even when every word of it is true.
     stack position. **Surface (decided): a persistent bottom dock at shell
     level** — the "now playing" bar pattern. The voice is never buried in
     scroll content: the dock anchors at the bottom of the content region
-    across the main working tabs (Tasks, Daily OS, Habits) with one shared
+    across the main working tabs (Tasks, DailyOS, Habits) with one shared
     rotation state. On desktop it sits beside — not under — the navigation
     sidebar, which keeps its full height. On mobile the exact position is
     **TBD**; the leading candidate is directly above the bottom navigation

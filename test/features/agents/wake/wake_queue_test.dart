@@ -22,6 +22,7 @@ void main() {
     String? workspaceKey,
     DateTime? createdAt,
     WakeInitiator? initiator,
+    bool drainImmediately = false,
   }) {
     return WakeJob(
       runKey: runKey,
@@ -32,6 +33,7 @@ void main() {
       workspaceKey: workspaceKey,
       createdAt: createdAt ?? testDate,
       initiator: initiator,
+      drainImmediately: drainImmediately,
     );
   }
 
@@ -466,6 +468,51 @@ void main() {
           );
         },
       );
+    });
+
+    group('immediate-drain job policy', () {
+      test('hasImmediateQueuedJobFor and hasDeferredQueuedJobFor split a '
+          'mixed queue by job policy, not by agent', () {
+        queue
+          ..enqueue(makeJob(runKey: 'a', drainImmediately: true))
+          ..enqueue(makeJob(runKey: 'b'));
+
+        expect(queue.hasImmediateQueuedJobFor('agent-1'), isTrue);
+        expect(queue.hasDeferredQueuedJobFor('agent-1'), isTrue);
+
+        // Workspace scoping matches the other predicates.
+        expect(
+          queue.hasImmediateQueuedJobFor('agent-1', workspaceKey: 'day:x'),
+          isFalse,
+        );
+      });
+
+      test('an immediate-only queue reports no deferred job — the post-run '
+          'path must not arm a countdown for it', () {
+        queue.enqueue(makeJob(runKey: 'a', drainImmediately: true));
+
+        expect(queue.hasImmediateQueuedJobFor('agent-1'), isTrue);
+        expect(queue.hasDeferredQueuedJobFor('agent-1'), isFalse);
+      });
+
+      test('mergeTokens(markImmediate) upgrades a deferred job monotonically '
+          '— a later deferred merge cannot downgrade it', () {
+        queue.enqueue(makeJob(runKey: 'a'));
+        expect(queue.hasImmediateQueuedJobFor('agent-1'), isFalse);
+
+        expect(
+          queue.mergeTokens('agent-1', {'tok-b'}, markImmediate: true),
+          isTrue,
+        );
+        expect(queue.hasImmediateQueuedJobFor('agent-1'), isTrue);
+
+        expect(queue.mergeTokens('agent-1', {'tok-c'}), isTrue);
+        expect(
+          queue.hasImmediateQueuedJobFor('agent-1'),
+          isTrue,
+          reason: 'the upgrade is monotonic, like hasDirectMatch',
+        );
+      });
     });
 
     glados.Glados(

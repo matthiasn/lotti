@@ -425,6 +425,13 @@ class WakeOrchestrator with AgentErrorLogging {
     } else {
       _subscriptions.add(sub);
     }
+    // An immediate-drain agent must never sit behind a countdown, including
+    // a `nextWakeAt` persisted before the policy existed (or before this
+    // subscription switched to it). Registration is the reliable moment to
+    // retire it: startup hydration may never load the deadline into the
+    // coordinator, leaving a stale countdown row in the pending-wakes UI
+    // that no in-memory check would ever clear.
+    if (sub.drainImmediately) clearThrottle(sub.agentId);
   }
 
   /// Remove all subscriptions for [agentId] and clean up internal state.
@@ -516,14 +523,6 @@ class WakeOrchestrator with AgentErrorLogging {
   bool _isThrottled(String agentId) {
     return _throttle.isThrottled(agentId);
   }
-
-  /// Whether [agentId] holds a subscription that opted into immediate
-  /// dispatch ([AgentSubscription.drainImmediately]). Consulted wherever a
-  /// throttle deadline would otherwise be armed on the agent's behalf — an
-  /// immediate-drain agent must never grow a countdown, including the
-  /// post-run follow-up arming in the drain engine.
-  bool _drainsImmediately(String agentId) =>
-      _subscriptions.any((s) => s.agentId == agentId && s.drainImmediately);
 
   /// Set the throttle deadline for [agentId] and persist it to the agent's
   /// state entity via `nextWakeAt`.

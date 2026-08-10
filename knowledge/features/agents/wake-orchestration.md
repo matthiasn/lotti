@@ -132,13 +132,20 @@ scheduled project digest; task-agent subscriptions opt out, so child-entry and
 task-context updates refresh on the normal coalesced path.
 
 A subscription can instead opt **out of the window entirely** with
-`AgentSubscription.drainImmediately`: matches enqueue and dispatch at once, no
-deadline is armed (including the post-run follow-up deadline), and a stale
-hydrated deadline is cleared rather than honoured. Goal-agent signal
-subscriptions use this — a habit check-off is atomic evidence and the wake it
-triggers is the deterministic €0 Phase A tier, so deferral protects nothing
-and delays the user-visible acknowledgment. Bursts stay safe because the
-runner single-flights per agent and queued jobs merge tokens.
+`AgentSubscription.drainImmediately`: matches enqueue and dispatch once the
+whole batch has routed (never mid-loop — a second matching subscription must
+still find the job to merge into), no deadline is armed, and registering the
+subscription retires any persisted `nextWakeAt` left by the defer-first
+policy. The policy travels **on the queued job** (`WakeJob.drainImmediately`,
+upgraded monotonically on merge): the throttle is per-agent, so an agent
+holding both a deferred and an immediate subscription dispatches the
+immediate job past a deadline the deferred job still honours, and the
+post-run path arms the follow-up deadline only for deferred queued work.
+Goal-agent signal subscriptions use this — a habit check-off is atomic
+evidence and the wake it triggers is the deterministic €0 Phase A tier, so
+deferral protects nothing and delays the user-visible acknowledgment. Bursts
+stay safe because the runner single-flights per agent and queued jobs merge
+tokens.
 
 Manual wakes — `creation`, `reanalysis`, and scheduled jobs enqueued by
 `ScheduledWakeManager` — bypass subscription matching and the throttle.

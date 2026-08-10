@@ -11,6 +11,12 @@ extension WakeBatchRouter on WakeOrchestrator {
       );
       return;
     }
+    // Immediate drains are collected and dispatched ONCE after the whole
+    // batch is routed: a mid-loop processNext() would dequeue the first
+    // immediate subscription's job synchronously, so a second subscription
+    // matching the same batch would find nothing to merge into and enqueue
+    // a duplicate — the agent would evaluate the same batch twice.
+    var immediateDrainRequested = false;
     for (final sub in _subscriptions) {
       // 1. Check whether any token matches the subscription's entity IDs.
       //    A "direct" match means the agent's own entity was edited
@@ -109,6 +115,7 @@ extension WakeBatchRouter on WakeOrchestrator {
           sub.agentId,
           allMatched,
           isDirect: usesFastThrottle,
+          markImmediate: sub.drainImmediately,
         );
         if (!merged) {
           final counter = _wakeCounters[sub.agentId] ?? 0;
@@ -128,6 +135,7 @@ extension WakeBatchRouter on WakeOrchestrator {
               reasonId: sub.id,
               createdAt: clock.now(),
               hasDirectMatch: usesFastThrottle,
+              drainImmediately: sub.drainImmediately,
             ),
           );
         }
@@ -203,6 +211,7 @@ extension WakeBatchRouter on WakeOrchestrator {
         reasonId: sub.id,
         createdAt: clock.now(),
         hasDirectMatch: usesFastThrottle,
+        drainImmediately: sub.drainImmediately,
       );
 
       // Attempt to merge tokens into an existing queued job for this agent
@@ -211,13 +220,14 @@ extension WakeBatchRouter on WakeOrchestrator {
         sub.agentId,
         allMatched,
         isDirect: usesFastThrottle,
+        markImmediate: sub.drainImmediately,
       )) {
         queue.enqueue(job);
       }
 
-      // Immediate-drain subscriptions dispatch now: no deadline, no
-      // countdown. The evidence is atomic and the wake is cheap — see
-      // [AgentSubscription.drainImmediately].
+      // Immediate-drain subscriptions dispatch after the batch finishes
+      // routing: no deadline, no countdown. The evidence is atomic and the
+      // wake is cheap — see [AgentSubscription.drainImmediately].
       if (sub.drainImmediately) {
         _log(
           'immediate drain for ${DomainLogger.sanitizeId(sub.agentId)}: '
@@ -225,7 +235,7 @@ extension WakeBatchRouter on WakeOrchestrator {
           'triggers=${allMatched.map(DomainLogger.sanitizeId).join(',')}',
           subDomain: 'defer',
         );
-        unawaited(processNext());
+        immediateDrainRequested = true;
         continue;
       }
 
@@ -272,6 +282,8 @@ extension WakeBatchRouter on WakeOrchestrator {
         subDomain: 'defer',
       );
     }
+    // One dispatch for the whole batch (see the loop-head comment).
+    if (immediateDrainRequested) unawaited(processNext());
   }
 
   /// Returns `true` when all [matchedTokens] are covered by the agent's
