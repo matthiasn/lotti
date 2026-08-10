@@ -108,7 +108,10 @@ class GoalAgentPhaseA {
       // the new spec, and a v1 escalation would arm an old-target Phase
       // B wake after the revision's sweep already cleaned up.
       final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
-      if (headNow is GoalSpecHeadEntity && headNow.versionId != version.id) {
+      // A MISSING head means the goal was hard-deleted mid-wake:
+      // recreating the register or an escalation would sync rows back
+      // out after the user requested permanent deletion.
+      if (headNow is! GoalSpecHeadEntity || headNow.versionId != version.id) {
         fenced = true;
         return;
       }
@@ -168,16 +171,24 @@ class GoalAgentPhaseA {
         }
         // A banner that synced in AFTER the revision sweep carries the
         // superseded spec in its provenance — sweep it here, the same
-        // deterministic maintenance that expires overdue rows.
+        // deterministic maintenance that expires overdue rows. Only when
+        // its origin version is PRESENT and itself superseded: partial
+        // sync can deliver a NEW spec's banner before that spec's head,
+        // and terminally superseding valid copy would be unrecoverable
+        // (the provider already hides mismatches until the head lands).
         final originVersion = nudge.provenance['specVersionId'];
         if (originVersion is String && originVersion != activeVersionId) {
-          await _syncService.upsertEntity(
-            nudge.copyWith(
-              status: GoalNudgeStatus.superseded,
-              supersededAt: now.toUtc(),
-              updatedAt: now,
-            ),
-          );
+          final origin = await _repository.getEntity(originVersion);
+          if (origin is GoalSpecVersionEntity &&
+              origin.status == GoalSpecVersionStatus.superseded) {
+            await _syncService.upsertEntity(
+              nudge.copyWith(
+                status: GoalNudgeStatus.superseded,
+                supersededAt: now.toUtc(),
+                updatedAt: now,
+              ),
+            );
+          }
           continue;
         }
         final staleAt = nudge.staleAt;

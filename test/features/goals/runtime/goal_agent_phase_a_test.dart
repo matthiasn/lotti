@@ -221,8 +221,29 @@ void main() {
   });
 
   test('a late-synced banner from a superseded spec is swept to '
-      'superseded on the next wake', () async {
+      'superseded on the next wake — but only when its origin version is '
+      'PRESENT and terminal', () async {
     stubSpec();
+    when(() => repository.getEntity('$agentId:spec-v0')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v0',
+        agentId: agentId,
+        version: 0,
+        status: GoalSpecVersionStatus.superseded,
+        authoredBy: 'user',
+        title: 'Old',
+        statement: 'x',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 9000,
+        ),
+        createdAt: DateTime(2026, 7),
+        vectorClock: null,
+      ),
+    );
     when(
       () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
     ).thenAnswer(
@@ -251,6 +272,15 @@ void main() {
     final swept = upserts.whereType<GoalNudgeEntity>().single;
     expect(swept.id, 'ad-foreign-spec');
     expect(swept.status, GoalNudgeStatus.superseded);
+
+    // Partial sync: a NEW spec's banner arriving before that spec's head
+    // (origin version unresolvable) is left alone, not destroyed.
+    upserts.clear();
+    when(
+      () => repository.getEntity('$agentId:spec-v0'),
+    ).thenAnswer((_) async => null);
+    await run(onTrackSignals());
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
   });
 
   test('a goal without a spec head is a clean no-op', () async {

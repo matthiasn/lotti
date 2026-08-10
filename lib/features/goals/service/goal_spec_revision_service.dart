@@ -5,6 +5,7 @@ import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/goals/service/goal_revision_apply.dart';
 import 'package:uuid/uuid.dart';
@@ -194,6 +195,25 @@ class GoalSpecRevisionService {
           supersededAt: now.toUtc(),
           updatedAt: now,
         ),
+      );
+    }
+
+    // Pending escalations were armed under the OLD spec: left alone they
+    // would later resolve against the revised register and spend
+    // inference on a transition the new goal never made. The immediate
+    // post-approval evaluation re-arms anything genuinely due.
+    final wakes = (await _repository.getEntitiesByAgentId(
+      agentId,
+      type: AgentEntityTypes.scheduledWake,
+    )).whereType<ScheduledWakeEntity>();
+    for (final wake in wakes) {
+      if (wake.deletedAt != null ||
+          wake.status != ScheduledWakeStatus.pending ||
+          !(wake.workspaceKey?.startsWith('goal-escalation') ?? false)) {
+        continue;
+      }
+      await _syncService.upsertEntity(
+        wake.copyWith(status: ScheduledWakeStatus.consumed, consumedAt: now),
       );
     }
 

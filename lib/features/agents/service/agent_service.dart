@@ -266,8 +266,8 @@ class AgentService {
   Future<bool> _updateLifecycle(
     String agentId,
     AgentLifecycle lifecycle,
-  ) {
-    return syncService.runInTransaction(() async {
+  ) async {
+    final updated = await syncService.runInTransaction(() async {
       final identity = await getAgent(agentId);
       if (identity == null) {
         developer.log(
@@ -287,5 +287,10 @@ class AgentService {
       await syncService.upsertEntity(updated);
       return true;
     });
+    // Pause/resume/destroy must reach every agent surface: the goal
+    // overview and banner providers watch the agent notification, and a
+    // sync-service write alone emits nothing.
+    if (updated) onPersistedStateChanged?.call(agentId);
+    return updated;
   }
 }

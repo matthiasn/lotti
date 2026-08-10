@@ -294,4 +294,36 @@ void main() {
       );
     },
   );
+  test('an agent-level batch with a misaligned register forces a '
+      'recompute — split-brain heads self-heal without waiting for '
+      'cadence', () async {
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [identity('goal-a', AgentKinds.goalAgent)]);
+    stubSpec('goal-a');
+    when(
+      () => repository.getEntitiesByAgentId('goal-a', type: 'goalProgress'),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.goalProgress(
+              id: 'goal_progress:goal-a:2026-08-10',
+              agentId: 'goal-a',
+              periodKey: '2026-08-10',
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1,
+              dataCoverage: 1,
+              satisfied: true,
+              specVersionId: 'goal-a:spec-v2-loser',
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalProgressEntity,
+      ],
+    );
+
+    await dispatcher.dispatchBatch({'goal-a'});
+    expect(phaseA.calls, hasLength(1));
+    expect(evaluated, ['goal-a']);
+  });
 }

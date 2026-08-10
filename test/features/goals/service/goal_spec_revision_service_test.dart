@@ -6,6 +6,7 @@ import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -171,6 +172,52 @@ void main() {
           'live and reusable nudges move with the spec; the user '
           'verdict (dismissed) stays history',
     );
+  });
+
+  test('approval consumes pending old-spec escalations — a stale wake '
+      'must not later spend inference against the revised register', () async {
+    stubSpec();
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'scheduledWake'),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.scheduledWake(
+              id: 'scheduled_wake:$agentId:goal-escalation:2026-08-10',
+              agentId: agentId,
+              scheduledAt: DateTime(2026, 8, 10, 9),
+              status: ScheduledWakeStatus.pending,
+              reason: 'scheduled',
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+              workspaceKey: 'goal-escalation:2026-08-10',
+            )
+            as ScheduledWakeEntity,
+        AgentDomainEntity.scheduledWake(
+              id: 'scheduled_wake:$agentId:goal-cadence',
+              agentId: agentId,
+              scheduledAt: DateTime(2026, 8, 11, 6),
+              status: ScheduledWakeStatus.pending,
+              reason: 'scheduled',
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+              workspaceKey: 'goal-cadence',
+            )
+            as ScheduledWakeEntity,
+      ],
+    );
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromProposal(
+        agentId: agentId,
+        changes: {'targetValue': 8000},
+        rationale: 'ease off',
+      ),
+    );
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    final consumed = upserts.whereType<ScheduledWakeEntity>().toList();
+    expect(consumed, hasLength(1));
+    expect(consumed.single.workspaceKey, 'goal-escalation:2026-08-10');
+    expect(consumed.single.status, ScheduledWakeStatus.consumed);
   });
 
   test('refusals: missing head, dangling head, inapplicable changes — '

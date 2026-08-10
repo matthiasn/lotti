@@ -151,13 +151,23 @@ class GoalBannerCard extends ConsumerWidget {
     final failedNotice = context.messages.goalBannerActionFailed;
     final container = ProviderScope.containerOf(context, listen: false);
     final interactions = ref.read(goalNudgeInteractionsProvider);
+    bool persisted;
     try {
-      await interactions.dismiss(
+      persisted = await interactions.dismiss(
         entry.nudge.id,
         forActivation: entry.nudge.activationCount,
       );
     } on Object {
       messenger?.showSnackBar(SnackBar(content: Text(failedNotice)));
+      return false;
+    }
+    if (!persisted) {
+      // The guards declined — sync advanced the activation mid-tap. The
+      // NEW run was never seen and must not be hidden; the refresh below
+      // re-renders it.
+      container
+        ..invalidate(activeGoalNudgesProvider)
+        ..invalidate(goalNudgeHistoryProvider);
       return false;
     }
     // The durable write succeeded: suppress the id locally FIRST, so the
