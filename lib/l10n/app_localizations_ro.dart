@@ -6118,6 +6118,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încă nu există raport — agentul va raporta după prima schimbare relevantă.';
 
   @override
+  String get goalDetailNotFound => 'Acest agent de obiectiv nu mai există.';
+
+  @override
   String get goalDetailTimelineTitle => 'Interacțiuni';
 
   @override

@@ -2804,6 +2804,7 @@
   "goalCreateValidationMissing": "Dá um nome à meta e pelo menos um critério.",
   "goalDetailHealthUnavailable": "Não foi possível carregar a saúde desta meta agora.",
   "goalDetailNoReport": "Ainda sem relatório — o agente reporta após a primeira mudança relevante.",
+  "goalDetailNotFound": "Este agente de meta não existe mais.",
   "goalDetailTimelineTitle": "Interações",
   "goalNudgeStatusDismissed": "Dispensado",
   "goalNudgeStatusExpired": "Expirado",

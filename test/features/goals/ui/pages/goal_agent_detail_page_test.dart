@@ -68,6 +68,14 @@ void main() {
 
     expect(find.text('Move more'), findsOneWidget);
     expect(find.text('At risk'), findsOneWidget);
+    // Wrap, not Row: the header must fold under large text scales.
+    expect(
+      find.ancestor(
+        of: find.text('At risk'),
+        matching: find.byType(Wrap),
+      ),
+      findsWidgets,
+    );
     expect(find.text('64% of target'), findsOneWidget);
     expect(
       find.text('Average 10,000 steps per day over a rolling week.'),
@@ -321,5 +329,32 @@ void main() {
     await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();
     await tester.pumpAndSettle();
     expect(navigated, ['/agents']);
+  });
+
+  testWidgets('a stale link or non-goal agent renders the not-found state '
+      'instead of a blank healthy page', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'task-1'),
+        overrides: [
+          agentIdentityProvider('task-1').overrideWith((ref) async => null),
+          goalAgentHealthProvider('task-1').overrideWith(
+            (ref) async => (
+              trackStatus: null,
+              attainment: null,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text('This goal agent no longer exists.'),
+      findsOneWidget,
+    );
+    expect(find.textContaining('No report yet'), findsNothing);
   });
 }

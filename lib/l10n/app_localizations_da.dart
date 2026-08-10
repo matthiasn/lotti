@@ -6019,6 +6019,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ingen rapport endnu — agenten rapporterer efter den første relevante ændring.';
 
   @override
+  String get goalDetailNotFound => 'Denne målagent findes ikke længere.';
+
+  @override
   String get goalDetailTimelineTitle => 'Interaktioner';
 
   @override

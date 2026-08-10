@@ -2804,6 +2804,7 @@
   "goalCreateValidationMissing": "Geef het doel een naam en minstens één criterium.",
   "goalDetailHealthUnavailable": "De gezondheid van dit doel kon nu niet worden geladen.",
   "goalDetailNoReport": "Nog geen rapport — de agent rapporteert na de eerste relevante verandering.",
+  "goalDetailNotFound": "Deze doel-agent bestaat niet meer.",
   "goalDetailTimelineTitle": "Interacties",
   "goalNudgeStatusDismissed": "Weggeveegd",
   "goalNudgeStatusExpired": "Verlopen",

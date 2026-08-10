@@ -5990,6 +5990,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'No report yet — the agent reports after its first meaningful change.';
 
   @override
+  String get goalDetailNotFound => 'This goal agent no longer exists.';
+
+  @override
   String get goalDetailTimelineTitle => 'Interactions';
 
   @override

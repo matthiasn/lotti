@@ -6093,6 +6093,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Ancora nessun report: l’agente riferirà al primo cambiamento rilevante.';
 
   @override
+  String get goalDetailNotFound =>
+      'Questo agente dell\'obiettivo non esiste più.';
+
+  @override
   String get goalDetailTimelineTitle => 'Interazioni';
 
   @override

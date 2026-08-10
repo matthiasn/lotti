@@ -6076,6 +6076,9 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ainda sem relatório — o agente reporta após a primeira mudança relevante.';
 
   @override
+  String get goalDetailNotFound => 'Este agente de meta não existe mais.';
+
+  @override
   String get goalDetailTimelineTitle => 'Interações';
 
   @override

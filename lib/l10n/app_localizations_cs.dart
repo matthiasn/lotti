@@ -6082,6 +6082,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zatím žádná zpráva — agent se ozve po první podstatné změně.';
 
   @override
+  String get goalDetailNotFound => 'Tento agent cíle už neexistuje.';
+
+  @override
   String get goalDetailTimelineTitle => 'Interakce';
 
   @override

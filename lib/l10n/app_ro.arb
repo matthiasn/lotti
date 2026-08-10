@@ -2555,6 +2555,7 @@
   "goalCreateValidationMissing": "Dați obiectivului un nume și cel puțin un criteriu.",
   "goalDetailHealthUnavailable": "Starea acestui obiectiv nu a putut fi încărcată momentan.",
   "goalDetailNoReport": "Încă nu există raport — agentul va raporta după prima schimbare relevantă.",
+  "goalDetailNotFound": "Acest agent de obiectiv nu mai există.",
   "goalDetailTimelineTitle": "Interacțiuni",
   "goalNudgeStatusDismissed": "Respins",
   "goalNudgeStatusExpired": "Expirat",

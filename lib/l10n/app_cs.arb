@@ -2562,6 +2562,7 @@
   "goalCreateValidationMissing": "Pojmenuj cíl a zadej alespoň jedno kritérium.",
   "goalDetailHealthUnavailable": "Zdraví tohoto cíle se teď nepodařilo načíst.",
   "goalDetailNoReport": "Zatím žádná zpráva — agent se ozve po první podstatné změně.",
+  "goalDetailNotFound": "Tento agent cíle už neexistuje.",
   "goalDetailTimelineTitle": "Interakce",
   "goalNudgeStatusDismissed": "Odmítnuto",
   "goalNudgeStatusExpired": "Vypršelo",

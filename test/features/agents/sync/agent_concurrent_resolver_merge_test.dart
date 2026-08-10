@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glados/glados.dart' as glados;
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -395,6 +396,54 @@ void main() {
           }
         },
         tags: 'glados',
+      );
+    });
+  });
+
+  group('goal progress — the newer spec version wins the shared row', () {
+    GoalProgressEntity register(String specVersionId) =>
+        AgentDomainEntity.goalProgress(
+              id: 'goal_progress:goal-1:2026-08-10',
+              agentId: 'goal-1',
+              periodKey: '2026-08-10',
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1,
+              dataCoverage: 1,
+              satisfied: true,
+              specVersionId: specVersionId,
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+
+    test('an offline v1 evaluation cannot replace the v2 row by LWW', () {
+      final v1 = register('goal-1:spec-v1');
+      final v2 = register('goal-1:spec-v2-9f2c1a08');
+      expect(
+        resolveConcurrentAgentEntityOverride(local: v2, incoming: v1),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(local: v1, incoming: v2),
+        ConcurrentWinner.incoming,
+      );
+    });
+
+    test('same or unparseable versions defer to LWW (null)', () {
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: register('goal-1:spec-v2-aa'),
+          incoming: register('goal-1:spec-v2-bb'),
+        ),
+        isNull,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: register('foreign-shape'),
+          incoming: register('goal-1:spec-v2-aa'),
+        ),
+        isNull,
       );
     });
   });

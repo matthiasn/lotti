@@ -1051,6 +1051,63 @@ void main() {
     });
   });
 
+  test('a late-synced banner from a superseded spec version is fenced by '
+      'its own provenance', () async {
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+    when(() => repository.getEntity(goalSpecHeadId('goal-a'))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId('goal-a'),
+        agentId: 'goal-a',
+        versionId: 'goal-a:spec-v2-aa',
+        updatedAt: DateTime(2026, 8, 10),
+        vectorClock: null,
+      ),
+    );
+    GoalNudgeEntity row(String id, Map<String, String> provenance) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-a',
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+              provenance: provenance,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        row('ad-old-spec', {'specVersionId': 'goal-a:spec-v1'}),
+        row('ad-current', {'specVersionId': 'goal-a:spec-v2-aa'}),
+        row('ad-legacy', const {}),
+      ],
+    );
+
+    final flagSub = container.listen(
+      configFlagProvider(enableAgentsPageFlag),
+      (_, _) {},
+    );
+    addTearDown(flagSub.close);
+    await container.read(configFlagProvider(enableAgentsPageFlag).future);
+    final entries = await container.read(activeGoalNudgesProvider.future);
+    expect(
+      {for (final e in entries) e.nudge.id},
+      {'ad-current', 'ad-legacy'},
+      reason:
+          'the old-spec banner is fenced; legacy rows without the '
+          'field still render',
+    );
+  });
+
   test('goalNudgeHistoryProvider lists only terminal outcomes, newest '
       'first — pipeline rows and failures stay internal', () async {
     GoalNudgeEntity row(String id, GoalNudgeStatus status, int day) =>

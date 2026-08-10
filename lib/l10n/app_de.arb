@@ -2555,6 +2555,7 @@
   "goalCreateValidationMissing": "Gib dem Ziel einen Namen und mindestens ein Kriterium.",
   "goalDetailHealthUnavailable": "Der Zustand dieses Ziels konnte gerade nicht geladen werden.",
   "goalDetailNoReport": "Noch kein Bericht — der Agent meldet sich nach der ersten relevanten Änderung.",
+  "goalDetailNotFound": "Diesen Ziel-Agenten gibt es nicht mehr.",
   "goalDetailTimelineTitle": "Interaktionen",
   "goalNudgeStatusDismissed": "Verworfen",
   "goalNudgeStatusExpired": "Abgelaufen",

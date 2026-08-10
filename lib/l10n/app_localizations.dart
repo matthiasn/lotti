@@ -10343,6 +10343,12 @@ abstract class AppLocalizations {
   /// **'No report yet — the agent reports after its first meaningful change.'**
   String get goalDetailNoReport;
 
+  /// No description provided for @goalDetailNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'This goal agent no longer exists.'**
+  String get goalDetailNotFound;
+
   /// Section title of the agent detail interaction timeline.
   ///
   /// In en, this message translates to:

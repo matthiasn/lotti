@@ -117,6 +117,22 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     if (byCreated == 0) return null;
     return byCreated < 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
   }
+  if (local is GoalProgressEntity && incoming is GoalProgressEntity) {
+    // Registers are keyed by (agent, period) only, so an offline v1
+    // evaluation and a v2 evaluation of the same day collide on one row.
+    // The row computed under the NEWER spec version wins — timestamp LWW
+    // could otherwise let the superseded evaluation hide current health.
+    final localVersion = _specVersionNumber(local.specVersionId);
+    final incomingVersion = _specVersionNumber(incoming.specVersionId);
+    if (localVersion != null &&
+        incomingVersion != null &&
+        localVersion != incomingVersion) {
+      return localVersion > incomingVersion
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
+    }
+    return null;
+  }
   if (local is GoalNudgeEntity && incoming is GoalNudgeEntity) {
     // Dismissal is terminal (ADR 0055): the user's "stop showing me this"
     // must not be revived by a concurrent re-activation or bookkeeping
@@ -162,6 +178,13 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     return null;
   }
   return null;
+}
+
+/// The ordinal in a spec version id (`agent:spec-v3-9f2c1a08` → 3), or
+/// null for foreign id shapes — those fall back to LWW.
+int? _specVersionNumber(String specVersionId) {
+  final match = RegExp(r'spec-v(\d+)').firstMatch(specVersionId);
+  return match == null ? null : int.tryParse(match.group(1)!);
 }
 
 const Set<GoalNudgeStatus> _terminalNudgeStatuses = {

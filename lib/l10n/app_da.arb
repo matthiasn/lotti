@@ -2805,6 +2805,7 @@
   "goalCreateValidationMissing": "Giv målet et navn og mindst ét kriterium.",
   "goalDetailHealthUnavailable": "Kunne ikke indlæse dette måls tilstand lige nu.",
   "goalDetailNoReport": "Ingen rapport endnu — agenten rapporterer efter den første relevante ændring.",
+  "goalDetailNotFound": "Denne målagent findes ikke længere.",
   "goalDetailTimelineTitle": "Interaktioner",
   "goalNudgeStatusDismissed": "Afvist",
   "goalNudgeStatusExpired": "Udløbet",

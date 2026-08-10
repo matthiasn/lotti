@@ -220,6 +220,39 @@ void main() {
     );
   });
 
+  test('a late-synced banner from a superseded spec is swept to '
+      'superseded on the next wake', () async {
+    stubSpec();
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.goalNudge(
+              id: 'ad-foreign-spec',
+              agentId: agentId,
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8, 5),
+              updatedAt: DateTime(2026, 8, 5),
+              vectorClock: null,
+              provenance: const {'specVersionId': '$agentId:spec-v0'},
+            )
+            as GoalNudgeEntity,
+      ],
+    );
+
+    await run(onTrackSignals());
+
+    final swept = upserts.whereType<GoalNudgeEntity>().single;
+    expect(swept.id, 'ad-foreign-spec');
+    expect(swept.status, GoalNudgeStatus.superseded);
+  });
+
   test('a goal without a spec head is a clean no-op', () async {
     final result = await run(onTrackSignals());
     expect(result.success, isTrue);

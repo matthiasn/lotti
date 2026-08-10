@@ -6023,6 +6023,9 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ingen rapport ännu — agenten rapporterar efter den första relevanta förändringen.';
 
   @override
+  String get goalDetailNotFound => 'Den här målagenten finns inte längre.';
+
+  @override
   String get goalDetailTimelineTitle => 'Interaktioner';
 
   @override

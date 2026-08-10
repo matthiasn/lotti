@@ -1011,7 +1011,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
         freshActiveExists = true;
         await _syncService.upsertEntity(
           AgentDomainEntity.goalNudge(
-            id: _uuid.v4(),
+            // Deterministic per escalation period: two devices that both
+            // win a partitioned lease and run the same escalation mint
+            // the SAME row and converge on one banner, instead of two
+            // random-id duplicates saturating the strip cap.
+            id: 'goal_nudge:$agentId:${derivation.periodKey}',
             agentId: agentId,
             status: GoalNudgeStatus.active,
             brief: brief,
@@ -1025,6 +1029,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
             reasonSummary: request.reasonSummary,
             staleAt: now.add(goalAdLifetime),
             activatedAt: now,
+            // The originating spec version: a banner syncing in AFTER
+            // the revision sweep carries its own fencing evidence.
+            provenance: {'specVersionId': derivation.version.id},
           ),
         );
       }

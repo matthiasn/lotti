@@ -6060,6 +6060,9 @@ class AppLocalizationsDe extends AppLocalizations {
       'Noch kein Bericht — der Agent meldet sich nach der ersten relevanten Änderung.';
 
   @override
+  String get goalDetailNotFound => 'Diesen Ziel-Agenten gibt es nicht mehr.';
+
+  @override
   String get goalDetailTimelineTitle => 'Interaktionen';
 
   @override

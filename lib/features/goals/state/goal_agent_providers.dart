@@ -260,6 +260,15 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
         if (identity.kind != AgentKinds.goalAgent) continue;
         ref.watch(agentUpdateStreamProvider(identity.agentId));
         final now = clock.now();
+        // A banner created under a superseded spec can sync in AFTER the
+        // revision sweep ran — its own provenance is the fence (Phase A
+        // also sweeps it to `superseded` on the next wake).
+        final head = await repository.getEntity(
+          goalSpecHeadId(identity.agentId),
+        );
+        final activeVersionId = head is GoalSpecHeadEntity
+            ? head.versionId
+            : null;
         final nudges =
             (await repository.getEntitiesByAgentId(
               identity.agentId,
@@ -268,10 +277,15 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
               // Staleness is a contract, not a hope (ADR 0055): an ad
               // past its deadline stops RENDERING immediately, even
               // though only a later Phase B wake retires the row.
-              (n) =>
-                  n.deletedAt == null &&
-                  n.status == GoalNudgeStatus.active &&
-                  (n.staleAt == null || now.isBefore(n.staleAt!)),
+              (n) {
+                final origin = n.provenance['specVersionId'];
+                return n.deletedAt == null &&
+                    n.status == GoalNudgeStatus.active &&
+                    (n.staleAt == null || now.isBefore(n.staleAt!)) &&
+                    (origin is! String ||
+                        activeVersionId == null ||
+                        origin == activeVersionId);
+              },
             );
         for (final nudge in nudges) {
           entries.add((nudge: nudge, goalTitle: identity.displayName));

@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_conversation_log.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -26,6 +28,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    final identityAsync = ref.watch(agentIdentityProvider(agentId));
     final healthAsync = ref.watch(goalAgentHealthProvider(agentId));
     // Stale-while-revalidate: `.value` keeps the last render across
     // background reloads; only a load that has never produced data gets
@@ -48,11 +51,37 @@ class GoalAgentDetailPage extends ConsumerWidget {
       },
       child: child,
     );
-    if (!healthAsync.hasValue && !healthAsync.hasError) {
+    if ((!healthAsync.hasValue && !healthAsync.hasError) ||
+        (!identityAsync.hasValue && !identityAsync.hasError)) {
       return popSafe(
         Scaffold(
           appBar: AppBar(leading: backToList, title: const Text('')),
           body: const Center(child: CircularProgressIndicator()),
+        ),
+      );
+    }
+    // A stale link or a foreign route: a missing agent (or one that is
+    // not a goal agent) is NOT healthy empty data — say so instead of
+    // mounting a blank page with proposals and history.
+    final identity = identityAsync.value;
+    if (identityAsync.hasValue &&
+        (identity is! AgentIdentityEntity ||
+            identity.kind != AgentKinds.goalAgent)) {
+      return popSafe(
+        Scaffold(
+          appBar: AppBar(leading: backToList, title: const Text('')),
+          body: Center(
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spacing.step5),
+              child: Text(
+                context.messages.goalDetailNotFound,
+                textAlign: TextAlign.center,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+            ),
+          ),
         ),
       );
     }
@@ -80,11 +109,16 @@ class GoalAgentDetailPage extends ConsumerWidget {
             ),
             children: [
               if (health?.trackStatus != null)
-                Row(
+                // Wrap, not Row: a long localized status plus the
+                // attainment label must fold to a second line under
+                // large text scales instead of overflowing.
+                Wrap(
+                  spacing: tokens.spacing.step3,
+                  runSpacing: tokens.spacing.step1,
+                  crossAxisAlignment: WrapCrossAlignment.center,
                   children: [
                     GoalStatusChip(status: health!.trackStatus!),
                     if (health.attainment != null) ...[
-                      SizedBox(width: tokens.spacing.step3),
                       Text(
                         context.messages.goalAttainmentLabel(
                           (health.attainment! * 100).round(),

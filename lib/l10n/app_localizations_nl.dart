@@ -6039,6 +6039,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Nog geen rapport — de agent rapporteert na de eerste relevante verandering.';
 
   @override
+  String get goalDetailNotFound => 'Deze doel-agent bestaat niet meer.';
+
+  @override
   String get goalDetailTimelineTitle => 'Interacties';
 
   @override

@@ -3274,6 +3274,7 @@
   "@goalDetailNoReport": {
     "description": "Placeholder when a goal agent has not written a report yet."
   },
+  "goalDetailNotFound": "This goal agent no longer exists.",
   "goalDetailTimelineTitle": "Interactions",
   "@goalDetailTimelineTitle": {
     "description": "Section title of the agent detail interaction timeline."

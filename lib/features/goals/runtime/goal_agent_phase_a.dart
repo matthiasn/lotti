@@ -78,7 +78,7 @@ class GoalAgentPhaseA {
     }
 
     await _rearmCadence(agentId, now);
-    await _expireStaleNudges(agentId, now);
+    await _expireStaleNudges(agentId, now, activeVersionId: version.id);
 
     final startDate = version.startDate;
     if (startDate != null &&
@@ -139,7 +139,11 @@ class GoalAgentPhaseA {
   /// `expiredAt` is the deadline itself (not this device's wall clock),
   /// and the resolver's terminal dominance makes concurrent sweeps
   /// converge.
-  Future<void> _expireStaleNudges(String agentId, DateTime now) async {
+  Future<void> _expireStaleNudges(
+    String agentId,
+    DateTime now, {
+    required String activeVersionId,
+  }) async {
     // Read and write in ONE transaction: a dismissal landing between a
     // pre-read and the expiry write would be erased by the stale
     // snapshot — and a same-host overwrite carries a newer vector clock,
@@ -151,13 +155,24 @@ class GoalAgentPhaseA {
         type: AgentEntityTypes.goalNudge,
       )).whereType<GoalNudgeEntity>();
       for (final nudge in nudges) {
-        final staleAt = nudge.staleAt;
-        if (nudge.deletedAt != null ||
-            nudge.status != GoalNudgeStatus.active ||
-            staleAt == null ||
-            staleAt.isAfter(now)) {
+        if (nudge.deletedAt != null || nudge.status != GoalNudgeStatus.active) {
           continue;
         }
+        // A banner that synced in AFTER the revision sweep carries the
+        // superseded spec in its provenance — sweep it here, the same
+        // deterministic maintenance that expires overdue rows.
+        final originVersion = nudge.provenance['specVersionId'];
+        if (originVersion is String && originVersion != activeVersionId) {
+          await _syncService.upsertEntity(
+            nudge.copyWith(
+              status: GoalNudgeStatus.superseded,
+              updatedAt: now,
+            ),
+          );
+          continue;
+        }
+        final staleAt = nudge.staleAt;
+        if (staleAt == null || staleAt.isAfter(now)) continue;
         await _syncService.upsertEntity(
           nudge.copyWith(
             status: GoalNudgeStatus.expired,
