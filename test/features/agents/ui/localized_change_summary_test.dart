@@ -778,6 +778,15 @@ void main() {
       );
     });
 
+    test('tiny fractional targets keep their precision at the gate', () {
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'targetValue': 0.0001},
+        }),
+        'Change the target to 0.0001',
+      );
+    });
+
     test('an empty or malformed changes map falls back to the persisted '
         'summary (null)', () {
       expect(

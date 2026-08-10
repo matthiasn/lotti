@@ -55,6 +55,12 @@ void main() {
     });
     when(() => orchestrator.addSubscription(any())).thenReturn(null);
     when(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+      ),
+    ).thenReturn('run-initial');
+    when(
       () => agentService.createAgent(
         kind: any(named: 'kind'),
         displayName: any(named: 'displayName'),
@@ -124,6 +130,15 @@ void main() {
 
     final cadence = upserts.whereType<ScheduledWakeEntity>().single;
     expect(cadence.workspaceKey, goalCadenceWorkspaceKey);
+
+    // The just-created goal is evaluated immediately — no day-long blank
+    // health while waiting for the next cadence tick.
+    verify(
+      () => orchestrator.enqueueManualWake(
+        agentId: agentId,
+        reason: any(named: 'reason'),
+      ),
+    ).called(1);
 
     final subscription =
         verify(() => orchestrator.addSubscription(captureAny())).captured.single

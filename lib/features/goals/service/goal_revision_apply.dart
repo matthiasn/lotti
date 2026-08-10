@@ -144,8 +144,9 @@ GoalRevisionResult applyGoalRevisionChanges({
       if (windowUnit == null || statedUnit != windowUnit) {
         return GoalRevisionRejected(
           'the cadence names "per $statedUnit" but the habit is evaluated '
-          'per ${windowUnit ?? 'rolling window'} — propose a period change '
-          'together with the count to move the window',
+          'per ${windowUnit ?? 'rolling window'} — propose the count per '
+          "${windowUnit ?? 'window'} instead (moving a habit's window is "
+          'not a supported revision)',
         );
       }
     }

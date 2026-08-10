@@ -156,10 +156,22 @@ class GoalAgentWorkflow with AgentErrorLogging {
       shortTermAttainment: derivation.facts.shortTermAttainment,
     );
 
-    final nudges = (await _repository.getEntitiesByAgentId(
-      agentId,
-      type: AgentEntityTypes.goalNudge,
-    )).whereType<GoalNudgeEntity>().where((n) => n.deletedAt == null).toList();
+    // Spec-scoped like the persistence snapshot: an old-spec fresh
+    // active must not convince _adRequired that the current goal is
+    // covered, and an old-spec retired row must not be offered for
+    // rerun. Dismissals pass — the quiet window binds the goal.
+    final nudges =
+        (await _repository.getEntitiesByAgentId(
+              agentId,
+              type: AgentEntityTypes.goalNudge,
+            ))
+            .whereType<GoalNudgeEntity>()
+            .where(
+              (n) =>
+                  n.deletedAt == null &&
+                  _specScopedRow(n, (version! as GoalSpecVersionEntity).id),
+            )
+            .toList();
     final observations = await _recentObservationTexts(agentId);
 
     final factsBlock = _factsRenderer.render(
@@ -771,18 +783,18 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // late must not satisfy the fresh-active guard and suppress the
       // current goal's banner (dismissals stay visible regardless — the
       // quiet window is the goal's, not one spec version's).
-      final nudges =
+      final allRows =
           (await _repository.getEntitiesByAgentId(
                 agentId,
                 type: AgentEntityTypes.goalNudge,
               ))
               .whereType<GoalNudgeEntity>()
-              .where(
-                (n) =>
-                    n.deletedAt == null &&
-                    _specScopedRow(n, derivation.version.id),
-              )
+              .where((n) => n.deletedAt == null)
               .toList();
+      final nudges = [
+        for (final nudge in allRows)
+          if (_specScopedRow(nudge, derivation.version.id)) nudge,
+      ];
       final byId = {for (final nudge in nudges) nudge.id: nudge};
 
       // Thought (final assistant prose — dialogue turns land here too).
@@ -1004,8 +1016,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // one row, while a same-period retire-and-create swap sees the
       // earlier row and mints ordinal 1 — never recycling (and wiping)
       // the retired row's history and counters.
+      // Counted over ALL same-period rows (not the spec-scoped view): a
+      // superseded v1 banner still owns ordinal 0, and recycling its id
+      // would wipe its ratings, counters and terminal history.
       final periodIdPrefix = 'goal_nudge:$agentId:${derivation.periodKey}:';
-      var periodOrdinal = nudges
+      var periodOrdinal = allRows
           .where((n) => n.id.startsWith(periodIdPrefix))
           .length;
       for (final request in strategy.createdAds) {

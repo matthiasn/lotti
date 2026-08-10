@@ -483,7 +483,11 @@ String? _goalRevision(AppLocalizations messages, Map<String, dynamic> args) {
 String _localizedTarget(AppLocalizations messages, Object? value) {
   final number = value is num ? value : num.tryParse('$value');
   if (number == null) return '$value';
-  return NumberFormat.decimalPattern(messages.localeName).format(number);
+  // Enough fraction digits that the gate never describes a different
+  // target than the one approval persists (decimalPattern rounds at 3).
+  final format = NumberFormat.decimalPattern(messages.localeName)
+    ..maximumFractionDigits = 10;
+  return format.format(number);
 }
 
 /// The model's window phrase ("rolling 14 days") re-rendered in the

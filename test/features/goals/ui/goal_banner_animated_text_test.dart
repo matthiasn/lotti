@@ -223,4 +223,28 @@ void main() {
     expect(semantics.label, 'Your inner couch potato is winning.');
     await tester.pumpWidget(const SizedBox.shrink());
   });
+
+  testWidgets('a preset swap under the same element resyncs the '
+      'controller — synced rows keep animating (or stop)', (tester) async {
+    await tester.pumpWidget(host(GoalBannerAnimation.steady));
+    await tester.pump();
+    expect(tester.hasRunningAnimations, isFalse);
+
+    await tester.pumpWidget(host(GoalBannerAnimation.pulse));
+    await tester.pump(const Duration(milliseconds: 50));
+    expect(
+      tester.hasRunningAnimations,
+      isTrue,
+      reason: 'steady→pulse must start the stopped controller',
+    );
+
+    await tester.pumpWidget(host(GoalBannerAnimation.steady));
+    await tester.pump();
+    expect(
+      tester.hasRunningAnimations,
+      isFalse,
+      reason: 'pulse→steady must stop the invisible controller',
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

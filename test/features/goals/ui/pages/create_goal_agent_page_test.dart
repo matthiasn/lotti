@@ -332,4 +332,37 @@ void main() {
       ),
     );
   });
+
+  testWidgets('a conventionally grouped step target parses through the '
+      'active locale instead of collapsing to the group prefix', (
+    tester,
+  ) async {
+    num? captured;
+    when(
+      () => service.createGoalAgent(
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((invocation) async {
+      captured =
+          ((invocation.namedArguments[#criteria] as GoalCriterion)
+                  as GoalCriterionMetric)
+              .target;
+      throw StateError('stop before navigation');
+    });
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Steps');
+    // The English harness locale groups with commas.
+    await tester.enterText(find.byType(TextField).last, '10,000');
+    await tester.tap(find.text('Create agent'));
+    await tester.pumpAndSettle();
+    expect(captured, 10000);
+  });
 }

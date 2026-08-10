@@ -131,6 +131,14 @@ class GoalAgentService {
     }
 
     registerSignalSubscription(identity.agentId, criteria);
+    // One immediate deterministic evaluation: a goal created after the
+    // cadence hour would otherwise show no register or health for up to
+    // a day if its signals never change (the subscription only fires on
+    // NEW writes). Phase A over existing journal data is €0.
+    _orchestrator.enqueueManualWake(
+      agentId: identity.agentId,
+      reason: 'goal created',
+    );
     return identity;
   }
 

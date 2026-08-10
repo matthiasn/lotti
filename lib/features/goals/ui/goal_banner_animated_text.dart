@@ -73,6 +73,19 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
+    _syncController();
+  }
+
+  @override
+  void didUpdateWidget(GoalBannerAnimatedText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync can swap the preset under the SAME element (deterministic row
+    // id, unchanged key): a steady→pulse update must start the stopped
+    // controller, and the reverse must stop the invisible one.
+    if (oldWidget.animation != widget.animation) _syncController();
+  }
+
+  void _syncController() {
     final reduced = MediaQuery.disableAnimationsOf(context);
     final animated = !reduced && widget.animation != GoalBannerAnimation.steady;
     if (animated && !_controller.isAnimating) {

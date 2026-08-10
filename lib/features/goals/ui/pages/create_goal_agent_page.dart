@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -44,10 +45,25 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     super.dispose();
   }
 
+  /// The conventional grouped form ("10.000" in German, "10,000" in
+  /// English) must not silently collapse to ten — the field is localized
+  /// input, so the active locale's separators decide.
+  num? _parseLocalizedTarget(String raw) {
+    final text = raw.trim();
+    if (text.isEmpty) return null;
+    try {
+      return NumberFormat.decimalPattern(
+        context.messages.localeName,
+      ).parse(text);
+    } on FormatException {
+      return num.tryParse(text);
+    }
+  }
+
   GoalCriterion? _buildCriteria() {
     switch (_kind) {
       case _GoalKind.steps:
-        final target = num.tryParse(_stepsTarget.text.trim());
+        final target = _parseLocalizedTarget(_stepsTarget.text);
         if (target == null || target <= 0) return null;
         return GoalCriterion.metric(
           criterionId: 'steps',
