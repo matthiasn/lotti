@@ -10,6 +10,8 @@ class GoalCriterionResult {
     required this.satisfied,
     required this.sampleCount,
     this.paceFeasible,
+    this.deficit,
+    this.buffer,
   });
 
   /// The node this result belongs to (`GoalCriterion.criterionId`).
@@ -38,6 +40,22 @@ class GoalCriterionResult {
   /// success per day). Null when pace is not applicable (rolling windows,
   /// metric leaves, already satisfied).
   final bool? paceFeasible;
+
+  /// Rolling-window habit leaves (and `allOf` routines of them): the
+  /// days-to-recovery — the fewest days of perfect adherence to bring the
+  /// rolling count back to target, SIMULATING the window sliding forward
+  /// (each future success day also ages the oldest in-window success out, so
+  /// this can exceed `target - successesInWindow`). `0` means at or above
+  /// rate; `target` means the window is empty (a restart, the warmest
+  /// register). Null for metric/measurable leaves and calendar windows.
+  final int? deficit;
+
+  /// Rolling-window habit leaves at or above rate (deficit 0): the number of
+  /// days until the count would drop below target if no new success arrives —
+  /// the aging day of the critical `(creditable - target)`-th oldest success.
+  /// `0` means a success expires at the next midnight. Null when below rate,
+  /// or not a rolling habit leaf.
+  final int? buffer;
 }
 
 /// Result of evaluating a whole criteria tree for one period.
@@ -48,6 +66,8 @@ class GoalEvaluation {
     required this.dataCoverage,
     required this.results,
     this.paceFeasible,
+    this.deficit,
+    this.buffer,
   });
 
   /// Overall progress 0..1 (composite fold of leaf ratios).
@@ -67,4 +87,16 @@ class GoalEvaluation {
 
   /// Combined pace feasibility (see [GoalCriterionResult.paceFeasible]).
   final bool? paceFeasible;
+
+  /// The root criterion's days-to-recovery, when the root is a rolling-window
+  /// habit leaf (see [GoalCriterionResult.deficit]). Null for composites,
+  /// metric leaves and calendar windows — the goal-level surfaces only lift a
+  /// single-leaf goal's deficit; a composite's per-leaf deficits stay in
+  /// [results].
+  final int? deficit;
+
+  /// The root criterion's buffer when at rate (see
+  /// [GoalCriterionResult.buffer]). Null under the same conditions as
+  /// [deficit].
+  final int? buffer;
 }

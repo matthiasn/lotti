@@ -5999,6 +5999,18 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dages buffer',
+      one: '1 dags buffer',
+      zero: 'Buffer slutter i dag',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get goalCoarseHealthBehind => 'Bagud';
 
   @override
@@ -6014,11 +6026,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Gange om ugen (pr. vane)';
+  String get goalCreateHabitCountLabel => 'Gange pr. 7 dage (hver vane)';
 
   @override
-  String get goalCreateHabitCountRange =>
-      'Det ugentlige antal skal være mellem 1 og 7.';
+  String get goalCreateHabitCountRange => 'Antallet skal være mellem 1 og 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Vaner at følge';
@@ -6048,6 +6059,17 @@ class AppLocalizationsDa extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Giv målet et navn og mindst ét kriterium.';
+
+  @override
+  String goalDaysToRecover(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dage til at komme på ret køl',
+      one: '1 dag til at komme på ret køl',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalDetailHealthUnavailable =>

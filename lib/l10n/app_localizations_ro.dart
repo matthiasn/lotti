@@ -6096,6 +6096,19 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de zile de rezervă',
+      few: '$count zile de rezervă',
+      one: '1 zi de rezervă',
+      zero: 'Rezerva se termină azi',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get goalCoarseHealthBehind => 'În urmă';
 
   @override
@@ -6113,11 +6126,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalCreateHabitCountLabel =>
-      'De câte ori pe săptămână (fiecare obicei)';
+      'De câte ori în 7 zile (fiecare obicei)';
 
   @override
   String get goalCreateHabitCountRange =>
-      'Numărul săptămânal trebuie să fie între 1 și 7.';
+      'Numărul trebuie să fie între 1 și 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Obiceiuri de urmărit';
@@ -6147,6 +6160,18 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Dați obiectivului un nume și cel puțin un criteriu.';
+
+  @override
+  String goalDaysToRecover(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count de zile până la revenire',
+      few: '$count zile până la revenire',
+      one: '1 zi până la revenire',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalDetailHealthUnavailable =>

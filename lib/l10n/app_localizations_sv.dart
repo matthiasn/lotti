@@ -6003,6 +6003,18 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagars marginal',
+      one: '1 dags marginal',
+      zero: 'Marginalen tar slut idag',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get goalCoarseHealthBehind => 'Ligger efter';
 
   @override
@@ -6018,11 +6030,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalCreateFailed => 'Målet kunde inte sparas — försök igen.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Gånger per vecka (per vana)';
+  String get goalCreateHabitCountLabel => 'Gånger per 7 dagar (varje vana)';
 
   @override
-  String get goalCreateHabitCountRange =>
-      'Veckoantalet måste vara mellan 1 och 7.';
+  String get goalCreateHabitCountRange => 'Antalet måste vara mellan 1 och 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Vanor att följa';
@@ -6052,6 +6063,17 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Ge målet ett namn och minst ett kriterium.';
+
+  @override
+  String goalDaysToRecover(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dagar för att komma ikapp',
+      one: '1 dag för att komma ikapp',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalDetailHealthUnavailable =>

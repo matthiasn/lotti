@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 
@@ -285,6 +286,100 @@ void main() {
     });
   });
 
+  group('rolling-window habit leaf — deficit and buffer', () {
+    // Rolling 7 ending Saturday d(8): the window is d(2)..d(8).
+    const gym = GoalCriterion.habit(
+      criterionId: 'gym',
+      habitId: 'gym-habit',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 3,
+    );
+    GoalSignalWindow days(Map<DateTime, int> byDay) =>
+        GoalSignalWindow(habitSuccessesByDay: {'gym-habit': byDay});
+    GoalCriterionResult leafFor(Map<DateTime, int> byDay) =>
+        evaluator.evaluate(gym, days(byDay), saturday).results['gym']!;
+
+    test('an empty window is a full deficit (= target) — a restart, not a '
+        'verdict; no buffer', () {
+      final leaf = leafFor(const {});
+      expect(leaf.deficit, 3);
+      expect(leaf.satisfied, isFalse);
+      expect(leaf.ratio, 0);
+      expect(leaf.buffer, isNull);
+    });
+
+    test('one short of target reads deficit 1', () {
+      final leaf = leafFor({d(4): 1, d(6): 1});
+      expect(leaf.deficit, 1);
+      expect(leaf.satisfied, isFalse);
+    });
+
+    test('a single-leaf goal lifts the leaf deficit/buffer to the evaluation '
+        'root — what the register persists and the list surfaces', () {
+      final behind = evaluator.evaluate(
+        gym,
+        days({d(4): 1, d(6): 1}),
+        saturday,
+      );
+      expect(behind.deficit, 1);
+      expect(behind.buffer, isNull);
+
+      final atRate = evaluator.evaluate(
+        gym,
+        days({d(4): 1, d(6): 1, d(8): 1}),
+        saturday,
+      );
+      expect(atRate.deficit, 0);
+      expect(atRate.buffer, 2);
+    });
+
+    test('exactly at target: deficit 0, and buffer is days until the OLDEST '
+        'success ages out — 0 when it sits on the window edge', () {
+      // Successes on d(2) (the window start), d(4), d(6).
+      final leaf = leafFor({d(2): 1, d(4): 1, d(6): 1});
+      expect(leaf.deficit, 0);
+      expect(leaf.satisfied, isTrue);
+      expect(leaf.buffer, 0, reason: 'the d(2) success ages out tonight');
+    });
+
+    test('exactly at target with the oldest success two days into the '
+        'window: buffer 2', () {
+      final leaf = leafFor({d(4): 1, d(6): 1, d(8): 1});
+      expect(leaf.deficit, 0);
+      expect(leaf.buffer, 2, reason: 'd(4) is two days past the d(2) edge');
+    });
+
+    test(
+      'above target computes a LARGER buffer — losing the oldest still '
+      'leaves it satisfied; the count drops when the critical success ages',
+      () {
+        // Four successes, target 3. Losing d(2) still leaves 3; the count drops
+        // below target when d(4) — the critical (creditable - target)-th oldest
+        // — ages out, two days from the d(2) edge.
+        final leaf = leafFor({d(2): 1, d(4): 1, d(6): 1, d(8): 1});
+        expect(leaf.deficit, 0);
+        expect(leaf.buffer, 2);
+      },
+    );
+
+    test('recovery days SIMULATE the sliding window — an old success at the '
+        'left edge is not worth one day of recovery', () {
+      // target 3, successes on the window-start day d(2) and yesterday d(7):
+      // succeeding tomorrow ages d(2) out, so the count stays 2, not 3. Two
+      // days of perfect adherence are needed, not the static one.
+      final leaf = leafFor({d(2): 1, d(7): 1});
+      expect(leaf.actual, 2);
+      expect(leaf.deficit, 2);
+    });
+
+    test('multiple completions on one day are ONE creditable day', () {
+      // Rolling counts days, not raw completions (unlike the calendar path).
+      final leaf = leafFor({d(3): 2, d(5): 1});
+      expect(leaf.actual, 2);
+      expect(leaf.deficit, 1);
+    });
+  });
+
   group('composites', () {
     const halfMetric = GoalCriterion.metric(
       criterionId: 'half',
@@ -511,6 +606,56 @@ void main() {
         throwsArgumentError,
       );
     });
+
+    test('an allOf routine of rolling habits aggregates the hints: worst '
+        'child deficit, and — only when every child is at rate — the first '
+        'buffer to run out', () {
+      GoalSignalWindow world(Map<String, Map<DateTime, int>> byHabit) =>
+          GoalSignalWindow(habitSuccessesByDay: byHabit);
+      const routine = GoalCriterion.allOf(
+        criterionId: 'routine',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'a',
+            habitId: 'a-habit',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'b',
+            habitId: 'b-habit',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+        ],
+      );
+
+      // A behind: deficit 1 (2 of 3). B at rate: deficit 0, buffer 2. The
+      // routine takes the WORST deficit and NO buffer (a child is behind).
+      final behind = evaluator.evaluate(
+        routine,
+        world({
+          'a-habit': {d(4): 1, d(6): 1},
+          'b-habit': {d(4): 1, d(6): 1, d(8): 1},
+        }),
+        saturday,
+      );
+      expect(behind.deficit, 1);
+      expect(behind.buffer, isNull);
+
+      // Both at rate: A buffer 2 (d(4)), B buffer 0 (d(2) edge). The routine
+      // loses rate when the FIRST runs out → buffer 0.
+      final atRate = evaluator.evaluate(
+        routine,
+        world({
+          'a-habit': {d(4): 1, d(6): 1, d(8): 1},
+          'b-habit': {d(2): 1, d(4): 1, d(6): 1},
+        }),
+        saturday,
+      );
+      expect(atRate.deficit, 0);
+      expect(atRate.buffer, 0);
+    });
   });
 
   group('shortTermAttainment', () {
@@ -602,6 +747,38 @@ void main() {
         evaluator.shortTermAttainment(criterion, signals, saturday),
         closeTo(0.9, 1e-9),
       );
+    });
+
+    test('a rolling habit leaf contributes its recent slice — three strong '
+        'recent days read as a full turnaround', () {
+      const gym = GoalCriterion.habit(
+        criterionId: 'gym',
+        habitId: 'gym-habit',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 7, // every day over the trailing week
+      );
+      final signals = GoalSignalWindow(
+        habitSuccessesByDay: {
+          'gym-habit': {d(6): 1, d(7): 1, d(8): 1},
+        },
+      );
+      // shortTarget = 7 * 3 / 7 = 3; three creditable days → 1.0.
+      expect(evaluator.shortTermAttainment(gym, signals, saturday), 1.0);
+    });
+
+    test('a calendar-week habit still has no short-term slice', () {
+      const gym = GoalCriterion.habit(
+        criterionId: 'gym',
+        habitId: 'gym-habit',
+        window: GoalWindow.calendarWeek(),
+        targetCount: 3,
+      );
+      final signals = GoalSignalWindow(
+        habitSuccessesByDay: {
+          'gym-habit': {d(8): 1},
+        },
+      );
+      expect(evaluator.shortTermAttainment(gym, signals, saturday), isNull);
     });
   });
 }

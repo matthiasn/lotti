@@ -6063,6 +6063,19 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dní rezervy',
+      few: '$count dny rezervy',
+      one: '1 den rezervy',
+      zero: 'Rezerva dnes končí',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get goalCoarseHealthBehind => 'Pozadu';
 
   @override
@@ -6078,10 +6091,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCreateFailed => 'Cíl se nepodařilo uložit — zkus to znovu.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Krát týdně (každý návyk)';
+  String get goalCreateHabitCountLabel =>
+      'Kolikrát za 7 dní (u každého návyku)';
 
   @override
-  String get goalCreateHabitCountRange => 'Týdenní počet musí být mezi 1 a 7.';
+  String get goalCreateHabitCountRange => 'Počet musí být mezi 1 a 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Sledované návyky';
@@ -6111,6 +6125,18 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Pojmenuj cíl a zadej alespoň jedno kritérium.';
+
+  @override
+  String goalDaysToRecover(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dní do zotavení',
+      few: '$count dny do zotavení',
+      one: '1 den do zotavení',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalDetailHealthUnavailable =>

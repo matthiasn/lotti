@@ -10301,6 +10301,12 @@ abstract class AppLocalizations {
   /// **'Goal banner for {goalTitle}'**
   String goalBannerSemanticLabel(String goalTitle);
 
+  /// Rolling-window goal at rate: days until the oldest success ages out.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{Buffer runs out today} =1{1 day of buffer} other{{count} days of buffer}}'**
+  String goalBufferDays(int count);
+
   /// Coarse goal-health chip label: behind and every remaining day matters
   ///
   /// In en, this message translates to:
@@ -10334,13 +10340,13 @@ abstract class AppLocalizations {
   /// Label of the per-habit weekly completion target.
   ///
   /// In en, this message translates to:
-  /// **'Times per week (each habit)'**
+  /// **'Times per 7 days (each habit)'**
   String get goalCreateHabitCountLabel;
 
   /// No description provided for @goalCreateHabitCountRange.
   ///
   /// In en, this message translates to:
-  /// **'The weekly count must be between 1 and 7.'**
+  /// **'The count must be between 1 and 7.'**
   String get goalCreateHabitCountRange;
 
   /// Label of the multi-select habit picker on the goal form.
@@ -10396,6 +10402,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Give the goal a name and at least one criterion.'**
   String get goalCreateValidationMissing;
+
+  /// Rolling-window goal behind target: days-to-recovery (creditable days needed).
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day to recover} other{{count} days to recover}}'**
+  String goalDaysToRecover(int count);
 
   /// No description provided for @goalDetailHealthUnavailable.
   ///

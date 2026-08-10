@@ -3259,6 +3259,15 @@
       }
     }
   },
+  "goalBufferDays": "{count, plural, =0{Buffer runs out today} =1{1 day of buffer} other{{count} days of buffer}}",
+  "@goalBufferDays": {
+    "description": "Rolling-window goal at rate: days until the oldest success ages out.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "goalCoarseHealthBehind": "Behind",
   "@goalCoarseHealthBehind": {
     "description": "Coarse goal-health chip label: behind and every remaining day matters"
@@ -3279,11 +3288,11 @@
   "@goalCreateFailed": {
     "description": "Shown when persisting a new goal agent throws (validation already passed)."
   },
-  "goalCreateHabitCountLabel": "Times per week (each habit)",
+  "goalCreateHabitCountLabel": "Times per 7 days (each habit)",
   "@goalCreateHabitCountLabel": {
     "description": "Label of the per-habit weekly completion target."
   },
-  "goalCreateHabitCountRange": "The weekly count must be between 1 and 7.",
+  "goalCreateHabitCountRange": "The count must be between 1 and 7.",
   "goalCreateHabitsLabel": "Habits to watch",
   "@goalCreateHabitsLabel": {
     "description": "Label of the multi-select habit picker on the goal form."
@@ -3316,6 +3325,15 @@
   "goalCreateValidationMissing": "Give the goal a name and at least one criterion.",
   "@goalCreateValidationMissing": {
     "description": "Validation message on the goal creation form."
+  },
+  "goalDaysToRecover": "{count, plural, =1{1 day to recover} other{{count} days to recover}}",
+  "@goalDaysToRecover": {
+    "description": "Rolling-window goal behind target: days-to-recovery (creditable days needed).",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
   },
   "goalDetailHealthUnavailable": "Couldn't load this goal's health right now.",
   "goalDetailNoReport": "No report yet — the agent reports after its first meaningful change.",

@@ -76,6 +76,8 @@ void main() {
               pendingProposals: 0,
               spec: spec,
               direction: null,
+              deficit: null,
+              buffer: null,
             ),
           ),
           selfTargetedPendingChangeSetsProvider(
@@ -132,6 +134,8 @@ void main() {
               pendingProposals: 0,
               spec: null,
               direction: null,
+              deficit: null,
+              buffer: null,
             ),
           ),
           selfTargetedPendingChangeSetsProvider(
@@ -230,6 +234,8 @@ void main() {
               pendingProposals: 0,
               spec: null,
               direction: null,
+              deficit: null,
+              buffer: null,
             ),
           ),
           activeGoalNudgesProvider.overrideWith(
@@ -301,6 +307,8 @@ void main() {
                 pendingProposals: 0,
                 spec: null,
                 direction: null,
+                deficit: null,
+                buffer: null,
               ),
             ),
             activeGoalNudgesProvider.overrideWith(
@@ -406,6 +414,8 @@ void main() {
               pendingProposals: 0,
               spec: null,
               direction: null,
+              deficit: null,
+              buffer: null,
             ),
           ),
           goalNudgeHistoryProvider(
@@ -448,6 +458,8 @@ void main() {
               pendingProposals: 0,
               spec: null,
               direction: null,
+              deficit: null,
+              buffer: null,
             ),
           ),
           selfTargetedPendingChangeSetsProvider(
@@ -498,6 +510,8 @@ void main() {
               pendingProposals: 0,
               spec: null,
               direction: null,
+              deficit: null,
+              buffer: null,
             ),
           ),
         ],

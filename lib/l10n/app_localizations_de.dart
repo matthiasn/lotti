@@ -6039,6 +6039,18 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Tage Puffer',
+      one: '1 Tag Puffer',
+      zero: 'Puffer endet heute',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get goalCoarseHealthBehind => 'Im Rückstand';
 
   @override
@@ -6055,11 +6067,11 @@ class AppLocalizationsDe extends AppLocalizations {
       'Das Ziel konnte nicht gespeichert werden — versuch es noch einmal.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Mal pro Woche (je Gewohnheit)';
+  String get goalCreateHabitCountLabel => 'Mal pro 7 Tage (je Gewohnheit)';
 
   @override
   String get goalCreateHabitCountRange =>
-      'Die wöchentliche Anzahl muss zwischen 1 und 7 liegen.';
+      'Die Anzahl muss zwischen 1 und 7 liegen.';
 
   @override
   String get goalCreateHabitsLabel => 'Zu beobachtende Gewohnheiten';
@@ -6089,6 +6101,17 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Gib dem Ziel einen Namen und mindestens ein Kriterium.';
+
+  @override
+  String goalDaysToRecover(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count Tage bis zur Erholung',
+      one: '1 Tag bis zur Erholung',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalDetailHealthUnavailable =>
