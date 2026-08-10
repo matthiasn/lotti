@@ -6129,6 +6129,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interacțiuni';
 
   @override
+  String get goalDockJustNow => 'chiar acum';
+
+  @override
   String get goalNudgeStatusDismissed => 'Respins';
 
   @override

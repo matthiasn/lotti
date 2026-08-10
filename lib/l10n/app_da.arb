@@ -2808,6 +2808,7 @@
   "goalDetailNoReport": "Ingen rapport endnu — agenten rapporterer efter den første relevante ændring.",
   "goalDetailNotFound": "Denne målagent findes ikke længere.",
   "goalDetailTimelineTitle": "Interaktioner",
+  "goalDockJustNow": "lige nu",
   "goalNudgeStatusDismissed": "Afvist",
   "goalNudgeStatusExpired": "Udløbet",
   "goalNudgeStatusRetired": "Trukket tilbage",

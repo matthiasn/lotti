@@ -2565,6 +2565,7 @@
   "goalDetailNoReport": "Zatím žádná zpráva — agent se ozve po první podstatné změně.",
   "goalDetailNotFound": "Tento agent cíle už neexistuje.",
   "goalDetailTimelineTitle": "Interakce",
+  "goalDockJustNow": "právě teď",
   "goalNudgeStatusDismissed": "Odmítnuto",
   "goalNudgeStatusExpired": "Vypršelo",
   "goalNudgeStatusRetired": "Staženo",

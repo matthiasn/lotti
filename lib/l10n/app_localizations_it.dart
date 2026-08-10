@@ -6105,6 +6105,9 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interazioni';
 
   @override
+  String get goalDockJustNow => 'proprio ora';
+
+  @override
   String get goalNudgeStatusDismissed => 'Ignorato';
 
   @override

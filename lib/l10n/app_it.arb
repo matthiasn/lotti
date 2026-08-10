@@ -2808,6 +2808,7 @@
   "goalDetailNoReport": "Ancora nessun report: l’agente riferirà al primo cambiamento rilevante.",
   "goalDetailNotFound": "Questo agente dell'obiettivo non esiste più.",
   "goalDetailTimelineTitle": "Interazioni",
+  "goalDockJustNow": "proprio ora",
   "goalNudgeStatusDismissed": "Ignorato",
   "goalNudgeStatusExpired": "Scaduto",
   "goalNudgeStatusRetired": "Ritirato",

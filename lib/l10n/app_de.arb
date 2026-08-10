@@ -2558,6 +2558,7 @@
   "goalDetailNoReport": "Noch kein Bericht — der Agent meldet sich nach der ersten relevanten Änderung.",
   "goalDetailNotFound": "Diesen Ziel-Agenten gibt es nicht mehr.",
   "goalDetailTimelineTitle": "Interaktionen",
+  "goalDockJustNow": "gerade eben",
   "goalNudgeStatusDismissed": "Verworfen",
   "goalNudgeStatusExpired": "Abgelaufen",
   "goalNudgeStatusRetired": "Zurückgezogen",

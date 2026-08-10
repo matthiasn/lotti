@@ -6030,6 +6030,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interaktioner';
 
   @override
+  String get goalDockJustNow => 'lige nu';
+
+  @override
   String get goalNudgeStatusDismissed => 'Afvist';
 
   @override

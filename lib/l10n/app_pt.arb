@@ -2807,6 +2807,7 @@
   "goalDetailNoReport": "Ainda sem relatório — o agente reporta após a primeira mudança relevante.",
   "goalDetailNotFound": "Este agente de meta não existe mais.",
   "goalDetailTimelineTitle": "Interações",
+  "goalDockJustNow": "agora mesmo",
   "goalNudgeStatusDismissed": "Dispensado",
   "goalNudgeStatusExpired": "Expirado",
   "goalNudgeStatusRetired": "Retirado",

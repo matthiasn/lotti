@@ -3287,6 +3287,10 @@
   "@goalDetailTimelineTitle": {
     "description": "Section title of the agent detail interaction timeline."
   },
+  "goalDockJustNow": "just now",
+  "@goalDockJustNow": {
+    "description": "Freshness marker on the goal dock caption when a completion acknowledgment just took the slot"
+  },
   "goalNudgeStatusDismissed": "Dismissed",
   "goalNudgeStatusExpired": "Expired",
   "goalNudgeStatusRetired": "Retired",
