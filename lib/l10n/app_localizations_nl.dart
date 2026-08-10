@@ -6046,11 +6046,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Het doel kon niet worden opgeslagen — probeer het opnieuw.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Keer per week (per gewoonte)';
+  String get goalCreateHabitCountLabel => 'Keer per 7 dagen (per gewoonte)';
 
   @override
   String get goalCreateHabitCountRange =>
-      'Het wekelijkse aantal moet tussen 1 en 7 liggen.';
+      'Het aantal moet tussen 1 en 7 liggen.';
 
   @override
   String get goalCreateHabitsLabel => 'Te volgen gewoontes';

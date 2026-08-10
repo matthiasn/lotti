@@ -6083,11 +6083,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível guardar a meta — tenta novamente.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Vezes por semana (cada hábito)';
+  String get goalCreateHabitCountLabel => 'Vezes por 7 dias (cada hábito)';
 
   @override
-  String get goalCreateHabitCountRange =>
-      'A contagem semanal deve ficar entre 1 e 7.';
+  String get goalCreateHabitCountRange => 'O número deve estar entre 1 e 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Hábitos a acompanhar';

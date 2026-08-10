@@ -1,32 +1,5 @@
 import 'package:lotti/classes/goal_enums.dart';
 
-/// One day in a habit leaf's rolling window (or the edge cell that just left
-/// it) — the atoms the detail-page grid and the list window-strip render.
-///
-/// The window is bookkeeping, never vocabulary: these cells drive the
-/// *picture*, while copy stays in events-and-time language. A cell is
-/// `done` when the habit succeeded that local day; `isToday` marks the
-/// window's trailing edge (rendered dashed); `agingOut` marks the oldest
-/// success that will slide out of the window at the next midnight while the
-/// leaf is exactly at target (its pulsing ring is the buffer made visible);
-/// `slipped` marks the day that has already left the window (the greyed
-/// left-edge cell).
-class GoalDayCell {
-  const GoalDayCell({
-    required this.day,
-    required this.done,
-    this.isToday = false,
-    this.agingOut = false,
-    this.slipped = false,
-  });
-
-  final DateTime day;
-  final bool done;
-  final bool isToday;
-  final bool agingOut;
-  final bool slipped;
-}
-
 /// Result of evaluating one criterion node for one period.
 class GoalCriterionResult {
   const GoalCriterionResult({
@@ -39,7 +12,6 @@ class GoalCriterionResult {
     this.paceFeasible,
     this.deficit,
     this.buffer,
-    this.dayCells,
   });
 
   /// The node this result belongs to (`GoalCriterion.criterionId`).
@@ -69,22 +41,21 @@ class GoalCriterionResult {
   /// metric leaves, already satisfied).
   final bool? paceFeasible;
 
-  /// Rolling-window habit leaves only: `target - successesInWindow`, floored
-  /// at 0 — the number of days-to-recovery (at most one creditable success
-  /// per day, so the deficit *is* the days needed). `0` means at rate;
-  /// `target` means the window is empty (a restart, the warmest register).
-  /// Null for metric/measurable leaves, composites, and calendar windows.
+  /// Rolling-window habit leaves (and `allOf` routines of them): the
+  /// days-to-recovery — the fewest days of perfect adherence to bring the
+  /// rolling count back to target, SIMULATING the window sliding forward
+  /// (each future success day also ages the oldest in-window success out, so
+  /// this can exceed `target - successesInWindow`). `0` means at or above
+  /// rate; `target` means the window is empty (a restart, the warmest
+  /// register). Null for metric/measurable leaves and calendar windows.
   final int? deficit;
 
-  /// Rolling-window habit leaves at rate (deficit 0): the number of days
-  /// until the OLDEST in-window success ages out — the slack before the
-  /// count drops. `0` means a success expires at the next midnight (aging
-  /// out). Null when not at rate, or not a rolling habit leaf.
+  /// Rolling-window habit leaves at or above rate (deficit 0): the number of
+  /// days until the count would drop below target if no new success arrives —
+  /// the aging day of the critical `(creditable - target)`-th oldest success.
+  /// `0` means a success expires at the next midnight. Null when below rate,
+  /// or not a rolling habit leaf.
   final int? buffer;
-
-  /// Rolling-window habit leaves: the per-day cells for the grid/strip
-  /// (window days plus the slipped left-edge). Null for other leaves.
-  final List<GoalDayCell>? dayCells;
 }
 
 /// Result of evaluating a whole criteria tree for one period.

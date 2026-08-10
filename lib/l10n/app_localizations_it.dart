@@ -6100,11 +6100,10 @@ class AppLocalizationsIt extends AppLocalizations {
       'Salvataggio dell’obiettivo non riuscito: riprova.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Volte a settimana (per abitudine)';
+  String get goalCreateHabitCountLabel => 'Volte ogni 7 giorni (per abitudine)';
 
   @override
-  String get goalCreateHabitCountRange =>
-      'Il conteggio settimanale deve essere compreso tra 1 e 7.';
+  String get goalCreateHabitCountRange => 'Il numero deve essere tra 1 e 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Abitudini da seguire';

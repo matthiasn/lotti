@@ -6091,10 +6091,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCreateFailed => 'Cíl se nepodařilo uložit — zkus to znovu.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Krát týdně (každý návyk)';
+  String get goalCreateHabitCountLabel =>
+      'Kolikrát za 7 dní (u každého návyku)';
 
   @override
-  String get goalCreateHabitCountRange => 'Týdenní počet musí být mezi 1 a 7.';
+  String get goalCreateHabitCountRange => 'Počet musí být mezi 1 a 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Sledované návyky';

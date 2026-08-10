@@ -308,7 +308,7 @@ void main() {
     expect(navigated, ['/agents']);
   });
 
-  testWidgets('a weekly count above seven is rejected with its own message '
+  testWidgets('a count above seven is rejected with its own message '
       '— one success per day makes eight unsatisfiable', (tester) async {
     tester.view.physicalSize = const Size(900, 2200);
     tester.view.devicePixelRatio = 1;
@@ -330,7 +330,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      find.text('The weekly count must be between 1 and 7.'),
+      find.text('The count must be between 1 and 7.'),
       findsOneWidget,
     );
     verifyNever(

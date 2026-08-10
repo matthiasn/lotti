@@ -6030,11 +6030,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalCreateFailed => 'Målet kunde inte sparas — försök igen.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Gånger per vecka (per vana)';
+  String get goalCreateHabitCountLabel => 'Gånger per 7 dagar (varje vana)';
 
   @override
-  String get goalCreateHabitCountRange =>
-      'Veckoantalet måste vara mellan 1 och 7.';
+  String get goalCreateHabitCountRange => 'Antalet måste vara mellan 1 och 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Vanor att följa';
@@ -6070,8 +6069,8 @@ class AppLocalizationsSv extends AppLocalizations {
     String _temp0 = intl.Intl.pluralLogic(
       count,
       locale: localeName,
-      other: '$count dagar till återhämtning',
-      one: '1 dag till återhämtning',
+      other: '$count dagar för att komma ikapp',
+      one: '1 dag för att komma ikapp',
     );
     return '$_temp0';
   }

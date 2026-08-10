@@ -6104,11 +6104,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se pudo guardar el objetivo; inténtalo de nuevo.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Veces por semana (cada hábito)';
+  String get goalCreateHabitCountLabel => 'Veces cada 7 días (cada hábito)';
 
   @override
-  String get goalCreateHabitCountRange =>
-      'El número semanal debe estar entre 1 y 7.';
+  String get goalCreateHabitCountRange => 'El número debe estar entre 1 y 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Hábitos a seguir';

@@ -77,8 +77,29 @@ class GoalProgressEvaluator {
           range.end,
         );
         return _leafRatio(series, aggregation, target, direction);
-      case GoalCriterionHabit():
-        return null;
+      case GoalCriterionHabit(
+        :final habitId,
+        :final window,
+        :final targetCount,
+      ):
+        // Only rolling habit leaves have a meaningful short slice — a
+        // calendar-week quota has no 3-day sub-target. A rolling routine with
+        // strong recent days but a weak trailing week is a turnaround, so its
+        // short slice reads high and routes the policy to `recovering`.
+        if (window is! GoalWindowRollingDays) return null;
+        final range = GoalWindow.rollingDays(
+          count: days,
+        ).periodRange(reference);
+        final byDay = signals.habitSuccessesInRange(
+          habitId,
+          range.start,
+          range.end,
+        );
+        final creditable = byDay.values.where((count) => count > 0).length;
+        final shortTarget = targetCount * days / window.count;
+        return shortTarget <= 0
+            ? 1.0
+            : math.min(1, creditable / shortTarget).toDouble();
       case GoalCriterionAllOf(:final criteria):
       case GoalCriterionAtLeastCount(:final criteria):
         final values = _shortTermChildren(criteria, signals, reference, days);
@@ -317,8 +338,8 @@ class GoalProgressEvaluator {
   }
 
   /// The rolling-window habit leaf: no pace/dead-zone, just a deficit
-  /// (days-to-recovery) and, at rate, a buffer (days until the oldest
-  /// success ages out) — plus the per-day cells the grid renders.
+  /// (days-to-recovery) and, at or above rate, a buffer (days until the
+  /// count would drop below target).
   _NodeOutcome _rollingHabitLeaf({
     required String criterionId,
     required Map<DateTime, int> byDay,
@@ -331,46 +352,46 @@ class GoalProgressEvaluator {
     required double ratio,
   }) {
     final today = GoalWindow.dayUtc(reference);
-    final deficit = math.max(0, targetCount - creditable);
     bool doneOn(DateTime day) => (byDay[day] ?? 0) > 0;
 
-    // The oldest in-window success — the first to age out as the window
-    // slides. Aging-out matters only when the leaf is EXACTLY at target:
-    // with slack (creditable > target) losing the oldest keeps it satisfied.
-    DateTime? oldestSuccess;
-    for (var i = 0; i < window.count; i++) {
-      final day = range.start.add(Duration(days: i));
-      if (doneOn(day)) {
-        oldestSuccess = day;
-        break;
+    // In-window success days, oldest first.
+    final successDays = [
+      for (var i = 0; i < window.count; i++)
+        if (doneOn(range.start.add(Duration(days: i))))
+          range.start.add(Duration(days: i)),
+    ];
+
+    // Days-to-recovery: the fewest days of perfect adherence to bring the
+    // rolling count back to target, SIMULATING the window sliding forward —
+    // each future success day also ages the oldest in-window successes out,
+    // so a static `target - creditable` understates it when an old success
+    // sits at the window's left edge.
+    var deficit = 0;
+    if (creditable < targetCount) {
+      for (var f = 1; f <= targetCount; f++) {
+        final windowStart = today.add(Duration(days: f - window.count + 1));
+        final surviving = successDays
+            .where((d) => !d.isBefore(windowStart))
+            .length;
+        if (surviving + f >= targetCount) {
+          deficit = f;
+          break;
+        }
+        // target <= window.count guarantees a hit by f == targetCount.
+        deficit = f;
       }
     }
-    final atRateExactly = creditable == targetCount && targetCount > 0;
-    // Buffer: days until the oldest critical success ages out. A success ON
-    // the window's start day leaves at the next midnight → buffer 0.
-    final buffer = (atRateExactly && oldestSuccess != null)
-        ? oldestSuccess.difference(range.start).inDays
-        : null;
-    final agingDay = atRateExactly ? oldestSuccess : null;
 
-    final cells = <GoalDayCell>[
-      // The slipped left-edge: the day that has just left the window.
-      GoalDayCell(
-        day: range.start.subtract(const Duration(days: 1)),
-        done: doneOn(range.start.subtract(const Duration(days: 1))),
-        slipped: true,
-      ),
-      for (var i = 0; i < window.count; i++)
-        () {
-          final day = range.start.add(Duration(days: i));
-          return GoalDayCell(
-            day: day,
-            done: doneOn(day),
-            isToday: day == today,
-            agingOut: agingDay != null && day == agingDay,
-          );
-        }(),
-    ];
+    // Buffer: days until the count would drop below target if no new success
+    // arrives. The critical success is the `(creditable - target)`-th oldest
+    // (0-indexed) — losing everything older than it still leaves `target` in
+    // the window. Defined whenever at or above target (slack included), so a
+    // goal with extra completions still shows its (larger) buffer.
+    int? buffer;
+    if (creditable >= targetCount && targetCount > 0) {
+      final critical = successDays[creditable - targetCount];
+      buffer = critical.difference(range.start).inDays;
+    }
 
     return _NodeOutcome(
       result: GoalCriterionResult(
@@ -382,7 +403,6 @@ class GoalProgressEvaluator {
         sampleCount: byDay.length,
         deficit: deficit,
         buffer: buffer,
-        dayCells: cells,
       ),
       coverage: 1,
     );
@@ -431,6 +451,27 @@ class GoalProgressEvaluator {
         target = successes;
         pace = _paceAtLeast(children, successes);
     }
+    // Rolling-window routine hints. An `allOf` recovers only when its WORST
+    // child recovers (max child deficit), and it holds rate only while EVERY
+    // child does — so it loses rate when the first child's buffer runs out
+    // (min child buffer, defined only when all children are at/above rate).
+    // Only `allOf` of rolling habit leaves carries these; other composites
+    // leave them null (the create flow builds routines as `allOf`).
+    int? deficit;
+    int? buffer;
+    if (kind == _CompositeKind.allOf) {
+      final childDeficits = [
+        for (final c in children)
+          if (c.result.deficit case final int d) d,
+      ];
+      if (childDeficits.isNotEmpty) {
+        deficit = childDeficits.reduce(math.max);
+      }
+      final childBuffers = [for (final c in children) c.result.buffer];
+      if (satisfied && childBuffers.every((b) => b != null)) {
+        buffer = childBuffers.cast<int>().reduce(math.min);
+      }
+    }
     return _NodeOutcome(
       result: GoalCriterionResult(
         criterionId: criterionId,
@@ -440,6 +481,8 @@ class GoalProgressEvaluator {
         satisfied: satisfied,
         sampleCount: children.map((c) => c.result.sampleCount).reduce(math.min),
         paceFeasible: pace,
+        deficit: deficit,
+        buffer: buffer,
       ),
       coverage: children.map((c) => c.coverage).reduce(math.min),
     );

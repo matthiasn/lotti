@@ -6026,11 +6026,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Gange om ugen (pr. vane)';
+  String get goalCreateHabitCountLabel => 'Gange pr. 7 dage (hver vane)';
 
   @override
-  String get goalCreateHabitCountRange =>
-      'Det ugentlige antal skal være mellem 1 og 7.';
+  String get goalCreateHabitCountRange => 'Antallet skal være mellem 1 og 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Vaner at følge';

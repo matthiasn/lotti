@@ -3288,11 +3288,11 @@
   "@goalCreateFailed": {
     "description": "Shown when persisting a new goal agent throws (validation already passed)."
   },
-  "goalCreateHabitCountLabel": "Times per week (each habit)",
+  "goalCreateHabitCountLabel": "Times per 7 days (each habit)",
   "@goalCreateHabitCountLabel": {
     "description": "Label of the per-habit weekly completion target."
   },
-  "goalCreateHabitCountRange": "The weekly count must be between 1 and 7.",
+  "goalCreateHabitCountRange": "The count must be between 1 and 7.",
   "goalCreateHabitsLabel": "Habits to watch",
   "@goalCreateHabitsLabel": {
     "description": "Label of the multi-select habit picker on the goal form."

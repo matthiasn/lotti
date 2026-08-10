@@ -5997,11 +5997,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalCreateFailed => 'Saving the goal failed — please try again.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Times per week (each habit)';
+  String get goalCreateHabitCountLabel => 'Times per 7 days (each habit)';
 
   @override
-  String get goalCreateHabitCountRange =>
-      'The weekly count must be between 1 and 7.';
+  String get goalCreateHabitCountRange => 'The count must be between 1 and 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Habits to watch';

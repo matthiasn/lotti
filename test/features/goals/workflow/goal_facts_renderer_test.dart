@@ -40,13 +40,17 @@ void main() {
   GoalWakeFacts facts({
     GoalTrackStatus status = GoalTrackStatus.offTrack,
     GoalTrackStatus? previous = GoalTrackStatus.atRisk,
+    int? deficit,
+    int? buffer,
   }) => GoalWakeFacts(
     trackStatus: status,
     previousStatus: previous,
-    evaluation: const GoalEvaluation(
+    evaluation: GoalEvaluation(
       attainment: 0.64,
       satisfied: false,
       dataCoverage: 1,
+      deficit: deficit,
+      buffer: buffer,
       results: {
         'steps': GoalCriterionResult(
           criterionId: 'steps',
@@ -55,6 +59,8 @@ void main() {
           ratio: 0.64,
           satisfied: false,
           sampleCount: 7,
+          deficit: deficit,
+          buffer: buffer,
         ),
       },
     ),
@@ -141,6 +147,18 @@ void main() {
       (goal['criteria'] as Map<String, dynamic>)['window'],
       'rolling 7 days',
     );
+  });
+
+  test('rolling-window recovery facts reach the authoritative block so the '
+      'agent can restate them without recomputing', () {
+    final json = renderedJson(wakeFacts: facts(deficit: 2, buffer: 1));
+    final evaluation = json['evaluation'] as Map<String, dynamic>;
+    // Root-level, and per-criterion.
+    expect(evaluation['daysToRecover'], 2);
+    expect(evaluation['bufferDays'], 1);
+    final steps = (evaluation['criterionResults'] as List).single;
+    expect((steps as Map<String, dynamic>)['daysToRecover'], 2);
+    expect(steps['bufferDays'], 1);
   });
 
   test('active ads carry freshness; a stale-marked ad is exposed as such', () {
