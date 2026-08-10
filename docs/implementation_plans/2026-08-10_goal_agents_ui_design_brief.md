@@ -181,8 +181,18 @@ Grouped by user job. Every surface needs phone and desktop, light and dark.
 1. **First-run / feature explanation.** What a goal agent is, what it will do,
    what it will cost, before the first one exists. Currently a single line of
    text on an empty list.
-2. **Agents list.** The home of the feature. Per goal: name, state, direction
-   of travel, whether it needs the user (pending proposal, unread message).
+2. **Agents list.** The home of the feature. Per goal: name, coarse health,
+   direction of travel, whether it needs the user (pending proposal, unread
+   message) — and an **executive summary**: the agent's standing one-liner,
+   one plain sentence per goal. It obeys the same language law as banners
+   (§3): events and time, never ledger states or percentages — "Three walks
+   this past week; the gym's been quiet since Tuesday", not "55% of target".
+   It is editorial, not exhaustive: it names the one thing that matters most
+   right now, reliability-weighted like the banner. It must never contradict
+   the chip beside it (both derive from the same facts) and it refreshes on
+   the voice's rhythm — completions reflected promptly, misses at day close.
+   (Wiring exists: the health projection already carries the report
+   one-liner; what's new is the language law and the freshness contract.)
    Must scale from one goal to a dozen without becoming a wall. States: empty,
    one, many, loading, background refresh, error.
 
