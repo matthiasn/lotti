@@ -24,7 +24,7 @@ void main() {
   ) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalBannerPersonaChip(
+        GoalBannerPersonaChip.forStyle(
           monogram: GoalBannerPersonaChip.monogramFor('expedition fitness'),
           style: style,
         ),
@@ -40,7 +40,7 @@ void main() {
         MediaQuery(
           data: MediaQueryData(textScaler: TextScaler.linear(scale)),
           child: Center(
-            child: GoalBannerPersonaChip(monogram: 'E', style: style),
+            child: GoalBannerPersonaChip.forStyle(monogram: 'E', style: style),
           ),
         ),
       ),

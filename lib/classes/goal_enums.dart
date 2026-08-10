@@ -73,3 +73,9 @@ enum GoalTrackStatus {
   /// period is below the policy minimum. Never guilt-trip over a data gap.
   insufficientData,
 }
+
+/// Which way a goal is trending across its two most recent progress
+/// registers — the direction arrow on the agents list. Computed in the
+/// health projection (`goalAgentHealthProvider`); purely a picture, it
+/// never becomes a number or a label.
+enum GoalHealthDirection { up, flat, down }

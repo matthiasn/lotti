@@ -354,6 +354,30 @@
   "agentSessionProgressTitle": "Session Progress",
   "agentSettingsSubtitle": "Templates, instances, and monitoring",
   "agentSettingsTitle": "Agents",
+  "agentsFirstRunControl": "You can talk to it, correct it, retarget it, pause it, delete it.",
+  "@agentsFirstRunControl": {
+    "description": "First-run explainer: what the user can do with an agent"
+  },
+  "agentsFirstRunCost": "Runs on your models — typically fractions of a cent per day.",
+  "@agentsFirstRunCost": {
+    "description": "First-run explainer: cost honesty line"
+  },
+  "agentsFirstRunCta": "Set an intention",
+  "@agentsFirstRunCta": {
+    "description": "First-run explainer call to action to create the first goal"
+  },
+  "agentsFirstRunSpeaks": "It speaks in short banners, where you already are. Dismiss one and it's quiet for the rest of the day.",
+  "@agentsFirstRunSpeaks": {
+    "description": "First-run explainer: how a goal agent speaks and dismissal contract"
+  },
+  "agentsFirstRunTitle": "One agent per goal",
+  "@agentsFirstRunTitle": {
+    "description": "Title of the agents-list first-run explainer"
+  },
+  "agentsFirstRunWatches": "It watches what the goal depends on — habit check-offs, step counts. Nothing it can't see, nothing you have to report.",
+  "@agentsFirstRunWatches": {
+    "description": "First-run explainer: what a goal agent watches"
+  },
   "agentSoulAntiSycophancyLabel": "Anti-Sycophancy Policy",
   "agentSoulAssignedTemplatesTitle": "Assigned Templates",
   "agentSoulAssignmentLabel": "Soul",
@@ -3234,6 +3258,22 @@
         "type": "String"
       }
     }
+  },
+  "goalCoarseHealthBehind": "Behind",
+  "@goalCoarseHealthBehind": {
+    "description": "Coarse goal-health chip label: behind and every remaining day matters"
+  },
+  "goalCoarseHealthHealthy": "Healthy",
+  "@goalCoarseHealthHealthy": {
+    "description": "Coarse goal-health chip label: keeping up or better"
+  },
+  "goalCoarseHealthNotEnoughData": "Not enough data",
+  "@goalCoarseHealthNotEnoughData": {
+    "description": "Coarse goal-health chip label: too little signal to judge"
+  },
+  "goalCoarseHealthRestarting": "Restarting",
+  "@goalCoarseHealthRestarting": {
+    "description": "Coarse goal-health chip label: a fresh start after a quiet stretch (never framed as failure)"
   },
   "goalCreateFailed": "Saving the goal failed — please try again.",
   "@goalCreateFailed": {

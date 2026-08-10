@@ -1303,6 +1303,42 @@ abstract class AppLocalizations {
   /// **'Agents'**
   String get agentSettingsTitle;
 
+  /// First-run explainer: what the user can do with an agent
+  ///
+  /// In en, this message translates to:
+  /// **'You can talk to it, correct it, retarget it, pause it, delete it.'**
+  String get agentsFirstRunControl;
+
+  /// First-run explainer: cost honesty line
+  ///
+  /// In en, this message translates to:
+  /// **'Runs on your models — typically fractions of a cent per day.'**
+  String get agentsFirstRunCost;
+
+  /// First-run explainer call to action to create the first goal
+  ///
+  /// In en, this message translates to:
+  /// **'Set an intention'**
+  String get agentsFirstRunCta;
+
+  /// First-run explainer: how a goal agent speaks and dismissal contract
+  ///
+  /// In en, this message translates to:
+  /// **'It speaks in short banners, where you already are. Dismiss one and it\'s quiet for the rest of the day.'**
+  String get agentsFirstRunSpeaks;
+
+  /// Title of the agents-list first-run explainer
+  ///
+  /// In en, this message translates to:
+  /// **'One agent per goal'**
+  String get agentsFirstRunTitle;
+
+  /// First-run explainer: what a goal agent watches
+  ///
+  /// In en, this message translates to:
+  /// **'It watches what the goal depends on — habit check-offs, step counts. Nothing it can\'t see, nothing you have to report.'**
+  String get agentsFirstRunWatches;
+
   /// No description provided for @agentSoulAntiSycophancyLabel.
   ///
   /// In en, this message translates to:
@@ -10264,6 +10300,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Goal banner for {goalTitle}'**
   String goalBannerSemanticLabel(String goalTitle);
+
+  /// Coarse goal-health chip label: behind and every remaining day matters
+  ///
+  /// In en, this message translates to:
+  /// **'Behind'**
+  String get goalCoarseHealthBehind;
+
+  /// Coarse goal-health chip label: keeping up or better
+  ///
+  /// In en, this message translates to:
+  /// **'Healthy'**
+  String get goalCoarseHealthHealthy;
+
+  /// Coarse goal-health chip label: too little signal to judge
+  ///
+  /// In en, this message translates to:
+  /// **'Not enough data'**
+  String get goalCoarseHealthNotEnoughData;
+
+  /// Coarse goal-health chip label: a fresh start after a quiet stretch (never framed as failure)
+  ///
+  /// In en, this message translates to:
+  /// **'Restarting'**
+  String get goalCoarseHealthRestarting;
 
   /// Shown when persisting a new goal agent throws (validation already passed).
   ///

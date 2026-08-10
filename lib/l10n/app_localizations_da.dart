@@ -696,6 +696,28 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentSettingsTitle => 'Agenter';
 
   @override
+  String get agentsFirstRunControl =>
+      'You can talk to it, correct it, retarget it, pause it, delete it.';
+
+  @override
+  String get agentsFirstRunCost =>
+      'Runs on your models — typically fractions of a cent per day.';
+
+  @override
+  String get agentsFirstRunCta => 'Set an intention';
+
+  @override
+  String get agentsFirstRunSpeaks =>
+      'It speaks in short banners, where you already are. Dismiss one and it\'s quiet for the rest of the day.';
+
+  @override
+  String get agentsFirstRunTitle => 'One agent per goal';
+
+  @override
+  String get agentsFirstRunWatches =>
+      'It watches what the goal depends on — habit check-offs, step counts. Nothing it can\'t see, nothing you have to report.';
+
+  @override
   String get agentSoulAntiSycophancyLabel => 'Anti-smiskerpolitik';
 
   @override
@@ -5975,6 +5997,18 @@ class AppLocalizationsDa extends AppLocalizations {
   String goalBannerSemanticLabel(String goalTitle) {
     return 'Målbanner for $goalTitle';
   }
+
+  @override
+  String get goalCoarseHealthBehind => 'Behind';
+
+  @override
+  String get goalCoarseHealthHealthy => 'Healthy';
+
+  @override
+  String get goalCoarseHealthNotEnoughData => 'Not enough data';
+
+  @override
+  String get goalCoarseHealthRestarting => 'Restarting';
 
   @override
   String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';

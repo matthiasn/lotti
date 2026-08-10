@@ -524,7 +524,7 @@ class _DockTenant extends ConsumerWidget {
           ),
           child: Row(
             children: [
-              GoalBannerPersonaChip(
+              GoalBannerPersonaChip.forStyle(
                 monogram: GoalBannerPersonaChip.monogramFor(entry.goalTitle),
                 style: style,
               ),

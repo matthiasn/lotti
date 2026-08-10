@@ -829,6 +829,80 @@ void main() {
     expect(health.reportOneLiner, 'Averaging 6.4k of 10k.');
     expect(health.pendingProposals, 1);
     expect(health.spec?.title, 'Steps');
+    // Direction: latest 0.64 vs the prior 1.0 — a drop beyond the deadband.
+    expect(health.direction, GoalHealthDirection.down);
+  });
+
+  test('goalAgentHealthProvider reports no direction with a single register, '
+      'and flat within the deadband', () async {
+    const agentId = 'goal-dir';
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v1',
+        agentId: agentId,
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Steps',
+        statement: 'Average 10,000 steps per day.',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 10000,
+        ),
+        createdAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    GoalProgressEntity register(String period, double attainment) =>
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, period),
+              agentId: agentId,
+              periodKey: period,
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: attainment,
+              dataCoverage: 1,
+              satisfied: true,
+              specVersionId: '$agentId:spec-v1',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalProgressEntity;
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer((_) async => null);
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
+
+    // One register: no comparison, no arrow.
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer((_) async => [register('2026-08-09', 0.9)]);
+    var health = await container.read(goalAgentHealthProvider(agentId).future);
+    expect(health.direction, isNull);
+
+    // Two registers within the deadband: flat.
+    container.invalidate(goalAgentHealthProvider(agentId));
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalProgress'),
+    ).thenAnswer(
+      (_) async => [register('2026-08-09', 0.9), register('2026-08-08', 0.91)],
+    );
+    health = await container.read(goalAgentHealthProvider(agentId).future);
+    expect(health.direction, GoalHealthDirection.flat);
   });
 
   test('a failing exposure flush is contained and logged — never an '

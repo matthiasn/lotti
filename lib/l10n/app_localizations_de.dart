@@ -705,6 +705,28 @@ class AppLocalizationsDe extends AppLocalizations {
   String get agentSettingsTitle => 'Agenten';
 
   @override
+  String get agentsFirstRunControl =>
+      'Du kannst mit ihm sprechen, ihn korrigieren, neu ausrichten, pausieren, löschen.';
+
+  @override
+  String get agentsFirstRunCost =>
+      'Läuft mit deinen Modellen — meist Bruchteile eines Cents pro Tag.';
+
+  @override
+  String get agentsFirstRunCta => 'Absicht festlegen';
+
+  @override
+  String get agentsFirstRunSpeaks =>
+      'Er meldet sich mit kurzen Bannern, dort wo du gerade bist. Weise eines ab und für den Rest des Tages ist Ruhe.';
+
+  @override
+  String get agentsFirstRunTitle => 'Ein Agent pro Ziel';
+
+  @override
+  String get agentsFirstRunWatches =>
+      'Er beobachtet, worauf das Ziel beruht — Gewohnheits-Häkchen, Schrittzahlen. Nichts, was er nicht sehen kann, nichts, was du melden musst.';
+
+  @override
   String get agentSoulAntiSycophancyLabel => 'Anti-Speichelleckerei-Richtlinie';
 
   @override
@@ -6015,6 +6037,18 @@ class AppLocalizationsDe extends AppLocalizations {
   String goalBannerSemanticLabel(String goalTitle) {
     return 'Ziel-Banner für $goalTitle';
   }
+
+  @override
+  String get goalCoarseHealthBehind => 'Im Rückstand';
+
+  @override
+  String get goalCoarseHealthHealthy => 'Gesund';
+
+  @override
+  String get goalCoarseHealthNotEnoughData => 'Zu wenig Daten';
+
+  @override
+  String get goalCoarseHealthRestarting => 'Neustart';
 
   @override
   String get goalCreateFailed =>

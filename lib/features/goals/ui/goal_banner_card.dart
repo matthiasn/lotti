@@ -69,7 +69,7 @@ class GoalBannerCard extends ConsumerWidget {
                   children: [
                     Row(
                       children: [
-                        GoalBannerPersonaChip(
+                        GoalBannerPersonaChip.forStyle(
                           monogram: GoalBannerPersonaChip.monogramFor(
                             entry.goalTitle,
                           ),

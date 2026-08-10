@@ -442,6 +442,9 @@ typedef GoalAgentHealth = ({
   String? reportOneLiner,
   int pendingProposals,
   GoalSpecVersionEntity? spec,
+  // The direction of travel across the two most recent registers — the
+  // list row's arrow. Null until there are two registers to compare.
+  GoalHealthDirection? direction,
 });
 
 final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
@@ -503,11 +506,27 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
         taskId: agentId,
       );
 
+      // Direction: the latest register's attainment against the one before
+      // it (registers are most-recent-first, same-spec-scoped above). A
+      // small deadband keeps noise from flickering the arrow; null until
+      // there are two registers to compare.
+      GoalHealthDirection? direction;
+      if (registers.length >= 2) {
+        const deadband = 0.02;
+        final delta = registers[0].attainment - registers[1].attainment;
+        direction = delta > deadband
+            ? GoalHealthDirection.up
+            : delta < -deadband
+            ? GoalHealthDirection.down
+            : GoalHealthDirection.flat;
+      }
+
       return (
         trackStatus: latest?.trackStatus,
         attainment: latest?.attainment,
         reportOneLiner: report?.oneLiner,
         pendingProposals: pending.length,
         spec: spec,
+        direction: direction,
       );
     }, name: 'goalAgentHealthProvider');
