@@ -124,4 +124,29 @@ void main() {
     expect(find.byTooltip('Dismiss'), findsNWidgets(2));
     expect(find.text('Three'), findsNothing);
   });
+
+  testWidgets('hiding the tab flushes the episode WITHOUT unmounting — '
+      'separate appearances never merge', (tester) async {
+    final sameOverrides = overrides([
+      (nudge: nudge(), goalTitle: 'Move more'),
+    ]);
+    Widget host({required bool visible}) => makeTestableWidget(
+      TickerMode(enabled: visible, child: const GoalBannerStrip()),
+      overrides: sameOverrides,
+    );
+    await tester.pumpWidget(host(visible: true));
+    await tester.pumpAndSettle();
+    expect(exposures, isEmpty);
+
+    await tester.pumpWidget(host(visible: false));
+    await tester.pumpAndSettle();
+    expect(exposures, hasLength(1), reason: 'transition flushes its episode');
+
+    // Returning and leaving again is a SECOND episode.
+    await tester.pumpWidget(host(visible: true));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(host(visible: false));
+    await tester.pumpAndSettle();
+    expect(exposures, hasLength(2));
+  });
 }

@@ -8,13 +8,16 @@ import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 /// the rest wait their turn (and are always on the Agents tab).
 const goalBannerStripMaxVisible = 2;
 
-/// The banner mount: renders every active goal ad, newest first, and
-/// shrinks to nothing when there are none (the `KnowledgeNudge`
-/// contract — hosts mount it unconditionally).
+/// The banner mount: renders the newest active goal ads (bounded by
+/// [goalBannerStripMaxVisible]) and shrinks to nothing when there are
+/// none (the `KnowledgeNudge` contract — hosts mount it unconditionally).
 ///
-/// Exposure accounting: each banner's on-screen time is measured from
-/// mount to unmount and flushed as ONE episode per appearance, matching
-/// the leave-viewport contract of `GoalNudgeInteractions.recordExposure`.
+/// Exposure accounting: an episode runs while the banner's TAB is the
+/// visible one (TickerMode — the app shell keeps inactive tabs mounted)
+/// and is flushed on every visible→hidden transition and on unmount.
+/// Scroll-out within an active page is deliberately not tracked: the
+/// strip sits at the top of its hosts, and per-frame viewport math would
+/// buy little for this surface.
 class GoalBannerStrip extends ConsumerWidget {
   const GoalBannerStrip({this.padded = true, super.key});
 
@@ -86,20 +89,27 @@ class _ExposureTrackerState extends ConsumerState<_ExposureTracker> {
     _flush = ref.read(goalNudgeExposureFlushProvider);
     // The app shell keeps inactive tabs mounted (IndexedStack) with
     // their tickers disabled — TickerMode is therefore the "is this tab
-    // actually on screen" signal, and the stopwatch only runs under it.
+    // actually on screen" signal. Each visible→hidden transition flushes
+    // its own episode, so separate appearances never merge and
+    // persistence doesn't wait for disposal.
     if (TickerMode.valuesOf(context).enabled) {
       _visible.start();
-    } else {
-      _visible.stop();
+    } else if (_visible.isRunning) {
+      _flushEpisode();
     }
   }
 
-  @override
-  void dispose() {
+  void _flushEpisode() {
     _visible.stop();
     if (_visible.elapsed > Duration.zero) {
       _flush?.call(widget.nudgeId, _visible.elapsed);
     }
+    _visible.reset();
+  }
+
+  @override
+  void dispose() {
+    _flushEpisode();
     super.dispose();
   }
 

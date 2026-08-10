@@ -690,11 +690,14 @@ class MockAudioTranscriptionService extends Mock
     implements AudioTranscriptionService {}
 
 class MockNavService extends Mock implements NavService {
-  /// Concrete default so the many app-shell tests that predate the
-  /// agents tab don't each need a stub; tests exercising the tab use the
-  /// real NavService with flag streams.
+  /// Concrete default (mutable) so the many app-shell tests that predate
+  /// the agents tab don't each need a stub; a test exercising the tab
+  /// flips [agentsPageEnabled] instead of `when()` (which cannot stub a
+  /// concrete member).
+  bool agentsPageEnabled = false;
+
   @override
-  bool get isAgentsPageEnabled => false;
+  bool get isAgentsPageEnabled => agentsPageEnabled;
 }
 
 class MockWindowService extends Mock implements WindowService {}

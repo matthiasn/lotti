@@ -75,4 +75,34 @@ void main() {
     );
     expect(find.text('Interactions'), findsOneWidget);
   });
+
+  testWidgets('a standing report renders its one-liner instead of the '
+      'no-report hint', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Seven for seven. Keep coasting.',
+              pendingProposals: 0,
+              spec: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Seven for seven. Keep coasting.'), findsOneWidget);
+    expect(find.textContaining('No report yet'), findsNothing);
+  });
 }

@@ -770,4 +770,55 @@ void main() {
     expect(health.spec, isNull);
     expect(health.pendingProposals, 0);
   });
+
+  test('activeGoalAgentsProvider lists only goal-kind identities', () async {
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer(
+      (_) async => [
+        goalIdentity('goal-a'),
+        AgentDomainEntity.agent(
+              id: 'task-1',
+              agentId: 'task-1',
+              kind: AgentKinds.taskAgent,
+              displayName: 'task',
+              lifecycle: AgentLifecycle.active,
+              mode: AgentInteractionMode.autonomous,
+              allowedCategoryIds: const {},
+              currentStateId: 'task-1:state',
+              config: const AgentConfig(),
+              createdAt: DateTime(2026),
+              updatedAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as AgentIdentityEntity,
+      ],
+    );
+    final agents = await container.read(activeGoalAgentsProvider.future);
+    expect([for (final a in agents) a.agentId], ['goal-a']);
+  });
+
+  test('the banner provider returns nothing while the rollout flag is '
+      'off', () async {
+    final gated = ProviderContainer(
+      overrides: [
+        configFlagProvider(
+          enableAgentsPageFlag,
+        ).overrideWith((ref) => Stream.value(false)),
+        agentServiceProvider.overrideWithValue(agentService),
+        agentRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
+    addTearDown(gated.dispose);
+    final flagSub = gated.listen(
+      configFlagProvider(enableAgentsPageFlag),
+      (_, _) {},
+    );
+    addTearDown(flagSub.close);
+    await gated.read(configFlagProvider(enableAgentsPageFlag).future);
+    expect(await gated.read(activeGoalNudgesProvider.future), isEmpty);
+    verifyNever(
+      () => agentService.listAgents(lifecycle: any(named: 'lifecycle')),
+    );
+  });
 }
