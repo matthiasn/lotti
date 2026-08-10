@@ -40,4 +40,26 @@ abstract final class SurfaceAlphas {
   /// names in one expression would read as a tautology rather than a value
   /// and its opacity.
   static const double linework = 0.7;
+
+  // ── The banner wash set (goal-agent voice surfaces, 2026-08-10) ─────────
+  //
+  // One accent hue, three strengths — the register-tinted card recipe from
+  // the goal-agents design handover: the same hue as the card's tint carries
+  // its border, its persona chip and its one pressable control, so a banner
+  // reads as ONE colour statement at three intensities rather than three
+  // decisions. Shared by the banner card, the dock, and the conversation
+  // proposal card. Maintainer-approved addition (the alternative was bending
+  // to `tint`/`muted`, which visibly breaks the recipe).
+
+  /// 0.26 — the 1 px border of a register-tinted card: strong enough to
+  /// hold the card's edge on `background.level02`, weak enough that the
+  /// full-strength accent stays reserved for text and monograms.
+  static const double washBorder = 0.26;
+
+  /// 0.22 — the persona-chip fill behind an accent-coloured monogram.
+  static const double washChip = 0.22;
+
+  /// 0.20 — the resting fill of a pressable accent control (the banner's
+  /// CTA pill): visibly a control, never louder than the copy above it.
+  static const double washControl = 0.20;
 }

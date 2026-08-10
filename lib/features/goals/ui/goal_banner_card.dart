@@ -8,12 +8,17 @@ import 'package:lotti/features/goals/ui/goal_banner_style.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 
-/// One goal ad, rendered as the procedural text banner ADR 0058
-/// specifies: model-authored copy, code-owned presentation. Tapping the
-/// banner opens the goal's page (ADR 0055's banner→conversation flow);
-/// the star opens the per-activation rating prompt while one is due;
-/// dismissing (X or swipe) is the terminal user verdict that quiets ads
-/// for the rest of the day.
+/// One goal banner — the agent's standing voice, rendered per the design
+/// handover (1a): the register tints the whole surface so state is legible
+/// before a word is read, the persona/goal caption lives in the header row
+/// where it can never collide with the CTA, and the CTA is the one
+/// pressable-looking element that is actually pressable. Personality comes
+/// from type, colour and motion only (ADR 0058).
+///
+/// Dismissing (X or swipe) is the terminal user verdict that quiets this
+/// goal's voice for the rest of the day — honoured absolutely, in every
+/// register. The star appears only while this run's one rating is due, in a
+/// fixed-width slot so the layout never jumps when it goes.
 class GoalBannerCard extends ConsumerWidget {
   const GoalBannerCard({required this.entry, super.key});
 
@@ -22,12 +27,15 @@ class GoalBannerCard extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final style = goalBannerAccentStyle(
-      entry.nudge.brief.accent,
-      tokens.colors,
-    );
     final brief = entry.nudge.brief;
+    final style = goalBannerStyle(
+      tone: brief.tone,
+      accent: brief.accent,
+      colors: tokens.colors,
+      brightness: Theme.of(context).brightness,
+    );
     final ratingDue = GoalNudgeInteractions.ratingDue(entry.nudge);
+    final radius = BorderRadius.circular(tokens.radii.l);
 
     return Semantics(
       label: context.messages.goalBannerSemanticLabel(entry.goalTitle),
@@ -41,99 +49,111 @@ class GoalBannerCard extends ConsumerWidget {
         confirmDismiss: (_) => _dismiss(context, ref),
         child: Material(
           color: style.fill,
-          borderRadius: BorderRadius.circular(tokens.radii.m),
+          borderRadius: radius,
           child: InkWell(
-            borderRadius: BorderRadius.circular(tokens.radii.m),
-            // The banner is the doorway to its goal — rating lives on the
-            // star so the tap target always leads somewhere.
+            borderRadius: radius,
+            // The card body is the doorway to the conversation about this
+            // nudge; rating lives on the star, dismissal on the X.
             onTap: () => beamToNamed('/agents/details/${entry.nudge.agentId}'),
-            child: Padding(
-              padding: EdgeInsets.all(tokens.spacing.cardPadding),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Container(
-                    width: tokens.spacing.step1,
-                    height: tokens.spacing.step9,
-                    decoration: BoxDecoration(
-                      color: style.accent,
-                      borderRadius: BorderRadius.circular(tokens.radii.xs),
-                    ),
-                  ),
-                  SizedBox(width: tokens.spacing.cardItemSpacing),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+            child: Ink(
+              decoration: BoxDecoration(
+                borderRadius: radius,
+                border: Border.all(color: style.border),
+              ),
+              child: Padding(
+                padding: EdgeInsets.all(tokens.spacing.cardPadding),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
                       children: [
-                        GoalBannerAnimatedText(
-                          text: brief.headline,
-                          animation: brief.animation,
-                          style: tokens.typography.styles.body.bodyLarge
-                              .copyWith(
-                                color: tokens.colors.text.highEmphasis,
-                              ),
+                        _PersonaChip(
+                          monogram: _monogram(entry.goalTitle),
+                          style: style,
                         ),
-                        if (brief.tagline != null) ...[
-                          SizedBox(height: tokens.spacing.step1),
-                          Text(
-                            brief.tagline!,
-                            maxLines: 2,
+                        SizedBox(width: tokens.spacing.step3),
+                        // The goal attribution lives HERE, where it can
+                        // ellipsize freely — never on the CTA row.
+                        Expanded(
+                          child: Text(
+                            entry.goalTitle,
+                            maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: tokens.typography.styles.body.bodySmall
+                            style: tokens.typography.styles.others.caption
                                 .copyWith(
                                   color: tokens.colors.text.mediumEmphasis,
                                 ),
                           ),
-                        ],
-                        SizedBox(height: tokens.spacing.step2),
-                        Row(
-                          children: [
-                            if (brief.cta != null)
-                              Flexible(
-                                child: Text(
-                                  brief.cta!,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: tokens.typography.styles.body.bodySmall
-                                      .copyWith(color: style.accent),
-                                ),
-                              ),
-                            SizedBox(width: tokens.spacing.step2),
-                            Expanded(
-                              child: Text(
-                                entry.goalTitle,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                textAlign: TextAlign.end,
-                                style: tokens.typography.styles.others.caption
-                                    .copyWith(
-                                      color: tokens.colors.text.lowEmphasis,
-                                    ),
-                              ),
+                        ),
+                        // Fixed-width slots: the star only exists while a
+                        // rating is due, but its SLOT always does — the
+                        // header never reflows when the star goes.
+                        SizedBox(
+                          width: tokens.spacing.step8,
+                          height: tokens.spacing.step8,
+                          child: ratingDue
+                              ? IconButton(
+                                  onPressed: () =>
+                                      _showRatingSheet(context, ref),
+                                  tooltip:
+                                      context.messages.goalBannerRateTooltip,
+                                  icon: Icon(
+                                    Icons.star_outline_rounded,
+                                    size: tokens.spacing.step5,
+                                    color: tokens.colors.text.lowEmphasis,
+                                  ),
+                                )
+                              : null,
+                        ),
+                        SizedBox(
+                          width: tokens.spacing.step8,
+                          height: tokens.spacing.step8,
+                          child: IconButton(
+                            onPressed: () => _dismiss(context, ref),
+                            tooltip: context.messages.goalBannerDismissTooltip,
+                            icon: Icon(
+                              Icons.close_rounded,
+                              size: tokens.spacing.step5,
+                              color: tokens.colors.text.lowEmphasis,
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
-                  ),
-                  if (ratingDue)
-                    IconButton(
-                      onPressed: () => _showRatingSheet(context, ref),
-                      tooltip: context.messages.goalBannerRateTooltip,
-                      icon: Icon(
-                        Icons.star_outline_rounded,
-                        color: tokens.colors.text.lowEmphasis,
+                    SizedBox(height: tokens.spacing.step2),
+                    // Generated copy is never localised and wraps freely —
+                    // the layout must hold long German compounds without
+                    // collision (handover stress test).
+                    GoalBannerAnimatedText(
+                      text: brief.headline,
+                      animation: brief.animation,
+                      style: tokens.typography.styles.body.bodyLarge.copyWith(
+                        color: tokens.colors.text.highEmphasis,
                       ),
                     ),
-                  IconButton(
-                    onPressed: () => _dismiss(context, ref),
-                    tooltip: context.messages.goalBannerDismissTooltip,
-                    icon: Icon(
-                      Icons.close_rounded,
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                  ),
-                ],
+                    if (brief.tagline != null) ...[
+                      SizedBox(height: tokens.spacing.step1),
+                      Text(
+                        brief.tagline!,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: tokens.typography.styles.body.bodySmall.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
+                      ),
+                    ],
+                    if (brief.cta != null) ...[
+                      SizedBox(height: tokens.spacing.step3),
+                      _CtaPill(
+                        label: brief.cta!,
+                        style: style,
+                        onTap: () => beamToNamed(
+                          '/agents/details/${entry.nudge.agentId}',
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
               ),
             ),
           ),
@@ -141,6 +161,9 @@ class GoalBannerCard extends ConsumerWidget {
       ),
     );
   }
+
+  static String _monogram(String title) =>
+      title.isEmpty ? '·' : title.characters.first.toUpperCase();
 
   /// Returns whether the dismissal persisted — the Dismissible's
   /// confirmDismiss contract: false snaps the card back into place.
@@ -257,5 +280,77 @@ class GoalBannerCard extends ConsumerWidget {
       messenger?.showSnackBar(SnackBar(content: Text(failedNotice)));
     }
     container.invalidate(activeGoalNudgesProvider);
+  }
+}
+
+/// The monogram identity chip: accent letter on the accent's chip wash.
+/// Typography and colour only — no faces, no imagery (ADR 0058 holds even
+/// for identity).
+class _PersonaChip extends StatelessWidget {
+  const _PersonaChip({required this.monogram, required this.style});
+
+  final String monogram;
+  final GoalBannerStyle style;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Container(
+      width: tokens.spacing.step6,
+      height: tokens.spacing.step6,
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: style.chipFill,
+        shape: BoxShape.circle,
+      ),
+      child: Text(
+        monogram,
+        style: tokens.typography.styles.others.overline.copyWith(
+          color: style.accent,
+        ),
+      ),
+    );
+  }
+}
+
+/// The one pressable-looking element that is actually pressable: the
+/// accent-washed CTA pill.
+class _CtaPill extends StatelessWidget {
+  const _CtaPill({
+    required this.label,
+    required this.style,
+    required this.onTap,
+  });
+
+  final String label;
+  final GoalBannerStyle style;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final radius = BorderRadius.circular(tokens.radii.badgesPills);
+    return Material(
+      color: style.controlFill,
+      borderRadius: radius,
+      child: InkWell(
+        borderRadius: radius,
+        onTap: onTap,
+        child: Padding(
+          padding: EdgeInsets.symmetric(
+            horizontal: tokens.spacing.step4,
+            vertical: tokens.spacing.step3,
+          ),
+          child: Text(
+            label,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+              color: style.accent,
+            ),
+          ),
+        ),
+      ),
+    );
   }
 }
