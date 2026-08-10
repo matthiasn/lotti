@@ -501,6 +501,7 @@ void main() {
             meliousMinimaxM27ModelId,
             meliousMistralSmall4119BInstructModelId,
             meliousQwen35122BA10BModelId,
+            meliousKimiK3ModelId,
             meliousDeepseekV4FlashModelId,
             meliousFlux2Klein9BModelId,
             meliousVoxtralSmall24B2507ModelId,
@@ -508,6 +509,45 @@ void main() {
             meliousWhisperLargeV3TurboModelId,
           }),
         );
+      });
+
+      test('every curated Melious model id is unique', () {
+        final ids = meliousModels
+            .map((model) => model.providerModelId)
+            .toList();
+
+        expect(
+          ids.toSet(),
+          hasLength(ids.length),
+          reason:
+              'FTUE snapshots existing rows once before installing, so a '
+              'duplicate id in the catalog would create two rows for it',
+        );
+      });
+
+      test('Kimi K3 is a vision-capable tool-calling reasoning model', () {
+        final kimi = findMeliousKnownModel(meliousKimiK3ModelId);
+
+        expect(kimi, isNotNull);
+        expect(kimi!.name, 'Kimi K3');
+        expect(kimi.isReasoningModel, isTrue);
+        expect(
+          kimi.supportsFunctionCalling,
+          isTrue,
+          reason: 'the high-end thinking slot drives tool-calling skills',
+        );
+        expect(
+          kimi.inputModalities,
+          containsAll([Modality.text, Modality.image]),
+          reason:
+              'the seeded profile binds Kimi K3 to the image-recognition '
+              'slot, which requires image input',
+        );
+        expect(kimi.outputModalities, [Modality.text]);
+      });
+
+      test('Kimi K3 is attributed to Moonshot AI', () {
+        expect(publisherForCuratedModel(meliousKimiK3ModelId), 'Moonshot AI');
       });
 
       test('GLM 5.2 default is a tool-calling reasoning model', () {
@@ -591,6 +631,52 @@ void main() {
           models.whisperTurbo.providerModelId,
           meliousWhisperLargeV3TurboModelId,
         );
+        expect(models.kimiK3.providerModelId, meliousKimiK3ModelId);
+      });
+
+      test(
+        'the FTUE install list covers every slot the seed profile binds',
+        () {
+          final models = getMeliousFtueKnownModels();
+          final installed = {
+            models!.thinking.providerModelId,
+            models.vision.providerModelId,
+            models.advancedThinking.providerModelId,
+            models.kimiK3.providerModelId,
+            models.imageGeneration.providerModelId,
+            models.voxtral.providerModelId,
+            models.whisper.providerModelId,
+            models.whisperTurbo.providerModelId,
+          };
+
+          // Without these rows, FTUE finishes with a profile whose slots point
+          // at models that were never created.
+          expect(
+            installed,
+            containsAll({
+              meliousGlm52ModelId,
+              meliousKimiK3ModelId,
+              meliousWhisperLargeV3ModelId,
+              meliousFlux2Klein9BModelId,
+            }),
+          );
+        },
+      );
+
+      test('the FTUE install list has no repeated model id', () {
+        final models = getMeliousFtueKnownModels();
+        final installed = [
+          models!.thinking.providerModelId,
+          models.vision.providerModelId,
+          models.advancedThinking.providerModelId,
+          models.kimiK3.providerModelId,
+          models.imageGeneration.providerModelId,
+          models.voxtral.providerModelId,
+          models.whisper.providerModelId,
+          models.whisperTurbo.providerModelId,
+        ];
+
+        expect(installed.toSet(), hasLength(installed.length));
       });
     });
 

@@ -381,9 +381,9 @@ AiProviderSetupPreviewPreset? mistralPreset() {
   );
 }
 
-/// FTUE preset for Melious: the default Melious profile plus Qwen thinking,
-/// Mistral vision, GLM 5.2 high-end thinking, image-generation, and
-/// Voxtral/Whisper transcription models.
+/// FTUE preset for Melious: the default Melious profile plus GLM 5.2 thinking,
+/// Kimi K3 high-end thinking and vision, image-generation, and Whisper/Voxtral
+/// transcription models, alongside the Qwen and Mistral alternatives.
 AiProviderSetupPreviewPreset? meliousPreset() {
   final known = getMeliousFtueKnownModels();
   assert(known != null, 'Melious FTUE known-model lookup returned null');
@@ -396,6 +396,7 @@ AiProviderSetupPreviewPreset? meliousPreset() {
       known.thinking,
       known.vision,
       known.advancedThinking,
+      known.kimiK3,
       known.imageGeneration,
       known.voxtral,
       known.whisper,

@@ -46,6 +46,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   context as well.
 
 ### Changed
+- **The Melious.ai profile now runs on GLM 5.2 and Kimi K3.** Connecting a
+  Melious key installs Kimi K3 alongside the models already offered, and the
+  profile Lotti sets up for you binds GLM 5.2 for thinking, Kimi K3 for both
+  high-end thinking and reading images, and Whisper Large v3 for transcription.
+  Image generation stays on Flux 2 Klein 9B. An existing Melious profile moves
+  to the same models on the next launch — unless you renamed it, described it,
+  pinned it to a device or chose any model yourself, in which case it is left
+  exactly as you set it. Voice capture that has no transcription model
+  configured — onboarding's first task included — now also lands on Whisper
+  Large v3 instead of the Voxtral chat path.
 - **AI task summaries now look like AI content wherever you scan tasks.** The
   agent's one-line take uses the AI accent in task lists, appears beneath linked
   task titles, and sits between the title and status pills on task details, so

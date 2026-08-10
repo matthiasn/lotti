@@ -19,10 +19,11 @@ class MeliousFtueResult extends AiFtueResult {
 extension MeliousFtueSetup on ProviderPromptSetupService {
   /// Performs FTUE setup for Melious providers.
   ///
-  /// This verifies or creates the default Qwen thinking, Mistral vision,
-  /// GLM 5.2 advanced thinking, Flux image-generation, and Voxtral/Whisper
-  /// transcription models, then creates the Melious test category bound to
-  /// the default Melious profile.
+  /// This verifies or creates the GLM 5.2 thinking, Kimi K3 high-end thinking
+  /// and vision, Whisper Large v3 transcription and Flux image-generation
+  /// models the seeded profile binds, plus the Qwen, Mistral, Voxtral and
+  /// Whisper Turbo alternatives, then creates the Melious test category bound
+  /// to the default Melious profile.
   Future<MeliousFtueResult?> performMeliousFtueSetup({
     required BuildContext context,
     required WidgetRef ref,
@@ -68,6 +69,7 @@ extension MeliousFtueSetup on ProviderPromptSetupService {
           known: knownModels.advancedThinking,
           id: ftueMeliousAdvancedThinkingModelId,
         ),
+        (known: knownModels.kimiK3, id: ftueMeliousKimiK3ModelId),
         (
           known: knownModels.imageGeneration,
           id: ftueMeliousImageGenerationModelId,

@@ -125,6 +125,7 @@ void _stubGenerateWithAudioStream(
       tools: any(named: 'tools'),
       speechDictionaryTerms: any(named: 'speechDictionaryTerms'),
       geminiThinkingMode: any(named: 'geminiThinkingMode'),
+      impactCollector: any(named: 'impactCollector'),
     ),
   ).thenAnswer((_) => stream());
 }
@@ -158,6 +159,7 @@ void _stubGenerateWithAudio(
       tools: any(named: 'tools'),
       speechDictionaryTerms: captureAny(named: 'speechDictionaryTerms'),
       geminiThinkingMode: any(named: 'geminiThinkingMode'),
+      impactCollector: any(named: 'impactCollector'),
     ),
   ).captured;
   return (model: captured[0], speechDictionaryTerms: captured[1]);
@@ -828,6 +830,109 @@ void main() {
   });
 
   group('context-capable model selection', () {
+    /// A Melious provider plus one audio model row per [providerModelIds]
+    /// entry, in an isolated repository.
+    Future<AiConfigRepository> meliousRepo(
+      List<String> providerModelIds,
+    ) async {
+      final aiRepo = isolatedRepo();
+      await aiRepo.saveConfig(
+        _provider(
+          id: 'p-melious-choice',
+          type: InferenceProviderType.melious,
+          name: 'Melious.ai',
+          baseUrl: 'https://api.melious.ai/v1',
+          apiKey: 'melious-key',
+        ),
+        fromSync: true,
+      );
+      for (final providerModelId in providerModelIds) {
+        await aiRepo.saveConfig(
+          _audioModel(
+            id: 'm-melious-$providerModelId',
+            providerId: 'p-melious-choice',
+            name: providerModelId,
+            providerModelId: providerModelId,
+          ),
+          fromSync: true,
+        );
+      }
+      return aiRepo;
+    }
+
+    // Since Melious seed generation 2 the bundled profile transcribes with
+    // Whisper Large v3; discovery must agree, or every surface without an
+    // explicit target (onboarding's first capture included) keeps landing on
+    // the Voxtral chat path the profile moved off.
+    test(
+      'prefers the seeded Whisper Large v3 default over Voxtral chat audio',
+      () async {
+        final aiRepo = await meliousRepo([
+          meliousVoxtralSmall24B2507ModelId,
+          meliousWhisperLargeV3ModelId,
+          meliousWhisperLargeV3TurboModelId,
+        ]);
+
+        final file = await audioFile();
+        final mockCloud = MockCloudInferenceRepository();
+        _stubGenerateWithAudio(mockCloud, ['whisper default']);
+
+        final svc = buildService(repo: aiRepo, cloud: mockCloud);
+        final result = await svc.transcribe(file.path);
+
+        expect(result, 'whisper default');
+        expect(
+          _verifyGenerateWithAudio(mockCloud).model,
+          meliousWhisperLargeV3ModelId,
+        );
+      },
+    );
+
+    test(
+      'falls back to another Melious transcription model without Whisper v3',
+      () async {
+        final aiRepo = await meliousRepo([
+          meliousVoxtralSmall24B2507ModelId,
+          meliousWhisperLargeV3TurboModelId,
+        ]);
+
+        final file = await audioFile();
+        final mockCloud = MockCloudInferenceRepository();
+        _stubGenerateWithAudio(mockCloud, ['whisper turbo']);
+
+        final svc = buildService(repo: aiRepo, cloud: mockCloud);
+        final result = await svc.transcribe(file.path);
+
+        expect(result, 'whisper turbo');
+        expect(
+          _verifyGenerateWithAudio(mockCloud).model,
+          meliousWhisperLargeV3TurboModelId,
+        );
+      },
+    );
+
+    test(
+      'still uses Voxtral chat audio when no transcription model exists',
+      () async {
+        final aiRepo = await meliousRepo([
+          meliousVoxtralSmall24B2507ModelId,
+        ]);
+
+        final file = await audioFile();
+        final mockCloud = MockCloudInferenceRepository();
+        _stubGenerateWithAudio(mockCloud, ['voxtral fallback']);
+
+        final svc = buildService(repo: aiRepo, cloud: mockCloud);
+        final result = await svc.transcribe(file.path);
+
+        expect(result, 'voxtral fallback');
+        expect(
+          _verifyGenerateWithAudio(mockCloud).model,
+          meliousVoxtralSmall24B2507ModelId,
+        );
+      },
+    );
+
     test('prefers Mistral chat audio over MLX Qwen when both exist', () async {
       final aiRepo = isolatedRepo();
       await aiRepo.saveConfig(

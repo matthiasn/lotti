@@ -366,8 +366,8 @@ void main() {
     });
 
     test(
-      'Melious profile wires Qwen thinking, GLM 5.2 high-end, Mistral vision, '
-      'Flux Klein, and Voxtral',
+      'Melious profile wires GLM 5.2 thinking, Kimi K3 high-end and vision, '
+      'Flux Klein, and Whisper Large v3',
       () async {
         final capturedConfigs = <AiConfig>[];
         when(
@@ -388,25 +388,32 @@ void main() {
         expect(meliousProfile.name, 'Melious.ai');
         expect(
           meliousProfile.thinkingModelId,
-          meliousQwen35122BA10BModelId,
-        );
-        expect(
-          meliousProfile.thinkingHighEndModelId,
           meliousGlm52ModelId,
         );
         expect(
+          meliousProfile.thinkingHighEndModelId,
+          meliousKimiK3ModelId,
+        );
+        expect(
           meliousProfile.imageRecognitionModelId,
-          meliousMistralSmall4119BInstructModelId,
+          meliousKimiK3ModelId,
         );
         expect(
           meliousProfile.transcriptionModelId,
-          meliousVoxtralSmall24B2507ModelId,
+          meliousWhisperLargeV3ModelId,
         );
         expect(
           meliousProfile.imageGenerationModelId,
           meliousFlux2Klein9BModelId,
         );
         expect(meliousProfile.isDefault, isTrue);
+        expect(
+          meliousProfile.seedGeneration,
+          meliousProfileSeedGeneration2,
+          reason:
+              'a freshly seeded profile is already current, so the '
+              'generation-2 migration must never reconsider it',
+        );
       },
     );
 

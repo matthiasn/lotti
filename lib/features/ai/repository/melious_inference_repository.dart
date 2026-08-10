@@ -1105,7 +1105,6 @@ class MeliousInferenceRepository extends TranscriptionRepository {
       'GPT',
       'GLM',
       'JSON',
-      'KIMI',
       'LLAMA',
       'MLX',
       'QWEN',

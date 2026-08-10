@@ -79,13 +79,14 @@ void main() {
           meliousQwen35122BA10BModelId,
           meliousMistralSmall4119BInstructModelId,
           meliousGlm52ModelId,
+          meliousKimiK3ModelId,
           meliousFlux2Klein9BModelId,
           meliousVoxtralSmall24B2507ModelId,
           meliousWhisperLargeV3TurboModelId,
           meliousWhisperLargeV3ModelId,
         ]),
       );
-      expect(preset.models, hasLength(7));
+      expect(preset.models, hasLength(8));
     });
 
     test('returns models for Alibaba', () {

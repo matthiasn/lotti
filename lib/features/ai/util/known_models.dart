@@ -80,6 +80,7 @@ String? publisherForCuratedModel(String providerModelId) {
     return 'Mistral AI';
   }
   if (id.contains('glm')) return 'Zhipu AI';
+  if (id.contains('kimi') || id.contains('moonshot')) return 'Moonshot AI';
   if (id.contains('deepseek')) return 'DeepSeek';
   if (id.contains('claude')) return 'Anthropic';
   if (id.contains('minimax')) return 'MiniMax';
@@ -136,6 +137,7 @@ const String meliousMistralSmall4119BInstructModelId =
     'mistral-small-4-119b-instruct';
 const String meliousDeepseekV4FlashModelId = 'deepseek-v4-flash';
 const String meliousQwen35122BA10BModelId = 'qwen3.5-122b-a10b';
+const String meliousKimiK3ModelId = 'kimi-k3';
 const String meliousVoxtralSmall24B2507ModelId = 'voxtral-small-24b-2507';
 const String meliousWhisperLargeV3ModelId = 'whisper-large-v3';
 const String meliousWhisperLargeV3TurboModelId = 'whisper-large-v3-turbo';

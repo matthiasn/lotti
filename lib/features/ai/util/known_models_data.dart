@@ -76,6 +76,20 @@ const List<KnownModel> meliousModels = [
         'task-agent execution with evidence-first reporting.',
   ),
   KnownModel(
+    providerModelId: meliousKimiK3ModelId,
+    name: 'Kimi K3',
+    // The live catalog also advertises `video` input, which `Modality` does
+    // not model; the vision path only ever sends images.
+    inputModalities: [Modality.text, Modality.image],
+    outputModalities: [Modality.text],
+    isReasoningModel: true,
+    supportsFunctionCalling: true,
+    description:
+        'Default Melious high-end thinking and image-recognition model. '
+        'Multimodal Kimi K3 with a 1M-token context window, tool calling, and '
+        'structured output.',
+  ),
+  KnownModel(
     providerModelId: meliousDeepseekV4FlashModelId,
     name: 'DeepSeek V4 Flash',
     inputModalities: [Modality.text],

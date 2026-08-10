@@ -5,13 +5,13 @@ description: Provider-gated profile seeds, why deletion needed a tombstone, and 
 resource: ../../../lib/features/ai/util/profile_seeding_service.dart
 tags: [ai, seeding, migration, soft-delete, lifecycle]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-26T00:00:00Z }
-stale_after: 2026-10-19
+generated: { by: claude-code/opus-5, at: 2026-08-10T00:00:00Z }
+stale_after: 2026-11-10
 sources:
   - id: seeding
     resource: ../../../lib/features/ai/util/profile_seeding_service.dart
     title: ProfileSeedingService
-    last_modified: 2026-07-25
+    last_modified: 2026-08-10
   - id: repo
     resource: ../../../lib/features/ai/repository/ai_config_repository.dart
     title: AiConfigRepository — soft and hard delete
@@ -52,9 +52,11 @@ Operational details of the seeded definitions:
   recognition, `whisper-large-v3-turbo` for transcription.
 - `Local Gemma 4 (oMLX)` uses `gemma-4-26B-A4B-it-QAT-MLX-4bit` plus the same
   transcription model.
-- `Melious.ai` uses Qwen3.5 122B A10B for thinking, Mistral Small 4 119B
-  Instruct for image recognition, GLM 5.2 for high-end thinking, Flux 2 Klein 9B
-  for image generation, Voxtral Small 24B for transcription.
+- `Melious.ai` uses GLM 5.2 for thinking, Kimi K3 for **both** high-end thinking
+  and image recognition, Whisper Large v3 for transcription, and Flux 2 Klein 9B
+  for image generation. Melious FTUE installs a wider set than the profile
+  binds — Qwen3.5 122B A10B, Mistral Small 4 119B Instruct, Voxtral Small 24B
+  and Whisper Large v3 Turbo are offered as one-dropdown alternatives.
 - `Local Gemma 4 Power (Ollama)` currently ships with no default skill
   assignments.
 
@@ -165,12 +167,75 @@ What `upgradeExisting()` does backfill, after model rows exist:
   slot.
 - Moves legacy Melious seeds through the Qwen thinking, GLM 5.2 high-end
   thinking, Flux 2 Klein 9B image-generation and Voxtral Small 24B transcription
-  defaults.
+  defaults (**generation 1**).
+- Moves untouched generation-1 Melious seeds to GLM 5.2 thinking, Kimi K3
+  high-end thinking *and* image recognition, and Whisper Large v3 transcription
+  (**generation 2**). Image generation already points at Flux 2 Klein 9B.
 
-**Melious stores a seed generation** after that one-shot migration, so later user
+**Melious stores a seed generation** after each one-shot migration, so later user
 model choices are never reclassified as legacy defaults, and provider-native
 slots resolve only against Melious-owned rows. Foreign providers with a matching
 provider model id cannot satisfy or capture the migration.
+
+Each generation has a **frozen** constant and its own migration, and they run in
+order, so a profile stranded at generation 0 chains all the way to the current
+generation in a single pass. Bumping one shared constant would have retargeted
+the older migration's guard and stamp along with it — which is how a one-shot
+migration quietly stops being one.
+
+The generation-2 move is **atomic**: it applies only once every target resolves
+to a Melious-owned model row, and is otherwise deferred whole until a later
+pass. Migrating slot-by-slot as rows appeared would leave a profile in a shape
+that is neither generation 1 nor generation 2, and the next pass — which
+recognises only the exact generation-1 shape — would read that as a user edit
+and stamp it forward with the remaining slots never migrated.
+
+**Each generation also waits for the previous one to actually complete.** A
+deferred generation-1 pass leaves the profile unstamped but possibly
+half-moved; generation 2 skips anything below generation 1 rather than
+stamping over that shape, which would freeze the profile short of both
+generations forever.
+
+# A missing row is not a user's choice
+
+The rule the three guards above share, and the one to keep in mind when adding
+a generation: **the stamp is permanent, so it may only be written on complete
+evidence.**
+
+Model deletion is a tombstone. `backfillNewModels()` reads deleted rows with
+`includeDeleted: true`, so it sees the row as present and never recreates it,
+while `upgradeExisting()` reads without it and cannot see the row at all. The
+two passes disagree *by design* — and the shape predicates match a slot by
+looking its row up, so a deleted source row makes an untouched slot look
+rewired. **A single deleted model row is enough** to make a profile look
+user-edited when nothing was edited.
+
+Three consequences, each enforced in code:
+
+| Guard | Without it |
+|---|---|
+| Neither migration stamps "user edited" while a row its own shape check reads is missing | One deleted row freezes the profile on stale models, permanently |
+| Each generation guards on *its own* sources, not the union | Deleting Whisper Turbo — an alternative no generation-1 profile binds — would stall a generation-1 → 2 migration |
+| The dangling-slot repair is skipped while a Melious migration is pending | The repair heals to the *current* template, writing a generation-2 value into a generation-0 shape that the migrations then read as a user edit |
+
+Legacy provider-native values (the old Flux 2 dev id) are matched as plain
+strings and need no row, so they are deliberately absent from the source lists.
+
+```mermaid
+stateDiagram-v2
+    [*] --> Gen0: seeded before the generation stamp existed
+    Gen0 --> Gen1: untouched — Qwen / GLM 5.2 / Mistral / Voxtral / Flux
+    Gen0 --> Gen2: user-edited — stamped forward, no slot moved
+    Gen0 --> Gen0: a generation-1 target row is missing — deferred, NOT stamped
+    Gen1 --> Gen2: untouched — GLM 5.2 / Kimi K3 / Kimi K3 / Whisper v3
+    Gen1 --> Gen1: a generation-2 target row is missing — deferred whole
+    Gen2 --> Gen2: current — never reconsidered
+    note right of Gen2
+      Fresh seeds are written at the
+      current generation, so the
+      migration never reconsiders them.
+    end note
+```
 
 User-edited names, resolvable model slots outside recognized seed generations,
 and skill assignments are all preserved.
