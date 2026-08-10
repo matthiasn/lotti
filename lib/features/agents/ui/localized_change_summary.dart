@@ -458,7 +458,17 @@ String? _goalRevision(AppLocalizations messages, Map<String, dynamic> args) {
       ),
   ];
   if (parts.isEmpty) return null;
-  final summary = parts.join(' · ');
+  // Composite goals: the metric/habit identifier is WHAT the approval
+  // mutates — without it two proposals against different habits read
+  // identically. (The id is the creation-time criterion name.)
+  final metric = args['changes'] is Map
+      ? (args['changes'] as Map)['metric']
+      : null;
+  final scoped = metric is String && metric.trim().isNotEmpty
+      ? '${parts.join(' · ')} '
+            '(${messages.agentSummaryGoalRevisionScope(metric.trim())})'
+      : parts.join(' · ');
+  final summary = scoped;
   // The agent's WHY is the heart of the approval decision. Rationale is
   // model-authored content (generated, not localized — the banner-copy
   // rule); only the sentence structure around it is ours.

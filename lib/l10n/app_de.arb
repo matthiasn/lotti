@@ -420,6 +420,7 @@
   "agentSummaryFollowUpTask": "Folgeaufgabe: {title}",
   "agentSummaryGoalRevisionCadence": "Häufigkeit auf {value} ändern",
   "agentSummaryGoalRevisionPeriod": "Zeitraum auf {value} ändern",
+  "agentSummaryGoalRevisionScope": "gilt für {value}",
   "agentSummaryGoalRevisionTarget": "Zielwert auf {value} ändern",
   "agentSummaryMigrateItem": "In die Folgeaufgabe verschieben: „{title}“",
   "agentSummaryRecommendNextSteps": "Nächste Schritte vorschlagen",

@@ -150,6 +150,14 @@ class GoalAgentPhaseA {
     // so the concurrent resolver could never recover the quiet-window
     // verdict.
     await _syncService.runInTransaction(() async {
+      // Re-read the head HERE: a revision committing after this wake's
+      // version load would otherwise make the sweep judge a fresh
+      // new-spec banner as foreign and terminally supersede it.
+      final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
+      if (headNow is GoalSpecHeadEntity &&
+          headNow.versionId != activeVersionId) {
+        return;
+      }
       final nudges = (await _repository.getEntitiesByAgentId(
         agentId,
         type: AgentEntityTypes.goalNudge,

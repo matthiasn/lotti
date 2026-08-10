@@ -430,17 +430,29 @@ void main() {
       );
     });
 
-    test('same or unparseable versions defer to LWW (null)', () {
+    test('same-ordinal DIFFERENT ids pick a stable lexicographic winner — '
+        'replicas agree, and the next tick recomputes under the real '
+        'head', () {
       expect(
         resolveConcurrentAgentEntityOverride(
           local: register('goal-1:spec-v2-aa'),
           incoming: register('goal-1:spec-v2-bb'),
         ),
-        isNull,
+        ConcurrentWinner.incoming,
       );
       expect(
         resolveConcurrentAgentEntityOverride(
-          local: register('foreign-shape'),
+          local: register('goal-1:spec-v2-bb'),
+          incoming: register('goal-1:spec-v2-aa'),
+        ),
+        ConcurrentWinner.local,
+      );
+    });
+
+    test('identical spec ids defer to LWW (null)', () {
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: register('goal-1:spec-v2-aa'),
           incoming: register('goal-1:spec-v2-aa'),
         ),
         isNull,

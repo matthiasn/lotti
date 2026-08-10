@@ -511,6 +511,14 @@
       }
     }
   },
+  "agentSummaryGoalRevisionScope": "applies to {value}",
+  "@agentSummaryGoalRevisionScope": {
+    "placeholders": {
+      "value": {
+        "type": "String"
+      }
+    }
+  },
   "agentSummaryGoalRevisionTarget": "Change the target to {value}",
   "@agentSummaryGoalRevisionTarget": {
     "placeholders": {

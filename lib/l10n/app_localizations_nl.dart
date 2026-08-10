@@ -919,6 +919,11 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'geldt voor $value';
+  }
+
+  @override
   String agentSummaryGoalRevisionTarget(String value) {
     return 'Doel wijzigen naar $value';
   }

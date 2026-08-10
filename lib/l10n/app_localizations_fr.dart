@@ -931,6 +931,11 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 's\'applique à $value';
+  }
+
+  @override
   String agentSummaryGoalRevisionTarget(String value) {
     return 'Changer l\'objectif à $value';
   }

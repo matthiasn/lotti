@@ -925,6 +925,11 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'aplica-se a $value';
+  }
+
+  @override
   String agentSummaryGoalRevisionTarget(String value) {
     return 'Alterar a meta para $value';
   }

@@ -60,13 +60,13 @@ class GoalAgentDetailPage extends ConsumerWidget {
         ),
       );
     }
-    // A stale link or a foreign route: a missing agent (or one that is
-    // not a goal agent) is NOT healthy empty data — say so instead of
-    // mounting a blank page with proposals and history.
+    // A stale link, a foreign route, OR a failed identity load: none of
+    // these may mount proposals and history as if the goal were healthy.
     final identity = identityAsync.value;
-    if (identityAsync.hasValue &&
-        (identity is! AgentIdentityEntity ||
-            identity.kind != AgentKinds.goalAgent)) {
+    if (identityAsync.hasError ||
+        (identityAsync.hasValue &&
+            (identity is! AgentIdentityEntity ||
+                identity.kind != AgentKinds.goalAgent))) {
       return popSafe(
         Scaffold(
           appBar: AppBar(leading: backToList, title: const Text('')),
@@ -74,7 +74,9 @@ class GoalAgentDetailPage extends ConsumerWidget {
             child: Padding(
               padding: EdgeInsets.all(tokens.spacing.step5),
               child: Text(
-                context.messages.goalDetailNotFound,
+                identityAsync.hasError
+                    ? context.messages.goalDetailHealthUnavailable
+                    : context.messages.goalDetailNotFound,
                 textAlign: TextAlign.center,
                 style: tokens.typography.styles.body.bodyMedium.copyWith(
                   color: tokens.colors.text.mediumEmphasis,

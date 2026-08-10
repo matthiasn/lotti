@@ -427,6 +427,7 @@
   "agentSummaryFollowUpTask": "Navazující úkol: {title}",
   "agentSummaryGoalRevisionCadence": "Změnit frekvenci na {value}",
   "agentSummaryGoalRevisionPeriod": "Změnit období na {value}",
+  "agentSummaryGoalRevisionScope": "platí pro {value}",
   "agentSummaryGoalRevisionTarget": "Změnit cíl na {value}",
   "agentSummaryMigrateItem": "Přesunout do navazujícího úkolu: „{title}“",
   "agentSummaryRecommendNextSteps": "Doporučit další kroky",

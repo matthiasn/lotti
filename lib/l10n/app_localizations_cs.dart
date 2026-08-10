@@ -919,6 +919,11 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'platí pro $value';
+  }
+
+  @override
   String agentSummaryGoalRevisionTarget(String value) {
     return 'Změnit cíl na $value';
   }

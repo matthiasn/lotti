@@ -444,6 +444,7 @@
   "agentSummaryFollowUpTask": "Tarefa de acompanhamento: {title}",
   "agentSummaryGoalRevisionCadence": "Alterar a cadência para {value}",
   "agentSummaryGoalRevisionPeriod": "Alterar o período para {value}",
+  "agentSummaryGoalRevisionScope": "aplica-se a {value}",
   "agentSummaryGoalRevisionTarget": "Alterar a meta para {value}",
   "agentSummaryMigrateItem": "Mover para a tarefa de acompanhamento: \"{title}\"",
   "agentSummaryRecommendNextSteps": "Recomendar os passos seguintes",

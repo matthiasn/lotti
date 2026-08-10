@@ -420,6 +420,7 @@
   "agentSummaryFollowUpTask": "Tâche de suivi : {title}",
   "agentSummaryGoalRevisionCadence": "Changer la cadence à {value}",
   "agentSummaryGoalRevisionPeriod": "Changer la période à {value}",
+  "agentSummaryGoalRevisionScope": "s'applique à {value}",
   "agentSummaryGoalRevisionTarget": "Changer l'objectif à {value}",
   "agentSummaryMigrateItem": "Déplacer vers la tâche de suivi : « {title} »",
   "agentSummaryRecommendNextSteps": "Recommander les prochaines étapes",

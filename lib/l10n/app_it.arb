@@ -445,6 +445,7 @@
   "agentSummaryFollowUpTask": "Attività di follow-up: {title}",
   "agentSummaryGoalRevisionCadence": "Cambia la cadenza a {value}",
   "agentSummaryGoalRevisionPeriod": "Cambia il periodo a {value}",
+  "agentSummaryGoalRevisionScope": "si applica a {value}",
   "agentSummaryGoalRevisionTarget": "Cambia l'obiettivo a {value}",
   "agentSummaryMigrateItem": "Sposta nell’attività di follow-up: \"{title}\"",
   "agentSummaryRecommendNextSteps": "Consiglia i passi successivi",

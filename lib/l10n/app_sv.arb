@@ -445,6 +445,7 @@
   "agentSummaryFollowUpTask": "Uppföljningsuppgift: {title}",
   "agentSummaryGoalRevisionCadence": "Ändra frekvensen till {value}",
   "agentSummaryGoalRevisionPeriod": "Ändra perioden till {value}",
+  "agentSummaryGoalRevisionScope": "gäller {value}",
   "agentSummaryGoalRevisionTarget": "Ändra målet till {value}",
   "agentSummaryMigrateItem": "Flytta till uppföljningsuppgift: ”{title}”",
   "agentSummaryRecommendNextSteps": "Rekommendera nästa steg",

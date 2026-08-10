@@ -1669,6 +1669,12 @@ abstract class AppLocalizations {
   /// **'Change the window to {value}'**
   String agentSummaryGoalRevisionPeriod(String value);
 
+  /// No description provided for @agentSummaryGoalRevisionScope.
+  ///
+  /// In en, this message translates to:
+  /// **'applies to {value}'**
+  String agentSummaryGoalRevisionScope(String value);
+
   /// No description provided for @agentSummaryGoalRevisionTarget.
   ///
   /// In en, this message translates to:

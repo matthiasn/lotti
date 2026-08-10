@@ -131,6 +131,16 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
           ? ConcurrentWinner.local
           : ConcurrentWinner.incoming;
     }
+    // Disconnected approvals mint the same ordinal under different ids
+    // (spec-v2-aaaa vs spec-v2-bbbb). Neither is knowably the standing
+    // head from here, but replicas MUST agree; the lexicographic pick is
+    // stable and symmetric, and the next Phase A tick recomputes the
+    // register under the actual head anyway (recompute-never-accumulate).
+    if (local.specVersionId != incoming.specVersionId) {
+      return local.specVersionId.compareTo(incoming.specVersionId) > 0
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
+    }
     return null;
   }
   if (local is GoalNudgeEntity && incoming is GoalNudgeEntity) {

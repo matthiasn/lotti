@@ -444,6 +444,7 @@
   "agentSummaryFollowUpTask": "Vervolgtaak: {title}",
   "agentSummaryGoalRevisionCadence": "Frequentie wijzigen naar {value}",
   "agentSummaryGoalRevisionPeriod": "Periode wijzigen naar {value}",
+  "agentSummaryGoalRevisionScope": "geldt voor {value}",
   "agentSummaryGoalRevisionTarget": "Doel wijzigen naar {value}",
   "agentSummaryMigrateItem": "Verplaatsen naar vervolgtaak: \"{title}\"",
   "agentSummaryRecommendNextSteps": "Volgende stappen voorstellen",

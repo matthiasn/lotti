@@ -929,6 +929,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'se aplică la $value';
+  }
+
+  @override
   String agentSummaryGoalRevisionTarget(String value) {
     return 'Schimbați ținta la $value';
   }

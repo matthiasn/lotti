@@ -425,6 +425,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
     }
   }
 
+  /// Whether a nudge row belongs in THIS wake's view: rows from another
+  /// spec version are invisible (they neither count as fresh actives nor
+  /// enter the reuse pool), except dismissals — the user's quiet window
+  /// binds the whole goal. Legacy rows without provenance pass.
+  bool _specScopedRow(GoalNudgeEntity nudge, String versionId) {
+    if (nudge.status == GoalNudgeStatus.dismissed) return true;
+    final origin = nudge.provenance['specVersionId'];
+    return origin == null || origin == versionId;
+  }
+
   /// Whether the deterministic facts permit ad activity at all: offTrack
   /// always; atRisk only on a worsening trend (policy rows P4/P5). Every
   /// other status forbids ads — succeeding, recovering or data-gapped
@@ -757,13 +767,21 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // snapshot: the user may have dismissed an ad while the model was
       // thinking, and that dismissal must bind EVERY guard below — the
       // retire skips, the cooldown, and the fresh-active check alike.
+      // Scoped to THIS wake's spec: a superseded-spec banner syncing in
+      // late must not satisfy the fresh-active guard and suppress the
+      // current goal's banner (dismissals stay visible regardless — the
+      // quiet window is the goal's, not one spec version's).
       final nudges =
           (await _repository.getEntitiesByAgentId(
                 agentId,
                 type: AgentEntityTypes.goalNudge,
               ))
               .whereType<GoalNudgeEntity>()
-              .where((n) => n.deletedAt == null)
+              .where(
+                (n) =>
+                    n.deletedAt == null &&
+                    _specScopedRow(n, derivation.version.id),
+              )
               .toList();
       final byId = {for (final nudge in nudges) nudge.id: nudge};
 
@@ -981,6 +999,15 @@ class GoalAgentWorkflow with AgentErrorLogging {
       final seenDigests = {
         for (final nudge in nudges) nudge.briefDigest,
       };
+      // The creation ordinal within this period: partitioned duplicate
+      // executions of the SAME escalation both compute 0 and converge on
+      // one row, while a same-period retire-and-create swap sees the
+      // earlier row and mints ordinal 1 — never recycling (and wiping)
+      // the retired row's history and counters.
+      final periodIdPrefix = 'goal_nudge:$agentId:${derivation.periodKey}:';
+      var periodOrdinal = nudges
+          .where((n) => n.id.startsWith(periodIdPrefix))
+          .length;
       for (final request in strategy.createdAds) {
         if (staleSpecWake) {
           logError(
@@ -1011,11 +1038,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
         freshActiveExists = true;
         await _syncService.upsertEntity(
           AgentDomainEntity.goalNudge(
-            // Deterministic per escalation period: two devices that both
-            // win a partitioned lease and run the same escalation mint
-            // the SAME row and converge on one banner, instead of two
-            // random-id duplicates saturating the strip cap.
-            id: 'goal_nudge:$agentId:${derivation.periodKey}',
+            // Deterministic per escalation period + creation ordinal:
+            // two devices that both win a partitioned lease and run the
+            // same escalation mint the SAME row and converge, while a
+            // same-period swap gets a fresh id.
+            id: '$periodIdPrefix${periodOrdinal++}',
             agentId: agentId,
             status: GoalNudgeStatus.active,
             brief: brief,

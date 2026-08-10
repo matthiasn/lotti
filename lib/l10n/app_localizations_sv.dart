@@ -923,6 +923,11 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionScope(String value) {
+    return 'gäller $value';
+  }
+
+  @override
   String agentSummaryGoalRevisionTarget(String value) {
     return 'Ändra målet till $value';
   }

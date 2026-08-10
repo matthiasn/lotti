@@ -6,7 +6,10 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -18,6 +21,22 @@ import 'package:lotti/services/nav_service.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  final goalIdentity =
+      AgentDomainEntity.agent(
+            id: 'goal-1',
+            agentId: 'goal-1',
+            kind: AgentKinds.goalAgent,
+            displayName: 'Move more',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'goal-1:state',
+            config: const AgentConfig(),
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+            vectorClock: null,
+          )
+          as AgentIdentityEntity;
   testWidgets('renders the health header, statement, no-report hint and '
       'timeline section', (tester) async {
     final spec =
@@ -45,6 +64,9 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
           goalAgentHealthProvider('goal-1').overrideWith(
             (ref) async => (
               trackStatus: GoalTrackStatus.atRisk,
@@ -97,6 +119,9 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
           goalAgentHealthProvider('goal-1').overrideWith(
             (ref) async => (
               trackStatus: GoalTrackStatus.onTrack,
@@ -191,6 +216,9 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
           goalAgentHealthProvider('goal-1').overrideWith(
             (ref) async => (
               trackStatus: GoalTrackStatus.offTrack,
@@ -251,6 +279,9 @@ void main() {
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
         overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
           goalAgentHealthProvider('goal-1').overrideWith(
             (ref) async => (
               trackStatus: GoalTrackStatus.onTrack,
@@ -289,6 +320,9 @@ void main() {
       makeTestableWidgetNoScroll(
         const SizedBox.shrink(),
         overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
           goalAgentHealthProvider('goal-1').overrideWith(
             (ref) async => (
               trackStatus: GoalTrackStatus.onTrack,

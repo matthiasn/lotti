@@ -445,6 +445,7 @@
   "agentSummaryFollowUpTask": "Opfølgningsopgave: {title}",
   "agentSummaryGoalRevisionCadence": "Ændr kadencen til {value}",
   "agentSummaryGoalRevisionPeriod": "Ændr perioden til {value}",
+  "agentSummaryGoalRevisionScope": "gælder for {value}",
   "agentSummaryGoalRevisionTarget": "Ændr målet til {value}",
   "agentSummaryMigrateItem": "Flyt til opfølgningsopgave: \"{title}\"",
   "agentSummaryRecommendNextSteps": "Anbefal næste skridt",
