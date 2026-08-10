@@ -391,10 +391,11 @@ void main() {
       );
     });
 
-    test('tool names follow the verb_goal_noun convention', () {
+    test('tool names use the shared reply carrier or verb_goal_noun', () {
       for (final tool in goalAgentTools) {
         expect(
-          RegExp(r'^[a-z]+_goal_[a-z_]+$').hasMatch(tool.name),
+          tool.name == GoalAgentToolNames.replyToUser ||
+              RegExp(r'^[a-z]+_goal_[a-z_]+$').hasMatch(tool.name),
           isTrue,
           reason: tool.name,
         );
