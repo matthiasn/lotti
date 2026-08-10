@@ -125,12 +125,20 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
         .clamp(0.0, 1.0);
     final graphemes = widget.text.characters;
     final count = (graphemes.length * t).round();
-    // Reserve the full size so the banner never reflows while typing.
-    return Stack(
-      children: [
-        Opacity(opacity: 0, child: _capped(widget.text)),
-        _capped(graphemes.take(count).toString()),
-      ],
+    // Screen readers get the STABLE full copy; the ever-changing visual
+    // prefix (empty at every cycle start) is excluded so VoiceOver never
+    // announces a truncated or blank headline.
+    return Semantics(
+      label: widget.text,
+      child: ExcludeSemantics(
+        // Reserve the full size so the banner never reflows while typing.
+        child: Stack(
+          children: [
+            Opacity(opacity: 0, child: _capped(widget.text)),
+            _capped(graphemes.take(count).toString()),
+          ],
+        ),
+      ),
     );
   }
 

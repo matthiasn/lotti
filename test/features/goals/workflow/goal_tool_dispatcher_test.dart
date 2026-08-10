@@ -89,12 +89,12 @@ void main() {
         agentId,
       );
       expect(result.success, isTrue);
-      expect(result.mutatedEntityId, '$agentId:spec-v2');
+      expect(result.mutatedEntityId, startsWith('$agentId:spec-v2-'));
+      final mintedVersion = upserts
+          .whereType<GoalSpecVersionEntity>()
+          .singleWhere((v) => v.version == 2);
       expect(
-        upserts
-            .whereType<GoalSpecVersionEntity>()
-            .singleWhere((v) => v.id == '$agentId:spec-v2')
-            .sourceSessionId,
+        mintedVersion.sourceSessionId,
         'thread-42',
         reason: 'the proposing conversation stays auditable on the version',
       );
@@ -102,7 +102,7 @@ void main() {
       expect(result.output, contains('target: 10000 → 8000'));
       expect(
         upserts.whereType<GoalSpecHeadEntity>().single.versionId,
-        '$agentId:spec-v2',
+        mintedVersion.id,
       );
     },
   );

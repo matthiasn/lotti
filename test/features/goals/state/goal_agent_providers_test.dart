@@ -405,10 +405,14 @@ void main() {
         vectorClock: null,
       ),
     );
-    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
-      (_) async => upserted
+    when(
+      () => repository.getEntity(
+        any(that: startsWith('$agentId:spec-v2')),
+      ),
+    ).thenAnswer(
+      (invocation) async => upserted
           .whereType<GoalSpecVersionEntity>()
-          .where((v) => v.id == '$agentId:spec-v2')
+          .where((v) => v.id == invocation.positionalArguments.first)
           .lastOrNull,
     );
     when(() => repository.getEntity('cs-1')).thenAnswer((_) async => changeSet);
@@ -434,14 +438,14 @@ void main() {
 
     final result = await service.confirmItem(applicable, 0);
     expect(result.success, isTrue, reason: result.errorMessage ?? '');
-    expect(result.mutatedEntityId, '$agentId:spec-v2');
+    expect(result.mutatedEntityId, startsWith('$agentId:spec-v2-'));
 
     final minted = upserted.whereType<GoalSpecVersionEntity>().singleWhere(
-      (v) => v.id == '$agentId:spec-v2',
+      (v) => v.version == 2,
     );
     expect((minted.criteria as GoalCriterionHabit).targetCount, 4);
     final head = upserted.whereType<GoalSpecHeadEntity>().last;
-    expect(head.versionId, '$agentId:spec-v2');
+    expect(head.versionId, minted.id);
 
     final decision = upserted.whereType<ChangeDecisionEntity>().single;
     expect(decision.verdict, ChangeDecisionVerdict.confirmed);

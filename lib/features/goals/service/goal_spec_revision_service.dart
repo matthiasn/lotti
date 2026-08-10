@@ -7,6 +7,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/goals/service/goal_revision_apply.dart';
+import 'package:uuid/uuid.dart';
 
 /// The outcome of a user-approved goal revision.
 sealed class GoalSpecRevisionOutcome {
@@ -48,6 +49,7 @@ class GoalSpecRevisionService {
 
   final AgentRepository _repository;
   final AgentSyncService _syncService;
+  static const _uuid = Uuid();
 
   Future<GoalSpecRevisionOutcome> reviseFromProposal({
     required String agentId,
@@ -129,16 +131,14 @@ class GoalSpecRevisionService {
     }
 
     final nextVersion = current.version + 1;
-    final versionId = '$agentId:spec-v$nextVersion';
-    final existing = await _repository.getEntity(versionId);
-    if (existing != null) {
-      // The successor id already exists: another acceptance won the race
-      // within this id space. Refuse rather than overwrite provenance.
-      return GoalSpecRevisionRefused(
-        'a concurrent revision already minted $versionId — re-approve '
-        'against the new head if the change is still wanted',
-      );
-    }
+    // The id carries a random suffix: two DISCONNECTED replicas approving
+    // different proposals both mint a v$nextVersion, and deterministic
+    // ids would collide — generic LWW would then silently swallow one
+    // explicit user approval, provenance and all. Unique ids keep both
+    // rows; the head's own LWW picks the standing one and the other
+    // stays in history.
+    final versionId =
+        '$agentId:spec-v$nextVersion-${_uuid.v4().substring(0, 8)}';
     final minted =
         AgentDomainEntity.goalSpecVersion(
               id: versionId,

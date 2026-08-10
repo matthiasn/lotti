@@ -93,7 +93,7 @@ void main() {
 
     expect(outcome, isA<GoalSpecRevisionMinted>());
     final minted = (outcome as GoalSpecRevisionMinted).version;
-    expect(minted.id, '$agentId:spec-v2');
+    expect(minted.id, startsWith('$agentId:spec-v2-'));
     expect(minted.version, 2);
     expect(minted.status, GoalSpecVersionStatus.active);
     expect(minted.authoredBy, AgentKinds.goalAgent);
@@ -113,7 +113,7 @@ void main() {
     expect(superseded.status, GoalSpecVersionStatus.superseded);
     final head = upserts.whereType<GoalSpecHeadEntity>().single;
     expect(head.id, goalSpecHeadId(agentId));
-    expect(head.versionId, '$agentId:spec-v2');
+    expect(head.versionId, minted.id);
     expect(head.updatedAt, now);
   });
 
@@ -291,12 +291,13 @@ void main() {
     );
     expect(
       (outcome as GoalSpecRevisionMinted).version.id,
-      '$agentId:spec-v5',
+      startsWith('$agentId:spec-v5-'),
     );
+    expect(outcome.version.version, 5);
   });
 
-  test('reads happen INSIDE the transaction, and a successor id that '
-      'already exists refuses instead of overwriting provenance', () async {
+  test('reads happen INSIDE the transaction, and successor ids carry a '
+      'collision-proof suffix', () async {
     final order = <String>[];
     final txnSyncService = _OrderRecordingSyncService(order);
     when(() => txnSyncService.upsertEntity(any())).thenAnswer((
@@ -321,36 +322,23 @@ void main() {
         vectorClock: null,
       );
     });
-    // The successor already exists: a concurrent acceptance won.
-    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
-      (_) async => AgentDomainEntity.goalSpecVersion(
-        id: '$agentId:spec-v2',
-        agentId: agentId,
-        version: 2,
-        status: GoalSpecVersionStatus.active,
-        authoredBy: AgentKinds.goalAgent,
-        title: 'Steps',
-        statement: 'x',
-        criteria: criteria,
-        createdAt: DateTime(2026, 8, 10, 8),
-        vectorClock: null,
-      ),
-    );
-
     final outcome = await txnService.reviseFromProposal(
       agentId: agentId,
       changes: {'targetValue': 8000},
       rationale: 'r',
     );
-    expect(
-      (outcome as GoalSpecRevisionRefused).reason,
-      contains('concurrent revision already minted'),
-    );
-    expect(upserts, isEmpty);
+    expect(outcome, isA<GoalSpecRevisionMinted>());
     expect(
       order.first,
       'transaction',
       reason: 'the head read must be serialized by the transaction',
+    );
+    // Successor ids carry a random suffix: two disconnected replicas
+    // minting the same version NUMBER can never collide on the row id,
+    // so neither user-approved revision is swallowed by LWW.
+    expect(
+      (outcome as GoalSpecRevisionMinted).version.id,
+      startsWith('$agentId:spec-v2-'),
     );
   });
 
@@ -379,10 +367,14 @@ void main() {
               )
               as GoalSpecHeadEntity,
     );
-    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
-      (_) async => upserts
+    when(
+      () => repository.getEntity(
+        any(that: startsWith('$agentId:spec-v2')),
+      ),
+    ).thenAnswer(
+      (invocation) async => upserts
           .whereType<GoalSpecVersionEntity>()
-          .where((v) => v.id == '$agentId:spec-v2')
+          .where((v) => v.id == invocation.positionalArguments.first)
           .lastOrNull,
     );
 
@@ -397,7 +389,7 @@ void main() {
     expect(outcome, isA<GoalSpecRevisionMinted>());
     expect(
       (outcome as GoalSpecRevisionMinted).version.id,
-      '$agentId:spec-v2',
+      startsWith('$agentId:spec-v2-'),
     );
   });
 }

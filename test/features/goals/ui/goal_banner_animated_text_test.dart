@@ -210,4 +210,17 @@ void main() {
     );
     expect(text.maxLines, 2);
   });
+
+  testWidgets('the typewriter exposes the FULL headline to screen readers '
+      'while the visual prefix is still typing', (tester) async {
+    await tester.pumpWidget(host(GoalBannerAnimation.typewriter));
+    await tester.pump(const Duration(milliseconds: 100));
+    // Early in the cycle only a prefix is painted…
+    final semantics = tester.getSemantics(
+      find.bySemanticsLabel('Your inner couch potato is winning.'),
+    );
+    // …but assistive tech always hears the whole copy.
+    expect(semantics.label, 'Your inner couch potato is winning.');
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
 }

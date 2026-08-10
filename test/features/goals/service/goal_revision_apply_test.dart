@@ -304,4 +304,35 @@ void main() {
     final revised = result.criteria as GoalCriterionAnyOf;
     expect((revised.criteria.single as GoalCriterionMetric).target, 9000);
   });
+
+  test('a cadence beyond the window capacity is rejected — one success '
+      'per day is the observable maximum', () {
+    const weekly = GoalCriterion.habit(
+      criterionId: 'gym',
+      habitId: 'gym-habit',
+      window: GoalWindow.calendarWeek(),
+      targetCount: 3,
+    );
+    final outcome = applyGoalRevisionChanges(
+      criteria: weekly,
+      changes: {'cadence': '8 times per week'},
+    );
+    expect(
+      (outcome as GoalRevisionRejected).reason,
+      contains('exceeds the window capacity of 7'),
+    );
+
+    // The bound is the window's, not a constant: rolling 10 days takes 8.
+    const rolling = GoalCriterion.habit(
+      criterionId: 'gym',
+      habitId: 'gym-habit',
+      window: GoalWindow.rollingDays(count: 10),
+      targetCount: 3,
+    );
+    final ok = applyGoalRevisionChanges(
+      criteria: rolling,
+      changes: {'cadence': 8},
+    );
+    expect(ok, isA<GoalRevisionApplied>());
+  });
 }
