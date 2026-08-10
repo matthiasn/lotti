@@ -245,6 +245,24 @@ void main() {
     expect(find.textContaining('just now'), findsNothing);
   });
 
+  testWidgets('when two fresh banners arrive in one refresh, the NEWEST '
+      '(first, newest-first order) takes the slot', (tester) async {
+    await pumpDock(tester, [entry(id: 'a', headline: 'First voice')]);
+    expect(find.text('First voice'), findsOneWidget);
+
+    // Two new voices arrive at once, newest-first: 'c' then 'b'. The newest
+    // acknowledgment ('c') must jump the queue, not the older 'b'.
+    notifier(tester).entries = [
+      entry(id: 'c', headline: 'Newest voice'),
+      entry(id: 'b', headline: 'Older new voice'),
+      entry(id: 'a', headline: 'First voice'),
+    ];
+    await tester.pump();
+    await settleTransition(tester);
+    expect(find.text('Newest voice'), findsOneWidget);
+    expect(find.text('Older new voice'), findsNothing);
+  });
+
   testWidgets('a re-run (activation bump) jumps the queue like a fresh '
       'acknowledgment', (tester) async {
     await pumpDock(tester, [
@@ -260,6 +278,42 @@ void main() {
     await tester.pump();
     await settleTransition(tester);
     expect(find.text('Second voice, refreshed'), findsOneWidget);
+  });
+
+  testWidgets('a second tenant arriving beside a lone one restarts the '
+      'idle cycle', (tester) async {
+    await pumpDock(tester, [entry(id: 'a', headline: 'First voice')]);
+    // Lone tenant: the tenure clock is stopped.
+    await tester.pump(goalBannerDockTenure * 2);
+    expect(find.text('First voice'), findsOneWidget);
+
+    // A second voice appears — the current tenant is still present, but the
+    // cycle must resume now that there is somewhere to rotate to.
+    notifier(tester).entries = [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ];
+    await tester.pump();
+    await tester.pump(goalBannerDockTenure);
+    await settleTransition(tester);
+    expect(find.text('Second voice'), findsOneWidget);
+  });
+
+  testWidgets('a cancelled touch releases the pause', (tester) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'First voice'),
+      entry(id: 'b', headline: 'Second voice'),
+    ]);
+    final gesture = await tester.startGesture(
+      tester.getCenter(find.text('First voice')),
+    );
+    await tester.pump();
+    // Cancel (not release): the pointer-cancel path must also resume.
+    await gesture.cancel();
+    await tester.pump();
+    await tester.pump(goalBannerDockTenure);
+    await settleTransition(tester);
+    expect(find.text('Second voice'), findsOneWidget);
   });
 
   testWidgets('dismissal advances immediately and the dot count shrinks; '

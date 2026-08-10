@@ -22,9 +22,14 @@ class GoalBannerPersonaChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    // The circle grows with the text scale so the monogram never outgrows
+    // its bounds at large accessibility sizes (2×–3×) and bleeds into the
+    // adjacent headline.
+    final size =
+        tokens.spacing.step6 * MediaQuery.textScalerOf(context).scale(1);
     return Container(
-      width: tokens.spacing.step6,
-      height: tokens.spacing.step6,
+      width: size,
+      height: size,
       alignment: Alignment.center,
       decoration: BoxDecoration(
         color: style.chipFill,

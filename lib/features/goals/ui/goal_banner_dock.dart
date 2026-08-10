@@ -169,13 +169,16 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     final coldStart = _seenActivations.isEmpty;
     for (final entry in entries) {
       final seen = _seenActivations[entry.nudge.id];
+      // Entries are newest-first, so the FIRST jump-worthy match is the most
+      // recent acknowledgment — keep it (`??=`) rather than letting an older
+      // fresh banner later in the list overwrite it.
       if (seen != null && entry.nudge.activationCount > seen) {
         // A re-run's fresh copy is an acknowledgment — it takes the slot.
-        jumpTo = entry.nudge.id;
+        jumpTo ??= entry.nudge.id;
       } else if (seen == null && !coldStart) {
         // A banner that appeared AFTER the dock was already rotating is a
         // fresh voice — it takes the slot.
-        jumpTo = entry.nudge.id;
+        jumpTo ??= entry.nudge.id;
       }
       _seenActivations[entry.nudge.id] = entry.nudge.activationCount;
     }
@@ -197,12 +200,10 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
           _successorOf(_currentId, entries)?.nudge.id ?? entries.first.nudge.id;
       _jumpedId = null;
       _restartTenure(entries.length);
-    } else if (entries.length > 1 &&
-        !_tenure.isAnimating &&
-        !_hovered &&
-        !_touched) {
-      _tenure.forward();
     } else if (entries.length == 1) {
+      // Fell to a lone tenant: it just sits, no cycle. (A new arrival takes
+      // the jump path above; a released pause resumes via `_setPaused`; a
+      // resumed app via the lifecycle hook — so no resume is needed here.)
       _tenure.stop();
     }
   }
@@ -253,10 +254,15 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     final tokens = context.designTokens;
     final entries = _visible(ref.watch(activeGoalNudgesProvider).value);
 
-    // First build with content: adopt without animation churn.
+    // First build when the provider was ALREADY resolved (a cached value on
+    // tab re-entry): `ref.listen` fires only on changes, so this adopts the
+    // first tenant that the listener never saw arrive. Exercised only with a
+    // pre-warmed provider, which widget tests don't reproduce.
+    // coverage:ignore-start
     if (_currentId == null && entries.isNotEmpty) {
       _reconcile(entries);
     }
+    // coverage:ignore-end
 
     final keyboardUp =
         widget.compact && MediaQuery.viewInsetsOf(context).bottom > 0;
@@ -264,6 +270,8 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
         ? null
         : entries.firstWhere(
             (e) => e.nudge.id == _currentId,
+            // Transient guard (the orElse) for the frame between a removed
+            // id landing on `_currentId` and the reconcile that fixes it.
             orElse: () => entries.first,
           );
 
