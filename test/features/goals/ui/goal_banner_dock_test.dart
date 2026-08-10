@@ -20,7 +20,8 @@ class _TestEntries extends Notifier<List<GoalBannerEntry>> {
   @override
   List<GoalBannerEntry> build() => initial;
 
-  void set(List<GoalBannerEntry> entries) => state = entries;
+  // ignore: avoid_setters_without_getters
+  set entries(List<GoalBannerEntry> value) => state = value;
 }
 
 final _testEntriesProvider =
@@ -193,7 +194,7 @@ void main() {
     ]);
     expect(find.text('First voice'), findsOneWidget);
 
-    notifier(tester).set([
+    notifier(tester).entries = [
       entry(id: 'a', headline: 'First voice'),
       entry(id: 'b', headline: 'Second voice'),
       entry(
@@ -201,7 +202,7 @@ void main() {
         headline: 'Walk done. That’s the rhythm.',
         goalTitle: 'Walk more',
       ),
-    ]);
+    ];
     await tester.pump();
     await settleTransition(tester);
 
@@ -222,10 +223,10 @@ void main() {
     ]);
     expect(find.text('First voice'), findsOneWidget);
 
-    notifier(tester).set([
+    notifier(tester).entries = [
       entry(id: 'a', headline: 'First voice'),
       entry(id: 'b', headline: 'Second voice, refreshed', activationCount: 2),
-    ]);
+    ];
     await tester.pump();
     await settleTransition(tester);
     expect(find.text('Second voice, refreshed'), findsOneWidget);
@@ -263,8 +264,8 @@ void main() {
     _TestEntries.initial = [entry(id: 'a', headline: 'First voice')];
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        MediaQuery(
-          data: const MediaQueryData(
+        const MediaQuery(
+          data: MediaQueryData(
             viewInsets: EdgeInsets.only(bottom: 280),
           ),
           child: Scaffold(
@@ -298,8 +299,8 @@ void main() {
     ];
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        MediaQuery(
-          data: const MediaQueryData(disableAnimations: true),
+        const MediaQuery(
+          data: MediaQueryData(disableAnimations: true),
           child: Scaffold(
             bottomNavigationBar: GoalBannerDock(compact: false),
           ),
