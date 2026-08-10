@@ -16,7 +16,15 @@ extension WakeBatchRouter on WakeOrchestrator {
     // immediate subscription's job synchronously, so a second subscription
     // matching the same batch would find nothing to merge into and enqueue
     // a duplicate — the agent would evaluate the same batch twice.
+    //
+    // Deadline arming is deferred to the same point: a deferred subscription
+    // whose tokens merged into a sibling's immediate job must not arm a
+    // deadline — the job dispatches this pass and leaves the queue empty, so
+    // nothing would ever clear that countdown. Deciding after the loop makes
+    // the outcome independent of subscription registration order.
     var immediateDrainRequested = false;
+    final immediateDrainAgents = <String>{};
+    final deadlineRequests = <String, DateTime?>{};
     for (final sub in _subscriptions) {
       // 1. Check whether any token matches the subscription's entity IDs.
       //    A "direct" match means the agent's own entity was edited
@@ -236,6 +244,7 @@ extension WakeBatchRouter on WakeOrchestrator {
           subDomain: 'defer',
         );
         immediateDrainRequested = true;
+        immediateDrainAgents.add(sub.agentId);
         continue;
       }
 
@@ -269,20 +278,41 @@ extension WakeBatchRouter on WakeOrchestrator {
       } else {
         morningDeadline = null;
       }
-      unawaited(
-        _setThrottleDeadline(sub.agentId, customDeadline: morningDeadline),
+      // Recorded, not armed — the decision happens after the loop. The
+      // fastest request wins when several subscriptions defer the same
+      // agent (null = the standard short window beats any morning slot).
+      deadlineRequests.update(
+        sub.agentId,
+        (existing) => existing == null || morningDeadline == null
+            ? null
+            : (morningDeadline.isBefore(existing) ? morningDeadline : existing),
+        ifAbsent: () => morningDeadline,
       );
 
       _log(
         'deferred wake for ${DomainLogger.sanitizeId(sub.agentId)}: '
-        '${morningDeadline == null ? 'drain scheduled in ${WakeOrchestrator.throttleWindow.inSeconds}s' : 'drain scheduled at $morningDeadline (morning)'}, '
+        '${morningDeadline == null ? 'drain requested in ${WakeOrchestrator.throttleWindow.inSeconds}s' : 'drain requested at $morningDeadline (morning)'}, '
         'reason=subscription, '
         'sub=${DomainLogger.sanitizeId(sub.id)}, '
         'triggers=${allMatched.map(DomainLogger.sanitizeId).join(',')}',
         subDomain: 'defer',
       );
     }
-    // One dispatch for the whole batch (see the loop-head comment).
+    // Arm the deferred deadlines first so other agents' queued jobs are
+    // throttled before the dispatch below can reach them — then one
+    // dispatch for the whole batch (see the loop-head comment).
+    deadlineRequests.forEach((agentId, customDeadline) {
+      if (immediateDrainAgents.contains(agentId)) {
+        _log(
+          'skipping deadline for ${DomainLogger.sanitizeId(agentId)}: '
+          'its tokens merged into an immediate job dispatching this batch — '
+          'arming would leave a countdown with no work behind it',
+          subDomain: 'defer',
+        );
+        return;
+      }
+      unawaited(_setThrottleDeadline(agentId, customDeadline: customDeadline));
+    });
     if (immediateDrainRequested) unawaited(processNext());
   }
 

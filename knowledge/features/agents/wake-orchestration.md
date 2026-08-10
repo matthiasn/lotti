@@ -5,13 +5,13 @@ description: How a local change becomes an agent wake — subscription matching,
 resource: ../../../lib/features/agents/wake
 tags: [agents, wake, scheduling, concurrency]
 status: stable
-generated: { by: claude-code/opus-5, at: 2026-07-25T23:30:00Z }
+generated: { by: claude-code/opus-5, at: 2026-08-10T16:30:00Z }
 stale_after: 2026-10-12
 sources:
   - id: wake
     resource: ../../../lib/features/agents/wake
     title: WakeOrchestrator, WakeQueue, WakeRunner, drain engine
-    last_modified: 2026-07-22
+    last_modified: 2026-08-10
   - id: enums
     resource: ../../../lib/features/agents/model/agent_enums.dart
     title: WakeReason

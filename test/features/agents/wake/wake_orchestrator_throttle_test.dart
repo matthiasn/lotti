@@ -233,6 +233,135 @@ void main() {
         });
       });
 
+      test('a deferred sibling matching the same batch does not arm a '
+          'deadline for the immediate job it merged into', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+          final state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(),
+                    updatedAt: clock.now(),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+
+          // Immediate registered FIRST, deferred second; both match the
+          // one batch. The deferred sibling's tokens merge into the
+          // immediate job, which dispatches and empties the queue — an
+          // armed deadline would be a countdown with no work behind it,
+          // and nothing would ever clear it.
+          orchestrator
+            ..addSubscription(
+              makeSub(drainImmediately: true, matchEntityIds: {'entity-1'}),
+            )
+            ..addSubscription(
+              makeSub(
+                id: 'sub-deferred',
+                matchEntityIds: {'entity-1', 'entity-2'},
+                deferPropagatedMatches: false,
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 1);
+
+          // No persisted countdown may survive a batch whose only job
+          // dispatched immediately.
+          verifyNever(
+            () => mockRepository.upsertEntity(
+              any(
+                that: isA<AgentStateEntity>().having(
+                  (s) => s.nextWakeAt,
+                  'nextWakeAt',
+                  isNotNull,
+                ),
+              ),
+            ),
+          );
+
+          controller.close();
+        });
+      });
+
+      test('the deferred-first registration order arms no deadline either — '
+          'the decision is order-independent', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+          final state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(),
+                    updatedAt: clock.now(),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+
+          orchestrator
+            ..addSubscription(
+              makeSub(
+                id: 'sub-deferred',
+                matchEntityIds: {'entity-1'},
+                deferPropagatedMatches: false,
+              ),
+            )
+            ..addSubscription(
+              makeSub(
+                id: 'sub-immediate',
+                drainImmediately: true,
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 1);
+
+          verifyNever(
+            () => mockRepository.upsertEntity(
+              any(
+                that: isA<AgentStateEntity>().having(
+                  (s) => s.nextWakeAt,
+                  'nextWakeAt',
+                  isNotNull,
+                ),
+              ),
+            ),
+          );
+
+          controller.close();
+        });
+      });
+
       test('a deferred subscription of the same agent keeps its follow-up '
           'window — the immediate policy is per job, not per agent', () {
         fakeAsync((async) {
