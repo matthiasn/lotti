@@ -235,6 +235,53 @@ void main() {
     expect(find.byTooltip('Dismiss'), findsOneWidget);
   });
 
+  testWidgets('the CTA pill is a real button: tapping it navigates to the '
+      'goal', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await pumpCard(tester);
+    await tester.tap(find.text('Lace up now'));
+    await tester.pumpAndSettle();
+    expect(navigated, ['/agents/details/goal-1']);
+  });
+
+  testWidgets('consuming the rating never reflows the header — the star '
+      'sits in a fixed slot, so the X does not move', (tester) async {
+    await pumpCard(tester);
+    final xBefore = tester.getTopLeft(find.byTooltip('Dismiss'));
+    expect(find.byTooltip('Rate this banner'), findsOneWidget);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalBannerCard(
+            entry: (
+              nudge: nudge(
+                ratings: [
+                  GoalNudgeRating(
+                    activation: 1,
+                    ratedAt: DateTime(2026, 8, 9, 12),
+                    rating: 4,
+                  ),
+                ],
+              ),
+              goalTitle: 'Move more',
+            ),
+          ),
+        ),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byTooltip('Rate this banner'), findsNothing);
+    expect(
+      tester.getTopLeft(find.byTooltip('Dismiss')),
+      xBefore,
+      reason: 'the vacated star slot must keep its width',
+    );
+  });
+
   testWidgets("tapping the banner opens its goal's page — the "
       'banner→conversation flow', (tester) async {
     final navigated = <String>[];

@@ -2558,6 +2558,7 @@
   "goalDetailNoReport": "Încă nu există raport — agentul va raporta după prima schimbare relevantă.",
   "goalDetailNotFound": "Acest agent de obiectiv nu mai există.",
   "goalDetailTimelineTitle": "Interacțiuni",
+  "goalDockJustNow": "chiar acum",
   "goalNudgeStatusDismissed": "Respins",
   "goalNudgeStatusExpired": "Expirat",
   "goalNudgeStatusRetired": "Retras",

@@ -15,6 +15,9 @@ void main() {
     'tint': SurfaceAlphas.tint,
     'muted': SurfaceAlphas.muted,
     'linework': SurfaceAlphas.linework,
+    'washBorder': SurfaceAlphas.washBorder,
+    'washChip': SurfaceAlphas.washChip,
+    'washControl': SurfaceAlphas.washControl,
   };
 
   group('SurfaceAlphas', () {
@@ -59,6 +62,19 @@ void main() {
       // roughly a tenth the tone starts competing with the glyphs on top of
       // it, which is the failure the 0.08 was chosen to avoid.
       expect(SurfaceAlphas.tint, lessThanOrEqualTo(0.1));
+    });
+
+    test('the banner wash set descends: border > chip > control > tint — '
+        'one hue reading as one statement at falling strengths', () {
+      // The goal-banner recipe's whole point is a single accent at graded
+      // presence; a reordering would make the CTA louder than the border
+      // or the chip louder than both, breaking the visual grammar.
+      expect(SurfaceAlphas.washBorder, greaterThan(SurfaceAlphas.washChip));
+      expect(SurfaceAlphas.washChip, greaterThan(SurfaceAlphas.washControl));
+      expect(SurfaceAlphas.washControl, greaterThan(SurfaceAlphas.tint));
+      // And the whole set stays below muted — these are washes behind or
+      // around content, never a satisfied-accent statement.
+      expect(SurfaceAlphas.washBorder, lessThan(SurfaceAlphas.muted));
     });
   });
 }

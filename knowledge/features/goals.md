@@ -5,13 +5,13 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/fable-5, at: 2026-08-09T02:30:00Z }
+generated: { by: claude-code/opus-4-8, at: 2026-08-11T00:00:00Z }
 stale_after: 2026-10-12
 sources:
   - id: goals-src
     resource: ../../lib/features/goals
     title: Goals feature source
-    last_modified: 2026-08-09
+    last_modified: 2026-08-11
   - id: phase-a
     resource: ../../lib/features/goals/runtime/goal_agent_phase_a.dart
     title: GoalAgentPhaseA — the deterministic tick
@@ -180,20 +180,31 @@ flowchart TD
 - **Banners** (`ui/goal_banner_*.dart`): procedural text banners per
   ADR 0058 — model-authored copy, code-owned animation presets (all
   degrade to plain text under reduced motion) and accent presets bound to
-  EXISTING design-system tokens (`aiCard.accent`, `alert.info/warning`,
-  `interactive.enabled`, `decorative`, with `SurfaceAlphas.tint` fills).
-  Mounted on the Daily OS day page nudge stack and the habits tab; both
-  mounts shrink to nothing without an active ad. Tapping a banner opens
+  design-system tokens. The register TINTS the accent (`goalBannerStyle`):
+  one hue at graded washes (`SurfaceAlphas.washBorder/washChip/washControl`
+  plus the `tint` fill) for the card fill, border, persona chip and CTA
+  pill, so the banner's state reads before a word is (celebrate green,
+  restart teal, nudge ember, roast the hand-authored `GoalAccentHues.neon`
+  lime). Rendered in a single **shell-level dock** (`GoalBannerDock`,
+  mounted in `beamer_app.dart`) — one rotating slot at the bottom of the
+  content region on desktop (beside the sidebar) and above the bottom nav
+  on mobile, on the main working tabs only (Tasks, DailyOS, Habits). One
+  shared rotation state cycles every standing banner ~15s each; a fresh
+  acknowledgment (a re-run) jumps the queue with a "just now" marker;
+  hover/touch and app-backgrounding pause the cycle; the dock collapses to
+  nothing when no goal is speaking. The goal detail page shows that goal's
+  banners uncycled via `GoalBannerCard` directly. Tapping a banner opens
   its goal's detail page (the banner→conversation flow); the star button
   — rendered only while an outcome is due — opens the per-activation
   rating prompt (one outcome per activation, skips count). Dismissal (X
   or swipe) is terminal and quiets ads for the rest of the local day.
-  Exposure is measured in visibility episodes gated on THREE signals —
-  the tracker's stopwatch runs only while the app lifecycle is
-  `resumed`, `TickerMode` reports the host tab on screen, AND the banner
-  intersects its enclosing viewport (rechecked on scroll events,
-  lifecycle changes and post-rebuild frames, never per frame; hosts
-  without a scrollable use the other two signals alone). Every
+  Exposure is measured in visibility episodes by
+  `GoalBannerExposureTracker` gated on THREE signals — the tracker's
+  stopwatch runs only while the app lifecycle is `resumed`, `TickerMode`
+  reports the host tab on screen, AND the banner intersects its enclosing
+  viewport (rechecked on scroll events, lifecycle changes and post-rebuild
+  frames, never per frame; the dock and other non-scrollable hosts use the
+  other two signals alone). Every
   visible→hidden transition — backgrounding, tab switch, scroll-out,
   unmount — flushes its own episode into the per-host G-counters, so
   returning starts a new episode. Writes per nudge are serialized in
@@ -202,8 +213,7 @@ flowchart TD
 - **The Agents tab** (`enable_agents_page` flag, `/agents`): one card per
   goal agent with health at a glance (latest register verdict +
   attainment, report one-liner, pending-proposal badge); the detail page
-  carries the goal's active banners (uncapped — ads the host strips'
-  two-visible limit holds back stay reachable here), the
+  carries the goal's active banners (uncapped, rendered inline), the
   revision-approval card (`ChangeSetSummaryCard.selfTargeted`) and the
   read-only interaction timeline (`AgentConversationLog`). Creation supports a steps goal or a
   MULTI-habit routine (`allOf` composite).

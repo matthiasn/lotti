@@ -6050,6 +6050,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDetailTimelineTitle => 'Interacties';
 
   @override
+  String get goalDockJustNow => 'zojuist';
+
+  @override
   String get goalNudgeStatusDismissed => 'Weggeveegd';
 
   @override

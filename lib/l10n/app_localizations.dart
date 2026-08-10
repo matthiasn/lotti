@@ -10361,6 +10361,12 @@ abstract class AppLocalizations {
   /// **'Interactions'**
   String get goalDetailTimelineTitle;
 
+  /// Freshness marker on the goal dock caption when a completion acknowledgment just took the slot
+  ///
+  /// In en, this message translates to:
+  /// **'just now'**
+  String get goalDockJustNow;
+
   /// No description provided for @goalNudgeStatusDismissed.
   ///
   /// In en, this message translates to:

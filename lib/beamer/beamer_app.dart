@@ -30,6 +30,7 @@ import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/domain/app_command_handler.dart';
 import 'package:lotti/features/keyboard/ui/app_command_host.dart';
@@ -738,22 +739,35 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           Expanded(
             child: KeyboardFocusRegion(
               debugLabel: 'app-content',
-              child: Stack(
+              // The goal-agent dock is docked at the bottom of the content
+              // region, beside (never under) the sidebar — one shared
+              // rotating slot for the agents' standing voices. It collapses
+              // to nothing when no goal is speaking, so it only occupies
+              // space when it has something to say (ADR 0058 / handover 1b).
+              child: Column(
                 children: [
-                  const IncomingVerificationWrapper(),
-                  IndexedStack(
-                    index: index,
-                    children: [
-                      for (var i = 0; i < beamerChildren.length; i++)
-                        TickerMode(
-                          enabled: i == index,
-                          child: ExcludeFocus(
-                            excluding: i != index,
-                            child: beamerChildren[i],
-                          ),
+                  Expanded(
+                    child: Stack(
+                      children: [
+                        const IncomingVerificationWrapper(),
+                        IndexedStack(
+                          index: index,
+                          children: [
+                            for (var i = 0; i < beamerChildren.length; i++)
+                              TickerMode(
+                                enabled: i == index,
+                                child: ExcludeFocus(
+                                  excluding: i != index,
+                                  child: beamerChildren[i],
+                                ),
+                              ),
+                          ],
                         ),
-                    ],
+                      ],
+                    ),
                   ),
+                  if (_showsGoalBannerDock(destinations[index].kind))
+                    const GoalBannerDock(compact: false),
                 ],
               ),
             ),
@@ -962,6 +976,15 @@ class _AppScreenState extends ConsumerState<AppScreen> {
             // running timer or recording must stay visible inside settings
             // definition surfaces. When the bar slides away they animate
             // down to the bottom safe-area edge in the same motion.
+            //
+            // The goal-agent dock (mini-player, handover 1b) shares this
+            // overlay column so the two never collide: the dock rides ABOVE
+            // the indicator row, which is zero-height when nothing is
+            // recording — so an idle dock sits directly above the bar, and
+            // a live recording pushes the dock up instead of vanishing
+            // under it. The dock only mounts on the main working tabs, and
+            // only when the bar is not sliding away (settings/project
+            // detail routes carry neither).
             AnimatedPositioned(
               duration: reduceMotion
                   ? Duration.zero
@@ -972,18 +995,26 @@ class _AppScreenState extends ConsumerState<AppScreen> {
               bottom: slideNavAway
                   ? MediaQuery.paddingOf(context).bottom
                   : DesignSystemFiveSlotNavBar.barHeight(context),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  const TimeRecordingIndicator(),
-                  // Audio indicator is omitted on Flatpak builds (MediaKit
-                  // compatibility issues). Spacer lives inside the same
-                  // conditional so it doesn't dangle when only the time
-                  // indicator is visible.
-                  if (!_isRunningInFlatpak()) ...[
-                    const SizedBox(width: 4),
-                    const AudioRecordingIndicator(),
-                  ],
+                  if (!slideNavAway &&
+                      _showsGoalBannerDock(destinations[index].kind))
+                    const GoalBannerDock(compact: true),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      const TimeRecordingIndicator(),
+                      // Audio indicator is omitted on Flatpak builds (MediaKit
+                      // compatibility issues). Spacer lives inside the same
+                      // conditional so it doesn't dangle when only the time
+                      // indicator is visible.
+                      if (!_isRunningInFlatpak()) ...[
+                        const SizedBox(width: 4),
+                        const AudioRecordingIndicator(),
+                      ],
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -992,6 +1023,15 @@ class _AppScreenState extends ConsumerState<AppScreen> {
       ),
     );
   }
+
+  /// The goal-agent dock mounts on the main working tabs only — the surface
+  /// set from the design handover (Tasks, DailyOS, Habits). Settings and the
+  /// Logbook are deliberately excluded; goal detail shows its own goal's
+  /// banner uncycled instead.
+  static bool _showsGoalBannerDock(_AppNavigationDestinationKind kind) =>
+      kind == _AppNavigationDestinationKind.tasks ||
+      kind == _AppNavigationDestinationKind.dailyOs ||
+      kind == _AppNavigationDestinationKind.habits;
 
   List<_AppNavigationDestination> _buildNavigationDestinations({
     required BuildContext context,

@@ -2807,6 +2807,7 @@
   "goalDetailNoReport": "Nog geen rapport — de agent rapporteert na de eerste relevante verandering.",
   "goalDetailNotFound": "Deze doel-agent bestaat niet meer.",
   "goalDetailTimelineTitle": "Interacties",
+  "goalDockJustNow": "zojuist",
   "goalNudgeStatusDismissed": "Weggeveegd",
   "goalNudgeStatusExpired": "Verlopen",
   "goalNudgeStatusRetired": "Teruggetrokken",
