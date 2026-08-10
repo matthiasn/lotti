@@ -163,8 +163,13 @@ void main() {
       {
         'ad-active': GoalNudgeStatus.superseded,
         'ad-ready': GoalNudgeStatus.superseded,
+        // Retired rows are the reuse library — a top-rated old-goal ad
+        // must not be re-activated beside the revised statement.
+        'ad-retired': GoalNudgeStatus.superseded,
       },
-      reason: 'live nudges move with the spec; terminal states are history',
+      reason:
+          'live and reusable nudges move with the spec; the user '
+          'verdict (dismissed) stays history',
     );
   });
 

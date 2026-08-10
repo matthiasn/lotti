@@ -18,6 +18,7 @@ import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/l10n/app_localizations.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../helpers/fallbacks.dart';
@@ -114,12 +115,19 @@ void main() {
             )
             as AgentIdentityEntity;
 
+    late BeamerDelegate delegate;
+
     Widget app() {
-      final delegate = BeamerDelegate(
+      delegate = BeamerDelegate(
         initialPath: '/agents',
         locationBuilder: (routeInformation, _) =>
             AgentsLocation(routeInformation),
       );
+      // The pages navigate through NavService's beamToNamed so the shell
+      // keeps currentPath and the persisted route in sync; here the flow
+      // runs against a bare delegate.
+      beamToNamedOverride = (path) => delegate.beamToNamed(path);
+      addTearDown(() => beamToNamedOverride = null);
       return ProviderScope(
         overrides: [
           activeGoalAgentsProvider.overrideWith(

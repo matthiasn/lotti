@@ -3,14 +3,12 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
-import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_strip.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
-
-class _MockInteractions extends Mock implements GoalNudgeInteractions {}
 
 void main() {
   GoalNudgeEntity nudge({
@@ -36,7 +34,7 @@ void main() {
           )
           as GoalNudgeEntity;
 
-  late _MockInteractions interactions;
+  late MockGoalNudgeInteractions interactions;
   late List<(String, Duration)> exposures;
 
   List<Override> overrides(List<GoalBannerEntry> entries) => [
@@ -48,7 +46,7 @@ void main() {
   ];
 
   setUp(() {
-    interactions = _MockInteractions();
+    interactions = MockGoalNudgeInteractions();
     exposures = [];
     when(
       () => interactions.dismiss(

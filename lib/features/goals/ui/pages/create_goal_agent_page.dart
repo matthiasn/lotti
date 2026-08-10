@@ -1,4 +1,3 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -9,6 +8,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// The dogfooding creation form: a steps goal (daily average over a
@@ -99,6 +99,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _validation = null;
       _saving = true;
     });
+    // Captured before the await: if the user backs out while the save is
+    // in flight, the creation can still succeed after this state is
+    // disposed — the refresh must reach the already-mounted list anyway.
+    final container = ProviderScope.containerOf(context, listen: false);
     try {
       final statement = _statement.text.trim();
       await ref
@@ -110,10 +114,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           );
       // Creation writes through the sync service, which emits no UI
       // notification — refresh the list the pop reveals.
-      ref
+      container
         ..invalidate(activeGoalAgentsProvider)
         ..invalidate(activeGoalNudgesProvider);
-      if (mounted) context.beamToNamed('/agents');
+      if (mounted) beamToNamed('/agents');
     } on Object {
       // Validation already passed — this is an operational failure, and
       // saying "pick a name" would misdiagnose it.

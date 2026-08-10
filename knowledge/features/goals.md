@@ -186,10 +186,13 @@ flowchart TD
   mounts shrink to nothing without an active ad. Dismissal is terminal
   and quiets ads for the rest of the local day; tapping opens the per-activation
   rating prompt (one outcome per activation, skips count); exposure is
-  measured in tab-visible episodes — the tracker's stopwatch runs while
-  `TickerMode` reports the host tab on screen, and every visible→hidden
-  transition (and unmount) flushes its own episode into the per-host
-  G-counters, so returning to a tab starts a new episode. Writes per
+  measured in visibility episodes gated on BOTH signals — the tracker's
+  stopwatch runs only while `TickerMode` reports the host tab on screen
+  AND the banner intersects its enclosing viewport (rechecked on scroll
+  events and post-rebuild frames, never per frame; hosts without a
+  scrollable use the tab signal alone). Every visible→hidden transition
+  — tab switch, scroll-out, unmount — flushes its own episode into the
+  per-host G-counters, so returning starts a new episode. Writes per
   nudge are serialized in `GoalNudgeInteractions` so a rapid
   flush/dismiss pair cannot lose an update to a stale read.
 - **The Agents tab** (`enable_agents_page` flag, `/agents`): one card per

@@ -109,6 +109,7 @@ import 'package:lotti/features/daily_os_next/services/day_processing_runtime.dar
 import 'package:lotti/features/daily_os_next/state/capture_controller.dart';
 import 'package:lotti/features/demo/state/demo_mode_gateway.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:lotti/features/insights/repository/insights_repository.dart';
 import 'package:lotti/features/journal/repository/journal_repository.dart';
@@ -1207,6 +1208,8 @@ class MockTaskSummaryResolver extends Mock implements TaskSummaryResolver {}
 class MockHabitsRepository extends Mock implements HabitsRepository {}
 
 class MockGoalAgentService extends Mock implements GoalAgentService {}
+
+class MockGoalNudgeInteractions extends Mock implements GoalNudgeInteractions {}
 
 class MockRatingRepository extends Mock implements RatingRepository {}
 

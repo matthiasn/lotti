@@ -1,4 +1,3 @@
-import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -6,6 +5,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// The flag-gated Agents tab: every running goal agent with its health
@@ -28,7 +28,9 @@ class AgentsPage extends ConsumerWidget {
     return Scaffold(
       floatingActionButton: DesignSystemBottomNavigationFabPadding(
         child: FloatingActionButton.extended(
-          onPressed: () => context.beamToNamed('/agents/create'),
+          // Through NavService, not raw Beamer: keeps currentPath and the
+          // persisted last route in sync (restart restores this page).
+          onPressed: () => beamToNamed('/agents/create'),
           label: Text(context.messages.agentsCreateGoal),
           icon: const Icon(Icons.add_rounded),
         ),
@@ -109,7 +111,7 @@ class _GoalAgentCard extends ConsumerWidget {
       borderRadius: BorderRadius.circular(tokens.radii.m),
       child: InkWell(
         borderRadius: BorderRadius.circular(tokens.radii.m),
-        onTap: () => context.beamToNamed('/agents/details/${identity.agentId}'),
+        onTap: () => beamToNamed('/agents/details/${identity.agentId}'),
         child: Padding(
           padding: EdgeInsets.all(tokens.spacing.cardPadding),
           child: Column(

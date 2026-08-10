@@ -98,9 +98,22 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker> {
       _position = position?..addListener(_recheck);
     }
     _recheck();
-    // On the FIRST build the render box has no layout yet, so the
-    // viewport check above conservatively said "not visible" — confirm
-    // once the frame is out.
+    _recheckAfterFrame();
+  }
+
+  @override
+  void didUpdateWidget(GoalBannerExposureTracker oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // A sibling banner inserted or removed above this one moves it across
+    // the viewport boundary with no scroll event — the rebuild that
+    // reflowed the list is the signal.
+    _recheckAfterFrame();
+  }
+
+  /// On the FIRST build the render box has no layout yet (and after a
+  /// rebuild the new layout isn't in yet), so visibility is confirmed
+  /// once the frame is out.
+  void _recheckAfterFrame() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (mounted) _recheck();
     });

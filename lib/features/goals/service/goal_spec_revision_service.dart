@@ -171,19 +171,23 @@ class GoalSpecRevisionService {
     // the revised statement until their own staleAt: every nudge that
     // has not reached a terminal state moves to `superseded` with the
     // spec (ADR 0055 — the agent retires, the clock expires, the USER
-    // dismisses; a revision is the spec itself moving on).
+    // dismisses; a revision is the spec itself moving on). `retired`
+    // rows move too: they are the reuse library (`reusableTopRated`),
+    // and a top-rated ad written for the old target must not be
+    // re-activated beside the revised statement on a later wake.
     final nudges = (await _repository.getEntitiesByAgentId(
       agentId,
       type: AgentEntityTypes.goalNudge,
     )).whereType<GoalNudgeEntity>();
     for (final nudge in nudges) {
       if (nudge.deletedAt != null) continue;
-      const live = {
+      const affected = {
         GoalNudgeStatus.draft,
         GoalNudgeStatus.ready,
         GoalNudgeStatus.active,
+        GoalNudgeStatus.retired,
       };
-      if (!live.contains(nudge.status)) continue;
+      if (!affected.contains(nudge.status)) continue;
       await _syncService.upsertEntity(
         nudge.copyWith(status: GoalNudgeStatus.superseded, updatedAt: now),
       );
