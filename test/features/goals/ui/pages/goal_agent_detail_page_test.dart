@@ -75,6 +75,7 @@ void main() {
               reportOneLiner: null,
               pendingProposals: 0,
               spec: spec,
+              direction: null,
             ),
           ),
           selfTargetedPendingChangeSetsProvider(
@@ -130,6 +131,7 @@ void main() {
               reportOneLiner: 'Seven for seven. Keep coasting.',
               pendingProposals: 0,
               spec: null,
+              direction: null,
             ),
           ),
           selfTargetedPendingChangeSetsProvider(
@@ -227,6 +229,7 @@ void main() {
               reportOneLiner: null,
               pendingProposals: 0,
               spec: null,
+              direction: null,
             ),
           ),
           activeGoalNudgesProvider.overrideWith(
@@ -297,6 +300,7 @@ void main() {
                 reportOneLiner: null,
                 pendingProposals: 0,
                 spec: null,
+                direction: null,
               ),
             ),
             activeGoalNudgesProvider.overrideWith(
@@ -401,6 +405,7 @@ void main() {
               reportOneLiner: null,
               pendingProposals: 0,
               spec: null,
+              direction: null,
             ),
           ),
           goalNudgeHistoryProvider(
@@ -442,6 +447,7 @@ void main() {
               reportOneLiner: null,
               pendingProposals: 0,
               spec: null,
+              direction: null,
             ),
           ),
           selfTargetedPendingChangeSetsProvider(
@@ -491,6 +497,7 @@ void main() {
               reportOneLiner: null,
               pendingProposals: 0,
               spec: null,
+              direction: null,
             ),
           ),
         ],

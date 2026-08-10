@@ -700,6 +700,28 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentSettingsTitle => 'Agenter';
 
   @override
+  String get agentsFirstRunControl =>
+      'Du kan prata med den, rätta den, styra om den, pausa den, radera den.';
+
+  @override
+  String get agentsFirstRunCost =>
+      'Körs på dina modeller — oftast bråkdelar av ett öre per dag.';
+
+  @override
+  String get agentsFirstRunCta => 'Ange en avsikt';
+
+  @override
+  String get agentsFirstRunSpeaks =>
+      'Den visas i korta banners, där du redan är. Avfärda en så är det tyst resten av dagen.';
+
+  @override
+  String get agentsFirstRunTitle => 'En agent per mål';
+
+  @override
+  String get agentsFirstRunWatches =>
+      'Den håller koll på det målet bygger på — bockade vanor, stegräkning. Inget den inte kan se, inget du behöver rapportera.';
+
+  @override
   String get agentSoulAntiSycophancyLabel => 'Anti-smygningspolitik';
 
   @override
@@ -5981,6 +6003,18 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalCoarseHealthBehind => 'Ligger efter';
+
+  @override
+  String get goalCoarseHealthHealthy => 'I form';
+
+  @override
+  String get goalCoarseHealthNotEnoughData => 'För lite data';
+
+  @override
+  String get goalCoarseHealthRestarting => 'Börjar om';
+
+  @override
   String get goalCreateFailed => 'Målet kunde inte sparas — försök igen.';
 
   @override
@@ -6035,6 +6069,15 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'just nu';
+
+  @override
+  String get goalHealthTrendDown => 'Minskar';
+
+  @override
+  String get goalHealthTrendFlat => 'Håller sig stabil';
+
+  @override
+  String get goalHealthTrendUp => 'Ökar';
 
   @override
   String get goalNudgeStatusDismissed => 'Avfärdad';

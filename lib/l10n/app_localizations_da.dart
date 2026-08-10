@@ -696,6 +696,28 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentSettingsTitle => 'Agenter';
 
   @override
+  String get agentsFirstRunControl =>
+      'Du kan tale med den, rette den, ændre mål, sætte den på pause, slette den.';
+
+  @override
+  String get agentsFirstRunCost =>
+      'Kører på dine modeller — typisk brøkdele af en cent om dagen.';
+
+  @override
+  String get agentsFirstRunCta => 'Sæt en intention';
+
+  @override
+  String get agentsFirstRunSpeaks =>
+      'Den taler i korte bannere, dér hvor du allerede er. Afvis et, og resten af dagen er der ro.';
+
+  @override
+  String get agentsFirstRunTitle => 'Én agent pr. mål';
+
+  @override
+  String get agentsFirstRunWatches =>
+      'Den holder øje med det, målet bygger på — afkrydsede vaner, skridttal. Intet, den ikke kan se, intet, du skal rapportere.';
+
+  @override
   String get agentSoulAntiSycophancyLabel => 'Anti-smiskerpolitik';
 
   @override
@@ -5977,6 +5999,18 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalCoarseHealthBehind => 'Bagud';
+
+  @override
+  String get goalCoarseHealthHealthy => 'Sund';
+
+  @override
+  String get goalCoarseHealthNotEnoughData => 'For få data';
+
+  @override
+  String get goalCoarseHealthRestarting => 'Starter forfra';
+
+  @override
   String get goalCreateFailed => 'Målet kunne ikke gemmes — prøv igen.';
 
   @override
@@ -6031,6 +6065,15 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'lige nu';
+
+  @override
+  String get goalHealthTrendDown => 'Falder';
+
+  @override
+  String get goalHealthTrendFlat => 'Holder stabilt';
+
+  @override
+  String get goalHealthTrendUp => 'Stiger';
 
   @override
   String get goalNudgeStatusDismissed => 'Afvist';

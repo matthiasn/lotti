@@ -139,6 +139,82 @@ void main() {
     );
   });
 
+  testWidgets('the reserved lane covers the rendered compact dock at every '
+      'text scale — two-line headline AND the multi-tenant dot row', (
+    tester,
+  ) async {
+    // Two active goals (so the dot-row footer renders), each with a headline
+    // long enough to wrap to the compact dock's full two lines: the tallest
+    // dock the reserve must clear.
+    List<GoalBannerEntry> tallEntries() => [
+      entry(
+        id: 'a',
+        headline:
+            'A deliberately long standing headline that wraps to two '
+            'full lines on a narrow phone dock so we size the tallest case',
+      ),
+      entry(
+        id: 'b',
+        headline:
+            'A second equally long standing headline that also wraps '
+            'to two full lines on the same narrow phone dock',
+      ),
+    ];
+
+    /// Renders the dock at [scaler] and returns (rendered height, the reserve
+    /// the shell would compute from the same context).
+    Future<(double rendered, double reserved)> measure(
+      TextScaler scaler,
+    ) async {
+      _TestEntries.initial = tallEntries();
+      late double reserved;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(context).copyWith(textScaler: scaler),
+              child: Builder(
+                builder: (context) {
+                  // Read the reserve through the SAME scaled context the shell
+                  // uses in `_MobileNavOverlayHeightScope`.
+                  reserved = goalBannerDockReservedHeight(context);
+                  return const Scaffold(
+                    bottomNavigationBar: GoalBannerDock(compact: true),
+                  );
+                },
+              ),
+            ),
+          ),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+      return (tester.getSize(find.byType(GoalBannerDock)).height, reserved);
+    }
+
+    final (base, baseReserve) = await measure(TextScaler.noScaling);
+    final (large, largeReserve) = await measure(const TextScaler.linear(2));
+
+    // Large text genuinely enlarges the tenant — a fixed reserve would
+    // under-clear it.
+    expect(large, greaterThan(base));
+    // The reserve clears the rendered dock at both scales, so page content
+    // and FABs never sit underneath it. This is the invariant the shell
+    // depends on; if the dock's chrome or typography drifts, it fails here.
+    expect(
+      baseReserve,
+      greaterThanOrEqualTo(base),
+      reason: 'reserve must clear the 1× dock',
+    );
+    expect(
+      largeReserve,
+      greaterThanOrEqualTo(large),
+      reason: 'reserve must clear the 2× dock',
+    );
+  });
+
   testWidgets('two tenants rotate round-robin on the tenure clock, and '
       'wrap', (tester) async {
     await pumpDock(tester, [
@@ -280,23 +356,27 @@ void main() {
     expect(find.text('Second voice, refreshed'), findsOneWidget);
   });
 
-  testWidgets('a second tenant arriving beside a lone one restarts the '
-      'idle cycle', (tester) async {
+  testWidgets('a second tenant arriving beside a lone one takes the slot '
+      '(a fresh voice) and the cycle then rotates', (tester) async {
     await pumpDock(tester, [entry(id: 'a', headline: 'First voice')]);
     // Lone tenant: the tenure clock is stopped.
     await tester.pump(goalBannerDockTenure * 2);
     expect(find.text('First voice'), findsOneWidget);
 
-    // A second voice appears — the current tenant is still present, but the
-    // cycle must resume now that there is somewhere to rotate to.
+    // A second voice appears: a banner arriving after the dock is already
+    // rotating is a fresh voice — it jumps the slot immediately.
     notifier(tester).entries = [
       entry(id: 'a', headline: 'First voice'),
       entry(id: 'b', headline: 'Second voice'),
     ];
     await tester.pump();
-    await tester.pump(goalBannerDockTenure);
     await settleTransition(tester);
     expect(find.text('Second voice'), findsOneWidget);
+
+    // The cycle resumed: one tenure later it rotates on to the other tenant.
+    await tester.pump(goalBannerDockTenure);
+    await settleTransition(tester);
+    expect(find.text('First voice'), findsOneWidget);
   });
 
   testWidgets('a cancelled touch releases the pause', (tester) async {

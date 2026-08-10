@@ -700,6 +700,28 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentSettingsTitle => 'Agenti';
 
   @override
+  String get agentsFirstRunControl =>
+      'Můžeš s ním mluvit, opravit ho, přesměrovat, pozastavit, smazat.';
+
+  @override
+  String get agentsFirstRunCost =>
+      'Běží na tvých modelech — obvykle zlomky centu za den.';
+
+  @override
+  String get agentsFirstRunCta => 'Nastavit záměr';
+
+  @override
+  String get agentsFirstRunSpeaks =>
+      'Ozývá se krátkými bannery tam, kde právě jsi. Jeden zavři a zbytek dne je klid.';
+
+  @override
+  String get agentsFirstRunTitle => 'Jeden agent na cíl';
+
+  @override
+  String get agentsFirstRunWatches =>
+      'Sleduje, na čem cíl stojí — odškrtnuté návyky, počty kroků. Nic, co nevidí, nic, co musíš hlásit.';
+
+  @override
   String get agentSoulAntiSycophancyLabel => 'Zásady proti pochlebování';
 
   @override
@@ -6041,6 +6063,18 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalCoarseHealthBehind => 'Pozadu';
+
+  @override
+  String get goalCoarseHealthHealthy => 'V pořádku';
+
+  @override
+  String get goalCoarseHealthNotEnoughData => 'Málo dat';
+
+  @override
+  String get goalCoarseHealthRestarting => 'Začíná znovu';
+
+  @override
   String get goalCreateFailed => 'Cíl se nepodařilo uložit — zkus to znovu.';
 
   @override
@@ -6094,6 +6128,15 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'právě teď';
+
+  @override
+  String get goalHealthTrendDown => 'Klesá';
+
+  @override
+  String get goalHealthTrendFlat => 'Drží se';
+
+  @override
+  String get goalHealthTrendUp => 'Roste';
 
   @override
   String get goalNudgeStatusDismissed => 'Odmítnuto';

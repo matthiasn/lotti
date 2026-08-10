@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -38,42 +40,46 @@ void main() {
   );
 
   late MockGoalNudgeInteractions interactions;
-  late ProviderContainer container;
 
   setUp(() {
     interactions = MockGoalNudgeInteractions();
-    container = ProviderContainer(
-      overrides: [
-        goalNudgeInteractionsProvider.overrideWithValue(interactions),
-      ],
-    );
-    addTearDown(container.dispose);
+    when(
+      () => interactions.recordRating(
+        any(),
+        rating: any(named: 'rating'),
+        skipped: any(named: 'skipped'),
+        forActivation: any(named: 'forActivation'),
+      ),
+    ).thenAnswer((_) async {});
   });
 
-  // A minimal host that exposes a real (BuildContext, WidgetRef) pair via a
-  // Consumer under a Scaffold (the ScaffoldMessenger the failure notices
-  // present on).
+  // A minimal host on the shared harness that exposes a real
+  // (BuildContext, WidgetRef) pair via a Consumer under a Scaffold (the
+  // ScaffoldMessenger the failure notices present on).
   Future<(BuildContext, WidgetRef)> host(WidgetTester tester) async {
     late BuildContext ctx;
     late WidgetRef widgetRef;
     await tester.pumpWidget(
-      UncontrolledProviderScope(
-        container: container,
-        child: makeTestableWidgetNoScroll(
-          Scaffold(
-            body: Consumer(
-              builder: (context, ref, _) {
-                ctx = context;
-                widgetRef = ref;
-                return const SizedBox.shrink();
-              },
-            ),
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: Consumer(
+            builder: (context, ref, _) {
+              ctx = context;
+              widgetRef = ref;
+              return const SizedBox.shrink();
+            },
           ),
         ),
+        overrides: [
+          goalNudgeInteractionsProvider.overrideWithValue(interactions),
+        ],
       ),
     );
     return (ctx, widgetRef);
   }
+
+  ProviderContainer containerOf(BuildContext ctx) =>
+      ProviderScope.containerOf(ctx, listen: false);
 
   group('dismissGoalBanner', () {
     testWidgets('a persisted dismissal suppresses the id and reports true', (
@@ -90,7 +96,9 @@ void main() {
       final result = await dismissGoalBanner(ctx, ref, entryFor());
       expect(result, isTrue);
       expect(
-        container.read(locallyDismissedNudgeIdsProvider).contains('ad-1'),
+        containerOf(
+          ctx,
+        ).read(locallyDismissedNudgeIdsProvider).contains('ad-1'),
         isTrue,
       );
       verify(() => interactions.dismiss('ad-1', forActivation: 1)).called(1);
@@ -109,7 +117,9 @@ void main() {
       final result = await dismissGoalBanner(ctx, ref, entryFor());
       expect(result, isFalse);
       expect(
-        container.read(locallyDismissedNudgeIdsProvider).contains('ad-1'),
+        containerOf(
+          ctx,
+        ).read(locallyDismissedNudgeIdsProvider).contains('ad-1'),
         isFalse,
       );
     });
@@ -130,6 +140,50 @@ void main() {
       expect(
         find.text("That didn't save — please try again."),
         findsOneWidget,
+      );
+    });
+  });
+
+  group('showGoalBannerRatingSheet', () {
+    testWidgets('picking a star records the rating for the shown activation', (
+      tester,
+    ) async {
+      final (ctx, ref) = await host(tester);
+      unawaited(showGoalBannerRatingSheet(ctx, ref, entryFor()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byTooltip('4'));
+      await tester.pumpAndSettle();
+      verify(
+        () => interactions.recordRating('ad-1', rating: 4, forActivation: 1),
+      ).called(1);
+    });
+
+    testWidgets('the Skip button records a skip', (tester) async {
+      final (ctx, ref) = await host(tester);
+      unawaited(showGoalBannerRatingSheet(ctx, ref, entryFor()));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Skip'));
+      await tester.pumpAndSettle();
+      verify(
+        () =>
+            interactions.recordRating('ad-1', skipped: true, forActivation: 1),
+      ).called(1);
+    });
+
+    testWidgets('a barrier dismissal consumes NOTHING — the one rating '
+        'opportunity survives an accidental swipe-away', (tester) async {
+      final (ctx, ref) = await host(tester);
+      unawaited(showGoalBannerRatingSheet(ctx, ref, entryFor()));
+      await tester.pumpAndSettle();
+      await tester.tapAt(const Offset(10, 10));
+      await tester.pumpAndSettle();
+      verifyNever(
+        () => interactions.recordRating(
+          any(),
+          rating: any(named: 'rating'),
+          skipped: any(named: 'skipped'),
+          forActivation: any(named: 'forActivation'),
+        ),
       );
     });
   });

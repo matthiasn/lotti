@@ -211,8 +211,21 @@ flowchart TD
   `GoalNudgeInteractions` so a rapid flush/dismiss pair cannot lose an
   update to a stale read.
 - **The Agents tab** (`enable_agents_page` flag, `/agents`): one card per
-  goal agent with health at a glance (latest register verdict +
-  attainment, report one-liner, pending-proposal badge); the detail page
+  goal agent with health at a glance — a coarse-health chip
+  (`coarseHealthOf` collapses the runtime `GoalTrackStatus` into Healthy /
+  Behind / Restarting / Not enough data; `recovering` reads Restarting, never
+  a failure), the report one-liner, a pending-proposal badge and a trend
+  arrow (`GoalHealthDirection`, computed in `goalAgentHealthProvider` from the
+  two most-recent non-deleted registers for the ACTIVE spec version with a
+  0.02 deadband — withheld when either register is insufficient-data, and only
+  for rolling-window goals, since calendar/day windows reset attainment each
+  period and a consecutive-register delta there is a boundary reset, not a
+  decline). Raw attainment percentages never reach the row — they stay in the
+  detail surfaces, and a report one-liner that leaks a percentage figure is
+  suppressed rather than rendered. A row whose per-agent
+  health has not resolved shows no chip rather than a false "Not enough data",
+  and the settled-empty state is a first-run explainer whose CTA is the sole
+  creation affordance (the global FAB hides). The detail page
   carries the goal's active banners (uncapped, rendered inline), the
   revision-approval card (`ChangeSetSummaryCard.selfTargeted`) and the
   read-only interaction timeline (`AgentConversationLog`). Creation supports a steps goal or a

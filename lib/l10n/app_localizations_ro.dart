@@ -706,6 +706,28 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentSettingsTitle => 'Agenți';
 
   @override
+  String get agentsFirstRunControl =>
+      'Puteți vorbi cu el, îl puteți corecta, reorienta, întrerupe, șterge.';
+
+  @override
+  String get agentsFirstRunCost =>
+      'Rulează pe modelele dumneavoastră — de obicei fracțiuni de cent pe zi.';
+
+  @override
+  String get agentsFirstRunCta => 'Stabiliți o intenție';
+
+  @override
+  String get agentsFirstRunSpeaks =>
+      'Vorbește prin bannere scurte, acolo unde vă aflați deja. Respingeți unul și va tăcea pentru tot restul zilei.';
+
+  @override
+  String get agentsFirstRunTitle => 'Un agent per obiectiv';
+
+  @override
+  String get agentsFirstRunWatches =>
+      'Urmărește lucrurile de care depinde obiectivul — obiceiuri bifate, numărul de pași. Nimic ce nu poate vedea, nimic ce trebuie să raportați.';
+
+  @override
   String get agentSoulAntiSycophancyLabel => 'Politica anti-lingușire';
 
   @override
@@ -6074,6 +6096,18 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalCoarseHealthBehind => 'În urmă';
+
+  @override
+  String get goalCoarseHealthHealthy => 'Sănătos';
+
+  @override
+  String get goalCoarseHealthNotEnoughData => 'Date insuficiente';
+
+  @override
+  String get goalCoarseHealthRestarting => 'Se repornește';
+
+  @override
   String get goalCreateFailed =>
       'Salvarea obiectivului a eșuat — vă rugăm să încercați din nou.';
 
@@ -6130,6 +6164,15 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'chiar acum';
+
+  @override
+  String get goalHealthTrendDown => 'În scădere';
+
+  @override
+  String get goalHealthTrendFlat => 'Se menține';
+
+  @override
+  String get goalHealthTrendUp => 'În creștere';
 
   @override
   String get goalNudgeStatusDismissed => 'Respins';

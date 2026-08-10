@@ -145,6 +145,7 @@ void main() {
               reportOneLiner: null,
               pendingProposals: 0,
               spec: null,
+              direction: null,
             ),
           ),
           selfTargetedPendingChangeSetsProvider(

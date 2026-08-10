@@ -704,6 +704,28 @@ class AppLocalizationsIt extends AppLocalizations {
   String get agentSettingsTitle => 'Agenti';
 
   @override
+  String get agentsFirstRunControl =>
+      'Puoi parlargli, correggerlo, riorientarlo, metterlo in pausa, eliminarlo.';
+
+  @override
+  String get agentsFirstRunCost =>
+      'Funziona con i tuoi modelli: di solito frazioni di centesimo al giorno.';
+
+  @override
+  String get agentsFirstRunCta => 'Imposta un\'intenzione';
+
+  @override
+  String get agentsFirstRunSpeaks =>
+      'Parla con brevi banner, dove sei già. Chiudine uno e resterà in silenzio per il resto della giornata.';
+
+  @override
+  String get agentsFirstRunTitle => 'Un agente per obiettivo';
+
+  @override
+  String get agentsFirstRunWatches =>
+      'Osserva ciò da cui dipende l\'obiettivo: abitudini spuntate, passi. Niente che non possa vedere, niente che tu debba segnalare.';
+
+  @override
   String get agentSoulAntiSycophancyLabel => 'Politica anti-sicofanzia';
 
   @override
@@ -6050,6 +6072,18 @@ class AppLocalizationsIt extends AppLocalizations {
   }
 
   @override
+  String get goalCoarseHealthBehind => 'In ritardo';
+
+  @override
+  String get goalCoarseHealthHealthy => 'In forma';
+
+  @override
+  String get goalCoarseHealthNotEnoughData => 'Dati insufficienti';
+
+  @override
+  String get goalCoarseHealthRestarting => 'Riparte';
+
+  @override
   String get goalCreateFailed =>
       'Salvataggio dell’obiettivo non riuscito: riprova.';
 
@@ -6106,6 +6140,15 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'proprio ora';
+
+  @override
+  String get goalHealthTrendDown => 'In calo';
+
+  @override
+  String get goalHealthTrendFlat => 'Stabile';
+
+  @override
+  String get goalHealthTrendUp => 'In aumento';
 
   @override
   String get goalNudgeStatusDismissed => 'Ignorato';

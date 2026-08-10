@@ -2,22 +2,32 @@ import 'package:flutter/material.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/ui/goal_banner_style.dart';
 
-/// The monogram identity chip: accent letter on the accent's chip wash.
-/// Typography and colour only — no faces, no imagery (ADR 0058 holds even
-/// for identity). Shared by the banner card and the dock.
+/// The monogram identity chip: a letter on a tinted [fill] wash. Typography
+/// and colour only — no faces, no imagery (ADR 0058 holds even for
+/// identity). Shared by the banner card, the dock and the agents list; the
+/// caller supplies the wash (an accent on banners, the health hue on the
+/// list row).
 class GoalBannerPersonaChip extends StatelessWidget {
   const GoalBannerPersonaChip({
     required this.monogram,
-    required this.style,
+    required this.fill,
     super.key,
   });
+
+  /// Convenience: the persona chip for a [GoalBannerStyle] — the accent's
+  /// 22% chip wash.
+  GoalBannerPersonaChip.forStyle({
+    required this.monogram,
+    required GoalBannerStyle style,
+    super.key,
+  }) : fill = style.chipFill;
 
   /// Derives the monogram for a goal/persona title.
   static String monogramFor(String title) =>
       title.isEmpty ? '·' : title.characters.first.toUpperCase();
 
   final String monogram;
-  final GoalBannerStyle style;
+  final Color fill;
 
   @override
   Widget build(BuildContext context) {
@@ -31,10 +41,7 @@ class GoalBannerPersonaChip extends StatelessWidget {
       width: size,
       height: size,
       alignment: Alignment.center,
-      decoration: BoxDecoration(
-        color: style.chipFill,
-        shape: BoxShape.circle,
-      ),
+      decoration: BoxDecoration(color: fill, shape: BoxShape.circle),
       child: Text(
         monogram,
         // High-emphasis, not the raw accent: the accent as 12px text over

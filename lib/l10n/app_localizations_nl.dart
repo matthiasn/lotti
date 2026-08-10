@@ -697,6 +697,28 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentSettingsTitle => 'Middelen';
 
   @override
+  String get agentsFirstRunControl =>
+      'Je kunt met hem praten, hem corrigeren, opnieuw richten, pauzeren, verwijderen.';
+
+  @override
+  String get agentsFirstRunCost =>
+      'Draait op jouw modellen — meestal fracties van een cent per dag.';
+
+  @override
+  String get agentsFirstRunCta => 'Stel een intentie in';
+
+  @override
+  String get agentsFirstRunSpeaks =>
+      'Hij spreekt in korte banners, waar je al bent. Wijs er een af en de rest van de dag is het stil.';
+
+  @override
+  String get agentsFirstRunTitle => 'Eén agent per doel';
+
+  @override
+  String get agentsFirstRunWatches =>
+      'Hij let op waar het doel van afhangt — afgevinkte gewoonten, stappen. Niets wat hij niet kan zien, niets wat je hoeft te melden.';
+
+  @override
   String get agentSoulAntiSycophancyLabel => 'Antisycophancybeleid';
 
   @override
@@ -5996,6 +6018,18 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalCoarseHealthBehind => 'Achterop';
+
+  @override
+  String get goalCoarseHealthHealthy => 'Gezond';
+
+  @override
+  String get goalCoarseHealthNotEnoughData => 'Te weinig gegevens';
+
+  @override
+  String get goalCoarseHealthRestarting => 'Begint opnieuw';
+
+  @override
   String get goalCreateFailed =>
       'Het doel kon niet worden opgeslagen — probeer het opnieuw.';
 
@@ -6051,6 +6085,15 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalDockJustNow => 'zojuist';
+
+  @override
+  String get goalHealthTrendDown => 'Daalt';
+
+  @override
+  String get goalHealthTrendFlat => 'Blijft stabiel';
+
+  @override
+  String get goalHealthTrendUp => 'Stijgt';
 
   @override
   String get goalNudgeStatusDismissed => 'Weggeveegd';

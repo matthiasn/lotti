@@ -947,6 +947,11 @@ class _AppScreenState extends ConsumerState<AppScreen> {
           // indicators never cover scroll content or floating actions.
           _MobileNavOverlayHeightScope(
             navBarVisible: showBottomNav,
+            // The goal-agent dock rides in the same bottom overlay on the
+            // main working tabs; reserve its lane so page content and FABs
+            // clear it when a goal is speaking.
+            goalDockAllowed:
+                showBottomNav && _showsGoalBannerDock(destinations[index].kind),
             child: IndexedStack(
               index: index,
               children: [
@@ -1168,10 +1173,18 @@ class _AppScreenState extends ConsumerState<AppScreen> {
 class _MobileNavOverlayHeightScope extends ConsumerWidget {
   const _MobileNavOverlayHeightScope({
     required this.navBarVisible,
+    required this.goalDockAllowed,
     required this.child,
   });
 
   final bool navBarVisible;
+
+  /// Whether the goal-agent dock may mount on this tab (a main working tab
+  /// with the bar visible). Its lane is reserved only when it is ALSO
+  /// speaking (there is an active nudge), so a collapsed dock reserves
+  /// nothing.
+  final bool goalDockAllowed;
+
   final Widget child;
 
   @override
@@ -1194,6 +1207,20 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
       audioIndicatorVisible = false;
     }
 
+    // The dock speaks only when there is at least one active nudge; a
+    // collapsed dock reserves no lane. Approximated by "any active nudge
+    // exists" — an over-reserve while a nudge is stale/dismissed is
+    // harmless (a little extra bottom clearance), an under-reserve is not.
+    // The compact dock renders its empty child while the keyboard is up
+    // (`GoalBannerDock` yields to it), so the reserve must drop to zero then —
+    // otherwise it would push scroll clearance and FABs an extra lane above
+    // the keyboard for the whole editing session. Mirror that collapse here.
+    final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final goalDockSpeaking =
+        goalDockAllowed &&
+        !keyboardUp &&
+        (ref.watch(activeGoalNudgesProvider).value?.isNotEmpty ?? false);
+
     return StreamBuilder<JournalEntity?>(
       stream: getIt<TimeService>().getStream(),
       builder: (context, snapshot) {
@@ -1210,6 +1237,14 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
                 : 0,
             audioIndicatorVisible ? context.designTokens.spacing.step6 : 0,
           );
+        }
+        // The dock rides ABOVE the indicator row in the same overlay
+        // column, so its lane adds to the row's height.
+        // The reserved lane is derived from the dock's own DS dimensions and
+        // is scale-aware (the tenant's copy grows with accessibility text),
+        // so content and FABs clear the dock at every text scale.
+        if (goalDockSpeaking) {
+          height += goalBannerDockReservedHeight(context);
         }
         return DesignSystemBottomNavigationOverlayHeight(
           height: height,
