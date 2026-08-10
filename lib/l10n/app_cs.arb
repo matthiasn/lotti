@@ -540,6 +540,7 @@
   "agentTokenUsageThoughtsTokens": "Úvahy",
   "agentTokenUsageTotalTokens": "Celkem",
   "agentTokenUsageWakeCount": "Probuzení",
+  "agentToolGoalRevisionLabel": "Návrh úpravy cíle",
   "aggregationDailyAvg": "Denní průměr",
   "aggregationDailyMax": "Denní maximum",
   "aggregationDailySum": "Denní součet",

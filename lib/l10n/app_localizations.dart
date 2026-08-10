@@ -2221,6 +2221,12 @@ abstract class AppLocalizations {
   /// **'Wakes'**
   String get agentTokenUsageWakeCount;
 
+  /// No description provided for @agentToolGoalRevisionLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal revision proposal'**
+  String get agentToolGoalRevisionLabel;
+
   /// No description provided for @aggregationDailyAvg.
   ///
   /// In en, this message translates to:

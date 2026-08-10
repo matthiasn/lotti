@@ -666,6 +666,7 @@
   "agentTokenUsageThoughtsTokens": "Pensieri",
   "agentTokenUsageTotalTokens": "Totale",
   "agentTokenUsageWakeCount": "Sveglia",
+  "agentToolGoalRevisionLabel": "Proposta di revisione dell'obiettivo",
   "aggregationDailyAvg": "Media giornaliera",
   "aggregationDailyMax": "Massimo giornaliero",
   "aggregationDailySum": "Sommario giornaliero",

@@ -666,6 +666,7 @@
   "agentTokenUsageThoughtsTokens": "Tankar",
   "agentTokenUsageTotalTokens": "Totalt",
   "agentTokenUsageWakeCount": "Vakor",
+  "agentToolGoalRevisionLabel": "Förslag på måljustering",
   "aggregationDailyAvg": "Dagligt genomsnitt",
   "aggregationDailyMax": "Daglig maxgräns",
   "aggregationDailySum": "Daglig summa",

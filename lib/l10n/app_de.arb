@@ -533,6 +533,7 @@
   "agentTokenUsageThoughtsTokens": "Denken",
   "agentTokenUsageTotalTokens": "Gesamt",
   "agentTokenUsageWakeCount": "Aufwachvorgänge",
+  "agentToolGoalRevisionLabel": "Vorschlag zur Zielanpassung",
   "aggregationDailyAvg": "Tagesdurchschnitt",
   "aggregationDailyMax": "Tagesmaximum",
   "aggregationDailySum": "Tagessumme",

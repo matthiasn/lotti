@@ -665,6 +665,7 @@
   "agentTokenUsageThoughtsTokens": "Gedachten",
   "agentTokenUsageTotalTokens": "Totaal",
   "agentTokenUsageWakeCount": "Wakker worden",
+  "agentToolGoalRevisionLabel": "Voorstel tot doelherziening",
   "aggregationDailyAvg": "Daggemiddelde",
   "aggregationDailyMax": "Dagelijks maximum",
   "aggregationDailySum": "Dagelijks bedrag",

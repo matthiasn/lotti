@@ -1271,6 +1271,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Vakor';
 
   @override
+  String get agentToolGoalRevisionLabel => 'Förslag på måljustering';
+
+  @override
   String get aggregationDailyAvg => 'Dagligt genomsnitt';
 
   @override

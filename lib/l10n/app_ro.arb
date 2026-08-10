@@ -533,6 +533,7 @@
   "agentTokenUsageThoughtsTokens": "Gânduri",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Treziri",
+  "agentToolGoalRevisionLabel": "Propunere de revizuire a obiectivului",
   "aggregationDailyAvg": "Medie zilnică",
   "aggregationDailyMax": "Maxim zilnic",
   "aggregationDailySum": "Sumă zilnică",

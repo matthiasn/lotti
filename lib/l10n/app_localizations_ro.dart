@@ -1281,6 +1281,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Treziri';
 
   @override
+  String get agentToolGoalRevisionLabel =>
+      'Propunere de revizuire a obiectivului';
+
+  @override
   String get aggregationDailyAvg => 'Medie zilnică';
 
   @override

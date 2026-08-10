@@ -1257,6 +1257,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Wakes';
 
   @override
+  String get agentToolGoalRevisionLabel => 'Goal revision proposal';
+
+  @override
   String get aggregationDailyAvg => 'Daily average';
 
   @override

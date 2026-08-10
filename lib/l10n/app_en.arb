@@ -875,6 +875,7 @@
   "agentTokenUsageThoughtsTokens": "Thoughts",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Wakes",
+  "agentToolGoalRevisionLabel": "Goal revision proposal",
   "aggregationDailyAvg": "Daily average",
   "aggregationDailyMax": "Daily maximum",
   "aggregationDailySum": "Daily sum",

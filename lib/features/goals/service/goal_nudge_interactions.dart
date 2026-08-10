@@ -33,6 +33,9 @@ class GoalNudgeInteractions {
   /// the whole row, and the exposure flushes are fire-and-forget — two
   /// overlapping calls would both read the same snapshot and the later
   /// upsert would silently drop the earlier increment (or a dismissal).
+  /// Each queued mutation additionally reads and writes inside ONE
+  /// database transaction, so incoming sync applications serialize
+  /// against it instead of landing between read and write.
   final Map<String, Future<void>> _writeTail = {};
 
   Future<void> _serialized(String nudgeId, Future<void> Function() write) {
@@ -57,23 +60,25 @@ class GoalNudgeInteractions {
   /// activation the user actually SAW: if sync re-ran the nudge while
   /// the close tap was in flight, the write is discarded rather than
   /// silencing a run the user never looked at (the rating path's guard).
-  Future<void> dismiss(String nudgeId, {int? forActivation}) =>
-      _serialized(nudgeId, () async {
-        final nudge = await _repository.getEntity(nudgeId);
-        if (nudge is! GoalNudgeEntity) return;
-        if (nudge.status != GoalNudgeStatus.active) return;
-        if (forActivation != null && forActivation != nudge.activationCount) {
-          return;
-        }
-        final now = clock.now();
-        await _syncService.upsertEntity(
-          nudge.copyWith(
-            status: GoalNudgeStatus.dismissed,
-            dismissedAt: now,
-            updatedAt: now,
-          ),
-        );
-      });
+  Future<void> dismiss(String nudgeId, {int? forActivation}) => _serialized(
+    nudgeId,
+    () => _syncService.runInTransaction(() async {
+      final nudge = await _repository.getEntity(nudgeId);
+      if (nudge is! GoalNudgeEntity) return;
+      if (nudge.status != GoalNudgeStatus.active) return;
+      if (forActivation != null && forActivation != nudge.activationCount) {
+        return;
+      }
+      final now = clock.now();
+      await _syncService.upsertEntity(
+        nudge.copyWith(
+          status: GoalNudgeStatus.dismissed,
+          dismissedAt: now,
+          updatedAt: now,
+        ),
+      );
+    }),
+  );
 
   /// Records the rating-prompt outcome — [rating] 1..5, or a skip — for
   /// [forActivation] (the activation the user actually SAW; defaults to
@@ -95,27 +100,30 @@ class GoalNudgeInteractions {
     if (rating != null && (rating < 1 || rating > 5)) {
       throw ArgumentError.value(rating, 'rating', 'must be 1..5');
     }
-    return _serialized(nudgeId, () async {
-      final nudge = await _repository.getEntity(nudgeId);
-      if (nudge is! GoalNudgeEntity) return;
-      final activation = forActivation ?? nudge.activationCount;
-      if (activation != nudge.activationCount) return;
-      if (nudge.ratings.any((r) => r.activation == activation)) return;
-      await _syncService.upsertEntity(
-        nudge.copyWith(
-          ratings: [
-            ...nudge.ratings,
-            GoalNudgeRating(
-              activation: activation,
-              ratedAt: clock.now(),
-              rating: rating,
-              skipped: skipped,
-            ),
-          ],
-          updatedAt: clock.now(),
-        ),
-      );
-    });
+    return _serialized(
+      nudgeId,
+      () => _syncService.runInTransaction(() async {
+        final nudge = await _repository.getEntity(nudgeId);
+        if (nudge is! GoalNudgeEntity) return;
+        final activation = forActivation ?? nudge.activationCount;
+        if (activation != nudge.activationCount) return;
+        if (nudge.ratings.any((r) => r.activation == activation)) return;
+        await _syncService.upsertEntity(
+          nudge.copyWith(
+            ratings: [
+              ...nudge.ratings,
+              GoalNudgeRating(
+                activation: activation,
+                ratedAt: clock.now(),
+                rating: rating,
+                skipped: skipped,
+              ),
+            ],
+            updatedAt: clock.now(),
+          ),
+        );
+      }),
+    );
   }
 
   /// Accounts one visibility episode: [visibleFor] accumulates into this
@@ -128,30 +136,35 @@ class GoalNudgeInteractions {
   }) {
     if (visibleFor <= Duration.zero) return Future.value();
     return _serialized(nudgeId, () async {
-      // Host FIRST: after the row read there must be no await before the
-      // write, or a synced terminal state landing in the gap would be
-      // clobbered by this bookkeeping upsert.
+      // Host outside the transaction (cached, immutable per install)…
       final host = await _localHost();
-      final nudge = await _repository.getEntity(nudgeId);
-      if (nudge is! GoalNudgeEntity) return;
-      final now = clock.now();
-      // The flush arrives at the END of the episode; the banner became
-      // visible one episode-length earlier. Stamping `now` would push
-      // firstShownAt past a dismissal that raced the disposal flush and
-      // corrupt time-to-dismiss metrics.
-      final shownAt = now.subtract(visibleFor);
-      await _syncService.upsertEntity(
-        nudge.copyWith(
-          totalVisibleMs: nudge.totalVisibleMs.increment(
-            host,
-            visibleFor.inMilliseconds,
+      // …then read and write INSIDE one database transaction: the
+      // vector-clock stamping in upsertEntity awaits before the actual
+      // write, so without the transaction a synced terminal state could
+      // land in that gap and be clobbered by this bookkeeping upsert
+      // (with a newer clock — unrecoverable by the resolver).
+      await _syncService.runInTransaction(() async {
+        final nudge = await _repository.getEntity(nudgeId);
+        if (nudge is! GoalNudgeEntity) return;
+        final now = clock.now();
+        // The flush arrives at the END of the episode; the banner became
+        // visible one episode-length earlier. Stamping `now` would push
+        // firstShownAt past a dismissal that raced the disposal flush and
+        // corrupt time-to-dismiss metrics.
+        final shownAt = now.subtract(visibleFor);
+        await _syncService.upsertEntity(
+          nudge.copyWith(
+            totalVisibleMs: nudge.totalVisibleMs.increment(
+              host,
+              visibleFor.inMilliseconds,
+            ),
+            impressionCount: nudge.impressionCount.increment(host),
+            firstShownAt: nudge.firstShownAt ?? shownAt,
+            lastShownAt: now,
+            updatedAt: now,
           ),
-          impressionCount: nudge.impressionCount.increment(host),
-          firstShownAt: nudge.firstShownAt ?? shownAt,
-          lastShownAt: now,
-          updatedAt: now,
-        ),
-      );
+        );
+      });
     });
   }
 }

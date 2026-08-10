@@ -1263,6 +1263,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Våger';
 
   @override
+  String get agentToolGoalRevisionLabel => 'Forslag til måljustering';
+
+  @override
   String get aggregationDailyAvg => 'Dagligt gennemsnit';
 
   @override

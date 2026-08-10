@@ -1269,6 +1269,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Wakker worden';
 
   @override
+  String get agentToolGoalRevisionLabel => 'Voorstel tot doelherziening';
+
+  @override
   String get aggregationDailyAvg => 'Daggemiddelde';
 
   @override

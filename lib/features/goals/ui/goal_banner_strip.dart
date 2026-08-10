@@ -35,6 +35,10 @@ class GoalBannerStrip extends ConsumerWidget {
       padding: EdgeInsets.only(
         left: padded ? tokens.spacing.step5 : 0,
         right: padded ? tokens.spacing.step5 : 0,
+        // Card rhythm: hosts mount the strip flush against the previous
+        // surface (the habits summary card), and an empty strip already
+        // shrank to nothing above.
+        top: tokens.spacing.cardItemSpacing,
         bottom: tokens.spacing.step3,
       ),
       child: Column(

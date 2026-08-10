@@ -445,7 +445,9 @@ String? _goalRevision(AppLocalizations messages, Map<String, dynamic> args) {
   if (changes is! Map) return null;
   final parts = <String>[
     if (changes['targetValue'] != null)
-      messages.agentSummaryGoalRevisionTarget('${changes['targetValue']}'),
+      messages.agentSummaryGoalRevisionTarget(
+        _localizedTarget(messages, changes['targetValue']),
+      ),
     if (changes['period'] != null)
       messages.agentSummaryGoalRevisionPeriod(
         _localizedWindow(messages, '${changes['period']}'),
@@ -457,6 +459,14 @@ String? _goalRevision(AppLocalizations messages, Map<String, dynamic> args) {
   ];
   if (parts.isEmpty) return null;
   return parts.join(' · ');
+}
+
+/// Numeric targets follow the reader's decimal/grouping conventions
+/// ("7,5" in German); a malformed value passes through verbatim.
+String _localizedTarget(AppLocalizations messages, Object? value) {
+  final number = value is num ? value : num.tryParse('$value');
+  if (number == null) return '$value';
+  return NumberFormat.decimalPattern(messages.localeName).format(number);
 }
 
 /// The model's window phrase ("rolling 14 days") re-rendered in the

@@ -590,10 +590,10 @@ void main() {
       );
       await _pumpUi(tester);
 
-      expect(find.text('Lower the target to 8000'), findsOneWidget);
+      expect(find.text('Change the target to 8,000'), findsOneWidget);
 
       await tester.drag(
-        find.text('Lower the target to 8000'),
+        find.text('Change the target to 8,000'),
         const Offset(300, 0),
       );
       await _pumpUi(tester);

@@ -408,7 +408,12 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
         style: context.textTheme.bodyMedium,
       ),
       subtitle: Text(
-        _item.toolName,
+        // Goal proposals face non-technical review — a raw tool id would
+        // leak the wire vocabulary into every locale. (Literal spelling:
+        // features/agents must not import goals.)
+        _item.toolName == 'propose_goal_revision'
+            ? context.messages.agentToolGoalRevisionLabel
+            : _item.toolName,
         style: context.textTheme.bodySmall?.copyWith(
           color: context.colorScheme.onSurfaceVariant,
         ),

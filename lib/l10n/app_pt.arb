@@ -665,6 +665,7 @@
   "agentTokenUsageThoughtsTokens": "Pensamentos",
   "agentTokenUsageTotalTokens": "Total",
   "agentTokenUsageWakeCount": "Acorda",
+  "agentToolGoalRevisionLabel": "Proposta de revisão da meta",
   "aggregationDailyAvg": "Média diária",
   "aggregationDailyMax": "Máximo diário",
   "aggregationDailySum": "Soma diária",

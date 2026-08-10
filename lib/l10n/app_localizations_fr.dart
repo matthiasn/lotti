@@ -1281,6 +1281,10 @@ class AppLocalizationsFr extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Réveils';
 
   @override
+  String get agentToolGoalRevisionLabel =>
+      'Proposition de révision de l\'objectif';
+
+  @override
   String get aggregationDailyAvg => 'Moyenne quotidienne';
 
   @override

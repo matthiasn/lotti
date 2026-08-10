@@ -1272,6 +1272,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Probuzení';
 
   @override
+  String get agentToolGoalRevisionLabel => 'Návrh úpravy cíle';
+
+  @override
   String get aggregationDailyAvg => 'Denní průměr';
 
   @override

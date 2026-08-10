@@ -1275,6 +1275,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get agentTokenUsageWakeCount => 'Acorda';
 
   @override
+  String get agentToolGoalRevisionLabel => 'Proposta de revisão da meta';
+
+  @override
   String get aggregationDailyAvg => 'Média diária';
 
   @override
