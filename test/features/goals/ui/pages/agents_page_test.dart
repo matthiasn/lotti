@@ -160,7 +160,8 @@ void main() {
           goalAgentHealthProvider('goal-leak').overrideWith(
             (ref) async => health(
               trackStatus: GoalTrackStatus.offTrack,
-              reportOneLiner: 'You are at 64% of target this week.',
+              // Locale comma decimal — must be caught too, not just `64%`.
+              reportOneLiner: 'Progress is 12,5 % of target this week.',
             ),
           ),
           goalAgentHealthProvider('goal-clean').overrideWith(
@@ -173,8 +174,9 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    // The leaked-percentage one-liner is withheld entirely...
-    expect(find.textContaining('64%'), findsNothing);
+    // The leaked-percentage one-liner is withheld entirely — including the
+    // comma-decimal locale form...
+    expect(find.textContaining('12,5'), findsNothing);
     expect(find.textContaining('% of target'), findsNothing);
     // ...while a clean events-and-time one-liner still renders.
     expect(find.text('Seven solid nights running.'), findsOneWidget);

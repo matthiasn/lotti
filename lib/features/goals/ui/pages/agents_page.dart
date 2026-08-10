@@ -143,8 +143,9 @@ class _FirstRunExplainer extends StatelessWidget {
   }
 }
 
-/// Matches a percentage figure like `64%` or `12.5 %`.
-final _percentagePattern = RegExp(r'\d+(\.\d+)?\s*%');
+/// Matches a percentage figure like `64%`, `12.5 %` or the locale-formatted
+/// `12,5 %` (comma decimal separator).
+final _percentagePattern = RegExp(r'\d+(?:[.,]\d+)?\s*%');
 
 /// The list-summary contract is events-and-time language, never a percentage
 /// (handover 1c). Model-authored report one-liners are otherwise trusted
