@@ -5970,6 +5970,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days of buffer',
+      one: '1 day of buffer',
+      zero: 'Buffer runs out today',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get goalCoarseHealthBehind => 'Behind';
 
   @override
@@ -5985,11 +5997,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalCreateFailed => 'Saving the goal failed — please try again.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Times per week (each habit)';
+  String get goalCreateHabitCountLabel => 'Times per 7 days (each habit)';
 
   @override
-  String get goalCreateHabitCountRange =>
-      'The weekly count must be between 1 and 7.';
+  String get goalCreateHabitCountRange => 'The count must be between 1 and 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Habits to watch';
@@ -6019,6 +6030,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Give the goal a name and at least one criterion.';
+
+  @override
+  String goalDaysToRecover(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days to recover',
+      one: '1 day to recover',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalDeleteConfirmButton => 'Delete goal';

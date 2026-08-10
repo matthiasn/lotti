@@ -1827,6 +1827,8 @@ GoalProgressEntity _$GoalProgressEntityFromJson(Map<String, dynamic> json) =>
           const <GoalCriterionProgress>[],
       paceFeasible: json['paceFeasible'] as bool?,
       shortTermAttainment: (json['shortTermAttainment'] as num?)?.toDouble(),
+      deficit: (json['deficit'] as num?)?.toInt(),
+      buffer: (json['buffer'] as num?)?.toInt(),
       deletedAt: json['deletedAt'] == null
           ? null
           : DateTime.parse(json['deletedAt'] as String),
@@ -1849,6 +1851,8 @@ Map<String, dynamic> _$GoalProgressEntityToJson(GoalProgressEntity instance) =>
       'criterionResults': instance.criterionResults,
       'paceFeasible': instance.paceFeasible,
       'shortTermAttainment': instance.shortTermAttainment,
+      'deficit': instance.deficit,
+      'buffer': instance.buffer,
       'deletedAt': instance.deletedAt?.toIso8601String(),
       'runtimeType': instance.$type,
     };

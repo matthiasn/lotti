@@ -350,6 +350,8 @@ class GoalAgentPhaseA {
         ],
         paceFeasible: evaluation.paceFeasible,
         shortTermAttainment: facts.shortTermAttainment,
+        deficit: evaluation.deficit,
+        buffer: evaluation.buffer,
       ),
     );
   }

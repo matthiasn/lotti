@@ -67,11 +67,20 @@ class GoalFactsRenderer {
               'sampleCount': result.sampleCount,
               if (result.paceFeasible != null)
                 'paceFeasible': result.paceFeasible,
+              // Rolling-window habit facts: days-to-recovery, and the buffer
+              // before the count drops below target. The LLM may restate
+              // these but never recomputes them.
+              if (result.deficit != null) 'daysToRecover': result.deficit,
+              if (result.buffer != null) 'bufferDays': result.buffer,
             },
         ],
         'attainment': facts.evaluation.attainment,
         'trackStatus': facts.trackStatus.name,
         'dataCoverage': facts.evaluation.dataCoverage,
+        if (facts.evaluation.deficit != null)
+          'daysToRecover': facts.evaluation.deficit,
+        if (facts.evaluation.buffer != null)
+          'bufferDays': facts.evaluation.buffer,
         if (facts.shortTermAttainment != null)
           'trailing3DayAttainment': facts.shortTermAttainment,
         'trendWorsening3PlusDays': trendWorsening(

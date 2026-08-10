@@ -6055,6 +6055,18 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String goalBufferDays(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dias de margem',
+      one: '1 dia de margem',
+      zero: 'A margem acaba hoje',
+    );
+    return '$_temp0';
+  }
+
+  @override
   String get goalCoarseHealthBehind => 'Atrasado';
 
   @override
@@ -6071,11 +6083,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Não foi possível guardar a meta — tenta novamente.';
 
   @override
-  String get goalCreateHabitCountLabel => 'Vezes por semana (cada hábito)';
+  String get goalCreateHabitCountLabel => 'Vezes por 7 dias (cada hábito)';
 
   @override
-  String get goalCreateHabitCountRange =>
-      'A contagem semanal deve ficar entre 1 e 7.';
+  String get goalCreateHabitCountRange => 'O número deve estar entre 1 e 7.';
 
   @override
   String get goalCreateHabitsLabel => 'Hábitos a acompanhar';
@@ -6105,6 +6116,17 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get goalCreateValidationMissing =>
       'Dá um nome à meta e pelo menos um critério.';
+
+  @override
+  String goalDaysToRecover(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dias para recuperar',
+      one: '1 dia para recuperar',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalDeleteConfirmButton => 'Eliminar objetivo';

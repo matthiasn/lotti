@@ -14,8 +14,8 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// The dogfooding creation form: a steps goal (daily average over a
 /// rolling week) or a habit routine watching ONE OR MORE habits, each
-/// completed N times per calendar week (an `allOf` composite — the
-/// multi-habit shape the criteria model always supported).
+/// completed N times within a trailing rolling seven-day window (an `allOf`
+/// composite — the multi-habit shape the criteria model always supported).
 class CreateGoalAgentPage extends ConsumerStatefulWidget {
   const CreateGoalAgentPage({super.key});
 
@@ -75,8 +75,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       case _GoalKind.habits:
         final count = int.tryParse(_habitCount.text.trim());
         // At most 7: the signal reader collapses completions to one
-        // success per local day, so a calendar week can never observe
-        // more — a higher count would mint an unsatisfiable goal.
+        // success per local day, so a rolling seven-day window can never
+        // observe more — a higher count would mint an unsatisfiable goal.
         if (count == null ||
             count < 1 ||
             count > 7 ||
@@ -88,7 +88,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
             GoalCriterion.habit(
               criterionId: 'habit-$habitId',
               habitId: habitId,
-              window: const GoalWindow.calendarWeek(),
+              // Rolling 7-day window: the deficit/buffer health model (a
+              // continuous trailing count, no calendar-quota dead zone).
+              window: const GoalWindow.rollingDays(count: 7),
               targetCount: count,
             ),
         ];
@@ -112,11 +114,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _selectedHabitIds.retainWhere(activeIds.contains);
     final criteria = _buildCriteria();
     if (name.isEmpty || criteria == null) {
-      final weeklyCount = int.tryParse(_habitCount.text.trim());
+      final habitCount = int.tryParse(_habitCount.text.trim());
       final countOutOfRange =
           _kind == _GoalKind.habits &&
-          weeklyCount != null &&
-          (weeklyCount < 1 || weeklyCount > 7);
+          habitCount != null &&
+          (habitCount < 1 || habitCount > 7);
       setState(
         () => _validation = countOutOfRange
             ? context.messages.goalCreateHabitCountRange

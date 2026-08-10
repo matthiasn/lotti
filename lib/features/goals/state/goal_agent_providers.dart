@@ -447,6 +447,11 @@ typedef GoalAgentHealth = ({
   // The direction of travel across the two most recent registers — the
   // list row's arrow. Null until there are two registers to compare.
   GoalHealthDirection? direction,
+  // Rolling-window habit goals only (from the latest register): days-to-
+  // recovery, and the buffer before the oldest success ages out when at rate.
+  // Null for calendar/metric goals and composites.
+  int? deficit,
+  int? buffer,
 });
 
 /// Whether comparing consecutive period registers' attainment is a sound
@@ -559,5 +564,7 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
         pendingProposals: pending.length,
         spec: spec,
         direction: direction,
+        deficit: latest?.deficit,
+        buffer: latest?.buffer,
       );
     }, name: 'goalAgentHealthProvider');
