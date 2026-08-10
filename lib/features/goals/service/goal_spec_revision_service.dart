@@ -189,7 +189,11 @@ class GoalSpecRevisionService {
       };
       if (!affected.contains(nudge.status)) continue;
       await _syncService.upsertEntity(
-        nudge.copyWith(status: GoalNudgeStatus.superseded, updatedAt: now),
+        nudge.copyWith(
+          status: GoalNudgeStatus.superseded,
+          supersededAt: now,
+          updatedAt: now,
+        ),
       );
     }
 

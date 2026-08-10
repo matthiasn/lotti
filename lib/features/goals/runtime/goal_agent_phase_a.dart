@@ -174,6 +174,7 @@ class GoalAgentPhaseA {
           await _syncService.upsertEntity(
             nudge.copyWith(
               status: GoalNudgeStatus.superseded,
+              supersededAt: now,
               updatedAt: now,
             ),
           );

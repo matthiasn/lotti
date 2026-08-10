@@ -69,7 +69,9 @@ void main() {
       await withClock(fixedClock, () => interactions.dismiss('ad-1'));
       final written = upserts.whereType<GoalNudgeEntity>().single;
       expect(written.status, GoalNudgeStatus.dismissed);
-      expect(written.dismissedAt, now);
+      // Persisted as UTC so peers in other zones parse the true instant.
+      expect(written.dismissedAt, now.toUtc());
+      expect(written.dismissedAt!.isUtc, isTrue);
     });
 
     test('a dismissal for a superseded activation is discarded — the tap '

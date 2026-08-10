@@ -386,6 +386,14 @@ goalNudgeHistoryProvider = FutureProvider.autoDispose
         GoalNudgeStatus.expired,
         GoalNudgeStatus.superseded,
       };
+      DateTime outcomeAt(GoalNudgeEntity n) =>
+          n.dismissedAt ??
+          n.retiredAt ??
+          n.expiredAt ??
+          n.supersededAt ??
+          // Legacy rows without a stamped outcome; updatedAt is mutable
+          // bookkeeping (exposure flushes bump it) and only a fallback.
+          n.updatedAt;
       return (await repository.getEntitiesByAgentId(
             agentId,
             type: AgentEntityTypes.goalNudge,
@@ -393,7 +401,7 @@ goalNudgeHistoryProvider = FutureProvider.autoDispose
           .whereType<GoalNudgeEntity>()
           .where((n) => n.deletedAt == null && shown.contains(n.status))
           .toList()
-        ..sort((a, b) => b.updatedAt.compareTo(a.updatedAt));
+        ..sort((a, b) => outcomeAt(b).compareTo(outcomeAt(a)));
     }, name: 'goalNudgeHistoryProvider');
 
 /// Health-at-a-glance for one goal agent: the latest register verdict,
@@ -432,9 +440,13 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
                 // revision is approved, showing the PREVIOUS goal's verdict
                 // beside the new statement would misreport health until
                 // Phase A writes the first register for the new version.
+                // No live spec (partial sync, dangling head) withholds
+                // health entirely — stale attainment beside a blank goal
+                // statement would misreport worse than an empty card.
                 (row) =>
                     row.deletedAt == null &&
-                    (spec == null || row.specVersionId == spec.id),
+                    spec != null &&
+                    row.specVersionId == spec.id,
               )
               .toList()
             ..sort((a, b) => b.periodKey.compareTo(a.periodKey));
@@ -451,10 +463,10 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
       final reportSpecId = latestReport?.provenance['specVersionId'];
       final reportMatchesSpec =
           latestReport != null &&
-          (spec == null ||
-              (reportSpecId is String
-                  ? reportSpecId == spec.id
-                  : !latestReport.createdAt.isBefore(spec.createdAt)));
+          spec != null &&
+          (reportSpecId is String
+              ? reportSpecId == spec.id
+              : !latestReport.createdAt.isBefore(spec.createdAt));
       final report = reportMatchesSpec ? latestReport : null;
 
       final pending = await repository.getPendingChangeSets(

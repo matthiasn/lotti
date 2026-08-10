@@ -75,7 +75,10 @@ class GoalNudgeInteractions {
           await _syncService.upsertEntity(
             nudge.copyWith(
               status: GoalNudgeStatus.dismissed,
-              dismissedAt: now,
+              // UTC: a local wall-clock instant serialized without its
+              // offset would be reinterpreted in the peer's zone and
+              // quiet the wrong calendar day.
+              dismissedAt: now.toUtc(),
               updatedAt: now,
             ),
           );

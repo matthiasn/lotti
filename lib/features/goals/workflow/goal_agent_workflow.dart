@@ -322,6 +322,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
         strategy: strategy,
         derivation: derivation,
         now: now,
+        escalationBaseline: goalEscalationBaselineFromTriggerTokens(
+          triggerTokens,
+        ),
       );
       outputsCommitted = true;
       if (!attributionFinalized && recordConsumption) {
@@ -749,6 +752,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required GoalAgentStrategy strategy,
     required GoalWakeDerivation derivation,
     required DateTime now,
+    String? escalationBaseline,
   }) async {
     final reportId = strategy.hasReport ? _uuid.v4() : null;
     final attributionEnvelope = await prepareAgentReportAttribution(
@@ -1012,14 +1016,15 @@ class GoalAgentWorkflow with AgentErrorLogging {
         for (final nudge in nudges) nudge.briefDigest,
       };
       // The creation id derives from the LOGICAL escalation — its period
-      // plus the baseline status that armed it — never from locally
-      // observed row counts, which legitimately differ across partitioned
-      // replicas. Duplicate executions of one escalation share both and
-      // converge on one row; a same-day SECOND escalation carries a
-      // different baseline (the status moved) and mints a distinct id.
+      // plus the ARMING baseline carried on the wake's trigger tokens —
+      // never from locally observed row counts (which differ across
+      // partitions) nor from the re-derived previousStatus (which is
+      // post-register and would collide when the same status recurs in
+      // one day). Duplicate executions of one escalation share both and
+      // converge; a same-day recurrence carries a different baseline.
       final creationId =
           'goal_nudge:$agentId:${derivation.periodKey}:'
-          '${derivation.facts.previousStatus?.name ?? 'first'}';
+          '${escalationBaseline ?? derivation.facts.previousStatus?.name ?? 'first'}';
       for (final request in strategy.createdAds) {
         if (staleSpecWake) {
           logError(

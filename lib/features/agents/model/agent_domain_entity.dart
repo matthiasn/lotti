@@ -979,6 +979,7 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? dismissedAt,
     DateTime? retiredAt,
     DateTime? expiredAt,
+    DateTime? supersededAt,
 
     /// How many times this ad has been activated (1-based; a reuse
     /// re-entry increments it). Rating prompts key off this: one outcome
