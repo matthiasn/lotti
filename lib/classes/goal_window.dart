@@ -125,6 +125,11 @@ sealed class GoalWindow with _$GoalWindow {
   static String _pad4(int value) => value.toString().padLeft(4, '0');
 }
 
+/// The largest rolling window a revision may mint — a decade, the
+/// product's own viability horizon. Date arithmetic beyond this throws
+/// at evaluation time, which would permanently wedge the goal.
+const int maxGoalRollingDays = 3650;
+
 /// Parses the FACTS window vocabulary into a [GoalWindow].
 GoalWindow? parseGoalWindowPhrase(String phrase) {
   final normalized = phrase.toLowerCase().trim();
@@ -136,8 +141,11 @@ GoalWindow? parseGoalWindowPhrase(String phrase) {
   if (rolling != null) {
     // tryParse: model-authored digits can overflow a 64-bit int, and this
     // parser's contract is null for unusable input, never a throw.
+    // Bounded to a decade: an approved absurd window ('rolling 1e9 days')
+    // would throw on every later evaluation's date arithmetic, leaving
+    // the goal permanently unable to refresh.
     final count = int.tryParse(rolling.group(1)!);
-    return count != null && count > 0
+    return count != null && count > 0 && count <= maxGoalRollingDays
         ? GoalWindow.rollingDays(count: count)
         : null;
   }

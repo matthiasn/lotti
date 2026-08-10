@@ -212,6 +212,15 @@ final goalChangeSetConfirmationServiceProvider =
                     changeSet.agentId,
                     version.criteria,
                   );
+              // One immediate deterministic evaluation over the data that
+              // already exists — revised health must not stay blank until
+              // tomorrow's cadence tick (the creation-time behavior).
+              ref
+                  .read(wakeOrchestratorProvider)
+                  .enqueueManualWake(
+                    agentId: changeSet.agentId,
+                    reason: 'goal revision approved',
+                  );
               // The revision sweep superseded the old spec's banners, but
               // the banner provider's per-agent stream dependency is
               // registered after an async gap and cannot be relied on —

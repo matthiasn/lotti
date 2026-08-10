@@ -785,6 +785,14 @@ void main() {
         }),
         'Change the target to 0.0001',
       );
+      // Beyond any fixed fraction cap: falls back to the value's own
+      // representation rather than rounding a nonzero target to 0.
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'targetValue': 0.00000000001},
+        }),
+        'Change the target to 1e-11',
+      );
     });
 
     test('an empty or malformed changes map falls back to the persisted '

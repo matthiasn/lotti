@@ -483,10 +483,15 @@ String? _goalRevision(AppLocalizations messages, Map<String, dynamic> args) {
 String _localizedTarget(AppLocalizations messages, Object? value) {
   final number = value is num ? value : num.tryParse('$value');
   if (number == null) return '$value';
-  // Enough fraction digits that the gate never describes a different
-  // target than the one approval persists (decimalPattern rounds at 3).
+  // Lossless: the gate must never describe a different target than the
+  // one approval persists. Fraction digits follow the value's own
+  // shortest representation; exponent-notation extremes fall back to
+  // that representation verbatim rather than rounding to 0.
+  final plain = number.toString();
+  if (plain.contains('e') || plain.contains('E')) return plain;
+  final fractionDigits = plain.contains('.') ? plain.split('.').last.length : 0;
   final format = NumberFormat.decimalPattern(messages.localeName)
-    ..maximumFractionDigits = 10;
+    ..maximumFractionDigits = fractionDigits;
   return format.format(number);
 }
 

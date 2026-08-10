@@ -117,13 +117,17 @@ class _GoalAgentCard extends ConsumerWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
+              // Wrap, not Row: a long localized status chip under a large
+              // text scale folds below the title instead of overflowing.
+              Wrap(
+                spacing: tokens.spacing.step3,
+                runSpacing: tokens.spacing.step1,
+                crossAxisAlignment: WrapCrossAlignment.center,
                 children: [
-                  Expanded(
-                    child: Text(
-                      identity.displayName,
-                      style: tokens.typography.styles.subtitle.subtitle1
-                          .copyWith(color: tokens.colors.text.highEmphasis),
+                  Text(
+                    identity.displayName,
+                    style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                      color: tokens.colors.text.highEmphasis,
                     ),
                   ),
                   if (health?.trackStatus != null)

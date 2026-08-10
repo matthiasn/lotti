@@ -423,4 +423,25 @@ void main() {
       isA<GoalRevisionApplied>(),
     );
   });
+
+  test('an absurd rolling window is rejected at the parse boundary — an '
+      'approved 1e9-day window would wedge every later evaluation', () {
+    const steps = GoalCriterion.metric(
+      criterionId: 'steps',
+      dataType: 'cumulative_step_count',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: 10000,
+    );
+    final outcome = applyGoalRevisionChanges(
+      criteria: steps,
+      changes: {'period': 'rolling 1000000000 days'},
+    );
+    expect(
+      (outcome as GoalRevisionRejected).reason,
+      contains('unrecognized period'),
+    );
+    expect(parseGoalWindowPhrase('rolling 3650 days'), isNotNull);
+    expect(parseGoalWindowPhrase('rolling 3651 days'), isNull);
+  });
 }

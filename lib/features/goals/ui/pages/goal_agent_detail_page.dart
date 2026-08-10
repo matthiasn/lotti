@@ -60,10 +60,12 @@ class GoalAgentDetailPage extends ConsumerWidget {
         ),
       );
     }
-    // A stale link, a foreign route, OR a failed identity load: none of
-    // these may mount proposals and history as if the goal were healthy.
+    // A stale link, a foreign route, OR a FIRST identity load that
+    // failed: none of these may mount proposals and history as if the
+    // goal were healthy. A background reload error with a retained
+    // identity keeps the established page (the no-flash rule).
     final identity = identityAsync.value;
-    if (identityAsync.hasError ||
+    if ((identityAsync.hasError && !identityAsync.hasValue) ||
         (identityAsync.hasValue &&
             (identity is! AgentIdentityEntity ||
                 identity.kind != AgentKinds.goalAgent))) {
@@ -74,7 +76,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
             child: Padding(
               padding: EdgeInsets.all(tokens.spacing.step5),
               child: Text(
-                identityAsync.hasError
+                identityAsync.hasError && !identityAsync.hasValue
                     ? context.messages.goalDetailHealthUnavailable
                     : context.messages.goalDetailNotFound,
                 textAlign: TextAlign.center,

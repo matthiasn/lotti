@@ -370,6 +370,12 @@ void main() {
     final orchestrator =
         container.read(wakeOrchestratorProvider) as MockWakeOrchestrator;
     when(() => orchestrator.addSubscription(any())).thenReturn(null);
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+      ),
+    ).thenReturn('run-revision');
 
     final headV1 =
         AgentDomainEntity.goalSpecHead(
@@ -449,6 +455,15 @@ void main() {
 
     final decision = upserted.whereType<ChangeDecisionEntity>().single;
     expect(decision.verdict, ChangeDecisionVerdict.confirmed);
+
+    // The approved revision is evaluated immediately — no blank health
+    // until tomorrow's cadence tick.
+    verify(
+      () => orchestrator.enqueueManualWake(
+        agentId: agentId,
+        reason: any(named: 'reason'),
+      ),
+    ).called(1);
 
     // The hook re-registered the subscription from the NEW criteria.
     final subscription =
