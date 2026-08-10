@@ -130,26 +130,33 @@ class GoalAgentPhaseA {
   /// and the resolver's terminal dominance makes concurrent sweeps
   /// converge.
   Future<void> _expireStaleNudges(String agentId, DateTime now) async {
-    final nudges = (await _repository.getEntitiesByAgentId(
-      agentId,
-      type: AgentEntityTypes.goalNudge,
-    )).whereType<GoalNudgeEntity>();
-    for (final nudge in nudges) {
-      final staleAt = nudge.staleAt;
-      if (nudge.deletedAt != null ||
-          nudge.status != GoalNudgeStatus.active ||
-          staleAt == null ||
-          staleAt.isAfter(now)) {
-        continue;
+    // Read and write in ONE transaction: a dismissal landing between a
+    // pre-read and the expiry write would be erased by the stale
+    // snapshot — and a same-host overwrite carries a newer vector clock,
+    // so the concurrent resolver could never recover the quiet-window
+    // verdict.
+    await _syncService.runInTransaction(() async {
+      final nudges = (await _repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      )).whereType<GoalNudgeEntity>();
+      for (final nudge in nudges) {
+        final staleAt = nudge.staleAt;
+        if (nudge.deletedAt != null ||
+            nudge.status != GoalNudgeStatus.active ||
+            staleAt == null ||
+            staleAt.isAfter(now)) {
+          continue;
+        }
+        await _syncService.upsertEntity(
+          nudge.copyWith(
+            status: GoalNudgeStatus.expired,
+            expiredAt: staleAt,
+            updatedAt: now,
+          ),
+        );
       }
-      await _syncService.upsertEntity(
-        nudge.copyWith(
-          status: GoalNudgeStatus.expired,
-          expiredAt: staleAt,
-          updatedAt: now,
-        ),
-      );
-    }
+    });
   }
 
   /// One deterministic derivation pass: signals → evaluation → policy →

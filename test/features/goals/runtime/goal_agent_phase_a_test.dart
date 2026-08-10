@@ -440,7 +440,9 @@ void main() {
       );
       expect(
         order,
-        ['transaction', 'register', 'escalation'],
+        // The first transaction is the (empty) staleness sweep; the
+        // register and its escalation share the SECOND.
+        ['transaction', 'transaction', 'register', 'escalation'],
         reason: 'both writes must happen inside the same transaction',
       );
     },

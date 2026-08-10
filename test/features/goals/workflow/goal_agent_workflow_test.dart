@@ -1219,16 +1219,11 @@ void main() {
     ).thenAnswer(
       (_) async => [
         recoveryRow('ad-obsolete', GoalNudgeStatus.active),
-        // Snapshot says active, but the user dismissed while the model
-        // was thinking — the in-transaction re-read must protect it.
-        recoveryRow('ad-just-dismissed', GoalNudgeStatus.active),
+        // The snapshot is read INSIDE the output transaction, so a
+        // dismissal that landed while the model was thinking is already
+        // visible in it — and must be skipped, not retired.
+        recoveryRow('ad-just-dismissed', GoalNudgeStatus.dismissed),
       ],
-    );
-    when(() => repository.getEntity('ad-obsolete')).thenAnswer(
-      (_) async => recoveryRow('ad-obsolete', GoalNudgeStatus.active),
-    );
-    when(() => repository.getEntity('ad-just-dismissed')).thenAnswer(
-      (_) async => recoveryRow('ad-just-dismissed', GoalNudgeStatus.dismissed),
     );
     final strategy = GoalAgentStrategy(
       syncService: syncService,

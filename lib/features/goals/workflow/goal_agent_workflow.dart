@@ -728,14 +728,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required GoalWakeDerivation derivation,
     required DateTime now,
   }) async {
-    // RE-READ, never trust the pre-inference snapshot: the user may have
-    // dismissed an ad while the model was thinking, and that dismissal's
-    // cooldown must bind this wake's ad writes.
-    final nudges = (await _repository.getEntitiesByAgentId(
-      agentId,
-      type: AgentEntityTypes.goalNudge,
-    )).whereType<GoalNudgeEntity>().where((n) => n.deletedAt == null).toList();
-    final byId = {for (final nudge in nudges) nudge.id: nudge};
     final reportId = strategy.hasReport ? _uuid.v4() : null;
     final attributionEnvelope = await prepareAgentReportAttribution(
       runKey: runKey,
@@ -760,6 +752,20 @@ class GoalAgentWorkflow with AgentErrorLogging {
         fenced = true;
         return;
       }
+
+      // RE-READ inside the transaction, never trust the pre-inference
+      // snapshot: the user may have dismissed an ad while the model was
+      // thinking, and that dismissal must bind EVERY guard below — the
+      // retire skips, the cooldown, and the fresh-active check alike.
+      final nudges =
+          (await _repository.getEntitiesByAgentId(
+                agentId,
+                type: AgentEntityTypes.goalNudge,
+              ))
+              .whereType<GoalNudgeEntity>()
+              .where((n) => n.deletedAt == null)
+              .toList();
+      final byId = {for (final nudge in nudges) nudge.id: nudge};
 
       // Thought (final assistant prose — dialogue turns land here too).
       final thought = strategy.finalResponse;
@@ -862,21 +868,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
               modelRetired.contains(nudge.id)) {
             continue;
           }
-          // Re-read INSIDE the transaction: a dismissal that landed
-          // after the snapshot was taken is the user's quiet-window
-          // verdict and must not be overwritten with `retired`.
-          final fresh = await _repository.getEntity(nudge.id);
-          if (fresh is! GoalNudgeEntity ||
-              fresh.status != GoalNudgeStatus.active) {
-            continue;
-          }
           await _syncService.upsertEntity(
-            fresh.copyWith(
+            nudge.copyWith(
               status: GoalNudgeStatus.retired,
               retiredAt: now,
               updatedAt: now,
               provenance: {
-                ...fresh.provenance,
+                ...nudge.provenance,
                 'retireReason': 'status no longer permits ads',
               },
             ),
@@ -887,15 +885,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // Retire before create: a wake that swaps ads must never leave two
       // active ones if it dies between writes.
       for (final action in strategy.retireRequests) {
-        final snapshot = byId[action.adId];
-        if (snapshot == null) continue;
-        // Re-read INSIDE the transaction — a dismissal (the user's
-        // quiet-window verdict) or a Phase A expiry landing after the
-        // snapshot must survive: rewriting expired→retired would feed
-        // the clock-expired ad back into the reuse library.
-        final nudge = await _repository.getEntity(action.adId);
-        if (nudge is! GoalNudgeEntity ||
-            nudge.status != GoalNudgeStatus.active) {
+        // The in-transaction snapshot is the consistent view: only a row
+        // that is STILL active retires — a dismissal (the user's
+        // quiet-window verdict) or a Phase A expiry that landed first
+        // survives; rewriting expired→retired would feed the clock-expired
+        // ad back into the reuse library.
+        final nudge = byId[action.adId];
+        if (nudge == null || nudge.status != GoalNudgeStatus.active) {
           continue;
         }
         await _syncService.upsertEntity(
