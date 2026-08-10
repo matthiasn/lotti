@@ -30,13 +30,23 @@ class GoalAgentDetailPage extends ConsumerWidget {
     // Stale-while-revalidate: `.value` keeps the last render across
     // background reloads; only a load that has never produced data gets
     // the spinner. An errored load must not claim "no report yet".
-    // Back pops through NavService so currentPath and the persisted
-    // route return to the Agents root instead of pinning this child.
+    // EVERY pop — AppBar button, Android system back, iOS gesture —
+    // routes through NavService so currentPath and the persisted route
+    // return to the Agents root instead of pinning this child.
     final backToList = BackButton(onPressed: () => beamToNamed('/agents'));
+    Widget popSafe(Widget child) => PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) beamToNamed('/agents');
+      },
+      child: child,
+    );
     if (!healthAsync.hasValue && !healthAsync.hasError) {
-      return Scaffold(
-        appBar: AppBar(leading: backToList, title: const Text('')),
-        body: const Center(child: CircularProgressIndicator()),
+      return popSafe(
+        Scaffold(
+          appBar: AppBar(leading: backToList, title: const Text('')),
+          body: const Center(child: CircularProgressIndicator()),
+        ),
       );
     }
     final health = healthAsync.value;
@@ -47,129 +57,132 @@ class GoalAgentDetailPage extends ConsumerWidget {
               const <GoalBannerEntry>[])
         if (entry.nudge.agentId == agentId) entry,
     ];
-    return Scaffold(
-      appBar: AppBar(leading: backToList, title: Text(spec?.title ?? '')),
-      body: SafeArea(
-        child: ListView(
-          // The mobile shell keeps the bottom navigation overlaid on agents
-          // subroutes, so the timeline's last entry must clear it.
-          padding: EdgeInsets.fromLTRB(
-            tokens.spacing.step5,
-            tokens.spacing.step5,
-            tokens.spacing.step5,
-            tokens.spacing.step5 +
-                DesignSystemBottomNavigationBar.occupiedHeight(context),
-          ),
-          children: [
-            if (health?.trackStatus != null)
-              Row(
-                children: [
-                  GoalStatusChip(status: health!.trackStatus!),
-                  if (health.attainment != null) ...[
-                    SizedBox(width: tokens.spacing.step3),
-                    Text(
-                      context.messages.goalAttainmentLabel(
-                        (health.attainment! * 100).round(),
-                      ),
-                      style: tokens.typography.styles.body.bodySmall.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-                  ],
-                ],
-              ),
-            if (spec != null) ...[
-              SizedBox(height: tokens.spacing.step3),
-              Text(
-                spec.statement,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.highEmphasis,
-                ),
-              ),
-            ],
-            // Every active banner, uncapped: this is where ads held back
-            // by the host strips' visible limit stay reachable for
-            // rating and dismissal.
-            for (final entry in nudges) ...[
-              SizedBox(height: tokens.spacing.step4),
-              GoalBannerExposureTracker(
-                key: ValueKey(
-                  '${entry.nudge.id}:${entry.nudge.activationCount}',
-                ),
-                nudgeId: entry.nudge.id,
-                child: GoalBannerCard(entry: entry),
-              ),
-            ],
-            SizedBox(height: tokens.spacing.step4),
-            ChangeSetSummaryCard.selfTargeted(
-              agentId: agentId,
-              confirmationProvider: goalChangeSetConfirmationServiceProvider,
+    return popSafe(
+      Scaffold(
+        appBar: AppBar(leading: backToList, title: Text(spec?.title ?? '')),
+        body: SafeArea(
+          child: ListView(
+            // The mobile shell keeps the bottom navigation overlaid on agents
+            // subroutes, so the timeline's last entry must clear it.
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step5,
+              tokens.spacing.step5,
+              tokens.spacing.step5,
+              tokens.spacing.step5 +
+                  DesignSystemBottomNavigationBar.occupiedHeight(context),
             ),
-            SizedBox(height: tokens.spacing.step2),
-            if (health?.reportOneLiner case final String oneLiner)
-              Text(
-                oneLiner,
-                style: tokens.typography.styles.body.bodyMedium.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
-                ),
-              )
-            else if (healthAsync.hasError)
-              Text(
-                context.messages.goalDetailHealthUnavailable,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              )
-            else
-              Text(
-                context.messages.goalDetailNoReport,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
-                ),
-              ),
-            SizedBox(height: tokens.spacing.sectionGap),
-            Text(
-              context.messages.goalDetailTimelineTitle,
-              style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                color: tokens.colors.text.mediumEmphasis,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step3),
-            // Past ads stay part of the durable history (ADR 0055): once
-            // dismissed/retired/expired/superseded they leave the banner
-            // list, so the timeline is where their outcomes remain
-            // browsable.
-            for (final past
-                in ref.watch(goalNudgeHistoryProvider(agentId)).value ??
-                    const <GoalNudgeEntity>[]) ...[
-              Padding(
-                padding: EdgeInsets.only(bottom: tokens.spacing.step2),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (health?.trackStatus != null)
+                Row(
                   children: [
-                    Expanded(
-                      child: Text(
-                        past.brief.headline,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
+                    GoalStatusChip(status: health!.trackStatus!),
+                    if (health.attainment != null) ...[
+                      SizedBox(width: tokens.spacing.step3),
+                      Text(
+                        context.messages.goalAttainmentLabel(
+                          (health.attainment! * 100).round(),
+                        ),
                         style: tokens.typography.styles.body.bodySmall.copyWith(
                           color: tokens.colors.text.mediumEmphasis,
                         ),
                       ),
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                    Text(
-                      goalNudgeStatusLabel(context, past.status),
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
-                      ),
-                    ),
+                    ],
                   ],
                 ),
+              if (spec != null) ...[
+                SizedBox(height: tokens.spacing.step3),
+                Text(
+                  spec.statement,
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                ),
+              ],
+              // Every active banner, uncapped: this is where ads held back
+              // by the host strips' visible limit stay reachable for
+              // rating and dismissal.
+              for (final entry in nudges) ...[
+                SizedBox(height: tokens.spacing.step4),
+                GoalBannerExposureTracker(
+                  key: ValueKey(
+                    '${entry.nudge.id}:${entry.nudge.activationCount}',
+                  ),
+                  nudgeId: entry.nudge.id,
+                  child: GoalBannerCard(entry: entry),
+                ),
+              ],
+              SizedBox(height: tokens.spacing.step4),
+              ChangeSetSummaryCard.selfTargeted(
+                agentId: agentId,
+                confirmationProvider: goalChangeSetConfirmationServiceProvider,
               ),
+              SizedBox(height: tokens.spacing.step2),
+              if (health?.reportOneLiner case final String oneLiner)
+                Text(
+                  oneLiner,
+                  style: tokens.typography.styles.body.bodyMedium.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                )
+              else if (healthAsync.hasError)
+                Text(
+                  context.messages.goalDetailHealthUnavailable,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                )
+              else
+                Text(
+                  context.messages.goalDetailNoReport,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              SizedBox(height: tokens.spacing.sectionGap),
+              Text(
+                context.messages.goalDetailTimelineTitle,
+                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+              SizedBox(height: tokens.spacing.step3),
+              // Past ads stay part of the durable history (ADR 0055): once
+              // dismissed/retired/expired/superseded they leave the banner
+              // list, so the timeline is where their outcomes remain
+              // browsable.
+              for (final past
+                  in ref.watch(goalNudgeHistoryProvider(agentId)).value ??
+                      const <GoalNudgeEntity>[]) ...[
+                Padding(
+                  padding: EdgeInsets.only(bottom: tokens.spacing.step2),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          past.brief.headline,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                      ),
+                      SizedBox(width: tokens.spacing.step2),
+                      Text(
+                        goalNudgeStatusLabel(context, past.status),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              AgentConversationLog(agentId: agentId),
             ],
-            AgentConversationLog(agentId: agentId),
-          ],
+          ),
         ),
       ),
     );

@@ -73,6 +73,10 @@ String? localizedChangeSummary(
     messages.agentSummaryUpdateRunningTimer(_trimmed(args['summary'])),
   TaskAgentToolNames.updateTimeEntry => _updateTimeEntry(messages, args),
 
+  // The literal spelling, not GoalAgentToolNames: `features/agents`
+  // must not import goals (the plug-in direction the arch test pins).
+  'propose_goal_revision' => _goalRevision(messages, args),
+
   ProjectAgentToolNames.recommendNextSteps => _recommendNextSteps(
     messages,
     args,
@@ -432,3 +436,20 @@ String _string(Object? value, {String fallback = ''}) =>
     value?.toString() ?? fallback;
 
 String _trimmed(Object? value) => value is String ? value.trim() : '';
+
+/// A goal revision proposal, rebuilt from its structured `changes` map —
+/// the persisted humanSummary is English whatever the locale.
+String? _goalRevision(AppLocalizations messages, Map<String, dynamic> args) {
+  final changes = args['changes'];
+  if (changes is! Map) return null;
+  final parts = <String>[
+    if (changes['targetValue'] != null)
+      messages.agentSummaryGoalRevisionTarget('${changes['targetValue']}'),
+    if (changes['period'] != null)
+      messages.agentSummaryGoalRevisionPeriod('${changes['period']}'),
+    if (changes['cadence'] != null)
+      messages.agentSummaryGoalRevisionCadence('${changes['cadence']}'),
+  ];
+  if (parts.isEmpty) return null;
+  return parts.join(' · ');
+}

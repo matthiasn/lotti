@@ -92,6 +92,24 @@ Future<GoalWakeDerivation> _offTrackDerivation(
   ),
 ).deriveWakeFacts(agentId: version.agentId, version: version, now: now);
 
+Future<GoalWakeDerivation> _onTrackDerivation(
+  MockAgentRepository repository,
+  GoalSpecVersionEntity version,
+  DateTime now,
+) => GoalAgentPhaseA(
+  repository: repository,
+  syncService: MockAgentSyncService(),
+  signalReader: _FakeReader(
+    GoalSignalWindow(
+      quantitativeDailySums: {
+        'cumulative_step_count': {
+          for (var day = 3; day <= 9; day++) DateTime.utc(2026, 8, day): 11000,
+        },
+      },
+    ),
+  ),
+).deriveWakeFacts(agentId: version.agentId, version: version, now: now);
+
 void _stubBadPrior(
   MockAgentRepository repository,
   String agentId,
@@ -1099,6 +1117,139 @@ void main() {
       );
     },
   );
+
+  test('persistOutputs: a spec head that moved during the wake fences '
+      'every output — nothing publishes beside the revised goal', () async {
+    stubSpec();
+    _stubBadPrior(repository, agentId, now);
+    // The wake derived against v1, but a revision landed v2 meanwhile.
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    final derivation = await _offTrackDerivation(repository, version!, now);
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v2',
+        updatedAt: now,
+        vectorClock: null,
+      ),
+    );
+    final strategy = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: agentId,
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+    );
+    await strategy.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.updateGoalReport, {
+          'status': 'offTrack',
+          'oneLiner': 'Two days behind on the OLD target.',
+          'tldr': 't',
+        }, id: 'c1'),
+      ],
+      manager: conversationManager,
+    );
+
+    final finalized = await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: strategy,
+        derivation: derivation,
+        now: now,
+      ),
+    );
+
+    expect(finalized, isFalse);
+    // The conversation's own message trail (thought/action/toolResult)
+    // already landed while the model ran — the fence stops the OUTPUTS:
+    // no report, no head move, no banner.
+    expect(upserts.whereType<AgentReportEntity>(), isEmpty);
+    expect(upserts.whereType<AgentReportHeadEntity>(), isEmpty);
+    expect(
+      upserts.whereType<GoalNudgeEntity>(),
+      isEmpty,
+      reason: 'a superseded-spec wake must not publish report or ads',
+    );
+  });
+
+  test('persistOutputs: an ad-ineligible status retires every remaining '
+      'active ad deterministically — recovery does not depend on the '
+      'model calling retire_goal_ad', () async {
+    stubSpec();
+    _stubBadPrior(repository, agentId, now);
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    final derivation = await _onTrackDerivation(repository, version!, now);
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.goalNudge(
+              id: 'ad-obsolete',
+              agentId: agentId,
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'Still on the couch?',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity,
+      ],
+    );
+    final strategy = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: agentId,
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-obsolete'},
+    );
+    await strategy.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.updateGoalReport, {
+          'status': 'onTrack',
+          'oneLiner': 'Back on pace.',
+          'tldr': 't',
+        }, id: 'c1'),
+      ],
+      manager: conversationManager,
+    );
+
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: strategy,
+        derivation: derivation,
+        now: now,
+      ),
+    );
+
+    final retired = upserts.whereType<GoalNudgeEntity>().single;
+    expect(retired.id, 'ad-obsolete');
+    expect(retired.status, GoalNudgeStatus.retired);
+    expect(
+      retired.provenance['retireReason'],
+      'status no longer permits ads',
+    );
+  });
 
   test('persistOutputs: an active dismissal cooldown suppresses creates '
       'and reruns; duplicate brief digests collapse to one row', () async {

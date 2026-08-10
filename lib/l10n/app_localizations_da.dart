@@ -906,6 +906,21 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Ændr kadencen til $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Ændr perioden til $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Ændr målet til $value';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Flyt til opfølgningsopgave: \"$title\"';
   }

@@ -909,6 +909,21 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Změnit frekvenci na $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Změnit období na $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Změnit cíl na $value';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Přesunout do navazujícího úkolu: „$title“';
   }

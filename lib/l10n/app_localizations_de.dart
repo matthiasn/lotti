@@ -918,6 +918,21 @@ class AppLocalizationsDe extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Häufigkeit auf $value ändern';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Zeitraum auf $value ändern';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Zielwert auf $value ändern';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'In die Folgeaufgabe verschieben: „$title“';
   }

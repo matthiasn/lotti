@@ -909,6 +909,21 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Frequentie wijzigen naar $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Periode wijzigen naar $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Doel wijzigen naar $value';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Verplaatsen naar vervolgtaak: \"$title\"';
   }

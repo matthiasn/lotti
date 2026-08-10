@@ -728,6 +728,23 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required GoalWakeDerivation derivation,
     required DateTime now,
   }) async {
+    // A revision approved while the model was thinking moves the head on
+    // — and NOTHING from this wake may then publish beside the revised
+    // goal: its report and banner describe the superseded target. The
+    // fence keys on the derivation snapshot's ACTIVE status: a stale
+    // escalation deliberately evaluates the superseded version that
+    // armed its period (its snapshot already says so) and stays exempt.
+    final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
+    if (derivation.version.status == GoalSpecVersionStatus.active &&
+        headNow is GoalSpecHeadEntity &&
+        headNow.versionId != derivation.version.id) {
+      logError(
+        'outputs fenced: spec head moved to ${headNow.versionId} while the '
+        'wake ran against ${derivation.version.id}',
+      );
+      return false;
+    }
+
     // RE-READ, never trust the pre-inference snapshot: the user may have
     // dismissed an ad while the model was thinking, and that dismissal's
     // cooldown must bind this wake's ad writes.
@@ -825,6 +842,34 @@ class GoalAgentWorkflow with AgentErrorLogging {
               // which device finished last.
               updatedAt: _headTimestamp(derivation.periodKey, now),
               vectorClock: null,
+            ),
+          );
+        }
+      }
+
+      // Deterministic recovery retire: when the authoritative status no
+      // longer permits ads (back on track, recovering, data gap), every
+      // still-active ad is retired HERE — the obsolete chiding banner
+      // must not depend on the model remembering retire_goal_ad, nor
+      // run out its 72 h staleAt.
+      if (!_adsEligible(derivation.facts, derivation.priors)) {
+        final modelRetired = {
+          for (final action in strategy.retireRequests) action.adId,
+        };
+        for (final nudge in nudges) {
+          if (nudge.status != GoalNudgeStatus.active ||
+              modelRetired.contains(nudge.id)) {
+            continue;
+          }
+          await _syncService.upsertEntity(
+            nudge.copyWith(
+              status: GoalNudgeStatus.retired,
+              retiredAt: now,
+              updatedAt: now,
+              provenance: {
+                ...nudge.provenance,
+                'retireReason': 'status no longer permits ads',
+              },
             ),
           );
         }

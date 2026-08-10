@@ -1657,6 +1657,24 @@ abstract class AppLocalizations {
   /// **'Follow-up task: {title}'**
   String agentSummaryFollowUpTask(Object title);
 
+  /// No description provided for @agentSummaryGoalRevisionCadence.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the cadence to {value}'**
+  String agentSummaryGoalRevisionCadence(String value);
+
+  /// No description provided for @agentSummaryGoalRevisionPeriod.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the window to {value}'**
+  String agentSummaryGoalRevisionPeriod(String value);
+
+  /// No description provided for @agentSummaryGoalRevisionTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Change the target to {value}'**
+  String agentSummaryGoalRevisionTarget(String value);
+
   /// No description provided for @agentSummaryMigrateItem.
   ///
   /// In en, this message translates to:

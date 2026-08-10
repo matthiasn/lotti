@@ -761,4 +761,37 @@ void main() {
       expect(localizedRelationSentence(de, blocks, '"A"'), contains('"A"'));
     });
   });
+
+  group('goal revision proposals', () {
+    test('the structured changes render localized, joined and in order', () {
+      final args = {
+        'changes': {'targetValue': 8000, 'cadence': 4},
+        'rationale': 'ease off',
+      };
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', args),
+        'Change the target to 8000 · Change the cadence to 4',
+      );
+      expect(
+        localizedChangeSummary(de, 'propose_goal_revision', args),
+        'Zielwert auf 8000 ändern · Häufigkeit auf 4 ändern',
+      );
+    });
+
+    test('an empty or malformed changes map falls back to the persisted '
+        'summary (null)', () {
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': <String, dynamic>{},
+        }),
+        isNull,
+      );
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': 'not a map',
+        }),
+        isNull,
+      );
+    });
+  });
 }

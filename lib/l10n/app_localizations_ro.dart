@@ -919,6 +919,21 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Schimbați cadența la $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Schimbați perioada la $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Schimbați ținta la $value';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Mutați în sarcina ulterioară: „$title”';
   }

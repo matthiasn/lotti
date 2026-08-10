@@ -140,115 +140,124 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     // the empty picker plus the missing-criterion validation would blame
     // the user for a database failure.
     final habitsFailed = habitsAsync.hasError && habitsAsync.value == null;
-    return Scaffold(
-      // Back through NavService: the persisted route must return to the
-      // Agents root, not pin the creation form.
-      appBar: AppBar(
-        leading: BackButton(onPressed: () => beamToNamed('/agents')),
-        title: Text(messages.agentsCreateGoal),
-      ),
-      body: SafeArea(
-        child: ListView(
-          // The mobile shell keeps the bottom navigation overlaid on agents
-          // subroutes, so the trailing Create button must clear it.
-          padding: EdgeInsets.fromLTRB(
-            tokens.spacing.step5,
-            tokens.spacing.step5,
-            tokens.spacing.step5,
-            tokens.spacing.step5 +
-                DesignSystemBottomNavigationBar.occupiedHeight(context),
-          ),
-          children: [
-            TextField(
-              controller: _name,
-              decoration: InputDecoration(
-                labelText: messages.goalCreateNameLabel,
-              ),
+    // EVERY pop — AppBar button, system back, iOS gesture — routes
+    // through NavService so the persisted route returns to the Agents
+    // root, not the creation form.
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) beamToNamed('/agents');
+      },
+      child: Scaffold(
+        // Back through NavService: the persisted route must return to the
+        // Agents root, not pin the creation form.
+        appBar: AppBar(
+          leading: BackButton(onPressed: () => beamToNamed('/agents')),
+          title: Text(messages.agentsCreateGoal),
+        ),
+        body: SafeArea(
+          child: ListView(
+            // The mobile shell keeps the bottom navigation overlaid on agents
+            // subroutes, so the trailing Create button must clear it.
+            padding: EdgeInsets.fromLTRB(
+              tokens.spacing.step5,
+              tokens.spacing.step5,
+              tokens.spacing.step5,
+              tokens.spacing.step5 +
+                  DesignSystemBottomNavigationBar.occupiedHeight(context),
             ),
-            SizedBox(height: tokens.spacing.step4),
-            TextField(
-              controller: _statement,
-              decoration: InputDecoration(
-                labelText: messages.goalCreateStatementLabel,
-              ),
-            ),
-            SizedBox(height: tokens.spacing.step5),
-            SegmentedButton<_GoalKind>(
-              segments: [
-                ButtonSegment(
-                  value: _GoalKind.steps,
-                  label: Text(messages.goalCreateTypeSteps),
-                ),
-                ButtonSegment(
-                  value: _GoalKind.habits,
-                  label: Text(messages.goalCreateTypeHabits),
-                ),
-              ],
-              selected: {_kind},
-              onSelectionChanged: (selection) =>
-                  setState(() => _kind = selection.single),
-            ),
-            SizedBox(height: tokens.spacing.step5),
-            if (_kind == _GoalKind.steps)
+            children: [
               TextField(
-                controller: _stepsTarget,
-                keyboardType: TextInputType.number,
+                controller: _name,
                 decoration: InputDecoration(
-                  labelText: messages.goalCreateStepsTargetLabel,
-                ),
-              )
-            else ...[
-              TextField(
-                controller: _habitCount,
-                keyboardType: TextInputType.number,
-                decoration: InputDecoration(
-                  labelText: messages.goalCreateHabitCountLabel,
+                  labelText: messages.goalCreateNameLabel,
                 ),
               ),
               SizedBox(height: tokens.spacing.step4),
-              Text(
-                messages.goalCreateHabitsLabel,
-                style: tokens.typography.styles.subtitle.subtitle2.copyWith(
-                  color: tokens.colors.text.mediumEmphasis,
+              TextField(
+                controller: _statement,
+                decoration: InputDecoration(
+                  labelText: messages.goalCreateStatementLabel,
                 ),
               ),
-              if (habitsFailed) ...[
-                SizedBox(height: tokens.spacing.step2),
+              SizedBox(height: tokens.spacing.step5),
+              SegmentedButton<_GoalKind>(
+                segments: [
+                  ButtonSegment(
+                    value: _GoalKind.steps,
+                    label: Text(messages.goalCreateTypeSteps),
+                  ),
+                  ButtonSegment(
+                    value: _GoalKind.habits,
+                    label: Text(messages.goalCreateTypeHabits),
+                  ),
+                ],
+                selected: {_kind},
+                onSelectionChanged: (selection) =>
+                    setState(() => _kind = selection.single),
+              ),
+              SizedBox(height: tokens.spacing.step5),
+              if (_kind == _GoalKind.steps)
+                TextField(
+                  controller: _stepsTarget,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: messages.goalCreateStepsTargetLabel,
+                  ),
+                )
+              else ...[
+                TextField(
+                  controller: _habitCount,
+                  keyboardType: TextInputType.number,
+                  decoration: InputDecoration(
+                    labelText: messages.goalCreateHabitCountLabel,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step4),
                 Text(
-                  messages.goalCreateHabitsLoadFailed,
+                  messages.goalCreateHabitsLabel,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: tokens.colors.text.mediumEmphasis,
+                  ),
+                ),
+                if (habitsFailed) ...[
+                  SizedBox(height: tokens.spacing.step2),
+                  Text(
+                    messages.goalCreateHabitsLoadFailed,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
+                  ),
+                ],
+                for (final habit in habits)
+                  CheckboxListTile(
+                    value: _selectedHabitIds.contains(habit.id),
+                    title: Text(habit.name),
+                    onChanged: (checked) => setState(() {
+                      if (checked ?? false) {
+                        _selectedHabitIds.add(habit.id);
+                      } else {
+                        _selectedHabitIds.remove(habit.id);
+                      }
+                    }),
+                  ),
+              ],
+              if (_validation != null) ...[
+                SizedBox(height: tokens.spacing.step3),
+                Text(
+                  _validation!,
                   style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
+                    color: tokens.colors.alert.error.defaultColor,
                   ),
                 ),
               ],
-              for (final habit in habits)
-                CheckboxListTile(
-                  value: _selectedHabitIds.contains(habit.id),
-                  title: Text(habit.name),
-                  onChanged: (checked) => setState(() {
-                    if (checked ?? false) {
-                      _selectedHabitIds.add(habit.id);
-                    } else {
-                      _selectedHabitIds.remove(habit.id);
-                    }
-                  }),
-                ),
-            ],
-            if (_validation != null) ...[
-              SizedBox(height: tokens.spacing.step3),
-              Text(
-                _validation!,
-                style: tokens.typography.styles.body.bodySmall.copyWith(
-                  color: tokens.colors.alert.error.defaultColor,
-                ),
+              SizedBox(height: tokens.spacing.sectionGap),
+              FilledButton(
+                onPressed: _saving ? null : _create,
+                child: Text(messages.goalCreateSaveButton),
               ),
             ],
-            SizedBox(height: tokens.spacing.sectionGap),
-            FilledButton(
-              onPressed: _saving ? null : _create,
-              child: Text(messages.goalCreateSaveButton),
-            ),
-          ],
+          ),
         ),
       ),
     );

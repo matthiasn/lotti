@@ -913,6 +913,21 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Ändra frekvensen till $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Ändra perioden till $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Ändra målet till $value';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Flytta till uppföljningsuppgift: ”$title”';
   }

@@ -183,18 +183,22 @@ flowchart TD
   EXISTING design-system tokens (`aiCard.accent`, `alert.info/warning`,
   `interactive.enabled`, `decorative`, with `SurfaceAlphas.tint` fills).
   Mounted on the Daily OS day page nudge stack and the habits tab; both
-  mounts shrink to nothing without an active ad. Dismissal is terminal
-  and quiets ads for the rest of the local day; tapping opens the per-activation
-  rating prompt (one outcome per activation, skips count); exposure is
-  measured in visibility episodes gated on BOTH signals — the tracker's
-  stopwatch runs only while `TickerMode` reports the host tab on screen
-  AND the banner intersects its enclosing viewport (rechecked on scroll
-  events and post-rebuild frames, never per frame; hosts without a
-  scrollable use the tab signal alone). Every visible→hidden transition
-  — tab switch, scroll-out, unmount — flushes its own episode into the
-  per-host G-counters, so returning starts a new episode. Writes per
-  nudge are serialized in `GoalNudgeInteractions` so a rapid
-  flush/dismiss pair cannot lose an update to a stale read.
+  mounts shrink to nothing without an active ad. Tapping a banner opens
+  its goal's detail page (the banner→conversation flow); the star button
+  — rendered only while an outcome is due — opens the per-activation
+  rating prompt (one outcome per activation, skips count). Dismissal (X
+  or swipe) is terminal and quiets ads for the rest of the local day.
+  Exposure is measured in visibility episodes gated on THREE signals —
+  the tracker's stopwatch runs only while the app lifecycle is
+  `resumed`, `TickerMode` reports the host tab on screen, AND the banner
+  intersects its enclosing viewport (rechecked on scroll events,
+  lifecycle changes and post-rebuild frames, never per frame; hosts
+  without a scrollable use the other two signals alone). Every
+  visible→hidden transition — backgrounding, tab switch, scroll-out,
+  unmount — flushes its own episode into the per-host G-counters, so
+  returning starts a new episode. Writes per nudge are serialized in
+  `GoalNudgeInteractions` so a rapid flush/dismiss pair cannot lose an
+  update to a stale read.
 - **The Agents tab** (`enable_agents_page` flag, `/agents`): one card per
   goal agent with health at a glance (latest register verdict +
   attainment, report one-liner, pending-proposal badge); the detail page

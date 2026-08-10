@@ -921,6 +921,21 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String agentSummaryGoalRevisionCadence(String value) {
+    return 'Changer la cadence à $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionPeriod(String value) {
+    return 'Changer la période à $value';
+  }
+
+  @override
+  String agentSummaryGoalRevisionTarget(String value) {
+    return 'Changer l\'objectif à $value';
+  }
+
+  @override
   String agentSummaryMigrateItem(Object title) {
     return 'Déplacer vers la tâche de suivi : « $title »';
   }
