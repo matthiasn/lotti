@@ -506,6 +506,30 @@ void main() {
       );
     });
 
+    test('supersession outranks even a HIGHER activation — an offline '
+        'old-spec rerun cannot resurrect the banner beside the revised '
+        'goal', () {
+      final swept = goalNudge(status: GoalNudgeStatus.superseded);
+      final offlineRerun = goalNudge(
+        status: GoalNudgeStatus.active,
+        activationCount: 3,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: swept,
+          incoming: offlineRerun,
+        ),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: offlineRerun,
+          incoming: swept,
+        ),
+        ConcurrentWinner.incoming,
+      );
+    });
+
     test('the higher activation wins whole-row selection — a bookkeeping '
         'write for the PREVIOUS run cannot stamp the rerun with its old '
         'deadline', () {

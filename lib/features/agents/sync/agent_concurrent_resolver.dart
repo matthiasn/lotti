@@ -128,6 +128,19 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
           ? ConcurrentWinner.local
           : ConcurrentWinner.incoming;
     }
+    // Supersession is the spec itself moving on and outranks EVERYTHING
+    // below, including a higher activation: an offline rerun of an
+    // old-spec banner must not resurrect it beside the revised goal.
+    // (Only revision sweeps write `superseded`, and superseded rows can
+    // never re-enter the rerun path, so this cannot mask a legitimate
+    // same-spec reactivation.)
+    final localSuperseded = local.status == GoalNudgeStatus.superseded;
+    final incomingSuperseded = incoming.status == GoalNudgeStatus.superseded;
+    if (localSuperseded != incomingSuperseded) {
+      return localSuperseded
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
+    }
     // The HIGHER activation is the newer run: its lifecycle metadata
     // (activatedAt, staleAt, runKey) must win whole-row selection, or a
     // peer's bookkeeping write for the PREVIOUS activation could win LWW
@@ -145,19 +158,6 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     final incomingTerminal = _terminalNudgeStatuses.contains(incoming.status);
     if (localTerminal != incomingTerminal) {
       return localTerminal ? ConcurrentWinner.local : ConcurrentWinner.incoming;
-    }
-    // Among terminal outcomes, supersession is the spec itself moving on
-    // and must stay monotonic across replicas: a concurrent old-spec
-    // retirement would otherwise put the banner back into the reuse
-    // library under the revised goal.
-    final localSuperseded = local.status == GoalNudgeStatus.superseded;
-    final incomingSuperseded = incoming.status == GoalNudgeStatus.superseded;
-    if (localTerminal &&
-        incomingTerminal &&
-        localSuperseded != incomingSuperseded) {
-      return localSuperseded
-          ? ConcurrentWinner.local
-          : ConcurrentWinner.incoming;
     }
     return null;
   }

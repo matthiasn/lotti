@@ -185,6 +185,41 @@ void main() {
     );
   });
 
+  test('a revision landing mid-wake fences the register AND the '
+      'escalation — no v1 row overwrites the day under v2', () async {
+    stubSpec();
+    // First head read (wake start) serves v1; the in-transaction
+    // re-read sees the revision's v2.
+    var headReads = 0;
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer((
+      _,
+    ) async {
+      headReads++;
+      return AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: headReads == 1 ? '$agentId:spec-v1' : '$agentId:spec-v2',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      );
+    });
+
+    final result = await run(onTrackSignals());
+    expect(result.success, isTrue);
+    expect(
+      upserts.whereType<GoalProgressEntity>(),
+      isEmpty,
+      reason: 'the fenced transaction must write neither register…',
+    );
+    expect(
+      upserts.whereType<ScheduledWakeEntity>().where(
+        (w) => w.workspaceKey?.startsWith('goal-escalation') ?? false,
+      ),
+      isEmpty,
+      reason: '…nor escalation (the spec-agnostic cadence re-arm may stay)',
+    );
+  });
+
   test('a goal without a spec head is a clean no-op', () async {
     final result = await run(onTrackSignals());
     expect(result.success, isTrue);

@@ -1186,6 +1186,108 @@ void main() {
     );
   });
 
+  test('persistOutputs: a superseded-spec wake keeps its report as history '
+      'but touches NO banners and never advances the head', () async {
+    stubSpec();
+    _stubBadPrior(repository, agentId, now);
+    final staleVersion =
+        AgentDomainEntity.goalSpecVersion(
+              id: '$agentId:spec-v0',
+              agentId: agentId,
+              version: 0,
+              status: GoalSpecVersionStatus.superseded,
+              authoredBy: 'user',
+              title: 'Steps (original)',
+              statement: 'x',
+              criteria: const GoalCriterion.metric(
+                criterionId: 'steps',
+                dataType: 'cumulative_step_count',
+                window: GoalWindow.rollingDays(count: 7),
+                aggregation: GoalAggregation.dailySumThenAverage,
+                target: 10000,
+              ),
+              createdAt: DateTime(2026, 7),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    // Ad-ineligible historical facts over a CURRENT active banner: the
+    // deterministic recovery retire must not fire across spec versions.
+    final derivation = await _onTrackDerivation(repository, staleVersion, now);
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        AgentDomainEntity.goalNudge(
+              id: 'ad-current',
+              agentId: agentId,
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'The revised goal still needs you.',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8),
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity,
+      ],
+    );
+    final strategy = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: agentId,
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-current'},
+    );
+    await strategy.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.updateGoalReport, {
+          'status': 'onTrack',
+          'oneLiner': 'That old week ended fine.',
+          'tldr': 't',
+        }, id: 'c1'),
+        toolCall(GoalAgentToolNames.retireGoalAd, {
+          'adId': 'ad-current',
+          'reason': 'not mine to touch',
+        }, id: 'c2'),
+      ],
+      manager: conversationManager,
+    );
+
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: strategy,
+        derivation: derivation,
+        now: now,
+      ),
+    );
+
+    expect(
+      upserts.whereType<AgentReportEntity>(),
+      hasLength(1),
+      reason: 'the historical report row still lands',
+    );
+    expect(
+      upserts.whereType<AgentReportHeadEntity>(),
+      isEmpty,
+      reason: 'a superseded-spec wake never advances the shared head',
+    );
+    expect(
+      upserts.whereType<GoalNudgeEntity>(),
+      isEmpty,
+      reason: "the current goal's banner is not this wake's to retire",
+    );
+  });
+
   test('persistOutputs: an ad-ineligible status retires every remaining '
       'active ad deterministically — recovery does not depend on the '
       'model calling retire_goal_ad', () async {

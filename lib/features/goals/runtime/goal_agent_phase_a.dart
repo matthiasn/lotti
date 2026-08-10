@@ -101,7 +101,17 @@ class GoalAgentPhaseA {
     // One transaction: a register write acknowledging the transition
     // without its escalation would be permanent — the next run reads the
     // new status as previousStatus and never re-arms the missed wake.
+    var fenced = false;
     await _syncService.runInTransaction(() async {
+      // A revision committing after this wake read the head must fence
+      // BOTH writes: a v1 register would overwrite the day's row under
+      // the new spec, and a v1 escalation would arm an old-target Phase
+      // B wake after the revision's sweep already cleaned up.
+      final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
+      if (headNow is GoalSpecHeadEntity && headNow.versionId != version.id) {
+        fenced = true;
+        return;
+      }
       await _upsertRegister(
         agentId: agentId,
         version: version,
@@ -115,7 +125,7 @@ class GoalAgentPhaseA {
         await _armEscalation(agentId, now, periodKey, facts.previousStatus);
       }
     });
-    if (facts.needsEscalation) {
+    if (facts.needsEscalation && !fenced) {
       _onEscalationArmed?.call();
     }
 

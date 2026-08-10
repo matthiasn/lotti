@@ -832,9 +832,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
           AgentReportScopes.current,
         );
         final publishedPeriod = published?.provenance['periodKey'];
+        // A superseded-spec wake keeps its report ROW as history but
+        // never advances the shared head: same-period LWW would let a
+        // delayed v1 escalation hide v2's standing report behind a
+        // spec-provenance filter until v2 publishes again.
         final headMayAdvance =
-            publishedPeriod is! String ||
-            derivation.periodKey.compareTo(publishedPeriod) >= 0;
+            derivation.version.status == GoalSpecVersionStatus.active &&
+            (publishedPeriod is! String ||
+                derivation.periodKey.compareTo(publishedPeriod) >= 0);
         if (headMayAdvance) {
           await _syncService.upsertEntity(
             AgentDomainEntity.agentReportHead(
@@ -859,7 +864,15 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // still-active ad is retired HERE — the obsolete chiding banner
       // must not depend on the model remembering retire_goal_ad, nor
       // run out its 72 h staleAt.
-      if (!_adsEligible(derivation.facts, derivation.priors)) {
+      // A superseded-spec wake owns none of the CURRENT banners: its
+      // historical facts must neither retire nor rerun rows that may
+      // belong to the revised goal (creates stay — they are evidence for
+      // the wake's own period, and a fresh current banner already blocks
+      // them via the fresh-active guard).
+      final staleSpecWake =
+          derivation.version.status != GoalSpecVersionStatus.active;
+      if (!staleSpecWake &&
+          !_adsEligible(derivation.facts, derivation.priors)) {
         final modelRetired = {
           for (final action in strategy.retireRequests) action.adId,
         };
@@ -885,6 +898,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // Retire before create: a wake that swaps ads must never leave two
       // active ones if it dies between writes.
       for (final action in strategy.retireRequests) {
+        if (staleSpecWake) break;
         // The in-transaction snapshot is the consistent view: only a row
         // that is STILL active retires — a dismissal (the user's
         // quiet-window verdict) or a Phase A expiry that landed first
@@ -927,6 +941,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
             now.difference(n.activatedAt ?? n.createdAt) < goalAdFreshFor,
       );
       for (final action in strategy.rerunRequests) {
+        if (staleSpecWake) {
+          logError('rerun suppressed: the wake ran under a superseded spec');
+          continue;
+        }
         if (!adsEligible) {
           logError('rerun suppressed: status does not permit ads');
           continue;
