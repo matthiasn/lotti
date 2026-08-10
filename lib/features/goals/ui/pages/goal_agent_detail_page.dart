@@ -96,13 +96,15 @@ class GoalAgentDetailPage extends ConsumerWidget {
     // from a failed deadline reload keeps fresh banners (no-flash) but
     // never expired copy — whose tracker would keep counting exposure.
     final bannerNow = clock.now();
+    final locallyDismissed = ref.watch(locallyDismissedNudgeIdsProvider);
     final nudges = [
       for (final entry
           in ref.watch(activeGoalNudgesProvider).value ??
               const <GoalBannerEntry>[])
         if (entry.nudge.agentId == agentId &&
             (entry.nudge.staleAt == null ||
-                bannerNow.isBefore(entry.nudge.staleAt!)))
+                bannerNow.isBefore(entry.nudge.staleAt!)) &&
+            !locallyDismissed.contains(entry.nudge.id))
           entry,
     ];
     return popSafe(

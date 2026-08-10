@@ -443,32 +443,44 @@ String _trimmed(Object? value) => value is String ? value.trim() : '';
 String? _goalRevision(AppLocalizations messages, Map<String, dynamic> args) {
   final changes = args['changes'];
   if (changes is! Map) return null;
+  // The metric identifier scopes the fields it actually BINDS: target
+  // and window resolve through it by contract; cadence resolves through
+  // it only when no quantitative field claimed it (a combined proposal's
+  // cadence binds to the goal's habit leaf instead).
+  final metricRaw = changes['metric'];
+  final metric = metricRaw is String && metricRaw.trim().isNotEmpty
+      ? metricRaw.trim()
+      : null;
+  final quantitativeChange =
+      changes['targetValue'] != null || changes['period'] != null;
+  String scoped(String part, {required bool binds}) => metric != null && binds
+      ? '$part (${messages.agentSummaryGoalRevisionScope(metric)})'
+      : part;
   final parts = <String>[
     if (changes['targetValue'] != null)
-      messages.agentSummaryGoalRevisionTarget(
-        _localizedTarget(messages, changes['targetValue']),
+      scoped(
+        messages.agentSummaryGoalRevisionTarget(
+          _localizedTarget(messages, changes['targetValue']),
+        ),
+        binds: true,
       ),
     if (changes['period'] != null)
-      messages.agentSummaryGoalRevisionPeriod(
-        _localizedWindow(messages, '${changes['period']}'),
+      scoped(
+        messages.agentSummaryGoalRevisionPeriod(
+          _localizedWindow(messages, '${changes['period']}'),
+        ),
+        binds: true,
       ),
     if (changes['cadence'] != null)
-      messages.agentSummaryGoalRevisionCadence(
-        _localizedCadence(changes['cadence']),
+      scoped(
+        messages.agentSummaryGoalRevisionCadence(
+          _localizedCadence(changes['cadence']),
+        ),
+        binds: !quantitativeChange,
       ),
   ];
   if (parts.isEmpty) return null;
-  // Composite goals: the metric/habit identifier is WHAT the approval
-  // mutates — without it two proposals against different habits read
-  // identically. (The id is the creation-time criterion name.)
-  final metric = args['changes'] is Map
-      ? (args['changes'] as Map)['metric']
-      : null;
-  final scoped = metric is String && metric.trim().isNotEmpty
-      ? '${parts.join(' · ')} '
-            '(${messages.agentSummaryGoalRevisionScope(metric.trim())})'
-      : parts.join(' · ');
-  final summary = scoped;
+  final summary = parts.join(' · ');
   // The agent's WHY is the heart of the approval decision. Rationale is
   // model-authored content (generated, not localized — the banner-copy
   // rule); only the sentence structure around it is ours.

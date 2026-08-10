@@ -160,6 +160,14 @@ class GoalBannerCard extends ConsumerWidget {
       messenger?.showSnackBar(SnackBar(content: Text(failedNotice)));
       return false;
     }
+    // The durable write succeeded: suppress the id locally FIRST, so the
+    // X visibly works even if the fallible reload below fails and the
+    // surfaces keep rendering retained data.
+    container
+        .read(locallyDismissedNudgeIdsProvider.notifier)
+        .add(
+          entry.nudge.id,
+        );
     // Interaction writes bypass the notifier by design — refresh the
     // strip AND the terminal-history timeline the dismissal just joined.
     container

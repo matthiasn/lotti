@@ -1032,9 +1032,15 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // post-register and would collide when the same status recurs in
       // one day). Duplicate executions of one escalation share both and
       // converge; a same-day recurrence carries a different baseline.
+      // Period + arming baseline + originating spec version: duplicate
+      // executions of one escalation converge (identical everything), a
+      // same-day recurrence differs by baseline, and a same-day REVISION
+      // producing the same baseline differs by spec — so the skip below
+      // can never starve the revised goal of its required banner.
       final creationId =
           'goal_nudge:$agentId:${derivation.periodKey}:'
-          '${escalationBaseline ?? derivation.facts.previousStatus?.name ?? 'first'}';
+          '${escalationBaseline ?? derivation.facts.previousStatus?.name ?? 'first'}:'
+          '${derivation.version.id}';
       for (final request in strategy.createdAds) {
         if (staleSpecWake) {
           logError(

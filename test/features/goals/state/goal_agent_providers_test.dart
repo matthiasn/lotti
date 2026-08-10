@@ -1080,6 +1080,27 @@ void main() {
         vectorClock: null,
       ),
     );
+    // The head must RESOLVE — a dangling pointer is not a live spec.
+    when(() => repository.getEntity('goal-a:spec-v2-aa')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: 'goal-a:spec-v2-aa',
+        agentId: 'goal-a',
+        version: 2,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Steps',
+        statement: 'x',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 8000,
+        ),
+        createdAt: DateTime(2026, 8, 10),
+        vectorClock: null,
+      ),
+    );
     GoalNudgeEntity row(String id, Map<String, String> provenance) =>
         AgentDomainEntity.goalNudge(
               id: id,

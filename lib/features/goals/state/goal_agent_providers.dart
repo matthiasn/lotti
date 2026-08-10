@@ -275,8 +275,14 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
         final head = await repository.getEntity(
           goalSpecHeadId(identity.agentId),
         );
-        final activeVersionId = head is GoalSpecHeadEntity
-            ? head.versionId
+        // The head must RESOLVE: a dangling pointer (partial sync) is
+        // not a live spec, and a tagged banner validated against it
+        // would render with no goal statement behind it.
+        final headVersion = head is GoalSpecHeadEntity
+            ? await repository.getEntity(head.versionId)
+            : null;
+        final activeVersionId = headVersion is GoalSpecVersionEntity
+            ? headVersion.id
             : null;
         final nudges =
             (await repository.getEntitiesByAgentId(
@@ -341,6 +347,25 @@ final FutureProvider<List<AgentIdentityEntity>> activeGoalAgentsProvider =
       ];
     }, name: 'activeGoalAgentsProvider');
 
+/// Nudge ids dismissed THIS session whose provider refresh may still be
+/// in flight (or may have failed): both banner surfaces subtract these
+/// at render time, so the X always visibly works even when the fallible
+/// reload behind it does not. New provider loads drop the rows anyway
+/// (the durable status is already terminal).
+class LocallyDismissedNudgeIds extends Notifier<Set<String>> {
+  @override
+  Set<String> build() => const {};
+
+  void add(String id) => state = {...state, id};
+}
+
+final NotifierProvider<LocallyDismissedNudgeIds, Set<String>>
+locallyDismissedNudgeIdsProvider =
+    NotifierProvider<LocallyDismissedNudgeIds, Set<String>>(
+      LocallyDismissedNudgeIds.new,
+      name: 'locallyDismissedNudgeIdsProvider',
+    );
+
 /// Fire-and-forget exposure flush, captured by the banner's tracker
 /// while its element is live and safe to call from `dispose`.
 typedef GoalNudgeInteractionsFlush =
@@ -386,14 +411,18 @@ goalNudgeHistoryProvider = FutureProvider.autoDispose
         GoalNudgeStatus.expired,
         GoalNudgeStatus.superseded,
       };
-      DateTime outcomeAt(GoalNudgeEntity n) =>
-          n.dismissedAt ??
-          n.retiredAt ??
-          n.expiredAt ??
-          n.supersededAt ??
-          // Legacy rows without a stamped outcome; updatedAt is mutable
-          // bookkeeping (exposure flushes bump it) and only a fallback.
-          n.updatedAt;
+      // The timestamp of the CURRENT terminal state: a reactivated row
+      // keeps its old retiredAt, so null-coalescing across all stamps
+      // would file a re-expired banner under its first retirement.
+      // updatedAt is mutable bookkeeping (exposure flushes bump it) and
+      // only a legacy fallback.
+      DateTime outcomeAt(GoalNudgeEntity n) => switch (n.status) {
+        GoalNudgeStatus.dismissed => n.dismissedAt ?? n.updatedAt,
+        GoalNudgeStatus.retired => n.retiredAt ?? n.updatedAt,
+        GoalNudgeStatus.expired => n.expiredAt ?? n.updatedAt,
+        GoalNudgeStatus.superseded => n.supersededAt ?? n.updatedAt,
+        _ => n.updatedAt,
+      };
       return (await repository.getEntitiesByAgentId(
             agentId,
             type: AgentEntityTypes.goalNudge,

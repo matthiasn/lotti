@@ -33,11 +33,14 @@ class GoalBannerStrip extends ConsumerWidget {
     // the staleness CONTRACT still binds at render time: the deadline
     // timer's reload failing must not keep expired copy on screen.
     final now = clock.now();
+    final locallyDismissed = ref.watch(locallyDismissedNudgeIdsProvider);
     final entries = [
       for (final entry
           in ref.watch(activeGoalNudgesProvider).value ??
               const <GoalBannerEntry>[])
-        if (entry.nudge.staleAt == null || now.isBefore(entry.nudge.staleAt!))
+        if ((entry.nudge.staleAt == null ||
+                now.isBefore(entry.nudge.staleAt!)) &&
+            !locallyDismissed.contains(entry.nudge.id))
           entry,
     ];
     if (entries.isEmpty) return const SizedBox.shrink();
