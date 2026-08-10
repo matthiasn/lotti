@@ -6144,6 +6144,19 @@ class AppLocalizationsFr extends AppLocalizations {
       'Donne un nom à l’objectif et au moins un critère.';
 
   @override
+  String get goalDeleteConfirmButton => 'Supprimer l’objectif';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Cela met l’agent d’objectif à la retraite et le retire de ta liste sur tous tes appareils. C’est irréversible.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Supprimer cet objectif ?';
+
+  @override
+  String get goalDeleteMenuItem => 'Supprimer l’objectif';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Impossible de charger l\'état de cet objectif pour le moment.';
 

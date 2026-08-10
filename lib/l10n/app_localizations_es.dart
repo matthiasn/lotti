@@ -6128,6 +6128,19 @@ class AppLocalizationsEs extends AppLocalizations {
       'Dale un nombre al objetivo y al menos un criterio.';
 
   @override
+  String get goalDeleteConfirmButton => 'Eliminar objetivo';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Esto retira el agente de objetivo y lo quita de tu lista en todos tus dispositivos. No se puede deshacer.';
+
+  @override
+  String get goalDeleteDialogTitle => '¿Eliminar este objetivo?';
+
+  @override
+  String get goalDeleteMenuItem => 'Eliminar objetivo';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'No se pudo cargar el estado de este objetivo ahora mismo.';
 

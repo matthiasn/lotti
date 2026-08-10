@@ -26,7 +26,9 @@ today:
 
 The deterministic runtime RUNS (Phase A of ADR 0054): `runtime/` holds the
 per-tick executor (`GoalAgentPhaseA`) and startup maintenance, `sync/` the
-synced-signal dispatcher, `service/` transactional goal creation, and
+synced-signal dispatcher, `service/` transactional goal creation and
+deletion (`GoalAgentService.deleteGoalAgent`, a thin wrapper over the shared
+`AgentService.destroyAgent` soft-delete transition), and
 `state/` the providers that plug the `goal_agent` kind into the shared
 agent runtime (merged in `app_bootstrap.dart`). Persistence entities live
 on `AgentDomainEntity` (`goalSpecVersion`/`goalSpecHead`/`goalProgress`/
@@ -39,7 +41,9 @@ into a new spec version. The visible layer shipped behind the
 `enable_agents_page` flag: procedural text banners (ADR 0058) on the day
 and habits pages (`ui/goal_banner_*`), and an Agents tab (`ui/pages/`)
 with per-goal health at a glance, proposal approval, a detail timeline,
-and goal creation. The two-way goal conversation is the remaining
+and goal creation and deletion (a confirmed overflow action on the detail
+page that retires the agent everywhere). The two-way goal conversation is
+the remaining
 increment; the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.
 

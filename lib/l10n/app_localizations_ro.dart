@@ -6149,6 +6149,19 @@ class AppLocalizationsRo extends AppLocalizations {
       'Dați obiectivului un nume și cel puțin un criteriu.';
 
   @override
+  String get goalDeleteConfirmButton => 'Ștergeți obiectivul';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Aceasta retrage agentul de obiectiv și îl elimină din lista dvs. de pe toate dispozitivele. Nu poate fi anulată.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Ștergeți acest obiectiv?';
+
+  @override
+  String get goalDeleteMenuItem => 'Ștergeți obiectivul';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Starea acestui obiectiv nu a putut fi încărcată momentan.';
 

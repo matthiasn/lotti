@@ -6091,6 +6091,19 @@ class AppLocalizationsDe extends AppLocalizations {
       'Gib dem Ziel einen Namen und mindestens ein Kriterium.';
 
   @override
+  String get goalDeleteConfirmButton => 'Ziel löschen';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Damit wird der Ziel-Agent stillgelegt und auf allen Geräten aus deiner Liste entfernt. Das lässt sich nicht rückgängig machen.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Dieses Ziel löschen?';
+
+  @override
+  String get goalDeleteMenuItem => 'Ziel löschen';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Der Zustand dieses Ziels konnte gerade nicht geladen werden.';
 

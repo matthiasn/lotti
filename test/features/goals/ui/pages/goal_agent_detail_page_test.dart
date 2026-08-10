@@ -18,7 +18,9 @@ import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/services/nav_service.dart';
+import 'package:mocktail/mocktail.dart';
 
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
@@ -481,6 +483,116 @@ void main() {
     await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();
     await tester.pumpAndSettle();
     expect(navigated, ['/agents']);
+  });
+
+  group('delete goal', () {
+    testWidgets('confirming retires the goal through the service and returns '
+        'to the Agents list', (tester) async {
+      final service = MockGoalAgentService();
+      when(
+        () => service.deleteGoalAgent('goal-1'),
+      ).thenAnswer((_) async => true);
+      final navigated = <String>[];
+      beamToNamedOverride = navigated.add;
+      addTearDown(() => beamToNamedOverride = null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            goalAgentServiceProvider.overrideWithValue(service),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: null,
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+              ),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportHistoryProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete goal'));
+      await tester.pumpAndSettle();
+
+      // The dialog is up; nothing is deleted until the user confirms.
+      expect(find.text('Delete this goal?'), findsOneWidget);
+      verifyNever(() => service.deleteGoalAgent(any()));
+
+      await tester.tap(find.widgetWithText(FilledButton, 'Delete goal'));
+      await tester.pumpAndSettle();
+
+      verify(() => service.deleteGoalAgent('goal-1')).called(1);
+      expect(navigated, ['/agents']);
+    });
+
+    testWidgets('cancelling the dialog neither retires the goal nor '
+        'navigates', (tester) async {
+      final service = MockGoalAgentService();
+      final navigated = <String>[];
+      beamToNamedOverride = navigated.add;
+      addTearDown(() => beamToNamedOverride = null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            goalAgentServiceProvider.overrideWithValue(service),
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: null,
+                pendingProposals: 0,
+                spec: null,
+                direction: null,
+              ),
+            ),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportHistoryProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.more_vert_rounded));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Delete goal'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Cancel'));
+      await tester.pumpAndSettle();
+
+      verifyNever(() => service.deleteGoalAgent(any()));
+      expect(navigated, isEmpty);
+    });
   });
 
   testWidgets('a stale link or non-goal agent renders the not-found state '

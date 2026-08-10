@@ -142,6 +142,25 @@ class GoalAgentService {
     return identity;
   }
 
+  /// Retires a goal agent via the shared `destroyed` lifecycle transition —
+  /// the synced deletion mechanism the agents subsystem already uses
+  /// ([AgentService.destroyAgent]). This is a soft delete, not a row wipe:
+  /// the goal's owned rows (spec head/versions, progress registers, nudges)
+  /// stay for audit, but the `destroyed` lifecycle replicates to every
+  /// device, so the goal disappears everywhere at once.
+  ///
+  /// The transition also withdraws the agent's wake subscriptions; because
+  /// every live surface reads the ACTIVE lifecycle only — the
+  /// `activeGoalAgentsProvider`/`activeGoalNudgesProvider` list filters, the
+  /// scheduled-wake manager and `GoalRuntimeMaintenance` — the retired goal
+  /// stops surfacing and its cadence wakes fall silent without any further
+  /// cleanup here.
+  ///
+  /// Returns `true` when the goal existed and was retired, `false` when no
+  /// agent matched [agentId].
+  Future<bool> deleteGoalAgent(String agentId) =>
+      _agentService.destroyAgent(agentId);
+
   /// Drops the agent's runtime subscriptions (paused/archived goals must
   /// stop waking on signals; a re-activation re-registers).
   void removeSignalSubscriptions(String agentId) =>

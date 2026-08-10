@@ -6113,6 +6113,19 @@ class AppLocalizationsCs extends AppLocalizations {
       'Pojmenuj cíl a zadej alespoň jedno kritérium.';
 
   @override
+  String get goalDeleteConfirmButton => 'Smazat cíl';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Tím se agent cíle vyřadí a odstraní ze tvého seznamu na všech zařízeních. Tuto akci nelze vrátit zpět.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Smazat tento cíl?';
+
+  @override
+  String get goalDeleteMenuItem => 'Smazat cíl';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Zdraví tohoto cíle se teď nepodařilo načíst.';
 

@@ -6070,6 +6070,19 @@ class AppLocalizationsNl extends AppLocalizations {
       'Geef het doel een naam en minstens één criterium.';
 
   @override
+  String get goalDeleteConfirmButton => 'Doel verwijderen';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Hiermee wordt de doel-agent stopgezet en van je lijst op al je apparaten verwijderd. Dit kan niet ongedaan worden gemaakt.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Dit doel verwijderen?';
+
+  @override
+  String get goalDeleteMenuItem => 'Doel verwijderen';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'De gezondheid van dit doel kon nu niet worden geladen.';
 

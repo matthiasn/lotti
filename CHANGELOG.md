@@ -18,7 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   above the navigation — one rotating slot shared across the Tasks, Daily OS and
   Habits tabs, coloured by the agent's tone so doing well reads at a glance,
   dismissible (a dismissal quiets that goal for the rest of the day), and rated
-  per showing so the agent learns which nudges actually help.
+  per showing so the agent learns which nudges actually help. A goal you no
+  longer want can be deleted from its detail page — an overflow action that
+  asks to confirm first, then retires the agent and removes it from the list
+  on every device.
 - **Vision models can use task images when writing coding prompts.** Choosing an
   image-capable model such as Kimi K3 now offers the task's attached images as
   visual context, with up to ten selections. Text-only models keep the existing

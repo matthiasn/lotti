@@ -109,7 +109,11 @@ class GoalAgentDetailPage extends ConsumerWidget {
     ];
     return popSafe(
       Scaffold(
-        appBar: AppBar(leading: backToList, title: Text(spec?.title ?? '')),
+        appBar: AppBar(
+          leading: backToList,
+          title: Text(spec?.title ?? ''),
+          actions: [_GoalDeleteMenuButton(agentId: agentId)],
+        ),
         body: SafeArea(
           child: ListView(
             // The mobile shell keeps the bottom navigation overlaid on agents
@@ -241,5 +245,88 @@ class GoalAgentDetailPage extends ConsumerWidget {
         ),
       ),
     );
+  }
+}
+
+/// The single overflow-menu action on the goal detail page.
+enum _GoalDetailMenuAction { delete }
+
+/// The goal detail page's destructive action: an overflow menu whose sole
+/// item retires the goal agent. Deletion is confirmed first, then routed
+/// through `GoalAgentService.deleteGoalAgent` (the shared `destroyed`
+/// lifecycle transition — synced, soft, audit-preserving). On success it
+/// leaves the detail page for the Agents root: the goal no longer surfaces
+/// on any active-lifecycle provider, so there is nothing left to show here.
+class _GoalDeleteMenuButton extends ConsumerWidget {
+  const _GoalDeleteMenuButton({required this.agentId});
+
+  final String agentId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final danger = tokens.colors.alert.error.defaultColor;
+    // onSelected (not PopupMenuItem.onTap): it fires after the menu route
+    // has popped, with this button's stable context, so the confirmation
+    // dialog never races the closing menu.
+    return PopupMenuButton<_GoalDetailMenuAction>(
+      icon: const Icon(Icons.more_vert_rounded),
+      onSelected: (action) {
+        switch (action) {
+          case _GoalDetailMenuAction.delete:
+            _confirmAndDelete(context, ref);
+        }
+      },
+      itemBuilder: (context) => [
+        PopupMenuItem<_GoalDetailMenuAction>(
+          value: _GoalDetailMenuAction.delete,
+          child: Row(
+            children: [
+              Icon(Icons.delete_outline_rounded, color: danger),
+              SizedBox(width: tokens.spacing.step3),
+              Text(
+                context.messages.goalDeleteMenuItem,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: danger,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Future<void> _confirmAndDelete(BuildContext context, WidgetRef ref) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) {
+        final tokens = dialogContext.designTokens;
+        final messages = dialogContext.messages;
+        return AlertDialog(
+          title: Text(messages.goalDeleteDialogTitle),
+          content: Text(messages.goalDeleteDialogContent),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(dialogContext).pop(false),
+              child: Text(messages.cancelButton),
+            ),
+            FilledButton(
+              onPressed: () => Navigator.of(dialogContext).pop(true),
+              style: FilledButton.styleFrom(
+                backgroundColor: tokens.colors.alert.error.defaultColor,
+              ),
+              child: Text(messages.goalDeleteConfirmButton),
+            ),
+          ],
+        );
+      },
+    );
+    if (confirmed ?? false) {
+      await ref.read(goalAgentServiceProvider).deleteGoalAgent(agentId);
+      // Through NavService — same idiom as every pop on this page — so
+      // currentPath and the persisted last route return to the Agents root.
+      beamToNamed('/agents');
+    }
   }
 }

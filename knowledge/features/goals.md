@@ -230,7 +230,18 @@ flowchart TD
   carries the goal's active banners (uncapped, rendered inline), the
   revision-approval card (`ChangeSetSummaryCard.selfTargeted`) and the
   read-only interaction timeline (`AgentConversationLog`). Creation supports a steps goal or a
-  MULTI-habit routine (`allOf` composite).
+  MULTI-habit routine (`allOf` composite). The detail page's overflow menu
+  carries the one destructive action: **delete goal**, confirmed first, then
+  routed through `GoalAgentService.deleteGoalAgent` — a thin wrapper over the
+  shared `AgentService.destroyAgent` transition. It is a *soft, synced*
+  delete: the identity moves to `AgentLifecycle.destroyed` (replicated to
+  every device) and its wake subscriptions are withdrawn, while its owned
+  rows (spec head/versions, progress registers, nudges) stay for audit. No
+  goal-specific cleanup is needed because every live surface reads the ACTIVE
+  lifecycle only — the `activeGoalAgentsProvider`/`activeGoalNudgesProvider`
+  list filters, the scheduled-wake manager and `GoalRuntimeMaintenance` all
+  skip non-active agents — so the goal disappears and its cadence wakes fall
+  silent. On success the page routes back to `/agents` through `NavService`.
 - **Interaction writes bypass the notifier by design** (they go through
   the sync service): the banner handlers invalidate
   `activeGoalNudgesProvider` after dismiss/rate.

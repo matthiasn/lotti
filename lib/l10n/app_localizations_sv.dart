@@ -6054,6 +6054,19 @@ class AppLocalizationsSv extends AppLocalizations {
       'Ge målet ett namn och minst ett kriterium.';
 
   @override
+  String get goalDeleteConfirmButton => 'Ta bort mål';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Detta pensionerar målagenten och tar bort den från din lista på alla enheter. Det går inte att ångra.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Ta bort det här målet?';
+
+  @override
+  String get goalDeleteMenuItem => 'Ta bort mål';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Det gick inte att läsa in målets hälsa just nu.';
 

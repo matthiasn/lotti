@@ -10397,6 +10397,30 @@ abstract class AppLocalizations {
   /// **'Give the goal a name and at least one criterion.'**
   String get goalCreateValidationMissing;
 
+  /// Confirm button in the delete-goal confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete goal'**
+  String get goalDeleteConfirmButton;
+
+  /// Body of the confirmation dialog shown before deleting a goal agent.
+  ///
+  /// In en, this message translates to:
+  /// **'This retires the goal agent and removes it from your list on every device. This can\'t be undone.'**
+  String get goalDeleteDialogContent;
+
+  /// Title of the confirmation dialog shown before deleting a goal agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this goal?'**
+  String get goalDeleteDialogTitle;
+
+  /// Overflow menu item on the goal detail page that starts deleting the goal agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete goal'**
+  String get goalDeleteMenuItem;
+
   /// No description provided for @goalDetailHealthUnavailable.
   ///
   /// In en, this message translates to:

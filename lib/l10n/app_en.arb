@@ -3317,6 +3317,22 @@
   "@goalCreateValidationMissing": {
     "description": "Validation message on the goal creation form."
   },
+  "goalDeleteConfirmButton": "Delete goal",
+  "@goalDeleteConfirmButton": {
+    "description": "Confirm button in the delete-goal confirmation dialog."
+  },
+  "goalDeleteDialogContent": "This retires the goal agent and removes it from your list on every device. This can't be undone.",
+  "@goalDeleteDialogContent": {
+    "description": "Body of the confirmation dialog shown before deleting a goal agent."
+  },
+  "goalDeleteDialogTitle": "Delete this goal?",
+  "@goalDeleteDialogTitle": {
+    "description": "Title of the confirmation dialog shown before deleting a goal agent."
+  },
+  "goalDeleteMenuItem": "Delete goal",
+  "@goalDeleteMenuItem": {
+    "description": "Overflow menu item on the goal detail page that starts deleting the goal agent."
+  },
   "goalDetailHealthUnavailable": "Couldn't load this goal's health right now.",
   "goalDetailNoReport": "No report yet — the agent reports after its first meaningful change.",
   "@goalDetailNoReport": {

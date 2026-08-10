@@ -6050,6 +6050,19 @@ class AppLocalizationsDa extends AppLocalizations {
       'Giv målet et navn og mindst ét kriterium.';
 
   @override
+  String get goalDeleteConfirmButton => 'Slet mål';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Dette pensionerer målagenten og fjerner den fra din liste på alle enheder. Det kan ikke fortrydes.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Slet dette mål?';
+
+  @override
+  String get goalDeleteMenuItem => 'Slet mål';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Kunne ikke indlæse dette måls tilstand lige nu.';
 

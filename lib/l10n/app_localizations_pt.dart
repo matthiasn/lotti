@@ -6107,6 +6107,19 @@ class AppLocalizationsPt extends AppLocalizations {
       'Dá um nome à meta e pelo menos um critério.';
 
   @override
+  String get goalDeleteConfirmButton => 'Eliminar objetivo';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Isto reforma o agente de objetivo e remove-o da tua lista em todos os dispositivos. Não pode ser anulado.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Eliminar este objetivo?';
+
+  @override
+  String get goalDeleteMenuItem => 'Eliminar objetivo';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Não foi possível carregar a saúde desta meta agora.';
 

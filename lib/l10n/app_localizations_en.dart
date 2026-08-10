@@ -6021,6 +6021,19 @@ class AppLocalizationsEn extends AppLocalizations {
       'Give the goal a name and at least one criterion.';
 
   @override
+  String get goalDeleteConfirmButton => 'Delete goal';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'This retires the goal agent and removes it from your list on every device. This can\'t be undone.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Delete this goal?';
+
+  @override
+  String get goalDeleteMenuItem => 'Delete goal';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Couldn\'t load this goal\'s health right now.';
 

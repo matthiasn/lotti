@@ -6124,6 +6124,19 @@ class AppLocalizationsIt extends AppLocalizations {
       'Dai un nome all’obiettivo e almeno un criterio.';
 
   @override
+  String get goalDeleteConfirmButton => 'Elimina obiettivo';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Questo ritira l’agente dell’obiettivo e lo rimuove dalla tua lista su tutti i dispositivi. Non è reversibile.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Eliminare questo obiettivo?';
+
+  @override
+  String get goalDeleteMenuItem => 'Elimina obiettivo';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Impossibile caricare lo stato di questo obiettivo al momento.';
 
