@@ -102,7 +102,14 @@ class GoalSignalSyncDispatcher {
     if (head is! GoalSpecHeadEntity) return const {};
     final version = await _repository.getEntity(head.versionId);
     if (version is! GoalSpecVersionEntity) return const {};
-    return goalSignalTriggerTokens(version.criteria).intersection(tokens);
+    return {
+      // A synced HEAD is itself a signal: after disconnected approvals
+      // settle, the register may have resolved to the other version —
+      // one immediate €0 recompute realigns health with the standing
+      // spec instead of waiting for the next cadence tick.
+      if (tokens.contains(goalSpecHeadId(agentId))) goalSpecHeadId(agentId),
+      ...goalSignalTriggerTokens(version.criteria).intersection(tokens),
+    };
   }
 }
 

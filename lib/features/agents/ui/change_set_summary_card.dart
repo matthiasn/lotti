@@ -102,6 +102,10 @@ class ChangeSetSummaryCard extends ConsumerWidget {
         child: changeSetsAsync.when(
           skipLoadingOnReload: true,
           skipLoadingOnRefresh: true,
+          // A transient background reload error must not vanish
+          // established, still-actionable proposals; the error branch is
+          // for a first load without data.
+          skipError: true,
           data: (entities) {
             final changeSets = entities.whereType<ChangeSetEntity>().toList();
             if (changeSets.isEmpty) return const SizedBox.shrink();

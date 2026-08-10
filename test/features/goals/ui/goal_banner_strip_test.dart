@@ -53,7 +53,7 @@ void main() {
         any(),
         forActivation: any(named: 'forActivation'),
       ),
-    ).thenAnswer((_) async {});
+    ).thenAnswer((_) async => true);
     when(
       () => interactions.recordRating(
         any(),

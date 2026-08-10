@@ -782,8 +782,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // status: a stale escalation deliberately evaluates the superseded
       // version that armed its period and stays exempt.
       final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
+      if (headNow is! GoalSpecHeadEntity) {
+        // The goal was DELETED while the model ran: recreating messages,
+        // reports or banners here would resurrect rows for a hard-deleted
+        // agent and sync them out after the deletion.
+        fenced = true;
+        return;
+      }
       if (derivation.version.status == GoalSpecVersionStatus.active &&
-          headNow is GoalSpecHeadEntity &&
           headNow.versionId != derivation.version.id) {
         fenced = true;
         return;

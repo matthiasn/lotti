@@ -303,6 +303,11 @@ GoalNudgeEntity mergeGoalNudgeAccumulators({
     }
   }
   return winner.copyWith(
+    // The merged row observed BOTH branches, so its clock must be their
+    // join: keeping only the winner's clock would let that device's next
+    // (pre-merge) write causally dominate and overwrite the other
+    // branch's accumulators through the ordinary non-concurrent path.
+    vectorClock: VectorClock.merge(local.vectorClock, incoming.vectorClock),
     totalVisibleMs: local.totalVisibleMs.merge(incoming.totalVisibleMs),
     impressionCount: local.impressionCount.merge(incoming.impressionCount),
     ratings: onePerActivation,

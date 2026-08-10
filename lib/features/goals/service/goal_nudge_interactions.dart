@@ -60,13 +60,20 @@ class GoalNudgeInteractions {
   /// activation the user actually SAW: if sync re-ran the nudge while
   /// the close tap was in flight, the write is discarded rather than
   /// silencing a run the user never looked at (the rating path's guard).
-  Future<void> dismiss(String nudgeId, {int? forActivation}) => _serialized(
-    nudgeId,
-    () async {
+  /// Returns whether the dismissal verdict is on the row afterwards —
+  /// false means the guards declined (already terminal, or sync advanced
+  /// the activation mid-tap) and the banner must NOT be suppressed.
+  Future<bool> dismiss(String nudgeId, {int? forActivation}) async {
+    var persisted = false;
+    await _serialized(nudgeId, () async {
       try {
         await _syncService.runInTransaction(() async {
           final nudge = await _repository.getEntity(nudgeId);
           if (nudge is! GoalNudgeEntity) return;
+          if (nudge.status == GoalNudgeStatus.dismissed) {
+            persisted = true;
+            return;
+          }
           if (nudge.status != GoalNudgeStatus.active) return;
           if (forActivation != null && forActivation != nudge.activationCount) {
             return;
@@ -82,6 +89,7 @@ class GoalNudgeInteractions {
               updatedAt: now,
             ),
           );
+          persisted = true;
         });
       } catch (error) {
         // The database commit can be durable when a deferred outbox
@@ -90,12 +98,14 @@ class GoalNudgeInteractions {
         final fresh = await _repository.getEntity(nudgeId);
         if (fresh is GoalNudgeEntity &&
             fresh.status == GoalNudgeStatus.dismissed) {
+          persisted = true;
           return;
         }
         rethrow;
       }
-    },
-  );
+    });
+    return persisted;
+  }
 
   /// Records the rating-prompt outcome — [rating] 1..5, or a skip — for
   /// [forActivation] (the activation the user actually SAW; defaults to
