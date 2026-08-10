@@ -257,12 +257,34 @@ class GoalProgressEvaluator {
       range.start,
       range.end,
     );
+
+    if (window is GoalWindowRollingDays) {
+      // The rolling model measures DAYS with a success (at most one per
+      // day) — a habit logged twice in a day is still one creditable day.
+      final creditable = byDay.values.where((count) => count > 0).length;
+      return _rollingHabitLeaf(
+        criterionId: criterionId,
+        byDay: byDay,
+        range: range,
+        window: window,
+        targetCount: targetCount,
+        reference: reference,
+        creditable: creditable,
+        satisfied: creditable >= targetCount,
+        ratio: targetCount <= 0
+            ? 1.0
+            : math.min(1, creditable / targetCount).toDouble(),
+      );
+    }
+
+    // Calendar-window habits keep the pre-migration quota semantics: the
+    // raw completion count (a habit logged twice today counts twice), and
+    // the pace model for feasibility.
     final actual = byDay.values.fold<int>(0, (sum, count) => sum + count);
     final satisfied = actual >= targetCount;
     final ratio = targetCount <= 0
         ? 1.0
         : math.min(1, actual / targetCount).toDouble();
-
     // Pace: only calendar periods have a fixed end to run out of road
     // against; each remaining day is worth at most one creditable success,
     // and today only counts if it has not already been credited.
@@ -288,6 +310,78 @@ class GoalProgressEvaluator {
       ),
       // A habit with no completion is genuinely uncompleted — absence IS
       // signal here, unlike a silent step tracker.
+      coverage: 1,
+    );
+  }
+
+  /// The rolling-window habit leaf: no pace/dead-zone, just a deficit
+  /// (days-to-recovery) and, at rate, a buffer (days until the oldest
+  /// success ages out) — plus the per-day cells the grid renders.
+  _NodeOutcome _rollingHabitLeaf({
+    required String criterionId,
+    required Map<DateTime, int> byDay,
+    required ({DateTime start, DateTime end}) range,
+    required GoalWindowRollingDays window,
+    required int targetCount,
+    required DateTime reference,
+    required int creditable,
+    required bool satisfied,
+    required double ratio,
+  }) {
+    final today = GoalWindow.dayUtc(reference);
+    final deficit = math.max(0, targetCount - creditable);
+    bool doneOn(DateTime day) => (byDay[day] ?? 0) > 0;
+
+    // The oldest in-window success — the first to age out as the window
+    // slides. Aging-out matters only when the leaf is EXACTLY at target:
+    // with slack (creditable > target) losing the oldest keeps it satisfied.
+    DateTime? oldestSuccess;
+    for (var i = 0; i < window.count; i++) {
+      final day = range.start.add(Duration(days: i));
+      if (doneOn(day)) {
+        oldestSuccess = day;
+        break;
+      }
+    }
+    final atRateExactly = creditable == targetCount && targetCount > 0;
+    // Buffer: days until the oldest critical success ages out. A success ON
+    // the window's start day leaves at the next midnight → buffer 0.
+    final buffer = (atRateExactly && oldestSuccess != null)
+        ? oldestSuccess.difference(range.start).inDays
+        : null;
+    final agingDay = atRateExactly ? oldestSuccess : null;
+
+    final cells = <GoalDayCell>[
+      // The slipped left-edge: the day that has just left the window.
+      GoalDayCell(
+        day: range.start.subtract(const Duration(days: 1)),
+        done: doneOn(range.start.subtract(const Duration(days: 1))),
+        slipped: true,
+      ),
+      for (var i = 0; i < window.count; i++)
+        () {
+          final day = range.start.add(Duration(days: i));
+          return GoalDayCell(
+            day: day,
+            done: doneOn(day),
+            isToday: day == today,
+            agingOut: agingDay != null && day == agingDay,
+          );
+        }(),
+    ];
+
+    return _NodeOutcome(
+      result: GoalCriterionResult(
+        criterionId: criterionId,
+        actual: creditable,
+        target: targetCount,
+        ratio: ratio,
+        satisfied: satisfied,
+        sampleCount: byDay.length,
+        deficit: deficit,
+        buffer: buffer,
+        dayCells: cells,
+      ),
       coverage: 1,
     );
   }

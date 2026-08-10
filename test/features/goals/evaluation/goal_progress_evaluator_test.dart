@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 
@@ -282,6 +283,95 @@ void main() {
       );
       expect(evaluation.results['gym']!.actual, 3);
       expect(evaluation.satisfied, isTrue);
+    });
+  });
+
+  group('rolling-window habit leaf — deficit / buffer / cells', () {
+    // Rolling 7 ending Saturday d(8): the window is d(2)..d(8).
+    const gym = GoalCriterion.habit(
+      criterionId: 'gym',
+      habitId: 'gym-habit',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 3,
+    );
+    GoalSignalWindow days(Map<DateTime, int> byDay) =>
+        GoalSignalWindow(habitSuccessesByDay: {'gym-habit': byDay});
+    GoalCriterionResult leafFor(Map<DateTime, int> byDay) =>
+        evaluator.evaluate(gym, days(byDay), saturday).results['gym']!;
+
+    test('an empty window is a full deficit (= target) — a restart, not a '
+        'verdict; no buffer', () {
+      final leaf = leafFor(const {});
+      expect(leaf.deficit, 3);
+      expect(leaf.satisfied, isFalse);
+      expect(leaf.ratio, 0);
+      expect(leaf.buffer, isNull);
+    });
+
+    test('one short of target reads deficit 1', () {
+      final leaf = leafFor({d(4): 1, d(6): 1});
+      expect(leaf.deficit, 1);
+      expect(leaf.satisfied, isFalse);
+    });
+
+    test('exactly at target: deficit 0, and buffer is days until the OLDEST '
+        'success ages out — 0 when it sits on the window edge', () {
+      // Successes on d(2) (the window start), d(4), d(6).
+      final leaf = leafFor({d(2): 1, d(4): 1, d(6): 1});
+      expect(leaf.deficit, 0);
+      expect(leaf.satisfied, isTrue);
+      expect(leaf.buffer, 0, reason: 'the d(2) success ages out tonight');
+    });
+
+    test('exactly at target with the oldest success two days into the '
+        'window: buffer 2', () {
+      final leaf = leafFor({d(4): 1, d(6): 1, d(8): 1});
+      expect(leaf.deficit, 0);
+      expect(leaf.buffer, 2, reason: 'd(4) is two days past the d(2) edge');
+    });
+
+    test('above target has slack: deficit 0 but NO buffer/aging — losing '
+        'the oldest still leaves it satisfied', () {
+      final leaf = leafFor({d(2): 1, d(4): 1, d(6): 1, d(8): 1});
+      expect(leaf.deficit, 0);
+      expect(leaf.buffer, isNull);
+      expect(
+        leaf.dayCells!.where((c) => c.agingOut),
+        isEmpty,
+        reason: 'with slack, no cell is at risk of dropping below target',
+      );
+    });
+
+    test('multiple completions on one day are ONE creditable day', () {
+      // Rolling counts days, not raw completions (unlike the calendar path).
+      final leaf = leafFor({d(3): 2, d(5): 1});
+      expect(leaf.actual, 2);
+      expect(leaf.deficit, 1);
+    });
+
+    test('the day cells: a slipped left edge, seven window days, today '
+        'marked, and the aging-out success ringed', () {
+      final leaf = leafFor({d(2): 1, d(4): 1, d(6): 1});
+      final cells = leaf.dayCells!;
+      // slipped edge + 7 window days.
+      expect(cells, hasLength(8));
+      expect(cells.first.slipped, isTrue);
+      expect(cells.first.day, d(1));
+      // Window days d(2)..d(8); today is d(8).
+      expect(cells[1].day, d(2));
+      expect(cells.last.day, d(8));
+      expect(cells.last.isToday, isTrue);
+      expect(cells.where((c) => c.isToday), hasLength(1));
+      // The done days.
+      expect(cells.where((c) => c.done).map((c) => c.day), {
+        if (leaf.deficit == 0) d(2),
+        d(4),
+        d(6),
+      });
+      // The aging-out success is the oldest at-target one (d(2)).
+      final aging = cells.where((c) => c.agingOut).toList();
+      expect(aging, hasLength(1));
+      expect(aging.single.day, d(2));
     });
   });
 
