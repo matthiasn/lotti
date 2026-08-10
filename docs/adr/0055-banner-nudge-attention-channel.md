@@ -49,7 +49,12 @@ routing to be tempted by.
 5. **Quiet-by-default surfaces.** The banner widget renders nothing when no active ad exists
    (the `KnowledgeNudge` contract). v1 mounts: the Daily OS day page nudge stack and the habits
    tab; multiple active ads render as a manual-swipe carousel with position dots (no
-   auto-advance; reduced-motion respected). An app-shell structural band (the demo-banner
+   auto-advance; reduced-motion respected). *Amended 2026-08-10: the carousel was specified for
+   ADR-0055-era fixed-height IMAGE cards. With ADR 0058's pivot to compact procedural text
+   banners, multiple ads render as a bounded vertical stack (at most two visible; the rest stay
+   reachable on the goal's detail page) — a swipe carousel over variable-height text rows would
+   hide the second ad behind a gesture without saving meaningful space. Revisit if banners ever
+   regain fixed-height media.* An app-shell structural band (the demo-banner
    pattern) is documented as an escalation surface and deliberately not built in v1.
 
 6. **Tap opens the conversation; dismissal is explicit.** Tapping the ad opens the goal agent's

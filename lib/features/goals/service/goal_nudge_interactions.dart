@@ -123,6 +123,11 @@ class GoalNudgeInteractions {
       if (nudge is! GoalNudgeEntity) return;
       final host = await _syncService.localHost();
       final now = clock.now();
+      // The flush arrives at the END of the episode; the banner became
+      // visible one episode-length earlier. Stamping `now` would push
+      // firstShownAt past a dismissal that raced the disposal flush and
+      // corrupt time-to-dismiss metrics.
+      final shownAt = now.subtract(visibleFor);
       await _syncService.upsertEntity(
         nudge.copyWith(
           totalVisibleMs: nudge.totalVisibleMs.increment(
@@ -130,7 +135,7 @@ class GoalNudgeInteractions {
             visibleFor.inMilliseconds,
           ),
           impressionCount: nudge.impressionCount.increment(host),
-          firstShownAt: nudge.firstShownAt ?? now,
+          firstShownAt: nudge.firstShownAt ?? shownAt,
           lastShownAt: now,
           updatedAt: now,
         ),

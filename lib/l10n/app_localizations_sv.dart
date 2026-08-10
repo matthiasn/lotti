@@ -5944,6 +5944,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalBannerDismissTooltip => 'Avfärda';
 
   @override
+  String get goalBannerRateTooltip => 'Betygsätt den här bannern';
+
+  @override
   String get goalBannerRatingSkip => 'Hoppa över';
 
   @override

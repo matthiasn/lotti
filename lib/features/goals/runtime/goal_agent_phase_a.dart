@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_progress_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
@@ -77,6 +78,7 @@ class GoalAgentPhaseA {
     }
 
     await _rearmCadence(agentId, now);
+    await _expireStaleNudges(agentId, now);
 
     final startDate = version.startDate;
     if (startDate != null &&
@@ -118,6 +120,36 @@ class GoalAgentPhaseA {
     }
 
     return const WakeResult(success: true);
+  }
+
+  /// The render-side staleness filter hides an overdue ad immediately,
+  /// but the ROW must record the clock's terminal verdict too — else it
+  /// sits `active` forever, out of terminal history, and every later
+  /// wake re-reads it as a live ad. Deterministic and idempotent:
+  /// `expiredAt` is the deadline itself (not this device's wall clock),
+  /// and the resolver's terminal dominance makes concurrent sweeps
+  /// converge.
+  Future<void> _expireStaleNudges(String agentId, DateTime now) async {
+    final nudges = (await _repository.getEntitiesByAgentId(
+      agentId,
+      type: AgentEntityTypes.goalNudge,
+    )).whereType<GoalNudgeEntity>();
+    for (final nudge in nudges) {
+      final staleAt = nudge.staleAt;
+      if (nudge.deletedAt != null ||
+          nudge.status != GoalNudgeStatus.active ||
+          staleAt == null ||
+          staleAt.isAfter(now)) {
+        continue;
+      }
+      await _syncService.upsertEntity(
+        nudge.copyWith(
+          status: GoalNudgeStatus.expired,
+          expiredAt: staleAt,
+          updatedAt: now,
+        ),
+      );
+    }
   }
 
   /// One deterministic derivation pass: signals → evaluation → policy →

@@ -5,6 +5,7 @@ import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
+import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
@@ -100,7 +101,7 @@ void main() {
   testWidgets('picking a star records the rating FOR THE ACTIVATION the '
       'user saw', (tester) async {
     await pumpCard(tester);
-    await tester.tap(find.text('Your shoes filed a missing person report.'));
+    await tester.tap(find.byTooltip('Rate this banner'));
     await tester.pumpAndSettle();
     expect(find.text('How was this banner?'), findsOneWidget);
     await tester.tap(find.byTooltip('4'));
@@ -121,7 +122,7 @@ void main() {
       ),
     ).thenAnswer((_) async => throw StateError('sync write failed'));
     await pumpCard(tester);
-    await tester.tap(find.text('Your shoes filed a missing person report.'));
+    await tester.tap(find.byTooltip('Rate this banner'));
     await tester.pumpAndSettle();
     await tester.tap(find.byTooltip('4'));
     await tester.pumpAndSettle();
@@ -133,7 +134,7 @@ void main() {
 
   testWidgets('the Skip button records a skip', (tester) async {
     await pumpCard(tester);
-    await tester.tap(find.text('Your shoes filed a missing person report.'));
+    await tester.tap(find.byTooltip('Rate this banner'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Skip'));
     await tester.pumpAndSettle();
@@ -149,7 +150,7 @@ void main() {
   testWidgets('swiping the sheet away consumes NOTHING — the rating '
       'opportunity survives an accidental dismiss', (tester) async {
     await pumpCard(tester);
-    await tester.tap(find.text('Your shoes filed a missing person report.'));
+    await tester.tap(find.byTooltip('Rate this banner'));
     await tester.pumpAndSettle();
     await tester.tapAt(const Offset(10, 10));
     await tester.pumpAndSettle();
@@ -163,7 +164,9 @@ void main() {
     );
   });
 
-  testWidgets('a rated activation stops responding to taps', (tester) async {
+  testWidgets('a rated activation loses its star — one outcome per run', (
+    tester,
+  ) async {
     await pumpCard(
       tester,
       ratings: [
@@ -174,8 +177,19 @@ void main() {
         ),
       ],
     );
+    expect(find.byTooltip('Rate this banner'), findsNothing);
+    expect(find.byTooltip('Dismiss'), findsOneWidget);
+  });
+
+  testWidgets("tapping the banner opens its goal's page — the "
+      'banner→conversation flow', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await pumpCard(tester);
     await tester.tap(find.text('Your shoes filed a missing person report.'));
     await tester.pumpAndSettle();
+    expect(navigated, ['/agents/details/goal-1']);
     expect(find.text('How was this banner?'), findsNothing);
   });
 }

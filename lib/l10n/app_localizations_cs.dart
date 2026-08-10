@@ -6004,6 +6004,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalBannerDismissTooltip => 'Zavřít';
 
   @override
+  String get goalBannerRateTooltip => 'Ohodnotit tento banner';
+
+  @override
   String get goalBannerRatingSkip => 'Přeskočit';
 
   @override

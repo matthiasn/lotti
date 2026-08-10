@@ -6032,6 +6032,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalBannerDismissTooltip => 'Ignorer';
 
   @override
+  String get goalBannerRateTooltip => 'Noter cette bannière';
+
+  @override
   String get goalBannerRatingSkip => 'Passer';
 
   @override

@@ -427,8 +427,13 @@ class _DayPageState extends ConsumerState<DayPage> {
                 child: KnowledgeNudge(),
               ),
             ),
-            // Goal ad banners: shrink to nothing on good days.
-            const GoalBannerStrip(),
+            // Goal ad banners: shrink to nothing on good days. Flexible +
+            // its own scroll keeps a short window or a large text scale
+            // from overflowing the fixed-height column — the banners
+            // yield to the agenda instead of painting over it.
+            const Flexible(
+              child: SingleChildScrollView(child: GoalBannerStrip()),
+            ),
             Expanded(
               // Rows meeting the fold dissolve instead of resting
               // razor-cut against the footer's glass edge.

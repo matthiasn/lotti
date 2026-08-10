@@ -5959,6 +5959,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalBannerDismissTooltip => 'Verbergen';
 
   @override
+  String get goalBannerRateTooltip => 'Beoordeel deze banner';
+
+  @override
   String get goalBannerRatingSkip => 'Overslaan';
 
   @override

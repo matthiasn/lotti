@@ -5996,6 +5996,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalBannerDismissTooltip => 'Dispensar';
 
   @override
+  String get goalBannerRateTooltip => 'Avaliar este banner';
+
+  @override
   String get goalBannerRatingSkip => 'Ignorar';
 
   @override

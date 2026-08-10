@@ -10211,6 +10211,12 @@ abstract class AppLocalizations {
   /// **'Dismiss'**
   String get goalBannerDismissTooltip;
 
+  /// No description provided for @goalBannerRateTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate this banner'**
+  String get goalBannerRateTooltip;
+
   /// Skips the banner rating prompt for this activation.
   ///
   /// In en, this message translates to:

@@ -2782,6 +2782,7 @@
   "goalAttainmentLabel": "{percent}% da meta",
   "goalBannerActionFailed": "Isso não foi salvo — tente novamente.",
   "goalBannerDismissTooltip": "Dispensar",
+  "goalBannerRateTooltip": "Avaliar este banner",
   "goalBannerRatingSkip": "Ignorar",
   "goalBannerRatingTitle": "O que achaste deste banner?",
   "goalBannerSemanticLabel": "Banner da meta {goalTitle}",

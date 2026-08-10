@@ -2540,6 +2540,7 @@
   "goalAttainmentLabel": "{percent} % cíle",
   "goalBannerActionFailed": "To se neuložilo — zkus to prosím znovu.",
   "goalBannerDismissTooltip": "Zavřít",
+  "goalBannerRateTooltip": "Ohodnotit tento banner",
   "goalBannerRatingSkip": "Přeskočit",
   "goalBannerRatingTitle": "Jaký byl tento banner?",
   "goalBannerSemanticLabel": "Banner cíle {goalTitle}",

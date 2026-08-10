@@ -2783,6 +2783,7 @@
   "goalAttainmentLabel": "{percent} % af målet",
   "goalBannerActionFailed": "Det blev ikke gemt — prøv venligst igen.",
   "goalBannerDismissTooltip": "Afvis",
+  "goalBannerRateTooltip": "Bedøm dette banner",
   "goalBannerRatingSkip": "Spring over",
   "goalBannerRatingTitle": "Hvordan var dette banner?",
   "goalBannerSemanticLabel": "Målbanner for {goalTitle}",

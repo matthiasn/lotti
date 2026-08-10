@@ -2533,6 +2533,7 @@
   "goalAttainmentLabel": "{percent} % des Ziels",
   "goalBannerActionFailed": "Das wurde nicht gespeichert — bitte versuch es noch einmal.",
   "goalBannerDismissTooltip": "Ausblenden",
+  "goalBannerRateTooltip": "Dieses Banner bewerten",
   "goalBannerRatingSkip": "Überspringen",
   "goalBannerRatingTitle": "Wie fandest du dieses Banner?",
   "goalBannerSemanticLabel": "Ziel-Banner für {goalTitle}",

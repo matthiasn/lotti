@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
@@ -108,6 +109,12 @@ void main() {
     syncService = MockAgentSyncService();
     upserts = [];
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.getEntitiesByAgentId(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => []);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
@@ -131,6 +138,52 @@ void main() {
       threadId: 'thread-1',
     ),
   );
+
+  test('an active ad past its staleAt is expired by the wake — the '
+      "clock's verdict lands on the row, stamped with the deadline", () async {
+    stubSpec();
+    GoalNudgeEntity nudgeRow(String id, {DateTime? staleAt}) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: agentId,
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, 5),
+              updatedAt: DateTime(2026, 8, 5),
+              vectorClock: null,
+              staleAt: staleAt,
+            )
+            as GoalNudgeEntity;
+    final deadline = DateTime(2026, 8, 7, 9);
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        nudgeRow('ad-overdue', staleAt: deadline),
+        nudgeRow('ad-fresh', staleAt: DateTime(2026, 8, 20)),
+        nudgeRow('ad-open-ended'),
+      ],
+    );
+
+    await run(onTrackSignals());
+
+    final expired = upserts.whereType<GoalNudgeEntity>().toList();
+    expect(expired, hasLength(1));
+    expect(expired.single.id, 'ad-overdue');
+    expect(expired.single.status, GoalNudgeStatus.expired);
+    expect(
+      expired.single.expiredAt,
+      deadline,
+      reason:
+          'the deadline itself, not this device wall clock — '
+          'every sweeping device writes the identical verdict',
+    );
+  });
 
   test('a goal without a spec head is a clean no-op', () async {
     final result = await run(onTrackSignals());

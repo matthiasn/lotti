@@ -175,6 +175,27 @@ void main() {
       expect(written.lastShownAt, now);
     });
 
+    test('an unset firstShownAt is stamped with the episode START, not '
+        'the flush instant', () async {
+      when(() => repository.getEntity('ad-1')).thenAnswer((_) async => nudge());
+      await withClock(
+        fixedClock,
+        () => interactions.recordExposure(
+          'ad-1',
+          visibleFor: const Duration(seconds: 30),
+        ),
+      );
+      final written = upserts.whereType<GoalNudgeEntity>().single;
+      expect(
+        written.firstShownAt,
+        now.subtract(const Duration(seconds: 30)),
+        reason:
+            'a flush racing a dismissal must not place firstShownAt '
+            'after dismissedAt',
+      );
+      expect(written.lastShownAt, now);
+    });
+
     test('zero or negative visibility writes nothing', () async {
       await interactions.recordExposure('ad-1', visibleFor: Duration.zero);
       expect(upserts, isEmpty);

@@ -6017,6 +6017,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalBannerDismissTooltip => 'Descartar';
 
   @override
+  String get goalBannerRateTooltip => 'Valorar este banner';
+
+  @override
   String get goalBannerRatingSkip => 'Omitir';
 
   @override

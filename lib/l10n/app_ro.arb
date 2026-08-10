@@ -2533,6 +2533,7 @@
   "goalAttainmentLabel": "{percent}% din obiectiv",
   "goalBannerActionFailed": "Nu s-a salvat — vă rugăm să încercați din nou.",
   "goalBannerDismissTooltip": "Închideți",
+  "goalBannerRateTooltip": "Evaluați acest banner",
   "goalBannerRatingSkip": "Omiteți",
   "goalBannerRatingTitle": "Cum vi s-a părut acest banner?",
   "goalBannerSemanticLabel": "Banner pentru obiectivul {goalTitle}",

@@ -5940,6 +5940,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalBannerDismissTooltip => 'Afvis';
 
   @override
+  String get goalBannerRateTooltip => 'Bedøm dette banner';
+
+  @override
   String get goalBannerRatingSkip => 'Spring over';
 
   @override

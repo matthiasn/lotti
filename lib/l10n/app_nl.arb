@@ -2782,6 +2782,7 @@
   "goalAttainmentLabel": "{percent}% van het doel",
   "goalBannerActionFailed": "Dat is niet opgeslagen — probeer het opnieuw.",
   "goalBannerDismissTooltip": "Verbergen",
+  "goalBannerRateTooltip": "Beoordeel deze banner",
   "goalBannerRatingSkip": "Overslaan",
   "goalBannerRatingTitle": "Wat vond je van deze banner?",
   "goalBannerSemanticLabel": "Doelbanner voor {goalTitle}",

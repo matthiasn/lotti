@@ -5911,6 +5911,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalBannerDismissTooltip => 'Dismiss';
 
   @override
+  String get goalBannerRateTooltip => 'Rate this banner';
+
+  @override
   String get goalBannerRatingSkip => 'Skip';
 
   @override

@@ -6,12 +6,14 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
 import 'package:lotti/features/goals/ui/goal_banner_style.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
+import 'package:lotti/services/nav_service.dart';
 
 /// One goal ad, rendered as the procedural text banner ADR 0058
-/// specifies: model-authored copy, code-owned presentation. Dismissing is
-/// the terminal user verdict (quiets ads for the rest of the day);
-/// tapping
-/// opens the per-activation rating prompt when one is due.
+/// specifies: model-authored copy, code-owned presentation. Tapping the
+/// banner opens the goal's page (ADR 0055's banner→conversation flow);
+/// the star opens the per-activation rating prompt while one is due;
+/// dismissing (X or swipe) is the terminal user verdict that quiets ads
+/// for the rest of the day.
 class GoalBannerCard extends ConsumerWidget {
   const GoalBannerCard({required this.entry, super.key});
 
@@ -42,7 +44,9 @@ class GoalBannerCard extends ConsumerWidget {
           borderRadius: BorderRadius.circular(tokens.radii.m),
           child: InkWell(
             borderRadius: BorderRadius.circular(tokens.radii.m),
-            onTap: ratingDue ? () => _showRatingSheet(context, ref) : null,
+            // The banner is the doorway to its goal — rating lives on the
+            // star so the tap target always leads somewhere.
+            onTap: () => beamToNamed('/agents/details/${entry.nudge.agentId}'),
             child: Padding(
               padding: EdgeInsets.all(tokens.spacing.cardPadding),
               child: Row(
@@ -112,6 +116,15 @@ class GoalBannerCard extends ConsumerWidget {
                       ],
                     ),
                   ),
+                  if (ratingDue)
+                    IconButton(
+                      onPressed: () => _showRatingSheet(context, ref),
+                      tooltip: context.messages.goalBannerRateTooltip,
+                      icon: Icon(
+                        Icons.star_outline_rounded,
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
                   IconButton(
                     onPressed: () => _dismiss(context, ref),
                     tooltip: context.messages.goalBannerDismissTooltip,
@@ -147,8 +160,11 @@ class GoalBannerCard extends ConsumerWidget {
       messenger?.showSnackBar(SnackBar(content: Text(failedNotice)));
       return false;
     }
-    // Interaction writes bypass the notifier by design — refresh the strip.
-    container.invalidate(activeGoalNudgesProvider);
+    // Interaction writes bypass the notifier by design — refresh the
+    // strip AND the terminal-history timeline the dismissal just joined.
+    container
+      ..invalidate(activeGoalNudgesProvider)
+      ..invalidate(goalNudgeHistoryProvider);
     return true;
   }
 
