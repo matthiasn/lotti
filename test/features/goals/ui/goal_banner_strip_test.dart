@@ -50,7 +50,12 @@ void main() {
   setUp(() {
     interactions = _MockInteractions();
     exposures = [];
-    when(() => interactions.dismiss(any())).thenAnswer((_) async {});
+    when(
+      () => interactions.dismiss(
+        any(),
+        forActivation: any(named: 'forActivation'),
+      ),
+    ).thenAnswer((_) async {});
     when(
       () => interactions.recordRating(
         any(),

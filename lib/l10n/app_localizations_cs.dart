@@ -829,6 +829,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Zatím žádní cíloví agenti. Vytvoř jednoho a bude tiše sledovat tvůj pokrok.';
 
   @override
+  String get agentsPageLoadFailed => 'Agenty se teď nepodařilo načíst.';
+
+  @override
   String get agentsPageTitle => 'Agenti';
 
   @override

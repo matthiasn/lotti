@@ -38,8 +38,11 @@ routing to be tempted by.
    wrong banner that lingers is treated as a defect of the contract, not of the model.
 
 4. **Respect mechanics, not budget mechanics.** Dismissing an ad suppresses new ads for that
-   goal for 24 h (wake-fact enforced). Near-identical regeneration is prevented by a
-   `briefDigest` dedupe key. There are **no spending caps** (cost policy is
+   goal for 24 h (wake-fact enforced). *Amended 2026-08-09 (maintainer decision during the
+   visible-layer build): the suppression window is the **rest of the local calendar day**, not
+   a rolling 24 h — "not today" should not silence most of tomorrow after an evening dismissal.
+   Enforced via the repo's DST-safe day key (`GoalWindow.dayUtc`).* Near-identical regeneration
+   is prevented by a `briefDigest` dedupe key. There are **no spending caps** (cost policy is
    monitoring-per-goal, ADR 0054 Decision 8); these mechanics exist so the channel stays
    respectful, which is what keeps it effective.
 

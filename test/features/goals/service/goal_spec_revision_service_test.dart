@@ -2,6 +2,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -36,6 +37,12 @@ void main() {
     syncService = MockAgentSyncService();
     upserts = [];
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.getEntitiesByAgentId(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => []);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
@@ -108,6 +115,57 @@ void main() {
     expect(head.id, goalSpecHeadId(agentId));
     expect(head.versionId, '$agentId:spec-v2');
     expect(head.updatedAt, now);
+  });
+
+  test("a minted revision supersedes the old spec's live nudges — the "
+      'revised goal never runs beside advice for the superseded one', () async {
+    stubSpec();
+    GoalNudgeEntity nudgeRow(String id, GoalNudgeStatus status) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: agentId,
+              status: status,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8, 9),
+              updatedAt: DateTime(2026, 8, 9),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        nudgeRow('ad-active', GoalNudgeStatus.active),
+        nudgeRow('ad-ready', GoalNudgeStatus.ready),
+        nudgeRow('ad-dismissed', GoalNudgeStatus.dismissed),
+        nudgeRow('ad-retired', GoalNudgeStatus.retired),
+      ],
+    );
+
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromProposal(
+        agentId: agentId,
+        changes: {'targetValue': 8000},
+        rationale: 'ease off',
+      ),
+    );
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+
+    final nudgeWrites = upserts.whereType<GoalNudgeEntity>().toList();
+    expect(
+      {for (final n in nudgeWrites) n.id: n.status},
+      {
+        'ad-active': GoalNudgeStatus.superseded,
+        'ad-ready': GoalNudgeStatus.superseded,
+      },
+      reason: 'live nudges move with the spec; terminal states are history',
+    );
   });
 
   test('refusals: missing head, dangling head, inapplicable changes — '

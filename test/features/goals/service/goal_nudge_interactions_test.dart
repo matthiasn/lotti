@@ -72,6 +72,24 @@ void main() {
       expect(written.dismissedAt, now);
     });
 
+    test('a dismissal for a superseded activation is discarded — the tap '
+        'targeted a banner sync has already re-run', () async {
+      when(() => repository.getEntity('ad-1')).thenAnswer(
+        (_) async => nudge(activationCount: 3),
+      );
+      await interactions.dismiss('ad-1', forActivation: 2);
+      expect(upserts, isEmpty);
+
+      await withClock(
+        fixedClock,
+        () => interactions.dismiss('ad-1', forActivation: 3),
+      );
+      expect(
+        upserts.whereType<GoalNudgeEntity>().single.status,
+        GoalNudgeStatus.dismissed,
+      );
+    });
+
     test('non-active ads and unknown ids are no-ops', () async {
       when(() => repository.getEntity('ad-1')).thenAnswer(
         (_) async => nudge(status: GoalNudgeStatus.retired),

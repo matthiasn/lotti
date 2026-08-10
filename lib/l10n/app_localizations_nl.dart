@@ -828,6 +828,10 @@ class AppLocalizationsNl extends AppLocalizations {
       'Nog geen doelagenten. Maak er een aan en hij volgt stilletjes je voortgang.';
 
   @override
+  String get agentsPageLoadFailed =>
+      'Je agenten konden nu niet worden geladen.';
+
+  @override
   String get agentsPageTitle => 'Agenten';
 
   @override

@@ -416,6 +416,7 @@
   "@agentsPageEmpty": {
     "description": "Empty state of the agents page."
   },
+  "agentsPageLoadFailed": "Couldn't load your agents right now.",
   "agentsPageTitle": "Agents",
   "@agentsPageTitle": {
     "description": "Title of the top-level agents page."

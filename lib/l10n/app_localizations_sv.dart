@@ -831,6 +831,10 @@ class AppLocalizationsSv extends AppLocalizations {
       'Inga målagenter ännu. Skapa en så följer den tyst dina framsteg.';
 
   @override
+  String get agentsPageLoadFailed =>
+      'Det gick inte att läsa in dina agenter just nu.';
+
+  @override
   String get agentsPageTitle => 'Agenter';
 
   @override

@@ -1531,6 +1531,12 @@ abstract class AppLocalizations {
   /// **'No goal agents yet. Create one and it will quietly watch your progress.'**
   String get agentsPageEmpty;
 
+  /// No description provided for @agentsPageLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your agents right now.'**
+  String get agentsPageLoadFailed;
+
   /// Title of the top-level agents page.
   ///
   /// In en, this message translates to:

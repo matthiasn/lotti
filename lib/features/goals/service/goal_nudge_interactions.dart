@@ -44,20 +44,27 @@ class GoalNudgeInteractions {
 
   /// Dismisses an active ad — the terminal user verdict (the resolver
   /// keeps it terminal against concurrent writes) and the start of the
-  /// same-day quiet window Phase B enforces.
-  Future<void> dismiss(String nudgeId) => _serialized(nudgeId, () async {
-    final nudge = await _repository.getEntity(nudgeId);
-    if (nudge is! GoalNudgeEntity) return;
-    if (nudge.status != GoalNudgeStatus.active) return;
-    final now = clock.now();
-    await _syncService.upsertEntity(
-      nudge.copyWith(
-        status: GoalNudgeStatus.dismissed,
-        dismissedAt: now,
-        updatedAt: now,
-      ),
-    );
-  });
+  /// same-day quiet window Phase B enforces. [forActivation] is the
+  /// activation the user actually SAW: if sync re-ran the nudge while
+  /// the close tap was in flight, the write is discarded rather than
+  /// silencing a run the user never looked at (the rating path's guard).
+  Future<void> dismiss(String nudgeId, {int? forActivation}) =>
+      _serialized(nudgeId, () async {
+        final nudge = await _repository.getEntity(nudgeId);
+        if (nudge is! GoalNudgeEntity) return;
+        if (nudge.status != GoalNudgeStatus.active) return;
+        if (forActivation != null && forActivation != nudge.activationCount) {
+          return;
+        }
+        final now = clock.now();
+        await _syncService.upsertEntity(
+          nudge.copyWith(
+            status: GoalNudgeStatus.dismissed,
+            dismissedAt: now,
+            updatedAt: now,
+          ),
+        );
+      });
 
   /// Records the rating-prompt outcome — [rating] 1..5, or a skip — for
   /// [forActivation] (the activation the user actually SAW; defaults to

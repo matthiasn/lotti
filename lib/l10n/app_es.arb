@@ -390,6 +390,7 @@
   "agentSoulVersionSaved": "Nueva versión de alma guardada",
   "agentSoulVoiceDirectiveLabel": "Directiva de voz",
   "agentsPageEmpty": "Aún no hay agentes de objetivos. Crea uno y seguirá tu progreso discretamente.",
+  "agentsPageLoadFailed": "No se pudieron cargar tus agentes ahora mismo.",
   "agentsPageTitle": "Agentes",
   "agentStateConsecutiveFailures": "Fallos consecutivos",
   "agentStateErrorLoading": "Error al cargar el estado: {error}",

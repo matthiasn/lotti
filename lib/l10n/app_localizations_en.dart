@@ -821,6 +821,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'No goal agents yet. Create one and it will quietly watch your progress.';
 
   @override
+  String get agentsPageLoadFailed => 'Couldn\'t load your agents right now.';
+
+  @override
   String get agentsPageTitle => 'Agents';
 
   @override

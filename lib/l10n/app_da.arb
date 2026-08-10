@@ -403,6 +403,7 @@
   "agentSoulVersionSaved": "Ny soul-version reddet",
   "agentSoulVoiceDirectiveLabel": "Taledirektivet",
   "agentsPageEmpty": "Ingen målagenter endnu. Opret en, så følger den stille dine fremskridt.",
+  "agentsPageLoadFailed": "Kunne ikke indlæse dine agenter lige nu.",
   "agentsPageTitle": "Agenter",
   "agentStateConsecutiveFailures": "På hinanden følgende fejl",
   "agentStateErrorLoading": "Fejlede i at indlæse tilstand: {error}",

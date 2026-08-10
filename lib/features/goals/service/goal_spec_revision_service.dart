@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_spec_validator.dart';
 import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -165,6 +166,28 @@ class GoalSpecRevisionService {
     await _syncService.upsertEntity(
       head.copyWith(versionId: versionId, updatedAt: now),
     );
+
+    // Ads pitched for the superseded goal must not keep running beside
+    // the revised statement until their own staleAt: every nudge that
+    // has not reached a terminal state moves to `superseded` with the
+    // spec (ADR 0055 — the agent retires, the clock expires, the USER
+    // dismisses; a revision is the spec itself moving on).
+    final nudges = (await _repository.getEntitiesByAgentId(
+      agentId,
+      type: AgentEntityTypes.goalNudge,
+    )).whereType<GoalNudgeEntity>();
+    for (final nudge in nudges) {
+      if (nudge.deletedAt != null) continue;
+      const live = {
+        GoalNudgeStatus.draft,
+        GoalNudgeStatus.ready,
+        GoalNudgeStatus.active,
+      };
+      if (!live.contains(nudge.status)) continue;
+      await _syncService.upsertEntity(
+        nudge.copyWith(status: GoalNudgeStatus.superseded, updatedAt: now),
+      );
+    }
 
     return GoalSpecRevisionMinted(
       version: minted,

@@ -403,6 +403,7 @@
   "agentSoulVersionSaved": "Nuova versione anima salvata",
   "agentSoulVoiceDirectiveLabel": "Direttiva della voce",
   "agentsPageEmpty": "Ancora nessun agente obiettivo. Creane uno e seguirà i tuoi progressi in silenzio.",
+  "agentsPageLoadFailed": "Impossibile caricare i tuoi agenti al momento.",
   "agentsPageTitle": "Agenti",
   "agentStateConsecutiveFailures": "Fallimenti consecutivi",
   "agentStateErrorLoading": "Non caricato stato: {error}",

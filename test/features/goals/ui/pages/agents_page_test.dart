@@ -94,4 +94,25 @@ void main() {
     expect(find.text('On track'), findsOneWidget);
     expect(find.text('100% of target'), findsOneWidget);
   });
+
+  testWidgets('a failed first load says so instead of a blank page', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const AgentsPage(),
+        overrides: [
+          activeGoalAgentsProvider.overrideWith(
+            (ref) async => throw StateError('agent db unavailable'),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(
+      find.text("Couldn't load your agents right now."),
+      findsOneWidget,
+    );
+    expect(find.textContaining('No goal agents yet'), findsNothing);
+  });
 }

@@ -402,6 +402,7 @@
   "agentSoulVersionSaved": "Nieuwe ziel versie opgeslagen",
   "agentSoulVoiceDirectiveLabel": "Spraakrichtlijn",
   "agentsPageEmpty": "Nog geen doelagenten. Maak er een aan en hij volgt stilletjes je voortgang.",
+  "agentsPageLoadFailed": "Je agenten konden nu niet worden geladen.",
   "agentsPageTitle": "Agenten",
   "agentStateConsecutiveFailures": "Consecutieve storingen",
   "agentStateErrorLoading": "Laden van status is mislukt: {error}",

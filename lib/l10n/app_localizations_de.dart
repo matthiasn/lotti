@@ -837,6 +837,10 @@ class AppLocalizationsDe extends AppLocalizations {
       'Noch keine Ziel-Agenten. Erstelle einen und er behält deinen Fortschritt im Blick.';
 
   @override
+  String get agentsPageLoadFailed =>
+      'Deine Agenten konnten gerade nicht geladen werden.';
+
+  @override
   String get agentsPageTitle => 'Agenten';
 
   @override

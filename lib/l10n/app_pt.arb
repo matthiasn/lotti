@@ -402,6 +402,7 @@
   "agentSoulVersionSaved": "Nova versão do soul salva",
   "agentSoulVoiceDirectiveLabel": "Diretiva de Voz",
   "agentsPageEmpty": "Ainda não há agentes de metas. Cria um e ele acompanha o teu progresso discretamente.",
+  "agentsPageLoadFailed": "Não foi possível carregar seus agentes agora.",
   "agentsPageTitle": "Agentes",
   "agentStateConsecutiveFailures": "Falhas consecutivas",
   "agentStateErrorLoading": "Falha ao carregar o estado: {error}",

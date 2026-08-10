@@ -403,6 +403,7 @@
   "agentSoulVersionSaved": "Ny själversion räddad",
   "agentSoulVoiceDirectiveLabel": "Röstdirektivet",
   "agentsPageEmpty": "Inga målagenter ännu. Skapa en så följer den tyst dina framsteg.",
+  "agentsPageLoadFailed": "Det gick inte att läsa in dina agenter just nu.",
   "agentsPageTitle": "Agenter",
   "agentStateConsecutiveFailures": "På varandra följande misslyckanden",
   "agentStateErrorLoading": "Misslyckades med att ladda tillstånd: {error}",

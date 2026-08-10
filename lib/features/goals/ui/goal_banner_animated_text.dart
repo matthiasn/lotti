@@ -209,12 +209,23 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
         final t = MotionCurves.standard.transform(
           (math.sin(_controller.value * 2 * math.pi - math.pi / 2) + 1) / 2,
         );
-        return ClipRect(
-          child: Transform.translate(
-            offset: Offset(-travel * t, 0),
-            child: SizedBox(
-              width: painter.width + 1,
-              child: Text(widget.text, style: widget.style, maxLines: 1),
+        // OverflowBox lifts the viewport's max-width constraint inside
+        // the clip: without it the SizedBox is clamped to the viewport,
+        // the line is truncated at layout time, and translation would
+        // reveal nothing.
+        return SizedBox(
+          height: painter.height,
+          child: ClipRect(
+            child: OverflowBox(
+              alignment: Alignment.centerLeft,
+              maxWidth: double.infinity,
+              child: Transform.translate(
+                offset: Offset(-travel * t, 0),
+                child: SizedBox(
+                  width: painter.width + 1,
+                  child: Text(widget.text, style: widget.style, maxLines: 1),
+                ),
+              ),
             ),
           ),
         );

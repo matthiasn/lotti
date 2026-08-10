@@ -21,8 +21,10 @@ class AgentsPage extends ConsumerWidget {
     // Stale-while-revalidate: background wake/sync notifications reload
     // the provider constantly; the established list must never flash
     // away (the repo's no-flash rule). Empty state only on a SETTLED
-    // empty value.
+    // empty value; a failed FIRST load says so instead of rendering the
+    // blank sliver a loading pass gets.
     final identities = agents.value;
+    final failedFirstLoad = identities == null && agents.hasError;
     return Scaffold(
       floatingActionButton: DesignSystemBottomNavigationFabPadding(
         child: FloatingActionButton.extended(
@@ -51,6 +53,18 @@ class AgentsPage extends ConsumerWidget {
                     tokens.spacing.step12,
               ),
               sliver: switch (identities) {
+                null when failedFirstLoad => SliverToBoxAdapter(
+                  child: Padding(
+                    padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
+                    child: Text(
+                      context.messages.agentsPageLoadFailed,
+                      textAlign: TextAlign.center,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ),
+                ),
                 null => const SliverToBoxAdapter(child: SizedBox.shrink()),
                 [] => SliverToBoxAdapter(
                   child: Padding(

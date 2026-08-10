@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
+import 'package:lotti/features/goals/ui/goal_banner_strip.dart';
 import 'package:lotti/features/goals/ui/goal_status_chip.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -86,7 +87,13 @@ class GoalAgentDetailPage extends ConsumerWidget {
             // rating and dismissal.
             for (final entry in nudges) ...[
               SizedBox(height: tokens.spacing.step4),
-              GoalBannerCard(entry: entry),
+              GoalBannerExposureTracker(
+                key: ValueKey(
+                  '${entry.nudge.id}:${entry.nudge.activationCount}',
+                ),
+                nudgeId: entry.nudge.id,
+                child: GoalBannerCard(entry: entry),
+              ),
             ],
             SizedBox(height: tokens.spacing.step4),
             ChangeSetSummaryCard.selfTargeted(

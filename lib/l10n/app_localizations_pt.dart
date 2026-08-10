@@ -834,6 +834,10 @@ class AppLocalizationsPt extends AppLocalizations {
       'Ainda não há agentes de metas. Cria um e ele acompanha o teu progresso discretamente.';
 
   @override
+  String get agentsPageLoadFailed =>
+      'Não foi possível carregar seus agentes agora.';
+
+  @override
   String get agentsPageTitle => 'Agentes';
 
   @override

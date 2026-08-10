@@ -120,7 +120,9 @@ class GoalBannerCard extends ConsumerWidget {
   }
 
   Future<void> _dismiss(WidgetRef ref) async {
-    await ref.read(goalNudgeInteractionsProvider).dismiss(entry.nudge.id);
+    await ref
+        .read(goalNudgeInteractionsProvider)
+        .dismiss(entry.nudge.id, forActivation: entry.nudge.activationCount);
     // Interaction writes bypass the notifier by design — refresh the strip.
     ref.invalidate(activeGoalNudgesProvider);
   }

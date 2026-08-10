@@ -390,6 +390,7 @@
   "agentSoulVersionSaved": "Versiune nouă de suflet salvată",
   "agentSoulVoiceDirectiveLabel": "Directivă vocală",
   "agentsPageEmpty": "Încă nu există agenți de obiective. Creați unul și vă va urmări discret progresul.",
+  "agentsPageLoadFailed": "Agenții dvs. nu au putut fi încărcați momentan.",
   "agentsPageTitle": "Agenți",
   "agentStateConsecutiveFailures": "Eșecuri consecutive",
   "agentStateErrorLoading": "Eroare la încărcarea stării: {error}",

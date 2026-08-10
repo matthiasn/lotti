@@ -45,7 +45,7 @@ class GoalBannerStrip extends ConsumerWidget {
           for (final entry in entries.take(goalBannerStripMaxVisible))
             Padding(
               padding: EdgeInsets.only(bottom: tokens.spacing.cardItemSpacing),
-              child: _ExposureTracker(
+              child: GoalBannerExposureTracker(
                 key: ValueKey(
                   '${entry.nudge.id}:${entry.nudge.activationCount}',
                 ),
@@ -63,8 +63,10 @@ class GoalBannerStrip extends ConsumerWidget {
 /// unmount (page left, banner dismissed, list refreshed). Deliberately
 /// coarse — a banner in a `Column` on a mounted page IS on screen, and
 /// per-frame viewport math would buy little for a surface this small.
-class _ExposureTracker extends ConsumerStatefulWidget {
-  const _ExposureTracker({
+/// Public because EVERY banner mount must account exposure the same way
+/// — the strips here and the uncapped list on the goal detail page.
+class GoalBannerExposureTracker extends ConsumerStatefulWidget {
+  const GoalBannerExposureTracker({
     required this.nudgeId,
     required this.child,
     super.key,
@@ -74,10 +76,11 @@ class _ExposureTracker extends ConsumerStatefulWidget {
   final Widget child;
 
   @override
-  ConsumerState<_ExposureTracker> createState() => _ExposureTrackerState();
+  ConsumerState<GoalBannerExposureTracker> createState() =>
+      _ExposureTrackerState();
 }
 
-class _ExposureTrackerState extends ConsumerState<_ExposureTracker> {
+class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker> {
   final Stopwatch _visible = Stopwatch();
   GoalNudgeInteractionsFlush? _flush;
 

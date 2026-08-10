@@ -390,6 +390,7 @@
   "agentSoulVersionSaved": "Nouvelle version d'âme enregistrée",
   "agentSoulVoiceDirectiveLabel": "Directive vocale",
   "agentsPageEmpty": "Pas encore d’agent d’objectif. Crée-en un et il suivra tes progrès discrètement.",
+  "agentsPageLoadFailed": "Impossible de charger tes agents pour le moment.",
   "agentsPageTitle": "Agents",
   "agentStateConsecutiveFailures": "Échecs consécutifs",
   "agentStateErrorLoading": "Échec du chargement de l'état : {error}",

@@ -11,6 +11,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
+import 'package:lotti/features/goals/ui/goal_banner_strip.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 
 import '../../../../widget_test_utils.dart';
@@ -198,6 +199,7 @@ void main() {
               entry('goal-2', 'Sleep is a skill too.'),
             ],
           ),
+          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
           selfTargetedPendingChangeSetsProvider(
             'goal-1',
           ).overrideWith((ref) async => []),
@@ -210,8 +212,10 @@ void main() {
     );
     await tester.pumpAndSettle();
     // All three of THIS goal's banners — more than the host strips'
-    // two-visible cap — and none of the other goal's.
+    // two-visible cap — and none of the other goal's. Each is wrapped in
+    // the shared exposure tracker: detail views count too.
     expect(find.byType(GoalBannerCard), findsNWidgets(3));
+    expect(find.byType(GoalBannerExposureTracker), findsNWidgets(3));
     expect(find.text('The stairs filed a complaint.'), findsOneWidget);
     expect(find.text('Sleep is a skill too.'), findsNothing);
   });

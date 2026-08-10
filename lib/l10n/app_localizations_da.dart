@@ -826,6 +826,9 @@ class AppLocalizationsDa extends AppLocalizations {
       'Ingen målagenter endnu. Opret en, så følger den stille dine fremskridt.';
 
   @override
+  String get agentsPageLoadFailed => 'Kunne ikke indlæse dine agenter lige nu.';
+
+  @override
   String get agentsPageTitle => 'Agenter';
 
   @override

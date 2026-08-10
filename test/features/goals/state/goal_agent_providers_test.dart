@@ -60,6 +60,12 @@ void main() {
       () => agentService.listAgents(lifecycle: AgentLifecycle.active),
     ).thenAnswer((_) async => []);
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.getEntitiesByAgentId(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => []);
 
     final aiConfigRepository = MockAiConfigRepository();
     when(

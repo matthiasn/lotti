@@ -397,6 +397,7 @@
   "agentSoulVersionSaved": "Nová verze duše uložena",
   "agentSoulVoiceDirectiveLabel": "Hlasová direktiva",
   "agentsPageEmpty": "Zatím žádní cíloví agenti. Vytvoř jednoho a bude tiše sledovat tvůj pokrok.",
+  "agentsPageLoadFailed": "Agenty se teď nepodařilo načíst.",
   "agentsPageTitle": "Agenti",
   "agentStateConsecutiveFailures": "Po sobě jdoucí selhání",
   "agentStateErrorLoading": "Nepodařilo se načíst stav: {error}",

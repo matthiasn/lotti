@@ -838,6 +838,10 @@ class AppLocalizationsRo extends AppLocalizations {
       'Încă nu există agenți de obiective. Creați unul și vă va urmări discret progresul.';
 
   @override
+  String get agentsPageLoadFailed =>
+      'Agenții dvs. nu au putut fi încărcați momentan.';
+
+  @override
   String get agentsPageTitle => 'Agenți';
 
   @override

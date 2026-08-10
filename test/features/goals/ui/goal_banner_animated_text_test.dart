@@ -79,6 +79,34 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  testWidgets('marquee lays the line out at its full text width inside '
+      'the clip — translation actually reveals the tail', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidget(
+        const SizedBox(
+          width: 60,
+          child: GoalBannerAnimatedText(
+            text: 'Your inner couch potato is winning.',
+            animation: GoalBannerAnimation.marquee,
+            style: TextStyle(fontSize: 16),
+          ),
+        ),
+      ),
+    );
+    await tester.pump();
+    final line = tester.getSize(
+      find.descendant(
+        of: find.byType(GoalBannerAnimatedText),
+        matching: find.text('Your inner couch potato is winning.'),
+      ),
+    );
+    expect(
+      line.width,
+      greaterThan(60),
+      reason: 'a viewport-clamped line would have nothing to reveal',
+    );
+  });
+
   testWidgets('marquee scrolls when the text overflows its line', (
     tester,
   ) async {

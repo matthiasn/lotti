@@ -390,6 +390,7 @@
   "agentSoulVersionSaved": "Neue Seelenversion gespeichert",
   "agentSoulVoiceDirectiveLabel": "Stimm-Direktive",
   "agentsPageEmpty": "Noch keine Ziel-Agenten. Erstelle einen und er behält deinen Fortschritt im Blick.",
+  "agentsPageLoadFailed": "Deine Agenten konnten gerade nicht geladen werden.",
   "agentsPageTitle": "Agenten",
   "agentStateConsecutiveFailures": "Aufeinanderfolgende Fehler",
   "agentStateErrorLoading": "Status konnte nicht geladen werden: {error}",

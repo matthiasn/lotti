@@ -40,7 +40,12 @@ void main() {
 
   setUp(() {
     interactions = _MockInteractions();
-    when(() => interactions.dismiss(any())).thenAnswer((_) async {});
+    when(
+      () => interactions.dismiss(
+        any(),
+        forActivation: any(named: 'forActivation'),
+      ),
+    ).thenAnswer((_) async {});
     when(
       () => interactions.recordRating(
         any(),
@@ -71,7 +76,9 @@ void main() {
     await pumpCard(tester);
     await tester.tap(find.byTooltip('Dismiss'));
     await tester.pumpAndSettle();
-    verify(() => interactions.dismiss('ad-1')).called(1);
+    verify(
+      () => interactions.dismiss('ad-1', forActivation: 1),
+    ).called(1);
   });
 
   testWidgets('picking a star records the rating FOR THE ACTIVATION the '

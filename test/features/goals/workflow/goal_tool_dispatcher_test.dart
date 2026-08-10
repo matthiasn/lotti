@@ -26,6 +26,12 @@ void main() {
     syncService = MockAgentSyncService();
     upserts = [];
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.getEntitiesByAgentId(
+        any(),
+        type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => []);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
