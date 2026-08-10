@@ -85,6 +85,60 @@ void main() {
     ).called(1);
   });
 
+  testWidgets('a dismiss write that throws surfaces the retry notice and '
+      'leaves the card in place — the tap did not remove it', (tester) async {
+    when(
+      () => interactions.dismiss(
+        any(),
+        forActivation: any(named: 'forActivation'),
+      ),
+    ).thenAnswer((_) async => throw StateError('sync write failed'));
+    await pumpCard(tester);
+    await tester.tap(find.byTooltip('Dismiss'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text("That didn't save — please try again."),
+      findsOneWidget,
+    );
+    // The failure path returns false from confirmDismiss — the
+    // Dismissible snaps back and the card is still on screen.
+    expect(find.byType(GoalBannerCard), findsOneWidget);
+    expect(
+      find.text('Your shoes filed a missing person report.'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('a dismiss that reports the guard declined (a sync race) '
+      'refreshes the lists instead of locally suppressing the card', (
+    tester,
+  ) async {
+    when(
+      () => interactions.dismiss(
+        any(),
+        forActivation: any(named: 'forActivation'),
+      ),
+    ).thenAnswer((_) async => false);
+    await pumpCard(tester);
+    await tester.tap(find.byTooltip('Dismiss'));
+    await tester.pumpAndSettle();
+    verify(
+      () => interactions.dismiss('ad-1', forActivation: 1),
+    ).called(1);
+    // confirmDismiss returned false: no failure notice (this was not an
+    // error) and the card is NOT locally suppressed — it stays exactly
+    // where it was, unlike the true-path terminal dismissal.
+    expect(
+      find.text("That didn't save — please try again."),
+      findsNothing,
+    );
+    expect(find.byType(GoalBannerCard), findsOneWidget);
+    expect(
+      find.text('Your shoes filed a missing person report.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('swiping the banner away dismisses it — the second gesture '
       'ADR 0055 specifies', (tester) async {
     await pumpCard(tester);

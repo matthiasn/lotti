@@ -424,6 +424,82 @@ void main() {
     );
   });
 
+  test('a cadence naming "month" binds against a calendar-month habit; '
+      'naming any other unit is rejected', () {
+    const monthly = GoalCriterion.habit(
+      criterionId: 'gym',
+      habitId: 'gym-habit',
+      window: GoalWindow.calendarMonth(),
+      targetCount: 8,
+    );
+    final matched = applied(
+      applyGoalRevisionChanges(
+        criteria: monthly,
+        changes: {'cadence': '3 times per month'},
+      ),
+    );
+    expect((matched.criteria as GoalCriterionHabit).targetCount, 3);
+
+    final mismatch = applyGoalRevisionChanges(
+      criteria: monthly,
+      changes: {'cadence': '3 times per week'},
+    );
+    expect(
+      (mismatch as GoalRevisionRejected).reason,
+      contains('names "per week" but the habit is evaluated per month'),
+    );
+  });
+
+  test('a cadence naming a unit against a rolling-days habit is rejected '
+      'with "per rolling window", not a phantom unit name', () {
+    const rolling = GoalCriterion.habit(
+      criterionId: 'gym',
+      habitId: 'gym-habit',
+      window: GoalWindow.rollingDays(count: 10),
+      targetCount: 3,
+    );
+    final outcome = applyGoalRevisionChanges(
+      criteria: rolling,
+      changes: {'cadence': '3 times per week'},
+    );
+    expect(
+      (outcome as GoalRevisionRejected).reason,
+      contains(
+        'names "per week" but the habit is evaluated per rolling '
+        'window',
+      ),
+    );
+  });
+
+  test('a calendar-month habit caps cadence at 28 — the guaranteed minimum '
+      'so the goal never wedges in February', () {
+    const monthly = GoalCriterion.habit(
+      criterionId: 'gym',
+      habitId: 'gym-habit',
+      window: GoalWindow.calendarMonth(),
+      targetCount: 3,
+    );
+    final tooMany = applyGoalRevisionChanges(
+      criteria: monthly,
+      changes: {'cadence': 29},
+    );
+    expect(
+      (tooMany as GoalRevisionRejected).reason,
+      contains('exceeds the window capacity of 28'),
+    );
+
+    final atBoundary = applyGoalRevisionChanges(
+      criteria: monthly,
+      changes: {'cadence': 28},
+    );
+    expect(atBoundary, isA<GoalRevisionApplied>());
+    expect(
+      (atBoundary as GoalRevisionApplied).criteria as GoalCriterionHabit,
+      isA<GoalCriterionHabit>(),
+    );
+    expect((atBoundary.criteria as GoalCriterionHabit).targetCount, 28);
+  });
+
   test('an absurd rolling window is rejected at the parse boundary — an '
       'approved 1e9-day window would wedge every later evaluation', () {
     const steps = GoalCriterion.metric(

@@ -43,6 +43,7 @@ void main() {
   late MockAgentRepository repository;
   late MockAgentSyncService syncService;
   late MockJournalDb journalDb;
+  late MockUpdateNotifications updateNotifications;
   late ProviderContainer container;
 
   setUp(() {
@@ -52,7 +53,8 @@ void main() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     journalDb = MockJournalDb();
-    final updateNotifications = MockUpdateNotifications();
+    updateNotifications = MockUpdateNotifications();
+    when(() => updateNotifications.notify(any())).thenReturn(null);
     when(
       () => updateNotifications.syncUpdateStream,
     ).thenAnswer((_) => syncStream.stream);
@@ -334,6 +336,72 @@ void main() {
       await listed.future;
     },
   );
+
+  test('a successful synced-batch evaluation notifies the UI for exactly '
+      'the evaluated agent — the health projections have no other way to '
+      'learn about it', () async {
+    const agentId = 'goal-sync';
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [goalIdentity(agentId)]);
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v1')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v1',
+        agentId: agentId,
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Gym',
+        statement: 'x',
+        criteria: const GoalCriterion.habit(
+          criterionId: 'gym',
+          habitId: 'gym-habit',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 3,
+        ),
+        createdAt: DateTime(2026),
+        vectorClock: null,
+      ),
+    );
+    when(
+      () => journalDb.getHabitCompletionsByHabitId(
+        habitId: any(named: 'habitId'),
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.observation,
+        limit: any(named: 'limit'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
+    when(
+      () => repository.getDueScheduledWakeRecords(any()),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getDueScheduledAgentStates(any()),
+    ).thenAnswer((_) async => []);
+
+    final dispatcher = container.read(goalSignalSyncDispatcherProvider);
+    await dispatcher.dispatchBatch({'gym-habit'});
+
+    verify(() => updateNotifications.notify({agentId})).called(1);
+  });
 
   test('accepting a revision proposal end-to-end: decision persisted, v2 '
       'minted, head moved, and the signal subscription re-registered from '
@@ -1191,6 +1259,89 @@ void main() {
     expect(
       [for (final n in history) n.id],
       ['ad-retired', 'ad-dismissed'],
+    );
+  });
+
+  test('goalNudgeHistoryProvider orders expired/superseded rows by their '
+      'OWN outcome stamp, falling back to updatedAt when the stamp is '
+      'missing — proves each switch arm, not just the sort', () async {
+    GoalNudgeEntity row({
+      required String id,
+      required GoalNudgeStatus status,
+      required DateTime updatedAt,
+      DateTime? expiredAt,
+      DateTime? supersededAt,
+    }) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-h2',
+              status: status,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: DateTime(2026, 8),
+              updatedAt: updatedAt,
+              vectorClock: null,
+              expiredAt: expiredAt,
+              supersededAt: supersededAt,
+            )
+            as GoalNudgeEntity;
+
+    when(
+      () => repository.getEntitiesByAgentId('goal-h2', type: 'goalNudge'),
+    ).thenAnswer(
+      (_) async => [
+        // expiredAt PRESENT but far in the past — updatedAt (bumped by a
+        // later exposure flush) must NOT leak in; the expiredAt arm wins.
+        row(
+          id: 'ad-expired-stamped',
+          status: GoalNudgeStatus.expired,
+          updatedAt: DateTime(2026, 8, 20),
+          expiredAt: DateTime(2026, 8, 5),
+        ),
+        // expiredAt MISSING — falls back to updatedAt, landing it ahead of
+        // the stamped row above.
+        row(
+          id: 'ad-expired-fallback',
+          status: GoalNudgeStatus.expired,
+          updatedAt: DateTime(2026, 8, 12),
+        ),
+        // supersededAt PRESENT, older than its updatedAt.
+        row(
+          id: 'ad-superseded-stamped',
+          status: GoalNudgeStatus.superseded,
+          updatedAt: DateTime(2026, 8, 18),
+          supersededAt: DateTime(2026, 8, 3),
+        ),
+        // supersededAt MISSING — falls back to updatedAt, the newest of
+        // all four.
+        row(
+          id: 'ad-superseded-fallback',
+          status: GoalNudgeStatus.superseded,
+          updatedAt: DateTime(2026, 8, 25),
+        ),
+      ],
+    );
+
+    final history = await container.read(
+      goalNudgeHistoryProvider('goal-h2').future,
+    );
+    // Newest outcomeAt first: 08-25 (superseded, updatedAt fallback),
+    // 08-12 (expired, updatedAt fallback), 08-05 (expired, expiredAt
+    // stamp), 08-03 (superseded, supersededAt stamp) — each status's own
+    // stamp is honored over its (later) updatedAt, and each fallback
+    // reads updatedAt only when its own stamp is null.
+    expect(
+      [for (final n in history) n.id],
+      [
+        'ad-superseded-fallback',
+        'ad-expired-fallback',
+        'ad-expired-stamped',
+        'ad-superseded-stamped',
+      ],
     );
   });
 

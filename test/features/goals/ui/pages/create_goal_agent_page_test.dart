@@ -365,4 +365,43 @@ void main() {
     await tester.pumpAndSettle();
     expect(captured, 10000);
   });
+
+  testWidgets('a target NumberFormat rejects falls back to num.tryParse '
+      'instead of failing validation', (tester) async {
+    num? captured;
+    when(
+      () => service.createGoalAgent(
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((invocation) async {
+      captured =
+          ((invocation.namedArguments[#criteria] as GoalCriterion)
+                  as GoalCriterionMetric)
+              .target;
+      throw StateError('stop before navigation');
+    });
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).first, 'Steps');
+    // `NumberFormat.decimalPattern('en').parse` throws a FormatException on
+    // scientific notation — the fallback then hands it to `num.tryParse`,
+    // which does understand it. If the fallback were missing, this would hit
+    // the missing-criterion validation message instead of creating a goal.
+    await tester.enterText(find.byType(TextField).last, '1e3');
+    await tester.tap(find.text('Create agent'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text('Give the goal a name and at least one criterion.'),
+      findsNothing,
+    );
+    expect(captured, 1000);
+  });
 }

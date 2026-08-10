@@ -193,6 +193,99 @@ void main() {
     expect(exposures, hasLength(2));
   });
 
+  testWidgets('an ad past its staleAt is filtered out of the strip even '
+      'while still active', (tester) async {
+    final fresh = nudge(id: 'ad-fresh');
+    final stale = nudge(
+      id: 'ad-stale',
+    ).copyWith(staleAt: DateTime(2026, 8));
+    await tester.pumpWidget(
+      makeTestableWidget(
+        const GoalBannerStrip(),
+        overrides: overrides([
+          (nudge: fresh, goalTitle: 'Move more'),
+          (nudge: stale, goalTitle: 'Move more'),
+        ]),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalBannerExposureTracker), findsOneWidget);
+    expect(
+      tester
+          .widget<GoalBannerExposureTracker>(
+            find.byType(GoalBannerExposureTracker),
+          )
+          .nudgeId,
+      'ad-fresh',
+    );
+  });
+
+  testWidgets('a sibling banner growing in above moves the tracked banner '
+      'across the viewport boundary with NO scroll gesture — the same '
+      'tracker element updates in place (didUpdateWidget), and its '
+      'post-frame recheck is what flushes the now-hidden episode', (
+    tester,
+  ) async {
+    final sameOverrides = overrides([
+      (nudge: nudge(), goalTitle: 'Move more'),
+    ]);
+    // A SingleChildScrollView (not a lazily-built ListView) keeps every
+    // child mounted regardless of scroll position — the tracker must stay
+    // ELEMENT-STABLE while sliding off-screen, not be torn down by list
+    // virtualization.
+    // GoalBannerStrip is deliberately NOT const here: a `const
+    // GoalBannerStrip()` would be the identical widget instance across
+    // both pumps, and Flutter's reconciliation skips rebuilding a child
+    // entirely when the new widget is `identical` to the old one — no
+    // didUpdateWidget would ever propagate down to the tracker.
+    Widget host({required double leadingHeight}) => makeTestableWidgetNoScroll(
+      SingleChildScrollView(
+        child: Column(
+          children: [
+            SizedBox(key: const ValueKey('leading'), height: leadingHeight),
+            // ignore: prefer_const_constructors
+            GoalBannerStrip(),
+            const SizedBox(height: 3000),
+          ],
+        ),
+      ),
+      overrides: sameOverrides,
+    );
+
+    await tester.pumpWidget(host(leadingHeight: 0));
+    await tester.pumpAndSettle();
+    expect(exposures, isEmpty);
+    expect(find.byType(GoalBannerExposureTracker), findsOneWidget);
+    final elementBefore = tester.element(
+      find.byType(GoalBannerExposureTracker),
+    );
+
+    // The tracked banner's own entry never changes — only content ABOVE it
+    // grows, pushing it below the fold. The ListView's scroll offset stays
+    // at 0 throughout: no ScrollNotification carries this news.
+    await tester.pumpWidget(host(leadingHeight: 3000));
+    await tester.pumpAndSettle();
+
+    final elementAfter = tester.element(
+      find.byType(GoalBannerExposureTracker),
+    );
+    expect(
+      identical(elementBefore, elementAfter),
+      isTrue,
+      reason:
+          'the SAME element updates via didUpdateWidget rather than '
+          'being torn down and remounted',
+    );
+    expect(
+      exposures,
+      hasLength(1),
+      reason:
+          "didUpdateWidget's _recheckAfterFrame caught the tracker "
+          'sliding out of the viewport and flushed its episode',
+    );
+    expect(exposures.single.$1, 'ad-1');
+  });
+
   testWidgets('backgrounding the app flushes the episode — pocket time '
       'never counts as exposure', (tester) async {
     final sameOverrides = overrides([

@@ -1,9 +1,11 @@
 # ADR 0056: The Need-to-Know Visual Brief Boundary
 
 - Status: Proposed (dormant — ADR 0058 removed generative imagery from the ad
-  channel the same day; this boundary is the door any future image feature
-  must re-enter through, and its principle — third parties receive only a
-  typed, leakage-checked allowlist — now applies to the banner copy fields)
+  channel the same day; this boundary is the door any future non-ZDR feature
+  must re-enter through. Every decision below is conditional on there being a
+  non-ZDR recipient: with no image provider in the path, banner copy never
+  leaves the device and nothing here imposes a runtime obligation on it. See
+  the amendment note under Decision 3.)
 - Date: 2026-08-08
 
 ## Context
@@ -46,12 +48,30 @@ deterministic-validation + one-repair-call + typed-failure shape for AI output g
    `altText` and any goal-referencing copy remain entity-only and are never sent. The boundary
    is the *field allowlist*, not the absence of text.
 
+   **Amended 2026-08-10 (post-ADR 0058).** The sentences above describe a world
+   with an outbound image request; ADR 0058 Decision 2 removed that request
+   entirely. There is no longer any recipient for `headline` or `cta`: the text
+   provider that *authors* them already holds the FACTS block they are drawn
+   from, the banner is composed on-device by Flutter, and nudge rows sync only
+   between the user's own devices over end-to-end encryption. "Leave the
+   device" therefore has no referent in the text-banner channel, and this
+   decision imposes no obligation on banner copy while that remains true. It
+   revives verbatim the moment any non-ZDR provider re-enters the path.
+
 4. **Defense-in-depth behind the type.** The agent authors the brief via a schema-constrained
    tool call; the goal constitution forbids names, health readings, locations, dates, or numbers
    from context in any brief field; and the tool handler lints briefs (digit+unit patterns,
    terms from the goal title, entries from the private-strings inventory) and rejects rather
    than sanitizes. The model writing personal data into a brief is the residual channel — which
    is why it is evaluated (Decision 6).
+
+   **Amended 2026-08-10 (post-ADR 0058).** This lint is an *egress* control, not
+   a display control, and it is dormant with the rest of this ADR. Applying it
+   to text-banner copy would reject the user's own step count on the way to the
+   user's own screen — privacy machinery pointed at no third party. What governs
+   banner copy today is the goal constitution's tone rules (still live) and
+   `sanitizeAgentReportText`, which strips model annotation artifacts from every
+   rendered copy field. Restore the lint together with the outbound request.
 
 5. **Reference images are provenance-gated.** For persona/series consistency the request may
    attach prior *AI-generated* anchors only: any referenced `JournalImage` must carry non-null
@@ -87,5 +107,6 @@ deterministic-validation + one-repair-call + typed-failure shape for AI output g
 
 - [ADR 0034: Hybrid Understanding Evaluation](./0034-hybrid-understanding-evaluation.md) — the validate/repair/typed-failure shape
 - [ADR 0055: The Banner-Nudge Attention Channel](./0055-banner-nudge-attention-channel.md)
+- [ADR 0058: Procedural Text Banners — No Generative Imagery](./0058-procedural-text-banners-no-generative-imagery.md) — removed this ADR's only recipient; the reason every decision here is dormant
 - [ADR 0053: Goal-Driven Agents — Per-Goal Durable Producers](./0053-goal-driven-agents-per-goal-producers.md)
 - `PRIVACY.md` — provider-claims stance this ADR operates within

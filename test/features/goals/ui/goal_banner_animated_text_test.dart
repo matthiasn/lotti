@@ -79,17 +79,27 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
+  // A `SizedBox` alone cannot force overflow here: `makeTestableWidget`
+  // hosts content in a vertical `SingleChildScrollView`, whose cross axis
+  // is TIGHT to the surface width, and `SizedBox.enforce` cannot shrink a
+  // tight incoming constraint below the surface size. Only shrinking the
+  // test surface itself (`tester.view.physicalSize`) produces a real
+  // narrow `constraints.maxWidth` for the marquee's `LayoutBuilder`.
+  void useNarrowSurface(WidgetTester tester) {
+    tester.view.physicalSize = const Size(60, 200);
+    tester.view.devicePixelRatio = 1.0;
+    addTearDown(tester.view.reset);
+  }
+
   testWidgets('marquee lays the line out at its full text width inside '
       'the clip — translation actually reveals the tail', (tester) async {
+    useNarrowSurface(tester);
     await tester.pumpWidget(
       makeTestableWidget(
-        const SizedBox(
-          width: 60,
-          child: GoalBannerAnimatedText(
-            text: 'Your inner couch potato is winning.',
-            animation: GoalBannerAnimation.marquee,
-            style: TextStyle(fontSize: 16),
-          ),
+        const GoalBannerAnimatedText(
+          text: 'Your inner couch potato is winning.',
+          animation: GoalBannerAnimation.marquee,
+          style: TextStyle(fontSize: 16),
         ),
       ),
     );
@@ -110,21 +120,89 @@ void main() {
   testWidgets('marquee scrolls when the text overflows its line', (
     tester,
   ) async {
+    useNarrowSurface(tester);
     await tester.pumpWidget(
       makeTestableWidget(
-        const SizedBox(
-          width: 60,
-          child: GoalBannerAnimatedText(
-            text: 'Your inner couch potato is winning again today.',
-            animation: GoalBannerAnimation.marquee,
-            style: TextStyle(fontSize: 16),
-          ),
+        const GoalBannerAnimatedText(
+          text: 'Your inner couch potato is winning again today.',
+          animation: GoalBannerAnimation.marquee,
+          style: TextStyle(fontSize: 16),
         ),
       ),
     );
     await tester.pump(const Duration(milliseconds: 400));
-    expect(find.byType(ClipRect), findsOneWidget);
+    // OverflowBox lifts the viewport's max-width clamp inside the clip —
+    // without it the translated line would have nothing to reveal.
+    expect(find.byType(OverflowBox), findsOneWidget);
+    expect(find.byType(ClipRect), findsWidgets);
     expect(tester.hasRunningAnimations, isTrue);
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('marquee actually translates the overflowing line, and the '
+      'offset changes over the cycle instead of sitting still', (
+    tester,
+  ) async {
+    useNarrowSurface(tester);
+    await tester.pumpWidget(
+      makeTestableWidget(
+        const GoalBannerAnimatedText(
+          text: 'Your inner couch potato is winning again today.',
+          animation: GoalBannerAnimation.marquee,
+          style: TextStyle(fontSize: 16),
+        ),
+      ),
+    );
+    await tester.pump();
+
+    Offset translateOffsetOf(Finder host) {
+      final transform = tester.widget<Transform>(
+        find.descendant(
+          of: host,
+          matching: find.byType(Transform),
+        ),
+      );
+      // Transform.translate stores its offset as a pure-translation matrix;
+      // decode the two translation components directly.
+      final storage = transform.transform.storage;
+      return Offset(storage[12], storage[13]);
+    }
+
+    final host = find.byType(GoalBannerAnimatedText);
+
+    // At the very start of the cycle the marquee sits at its resting
+    // (untranslated) position: sin(-pi/2) maps to t == 0 via the standard
+    // curve, so travel * t == 0.
+    final atStart = translateOffsetOf(host);
+    expect(
+      atStart.dx,
+      moreOrLessEquals(0, epsilon: 0.01),
+      reason: 'cycle start holds at the untranslated resting position',
+    );
+
+    await tester.pump(const Duration(milliseconds: 750));
+    final atQuarterCycle = translateOffsetOf(host);
+    expect(
+      atQuarterCycle.dx,
+      isNot(moreOrLessEquals(atStart.dx, epsilon: 0.01)),
+      reason: 'the offset must change as the controller advances',
+    );
+    expect(
+      atQuarterCycle.dx,
+      lessThan(0),
+      reason: 'the overflowing line scrolls leftward to reveal its tail',
+    );
+    // No vertical motion — marquee only ever travels horizontally.
+    expect(atQuarterCycle.dy, 0);
+
+    await tester.pump(const Duration(milliseconds: 750));
+    final atHalfCycle = translateOffsetOf(host);
+    expect(
+      atHalfCycle.dx,
+      isNot(moreOrLessEquals(atQuarterCycle.dx, epsilon: 0.01)),
+      reason: 'motion continues past the quarter-cycle mark',
+    );
+
     await tester.pumpWidget(const SizedBox.shrink());
   });
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -255,6 +256,117 @@ void main() {
     expect(find.byType(GoalBannerExposureTracker), findsNWidgets(3));
     expect(find.text('The stairs filed a complaint.'), findsOneWidget);
     expect(find.text('Sleep is a skill too.'), findsNothing);
+  });
+
+  testWidgets('a banner past its staleAt is filtered out at render time even '
+      'while still active — the fresh sibling still renders', (tester) async {
+    final now = DateTime(2026, 8, 10, 12);
+    GoalBannerEntry entry(String id, String headline, DateTime staleAt) => (
+      nudge:
+          AgentDomainEntity.goalNudge(
+                id: id,
+                agentId: 'goal-1',
+                status: GoalNudgeStatus.active,
+                brief: GoalNudgeBrief(
+                  headline: headline,
+                  tone: GoalNudgeTone.nudge,
+                  animation: GoalBannerAnimation.steady,
+                ),
+                briefDigest: 'd-$id',
+                createdAt: DateTime(2026, 8, 9),
+                updatedAt: DateTime(2026, 8, 9),
+                vectorClock: null,
+                staleAt: staleAt,
+              )
+              as GoalNudgeEntity,
+      goalTitle: 'goal-1',
+    );
+
+    await withClock(Clock.fixed(now), () async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const GoalAgentDetailPage(agentId: 'goal-1'),
+          overrides: [
+            agentIdentityProvider(
+              'goal-1',
+            ).overrideWith((ref) async => goalIdentity),
+            goalAgentHealthProvider('goal-1').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.offTrack,
+                attainment: 0.4,
+                reportOneLiner: null,
+                pendingProposals: 0,
+                spec: null,
+              ),
+            ),
+            activeGoalNudgesProvider.overrideWith(
+              (ref) async => [
+                entry(
+                  'ad-stale',
+                  'This one already expired.',
+                  now.subtract(const Duration(minutes: 1)),
+                ),
+                entry(
+                  'ad-fresh',
+                  'This one is still current.',
+                  now.add(const Duration(hours: 1)),
+                ),
+              ],
+            ),
+            goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+            selfTargetedPendingChangeSetsProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+            agentMessagesByThreadProvider(
+              'goal-1',
+            ).overrideWith((ref) async => {}),
+            agentReportHistoryProvider(
+              'goal-1',
+            ).overrideWith((ref) async => []),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byType(GoalBannerCard), findsOneWidget);
+      expect(find.text('This one is still current.'), findsOneWidget);
+      expect(find.text('This one already expired.'), findsNothing);
+    });
+  });
+
+  testWidgets('an error-only health load with a resolved goal identity shows '
+      'the unavailable notice under the report section — the not-found '
+      'shell is reserved for identity failures', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider(
+            'goal-1',
+          ).overrideWith((ref) async => throw StateError('health db gone')),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // The identity resolved fine, so the page renders the normal detail
+    // shell (title from goalIdentity's displayName — spec is null) rather
+    // than the "no longer exists" not-found state.
+    expect(find.text('This goal agent no longer exists.'), findsNothing);
+    expect(
+      find.text("Couldn't load this goal's health right now."),
+      findsOneWidget,
+    );
   });
 
   testWidgets('past ads stay browsable in the timeline with their localized '

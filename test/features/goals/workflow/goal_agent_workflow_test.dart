@@ -1603,6 +1603,334 @@ void main() {
     expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
   });
 
+  test('persistOutputs: a fresh active row scopes to its own spec version — '
+      'the matching version blocks a new banner, a foreign version does '
+      'not', () async {
+    stubSpec();
+    _stubBadPrior(repository, agentId, now);
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    final derivation = await _offTrackDerivation(repository, version!, now);
+
+    GoalNudgeEntity freshRow(String id, String specVersionId) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: agentId,
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'h',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd-$id',
+              createdAt: now,
+              updatedAt: now,
+              activatedAt: now,
+              vectorClock: null,
+              provenance: {'specVersionId': specVersionId},
+            )
+            as GoalNudgeEntity;
+
+    Future<GoalAgentStrategy> creating() async {
+      final strategy = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: agentId,
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        knownAdIds: const {},
+      );
+      await strategy.processToolCalls(
+        toolCalls: [
+          toolCall(GoalAgentToolNames.createGoalAd, {
+            'headline': 'New copy.',
+            'tone': 'nudge',
+            'animation': 'steady',
+          }, id: 'c1'),
+        ],
+        manager: conversationManager,
+      );
+      return strategy;
+    }
+
+    // A row provenanced to THIS wake's spec version is visible: it counts
+    // as a fresh active and blocks the new create.
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [freshRow('ad-matching', version.id)]);
+    final matchingStrategy = await creating();
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: matchingStrategy,
+        derivation: derivation,
+        now: now,
+      ),
+    );
+    expect(
+      upserts.whereType<GoalNudgeEntity>(),
+      isEmpty,
+      reason: 'the same-version fresh active row blocks the new banner',
+    );
+
+    // A row provenanced to a DIFFERENT spec version is invisible: it
+    // neither blocks the fresh-active guard nor sits in the reuse pool,
+    // so the create proceeds.
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer(
+      (_) async => [freshRow('ad-foreign', '$agentId:spec-v0')],
+    );
+    final foreignStrategy = await creating();
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: foreignStrategy,
+        derivation: derivation,
+        now: now,
+      ),
+    );
+    expect(
+      upserts.whereType<GoalNudgeEntity>().where(
+        (n) => n.id != 'ad-foreign',
+      ),
+      hasLength(1),
+      reason:
+          'a foreign-version row is invisible — it never counts as a '
+          'fresh active, so a new banner for THIS version lands',
+    );
+  });
+
+  test('persistOutputs: a superseded-spec wake suppresses rerun requests — '
+      'a wake evaluating a historical version must not resurrect any '
+      'ad', () async {
+    stubSpec();
+    _stubBadPrior(repository, agentId, now);
+    final staleVersion =
+        AgentDomainEntity.goalSpecVersion(
+              id: '$agentId:spec-v0',
+              agentId: agentId,
+              version: 0,
+              status: GoalSpecVersionStatus.superseded,
+              authoredBy: 'user',
+              title: 'Steps (original)',
+              statement: 'x',
+              criteria: const GoalCriterion.metric(
+                criterionId: 'steps',
+                dataType: 'cumulative_step_count',
+                window: GoalWindow.rollingDays(count: 7),
+                aggregation: GoalAggregation.dailySumThenAverage,
+                target: 10000,
+              ),
+              createdAt: DateTime(2026, 7),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final derivation = await _offTrackDerivation(repository, staleVersion, now);
+
+    final strategy = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: agentId,
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-retired'},
+    );
+    await strategy.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.rerunGoalAd, {
+          'adId': 'ad-retired',
+          'reason': 'bring it back',
+        }, id: 'c1'),
+      ],
+      manager: conversationManager,
+    );
+
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: strategy,
+        derivation: derivation,
+        now: now,
+      ),
+    );
+
+    expect(
+      upserts.whereType<GoalNudgeEntity>(),
+      isEmpty,
+      reason:
+          'a superseded-spec wake must not reactivate any ad, even one it '
+          'names directly',
+    );
+  });
+
+  test('persistOutputs: a superseded-spec wake suppresses revision '
+      'proposals — approving one would distort the newer goal', () async {
+    stubSpec();
+    _stubBadPrior(repository, agentId, now);
+    final staleVersion =
+        AgentDomainEntity.goalSpecVersion(
+              id: '$agentId:spec-v0',
+              agentId: agentId,
+              version: 0,
+              status: GoalSpecVersionStatus.superseded,
+              authoredBy: 'user',
+              title: 'Steps (original)',
+              statement: 'x',
+              criteria: const GoalCriterion.metric(
+                criterionId: 'steps',
+                dataType: 'cumulative_step_count',
+                window: GoalWindow.rollingDays(count: 7),
+                aggregation: GoalAggregation.dailySumThenAverage,
+                target: 10000,
+              ),
+              createdAt: DateTime(2026, 7),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final derivation = await _offTrackDerivation(repository, staleVersion, now);
+
+    final strategy = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: agentId,
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {},
+    );
+    await strategy.processToolCalls(
+      toolCalls: [
+        toolCall(GoalAgentToolNames.proposeGoalRevision, {
+          'changes': {'targetValue': 8000},
+          'rationale': 'the old target no longer fits',
+        }, id: 'c1'),
+      ],
+      manager: conversationManager,
+    );
+
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: strategy,
+        derivation: derivation,
+        now: now,
+      ),
+    );
+
+    expect(
+      upserts.whereType<ChangeSetEntity>(),
+      isEmpty,
+      reason:
+          'a superseded-spec wake must never mint a ChangeSet against the '
+          'revised goal',
+    );
+  });
+
+  test('persistOutputs: the SAME transition recurring within one day skips '
+      'a second create for that deterministic id — the earlier row is '
+      'left untouched', () async {
+    stubSpec();
+    _stubBadPrior(repository, agentId, now);
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    final derivation = await _offTrackDerivation(repository, version!, now);
+
+    Future<GoalAgentStrategy> creating(String headline) async {
+      final strategy = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: agentId,
+        threadId: 'thread-1',
+        runKey: 'run-1',
+        knownAdIds: const {},
+      );
+      await strategy.processToolCalls(
+        toolCalls: [
+          toolCall(GoalAgentToolNames.createGoalAd, {
+            'headline': headline,
+            'tone': 'nudge',
+            'animation': 'steady',
+          }, id: 'c1'),
+        ],
+        manager: conversationManager,
+      );
+      return strategy;
+    }
+
+    // First wake: nothing exists yet, so the create lands and its
+    // deterministic id is captured for the second wake below.
+    final firstStrategy = await creating('First transition banner.');
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: firstStrategy,
+        derivation: derivation,
+        now: now,
+      ),
+    );
+    final created = upserts.whereType<GoalNudgeEntity>().single;
+    upserts.clear();
+
+    // Second wake: the SAME transition recurs (identical period, baseline
+    // and spec version), so the deterministic id collides with the
+    // earlier row — which is retired, so it does not trip the
+    // fresh-active guard first, and the new brief's digest differs, so
+    // it does not trip the digest guard first either.
+    final priorRow = created.copyWith(
+      status: GoalNudgeStatus.retired,
+      retiredAt: now.subtract(const Duration(hours: 1)),
+    );
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [priorRow]);
+
+    final secondStrategy = await creating(
+      'Second transition banner, same day.',
+    );
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: secondStrategy,
+        derivation: derivation,
+        now: now,
+      ),
+    );
+
+    expect(
+      upserts.whereType<GoalNudgeEntity>(),
+      isEmpty,
+      reason:
+          "the recurring transition's deterministic id already exists — "
+          "no second banner is minted and the earlier row's state is "
+          'left alone',
+    );
+  });
+
   test('with consumption registered, a failed wake is terminalized as '
       'FAILED — no perpetually open session on the exception path', () async {
     final attribution = MockAiAttributionService();

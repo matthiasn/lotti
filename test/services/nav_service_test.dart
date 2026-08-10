@@ -845,6 +845,9 @@ void main() {
         bench.emitAll(enabled: true);
         bench.agents.add(true);
 
+        // The getter mirrors the config flag stream directly, independent
+        // of the delegate list it also drives.
+        expect(navService.isAgentsPageEnabled, isTrue);
         expect(
           navService.beamerDelegates.indexOf(navService.agentsDelegate),
           navService.beamerDelegates.indexOf(navService.dashboardsDelegate) + 1,
@@ -854,6 +857,7 @@ void main() {
         expect(navService.currentPath, '/agents/details/goal-1');
 
         bench.agents.add(false);
+        expect(navService.isAgentsPageEnabled, isFalse);
         expect(
           navService.beamerDelegates.contains(navService.agentsDelegate),
           isFalse,

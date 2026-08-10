@@ -810,5 +810,75 @@ void main() {
         isNull,
       );
     });
+
+    test('a present metric scopes the target it binds', () {
+      // metric is a non-empty string, so the target part gets the
+      // "applies to {metric}" suffix appended by scoped().
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'metric': 'steps', 'targetValue': 5000},
+        }),
+        'Change the target to 5,000 (applies to steps)',
+      );
+    });
+
+    test('a blank or absent metric leaves the part unscoped', () {
+      // Blank (whitespace-only) is treated the same as absent: scoped()
+      // must fall to the bare part, not append an empty scope suffix.
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'metric': '   ', 'targetValue': 5000},
+        }),
+        'Change the target to 5,000',
+      );
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'targetValue': 5000},
+        }),
+        'Change the target to 5,000',
+      );
+    });
+
+    test('a period change renders the localized window, scoped by metric', () {
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'metric': 'steps', 'period': 'rolling 14 days'},
+        }),
+        'Change the window to rolling 14 days (applies to steps)',
+      );
+    });
+
+    test('a non-numeric, unparseable target passes through verbatim', () {
+      // Neither `num` nor parseable by `num.tryParse` — must not throw, and
+      // must not silently disappear, because it is still evidence of what
+      // the model actually asked for.
+      expect(
+        localizedChangeSummary(en, 'propose_goal_revision', {
+          'changes': {'targetValue': 'a lot more'},
+        }),
+        'Change the target to a lot more',
+      );
+    });
+
+    test('every _localizedWindow branch renders its own phrase', () {
+      // Exercises every arm of parseGoalWindowPhrase's result, plus the
+      // verbatim passthrough for a phrase the parser rejects outright.
+      const cases = {
+        'day': 'Change the window to a single day',
+        'rolling 14 days': 'Change the window to rolling 14 days',
+        'calendar week': 'Change the window to calendar week',
+        'calendar month': 'Change the window to calendar month',
+        'once in a blue moon': 'Change the window to once in a blue moon',
+      };
+      for (final MapEntry(key: phrase, value: expected) in cases.entries) {
+        expect(
+          localizedChangeSummary(en, 'propose_goal_revision', {
+            'changes': {'period': phrase},
+          }),
+          expected,
+          reason: phrase,
+        );
+      }
+    });
   });
 }
