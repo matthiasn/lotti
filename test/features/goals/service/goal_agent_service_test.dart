@@ -146,6 +146,11 @@ void main() {
     expect(subscription.id, goalSignalSubscriptionId(agentId));
     expect(subscription.agentId, agentId);
     expect(subscription.matchEntityIds, {'gym-habit'});
+    // A habit check-off is atomic evidence and Phase A is €0: the wake
+    // dispatches immediately instead of sitting behind the task-agent
+    // 120-second coalescing window (the user's tap must be acknowledged
+    // in seconds).
+    expect(subscription.drainImmediately, isTrue);
   });
 
   test('removeSignalSubscriptions drops the agent from the orchestrator', () {

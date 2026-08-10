@@ -142,8 +142,15 @@ extension WakeBatchRouter on WakeOrchestrator {
 
       // 5. Throttle gate: when the agent is throttled (but not executing),
       //    merge tokens into the queued job or enqueue a new one so the
-      //    deferred drain timer can pick it up.
-      if (_isThrottled(sub.agentId)) {
+      //    deferred drain timer can pick it up. Immediate-drain
+      //    subscriptions clear the deadline instead — the only way one
+      //    exists for them is hydration of a pre-policy `nextWakeAt`, and
+      //    honouring it would defer exactly the wake this policy exists to
+      //    dispatch (the drain re-check also skips throttled agents, so a
+      //    stale deadline would strand the job).
+      if (sub.drainImmediately && _isThrottled(sub.agentId)) {
+        clearThrottle(sub.agentId);
+      } else if (_isThrottled(sub.agentId)) {
         final deadline = _throttle.deadlineFor(sub.agentId);
         final merged = queue.mergeTokens(
           sub.agentId,
@@ -206,6 +213,20 @@ extension WakeBatchRouter on WakeOrchestrator {
         isDirect: usesFastThrottle,
       )) {
         queue.enqueue(job);
+      }
+
+      // Immediate-drain subscriptions dispatch now: no deadline, no
+      // countdown. The evidence is atomic and the wake is cheap — see
+      // [AgentSubscription.drainImmediately].
+      if (sub.drainImmediately) {
+        _log(
+          'immediate drain for ${DomainLogger.sanitizeId(sub.agentId)}: '
+          'dispatching without throttle deadline, '
+          'triggers=${allMatched.map(DomainLogger.sanitizeId).join(',')}',
+          subDomain: 'defer',
+        );
+        unawaited(processNext());
+        continue;
       }
 
       // Awaiting-content agents (newly-created task agents on blank tasks)

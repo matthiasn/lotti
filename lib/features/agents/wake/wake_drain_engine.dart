@@ -509,20 +509,27 @@ extension WakeDrainEngine on WakeOrchestrator {
               job.agentId,
               workspaceKey: job.workspaceKey,
             )) {
-          final hasDirectQueued = queue.hasDirectQueuedJobFor(
-            job.agentId,
-            workspaceKey: job.workspaceKey,
-          );
-          final morningDeadline = !hasDirectQueued
-              ? nextOccurrenceOf(
-                  clock.now(),
-                  hour: AgentSchedules.projectDailyDigestHour,
-                )
-              : null;
-          await _setThrottleDeadline(
-            job.agentId,
-            customDeadline: morningDeadline,
-          );
+          if (_drainsImmediately(job.agentId)) {
+            // Tokens that arrived during execution merged into a queued
+            // follow-up. An immediate-drain agent gets no follow-up
+            // countdown either — dispatch the merged job now.
+            unawaited(processNext());
+          } else {
+            final hasDirectQueued = queue.hasDirectQueuedJobFor(
+              job.agentId,
+              workspaceKey: job.workspaceKey,
+            );
+            final morningDeadline = !hasDirectQueued
+                ? nextOccurrenceOf(
+                    clock.now(),
+                    hour: AgentSchedules.projectDailyDigestHour,
+                  )
+                : null;
+            await _setThrottleDeadline(
+              job.agentId,
+              customDeadline: morningDeadline,
+            );
+          }
         }
       } catch (e) {
         _suppression.clearPreRegistered(job.agentId);

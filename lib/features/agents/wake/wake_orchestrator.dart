@@ -31,6 +31,7 @@ class AgentSubscription {
     required this.matchEntityIds,
     this.predicate,
     this.deferPropagatedMatches = true,
+    this.drainImmediately = false,
   });
 
   /// Unique subscription identifier (stable across restarts).
@@ -54,6 +55,20 @@ class AgentSubscription {
   /// subscriptions disable it: child-entry/task-context changes should update
   /// the task agent on the normal coalesced wake path.
   final bool deferPropagatedMatches;
+
+  /// Whether matches dispatch immediately instead of defer-first behind the
+  /// 120-second coalescing window.
+  ///
+  /// The window exists for wakes that cost real inference money on evidence
+  /// that arrives in incomplete bursts (a task being edited). Goal-agent
+  /// signal subscriptions set this: their evidence is atomic (a habit
+  /// check-off IS the complete fact) and the triggered work is the
+  /// deterministic €0 Phase A tier, so deferral protects nothing and delays
+  /// the user-visible acknowledgment of their own action by two minutes.
+  /// Bursts stay safe without the window — the runner single-flights per
+  /// agent and queued jobs merge tokens, so N rapid check-offs collapse into
+  /// at most one follow-up run.
+  final bool drainImmediately;
 }
 
 /// Checks whether a content-gated entity (by ID) has the content the agent is
@@ -501,6 +516,14 @@ class WakeOrchestrator with AgentErrorLogging {
   bool _isThrottled(String agentId) {
     return _throttle.isThrottled(agentId);
   }
+
+  /// Whether [agentId] holds a subscription that opted into immediate
+  /// dispatch ([AgentSubscription.drainImmediately]). Consulted wherever a
+  /// throttle deadline would otherwise be armed on the agent's behalf — an
+  /// immediate-drain agent must never grow a countdown, including the
+  /// post-run follow-up arming in the drain engine.
+  bool _drainsImmediately(String agentId) =>
+      _subscriptions.any((s) => s.agentId == agentId && s.drainImmediately);
 
   /// Set the throttle deadline for [agentId] and persist it to the agent's
   /// state entity via `nextWakeAt`.

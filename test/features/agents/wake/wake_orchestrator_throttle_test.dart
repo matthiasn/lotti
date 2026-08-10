@@ -85,6 +85,124 @@ void main() {
         });
       });
     });
+    group('immediate drain (drainImmediately subscriptions)', () {
+      test('dispatches without the 120s defer-first window — the wake runs '
+          'on flushMicrotasks alone', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+
+          orchestrator
+            ..addSubscription(makeSub(drainImmediately: true))
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // No async.elapse: a defer-first subscription would sit behind
+          // the 120s deadline here (see the deferred-drain group above).
+          emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 1);
+
+          controller.close();
+        });
+      });
+
+      test('a stale hydrated deadline is cleared instead of stranding the '
+          'wake behind a countdown', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+
+          orchestrator
+            ..addSubscription(makeSub(drainImmediately: true))
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            }
+            // Hydration of a pre-policy `nextWakeAt` arms a real deadline.
+            ..setThrottleDeadline(
+              'agent-1',
+              clock.now().add(WakeOrchestrator.throttleWindow),
+            );
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          emitTokens(async, controller, {'entity-1'});
+          expect(
+            executionCount,
+            1,
+            reason:
+                'the stale deadline must be cleared, not honoured — '
+                'the drain re-check skips throttled agents, so honouring '
+                'it would strand the job',
+          );
+
+          controller.close();
+        });
+      });
+
+      test('a burst during execution merges and the follow-up runs without '
+          'a post-run countdown', () {
+        fakeAsync((async) {
+          final gate = Completer<Map<String, VectorClock>?>();
+          var executionCount = 0;
+
+          orchestrator
+            ..addSubscription(
+              makeSub(
+                matchEntityIds: {'entity-1', 'entity-2'},
+                drainImmediately: true,
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) {
+              executionCount++;
+              if (executionCount == 1) return gate.future;
+              return Future.value();
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // First check-off dispatches immediately.
+          emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 1);
+
+          // Second check-off lands while the first wake is executing —
+          // single-flight queues it for the drain re-check.
+          emitTokens(async, controller, {'entity-2'});
+          expect(executionCount, 1);
+
+          // First wake completes with no recorded mutations. The post-run
+          // path must dispatch the merged follow-up NOW instead of arming
+          // the 120s follow-up deadline task agents get.
+          gate.complete(null);
+          async.flushMicrotasks();
+          expect(
+            executionCount,
+            2,
+            reason: 'the follow-up job must not wait out a countdown',
+          );
+
+          controller.close();
+        });
+      });
+    });
+
     group('throttle gate', () {
       glados.Glados(
         glados.any.pendingWakeRestoreScenario,

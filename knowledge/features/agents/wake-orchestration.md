@@ -131,6 +131,15 @@ Project-agent subscriptions use that path, so linked-task churn waits for the
 scheduled project digest; task-agent subscriptions opt out, so child-entry and
 task-context updates refresh on the normal coalesced path.
 
+A subscription can instead opt **out of the window entirely** with
+`AgentSubscription.drainImmediately`: matches enqueue and dispatch at once, no
+deadline is armed (including the post-run follow-up deadline), and a stale
+hydrated deadline is cleared rather than honoured. Goal-agent signal
+subscriptions use this — a habit check-off is atomic evidence and the wake it
+triggers is the deterministic €0 Phase A tier, so deferral protects nothing
+and delays the user-visible acknowledgment. Bursts stay safe because the
+runner single-flights per agent and queued jobs merge tokens.
+
 Manual wakes — `creation`, `reanalysis`, and scheduled jobs enqueued by
 `ScheduledWakeManager` — bypass subscription matching and the throttle.
 
