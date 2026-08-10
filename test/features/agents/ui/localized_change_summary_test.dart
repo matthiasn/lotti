@@ -770,11 +770,11 @@ void main() {
       };
       expect(
         localizedChangeSummary(en, 'propose_goal_revision', args),
-        'Change the target to 8,000 · Change the cadence to 4',
+        'Change the target to 8,000 · Change the cadence to 4 — ease off',
       );
       expect(
         localizedChangeSummary(de, 'propose_goal_revision', args),
-        'Zielwert auf 8.000 ändern · Häufigkeit auf 4 ändern',
+        'Zielwert auf 8.000 ändern · Häufigkeit auf 4 ändern — ease off',
       );
     });
 

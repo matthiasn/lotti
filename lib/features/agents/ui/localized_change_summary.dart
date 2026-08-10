@@ -458,7 +458,14 @@ String? _goalRevision(AppLocalizations messages, Map<String, dynamic> args) {
       ),
   ];
   if (parts.isEmpty) return null;
-  return parts.join(' · ');
+  final summary = parts.join(' · ');
+  // The agent's WHY is the heart of the approval decision. Rationale is
+  // model-authored content (generated, not localized — the banner-copy
+  // rule); only the sentence structure around it is ours.
+  final rationale = args['rationale'];
+  return rationale is String && rationale.trim().isNotEmpty
+      ? '$summary — ${rationale.trim()}'
+      : summary;
 }
 
 /// Numeric targets follow the reader's decimal/grouping conventions
