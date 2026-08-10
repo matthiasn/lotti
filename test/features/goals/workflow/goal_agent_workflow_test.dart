@@ -1126,6 +1126,79 @@ void main() {
     },
   );
 
+  test('a wake resolved onto a NON-HEAD active version no-ops before any '
+      'inference spend — split-brain approvals cost nothing', () async {
+    stubSpec();
+    // The escalation period's register was armed under a different,
+    // still-ACTIVE version (a disconnected same-ordinal approval).
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-06')),
+    ).thenAnswer(
+      (_) async => AgentDomainEntity.goalProgress(
+        id: goalProgressId(agentId, '2026-08-06'),
+        agentId: agentId,
+        periodKey: '2026-08-06',
+        trackStatus: GoalTrackStatus.atRisk,
+        attainment: 0.6,
+        dataCoverage: 1,
+        satisfied: false,
+        specVersionId: '$agentId:spec-v2-loser',
+        createdAt: DateTime(2026, 8, 6),
+        updatedAt: DateTime(2026, 8, 6),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v2-loser')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v2-loser',
+        agentId: agentId,
+        version: 2,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Steps (split-brain)',
+        statement: 'x',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 9000,
+        ),
+        createdAt: DateTime(2026, 8, 6),
+        vectorClock: null,
+      ),
+    );
+    var inferenceRan = false;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          inferenceRan = true;
+          return null;
+        };
+
+    final result = await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'run-splitbrain',
+        triggerTokens: const {'goal-escalation:2026-08-06'},
+        threadId: 'thread-sb',
+      ),
+    );
+    expect(result.success, isTrue);
+    expect(inferenceRan, isFalse, reason: 'no model spend on a doomed wake');
+    expect(upserts, isEmpty);
+  });
+
   test('persistOutputs: a spec head that moved during the wake fences '
       'every output — nothing publishes beside the revised goal', () async {
     stubSpec();

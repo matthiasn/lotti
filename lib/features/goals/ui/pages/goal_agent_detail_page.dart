@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
@@ -91,11 +92,18 @@ class GoalAgentDetailPage extends ConsumerWidget {
     }
     final health = healthAsync.value;
     final spec = health?.spec;
+    // Same render-time staleness contract as the strip: retained data
+    // from a failed deadline reload keeps fresh banners (no-flash) but
+    // never expired copy — whose tracker would keep counting exposure.
+    final bannerNow = clock.now();
     final nudges = [
       for (final entry
           in ref.watch(activeGoalNudgesProvider).value ??
               const <GoalBannerEntry>[])
-        if (entry.nudge.agentId == agentId) entry,
+        if (entry.nudge.agentId == agentId &&
+            (entry.nudge.staleAt == null ||
+                bannerNow.isBefore(entry.nudge.staleAt!)))
+          entry,
     ];
     return popSafe(
       Scaffold(

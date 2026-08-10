@@ -128,6 +128,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
         if (armed is GoalSpecVersionEntity) version = armed;
       }
     }
+    // Disconnected same-ordinal approvals can leave TWO active version
+    // rows while the head names only one. A wake resolved onto the
+    // non-head active version would pay for inference the transactional
+    // fence then discards — no-op here, before any message or model
+    // spend. (Superseded versions pass: the stale-escalation path is
+    // deliberate and report-only.)
+    if (version.status == GoalSpecVersionStatus.active &&
+        version.id != head.versionId) {
+      return const WakeResult(success: true);
+    }
     final derivation = await _phaseA.deriveWakeFacts(
       agentId: agentId,
       version: version,
