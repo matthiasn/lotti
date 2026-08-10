@@ -5933,6 +5933,10 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalBannerActionFailed =>
+      'Det blev ikke gemt — prøv venligst igen.';
+
+  @override
   String get goalBannerDismissTooltip => 'Afvis';
 
   @override
@@ -5954,6 +5958,10 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalCreateHabitsLabel => 'Vaner at følge';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Kunne ikke indlæse dine vaner lige nu — prøv igen om lidt.';
 
   @override
   String get goalCreateNameLabel => 'Navn';

@@ -5952,6 +5952,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalBannerActionFailed =>
+      'Dat is niet opgeslagen — probeer het opnieuw.';
+
+  @override
   String get goalBannerDismissTooltip => 'Verbergen';
 
   @override
@@ -5974,6 +5978,10 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalCreateHabitsLabel => 'Te volgen gewoontes';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Je gewoontes konden nu niet worden geladen — probeer het zo opnieuw.';
 
   @override
   String get goalCreateNameLabel => 'Naam';

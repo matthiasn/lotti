@@ -154,4 +154,44 @@ void main() {
     await tester.pumpAndSettle();
     expect(exposures, hasLength(2));
   });
+
+  testWidgets('scrolling the banner out of the viewport flushes its '
+      'episode — off-screen time never counts', (tester) async {
+    final sameOverrides = overrides([
+      (nudge: nudge(), goalTitle: 'Move more'),
+    ]);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        ListView(
+          children: const [
+            GoalBannerStrip(),
+            SizedBox(height: 3000),
+          ],
+        ),
+        overrides: sameOverrides,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(exposures, isEmpty);
+
+    await tester.drag(find.byType(ListView), const Offset(0, -1500));
+    await tester.pumpAndSettle();
+    expect(
+      exposures,
+      hasLength(1),
+      reason: 'scroll-out ends the episode without unmounting',
+    );
+
+    // Scrolling back starts a SECOND episode, flushed on unmount.
+    await tester.drag(find.byType(ListView), const Offset(0, 1500));
+    await tester.pumpAndSettle();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const SizedBox.shrink(),
+        overrides: sameOverrides,
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(exposures, hasLength(2));
+  });
 }

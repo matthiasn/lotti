@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -14,10 +15,9 @@ const goalBannerStripMaxVisible = 2;
 ///
 /// Exposure accounting: an episode runs while the banner's TAB is the
 /// visible one (TickerMode — the app shell keeps inactive tabs mounted)
-/// and is flushed on every visible→hidden transition and on unmount.
-/// Scroll-out within an active page is deliberately not tracked: the
-/// strip sits at the top of its hosts, and per-frame viewport math would
-/// buy little for this surface.
+/// AND the banner itself intersects its enclosing viewport; every
+/// visible→hidden transition (tab switch, scroll-out, unmount) flushes
+/// its own episode. Viewport checks run on scroll events, not per frame.
 class GoalBannerStrip extends ConsumerWidget {
   const GoalBannerStrip({this.padded = true, super.key});
 
@@ -59,12 +59,13 @@ class GoalBannerStrip extends ConsumerWidget {
   }
 }
 
-/// Measures one visibility episode: stopwatch from mount, flushed on
-/// unmount (page left, banner dismissed, list refreshed). Deliberately
-/// coarse — a banner in a `Column` on a mounted page IS on screen, and
-/// per-frame viewport math would buy little for a surface this small.
-/// Public because EVERY banner mount must account exposure the same way
-/// — the strips here and the uncapped list on the goal detail page.
+/// Measures visibility episodes: the stopwatch runs while the host tab
+/// is on screen (TickerMode) AND the banner intersects its enclosing
+/// viewport — scrolled-away time on the habits page or the goal detail
+/// list never counts. Rechecks happen on scroll events and dependency
+/// changes, not per frame. Public because EVERY banner mount must
+/// account exposure the same way — the strips here and the uncapped
+/// list on the goal detail page.
 class GoalBannerExposureTracker extends ConsumerStatefulWidget {
   const GoalBannerExposureTracker({
     required this.nudgeId,
@@ -83,6 +84,7 @@ class GoalBannerExposureTracker extends ConsumerStatefulWidget {
 class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker> {
   final Stopwatch _visible = Stopwatch();
   GoalNudgeInteractionsFlush? _flush;
+  ScrollPosition? _position;
 
   @override
   void didChangeDependencies() {
@@ -90,16 +92,51 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker> {
     // Captured while the element is live: `ref` must not be touched from
     // dispose, and the flush must survive the widget's death.
     _flush = ref.read(goalNudgeExposureFlushProvider);
-    // The app shell keeps inactive tabs mounted (IndexedStack) with
-    // their tickers disabled — TickerMode is therefore the "is this tab
-    // actually on screen" signal. Each visible→hidden transition flushes
-    // its own episode, so separate appearances never merge and
-    // persistence doesn't wait for disposal.
-    if (TickerMode.valuesOf(context).enabled) {
-      _visible.start();
+    final position = Scrollable.maybeOf(context)?.position;
+    if (!identical(position, _position)) {
+      _position?.removeListener(_recheck);
+      _position = position?..addListener(_recheck);
+    }
+    _recheck();
+    // On the FIRST build the render box has no layout yet, so the
+    // viewport check above conservatively said "not visible" — confirm
+    // once the frame is out.
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) _recheck();
+    });
+  }
+
+  /// The app shell keeps inactive tabs mounted (IndexedStack) with their
+  /// tickers disabled — TickerMode is the "is this tab on screen" signal
+  /// — and scrollable hosts keep off-screen banners mounted too, so the
+  /// enclosing viewport must actually show the banner. Each
+  /// visible→hidden transition flushes its own episode, so separate
+  /// appearances never merge and persistence doesn't wait for disposal.
+  void _recheck() {
+    final visible = TickerMode.valuesOf(context).enabled && _inViewport();
+    if (visible) {
+      if (!_visible.isRunning) _visible.start();
     } else if (_visible.isRunning) {
       _flushEpisode();
     }
+  }
+
+  bool _inViewport() {
+    final box = context.findRenderObject();
+    if (box is! RenderBox || !box.attached || !box.hasSize) return false;
+    final viewport = RenderAbstractViewport.maybeOf(box);
+    final position = _position;
+    if (viewport == null ||
+        position == null ||
+        !position.hasPixels ||
+        !position.hasViewportDimension) {
+      // No scrollable ancestor (the day page nudge column): mounted on a
+      // visible tab means on screen.
+      return true;
+    }
+    final leadingEdge = viewport.getOffsetToReveal(box, 0).offset;
+    return leadingEdge < position.pixels + position.viewportDimension &&
+        leadingEdge + box.size.height > position.pixels;
   }
 
   void _flushEpisode() {
@@ -112,6 +149,7 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker> {
 
   @override
   void dispose() {
+    _position?.removeListener(_recheck);
     _flushEpisode();
     super.dispose();
   }

@@ -6029,6 +6029,10 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalBannerActionFailed =>
+      'Nu s-a salvat — vă rugăm să încercați din nou.';
+
+  @override
   String get goalBannerDismissTooltip => 'Închideți';
 
   @override
@@ -6052,6 +6056,10 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalCreateHabitsLabel => 'Obiceiuri de urmărit';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Obiceiurile dvs. nu au putut fi încărcate momentan — încercați din nou în scurt timp.';
 
   @override
   String get goalCreateNameLabel => 'Nume';

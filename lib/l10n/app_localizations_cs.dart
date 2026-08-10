@@ -5997,6 +5997,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalBannerActionFailed =>
+      'To se neuložilo — zkus to prosím znovu.';
+
+  @override
   String get goalBannerDismissTooltip => 'Zavřít';
 
   @override
@@ -6018,6 +6022,10 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalCreateHabitsLabel => 'Sledované návyky';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Návyky se teď nepodařilo načíst — zkus to za chvíli znovu.';
 
   @override
   String get goalCreateNameLabel => 'Název';

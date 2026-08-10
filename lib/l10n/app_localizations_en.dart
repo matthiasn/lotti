@@ -5905,6 +5905,9 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalBannerActionFailed => 'That didn\'t save — please try again.';
+
+  @override
   String get goalBannerDismissTooltip => 'Dismiss';
 
   @override
@@ -5926,6 +5929,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalCreateHabitsLabel => 'Habits to watch';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Couldn\'t load your habits right now — try again in a moment.';
 
   @override
   String get goalCreateNameLabel => 'Name';

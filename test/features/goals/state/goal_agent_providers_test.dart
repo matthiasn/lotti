@@ -812,6 +812,67 @@ void main() {
     expect(health.pendingProposals, 0);
   });
 
+  test('a standing report older than the active spec version is withheld '
+      '— its one-liner describes the superseded goal', () async {
+    const agentId = 'goal-old-report';
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v2',
+        updatedAt: DateTime(2026, 8, 10),
+        vectorClock: null,
+      ),
+    );
+    when(() => repository.getEntity('$agentId:spec-v2')).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: '$agentId:spec-v2',
+        agentId: agentId,
+        version: 2,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Steps, revised',
+        statement: 'Average 8,000 steps per day.',
+        criteria: const GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 8000,
+        ),
+        createdAt: DateTime(2026, 8, 10, 9),
+        vectorClock: null,
+      ),
+    );
+    when(
+      () => repository.getLatestReport(agentId, 'current'),
+    ).thenAnswer(
+      (_) async =>
+          AgentDomainEntity.agentReport(
+                id: 'r-old',
+                agentId: agentId,
+                scope: 'current',
+                createdAt: DateTime(2026, 8, 9),
+                vectorClock: null,
+                content: 'body',
+                oneLiner: 'Chasing 10k — two days behind.',
+              )
+              as AgentReportEntity,
+    );
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => []);
+
+    final health = await container.read(
+      goalAgentHealthProvider(agentId).future,
+    );
+    expect(
+      health.reportOneLiner,
+      isNull,
+      reason: 'the old goal report must not caption the revised goal',
+    );
+  });
+
   test('health ignores progress registers written for superseded spec '
       'versions', () async {
     const agentId = 'goal-rev';

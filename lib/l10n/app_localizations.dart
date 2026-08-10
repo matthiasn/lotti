@@ -10199,6 +10199,12 @@ abstract class AppLocalizations {
   /// **'{percent}% of target'**
   String goalAttainmentLabel(int percent);
 
+  /// No description provided for @goalBannerActionFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t save — please try again.'**
+  String get goalBannerActionFailed;
+
   /// Tooltip of the X button on a goal banner; dismissing starts a 24h quiet window.
   ///
   /// In en, this message translates to:
@@ -10240,6 +10246,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Habits to watch'**
   String get goalCreateHabitsLabel;
+
+  /// No description provided for @goalCreateHabitsLoadFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load your habits right now — try again in a moment.'**
+  String get goalCreateHabitsLoadFailed;
 
   /// Label of the goal name field on the creation form.
   ///

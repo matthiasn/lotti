@@ -5990,6 +5990,9 @@ class AppLocalizationsPt extends AppLocalizations {
   }
 
   @override
+  String get goalBannerActionFailed => 'Isso não foi salvo — tente novamente.';
+
+  @override
   String get goalBannerDismissTooltip => 'Dispensar';
 
   @override
@@ -6012,6 +6015,10 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalCreateHabitsLabel => 'Hábitos a acompanhar';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Não foi possível carregar seus hábitos agora — tente novamente em instantes.';
 
   @override
   String get goalCreateNameLabel => 'Nome';

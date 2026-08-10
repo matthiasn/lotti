@@ -130,7 +130,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final messages = context.messages;
-    final habits = ref.watch(_habitDefinitionsProvider).value ?? const [];
+    final habitsAsync = ref.watch(_habitDefinitionsProvider);
+    final habits = habitsAsync.value ?? const <HabitDefinition>[];
+    // A failed FIRST load must not masquerade as "you have no habits" —
+    // the empty picker plus the missing-criterion validation would blame
+    // the user for a database failure.
+    final habitsFailed = habitsAsync.hasError && habitsAsync.value == null;
     return Scaffold(
       appBar: AppBar(title: Text(messages.agentsCreateGoal)),
       body: SafeArea(
@@ -198,6 +203,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                   color: tokens.colors.text.mediumEmphasis,
                 ),
               ),
+              if (habitsFailed) ...[
+                SizedBox(height: tokens.spacing.step2),
+                Text(
+                  messages.goalCreateHabitsLoadFailed,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ],
               for (final habit in habits)
                 CheckboxListTile(
                   value: _selectedHabitIds.contains(habit.id),

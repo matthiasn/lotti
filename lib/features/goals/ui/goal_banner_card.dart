@@ -33,7 +33,7 @@ class GoalBannerCard extends ConsumerWidget {
       // (alongside the X); both write the same terminal verdict.
       child: Dismissible(
         key: ValueKey('goal-banner-${entry.nudge.id}'),
-        onDismissed: (_) => _dismiss(ref),
+        onDismissed: (_) => _dismiss(context, ref),
         child: Material(
           color: style.fill,
           borderRadius: BorderRadius.circular(tokens.radii.m),
@@ -110,7 +110,7 @@ class GoalBannerCard extends ConsumerWidget {
                     ),
                   ),
                   IconButton(
-                    onPressed: () => _dismiss(ref),
+                    onPressed: () => _dismiss(context, ref),
                     tooltip: context.messages.goalBannerDismissTooltip,
                     icon: Icon(
                       Icons.close_rounded,
@@ -126,10 +126,20 @@ class GoalBannerCard extends ConsumerWidget {
     );
   }
 
-  Future<void> _dismiss(WidgetRef ref) async {
-    await ref
-        .read(goalNudgeInteractionsProvider)
-        .dismiss(entry.nudge.id, forActivation: entry.nudge.activationCount);
+  Future<void> _dismiss(BuildContext context, WidgetRef ref) async {
+    // Captured before the await: the card may be gone when the write
+    // settles (the Dismissible removes it optimistically).
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final failedNotice = context.messages.goalBannerActionFailed;
+    try {
+      await ref
+          .read(goalNudgeInteractionsProvider)
+          .dismiss(entry.nudge.id, forActivation: entry.nudge.activationCount);
+    } on Object {
+      // The invalidate below restores the still-active banner; the notice
+      // explains why it came back.
+      messenger?.showSnackBar(SnackBar(content: Text(failedNotice)));
+    }
     // Interaction writes bypass the notifier by design — refresh the strip.
     ref.invalidate(activeGoalNudgesProvider);
   }
@@ -137,6 +147,8 @@ class GoalBannerCard extends ConsumerWidget {
   Future<void> _showRatingSheet(BuildContext context, WidgetRef ref) async {
     final tokens = context.designTokens;
     final messages = context.messages;
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    final failedNotice = messages.goalBannerActionFailed;
     // Sentinel contract: 1..5 = rating, 0 = the explicit Skip button,
     // null = barrier/back/drag dismissal — which consumes NOTHING, so
     // the one rating opportunity per activation survives an accidental
@@ -185,14 +197,20 @@ class GoalBannerCard extends ConsumerWidget {
       ),
     );
     if (outcome == null) return;
-    await ref
-        .read(goalNudgeInteractionsProvider)
-        .recordRating(
-          entry.nudge.id,
-          rating: outcome == 0 ? null : outcome,
-          skipped: outcome == 0,
-          forActivation: entry.nudge.activationCount,
-        );
+    try {
+      await ref
+          .read(goalNudgeInteractionsProvider)
+          .recordRating(
+            entry.nudge.id,
+            rating: outcome == 0 ? null : outcome,
+            skipped: outcome == 0,
+            forActivation: entry.nudge.activationCount,
+          );
+    } on Object {
+      // The banner stays rating-due, so tapping it re-opens the prompt —
+      // the notice tells the user their pick did not stick.
+      messenger?.showSnackBar(SnackBar(content: Text(failedNotice)));
+    }
     ref.invalidate(activeGoalNudgesProvider);
   }
 }

@@ -5938,6 +5938,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalBannerActionFailed => 'Det sparades inte — försök igen.';
+
+  @override
   String get goalBannerDismissTooltip => 'Avfärda';
 
   @override
@@ -5959,6 +5962,10 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalCreateHabitsLabel => 'Vanor att följa';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Det gick inte att läsa in dina vanor just nu — försök igen om en stund.';
 
   @override
   String get goalCreateNameLabel => 'Namn';

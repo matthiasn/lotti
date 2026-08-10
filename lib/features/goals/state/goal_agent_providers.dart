@@ -378,10 +378,19 @@ final FutureProviderFamily<GoalAgentHealth, String> goalAgentHealthProvider =
             ..sort((a, b) => b.periodKey.compareTo(a.periodKey));
       final latest = registers.firstOrNull;
 
-      final report = await repository.getLatestReport(
+      final latestReport = await repository.getLatestReport(
         agentId,
         AgentReportScopes.current,
       );
+      // A standing report written BEFORE the active spec version was
+      // minted describes the superseded goal — showing its one-liner
+      // beside the revised statement would misreport, so it is withheld
+      // until the revised goal's first report lands.
+      final report =
+          latestReport != null &&
+              (spec == null || !latestReport.createdAt.isBefore(spec.createdAt))
+          ? latestReport
+          : null;
 
       final pending = await repository.getPendingChangeSets(
         agentId,

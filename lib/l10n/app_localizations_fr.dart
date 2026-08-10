@@ -6025,6 +6025,10 @@ class AppLocalizationsFr extends AppLocalizations {
   }
 
   @override
+  String get goalBannerActionFailed =>
+      'Ça n\'a pas été enregistré — réessaie, s\'il te plaît.';
+
+  @override
   String get goalBannerDismissTooltip => 'Ignorer';
 
   @override
@@ -6047,6 +6051,10 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalCreateHabitsLabel => 'Habitudes à suivre';
+
+  @override
+  String get goalCreateHabitsLoadFailed =>
+      'Impossible de charger tes habitudes pour le moment — réessaie dans un instant.';
 
   @override
   String get goalCreateNameLabel => 'Nom';

@@ -62,9 +62,13 @@ void main() {
     List<GoalNudgeRating> ratings = const [],
   }) async {
     await tester.pumpWidget(
-      makeTestableWidget(
-        GoalBannerCard(
-          entry: (nudge: nudge(ratings: ratings), goalTitle: 'Move more'),
+      makeTestableWidgetNoScroll(
+        // The failure notices go through the ScaffoldMessenger, which
+        // needs a Scaffold to present on.
+        Scaffold(
+          body: GoalBannerCard(
+            entry: (nudge: nudge(ratings: ratings), goalTitle: 'Move more'),
+          ),
         ),
         overrides: overrides(),
       ),
@@ -106,6 +110,27 @@ void main() {
     verify(
       () => interactions.recordRating('ad-1', rating: 4, forActivation: 1),
     ).called(1);
+  });
+
+  testWidgets('a failed rating write surfaces the retry notice instead of '
+      'an uncaught error', (tester) async {
+    when(
+      () => interactions.recordRating(
+        any(),
+        rating: any(named: 'rating'),
+        skipped: any(named: 'skipped'),
+        forActivation: any(named: 'forActivation'),
+      ),
+    ).thenAnswer((_) async => throw StateError('sync write failed'));
+    await pumpCard(tester);
+    await tester.tap(find.text('Your shoes filed a missing person report.'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byTooltip('4'));
+    await tester.pumpAndSettle();
+    expect(
+      find.text("That didn't save — please try again."),
+      findsOneWidget,
+    );
   });
 
   testWidgets('the Skip button records a skip', (tester) async {

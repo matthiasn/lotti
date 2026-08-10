@@ -5,18 +5,14 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
-import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../../helpers/fallbacks.dart';
+import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
-
-class _MockGoalAgentService extends Mock implements GoalAgentService {}
-
-class _MockHabitsRepository extends Mock implements HabitsRepository {}
 
 HabitDefinition _habit(String id, String name) => HabitDefinition(
   id: id,
@@ -39,8 +35,8 @@ void main() {
     );
   });
 
-  late _MockGoalAgentService service;
-  late _MockHabitsRepository habitsRepository;
+  late MockGoalAgentService service;
+  late MockHabitsRepository habitsRepository;
 
   List<Override> overrides() => [
     goalAgentServiceProvider.overrideWithValue(service),
@@ -48,8 +44,8 @@ void main() {
   ];
 
   setUp(() {
-    service = _MockGoalAgentService();
-    habitsRepository = _MockHabitsRepository();
+    service = MockGoalAgentService();
+    habitsRepository = MockHabitsRepository();
     when(habitsRepository.watchHabitDefinitions).thenAnswer(
       (_) => Stream.value([_habit('h-gym', 'Gym'), _habit('h-run', 'Run')]),
     );
@@ -248,5 +244,31 @@ void main() {
     // reaches the goal, as a single leaf rather than a composite.
     final leaf = captured! as GoalCriterionHabit;
     expect(leaf.habitId, 'h-gym');
+  });
+
+  testWidgets('a failed habit stream shows the load-failure notice instead '
+      'of a silently empty picker', (tester) async {
+    when(
+      habitsRepository.watchHabitDefinitions,
+    ).thenAnswer((_) => Stream.error(StateError('db unavailable')));
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Habit routine'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        "Couldn't load your habits right now — try again in a "
+        'moment.',
+      ),
+      findsOneWidget,
+    );
+    expect(find.byType(CheckboxListTile), findsNothing);
   });
 }
