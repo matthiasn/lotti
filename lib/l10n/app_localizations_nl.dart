@@ -3164,11 +3164,11 @@ class AppLocalizationsNl extends AppLocalizations {
       'Begeleid de eerste keer Dagelijkse OS gebruikers door een echte check-in die spraak verandert in een taak en een dagplan.';
 
   @override
-  String get configFlagEnableAgentsPage => 'Agenten-pagina inschakelen';
+  String get configFlagEnableAgentsPage => 'Agentenpagina inschakelen';
 
   @override
   String get configFlagEnableAgentsPageDescription =>
-      'Toon de Agenten-pagina in de hoofdnavigatie. Volg in één oogopslag de gezondheid van je doel-agenten en kijk bij elk van hen binnen.';
+      'Toon de agentenpagina in de hoofdnavigatie. Volg in één oogopslag de gezondheid van je doelagenten en kijk bij elk van hen binnen.';
 
   @override
   String get configFlagEnableAiStreaming =>

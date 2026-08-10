@@ -171,12 +171,14 @@ void main() {
       // collapse to the last write.
       var current = nudge();
       final gate = Completer<void>();
+      final firstWriteAtGate = Completer<void>();
       when(() => repository.getEntity('ad-1')).thenAnswer(
         (_) async => current,
       );
       when(
         () => syncService.upsertEntity(any()),
       ).thenAnswer((invocation) async {
+        if (!firstWriteAtGate.isCompleted) firstWriteAtGate.complete();
         await gate.future;
         current = invocation.positionalArguments.first as GoalNudgeEntity;
         upserts.add(current);
@@ -192,10 +194,10 @@ void main() {
           'ad-1',
           visibleFor: const Duration(seconds: 3),
         );
-        // Let both calls progress as far as the gate allows before it
-        // opens — this is the window where a stale read would happen.
-        await Future<void>.delayed(Duration.zero);
-        await Future<void>.delayed(Duration.zero);
+        // Wait until the first write is held at the gate — the window in
+        // which an unserialized second call reads the stale seed row —
+        // then open it.
+        await firstWriteAtGate.future;
         gate.complete();
         await Future.wait([first, second]);
       });
