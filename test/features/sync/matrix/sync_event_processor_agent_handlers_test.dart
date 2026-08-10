@@ -414,8 +414,8 @@ void main() {
       expect(upserted.wakeCounter.value, 11);
     });
 
-    test('concurrent goal-nudge edits join exposure counters and union '
-        'ratings — the labeled library survives whole-row LWW', () async {
+    test('concurrent goal-nudge edits join exposure counters and collapse '
+        'same-activation ratings to the earliest outcome', () async {
       const localVc = VectorClock({'host-A': 2, 'host-B': 1});
       const incomingVc = VectorClock({'host-A': 1, 'host-B': 2});
       GoalNudgeEntity nudgeRow({
@@ -490,7 +490,12 @@ void main() {
         upserted.totalVisibleMs.byHost,
         {'host-A': 5000, 'host-B': 3000},
       );
-      expect(upserted.ratings, hasLength(2));
+      // One outcome per activation: both devices rated activation 1, and
+      // the merge keeps the EARLIEST outcome (the first one the user gave).
+      expect(upserted.ratings, hasLength(1));
+      expect(upserted.ratings.single.activation, 1);
+      expect(upserted.ratings.single.rating, 5);
+      expect(upserted.ratings.single.ratedAt, DateTime(2026, 8, 1, 9));
     });
 
     test('concurrent goal-nudge edits with no dismissal fall to LWW for '

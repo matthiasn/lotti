@@ -133,6 +133,11 @@ void main() {
           activeGoalAgentsProvider.overrideWith(
             (ref) async => [identity('goal-fit', 'Expedition fitness')],
           ),
+          // The detail page refuses to mount for anything that is not a
+          // resolvable goal-kind identity, so the flow must provide one.
+          agentIdentityProvider('goal-fit').overrideWith(
+            (ref) async => identity('goal-fit', 'Expedition fitness'),
+          ),
           goalAgentHealthProvider('goal-fit').overrideWith(
             (ref) async => (
               trackStatus: GoalTrackStatus.onTrack,
