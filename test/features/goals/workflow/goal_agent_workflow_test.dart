@@ -396,7 +396,7 @@ void main() {
     expect(nudge.brief.headline, 'Your pedometer misses you.');
     expect(nudge.brief.accent, GoalBannerAccent.tide);
     expect(nudge.briefDigest, goalBriefDigest(nudge.brief));
-    expect(nudge.staleAt, now.add(goalAdLifetime));
+    expect(nudge.staleAt, now.toUtc().add(goalAdLifetime));
     expect(nudge.runKey, 'run-1');
     expect(nudge.triggerProgressId, goalProgressId(agentId, '2026-08-09'));
 

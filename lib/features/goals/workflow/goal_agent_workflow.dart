@@ -918,7 +918,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           await _syncService.upsertEntity(
             nudge.copyWith(
               status: GoalNudgeStatus.retired,
-              retiredAt: now,
+              retiredAt: now.toUtc(),
               updatedAt: now,
               provenance: {
                 ...nudge.provenance,
@@ -945,7 +945,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
         await _syncService.upsertEntity(
           nudge.copyWith(
             status: GoalNudgeStatus.retired,
-            retiredAt: now,
+            retiredAt: now.toUtc(),
             updatedAt: now,
             provenance: {...nudge.provenance, 'retireReason': action.reason},
           ),
@@ -1000,8 +1000,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
           nudge.copyWith(
             status: GoalNudgeStatus.active,
             activationCount: nudge.activationCount + 1,
-            activatedAt: now,
-            staleAt: now.add(goalAdLifetime),
+            activatedAt: now.toUtc(),
+            staleAt: now.toUtc().add(goalAdLifetime),
             updatedAt: now,
             runKey: runKey,
             threadId: threadId,
@@ -1052,6 +1052,18 @@ class GoalAgentWorkflow with AgentErrorLogging {
           logError('ad creation skipped: duplicate brief digest');
           continue;
         }
+        if (allRows.any((n) => n.id == creationId)) {
+          // The SAME transition recurring within one day (offTrack →
+          // recover → offTrack) maps to one id — skipping preserves the
+          // earlier banner's outcome, ratings and counters, and one
+          // banner per identical daily transition is the respectful
+          // ceiling anyway (the digest/cooldown spirit).
+          logError(
+            'ad creation skipped: this transition already produced '
+            "today's banner",
+          );
+          continue;
+        }
         freshActiveExists = true;
         await _syncService.upsertEntity(
           AgentDomainEntity.goalNudge(
@@ -1060,15 +1072,18 @@ class GoalAgentWorkflow with AgentErrorLogging {
             status: GoalNudgeStatus.active,
             brief: brief,
             briefDigest: digest,
-            createdAt: now,
-            updatedAt: now,
+            // UTC throughout: local instants serialize without an offset
+            // and would shift the 72 h lifetime and freshness checks by
+            // the zone difference on a syncing peer.
+            createdAt: now.toUtc(),
+            updatedAt: now.toUtc(),
             vectorClock: null,
             runKey: runKey,
             threadId: threadId,
             triggerProgressId: goalProgressId(agentId, derivation.periodKey),
             reasonSummary: request.reasonSummary,
-            staleAt: now.add(goalAdLifetime),
-            activatedAt: now,
+            staleAt: now.toUtc().add(goalAdLifetime),
+            activatedAt: now.toUtc(),
             // The originating spec version: a banner syncing in AFTER
             // the revision sweep carries its own fencing evidence.
             provenance: {'specVersionId': derivation.version.id},
@@ -1108,7 +1123,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
       // Revision proposals: ChangeSet-gated — the goal spec NEVER mutates
       // here; PR 4's approval flow mints the new version on accept.
-      if (strategy.revisionProposals.isNotEmpty) {
+      if (staleSpecWake && strategy.revisionProposals.isNotEmpty) {
+        logError(
+          'revision proposal suppressed: the wake ran under a superseded '
+          'spec — approving it would distort the newer goal',
+        );
+      }
+      if (!staleSpecWake && strategy.revisionProposals.isNotEmpty) {
         await _syncService.upsertEntity(
           AgentDomainEntity.changeSet(
             id: _uuid.v4(),

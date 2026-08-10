@@ -191,7 +191,7 @@ class GoalSpecRevisionService {
       await _syncService.upsertEntity(
         nudge.copyWith(
           status: GoalNudgeStatus.superseded,
-          supersededAt: now,
+          supersededAt: now.toUtc(),
           updatedAt: now,
         ),
       );

@@ -178,7 +178,7 @@ void main() {
     expect(expired.single.status, GoalNudgeStatus.expired);
     expect(
       expired.single.expiredAt,
-      deadline,
+      deadline.toUtc(),
       reason:
           'the deadline itself, not this device wall clock — '
           'every sweeping device writes the identical verdict',

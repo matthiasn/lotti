@@ -1,3 +1,4 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart' show RenderAbstractViewport;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -28,8 +29,17 @@ class GoalBannerStrip extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
-    final entries =
-        ref.watch(activeGoalNudgesProvider).value ?? const <GoalBannerEntry>[];
+    // Retained data survives a failed background refresh (no-flash), but
+    // the staleness CONTRACT still binds at render time: the deadline
+    // timer's reload failing must not keep expired copy on screen.
+    final now = clock.now();
+    final entries = [
+      for (final entry
+          in ref.watch(activeGoalNudgesProvider).value ??
+              const <GoalBannerEntry>[])
+        if (entry.nudge.staleAt == null || now.isBefore(entry.nudge.staleAt!))
+          entry,
+    ];
     if (entries.isEmpty) return const SizedBox.shrink();
     return Padding(
       padding: EdgeInsets.only(

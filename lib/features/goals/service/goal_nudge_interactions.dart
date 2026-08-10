@@ -131,7 +131,7 @@ class GoalNudgeInteractions {
                 ...nudge.ratings,
                 GoalNudgeRating(
                   activation: activation,
-                  ratedAt: clock.now(),
+                  ratedAt: clock.now().toUtc(),
                   rating: rating,
                   skipped: skipped,
                 ),
@@ -188,8 +188,8 @@ class GoalNudgeInteractions {
               visibleFor.inMilliseconds,
             ),
             impressionCount: nudge.impressionCount.increment(host),
-            firstShownAt: nudge.firstShownAt ?? shownAt,
-            lastShownAt: now,
+            firstShownAt: nudge.firstShownAt ?? shownAt.toUtc(),
+            lastShownAt: now.toUtc(),
             updatedAt: now,
           ),
         );

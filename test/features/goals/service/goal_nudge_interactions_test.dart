@@ -219,7 +219,7 @@ void main() {
         DateTime(2026, 8, 9, 8),
         reason: 'the first showing is never overwritten',
       );
-      expect(written.lastShownAt, now);
+      expect(written.lastShownAt, now.toUtc());
     });
 
     test('an unset firstShownAt is stamped with the episode START, not '
@@ -235,12 +235,12 @@ void main() {
       final written = upserts.whereType<GoalNudgeEntity>().single;
       expect(
         written.firstShownAt,
-        now.subtract(const Duration(seconds: 30)),
+        now.subtract(const Duration(seconds: 30)).toUtc(),
         reason:
             'a flush racing a dismissal must not place firstShownAt '
             'after dismissedAt',
       );
-      expect(written.lastShownAt, now);
+      expect(written.lastShownAt, now.toUtc());
     });
 
     test('zero or negative visibility writes nothing', () async {
