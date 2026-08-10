@@ -1121,6 +1121,18 @@ void main() {
           'the old-spec banner is fenced; legacy rows without the '
           'field still render',
     );
+
+    // With NO live head, tagged banners have nothing to validate against
+    // and are hidden; only the untagged legacy row remains.
+    when(
+      () => repository.getEntity(goalSpecHeadId('goal-a')),
+    ).thenAnswer((_) async => null);
+    container.invalidate(activeGoalNudgesProvider);
+    final headless = await container.read(activeGoalNudgesProvider.future);
+    expect(
+      {for (final e in headless) e.nudge.id},
+      {'ad-legacy'},
+    );
   });
 
   test('goalNudgeHistoryProvider lists only terminal outcomes, newest '

@@ -120,7 +120,11 @@ class GoalFactsRenderer {
       nudges.any(
         (n) =>
             n.dismissedAt != null &&
-            GoalWindow.dayUtc(n.dismissedAt!) == GoalWindow.dayUtc(now),
+            // toLocal: the instant persists as UTC; "not today" means the
+            // READING device's calendar day (older local-stamped rows
+            // pass through toLocal unchanged).
+            GoalWindow.dayUtc(n.dismissedAt!.toLocal()) ==
+                GoalWindow.dayUtc(now),
       );
 
   /// Retired ads whose mean rating clears [goalReusableMinMeanRating],

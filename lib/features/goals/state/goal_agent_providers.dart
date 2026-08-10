@@ -291,9 +291,12 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
                 return n.deletedAt == null &&
                     n.status == GoalNudgeStatus.active &&
                     (n.staleAt == null || now.isBefore(n.staleAt!)) &&
+                    // A spec-tagged banner needs a live head to validate
+                    // against — a missing/dangling head must not admit
+                    // copy that has no goal statement behind it. Only
+                    // untagged legacy rows pass without one.
                     (origin is! String ||
-                        activeVersionId == null ||
-                        origin == activeVersionId);
+                        (activeVersionId != null && origin == activeVersionId));
               },
             );
         for (final nudge in nudges) {

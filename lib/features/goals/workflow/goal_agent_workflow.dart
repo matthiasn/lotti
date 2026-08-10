@@ -1011,18 +1011,15 @@ class GoalAgentWorkflow with AgentErrorLogging {
       final seenDigests = {
         for (final nudge in nudges) nudge.briefDigest,
       };
-      // The creation ordinal within this period: partitioned duplicate
-      // executions of the SAME escalation both compute 0 and converge on
-      // one row, while a same-period retire-and-create swap sees the
-      // earlier row and mints ordinal 1 — never recycling (and wiping)
-      // the retired row's history and counters.
-      // Counted over ALL same-period rows (not the spec-scoped view): a
-      // superseded v1 banner still owns ordinal 0, and recycling its id
-      // would wipe its ratings, counters and terminal history.
-      final periodIdPrefix = 'goal_nudge:$agentId:${derivation.periodKey}:';
-      var periodOrdinal = allRows
-          .where((n) => n.id.startsWith(periodIdPrefix))
-          .length;
+      // The creation id derives from the LOGICAL escalation — its period
+      // plus the baseline status that armed it — never from locally
+      // observed row counts, which legitimately differ across partitioned
+      // replicas. Duplicate executions of one escalation share both and
+      // converge on one row; a same-day SECOND escalation carries a
+      // different baseline (the status moved) and mints a distinct id.
+      final creationId =
+          'goal_nudge:$agentId:${derivation.periodKey}:'
+          '${derivation.facts.previousStatus?.name ?? 'first'}';
       for (final request in strategy.createdAds) {
         if (staleSpecWake) {
           logError(
@@ -1053,11 +1050,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
         freshActiveExists = true;
         await _syncService.upsertEntity(
           AgentDomainEntity.goalNudge(
-            // Deterministic per escalation period + creation ordinal:
-            // two devices that both win a partitioned lease and run the
-            // same escalation mint the SAME row and converge, while a
-            // same-period swap gets a fresh id.
-            id: '$periodIdPrefix${periodOrdinal++}',
+            id: creationId,
             agentId: agentId,
             status: GoalNudgeStatus.active,
             brief: brief,
