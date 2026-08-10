@@ -117,8 +117,12 @@ extension WakeDrainEngine on WakeOrchestrator {
                 candidate.agentId,
                 candidate.triggerTokens,
               );
+              // The throttle is per-agent but the drain policy is per-job:
+              // an immediate-drain job dispatches past a deadline that a
+              // deferred job for the SAME agent legitimately armed.
               return suppressed ||
                   preRegistered ||
+                  candidate.drainImmediately ||
                   !_isThrottled(candidate.agentId);
             },
           );
@@ -168,8 +172,9 @@ extension WakeDrainEngine on WakeOrchestrator {
             }
 
             // Throttled: defer the job so the deferred drain timer can pick
-            // it up after the throttle window expires.
-            if (_isThrottled(job.agentId)) {
+            // it up after the throttle window expires. Immediate-drain jobs
+            // ignore the agent-level deadline (see the candidate filter).
+            if (!job.drainImmediately && _isThrottled(job.agentId)) {
               _log(
                 'drain re-check: throttled=true '
                 'for ${DomainLogger.sanitizeId(job.agentId)}',
@@ -509,20 +514,36 @@ extension WakeDrainEngine on WakeOrchestrator {
               job.agentId,
               workspaceKey: job.workspaceKey,
             )) {
-          final hasDirectQueued = queue.hasDirectQueuedJobFor(
+          // The policy lives on the queued jobs, not on the agent: a mixed
+          // queue (deferred follow-up beside an immediate one) arms the
+          // deadline for the deferred job AND dispatches the immediate one
+          // now — the job-level check in the candidate filter lets it pass
+          // the deadline the deferred job still honours.
+          if (queue.hasDeferredQueuedJobFor(
             job.agentId,
             workspaceKey: job.workspaceKey,
-          );
-          final morningDeadline = !hasDirectQueued
-              ? nextOccurrenceOf(
-                  clock.now(),
-                  hour: AgentSchedules.projectDailyDigestHour,
-                )
-              : null;
-          await _setThrottleDeadline(
+          )) {
+            final hasDirectQueued = queue.hasDirectQueuedJobFor(
+              job.agentId,
+              workspaceKey: job.workspaceKey,
+            );
+            final morningDeadline = !hasDirectQueued
+                ? nextOccurrenceOf(
+                    clock.now(),
+                    hour: AgentSchedules.projectDailyDigestHour,
+                  )
+                : null;
+            await _setThrottleDeadline(
+              job.agentId,
+              customDeadline: morningDeadline,
+            );
+          }
+          if (queue.hasImmediateQueuedJobFor(
             job.agentId,
-            customDeadline: morningDeadline,
-          );
+            workspaceKey: job.workspaceKey,
+          )) {
+            unawaited(processNext());
+          }
         }
       } catch (e) {
         _suppression.clearPreRegistered(job.agentId);

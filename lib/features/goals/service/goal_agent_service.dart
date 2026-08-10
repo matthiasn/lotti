@@ -149,7 +149,10 @@ class GoalAgentService {
 
   /// Evidence-triggered wakes: the goal agent listens to exactly the
   /// signals its criteria reference — leaf dataTypes, habitIds and
-  /// measurable ids — never a global sentinel.
+  /// measurable ids — never a global sentinel. `drainImmediately`: a habit
+  /// check-off is atomic evidence and Phase A is €0, so the wake dispatches
+  /// now — the user's tap is acknowledged in seconds, not after the
+  /// 120-second coalescing window built for costly task-agent wakes.
   void registerSignalSubscription(String agentId, GoalCriterion criteria) {
     _orchestrator.addSubscription(
       AgentSubscription(
@@ -157,6 +160,7 @@ class GoalAgentService {
         agentId: agentId,
         matchEntityIds: goalSignalTriggerTokens(criteria),
         deferPropagatedMatches: false,
+        drainImmediately: true,
       ),
     );
   }

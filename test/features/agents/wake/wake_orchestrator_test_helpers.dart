@@ -17,6 +17,7 @@ AgentSubscription makeSub({
   Set<String> matchEntityIds = const {'entity-1'},
   bool Function(Set<String> tokens)? predicate,
   bool deferPropagatedMatches = true,
+  bool drainImmediately = false,
 }) {
   return AgentSubscription(
     id: id,
@@ -24,6 +25,7 @@ AgentSubscription makeSub({
     matchEntityIds: matchEntityIds,
     predicate: predicate,
     deferPropagatedMatches: deferPropagatedMatches,
+    drainImmediately: drainImmediately,
   );
 }
 

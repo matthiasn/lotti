@@ -11,6 +11,7 @@ class WakeJob {
     this.reasonId,
     this.workspaceKey,
     this.hasDirectMatch = true,
+    this.drainImmediately = false,
     WakeInitiator? initiator,
   }) : initiator =
            initiator ??
@@ -68,6 +69,15 @@ class WakeJob {
   /// pending propagated-only job that picks up a fresh direct edit no
   /// longer fires at next 06:00 as if it were still propagated-only.
   bool hasDirectMatch;
+
+  /// `true` when a match from an immediate-drain subscription
+  /// (`AgentSubscription.drainImmediately`) contributed to this job. The
+  /// throttle is per-agent, so an agent holding both a deferred and an
+  /// immediate subscription needs the policy ON THE JOB: the drain engine
+  /// dispatches an immediate job past the agent's deadline while a deferred
+  /// job queued alongside it keeps waiting. [WakeQueue.mergeTokens] upgrades
+  /// this monotonically, mirroring [hasDirectMatch].
+  bool drainImmediately;
 }
 
 /// In-memory FIFO queue with run-key deduplication.
@@ -118,16 +128,22 @@ class WakeQueue {
   ///
   /// Returns `true` when a matching job was found and updated, `false`
   /// otherwise.
+  /// When [markImmediate] is `true`, also upgrades the job's
+  /// [WakeJob.drainImmediately] — an immediate-drain match coalescing onto a
+  /// deferred job must not wait out that job's window. Monotonic, like the
+  /// [isDirect] upgrade.
   bool mergeTokens(
     String agentId,
     Set<String> tokens, {
     String? workspaceKey,
     bool isDirect = false,
+    bool markImmediate = false,
   }) {
     for (final job in _queue) {
       if (job.agentId == agentId && job.workspaceKey == workspaceKey) {
         job.triggerTokens.addAll(tokens);
         if (isDirect) job.hasDirectMatch = true;
+        if (markImmediate) job.drainImmediately = true;
         return true;
       }
     }
@@ -152,6 +168,28 @@ class WakeQueue {
   bool hasQueuedJobFor(String agentId, {String? workspaceKey}) => _queue.any(
     (job) => job.agentId == agentId && job.workspaceKey == workspaceKey,
   );
+
+  /// Whether a queued job for [agentId] in [workspaceKey] carries the
+  /// immediate-drain policy — the post-run path dispatches these at once
+  /// instead of arming a follow-up deadline.
+  bool hasImmediateQueuedJobFor(String agentId, {String? workspaceKey}) =>
+      _queue.any(
+        (job) =>
+            job.agentId == agentId &&
+            job.workspaceKey == workspaceKey &&
+            job.drainImmediately,
+      );
+
+  /// Whether a queued job for [agentId] in [workspaceKey] does NOT carry the
+  /// immediate-drain policy — such a job still deserves its follow-up
+  /// deadline even when an immediate job sits beside it in the queue.
+  bool hasDeferredQueuedJobFor(String agentId, {String? workspaceKey}) =>
+      _queue.any(
+        (job) =>
+            job.agentId == agentId &&
+            job.workspaceKey == workspaceKey &&
+            !job.drainImmediately,
+      );
 
   /// Remove queued jobs for [agentId] and return them.
   ///

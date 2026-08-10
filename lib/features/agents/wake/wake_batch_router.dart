@@ -11,6 +11,20 @@ extension WakeBatchRouter on WakeOrchestrator {
       );
       return;
     }
+    // Immediate drains are collected and dispatched ONCE after the whole
+    // batch is routed: a mid-loop processNext() would dequeue the first
+    // immediate subscription's job synchronously, so a second subscription
+    // matching the same batch would find nothing to merge into and enqueue
+    // a duplicate — the agent would evaluate the same batch twice.
+    //
+    // Deadline arming is deferred to the same point: a deferred subscription
+    // whose tokens merged into a sibling's immediate job must not arm a
+    // deadline — the job dispatches this pass and leaves the queue empty, so
+    // nothing would ever clear that countdown. Deciding after the loop makes
+    // the outcome independent of subscription registration order.
+    var immediateDrainRequested = false;
+    final immediateDrainAgents = <String>{};
+    final deadlineRequests = <String, DateTime?>{};
     for (final sub in _subscriptions) {
       // 1. Check whether any token matches the subscription's entity IDs.
       //    A "direct" match means the agent's own entity was edited
@@ -109,6 +123,7 @@ extension WakeBatchRouter on WakeOrchestrator {
           sub.agentId,
           allMatched,
           isDirect: usesFastThrottle,
+          markImmediate: sub.drainImmediately,
         );
         if (!merged) {
           final counter = _wakeCounters[sub.agentId] ?? 0;
@@ -128,6 +143,7 @@ extension WakeBatchRouter on WakeOrchestrator {
               reasonId: sub.id,
               createdAt: clock.now(),
               hasDirectMatch: usesFastThrottle,
+              drainImmediately: sub.drainImmediately,
             ),
           );
         }
@@ -142,8 +158,15 @@ extension WakeBatchRouter on WakeOrchestrator {
 
       // 5. Throttle gate: when the agent is throttled (but not executing),
       //    merge tokens into the queued job or enqueue a new one so the
-      //    deferred drain timer can pick it up.
-      if (_isThrottled(sub.agentId)) {
+      //    deferred drain timer can pick it up. Immediate-drain
+      //    subscriptions clear the deadline instead — the only way one
+      //    exists for them is hydration of a pre-policy `nextWakeAt`, and
+      //    honouring it would defer exactly the wake this policy exists to
+      //    dispatch (the drain re-check also skips throttled agents, so a
+      //    stale deadline would strand the job).
+      if (sub.drainImmediately && _isThrottled(sub.agentId)) {
+        clearThrottle(sub.agentId);
+      } else if (_isThrottled(sub.agentId)) {
         final deadline = _throttle.deadlineFor(sub.agentId);
         final merged = queue.mergeTokens(
           sub.agentId,
@@ -196,6 +219,7 @@ extension WakeBatchRouter on WakeOrchestrator {
         reasonId: sub.id,
         createdAt: clock.now(),
         hasDirectMatch: usesFastThrottle,
+        drainImmediately: sub.drainImmediately,
       );
 
       // Attempt to merge tokens into an existing queued job for this agent
@@ -204,8 +228,24 @@ extension WakeBatchRouter on WakeOrchestrator {
         sub.agentId,
         allMatched,
         isDirect: usesFastThrottle,
+        markImmediate: sub.drainImmediately,
       )) {
         queue.enqueue(job);
+      }
+
+      // Immediate-drain subscriptions dispatch after the batch finishes
+      // routing: no deadline, no countdown. The evidence is atomic and the
+      // wake is cheap — see [AgentSubscription.drainImmediately].
+      if (sub.drainImmediately) {
+        _log(
+          'immediate drain for ${DomainLogger.sanitizeId(sub.agentId)}: '
+          'dispatching without throttle deadline, '
+          'triggers=${allMatched.map(DomainLogger.sanitizeId).join(',')}',
+          subDomain: 'defer',
+        );
+        immediateDrainRequested = true;
+        immediateDrainAgents.add(sub.agentId);
+        continue;
       }
 
       // Awaiting-content agents (newly-created task agents on blank tasks)
@@ -238,19 +278,42 @@ extension WakeBatchRouter on WakeOrchestrator {
       } else {
         morningDeadline = null;
       }
-      unawaited(
-        _setThrottleDeadline(sub.agentId, customDeadline: morningDeadline),
+      // Recorded, not armed — the decision happens after the loop. The
+      // fastest request wins when several subscriptions defer the same
+      // agent (null = the standard short window beats any morning slot).
+      deadlineRequests.update(
+        sub.agentId,
+        (existing) => existing == null || morningDeadline == null
+            ? null
+            : (morningDeadline.isBefore(existing) ? morningDeadline : existing),
+        ifAbsent: () => morningDeadline,
       );
 
       _log(
         'deferred wake for ${DomainLogger.sanitizeId(sub.agentId)}: '
-        '${morningDeadline == null ? 'drain scheduled in ${WakeOrchestrator.throttleWindow.inSeconds}s' : 'drain scheduled at $morningDeadline (morning)'}, '
+        '${morningDeadline == null ? 'drain requested in ${WakeOrchestrator.throttleWindow.inSeconds}s' : 'drain requested at $morningDeadline (morning)'}, '
         'reason=subscription, '
         'sub=${DomainLogger.sanitizeId(sub.id)}, '
         'triggers=${allMatched.map(DomainLogger.sanitizeId).join(',')}',
         subDomain: 'defer',
       );
     }
+    // Arm the deferred deadlines first so other agents' queued jobs are
+    // throttled before the dispatch below can reach them — then one
+    // dispatch for the whole batch (see the loop-head comment).
+    deadlineRequests.forEach((agentId, customDeadline) {
+      if (immediateDrainAgents.contains(agentId)) {
+        _log(
+          'skipping deadline for ${DomainLogger.sanitizeId(agentId)}: '
+          'its tokens merged into an immediate job dispatching this batch — '
+          'arming would leave a countdown with no work behind it',
+          subDomain: 'defer',
+        );
+        return;
+      }
+      unawaited(_setThrottleDeadline(agentId, customDeadline: customDeadline));
+    });
+    if (immediateDrainRequested) unawaited(processNext());
   }
 
   /// Returns `true` when all [matchedTokens] are covered by the agent's

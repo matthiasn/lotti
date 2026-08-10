@@ -85,6 +85,444 @@ void main() {
         });
       });
     });
+    group('immediate drain (drainImmediately subscriptions)', () {
+      test('dispatches without the 120s defer-first window — the wake runs '
+          'on flushMicrotasks alone', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+
+          orchestrator
+            ..addSubscription(makeSub(drainImmediately: true))
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // No async.elapse: a defer-first subscription would sit behind
+          // the 120s deadline here (see the deferred-drain group above).
+          emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 1);
+
+          controller.close();
+        });
+      });
+
+      test('a stale hydrated deadline is cleared instead of stranding the '
+          'wake behind a countdown', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+
+          orchestrator
+            ..addSubscription(makeSub(drainImmediately: true))
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            }
+            // Hydration of a pre-policy `nextWakeAt` arms a real deadline.
+            ..setThrottleDeadline(
+              'agent-1',
+              clock.now().add(WakeOrchestrator.throttleWindow),
+            );
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          emitTokens(async, controller, {'entity-1'});
+          expect(
+            executionCount,
+            1,
+            reason:
+                'the stale deadline must be cleared, not honoured — '
+                'the drain re-check skips throttled agents, so honouring '
+                'it would strand the job',
+          );
+
+          controller.close();
+        });
+      });
+
+      test('registering an immediate-drain subscription retires a deadline '
+          'persisted under the old defer-first policy', () {
+        fakeAsync((async) {
+          // The upgrade scenario: `nextWakeAt` was persisted by the old
+          // defer-first policy and hydration never loaded it into the
+          // coordinator. No notification arrives — an idle goal would show
+          // the stale countdown row forever unless registration clears it.
+          final state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(),
+                    updatedAt: clock.now(),
+                    vectorClock: null,
+                    nextWakeAt: clock.now().add(
+                      WakeOrchestrator.throttleWindow,
+                    ),
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          orchestrator.addSubscription(makeSub(drainImmediately: true));
+          async.flushMicrotasks();
+
+          final upserted = verify(
+            () => mockRepository.upsertEntity(captureAny()),
+          ).captured.whereType<AgentStateEntity>().last;
+          expect(
+            upserted.nextWakeAt,
+            isNull,
+            reason: 'registration alone must wipe the durable countdown',
+          );
+        });
+      });
+
+      test('one batch matching two immediate subscriptions of the same '
+          'agent coalesces into a single wake', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+          final seenTriggers = <Set<String>>[];
+
+          orchestrator
+            ..addSubscription(
+              makeSub(drainImmediately: true, matchEntityIds: {'entity-1'}),
+            )
+            ..addSubscription(
+              makeSub(
+                id: 'sub-2',
+                drainImmediately: true,
+                matchEntityIds: {'entity-2'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              seenTriggers.add(triggers);
+              return null;
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // Both subscriptions match the SAME batch. A mid-loop dispatch
+          // would dequeue the first job before the second subscription
+          // routes, duplicating the evaluation of one database batch.
+          emitTokens(async, controller, {'entity-1', 'entity-2'});
+          expect(executionCount, 1);
+          expect(seenTriggers.single, containsAll(['entity-1', 'entity-2']));
+
+          controller.close();
+        });
+      });
+
+      test('a deferred sibling matching the same batch does not arm a '
+          'deadline for the immediate job it merged into', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+          final state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(),
+                    updatedAt: clock.now(),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+
+          // Immediate registered FIRST, deferred second; both match the
+          // one batch. The deferred sibling's tokens merge into the
+          // immediate job, which dispatches and empties the queue — an
+          // armed deadline would be a countdown with no work behind it,
+          // and nothing would ever clear it.
+          orchestrator
+            ..addSubscription(
+              makeSub(drainImmediately: true, matchEntityIds: {'entity-1'}),
+            )
+            ..addSubscription(
+              makeSub(
+                id: 'sub-deferred',
+                matchEntityIds: {'entity-1', 'entity-2'},
+                deferPropagatedMatches: false,
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 1);
+
+          // No persisted countdown may survive a batch whose only job
+          // dispatched immediately.
+          verifyNever(
+            () => mockRepository.upsertEntity(
+              any(
+                that: isA<AgentStateEntity>().having(
+                  (s) => s.nextWakeAt,
+                  'nextWakeAt',
+                  isNotNull,
+                ),
+              ),
+            ),
+          );
+
+          controller.close();
+        });
+      });
+
+      test('the deferred-first registration order arms no deadline either — '
+          'the decision is order-independent', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+          final state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(),
+                    updatedAt: clock.now(),
+                    vectorClock: null,
+                  )
+                  as AgentStateEntity;
+
+          orchestrator
+            ..addSubscription(
+              makeSub(
+                id: 'sub-deferred',
+                matchEntityIds: {'entity-1'},
+                deferPropagatedMatches: false,
+              ),
+            )
+            ..addSubscription(
+              makeSub(
+                id: 'sub-immediate',
+                drainImmediately: true,
+                matchEntityIds: {'entity-1'},
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          when(
+            () => mockRepository.upsertEntity(any()),
+          ).thenAnswer((_) async {});
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 1);
+
+          verifyNever(
+            () => mockRepository.upsertEntity(
+              any(
+                that: isA<AgentStateEntity>().having(
+                  (s) => s.nextWakeAt,
+                  'nextWakeAt',
+                  isNotNull,
+                ),
+              ),
+            ),
+          );
+
+          controller.close();
+        });
+      });
+
+      test('a deferred subscription of the same agent keeps its follow-up '
+          'window — the immediate policy is per job, not per agent', () {
+        fakeAsync((async) {
+          final gate = Completer<Map<String, VectorClock>?>();
+          var executionCount = 0;
+
+          // One agent, two subscriptions with opposite policies.
+          orchestrator
+            ..addSubscription(
+              makeSub(drainImmediately: true, matchEntityIds: {'entity-1'}),
+            )
+            ..addSubscription(
+              makeSub(
+                id: 'sub-deferred',
+                matchEntityIds: {'entity-2'},
+                deferPropagatedMatches: false,
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) {
+              executionCount++;
+              if (executionCount == 1) return gate.future;
+              return Future.value();
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // Immediate wake starts.
+          emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 1);
+
+          // The DEFERRED subscription matches while the agent is running —
+          // its follow-up job must wait out the normal window after the
+          // wake completes, not ride the other subscription's policy.
+          emitTokens(async, controller, {'entity-2'});
+          gate.complete(null);
+          async.flushMicrotasks();
+          expect(
+            executionCount,
+            1,
+            reason:
+                'the deferred follow-up must not dispatch immediately '
+                'just because a sibling subscription drains immediately',
+          );
+
+          // After the window, the deferred job drains normally.
+          async
+            ..elapse(WakeOrchestrator.throttleWindow)
+            ..flushMicrotasks();
+          expect(executionCount, 2);
+
+          controller.close();
+        });
+      });
+
+      test('a burst during execution merges and the follow-up runs without '
+          'a post-run countdown', () {
+        fakeAsync((async) {
+          final gate = Completer<Map<String, VectorClock>?>();
+          var executionCount = 0;
+
+          orchestrator
+            ..addSubscription(
+              makeSub(
+                matchEntityIds: {'entity-1', 'entity-2'},
+                drainImmediately: true,
+              ),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) {
+              executionCount++;
+              if (executionCount == 1) return gate.future;
+              return Future.value();
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          // First check-off dispatches immediately.
+          emitTokens(async, controller, {'entity-1'});
+          expect(executionCount, 1);
+
+          // Second check-off lands while the first wake is executing —
+          // single-flight queues it for the drain re-check.
+          emitTokens(async, controller, {'entity-2'});
+          expect(executionCount, 1);
+
+          // First wake completes with no recorded mutations. The post-run
+          // path must dispatch the merged follow-up NOW instead of arming
+          // the 120s follow-up deadline task agents get.
+          gate.complete(null);
+          async.flushMicrotasks();
+          expect(
+            executionCount,
+            2,
+            reason: 'the follow-up job must not wait out a countdown',
+          );
+
+          controller.close();
+        });
+      });
+    });
+
+    group('batch deadline decision', () {
+      test('two digest-deferred subscriptions of one agent coalesce to a '
+          'single morning deadline — and neither dispatches early', () {
+        fakeAsync((async) {
+          var executionCount = 0;
+
+          // Both subscriptions keep the default deferPropagatedMatches and
+          // match only propagated tokens, so each requests the next-06:00
+          // slot; the second request exercises the keep-the-earlier
+          // tie-break in the post-loop decision.
+          orchestrator
+            ..addSubscription(makeSub(matchEntityIds: {'entity-1'}))
+            ..addSubscription(
+              makeSub(id: 'sub-2', matchEntityIds: {'entity-1', 'entity-2'}),
+            )
+            ..wakeExecutor = (agentId, runKey, triggers, threadId) async {
+              executionCount++;
+              return null;
+            };
+
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => null);
+
+          final controller = StreamController<Set<String>>.broadcast();
+          orchestrator.start(controller.stream);
+
+          emitTokens(async, controller, {
+            propagatedNotification('entity-1'),
+            propagatedNotification('entity-2'),
+          });
+
+          // The short window passing proves the morning slot won — a fast
+          // deadline here would mean the digest policy was dropped in the
+          // post-loop coalescing.
+          async
+            ..elapse(WakeOrchestrator.throttleWindow * 2)
+            ..flushMicrotasks();
+          expect(executionCount, 0);
+
+          // Past the morning slot the single coalesced job drains once.
+          async
+            ..elapse(const Duration(hours: 25))
+            ..flushMicrotasks();
+          expect(executionCount, 1);
+
+          controller.close();
+        });
+      });
+    });
+
     group('throttle gate', () {
       glados.Glados(
         glados.any.pendingWakeRestoreScenario,
