@@ -38,7 +38,7 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
   final bool inMemoryDatabase;
 
   @override
-  int get schemaVersion => 2;
+  int get schemaVersion => 3;
 
   @override
   MigrationStrategy get migration => MigrationStrategy(
@@ -70,6 +70,13 @@ class ConsumptionDatabase extends _$ConsumptionDatabase {
         await customStatement(
           'CREATE INDEX IF NOT EXISTS idx_attribution_type_created '
           'ON ai_work_attributions(work_type, completed_at)',
+        );
+      }
+      if (from < 3) {
+        await customStatement(
+          'CREATE INDEX IF NOT EXISTS idx_consumption_agent_created '
+          'ON consumption_events(agent_id, created_at) '
+          'WHERE agent_id IS NOT NULL',
         );
       }
     },

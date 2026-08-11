@@ -102,6 +102,28 @@ final taskConsumptionTotalsProvider = StreamProvider.autoDispose
       name: 'taskConsumptionTotalsProvider',
     );
 
+/// Lifetime consumption totals for one agent, refreshed whenever consumption
+/// changes. This is the same persisted Melious/tokens aggregate used by tasks.
+final agentConsumptionTotalsProvider = StreamProvider.autoDispose
+    .family<ConsumptionTotals, String>(
+      (ref, agentId) {
+        final repository = ref.watch(consumptionRepositoryProvider);
+        final notifications = ref.watch(maybeUpdateNotificationsProvider);
+        final refetchThrottle = ref.watch(consumptionRefetchThrottleProvider);
+
+        Future<ConsumptionTotals> fetch() => repository.totalsForAgent(agentId);
+
+        if (notifications == null) return Stream.fromFuture(fetch());
+        return notificationDrivenItemStream<ConsumptionTotals>(
+          notifications: notifications,
+          notificationKeys: const {aiConsumptionNotification},
+          fetcher: fetch,
+          refetchThrottle: refetchThrottle,
+        ).map((totals) => totals ?? ConsumptionTotals.empty);
+      },
+      name: 'agentConsumptionTotalsProvider',
+    );
+
 /// Bucketized consumption for the window starting at the given epoch day.
 ///
 /// A structural clone of `insightsBucketsProvider` (same year-window family

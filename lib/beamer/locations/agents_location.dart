@@ -2,6 +2,7 @@ import 'package:beamer/beamer.dart';
 import 'package:flutter/material.dart';
 import 'package:lotti/features/goals/ui/pages/agents_page.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
+import 'package:lotti/features/goals/ui/pages/goal_agent_chat_page.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
@@ -15,6 +16,7 @@ class AgentsLocation extends BeamLocation<BeamState> {
     '/agents',
     '/agents/create',
     '/agents/details/:agentId',
+    '/agents/details/:agentId/chat',
   ];
 
   @override
@@ -38,6 +40,12 @@ class AgentsLocation extends BeamLocation<BeamState> {
           key: ValueKey('agents-details-$agentId'),
           title: messages.agentsPageTitle,
           child: GoalAgentDetailPage(agentId: agentId),
+        ),
+      if (agentId != null && state.uri.path.endsWith('/chat'))
+        BeamPage(
+          key: ValueKey('agents-details-$agentId-chat'),
+          title: messages.goalChatPageTitle,
+          child: GoalAgentChatPage(agentId: agentId),
         ),
     ];
   }

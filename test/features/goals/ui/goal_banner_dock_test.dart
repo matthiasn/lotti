@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
 import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -33,9 +36,11 @@ void main() {
     required String id,
     required String headline,
     String goalTitle = 'Move more',
+    String? tagline,
     String? cta,
     int activationCount = 1,
     GoalNudgeTone tone = GoalNudgeTone.nudge,
+    GoalBannerAnimation animation = GoalBannerAnimation.steady,
   }) => (
     nudge:
         AgentDomainEntity.goalNudge(
@@ -44,9 +49,10 @@ void main() {
               status: GoalNudgeStatus.active,
               brief: GoalNudgeBrief(
                 headline: headline,
+                tagline: tagline,
                 cta: cta,
                 tone: tone,
-                animation: GoalBannerAnimation.steady,
+                animation: animation,
               ),
               briefDigest: id,
               activationCount: activationCount,
@@ -123,6 +129,10 @@ void main() {
       'a full tenure', (tester) async {
     await pumpDock(tester, [entry(id: 'a', headline: 'Only voice')]);
     expect(find.text('Only voice'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('Goal banner for Move more')),
+      findsOneWidget,
+    );
 
     await tester.pump(goalBannerDockTenure + const Duration(seconds: 1));
     expect(find.text('Only voice'), findsOneWidget);
@@ -136,6 +146,109 @@ void main() {
             w.constraints?.maxWidth == 4.0,
       ),
       findsNothing,
+    );
+  });
+
+  testWidgets('the task-page dock honors the banner animation preset', (
+    tester,
+  ) async {
+    await pumpDock(tester, [
+      entry(
+        id: 'pulse',
+        headline: 'Animated standing voice',
+        animation: GoalBannerAnimation.pulse,
+      ),
+    ]);
+
+    expect(find.byType(GoalBannerAnimatedText), findsOneWidget);
+    final samples = <double>[];
+    for (var i = 0; i < 4; i++) {
+      samples.add(tester.widget<Opacity>(find.byType(Opacity)).opacity);
+      await tester.pump(const Duration(milliseconds: 750));
+    }
+
+    expect(samples.reduce(max) - samples.reduce(min), greaterThan(0.2));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('desktop shows full copy while compact preserves its line cap', (
+    tester,
+  ) async {
+    final animated = entry(
+      id: 'pulse',
+      headline: 'Animated standing voice',
+      animation: GoalBannerAnimation.pulse,
+    );
+
+    await pumpDock(tester, [animated]);
+    expect(
+      tester
+          .widget<GoalBannerAnimatedText>(
+            find.byType(GoalBannerAnimatedText),
+          )
+          .maxLines,
+      isNull,
+    );
+
+    await pumpDock(tester, [animated], compact: true);
+    expect(
+      tester
+          .widget<GoalBannerAnimatedText>(
+            find.byType(GoalBannerAnimatedText),
+          )
+          .maxLines,
+      2,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('the dock spans its host and renders the authored tagline '
+      'instead of substituting the goal name', (tester) async {
+    await pumpDock(tester, [
+      entry(
+        id: 'tagline',
+        headline: 'Your shoes are getting suspicious.',
+        tagline: 'One walk puts the rumors to bed.',
+        goalTitle: 'Walk',
+      ),
+    ]);
+
+    expect(find.text('One walk puts the rumors to bed.'), findsOneWidget);
+    expect(find.text('Walk'), findsNothing);
+    expect(
+      tester.getSize(find.byType(GoalBannerDock)).width,
+      tester.getSize(find.byType(Scaffold)).width,
+    );
+  });
+
+  testWidgets('the desktop tenant uses the full banner frame width', (
+    tester,
+  ) async {
+    await pumpDock(tester, [
+      entry(
+        id: 'wide',
+        headline: 'Ghost feet detected',
+        tagline: 'Your sneakers would like the whole available lane.',
+        cta: 'Go touch grass',
+      ),
+    ]);
+
+    final frame = find.byKey(const ValueKey('goal-banner-dock-frame'));
+    final tenant = find.byKey(const ValueKey('goal-banner-dock-tenant'));
+    expect(frame, findsOneWidget);
+    expect(tenant, findsOneWidget);
+    final frameRect = tester.getRect(frame);
+    final tenantRect = tester.getRect(tenant);
+    expect(tenantRect.center.dx, frameRect.center.dx);
+    expect(tenantRect.width, closeTo(frameRect.width, 2));
+    final dismissRect = tester.getRect(find.byTooltip('Dismiss'));
+    expect(frameRect.right - dismissRect.right, lessThan(24));
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('goal-banner-copy-region')))
+          .width,
+      greaterThan(frameRect.width * 0.45),
+      reason: 'a short CTA must not reserve half the dock from the copy',
     );
   });
 
@@ -306,6 +419,7 @@ void main() {
       entry(
         id: 'c',
         headline: 'Walk done. That’s the rhythm.',
+        tagline: 'One more outing keeps the streak alive.',
         goalTitle: 'Walk more',
       ),
     ];
@@ -313,7 +427,10 @@ void main() {
     await settleTransition(tester);
 
     expect(find.text('Walk done. That’s the rhythm.'), findsOneWidget);
-    expect(find.textContaining('just now'), findsOneWidget);
+    expect(
+      find.text('One more outing keeps the streak alive. · just now'),
+      findsOneWidget,
+    );
 
     // The marker is for THAT tenure only.
     await tester.pump(goalBannerDockTenure);
@@ -537,6 +654,27 @@ void main() {
     ]);
     expect(find.text('Fresh voice'), findsOneWidget);
     expect(find.text('Stale voice'), findsNothing);
+  });
+
+  testWidgets('a local snooze hides only its retained banner immediately', (
+    tester,
+  ) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'Quiet now'),
+      entry(id: 'b', headline: 'Still here'),
+    ]);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(GoalBannerDock)),
+      listen: false,
+    );
+
+    container
+        .read(locallySnoozedNudgeDeadlinesProvider.notifier)
+        .add('a', DateTime.utc(2099));
+    await settleTransition(tester);
+
+    expect(find.text('Quiet now'), findsNothing);
+    expect(find.text('Still here'), findsOneWidget);
   });
 
   testWidgets('zero tenants render nothing at all', (tester) async {

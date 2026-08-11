@@ -11,6 +11,15 @@ abstract final class AgentKinds {
   static const goalAgent = 'goal_agent';
 }
 
+/// Tool-call names that carry user-visible conversation output.
+///
+/// A reply remains an action in the durable log rather than introducing a
+/// second assistant-message schema. Conversation projections whitelist this
+/// name and hide every other tool call by default.
+abstract final class AgentConversationToolNames {
+  static const replyToUser = 'reply_to_user';
+}
+
 /// `linkType` discriminators on `AgentLink` rows.
 ///
 /// Every edge the agent layer persists between two entities carries one of

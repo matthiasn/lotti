@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
@@ -52,6 +53,53 @@ void main() {
             ),
           ).captured.last)
           as String;
+
+  test('reply_to_user captures exactly one visible answer', () async {
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          name: GoalAgentToolNames.replyToUser,
+          args: {'message': 'You are one gym visit from being back on pace.'},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(
+      strategy.replyToUser,
+      'You are one gym visit from being back on pace.',
+    );
+
+    await strategy.processToolCalls(
+      toolCalls: [
+        _call(
+          id: 'call-2',
+          name: GoalAgentToolNames.replyToUser,
+          args: {'message': 'A second answer.'},
+        ),
+      ],
+      manager: manager,
+    );
+    expect(strategy.replyToUser, isNot('A second answer.'));
+    expect(rejection(), contains('at most once'));
+  });
+
+  test(
+    'reply_to_user rejects blank copy instead of creating an empty bubble',
+    () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.replyToUser,
+            args: {'message': '   '},
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.replyToUser, isNull);
+      expect(rejection(), contains('non-empty message'));
+    },
+  );
 
   test('update_goal_report accumulates the validated report', () async {
     await strategy.processToolCalls(
@@ -181,6 +229,116 @@ void main() {
     expect(strategy.retireRequests.single.adId, 'ad-known');
     expect(strategy.rerunRequests, isEmpty);
     expect(rejection(), contains('unknown adId'));
+  });
+
+  test('snooze accepts any requested future instant for a known ad', () async {
+    final now = DateTime.utc(2026, 8, 11, 12);
+    await withClock(
+      Clock.fixed(now),
+      () => strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-12T08:30:00+02:00',
+              'reason': 'user asked for tomorrow morning',
+            },
+          ),
+        ],
+        manager: manager,
+      ),
+    );
+
+    final request = strategy.snoozeRequests.single;
+    expect(request.adId, 'ad-known');
+    expect(request.until, DateTime.utc(2026, 8, 12, 6, 30));
+    expect(request.reason, 'user asked for tomorrow morning');
+  });
+
+  test('snooze rejects future timestamps without an explicit offset', () async {
+    await withClock(
+      Clock.fixed(DateTime.utc(2026, 8, 11, 12)),
+      () => strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-12T08:30:00',
+              'reason': 'ambiguous local time',
+            },
+          ),
+        ],
+        manager: manager,
+      ),
+    );
+
+    expect(strategy.snoozeRequests, isEmpty);
+    expect(rejection(), contains('ISO 8601'));
+  });
+
+  test('snooze rejects past deadlines and unknown ads', () async {
+    await withClock(
+      Clock.fixed(DateTime.utc(2026, 8, 11, 12)),
+      () => strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            id: 'past',
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-11T11:59:00Z',
+              'reason': 'past',
+            },
+          ),
+          _call(
+            id: 'unknown',
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'invented',
+              'until': '2026-08-11T13:00:00Z',
+              'reason': 'later',
+            },
+          ),
+        ],
+        manager: manager,
+      ),
+    );
+
+    expect(strategy.snoozeRequests, isEmpty);
+    expect(rejection(), contains('is not active'));
+  });
+
+  test('snooze rejects a known reusable ad that is not active', () async {
+    final activeOnly = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-active', 'ad-reusable'},
+      activeAdIds: const {'ad-active'},
+    );
+
+    await withClock(
+      Clock.fixed(DateTime.utc(2026, 8, 11, 12)),
+      () => activeOnly.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-reusable',
+              'until': '2026-08-11T13:00:00Z',
+              'reason': 'hide it',
+            },
+          ),
+        ],
+        manager: manager,
+      ),
+    );
+
+    expect(activeOnly.snoozeRequests, isEmpty);
+    expect(rejection(), contains('is not active'));
   });
 
   test('only ONE revision proposal per wake is accepted', () async {

@@ -289,6 +289,19 @@ class WakeOrchestrator with AgentErrorLogging {
     );
   }
 
+  void _emitRemovedRunCompletions(
+    Iterable<WakeJob> jobs, {
+    required String reason,
+  }) {
+    for (final job in jobs) {
+      _emitRunCompletion(
+        job,
+        WakeRunStatus.aborted,
+        error: StateError(reason),
+      );
+    }
+  }
+
   /// In-memory mirror of the persisted `awaitingContent` flag for each agent.
   ///
   /// Populated by the task-agent service when agents are created or their
@@ -451,9 +464,13 @@ class WakeOrchestrator with AgentErrorLogging {
   void disableAutomaticUpdatesRuntime(String agentId) {
     _automaticUpdatesDisabledAgents.add(agentId);
     clearThrottle(agentId);
-    queue.removeByAgentWhere(
+    final removed = queue.removeByAgentWhere(
       agentId,
       (job) => job.initiator == WakeInitiator.automation,
+    );
+    _emitRemovedRunCompletions(
+      removed,
+      reason: 'automatic wake removed because updates were disabled',
     );
   }
 
@@ -685,7 +702,14 @@ class WakeOrchestrator with AgentErrorLogging {
     // per submission) opt out so a second submission in the same workspace
     // cannot drop the first's still-queued parse before it drains.
     if (supersede) {
-      queue.removeByAgent(agentId, workspaceKey: workspaceKey);
+      final removed = queue.removeByAgent(
+        agentId,
+        workspaceKey: workspaceKey,
+      );
+      _emitRemovedRunCompletions(
+        removed,
+        reason: 'wake superseded by a newer manual request',
+      );
     }
 
     final now = clock.now();
@@ -709,6 +733,25 @@ class WakeOrchestrator with AgentErrorLogging {
     queue.enqueue(job);
     unawaited(processNext());
     return runKey;
+  }
+
+  /// Removes queued work and emits an aborted completion for every removed
+  /// run so in-process waiters cannot hang after an explicit cancellation.
+  List<WakeJob> cancelPendingWakes(
+    String agentId, {
+    String? workspaceKey,
+    bool allWorkspaces = false,
+  }) {
+    final removed = queue.removeByAgent(
+      agentId,
+      workspaceKey: workspaceKey,
+      allWorkspaces: allWorkspaces,
+    );
+    _emitRemovedRunCompletions(
+      removed,
+      reason: 'wake cancelled before execution',
+    );
+    return removed;
   }
 
   /// Wake [agentId] for externally produced content (e.g. a completed audio

@@ -68,14 +68,34 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('marquee falls back to a single ellipsized line when the '
-      'text fits', (tester) async {
+  testWidgets('marquee remains visibly animated when the text fits', (
+    tester,
+  ) async {
     await tester.pumpWidget(host(GoalBannerAnimation.marquee));
-    await tester.pump(const Duration(milliseconds: 100));
+    await tester.pump();
+    final transform = find.descendant(
+      of: find.byType(GoalBannerAnimatedText),
+      matching: find.byType(Transform),
+    );
+    final atStart = tester.widget<Transform>(transform).transform;
+    await tester.pump(const Duration(milliseconds: 750));
+    final moving = tester.widget<Transform>(transform).transform;
     expect(
       find.text('Your inner couch potato is winning.'),
       findsOneWidget,
     );
+    expect(moving.storage[12], isNot(atStart.storage[12]));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('pulse has a clearly visible opacity range', (tester) async {
+    await tester.pumpWidget(host(GoalBannerAnimation.pulse));
+    await tester.pump();
+    final atStart = tester.widget<Opacity>(find.byType(Opacity)).opacity;
+    await tester.pump(const Duration(milliseconds: 750));
+    final peak = tester.widget<Opacity>(find.byType(Opacity)).opacity;
+
+    expect(peak - atStart, greaterThan(0.2));
     await tester.pumpWidget(const SizedBox.shrink());
   });
 

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -279,6 +280,27 @@ void main() {
       tester.getTopLeft(find.byTooltip('Dismiss')),
       xBefore,
       reason: 'the vacated star slot must keep its width',
+    );
+  });
+
+  testWidgets('uses the compact top inset while preserving card padding on '
+      'the other edges', (tester) async {
+    await pumpCard(tester);
+
+    final padding = tester.widget<Padding>(
+      find.byKey(const ValueKey('goal-banner-content-padding')),
+    );
+    final context = tester.element(find.byType(GoalBannerCard));
+    final spacing = context.designTokens.spacing;
+
+    expect(
+      padding.padding,
+      EdgeInsets.fromLTRB(
+        spacing.cardPadding,
+        spacing.step2,
+        spacing.cardPadding,
+        spacing.cardPadding,
+      ),
     );
   });
 

@@ -1,3 +1,4 @@
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_window.dart';
 
 /// The pre-fetched daily aggregates a goal evaluation runs over.
@@ -15,6 +16,7 @@ class GoalSignalWindow {
   const GoalSignalWindow({
     this.quantitativeDailySums = const {},
     this.habitSuccessesByDay = const {},
+    this.habitCompletionsByDay = const {},
     this.measurableDailySums = const {},
   });
 
@@ -26,6 +28,11 @@ class GoalSignalWindow {
   /// completions that day. Skips and fails are not successes and must not
   /// be included by the producer.
   final Map<String, Map<DateTime, int>> habitSuccessesByDay;
+
+  /// Latest habit completion outcome per day. Evaluation still consumes only
+  /// [habitSuccessesByDay]; this parallel projection lets interactive progress
+  /// surfaces distinguish an explicit miss from an untouched day.
+  final Map<String, Map<DateTime, HabitCompletionType>> habitCompletionsByDay;
 
   /// Measurable data: `MeasurableDataType` id → day key → daily sum.
   final Map<String, Map<DateTime, num>> measurableDailySums;

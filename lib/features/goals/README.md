@@ -35,12 +35,58 @@ on `AgentDomainEntity` (`goalSpecVersion`/`goalSpecHead`/`goalProgress`/
 The LLM tier (Phase B) runs too: `workflow/` holds the lease-elected
 escalation workflow, its code-owned contract, the tool dispatcher, and the
 revision flow that turns an approved `propose_goal_revision` change set
-into a new spec version. The visible layer shipped behind the
+into a new spec version. User-authored chat turns take the same fact-grounded
+workflow through a throttle-bypassing manual wake: `GoalChatService` persists
+the source turn only after rechecking that the goal identity is active, then
+enqueues it; it reconciles a committed message when a later
+sync-outbox flush reports failure, and the workflow persists a sanitized answer as a
+`reply_to_user` action that the shared bounded chat projection can display
+without exposing thoughts or tool bookkeeping. Reply rows use stable per-wake
+ids, so a transaction that commits before its deferred outbox flush fails is
+recognized as complete instead of rerunning inference. The visible layer shipped behind the
 `enable_agents_page` flag: procedural text banners (ADR 0058) on the day
 and habits pages (`ui/goal_banner_*`), and an Agents tab (`ui/pages/`)
-with per-goal health at a glance, proposal approval, a detail timeline,
-and goal creation. The two-way goal conversation is the remaining
-increment; the plan of record is
+with per-goal health at a glance, deterministic rolling-window progress,
+proposal approval, goal creation/deletion, and durable conversation as a
+pushed phone page or desktop peer pane. Agent replies retain their Markdown
+structure, while long replies start compact and can be expanded in place.
+The detail grid follows each habit's authored day, rolling, week, or month
+window and can record success or a miss on any day inside the habit's active
+lifetime through the normal habit-completion path while the goal remains active;
+current and past edits wake the
+deterministic evaluator and queue a standing-report refresh, with an Update now
+fallback visible beside the report, while future calendar cells remain
+read-only. On desktop the rolling-seven-day rows share one localized weekday
+header and keep compact visual spacing while retaining full-size tap targets.
+Metric strips preserve the evaluator's configured aggregation
+rather than treating every daily contribution as a standalone target;
+composite details retain every metric and measurable leaf that contributes to
+health. Their compact cells combine accomplishment and rolling success: a day
+is green when the rolling criterion was satisfied then, or when the authored
+routine was fully completed on that day. Goal chat stays purpose-bound: unrelated
+general-assistant requests are redirected to the goal rather than answered.
+Habit-routine creation assigns the rolling-seven-day frequency independently
+for every selected habit rather than applying one shared count.
+Weekly reliability is shown only for authored rolling-seven-day habits rather
+than reinterpreting day, rolling-N, or calendar periods. Health and direction are separate signals, the standing report stays visible
+beside active banners, and lifetime AI consumption plus compute time use the
+same governance pills as Task Details; compute time is withheld when legacy
+calls carry no recorded duration. Chat can also snooze the current banner
+until any requested future time, when that exact banner returns automatically;
+the just-committed snooze is suppressed locally while its durable projection
+reloads. Dismissal cooldown applies to automatic banners only: a direct request
+for a banner, a missing-banner report, or a short affirmative reply to the
+agent's banner offer can create or re-run a banner immediately without the
+follow-up wake retiring it, including positive or recovery copy when the goal
+is not behind. Localized requests use the model's typed banner action as the
+language-independent authorization at persistence. A new at-risk goal receives
+its first banner without waiting for a multi-day decline. When an active banner
+ages out while the goal still qualifies for automatic copy, the next
+deterministic tick expires it and re-arms Phase B for a replacement; healthy
+expiry remains model-free. The desktop banner tenant fills the dock's available
+width.
+Voice, paging beyond the newest fifty visible turns, search, and inline nudge
+cards remain later conversation increments; the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.
 
 Runtime map: [knowledge/features/goals.md](../../../knowledge/features/goals.md).

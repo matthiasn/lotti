@@ -253,6 +253,51 @@ void main() {
       reason: 'exactly one goal exists — no duplicate mint on retry',
     );
   });
+
+  group('deleteGoalAgent', () {
+    test('retires the goal through the shared destroyed lifecycle', () async {
+      when(() => agentService.cancelPendingWake(agentId)).thenReturn(null);
+      when(() => agentService.abortRunningWake(agentId)).thenReturn(true);
+      when(() => orchestrator.removeSubscriptions(agentId)).thenReturn(null);
+      when(
+        () => agentService.destroyAgent(agentId),
+      ).thenAnswer((_) async => true);
+
+      expect(await service.deleteGoalAgent(agentId), isTrue);
+
+      verify(() => agentService.cancelPendingWake(agentId)).called(1);
+      verify(() => agentService.abortRunningWake(agentId)).called(1);
+      verify(() => orchestrator.removeSubscriptions(agentId)).called(1);
+      verify(() => agentService.destroyAgent(agentId)).called(1);
+    });
+
+    test('reports when no goal matched the id', () async {
+      when(
+        () => agentService.destroyAgent('missing'),
+      ).thenAnswer((_) async => false);
+
+      expect(await service.deleteGoalAgent('missing'), isFalse);
+
+      verify(() => agentService.destroyAgent('missing')).called(1);
+      verifyNever(() => agentService.cancelPendingWake('missing'));
+      verifyNever(() => agentService.abortRunningWake('missing'));
+      verifyNever(() => orchestrator.removeSubscriptions('missing'));
+    });
+
+    test('preserves the live runtime when the lifecycle write throws', () {
+      when(
+        () => agentService.destroyAgent('goal-live'),
+      ).thenThrow(StateError('sync write failed'));
+
+      expect(
+        () => service.deleteGoalAgent('goal-live'),
+        throwsA(isA<StateError>()),
+      );
+      verifyNever(() => agentService.cancelPendingWake('goal-live'));
+      verifyNever(() => agentService.abortRunningWake('goal-live'));
+      verifyNever(() => orchestrator.removeSubscriptions('goal-live'));
+    });
+  });
 }
 
 class _OrderRecordingSyncService extends MockAgentSyncService {

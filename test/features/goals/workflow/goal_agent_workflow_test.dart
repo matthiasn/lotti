@@ -47,6 +47,14 @@ class _FakeReader extends GoalSignalReader {
   }) async => window;
 }
 
+class _CommitThenThrowSyncService extends MockAgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    await action();
+    throw StateError('deferred outbox flush failed');
+  }
+}
+
 GoalAgentWorkflow _offTrackWorkflow(
   MockAgentRepository repository,
   MockAgentSyncService syncService,
@@ -236,6 +244,63 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
+  test(
+    'banner replacement intent excludes courtesy and explanation prompts',
+    () {
+      expect(
+        isExplicitGoalAdReplacementRequest('Please explain this banner.'),
+        isFalse,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest('Please show me another banner ad.'),
+        isTrue,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest('I want to snooze this banner.'),
+        isFalse,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest("Please don't replace the banner."),
+        isFalse,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest(
+          "I don't want another banner ad.",
+        ),
+        isFalse,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest("I don't want a banner."),
+        isFalse,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest('I see no banner.'),
+        isTrue,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest(
+          'Yes and I want a reminder banner ad of this.',
+        ),
+        isTrue,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest(
+          'yes now',
+          previousAssistantMessage:
+              "If you'd like a fresh banner right now, just say the word.",
+        ),
+        isTrue,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest(
+          'yes now',
+          previousAssistantMessage: 'Want to squeeze in a walk today?',
+        ),
+        isFalse,
+      );
+    },
+  );
+
   setUp(() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
@@ -282,12 +347,15 @@ void main() {
     );
   });
 
-  Future<WakeResult> run({AgentIdentityEntity? identityOverride}) => withClock(
+  Future<WakeResult> run({
+    AgentIdentityEntity? identityOverride,
+    Set<String> triggerTokens = const {'goal-escalation:2026-08-09'},
+  }) => withClock(
     fixedClock,
     () => workflow.execute(
       agentIdentity: identityOverride ?? identity,
       runKey: 'run-1',
-      triggerTokens: const {'goal-escalation:2026-08-09'},
+      triggerTokens: triggerTokens,
       threadId: 'thread-1',
     ),
   );
@@ -297,6 +365,23 @@ void main() {
     expect(result.success, isTrue);
     expect(conversationRepository.sendMessageDelegateCallCount, 0);
     expect(upserts, isEmpty);
+  });
+
+  test('an interactive turn without a spec head fails for retry', () async {
+    final result = await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'run-1',
+        triggerTokens: const {},
+        threadId: 'thread-1',
+        pendingUserMessage: 'How am I doing?',
+      ),
+    );
+
+    expect(result.success, isFalse);
+    expect(result.error, contains('spec head'));
+    expect(conversationRepository.sendMessageDelegateCallCount, 0);
   });
 
   test('a dangling spec head fails the wake', () async {
@@ -323,6 +408,134 @@ void main() {
     expect(result.success, isFalse);
     expect(result.error, contains('no inference provider'));
     expect(conversationRepository.sendMessageDelegateCallCount, 0);
+  });
+
+  test('a foreign-agent chat payload is rejected before inference', () async {
+    when(() => repository.getEntity('message-foreign')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessage(
+        id: 'message-foreign',
+        agentId: agentId,
+        threadId: 'chat',
+        kind: AgentMessageKind.user,
+        createdAt: now,
+        vectorClock: null,
+        contentEntryId: 'payload-foreign',
+        metadata: const AgentMessageMetadata(),
+      ),
+    );
+    when(() => repository.getEntity('payload-foreign')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'payload-foreign',
+        agentId: 'other-agent',
+        createdAt: now,
+        vectorClock: null,
+        content: const {'text': 'private text'},
+      ),
+    );
+
+    final result = await workflow.executeUserMessage(
+      agentIdentity: identity,
+      runKey: 'chat-run',
+      triggerTokens: const {'goal-chat-message:message-foreign'},
+      threadId: 'chat',
+      messageId: 'message-foreign',
+    );
+
+    expect(result.success, isFalse);
+    expect(result.error, contains('payload is unavailable'));
+    expect(conversationRepository.sendMessageDelegateCallCount, 0);
+  });
+
+  test('a failed chat turn never re-arms the scheduled escalation', () async {
+    stubSpec();
+    when(
+      () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => []);
+    when(() => repository.getEntity('message-chat')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessage(
+        id: 'message-chat',
+        agentId: agentId,
+        threadId: 'chat',
+        kind: AgentMessageKind.user,
+        createdAt: now,
+        vectorClock: null,
+        contentEntryId: 'payload-chat',
+        metadata: const AgentMessageMetadata(),
+      ),
+    );
+    when(() => repository.getEntity('payload-chat')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'payload-chat',
+        agentId: agentId,
+        createdAt: now,
+        vectorClock: null,
+        content: const {'text': 'How am I doing?'},
+      ),
+    );
+
+    final result = await workflow.executeUserMessage(
+      agentIdentity: identity,
+      runKey: 'chat-run',
+      triggerTokens: const {'goal-chat-message:message-chat'},
+      threadId: 'chat',
+      messageId: 'message-chat',
+    );
+
+    expect(result.success, isFalse);
+    expect(upserts.whereType<ScheduledWakeEntity>(), isEmpty);
+  });
+
+  test('an interactive wake without a visible reply fails instead of silently '
+      'acknowledging the source turn', () async {
+    stubSpec();
+    stubGlmResolution();
+    when(() => repository.getEntity('message-silent')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessage(
+        id: 'message-silent',
+        agentId: agentId,
+        threadId: 'chat',
+        kind: AgentMessageKind.user,
+        createdAt: now,
+        vectorClock: null,
+        contentEntryId: 'payload-silent',
+        metadata: const AgentMessageMetadata(),
+      ),
+    );
+    when(() => repository.getEntity('payload-silent')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'payload-silent',
+        agentId: agentId,
+        createdAt: now,
+        vectorClock: null,
+        content: const {'text': 'How am I doing?'},
+      ),
+    );
+    conversationRepository
+      ..maxDelegateCalls = 2
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async => null;
+
+    final result = await workflow.executeUserMessage(
+      agentIdentity: identity,
+      runKey: 'chat-run',
+      triggerTokens: const {'goal-chat-message:message-silent'},
+      threadId: 'chat',
+      messageId: 'message-silent',
+    );
+
+    expect(result.success, isFalse);
+    expect(result.error, contains('no visible reply'));
+    expect(conversationRepository.sendMessageDelegateCallCount, 2);
   });
 
   test('a full wake persists FACTS, report + head, the new ad, and token '
@@ -380,10 +593,14 @@ void main() {
     // null owners rather than attribute an unmeasured wake.
     expect(conversationRepository.lastConsumptionAgentId, isNull);
 
-    final userMessages = upserts.whereType<AgentMessageEntity>().where(
-      (m) => m.kind == AgentMessageKind.user,
+    final contextMessages = upserts.whereType<AgentMessageEntity>().where(
+      (m) => m.kind == AgentMessageKind.system,
     );
-    expect(userMessages, hasLength(1), reason: 'the FACTS blob is inspectable');
+    expect(
+      contextMessages,
+      hasLength(1),
+      reason: 'the FACTS blob is inspectable but not user-authored',
+    );
 
     final report = upserts.whereType<AgentReportEntity>().single;
     expect(report.tldr, 'The rolling week slid well under target.');
@@ -404,6 +621,342 @@ void main() {
     expect(usage.modelId, 'glm-5.2');
     expect(usage.inputTokens, 900);
   });
+
+  test('a contextual yes-now banner request overrides dismissal cooldown '
+      'and cannot retire the requested banner', () async {
+    stubSpec();
+    stubGlmResolution();
+    workflow = _offTrackWorkflow(
+      repository,
+      syncService,
+      conversationRepository,
+      cloudInferenceRepository,
+      aiConfigRepository,
+    );
+    _stubBadPrior(repository, agentId, now);
+    const retiredBrief = GoalNudgeBrief(
+      headline: 'Below target.',
+      tone: GoalNudgeTone.nudge,
+      animation: GoalBannerAnimation.steady,
+    );
+    final dismissedTransitionBanner = AgentDomainEntity.goalNudge(
+      id: 'goal_nudge:$agentId:2026-08-09:atRisk:$agentId:spec-v1',
+      agentId: agentId,
+      status: GoalNudgeStatus.dismissed,
+      brief: retiredBrief,
+      briefDigest: goalBriefDigest(retiredBrief),
+      createdAt: now.subtract(const Duration(hours: 2)),
+      updatedAt: now.subtract(const Duration(hours: 1)),
+      vectorClock: null,
+      dismissedAt: now.subtract(const Duration(hours: 1)),
+    );
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [dismissedTransitionBanner]);
+    final source = AgentDomainEntity.agentMessage(
+      id: 'message-1',
+      agentId: agentId,
+      threadId: 'message-1',
+      kind: AgentMessageKind.user,
+      createdAt: now,
+      vectorClock: null,
+      contentEntryId: 'payload-1',
+      metadata: const AgentMessageMetadata(),
+    );
+    when(
+      () => repository.getEntity('message-1'),
+    ).thenAnswer((_) async => source);
+    when(() => repository.getEntity('payload-1')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'payload-1',
+        agentId: agentId,
+        createdAt: now,
+        vectorClock: null,
+        content: const {'text': 'yes now'},
+      ),
+    );
+    final priorReply =
+        AgentDomainEntity.agentMessage(
+              id: 'prior-reply',
+              agentId: agentId,
+              threadId: 'prior-thread',
+              kind: AgentMessageKind.action,
+              createdAt: now.subtract(const Duration(minutes: 1)),
+              vectorClock: null,
+              contentEntryId: 'prior-reply-payload',
+              metadata: const AgentMessageMetadata(
+                toolName: AgentConversationToolNames.replyToUser,
+              ),
+            )
+            as AgentMessageEntity;
+    when(
+      () => repository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.action,
+        limit: 12,
+      ),
+    ).thenAnswer((_) async => [priorReply]);
+    when(() => repository.getEntity('prior-reply-payload')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'prior-reply-payload',
+        agentId: agentId,
+        createdAt: now.subtract(const Duration(minutes: 1)),
+        vectorClock: null,
+        content: const {
+          'text':
+              "If you'd like me to put a fresh banner up right now, just "
+              'say the word.',
+        },
+      ),
+    );
+    conversationRepository.maxDelegateCalls = 3;
+    var calls = 0;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          calls += 1;
+          final goalStrategy = strategy! as GoalAgentStrategy;
+          if (calls == 1) {
+            expect(
+              message,
+              contains('PENDING USER MESSAGE:\nyes now'),
+            );
+            expect(message, contains('overrides dismissal cooldown'));
+            // The primary turn answers and reports, but refuses/forgets the
+            // requested ad. Deterministic policy must force the tool next.
+            await goalStrategy.processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.replyToUser, {
+                  'message': 'Cooldown says no banner right now.',
+                }),
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'offTrack',
+                  'oneLiner': 'The week is below target.',
+                  'tldr': 'One more walk would help.',
+                }, id: 'call-report'),
+              ],
+              manager: conversationManager,
+            );
+          } else if (calls == 2) {
+            expect(message, contains('Dismissal cooldown does not block'));
+            expect(
+              [for (final tool in tools!) tool.function.name],
+              [GoalAgentToolNames.createGoalAd],
+            );
+            expect(toolChoice, isNotNull);
+            await goalStrategy.processToolCalls(
+              toolCalls: [
+                toolCall(
+                  GoalAgentToolNames.createGoalAd,
+                  {
+                    'headline': 'Your trainers filed a missing-person report.',
+                    'tagline': 'One strong walk gets you moving again.',
+                    'cta': 'Show up today',
+                    'tone': 'roast',
+                    'animation': 'pulse',
+                  },
+                  id: 'call-2',
+                ),
+              ],
+              manager: conversationManager,
+            );
+          } else {
+            expect(message, contains('A banner was created in this wake'));
+            expect(
+              [for (final tool in tools!) tool.function.name],
+              [GoalAgentToolNames.replyToUser],
+            );
+            expect(toolChoice, isNotNull);
+            await goalStrategy.processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.replyToUser, {
+                  'message':
+                      'Your new banner is live '
+                      '(id: 123e4567-e89b-12d3-a456-426614174000).',
+                }, id: 'call-3'),
+              ],
+              manager: conversationManager,
+            );
+          }
+          return null;
+        };
+
+    final result = await withClock(
+      fixedClock,
+      () => workflow.executeUserMessage(
+        agentIdentity: identity,
+        runKey: 'chat-run',
+        triggerTokens: const {'goal-chat-message:message-1'},
+        threadId: 'chat-run',
+        messageId: 'message-1',
+      ),
+    );
+
+    expect(result.success, isTrue);
+    expect(
+      calls,
+      3,
+      reason: 'primary turn, forced banner, then corrected visible reply',
+    );
+    expect(
+      upserts.whereType<AgentMessageEntity>().where(
+        (message) => message.kind == AgentMessageKind.user,
+      ),
+      isEmpty,
+      reason: 'the source user turn was already durable before the wake',
+    );
+    expect(
+      upserts.whereType<AgentMessagePayloadEntity>().where(
+        (payload) => payload.content.values.any(
+          (value) => value is String && value.contains('Cooldown says no'),
+        ),
+      ),
+      isEmpty,
+      reason:
+          'a stale cooldown refusal must not become a visible chat bubble; '
+          'the content-free action/tool trace may remain in internals',
+    );
+    expect(
+      upserts.whereType<AgentMessagePayloadEntity>().any(
+        (payload) => payload.content['text'] == 'Your new banner is live.',
+      ),
+      isTrue,
+    );
+    final replacement = upserts.whereType<GoalNudgeEntity>().single;
+    expect(replacement.status, GoalNudgeStatus.active);
+    expect(
+      replacement.id,
+      'goal_nudge:$agentId:2026-08-09:chat:message-1:$agentId:spec-v1',
+    );
+    expect(
+      replacement.brief.headline,
+      'Your trainers filed a missing-person report.',
+    );
+  });
+
+  test(
+    'a localized interactive ad tool call overrides dismissal cooldown',
+    () async {
+      stubSpec();
+      stubGlmResolution();
+      workflow = _offTrackWorkflow(
+        repository,
+        syncService,
+        conversationRepository,
+        cloudInferenceRepository,
+        aiConfigRepository,
+      );
+      _stubBadPrior(repository, agentId, now);
+      const retiredBrief = GoalNudgeBrief(
+        headline: 'Old banner.',
+        tone: GoalNudgeTone.nudge,
+        animation: GoalBannerAnimation.steady,
+      );
+      final dismissedBanner = AgentDomainEntity.goalNudge(
+        id: 'dismissed-banner',
+        agentId: agentId,
+        status: GoalNudgeStatus.dismissed,
+        brief: retiredBrief,
+        briefDigest: goalBriefDigest(retiredBrief),
+        createdAt: now.subtract(const Duration(hours: 2)),
+        updatedAt: now.subtract(const Duration(hours: 1)),
+        vectorClock: null,
+        dismissedAt: now.subtract(const Duration(hours: 1)),
+      );
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.goalNudge,
+        ),
+      ).thenAnswer((_) async => [dismissedBanner]);
+      final source = AgentDomainEntity.agentMessage(
+        id: 'message-de',
+        agentId: agentId,
+        threadId: 'message-de',
+        kind: AgentMessageKind.user,
+        createdAt: now,
+        vectorClock: null,
+        contentEntryId: 'payload-de',
+        metadata: const AgentMessageMetadata(),
+      );
+      when(
+        () => repository.getEntity('message-de'),
+      ).thenAnswer((_) async => source);
+      when(() => repository.getEntity('payload-de')).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessagePayload(
+          id: 'payload-de',
+          agentId: agentId,
+          createdAt: now,
+          vectorClock: null,
+          content: const {'text': 'Bitte erstelle ein neues Banner'},
+        ),
+      );
+      conversationRepository
+        ..maxDelegateCalls = 1
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              expect(message, contains('Bitte erstelle ein neues Banner'));
+              expect(message, isNot(contains('overrides dismissal cooldown')));
+              await (strategy! as GoalAgentStrategy).processToolCalls(
+                toolCalls: [
+                  toolCall(GoalAgentToolNames.replyToUser, {
+                    'message': 'Das neue Banner ist da.',
+                  }),
+                  toolCall(GoalAgentToolNames.updateGoalReport, {
+                    'status': 'offTrack',
+                    'oneLiner': 'Das Ziel liegt zurück.',
+                    'tldr': 'Die aktuelle Woche liegt unter dem Ziel.',
+                  }, id: 'call-report-de'),
+                  toolCall(GoalAgentToolNames.createGoalAd, {
+                    'headline': 'Zeit, wieder loszulegen.',
+                    'tone': 'nudge',
+                    'animation': 'pulse',
+                  }, id: 'call-ad-de'),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            };
+
+      final result = await withClock(
+        fixedClock,
+        () => workflow.executeUserMessage(
+          agentIdentity: identity,
+          runKey: 'chat-run-de',
+          triggerTokens: const {'goal-chat-message:message-de'},
+          threadId: 'chat-run-de',
+          messageId: 'message-de',
+        ),
+      );
+
+      expect(result.success, isTrue);
+      final replacement = upserts.whereType<GoalNudgeEntity>().single;
+      expect(replacement.status, GoalNudgeStatus.active);
+      expect(replacement.brief.headline, 'Zeit, wieder loszulegen.');
+    },
+  );
 
   test('a first-evaluation wake that ends without a report gets exactly one '
       'pinned update_goal_report retry', () async {
@@ -452,10 +1005,84 @@ void main() {
     expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
   });
 
+  test('an explicit detail-page refresh forces a standing report even when '
+      'the recomputed status did not change', () async {
+    stubSpec();
+    stubGlmResolution();
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-09')),
+    ).thenAnswer(
+      (_) async => AgentDomainEntity.goalProgress(
+        id: goalProgressId(agentId, '2026-08-09'),
+        agentId: agentId,
+        periodKey: '2026-08-09',
+        trackStatus: GoalTrackStatus.insufficientData,
+        attainment: 0,
+        dataCoverage: 0,
+        satisfied: false,
+        specVersionId: '$agentId:spec-v1',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      ),
+    );
+    conversationRepository.maxDelegateCalls = 2;
+    var calls = 0;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          calls += 1;
+          if (calls == 1) {
+            expect(message, contains('USER REQUESTED REPORT REFRESH'));
+          } else {
+            expect(message, contains('editing a habit day'));
+            expect(
+              [for (final tool in tools!) tool.function.name],
+              [GoalAgentToolNames.updateGoalReport],
+            );
+            expect(toolChoice, isNotNull);
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'insufficientData',
+                  'oneLiner': 'The edited day is accounted for.',
+                  'tldr': 'The standing report now reflects the correction.',
+                }),
+              ],
+              manager: conversationManager,
+            );
+          }
+          return null;
+        };
+
+    final result = await run(
+      triggerTokens: const {goalReportRefreshTriggerToken},
+    );
+
+    expect(result.success, isTrue);
+    expect(calls, 2, reason: 'primary turn plus one forced report tool turn');
+    final report = upserts.whereType<AgentReportEntity>().single;
+    expect(report.oneLiner, 'The edited day is accounted for.');
+  });
+
   test('persistOutputs: retire is dismissal-terminal-safe, rerun requires a '
       'retired ad and increments the activation count, and a revision '
       'proposal lands as a pending ChangeSet', () async {
-    GoalNudgeEntity nudgeRow(String id, GoalNudgeStatus status) =>
+    GoalNudgeEntity nudgeRow(
+      String id,
+      GoalNudgeStatus status, {
+      DateTime? staleAt,
+      Map<String, String> provenance = const {},
+    }) =>
         AgentDomainEntity.goalNudge(
               id: id,
               agentId: agentId,
@@ -468,7 +1095,9 @@ void main() {
               briefDigest: 'd',
               createdAt: DateTime(2026, 8),
               updatedAt: DateTime(2026, 8),
+              staleAt: staleAt,
               vectorClock: null,
+              provenance: provenance,
             )
             as GoalNudgeEntity;
 
@@ -477,7 +1106,14 @@ void main() {
       agentId: agentId,
       threadId: 'thread-1',
       runKey: 'run-1',
-      knownAdIds: {'ad-dismissed', 'ad-retired', 'ad-active', 'ad-gone'},
+      knownAdIds: {
+        'ad-dismissed',
+        'ad-retired',
+        'ad-active',
+        'ad-snooze',
+        'ad-snooze-long',
+        'ad-gone',
+      },
     );
     when(
       () => repository.getEntitiesByAgentId(
@@ -487,8 +1123,23 @@ void main() {
     ).thenAnswer(
       (_) async => [
         nudgeRow('ad-dismissed', GoalNudgeStatus.dismissed),
-        nudgeRow('ad-retired', GoalNudgeStatus.retired),
+        nudgeRow(
+          'ad-retired',
+          GoalNudgeStatus.retired,
+          provenance: const {
+            'snoozedUntil': '2026-08-10T08:30:00.000Z',
+            'snoozeReason': 'old snooze',
+            'snoozedAt': '2026-08-09T08:30:00.000Z',
+            'campaign': 'morning-walk',
+          },
+        ),
         nudgeRow('ad-active', GoalNudgeStatus.active),
+        nudgeRow('ad-snooze', GoalNudgeStatus.active),
+        nudgeRow(
+          'ad-snooze-long',
+          GoalNudgeStatus.active,
+          staleAt: DateTime.utc(2100),
+        ),
       ],
     );
     // The retire loops re-read each row inside the transaction.
@@ -524,6 +1175,16 @@ void main() {
           'adId': 'ad-active',
           'reason': 'quota completed',
         }, id: 'c6'),
+        toolCall(GoalAgentToolNames.snoozeGoalAd, {
+          'adId': 'ad-snooze',
+          'until': '2099-08-12T08:30:00Z',
+          'reason': 'user asked for later',
+        }, id: 'c7'),
+        toolCall(GoalAgentToolNames.snoozeGoalAd, {
+          'adId': 'ad-snooze-long',
+          'until': '2099-08-12T08:30:00Z',
+          'reason': 'keep the longer lifetime',
+        }, id: 'c8'),
       ],
       manager: conversationManager,
     );
@@ -551,7 +1212,7 @@ void main() {
     // The dismissed ad was NOT retired (terminal), the missing ad was
     // skipped, the active ad was NOT re-run but WAS retired; the retired
     // ad was re-run.
-    expect(written, hasLength(2));
+    expect(written, hasLength(4));
     final retired = written.singleWhere((n) => n.id == 'ad-active');
     expect(retired.status, GoalNudgeStatus.retired);
     expect(retired.provenance['retireReason'], 'quota completed');
@@ -559,6 +1220,28 @@ void main() {
     expect(rerun.status, GoalNudgeStatus.active);
     expect(rerun.activationCount, 2);
     expect(rerun.provenance['rerunReason'], 'proven copy');
+    expect(rerun.provenance['campaign'], 'morning-walk');
+    expect(rerun.provenance, isNot(contains('snoozedUntil')));
+    expect(rerun.provenance, isNot(contains('snoozeReason')));
+    expect(rerun.provenance, isNot(contains('snoozedAt')));
+    final snoozed = written.singleWhere((n) => n.id == 'ad-snooze');
+    expect(snoozed.status, GoalNudgeStatus.active);
+    expect(
+      snoozed.provenance['snoozedUntil'],
+      '2099-08-12T08:30:00.000Z',
+    );
+    expect(snoozed.provenance['snoozeReason'], 'user asked for later');
+    expect(
+      snoozed.staleAt,
+      DateTime.utc(2099, 8, 12, 8, 30).add(goalAdLifetime),
+      reason: 'the banner must remain live after its snooze expires',
+    );
+    final longLived = written.singleWhere((n) => n.id == 'ad-snooze-long');
+    expect(
+      longLived.staleAt,
+      DateTime.utc(2100),
+      reason: 'snoozing must never shorten an existing useful lifetime',
+    );
 
     final changeSet = upserts.whereType<ChangeSetEntity>().single;
     expect(changeSet.status, ChangeSetStatus.pending);
@@ -1260,6 +1943,72 @@ void main() {
     );
   });
 
+  test(
+    'persistOutputs: an interactive turn fenced by a concurrent revision '
+    'fails instead of silently leaving its durable user turn unanswered',
+    () async {
+      stubSpec();
+      _stubBadPrior(repository, agentId, now);
+      final version =
+          await repository.getEntity('$agentId:spec-v1')
+              as GoalSpecVersionEntity?;
+      final derivation = await _offTrackDerivation(repository, version!, now);
+      when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+        (_) async => AgentDomainEntity.goalSpecHead(
+          id: goalSpecHeadId(agentId),
+          agentId: agentId,
+          versionId: '$agentId:spec-v2',
+          updatedAt: now,
+          vectorClock: null,
+        ),
+      );
+      final strategy = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: agentId,
+        threadId: 'thread-chat',
+        runKey: 'run-chat',
+        knownAdIds: const {},
+      );
+      await strategy.processToolCalls(
+        toolCalls: [
+          toolCall(GoalAgentToolNames.replyToUser, {
+            'message': 'This reply belongs to the old goal.',
+          }),
+        ],
+        manager: conversationManager,
+      );
+
+      await expectLater(
+        withClock(
+          fixedClock,
+          () => workflow.persistOutputs(
+            agentId: agentId,
+            runKey: 'run-chat',
+            threadId: 'thread-chat',
+            strategy: strategy,
+            derivation: derivation,
+            now: now,
+            replyToUser: true,
+          ),
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('concurrent spec revision'),
+          ),
+        ),
+      );
+      expect(
+        upserts.whereType<AgentMessageEntity>().where(
+          (message) => message.contentEntryId != null,
+        ),
+        isEmpty,
+      );
+      expect(upserts.whereType<AgentMessagePayloadEntity>(), isEmpty);
+    },
+  );
+
   test('persistOutputs: a superseded-spec wake keeps its report as history '
       'but touches NO banners and never advances the head', () async {
     stubSpec();
@@ -1601,6 +2350,220 @@ void main() {
       },
     );
     expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+  });
+
+  test('persistOutputs: an explicit chat ad request overrides dismissal '
+      'cooldown, replaces a rated banner, and permits recovery copy', () async {
+    stubSpec();
+    _stubBadPrior(repository, agentId, now);
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    final derivation = await _offTrackDerivation(repository, version!, now);
+
+    Future<GoalAgentStrategy> creating(String headline) async {
+      final strategy = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: agentId,
+        threadId: 'thread-chat',
+        runKey: 'run-chat',
+        knownAdIds: const {},
+      );
+      await strategy.processToolCalls(
+        toolCalls: [
+          toolCall(GoalAgentToolNames.createGoalAd, {
+            'headline': headline,
+            'tone': 'nudge',
+            'animation': 'pulse',
+          }),
+        ],
+        manager: conversationManager,
+      );
+      return strategy;
+    }
+
+    final dismissed =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-dismissed',
+              agentId: agentId,
+              status: GoalNudgeStatus.dismissed,
+              brief: const GoalNudgeBrief(
+                headline: 'Quiet now.',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'dismissed-digest',
+              createdAt: now.subtract(const Duration(hours: 3)),
+              updatedAt: now.subtract(const Duration(hours: 1)),
+              vectorClock: null,
+              dismissedAt: now.subtract(const Duration(hours: 1)),
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [dismissed]);
+
+    final postDismissalStrategy = await creating(
+      'The requested post-dismissal banner.',
+    );
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-chat-1',
+        threadId: 'thread-chat-1',
+        strategy: postDismissalStrategy,
+        derivation: derivation,
+        now: now,
+        replyToUser: true,
+        userRequestedAd: true,
+        adCreationDiscriminator: 'chat:message-1',
+      ),
+    );
+    final afterDismissal = upserts.whereType<GoalNudgeEntity>().single;
+    expect(afterDismissal.status, GoalNudgeStatus.active);
+    expect(
+      afterDismissal.brief.headline,
+      'The requested post-dismissal banner.',
+    );
+    upserts.clear();
+
+    const ratedBrief = GoalNudgeBrief(
+      headline: 'Already rated.',
+      tone: GoalNudgeTone.nudge,
+      animation: GoalBannerAnimation.steady,
+    );
+    final ratedActive =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-rated-active',
+              agentId: agentId,
+              status: GoalNudgeStatus.active,
+              brief: ratedBrief,
+              briefDigest: goalBriefDigest(ratedBrief),
+              createdAt: now.subtract(const Duration(hours: 3)),
+              updatedAt: now.subtract(const Duration(hours: 1)),
+              vectorClock: null,
+              activatedAt: now.subtract(const Duration(hours: 3)),
+              ratings: [
+                GoalNudgeRating(
+                  activation: 1,
+                  ratedAt: now.subtract(const Duration(hours: 1)),
+                  rating: 4,
+                ),
+              ],
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [ratedActive]);
+
+    final postRatingStrategy = await creating('The replacement after rating.');
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-chat-2',
+        threadId: 'thread-chat-2',
+        strategy: postRatingStrategy,
+        derivation: derivation,
+        now: now,
+        replyToUser: true,
+        userRequestedAd: true,
+        adCreationDiscriminator: 'chat:message-2',
+      ),
+    );
+
+    final afterRating = upserts.whereType<GoalNudgeEntity>().toList();
+    expect(afterRating, hasLength(2));
+    final retired = afterRating.singleWhere(
+      (nudge) => nudge.id == 'ad-rated-active',
+    );
+    expect(retired.status, GoalNudgeStatus.retired);
+    expect(
+      retired.provenance['retireReason'],
+      'replaced by explicit chat request',
+    );
+    final replacement = afterRating.singleWhere(
+      (nudge) => nudge.id != 'ad-rated-active',
+    );
+    expect(replacement.status, GoalNudgeStatus.active);
+    expect(replacement.brief.headline, 'The replacement after rating.');
+
+    upserts.clear();
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [ratedActive]);
+    final duplicateStrategy = await creating('Already rated.');
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-chat-3',
+        threadId: 'thread-chat-3',
+        strategy: duplicateStrategy,
+        derivation: derivation,
+        now: now,
+        replyToUser: true,
+        userRequestedAd: true,
+        adCreationDiscriminator: 'chat:message-3',
+      ),
+    );
+
+    expect(
+      upserts.whereType<GoalNudgeEntity>(),
+      isEmpty,
+      reason: 'a duplicate candidate must not retire the active banner',
+    );
+
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => []);
+    final recovering = GoalWakeDerivation(
+      version: derivation.version,
+      facts: GoalWakeFacts(
+        trackStatus: GoalTrackStatus.recovering,
+        previousStatus: GoalTrackStatus.atRisk,
+        evaluation: derivation.facts.evaluation,
+        shortTermAttainment: derivation.facts.shortTermAttainment,
+      ),
+      periodKey: derivation.periodKey,
+      priors: derivation.priors,
+      existingToday: derivation.existingToday,
+    );
+    final recoveryStrategy = await creating(
+      'Recovery deserves a banner too.',
+    );
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-chat-4',
+        threadId: 'thread-chat-4',
+        strategy: recoveryStrategy,
+        derivation: recovering,
+        now: now,
+        replyToUser: true,
+        userRequestedAd: true,
+        adCreationDiscriminator: 'chat:message-4',
+      ),
+    );
+    expect(upserts.whereType<GoalNudgeEntity>(), hasLength(1));
+    expect(
+      upserts.whereType<GoalNudgeEntity>().single.status,
+      GoalNudgeStatus.active,
+    );
   });
 
   test('persistOutputs: a fresh active row scopes to its own spec version — '
@@ -2457,6 +3420,67 @@ void main() {
     expect(usage.inputTokens, 1000, reason: 'primary + ad-retry merged');
   });
 
+  test(
+    'a new at-risk goal gets its first banner without waiting for a trend',
+    () async {
+      stubSpec();
+      stubGlmResolution();
+      workflow = _offTrackWorkflow(
+        repository,
+        syncService,
+        conversationRepository,
+        cloudInferenceRepository,
+        aiConfigRepository,
+      );
+      conversationRepository.maxDelegateCalls = 3;
+      var calls = 0;
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            calls++;
+            if (calls == 1) {
+              await (strategy! as GoalAgentStrategy).processToolCalls(
+                toolCalls: [
+                  toolCall(GoalAgentToolNames.updateGoalReport, {
+                    'status': 'atRisk',
+                    'oneLiner': 'The first window starts behind.',
+                    'tldr': 'Two walks will recover the window.',
+                  }),
+                ],
+                manager: conversationManager,
+              );
+            } else {
+              await (strategy! as GoalAgentStrategy).processToolCalls(
+                toolCalls: [
+                  toolCall(GoalAgentToolNames.createGoalAd, {
+                    'headline': 'Your trainers are waiting.',
+                    'tone': 'nudge',
+                    'animation': 'pulse',
+                  }),
+                ],
+                manager: conversationManager,
+              );
+            }
+            return null;
+          };
+
+      final result = await run(triggerTokens: const {});
+
+      expect(result.success, isTrue);
+      expect(calls, 2, reason: 'primary evaluation + required first banner');
+      expect(upserts.whereType<GoalNudgeEntity>(), hasLength(1));
+    },
+  );
+
   test('a fresh active ad satisfies the P5 requirement — no forced ad '
       'retry fires', () async {
     stubSpec();
@@ -2723,6 +3747,65 @@ void main() {
     );
     expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
 
+    // At risk without a three-day decline is ineligible for an automatic ad,
+    // but the same structured create action is honored when it comes from an
+    // interactive turn: the user explicitly asked for the banner.
+    final firstAtRisk = await _offTrackDerivation(repository, version!, now);
+    final steadyAtRisk = GoalWakeDerivation(
+      version: firstAtRisk.version,
+      facts: firstAtRisk.facts,
+      periodKey: firstAtRisk.periodKey,
+      priors: [
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, '2026-08-08'),
+              agentId: agentId,
+              periodKey: '2026-08-08',
+              trackStatus: GoalTrackStatus.atRisk,
+              attainment: firstAtRisk.facts.evaluation.attainment,
+              dataCoverage: 1,
+              satisfied: false,
+              specVersionId: version.id,
+              createdAt: now.subtract(const Duration(days: 1)),
+              updatedAt: now.subtract(const Duration(days: 1)),
+              vectorClock: null,
+            )
+            as GoalProgressEntity,
+      ],
+      existingToday: firstAtRisk.existingToday,
+    );
+    expect(steadyAtRisk.facts.trackStatus, GoalTrackStatus.atRisk);
+    await withClock(
+      fixedClock,
+      () async => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: await creating('Automatic at-risk banner.'),
+        derivation: steadyAtRisk,
+        now: now,
+      ),
+    );
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+
+    await withClock(
+      fixedClock,
+      () async => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-chat',
+        threadId: 'thread-chat',
+        strategy: await creating('One more walk. Make it count.'),
+        derivation: steadyAtRisk,
+        now: now,
+        replyToUser: true,
+        userRequestedAd: true,
+        adCreationDiscriminator: 'chat:message-1',
+      ),
+    );
+    final requested = upserts.whereType<GoalNudgeEntity>().single;
+    expect(requested.status, GoalNudgeStatus.active);
+    expect(requested.brief.headline, 'One more walk. Make it count.');
+    upserts.clear();
+
     // atRisk with a strictly worsening trend (good prior days, bad today):
     // eligible — and the persisted copy is sanitized.
     for (final (period, attainment) in [
@@ -2747,7 +3830,7 @@ void main() {
         ),
       );
     }
-    final atRisk = await _offTrackDerivation(repository, version!, now);
+    final atRisk = await _offTrackDerivation(repository, version, now);
     expect(atRisk.facts.trackStatus, GoalTrackStatus.atRisk);
     await withClock(
       fixedClock,
@@ -2831,6 +3914,77 @@ void main() {
       ),
       isEmpty,
       reason: 'no re-arm: the wake must not be re-billed',
+    );
+  });
+
+  test('an interactive reply committed before an outbox failure completes '
+      'without retrying inference', () async {
+    stubSpec();
+    stubGlmResolution();
+    syncService = _CommitThenThrowSyncService();
+    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
+      upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
+    });
+    workflow = GoalAgentWorkflow(
+      repository: repository,
+      syncService: syncService,
+      phaseA: GoalAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        signalReader: _FakeReader(),
+      ),
+      conversationRepository: conversationRepository,
+      cloudInferenceRepository: cloudInferenceRepository,
+      aiConfigRepository: aiConfigRepository,
+    );
+    final replyId = goalAgentReplyMessageId(agentId, 'chat-run');
+    when(() => repository.getEntity(replyId)).thenAnswer((_) async {
+      final replies = upserts.whereType<AgentMessageEntity>().where(
+        (message) => message.id == replyId,
+      );
+      return replies.isEmpty ? null : replies.single;
+    });
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          await (strategy! as GoalAgentStrategy).processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.replyToUser, {
+                'message': 'One more walk closes the gap.',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          return const InferenceUsage(inputTokens: 100, outputTokens: 10);
+        };
+
+    final result = await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'chat-run',
+        triggerTokens: const {},
+        threadId: 'chat',
+        pendingUserMessage: 'How am I doing?',
+      ),
+    );
+
+    expect(result.success, isTrue);
+    expect(conversationRepository.sendMessageDelegateCallCount, 1);
+    expect(
+      upserts.whereType<AgentMessageEntity>().where(
+        (message) => message.id == replyId,
+      ),
+      hasLength(1),
     );
   });
 

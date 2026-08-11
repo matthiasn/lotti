@@ -50,6 +50,12 @@ class GoalFactsRenderer {
     ];
 
     return _factsBlock({
+      'generatedAt': now.toUtc().toIso8601String(),
+      'localTime': {
+        'iso8601': now.toIso8601String(),
+        'utcOffsetMinutes': now.timeZoneOffset.inMinutes,
+        'timeZoneName': now.timeZoneName,
+      },
       'goal': {
         'id': version.agentId,
         'statement': version.statement,
@@ -115,10 +121,7 @@ class GoalFactsRenderer {
   /// least two prior periods (three data points, each below the one
   /// before it) — the FACTS key policy row P4 keys on.
   bool trendWorsening(double current, List<double> priorAttainments) {
-    if (priorAttainments.length < 2) return false;
-    // priors are most-recent-first: current < prior[0] < prior[1].
-    return current < priorAttainments[0] &&
-        priorAttainments[0] < priorAttainments[1];
+    return goalTrendWorsening(current, priorAttainments);
   }
 
   /// A dismissal blocks all ad activity for the rest of that LOCAL
@@ -168,6 +171,10 @@ class GoalFactsRenderer {
       'ageHours': age.inHours,
       'fresh': age < goalAdFreshFor,
       'markedStale': nudge.staleAt != null && !now.isBefore(nudge.staleAt!),
+      'outcomeRecorded': nudge.ratings.any(
+        (rating) => rating.activation == nudge.activationCount,
+      ),
+      'snoozedUntil': ?nudge.provenance['snoozedUntil'],
     };
   }
 

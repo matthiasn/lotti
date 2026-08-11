@@ -26,6 +26,7 @@ class ConsumptionTotals {
     required this.energyKwh,
     required this.carbonGCo2,
     required this.waterLiters,
+    this.durationMs = 0,
   });
 
   static const empty = ConsumptionTotals(
@@ -53,6 +54,7 @@ class ConsumptionTotals {
   final double energyKwh;
   final double carbonGCo2;
   final double waterLiters;
+  final int durationMs;
 
   @override
   bool operator ==(Object other) =>
@@ -68,7 +70,8 @@ class ConsumptionTotals {
           other.credits == credits &&
           other.energyKwh == energyKwh &&
           other.carbonGCo2 == carbonGCo2 &&
-          other.waterLiters == waterLiters;
+          other.waterLiters == waterLiters &&
+          other.durationMs == durationMs;
 
   @override
   int get hashCode => Object.hash(
@@ -83,6 +86,7 @@ class ConsumptionTotals {
     energyKwh,
     carbonGCo2,
     waterLiters,
+    durationMs,
   );
 }
 

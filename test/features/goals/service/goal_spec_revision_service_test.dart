@@ -4,6 +4,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -33,11 +34,31 @@ void main() {
   late List<AgentDomainEntity> upserts;
   late GoalSpecRevisionService service;
 
+  AgentIdentityEntity goalIdentity(AgentLifecycle lifecycle) =>
+      AgentDomainEntity.agent(
+            id: agentId,
+            agentId: agentId,
+            kind: AgentKinds.goalAgent,
+            displayName: 'Steps',
+            lifecycle: lifecycle,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: '$agentId:state',
+            config: const AgentConfig(),
+            createdAt: DateTime(2026, 8),
+            updatedAt: DateTime(2026, 8),
+            vectorClock: null,
+          )
+          as AgentIdentityEntity;
+
   setUp(() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
     upserts = [];
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => goalIdentity(AgentLifecycle.active));
     when(
       () => repository.getEntitiesByAgentId(
         any(),
@@ -79,6 +100,26 @@ void main() {
       ),
     );
   }
+
+  test('an inactive goal refuses a revision before writing anything', () async {
+    stubSpec();
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => goalIdentity(AgentLifecycle.dormant));
+
+    final outcome = await service.reviseFromProposal(
+      agentId: agentId,
+      changes: {'targetValue': 8000},
+      rationale: 'change it',
+    );
+
+    expect(outcome, isA<GoalSpecRevisionRefused>());
+    expect(
+      (outcome as GoalSpecRevisionRefused).reason,
+      'goal agent is not active',
+    );
+    expect(upserts, isEmpty);
+  });
 
   test('an approved proposal supersedes v1, mints v2 with provenance, and '
       'moves the head — in one transaction', () async {

@@ -121,6 +121,39 @@ void main() {
       expect(labels[GoalHealthDirection.up], en.goalHealthTrendUp);
       expect(labels[GoalHealthDirection.down], en.goalHealthTrendDown);
     });
+
+    for (final (name, tokens) in [
+      ('light', dsTokensLight),
+      ('dark', dsTokensDark),
+    ]) {
+      test('$name theme uses an independent semantic hue', () {
+        expect(
+          goalHealthDirectionColor(GoalHealthDirection.up, tokens.colors),
+          tokens.colors.alert.success.defaultColor,
+        );
+        expect(
+          goalHealthDirectionColor(GoalHealthDirection.flat, tokens.colors),
+          tokens.colors.text.lowEmphasis,
+        );
+        expect(
+          goalHealthDirectionColor(GoalHealthDirection.down, tokens.colors),
+          tokens.colors.alert.warning.defaultColor,
+        );
+      });
+    }
+  });
+
+  testWidgets('direction chip renders its icon and localized label', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidget(
+        const GoalHealthDirectionChip(direction: GoalHealthDirection.up),
+      ),
+    );
+
+    expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
+    expect(find.text(en.goalHealthTrendUp), findsOneWidget);
   });
 
   group('GoalCoarseHealthChip', () {

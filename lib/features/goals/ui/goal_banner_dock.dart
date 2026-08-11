@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_actions.dart';
+import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/goal_banner_style.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
@@ -36,7 +37,7 @@ double _textBlockHeight(TextStyle style, int lines, TextScaler scaler) {
 /// Derived entirely from the dock's own design-system dimensions and text
 /// styles, and scale-aware. The tenant row is as tall as the taller of the
 /// [TapTargets.minimum] dismiss target and the copy block — the headline
-/// (`subtitle2`, up to two lines) plus the caption (one line), measured from
+/// (`subtitle2`, up to two lines) plus the tagline (up to two lines), measured
 /// the real text metrics at the current [MediaQuery.textScalerOf] so it grows
 /// correctly with accessibility text. Around it sits the fixed chrome — outer
 /// padding (`step3` both edges), the tenure strip (`step1`), the tenant's own
@@ -60,7 +61,7 @@ double goalBannerDockReservedHeight(BuildContext context) {
         2,
         scaler,
       ) +
-      _textBlockHeight(tokens.typography.styles.others.caption, 1, scaler);
+      _textBlockHeight(tokens.typography.styles.others.caption, 2, scaler);
   final row = textBlock > TapTargets.minimum ? textBlock : TapTargets.minimum;
   // A `step1` cushion absorbs sub-pixel rounding between the sample-glyph
   // measurement and the rendered headline's own metrics (the test pins the
@@ -173,11 +174,13 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     // and locally dismissed ids stay suppressed.
     final now = clock.now();
     final locallyDismissed = ref.read(locallyDismissedNudgeIdsProvider);
+    final locallySnoozed = ref.read(locallySnoozedNudgeDeadlinesProvider);
     return [
       for (final entry in raw ?? const <GoalBannerEntry>[])
         if ((entry.nudge.staleAt == null ||
                 now.isBefore(entry.nudge.staleAt!)) &&
-            !locallyDismissed.contains(entry.nudge.id))
+            !locallyDismissed.contains(entry.nudge.id) &&
+            locallySnoozed[entry.nudge.id]?.isAfter(now) != true)
           entry,
     ];
   }
@@ -301,6 +304,11 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
         setState(
           () => _reconcile(_visible(ref.read(activeGoalNudgesProvider).value)),
         );
+      })
+      ..listen(locallySnoozedNudgeDeadlinesProvider, (_, _) {
+        setState(
+          () => _reconcile(_visible(ref.read(activeGoalNudgesProvider).value)),
+        );
       });
 
     final tokens = context.designTokens;
@@ -341,27 +349,34 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     // it re-dirties itself mid-layout when that controller fires during its
     // own size animation. AnimatedSwitcher animates between the dock and an
     // empty box via a SizeTransition it owns, with no such reentrancy.
-    return AnimatedSwitcher(
-      duration: reduceMotion ? Duration.zero : MotionDurations.medium1,
-      switchInCurve: MotionCurves.emphasizedDecelerate,
-      switchOutCurve: MotionCurves.standard,
-      transitionBuilder: (child, animation) => SizeTransition(
-        sizeFactor: animation,
-        alignment: Alignment.topCenter,
-        child: child,
-      ),
-      child: current == null || keyboardUp
-          ? const SizedBox(key: ValueKey('dock-empty'), width: double.infinity)
-          : KeyedSubtree(
-              key: const ValueKey('dock-full'),
-              child: _buildDock(
-                context,
-                tokens,
-                entries,
-                current,
-                reduceMotion,
+    return SizedBox(
+      width: double.infinity,
+      child: AnimatedSwitcher(
+        duration: reduceMotion ? Duration.zero : MotionDurations.medium1,
+        switchInCurve: MotionCurves.emphasizedDecelerate,
+        switchOutCurve: MotionCurves.standard,
+        transitionBuilder: (child, animation) => SizeTransition(
+          sizeFactor: animation,
+          alignment: Alignment.topCenter,
+          child: child,
+        ),
+        child: current == null || keyboardUp
+            ? const SizedBox(
+                key: ValueKey('dock-empty'),
+                width: double.infinity,
+              )
+            : SizedBox(
+                key: const ValueKey('dock-full'),
+                width: double.infinity,
+                child: _buildDock(
+                  context,
+                  tokens,
+                  entries,
+                  current,
+                  reduceMotion,
+                ),
               ),
-            ),
+      ),
     );
   }
 
@@ -381,16 +396,19 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     final radius = BorderRadius.circular(tokens.radii.m);
     final multi = entries.length > 1;
 
-    Widget tenant = _DockTenant(
+    Widget tenant = SizedBox(
       key: ValueKey(
         'dock-${current.nudge.id}-${current.nudge.activationCount}',
       ),
-      entry: current,
-      style: style,
-      compact: widget.compact,
-      justNow: _jumpedId == current.nudge.id,
-      onDismiss: () => dismissGoalBanner(context, ref, current),
-      onRate: () => showGoalBannerRatingSheet(context, ref, current),
+      width: double.infinity,
+      child: _DockTenant(
+        entry: current,
+        style: style,
+        compact: widget.compact,
+        justNow: _jumpedId == current.nudge.id,
+        onDismiss: () => dismissGoalBanner(context, ref, current),
+        onRate: () => showGoalBannerRatingSheet(context, ref, current),
+      ),
     );
 
     if (widget.compact) {
@@ -414,6 +432,7 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
             color: style.fill,
             borderRadius: radius,
             child: Ink(
+              key: const ValueKey('goal-banner-dock-frame'),
               decoration: BoxDecoration(
                 borderRadius: radius,
                 border: Border.all(color: style.border),
@@ -538,7 +557,6 @@ class _DockTenant extends ConsumerWidget {
     required this.justNow,
     required this.onDismiss,
     required this.onRate,
-    super.key,
   });
 
   final GoalBannerEntry entry;
@@ -553,94 +571,110 @@ class _DockTenant extends ConsumerWidget {
     final tokens = context.designTokens;
     final brief = entry.nudge.brief;
     final ratingDue = GoalNudgeInteractions.ratingDue(entry.nudge);
-    final caption = justNow
-        ? '${entry.goalTitle} · ${context.messages.goalDockJustNow}'
-        : entry.goalTitle;
+    final tagline = brief.tagline?.trim();
+    final caption = tagline == null || tagline.isEmpty
+        ? justNow
+              ? context.messages.goalDockJustNow
+              : null
+        : justNow
+        ? '$tagline · ${context.messages.goalDockJustNow}'
+        : tagline;
 
     return GoalBannerExposureTracker(
       nudgeId: entry.nudge.id,
-      child: InkWell(
-        onTap: () => beamToNamed('/agents/details/${entry.nudge.agentId}'),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.cardPadding,
-            vertical: tokens.spacing.step3,
-          ),
-          child: Row(
-            children: [
-              GoalBannerPersonaChip.forStyle(
-                monogram: GoalBannerPersonaChip.monogramFor(entry.goalTitle),
-                style: style,
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      brief.headline,
-                      maxLines: compact ? 2 : 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.subtitle.subtitle2
-                          .copyWith(
-                            color: tokens.colors.text.highEmphasis,
-                          ),
-                    ),
-                    Text(
-                      caption,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
-                      ),
-                    ),
-                  ],
+      child: Semantics(
+        container: true,
+        label: context.messages.goalBannerSemanticLabel(entry.goalTitle),
+        child: InkWell(
+          key: const ValueKey('goal-banner-dock-tenant'),
+          onTap: () => beamToNamed('/agents/details/${entry.nudge.agentId}'),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.cardPadding,
+              vertical: tokens.spacing.step3,
+            ),
+            child: Row(
+              children: [
+                GoalBannerPersonaChip.forStyle(
+                  monogram: GoalBannerPersonaChip.monogramFor(entry.goalTitle),
+                  style: style,
                 ),
-              ),
-              if (!compact && brief.cta != null) ...[
                 SizedBox(width: tokens.spacing.step3),
-                // Flexible so a long CTA is bounded by the row and its own
-                // ellipsis actually engages — a bare Row child would be
-                // measured at full intrinsic width and overflow the dock.
-                Flexible(
-                  child: GoalBannerCtaPill(
-                    label: brief.cta!,
-                    style: style,
-                    onTap: () =>
-                        beamToNamed('/agents/details/${entry.nudge.agentId}'),
+                Expanded(
+                  key: const ValueKey('goal-banner-copy-region'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GoalBannerAnimatedText(
+                        text: brief.headline,
+                        animation: brief.animation,
+                        // Desktop has the room to show the authored headline in
+                        // full. Compact keeps the documented two-line reserve.
+                        maxLines: compact ? 2 : null,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                            ),
+                      ),
+                      if (caption != null)
+                        Text(
+                          caption,
+                          maxLines: compact ? 2 : null,
+                          overflow: compact
+                              ? TextOverflow.ellipsis
+                              : TextOverflow.visible,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                    ],
                   ),
                 ),
-              ],
-              if (!compact)
+                if (!compact && brief.cta != null) ...[
+                  SizedBox(width: tokens.spacing.step3),
+                  // CTA copy is contractually 2–4 words. Keep it intrinsic so
+                  // it cannot claim a flex share and arbitrarily cap the banner
+                  // copy at half the dock.
+                  GoalBannerCtaPill(
+                    label: brief.cta!,
+                    style: style,
+                    onTap: () => beamToNamed(
+                      '/agents/details/${entry.nudge.agentId}',
+                    ),
+                  ),
+                ],
+                if (!compact)
+                  SizedBox(
+                    width: TapTargets.minimum,
+                    height: TapTargets.minimum,
+                    child: ratingDue
+                        ? IconButton(
+                            onPressed: onRate,
+                            tooltip: context.messages.goalBannerRateTooltip,
+                            icon: Icon(
+                              Icons.star_outline_rounded,
+                              size: tokens.spacing.step5,
+                              color: tokens.colors.text.lowEmphasis,
+                            ),
+                          )
+                        : null,
+                  ),
                 SizedBox(
                   width: TapTargets.minimum,
                   height: TapTargets.minimum,
-                  child: ratingDue
-                      ? IconButton(
-                          onPressed: onRate,
-                          tooltip: context.messages.goalBannerRateTooltip,
-                          icon: Icon(
-                            Icons.star_outline_rounded,
-                            size: tokens.spacing.step5,
-                            color: tokens.colors.text.lowEmphasis,
-                          ),
-                        )
-                      : null,
-                ),
-              SizedBox(
-                width: TapTargets.minimum,
-                height: TapTargets.minimum,
-                child: IconButton(
-                  onPressed: onDismiss,
-                  tooltip: context.messages.goalBannerDismissTooltip,
-                  icon: Icon(
-                    Icons.close_rounded,
-                    size: tokens.spacing.step5,
-                    color: tokens.colors.text.lowEmphasis,
+                  child: IconButton(
+                    onPressed: onDismiss,
+                    tooltip: context.messages.goalBannerDismissTooltip,
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: tokens.spacing.step5,
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

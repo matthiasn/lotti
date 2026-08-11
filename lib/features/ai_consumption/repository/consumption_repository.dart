@@ -139,6 +139,26 @@ class ConsumptionRepository {
       energyKwh: row.energyKwh,
       carbonGCo2: row.carbonGCo2,
       waterLiters: row.waterLiters,
+      durationMs: row.durationMs,
+    );
+  }
+
+  /// Sum every persisted metric for [agentId] across its whole lifetime.
+  Future<ConsumptionTotals> totalsForAgent(String agentId) async {
+    final row = await _db.sumConsumptionByAgent(agentId).getSingle();
+    return ConsumptionTotals(
+      callCount: row.callCount,
+      impactCallCount: row.impactCallCount,
+      inputTokens: row.inputTokens,
+      outputTokens: row.outputTokens,
+      cachedInputTokens: row.cachedInputTokens,
+      thoughtsTokens: row.thoughtsTokens,
+      totalTokens: row.totalTokens,
+      credits: row.credits,
+      energyKwh: row.energyKwh,
+      carbonGCo2: row.carbonGCo2,
+      waterLiters: row.waterLiters,
+      durationMs: row.durationMs,
     );
   }
 

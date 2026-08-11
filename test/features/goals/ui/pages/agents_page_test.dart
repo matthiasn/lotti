@@ -2,13 +2,17 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/pages/agents_page.dart';
 import 'package:lotti/services/nav_service.dart';
 
@@ -182,6 +186,82 @@ void main() {
     expect(find.text('3 days to recover'), findsOneWidget);
     expect(find.text('1 day of buffer'), findsOneWidget);
   });
+
+  testWidgets(
+    'a resolved goal spec adds the compact seven-day progress strip',
+    (
+      tester,
+    ) async {
+      final spec =
+          AgentDomainEntity.goalSpecVersion(
+                id: 'goal-fit:spec-v1',
+                agentId: 'goal-fit',
+                version: 1,
+                status: GoalSpecVersionStatus.active,
+                authoredBy: 'user',
+                title: 'Fitness',
+                statement: 'Walk most days.',
+                criteria: const GoalCriterion.habit(
+                  criterionId: 'walk',
+                  habitId: 'walk',
+                  window: GoalWindow.rollingDays(count: 7),
+                  targetCount: 4,
+                ),
+                createdAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as GoalSpecVersionEntity;
+      final today = DateTime.utc(2026, 8, 11);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentsPage(),
+          overrides: [
+            activeGoalAgentsProvider.overrideWith(
+              (ref) async => [identity('goal-fit', 'Expedition fitness')],
+            ),
+            goalAgentHealthProvider('goal-fit').overrideWith(
+              (ref) async => (
+                trackStatus: GoalTrackStatus.onTrack,
+                attainment: 1.0,
+                reportOneLiner: null,
+                pendingProposals: 0,
+                spec: spec,
+                direction: null,
+                deficit: null,
+                buffer: null,
+              ),
+            ),
+            goalAgentProgressViewProvider('goal-fit').overrideWith(
+              (ref) async => GoalProgressView(
+                today: today,
+                habits: [
+                  GoalHabitProgressView(
+                    habitId: 'walk',
+                    name: 'Walk',
+                    targetCount: 4,
+                    days: [
+                      for (var offset = 7; offset >= 0; offset--)
+                        GoalProgressDay(
+                          day: today.subtract(Duration(days: offset)),
+                          value: offset.isEven ? 1 : 0,
+                        ),
+                    ],
+                    successfulWeeks: 3,
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final strip = tester.widget<GoalCompactWindowStrip>(
+        find.byType(GoalCompactWindowStrip),
+      );
+      expect(strip.days, [true, false, true, false, true, false, true]);
+    },
+  );
 
   testWidgets('the create FAB opens the creation flow, and a row opens that '
       "agent's detail page", (tester) async {

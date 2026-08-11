@@ -125,6 +125,11 @@ enum WakeReason {
   /// audio entry linked to a task — bypasses the throttle so the user
   /// does not wait through a 2-minute countdown after speaking.
   transcriptionComplete,
+
+  /// Triggered by a durable message sent directly to an agent. Interactive
+  /// turns bypass the subscription throttle and may not be swept with
+  /// automation while automatic updates are disabled.
+  userMessage,
 }
 
 /// Whether a queued wake was explicitly requested by the user or automation.

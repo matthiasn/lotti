@@ -135,6 +135,7 @@ extension WakeDrainEngine on WakeOrchestrator {
               '${DomainLogger.sanitizeId(job.agentId)}',
               subDomain: 'drain',
             );
+            _emitRunCompletion(job, WakeRunStatus.aborted);
             continue;
           }
 
@@ -280,8 +281,11 @@ extension WakeDrainEngine on WakeOrchestrator {
       );
       return true;
     }
-    if (entity is! AgentIdentityEntity || entity.kind != AgentKinds.taskAgent) {
+    if (entity is! AgentIdentityEntity) {
       return true;
+    }
+    if (entity.kind != AgentKinds.taskAgent) {
+      return entity.lifecycle == AgentLifecycle.active;
     }
     return taskAgentWakeAllowed(
       config: entity.config,

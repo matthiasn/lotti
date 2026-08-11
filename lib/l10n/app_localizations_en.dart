@@ -1539,6 +1539,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get aiConsumptionDurationLessThanMinute => 'Less than 1 min';
+
+  @override
+  String aiConsumptionDurationLine(String duration) {
+    return 'Compute time: $duration';
+  }
+
+  @override
   String aiConsumptionImpactLine(String energy, String carbon, String water) {
     return 'Impact: $energy · $carbon CO₂e · $water water';
   }
@@ -5945,6 +5953,16 @@ class AppLocalizationsEn extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Create image from voice description';
 
   @override
+  String goalAgentLifetimeTimePill(String duration) {
+    return '$duration AI time';
+  }
+
+  @override
+  String goalAgentLifetimeTimeTooltip(String calls) {
+    return 'Lifetime agent compute time across $calls model calls.';
+  }
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent% of target';
   }
@@ -5980,6 +5998,49 @@ class AppLocalizationsEn extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String goalChatEmpty(String agentName) {
+    return 'Start a conversation with $agentName.';
+  }
+
+  @override
+  String get goalChatFailed => 'That didn\'t send.';
+
+  @override
+  String get goalChatHistoryError =>
+      'Couldn\'t load this conversation right now.';
+
+  @override
+  String goalChatMessageFooter(Object author, Object time) {
+    return '$author · $time';
+  }
+
+  @override
+  String goalChatMessageSemantics(String author, String time, String message) {
+    return '$author, $time: $message';
+  }
+
+  @override
+  String get goalChatPageTitle => 'Conversation';
+
+  @override
+  String goalChatPlaceholder(String agentName) {
+    return 'Talk to $agentName…';
+  }
+
+  @override
+  String goalChatResponding(String agentName) {
+    return '$agentName is replying…';
+  }
+
+  @override
+  String goalChatTalkTo(String agentName) {
+    return 'Talk to $agentName';
+  }
+
+  @override
+  String get goalChatYou => 'You';
 
   @override
   String get goalCoarseHealthBehind => 'Behind';
@@ -6043,6 +6104,19 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalDeleteConfirmButton => 'Delete goal';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'This retires the goal agent and removes it from your list on every device. This can\'t be undone.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Delete this goal?';
+
+  @override
+  String get goalDeleteMenuItem => 'Delete goal';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Couldn\'t load this goal\'s health right now.';
 
@@ -6054,7 +6128,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goalDetailNotFound => 'This goal agent no longer exists.';
 
   @override
+  String get goalDetailSayingTitle => 'What your agent is saying';
+
+  @override
   String get goalDetailTimelineTitle => 'Interactions';
+
+  @override
+  String get goalDetailWatchingSignals =>
+      'Signals listed above update within seconds. Your agent only sees the signals listed here.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Watching';
 
   @override
   String get goalDockJustNow => 'just now';
@@ -6067,6 +6151,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalHealthTrendUp => 'Trending up';
+
+  @override
+  String goalMetricBarSemantics(
+    String status,
+    Object date,
+    Object value,
+    Object target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      status,
+      {
+        'missing': '$date: no value; target $target',
+        'met': '$date: $value; target $target; met',
+        'other': '$date: $value; target $target; not met',
+      },
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalNudgeStatusDismissed => 'Dismissed';
@@ -6082,6 +6184,65 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalPendingProposalBadge => 'Proposal awaiting review';
+
+  @override
+  String get goalProgressAgesOut => 'ages out tonight';
+
+  @override
+  String get goalProgressAtRate => 'at rate';
+
+  @override
+  String get goalProgressCaption => 'trailing 7 days · slides at midnight';
+
+  @override
+  String goalProgressCompactSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count successful days in the trailing seven-day window',
+      one: '1 successful day in the trailing seven-day window',
+      zero: 'No successful days in the trailing seven-day window',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String goalProgressDaysToHealthy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count days to healthy',
+      one: '1 day to healthy',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalProgressDone => 'done';
+
+  @override
+  String get goalProgressHabitDayNoEntry => 'No entry';
+
+  @override
+  String goalProgressHabitDaySemantics(String date, String outcome) {
+    return '$date: $outcome';
+  }
+
+  @override
+  String goalProgressHabitTarget(int count) {
+    return '$count× per 7 days';
+  }
+
+  @override
+  String goalProgressHabitTargetWindow(int count, String window) {
+    return '$count× · $window';
+  }
+
+  @override
+  String get goalProgressTitle => 'This rolling week';
+
+  @override
+  String get goalProgressToday => 'today';
 
   @override
   String get goalStatusAchieved => 'Achieved';

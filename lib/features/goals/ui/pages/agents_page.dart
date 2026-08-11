@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_coarse_health.dart';
+import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -159,6 +161,9 @@ class _GoalAgentRow extends ConsumerWidget {
     // null status). Once a value has arrived, stale-while-revalidate keeps it
     // through background refreshes and transient errors.
     final health = healthAsync.value;
+    final progress = health?.spec == null
+        ? null
+        : ref.watch(goalAgentProgressViewProvider(identity.agentId)).value;
     final coarse = healthAsync.hasValue
         ? coarseHealthOf(health?.trackStatus)
         : null;
@@ -246,6 +251,11 @@ class _GoalAgentRow extends ConsumerWidget {
                         ),
                       ),
                     ],
+                    if (progress?.compactWindow case final days?
+                        when days.isNotEmpty) ...[
+                      SizedBox(height: tokens.spacing.step2),
+                      GoalCompactWindowStrip(days: days),
+                    ],
                   ],
                 ),
               ),
@@ -254,7 +264,7 @@ class _GoalAgentRow extends ConsumerWidget {
                 Icon(
                   goalHealthDirectionIcon(direction),
                   size: tokens.spacing.step5,
-                  color: color,
+                  color: goalHealthDirectionColor(direction, tokens.colors),
                   // The arrow is the only trend signal in the row; without a
                   // label a screen reader announces nothing for it.
                   semanticLabel: goalHealthDirectionLabel(

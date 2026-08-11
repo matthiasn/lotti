@@ -24,6 +24,7 @@ import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
+import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
@@ -117,6 +118,7 @@ void main() {
     expect(container.read(goalSignalReaderProvider), isA<GoalSignalReader>());
     expect(container.read(goalAgentPhaseAProvider), isA<GoalAgentPhaseA>());
     expect(container.read(goalAgentServiceProvider), isA<GoalAgentService>());
+    expect(container.read(goalChatServiceProvider), isA<GoalChatService>());
     expect(
       container.read(goalRuntimeMaintenanceProvider),
       isA<GoalRuntimeMaintenance>(),
@@ -156,6 +158,24 @@ void main() {
     );
     expect(result.success, isTrue);
   });
+
+  test(
+    'a chat-message trigger routes to the durable user-message workflow',
+    () async {
+      final runner = container.read(
+        goalAgentWakeRunnersProvider,
+      )[AgentKinds.goalAgent]!;
+      final result = await runner(
+        agentIdentity: goalIdentity('goal-chat'),
+        runKey: 'chat-run',
+        triggerTokens: const {'goal-chat-message:missing'},
+        threadId: 'chat-run',
+      );
+
+      expect(result.success, isFalse);
+      expect(result.error, contains('source message is unavailable'));
+    },
+  );
 
   test('an escalation trigger token routes the wake to Phase B — proven '
       'by it failing on the missing inference provider, which the €0 tier '
@@ -221,6 +241,18 @@ void main() {
     );
     expect(phaseB.success, isFalse);
     expect(phaseB.error, contains('no inference provider'));
+
+    // A report refresh requested by the goal-detail habit editor follows the
+    // same fact-grounded Phase B path even when the status itself did not
+    // transition.
+    final reportRefresh = await runner(
+      agentIdentity: goalIdentity(agentId),
+      runKey: 'run-refresh',
+      triggerTokens: const {goalReportRefreshTriggerToken},
+      threadId: 'thread-refresh',
+    );
+    expect(reportRefresh.success, isFalse);
+    expect(reportRefresh.error, contains('no inference provider'));
 
     // The same wake without the escalation token stays on the €0 tier and
     // succeeds without any inference plumbing.
@@ -407,6 +439,9 @@ void main() {
       'minted, head moved, and the signal subscription re-registered from '
       'the NEW criteria', () async {
     const agentId = 'goal-rev';
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => goalIdentity(agentId));
     final changeSet =
         AgentDomainEntity.changeSet(
               id: 'cs-1',
@@ -544,6 +579,9 @@ void main() {
   test('a confirmed revision whose spec cannot be read back logs the '
       'skipped re-registration instead of failing silently', () async {
     const agentId = 'goal-gone';
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => goalIdentity(agentId));
     final logger = container.read(domainLoggerProvider) as MockDomainLogger;
     when(
       () => logger.error(
@@ -693,6 +731,13 @@ void main() {
       (_) async => [
         nudgeRow('ad-old', GoalNudgeStatus.active, DateTime(2026, 8, 8)),
         nudgeRow('ad-new', GoalNudgeStatus.active, DateTime(2026, 8, 10)),
+        nudgeRow(
+          'ad-snoozed',
+          GoalNudgeStatus.active,
+          DateTime(2026, 8, 11),
+        ).copyWith(
+          provenance: const {'snoozedUntil': '2099-08-11T12:00:00.000Z'},
+        ),
         nudgeRow('ad-gone', GoalNudgeStatus.dismissed, DateTime(2026, 8, 9)),
       ],
     );
@@ -1480,6 +1525,83 @@ void main() {
           container.read(activeGoalNudgesProvider).value,
           isEmpty,
           reason: 'the staleness contract holds without an external event',
+        );
+      });
+    });
+  });
+
+  test('a local snooze deadline removes itself exactly on time', () {
+    final start = DateTime.utc(2026, 8, 11, 12);
+    fakeAsync((async) {
+      withClock(Clock(() => start.add(async.elapsed)), () {
+        container
+            .read(locallySnoozedNudgeDeadlinesProvider.notifier)
+            .add('ad-1', start.add(const Duration(minutes: 15)));
+
+        expect(container.read(locallySnoozedNudgeDeadlinesProvider), {
+          'ad-1': start.add(const Duration(minutes: 15)),
+        });
+        async.elapse(const Duration(minutes: 15));
+        expect(container.read(locallySnoozedNudgeDeadlinesProvider), isEmpty);
+      });
+    });
+  });
+
+  test('a snoozed banner automatically returns at its deadline without an '
+      'agent notification', () {
+    final start = DateTime.utc(2026, 8, 10, 12);
+    fakeAsync((async) {
+      withClock(Clock(() => start.add(async.elapsed)), () {
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+        when(
+          () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.goalNudge(
+                  id: 'ad-snoozed',
+                  agentId: 'goal-a',
+                  status: GoalNudgeStatus.active,
+                  brief: const GoalNudgeBrief(
+                    headline: 'h',
+                    tone: GoalNudgeTone.nudge,
+                    animation: GoalBannerAnimation.steady,
+                  ),
+                  briefDigest: 'd',
+                  createdAt: start,
+                  updatedAt: start,
+                  vectorClock: null,
+                  staleAt: start.add(const Duration(days: 1)),
+                  provenance: {
+                    'snoozedUntil': start
+                        .add(const Duration(hours: 1))
+                        .toIso8601String(),
+                  },
+                )
+                as GoalNudgeEntity,
+          ],
+        );
+
+        final flagSub = container.listen(
+          configFlagProvider(enableAgentsPageFlag),
+          (_, _) {},
+        );
+        addTearDown(flagSub.close);
+        final sub = container.listen(activeGoalNudgesProvider, (_, _) {});
+        addTearDown(sub.close);
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 1))
+          ..flushMicrotasks();
+        expect(container.read(activeGoalNudgesProvider).value, isEmpty);
+
+        async
+          ..elapse(const Duration(hours: 1, seconds: 1))
+          ..flushMicrotasks();
+        expect(
+          container.read(activeGoalNudgesProvider).value?.single.nudge.id,
+          'ad-snoozed',
         );
       });
     });

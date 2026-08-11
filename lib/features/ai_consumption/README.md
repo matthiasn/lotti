@@ -5,8 +5,9 @@ it, which model answered, what it used, and what it cost.
 
 ## What it does for the user
 
-- **Shows what AI actually costs.** Per task, per area and per model — tokens,
-  money where the provider reports it, and estimated energy and CO₂e.
+- **Shows what AI actually costs.** Per task, per goal agent, per area and per
+  model — tokens, money where the provider reports it, and measured energy and
+  CO₂e.
 - **Attributes work honestly.** A summary, a transcript or a generated image
   carries a record of the calls that produced it, so a cost can always be traced
   to an output.

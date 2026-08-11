@@ -6,6 +6,7 @@ import 'package:lotti/features/ai/model/ai_config.dart';
 import 'package:lotti/features/ai_consumption/database/consumption_database.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/model/ai_consumption_enums.dart';
+import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/ai_consumption/repository/consumption_repository.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
 
@@ -175,6 +176,7 @@ void main() {
           energyKwh: 0.0003,
           carbonGCo2: 0.12,
           waterLiters: 0.01,
+          durationMs: 1200,
         ),
       );
       await repo.upsertEvent(
@@ -188,6 +190,7 @@ void main() {
           energyKwh: 0.0001,
           carbonGCo2: 0.05,
           waterLiters: 0.02,
+          durationMs: 800,
         ),
       );
       // A no-impact call (Gemini) on the same task counts toward callCount and
@@ -204,6 +207,7 @@ void main() {
           energyKwh: null,
           carbonGCo2: null,
           waterLiters: null,
+          durationMs: 500,
         ),
       );
 
@@ -217,6 +221,7 @@ void main() {
       expect(totals.energyKwh, closeTo(0.0004, 1e-9));
       expect(totals.carbonGCo2, closeTo(0.17, 1e-9));
       expect(totals.waterLiters, closeTo(0.03, 1e-9));
+      expect(totals.durationMs, 2500);
     });
 
     test('ignores rows belonging to other tasks', () async {
@@ -237,6 +242,58 @@ void main() {
       expect(totals.impactCallCount, 0);
       expect(totals.totalTokens, 0);
       expect(totals.energyKwh, 0);
+      expect(totals.durationMs, 0);
+    });
+  });
+
+  group('totalsForAgent', () {
+    test('sums the lifetime metrics for only the requested agent', () async {
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'first',
+          agentId: 'goal-1',
+          inputTokens: 100,
+          totalTokens: 150,
+          credits: 0.2,
+          energyKwh: 0.003,
+          durationMs: 1200,
+        ),
+      );
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'second',
+          agentId: 'goal-1',
+          inputTokens: 200,
+          totalTokens: 300,
+          credits: null,
+          energyKwh: null,
+          carbonGCo2: null,
+          waterLiters: null,
+          durationMs: 800,
+        ),
+      );
+      await repo.upsertEvent(
+        makeConsumptionEvent(
+          id: 'other',
+          agentId: 'goal-2',
+          totalTokens: 999,
+          durationMs: 9999,
+        ),
+      );
+
+      final totals = await repo.totalsForAgent('goal-1');
+
+      expect(totals.callCount, 2);
+      expect(totals.impactCallCount, 1);
+      expect(totals.inputTokens, 300);
+      expect(totals.totalTokens, 450);
+      expect(totals.credits, closeTo(0.2, 1e-9));
+      expect(totals.energyKwh, closeTo(0.003, 1e-9));
+      expect(totals.durationMs, 2000);
+    });
+
+    test('returns zeroed totals for an agent with no calls', () async {
+      expect(await repo.totalsForAgent('missing'), ConsumptionTotals.empty);
     });
   });
 

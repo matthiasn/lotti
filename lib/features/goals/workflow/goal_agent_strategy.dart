@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
@@ -16,6 +17,9 @@ typedef GoalAdRequest = ({GoalNudgeBrief brief, String? reasonSummary});
 
 /// A retire/rerun request accumulated during the conversation.
 typedef GoalAdAction = ({String adId, String reason});
+
+/// A request to hide one active banner until an exact future instant.
+typedef GoalAdSnooze = ({String adId, DateTime until, String reason});
 
 /// A revision proposal accumulated from `propose_goal_revision`.
 typedef GoalRevisionProposal = ({
@@ -40,9 +44,11 @@ class GoalAgentStrategy extends ConversationStrategy
     required this.agentId,
     required this.threadId,
     required this.runKey,
-    required this._knownAdIds,
+    required Set<String> knownAdIds,
+    Set<String>? activeAdIds,
     this.expectedStatus,
-  });
+  }) : _knownAdIds = knownAdIds,
+       _activeAdIds = activeAdIds ?? knownAdIds;
 
   @override
   final AgentSyncService syncService;
@@ -58,6 +64,11 @@ class GoalAgentStrategy extends ConversationStrategy
   /// corrupting the library.
   final Set<String> _knownAdIds;
 
+  /// Ad ids that are currently rendered. Snoozing is only meaningful for
+  /// this subset; reusable or retired library entries remain valid rerun
+  /// targets but cannot be hidden from a surface where they are not shown.
+  final Set<String> _activeAdIds;
+
   /// The deterministic track status of this wake's FACTS. The contract
   /// declares it authoritative, so a report claiming any other status is
   /// rejected in-conversation instead of publishing a contradiction.
@@ -68,9 +79,11 @@ class GoalAgentStrategy extends ConversationStrategy
   String? _reportTldr;
   String? _reportContent;
   String? _finalResponse;
+  String? _replyToUser;
   final _createdAds = <GoalAdRequest>[];
   final _rerunRequests = <GoalAdAction>[];
   final _retireRequests = <GoalAdAction>[];
+  final _snoozeRequests = <GoalAdSnooze>[];
   final _revisionProposals = <GoalRevisionProposal>[];
   final _observations = <ObservationRecord>[];
 
@@ -79,10 +92,12 @@ class GoalAgentStrategy extends ConversationStrategy
   String? get reportTldr => _reportTldr;
   String? get reportContent => _reportContent;
   String? get finalResponse => _finalResponse;
+  String? get replyToUser => _replyToUser;
   bool get hasReport => _reportStatus != null;
   List<GoalAdRequest> get createdAds => List.unmodifiable(_createdAds);
   List<GoalAdAction> get rerunRequests => List.unmodifiable(_rerunRequests);
   List<GoalAdAction> get retireRequests => List.unmodifiable(_retireRequests);
+  List<GoalAdSnooze> get snoozeRequests => List.unmodifiable(_snoozeRequests);
   List<GoalRevisionProposal> get revisionProposals =>
       List.unmodifiable(_revisionProposals);
   List<ObservationRecord> get observations => List.unmodifiable(_observations);
@@ -90,6 +105,13 @@ class GoalAgentStrategy extends ConversationStrategy
   /// Called by the workflow after the loop with the last assistant text.
   void recordFinalResponse(String? content) {
     if (content != null && content.isNotEmpty) _finalResponse = content;
+  }
+
+  /// Drops a reply the deterministic workflow proved stale so a pinned
+  /// corrective reply can replace it within the same wake.
+  void discardVisibleReply() {
+    _replyToUser = null;
+    _finalResponse = null;
   }
 
   @override
@@ -125,6 +147,8 @@ class GoalAgentStrategy extends ConversationStrategy
       await recordActionMessage(toolName: toolName);
 
       switch (toolName) {
+        case GoalAgentToolNames.replyToUser:
+          await _handleReplyToUser(call, args, manager);
         case GoalAgentToolNames.updateGoalReport:
           await _handleUpdateReport(call, args, manager);
         case GoalAgentToolNames.createGoalAd:
@@ -133,6 +157,8 @@ class GoalAgentStrategy extends ConversationStrategy
           await _handleAdAction(call, args, manager, _rerunRequests, 'rerun');
         case GoalAgentToolNames.retireGoalAd:
           await _handleAdAction(call, args, manager, _retireRequests, 'retire');
+        case GoalAgentToolNames.snoozeGoalAd:
+          await _handleSnoozeAd(call, args, manager);
         case GoalAgentToolNames.proposeGoalRevision:
           await _handleProposeRevision(call, args, manager);
         case GoalAgentToolNames.recordGoalObservation:
@@ -196,6 +222,32 @@ class GoalAgentStrategy extends ConversationStrategy
     final content = _trimmed(args['content']);
     _reportContent = content.isEmpty ? null : content;
     await _accept(call, manager, 'Goal report updated.');
+  }
+
+  Future<void> _handleReplyToUser(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    final message = _trimmed(args['message']);
+    if (message.isEmpty) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error: 'Error: reply_to_user needs a non-empty message.',
+      );
+      return;
+    }
+    if (_replyToUser != null) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error: 'Error: reply_to_user may be called at most once per wake.',
+      );
+      return;
+    }
+    _replyToUser = message;
+    await _accept(call, manager, 'Reply delivered.');
   }
 
   Future<void> _handleCreateAd(
@@ -271,6 +323,51 @@ class GoalAgentStrategy extends ConversationStrategy
     }
     sink.add((adId: adId, reason: reason));
     await _accept(call, manager, 'Ad $verb recorded.');
+  }
+
+  Future<void> _handleSnoozeAd(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    final adId = _trimmed(args['adId']);
+    final reason = _trimmed(args['reason']);
+    final untilText = _trimmed(args['until']);
+    final hasExplicitOffset = RegExp(
+      r'(?:[zZ]|[+-]\d{2}:?\d{2})$',
+    ).hasMatch(untilText);
+    final until = hasExplicitOffset
+        ? DateTime.tryParse(untilText)?.toUtc()
+        : null;
+    if (adId.isEmpty ||
+        reason.isEmpty ||
+        until == null ||
+        !until.isAfter(clock.now().toUtc())) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: snooze needs a known active adId, a future ISO 8601 '
+            'until instant, and a reason.',
+      );
+      return;
+    }
+    if (!_activeAdIds.contains(adId)) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: adId "$adId" is not active — snooze an active adId '
+            'from the FACTS block exactly as given.',
+      );
+      return;
+    }
+    _snoozeRequests.add((adId: adId, until: until, reason: reason));
+    await _accept(
+      call,
+      manager,
+      'Ad snoozed until ${until.toIso8601String()}.',
+    );
   }
 
   Future<void> _handleProposeRevision(

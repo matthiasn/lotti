@@ -150,9 +150,10 @@ class AgentService {
   /// Removes any persisted/local throttle deadline and drops queued wake jobs
   /// for the same agent from the in-memory wake queue.
   void cancelPendingWake(String agentId) {
-    orchestrator.clearThrottle(agentId);
-    // Cancel-all: drop every queued job for the agent across all workspaces.
-    orchestrator.queue.removeByAgent(agentId, allWorkspaces: true);
+    orchestrator
+      ..clearThrottle(agentId)
+      // Cancel-all: drop every queued job for the agent across all workspaces.
+      ..cancelPendingWakes(agentId, allWorkspaces: true);
   }
 
   /// Abort the in-flight wake for [agentId], if any.

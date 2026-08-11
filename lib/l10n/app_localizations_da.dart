@@ -1545,6 +1545,14 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get aiConsumptionDurationLessThanMinute => 'Mindre end 1 min';
+
+  @override
+  String aiConsumptionDurationLine(String duration) {
+    return 'Beregningstid: $duration';
+  }
+
+  @override
   String aiConsumptionImpactLine(String energy, String carbon, String water) {
     return 'Impact: $energy · $carbon CO₂e · $water vand';
   }
@@ -5973,6 +5981,16 @@ class AppLocalizationsDa extends AppLocalizations {
       'Opret billede ud fra stemmebeskrivelse';
 
   @override
+  String goalAgentLifetimeTimePill(String duration) {
+    return '$duration AI-tid';
+  }
+
+  @override
+  String goalAgentLifetimeTimeTooltip(String calls) {
+    return 'Samlet beregningstid for agenten på tværs af $calls modelkald.';
+  }
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent % af målet';
   }
@@ -6009,6 +6027,48 @@ class AppLocalizationsDa extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String goalChatEmpty(String agentName) {
+    return 'Start en samtale med $agentName.';
+  }
+
+  @override
+  String get goalChatFailed => 'Det blev ikke sendt.';
+
+  @override
+  String get goalChatHistoryError => 'Samtalen kunne ikke indlæses lige nu.';
+
+  @override
+  String goalChatMessageFooter(Object author, Object time) {
+    return '$author · $time';
+  }
+
+  @override
+  String goalChatMessageSemantics(String author, String time, String message) {
+    return '$author, $time: $message';
+  }
+
+  @override
+  String get goalChatPageTitle => 'Samtale';
+
+  @override
+  String goalChatPlaceholder(String agentName) {
+    return 'Tal med $agentName…';
+  }
+
+  @override
+  String goalChatResponding(String agentName) {
+    return '$agentName svarer…';
+  }
+
+  @override
+  String goalChatTalkTo(String agentName) {
+    return 'Tal med $agentName';
+  }
+
+  @override
+  String get goalChatYou => 'Dig';
 
   @override
   String get goalCoarseHealthBehind => 'Bagud';
@@ -6072,6 +6132,19 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalDeleteConfirmButton => 'Slet mål';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Dette pensionerer målagenten og fjerner den fra din liste på alle enheder. Det kan ikke fortrydes.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Slet dette mål?';
+
+  @override
+  String get goalDeleteMenuItem => 'Slet mål';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Kunne ikke indlæse dette måls tilstand lige nu.';
 
@@ -6083,7 +6156,17 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDetailNotFound => 'Denne målagent findes ikke længere.';
 
   @override
+  String get goalDetailSayingTitle => 'Det siger din agent';
+
+  @override
   String get goalDetailTimelineTitle => 'Interaktioner';
+
+  @override
+  String get goalDetailWatchingSignals =>
+      'Signalerne ovenfor opdateres inden for sekunder. Din agent ser kun de signaler, der er angivet her.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Følger';
 
   @override
   String get goalDockJustNow => 'lige nu';
@@ -6096,6 +6179,24 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalHealthTrendUp => 'Stiger';
+
+  @override
+  String goalMetricBarSemantics(
+    String status,
+    Object date,
+    Object value,
+    Object target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      status,
+      {
+        'missing': '$date: ingen værdi; mål $target',
+        'met': '$date: $value; mål $target; nået',
+        'other': '$date: $value; mål $target; ikke nået',
+      },
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalNudgeStatusDismissed => 'Afvist';
@@ -6111,6 +6212,65 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalPendingProposalBadge => 'Forslag afventer';
+
+  @override
+  String get goalProgressAgesOut => 'udløber i aften';
+
+  @override
+  String get goalProgressAtRate => 'i takt';
+
+  @override
+  String get goalProgressCaption => 'seneste 7 dage · flytter ved midnat';
+
+  @override
+  String goalProgressCompactSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count vellykkede dage i de seneste syv dage',
+      one: '1 vellykket dag i de seneste syv dage',
+      zero: 'Ingen vellykkede dage i de seneste syv dage',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String goalProgressDaysToHealthy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dage til sund',
+      one: '1 dag til sund',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalProgressDone => 'klaret';
+
+  @override
+  String get goalProgressHabitDayNoEntry => 'Ingen registrering';
+
+  @override
+  String goalProgressHabitDaySemantics(String date, String outcome) {
+    return '$date: $outcome';
+  }
+
+  @override
+  String goalProgressHabitTarget(int count) {
+    return '$count× pr. 7 dage';
+  }
+
+  @override
+  String goalProgressHabitTargetWindow(int count, String window) {
+    return '$count× · $window';
+  }
+
+  @override
+  String get goalProgressTitle => 'Denne rullende uge';
+
+  @override
+  String get goalProgressToday => 'i dag';
 
   @override
   String get goalStatusAchieved => 'Opnået';

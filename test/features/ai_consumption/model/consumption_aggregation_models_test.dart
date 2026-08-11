@@ -17,6 +17,7 @@ void main() {
       expect(e.energyKwh, 0);
       expect(e.carbonGCo2, 0);
       expect(e.waterLiters, 0);
+      expect(e.durationMs, 0);
     });
 
     test('equality and hashCode are structural, not identity-based', () {
@@ -41,6 +42,7 @@ void main() {
         'energyKwh': _makeTotals(energyKwh: 0.004),
         'carbonGCo2': _makeTotals(carbonGCo2: 1.3),
         'waterLiters': _makeTotals(waterLiters: 0.5),
+        'durationMs': _makeTotals(durationMs: 1801),
       };
       for (final MapEntry(key: field, value: variant) in variants.entries) {
         expect(
@@ -541,6 +543,7 @@ ConsumptionTotals _makeTotals({
   double energyKwh = 0.003,
   double carbonGCo2 = 1.2,
   double waterLiters = 0.4,
+  int durationMs = 1800,
 }) => ConsumptionTotals(
   callCount: callCount,
   impactCallCount: impactCallCount,
@@ -553,6 +556,7 @@ ConsumptionTotals _makeTotals({
   energyKwh: energyKwh,
   carbonGCo2: carbonGCo2,
   waterLiters: waterLiters,
+  durationMs: durationMs,
 );
 
 ConsumptionMetrics _makeMetrics({

@@ -2718,6 +2718,18 @@ abstract class AppLocalizations {
   /// **'Cost: {cost}'**
   String aiConsumptionCostLine(String cost);
 
+  /// No description provided for @aiConsumptionDurationLessThanMinute.
+  ///
+  /// In en, this message translates to:
+  /// **'Less than 1 min'**
+  String get aiConsumptionDurationLessThanMinute;
+
+  /// No description provided for @aiConsumptionDurationLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Compute time: {duration}'**
+  String aiConsumptionDurationLine(String duration);
+
   /// No description provided for @aiConsumptionImpactLine.
   ///
   /// In en, this message translates to:
@@ -10259,6 +10271,18 @@ abstract class AppLocalizations {
   /// **'Create image from voice description'**
   String get generateCoverArtSubtitle;
 
+  /// Top-level pill containing a goal agent's lifetime model compute duration.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} AI time'**
+  String goalAgentLifetimeTimePill(String duration);
+
+  /// Tooltip for a goal agent's lifetime model compute duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifetime agent compute time across {calls} model calls.'**
+  String goalAgentLifetimeTimeTooltip(String calls);
+
   /// Attainment summary on an agent card; percent is 0-100.
   ///
   /// In en, this message translates to:
@@ -10306,6 +10330,66 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count, plural, =0{Buffer runs out today} =1{1 day of buffer} other{{count} days of buffer}}'**
   String goalBufferDays(int count);
+
+  /// Empty-state invitation in a goal-agent conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Start a conversation with {agentName}.'**
+  String goalChatEmpty(String agentName);
+
+  /// No description provided for @goalChatFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'That didn\'t send.'**
+  String get goalChatFailed;
+
+  /// No description provided for @goalChatHistoryError.
+  ///
+  /// In en, this message translates to:
+  /// **'Couldn\'t load this conversation right now.'**
+  String get goalChatHistoryError;
+
+  /// Visible author and localized time beneath a goal-agent chat bubble.
+  ///
+  /// In en, this message translates to:
+  /// **'{author} · {time}'**
+  String goalChatMessageFooter(Object author, Object time);
+
+  /// Accessible label for one durable chat bubble.
+  ///
+  /// In en, this message translates to:
+  /// **'{author}, {time}: {message}'**
+  String goalChatMessageSemantics(String author, String time, String message);
+
+  /// No description provided for @goalChatPageTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Conversation'**
+  String get goalChatPageTitle;
+
+  /// Composer hint in a goal-agent conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to {agentName}…'**
+  String goalChatPlaceholder(String agentName);
+
+  /// Waiting state while a goal-agent wake is in flight.
+  ///
+  /// In en, this message translates to:
+  /// **'{agentName} is replying…'**
+  String goalChatResponding(String agentName);
+
+  /// Button that opens a goal-agent conversation.
+  ///
+  /// In en, this message translates to:
+  /// **'Talk to {agentName}'**
+  String goalChatTalkTo(String agentName);
+
+  /// No description provided for @goalChatYou.
+  ///
+  /// In en, this message translates to:
+  /// **'You'**
+  String get goalChatYou;
 
   /// Coarse goal-health chip label: behind and every remaining day matters
   ///
@@ -10409,6 +10493,30 @@ abstract class AppLocalizations {
   /// **'{count, plural, =1{1 day to recover} other{{count} days to recover}}'**
   String goalDaysToRecover(int count);
 
+  /// Confirm button in the delete-goal confirmation dialog.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete goal'**
+  String get goalDeleteConfirmButton;
+
+  /// Body of the confirmation dialog shown before deleting a goal agent.
+  ///
+  /// In en, this message translates to:
+  /// **'This retires the goal agent and removes it from your list on every device. This can\'t be undone.'**
+  String get goalDeleteDialogContent;
+
+  /// Title of the confirmation dialog shown before deleting a goal agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete this goal?'**
+  String get goalDeleteDialogTitle;
+
+  /// Overflow menu item on the goal detail page that starts deleting the goal agent.
+  ///
+  /// In en, this message translates to:
+  /// **'Delete goal'**
+  String get goalDeleteMenuItem;
+
   /// No description provided for @goalDetailHealthUnavailable.
   ///
   /// In en, this message translates to:
@@ -10427,11 +10535,29 @@ abstract class AppLocalizations {
   /// **'This goal agent no longer exists.'**
   String get goalDetailNotFound;
 
+  /// No description provided for @goalDetailSayingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What your agent is saying'**
+  String get goalDetailSayingTitle;
+
   /// Section title of the agent detail interaction timeline.
   ///
   /// In en, this message translates to:
   /// **'Interactions'**
   String get goalDetailTimelineTitle;
+
+  /// No description provided for @goalDetailWatchingSignals.
+  ///
+  /// In en, this message translates to:
+  /// **'Signals listed above update within seconds. Your agent only sees the signals listed here.'**
+  String get goalDetailWatchingSignals;
+
+  /// No description provided for @goalDetailWatchingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Watching'**
+  String get goalDetailWatchingTitle;
 
   /// Freshness marker on the goal dock caption when a completion acknowledgment just took the slot
   ///
@@ -10456,6 +10582,17 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trending up'**
   String get goalHealthTrendUp;
+
+  /// Accessible label for one dated metric bar. Status is missing, met, or missed.
+  ///
+  /// In en, this message translates to:
+  /// **'{status, select, missing{{date}: no value; target {target}} met{{date}: {value}; target {target}; met} other{{date}: {value}; target {target}; not met}}'**
+  String goalMetricBarSemantics(
+    String status,
+    Object date,
+    Object value,
+    Object target,
+  );
 
   /// No description provided for @goalNudgeStatusDismissed.
   ///
@@ -10486,6 +10623,78 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Proposal awaiting review'**
   String get goalPendingProposalBadge;
+
+  /// No description provided for @goalProgressAgesOut.
+  ///
+  /// In en, this message translates to:
+  /// **'ages out tonight'**
+  String get goalProgressAgesOut;
+
+  /// No description provided for @goalProgressAtRate.
+  ///
+  /// In en, this message translates to:
+  /// **'at rate'**
+  String get goalProgressAtRate;
+
+  /// No description provided for @goalProgressCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'trailing 7 days · slides at midnight'**
+  String get goalProgressCaption;
+
+  /// Screen-reader summary of the compact seven-day progress strip.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =0{No successful days in the trailing seven-day window} =1{1 successful day in the trailing seven-day window} other{{count} successful days in the trailing seven-day window}}'**
+  String goalProgressCompactSemantics(int count);
+
+  /// Habit progress row note: creditable days needed to reach the healthy state.
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{1 day to healthy} other{{count} days to healthy}}'**
+  String goalProgressDaysToHealthy(int count);
+
+  /// No description provided for @goalProgressDone.
+  ///
+  /// In en, this message translates to:
+  /// **'done'**
+  String get goalProgressDone;
+
+  /// No description provided for @goalProgressHabitDayNoEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'No entry'**
+  String get goalProgressHabitDayNoEntry;
+
+  /// No description provided for @goalProgressHabitDaySemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{date}: {outcome}'**
+  String goalProgressHabitDaySemantics(String date, String outcome);
+
+  /// Target caption for one habit in a rolling seven-day goal.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}× per 7 days'**
+  String goalProgressHabitTarget(int count);
+
+  /// Target caption for one habit using its authored time window.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}× · {window}'**
+  String goalProgressHabitTargetWindow(int count, String window);
+
+  /// No description provided for @goalProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'This rolling week'**
+  String get goalProgressTitle;
+
+  /// No description provided for @goalProgressToday.
+  ///
+  /// In en, this message translates to:
+  /// **'today'**
+  String get goalProgressToday;
 
   /// Goal track status chip: target date passed with criteria met.
   ///

@@ -1556,6 +1556,14 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get aiConsumptionDurationLessThanMinute => 'Méně než 1 min';
+
+  @override
+  String aiConsumptionDurationLine(String duration) {
+    return 'Doba výpočtu: $duration';
+  }
+
+  @override
   String aiConsumptionImpactLine(String energy, String carbon, String water) {
     return 'Dopad: $energy · $carbon CO₂e · $water vody';
   }
@@ -6037,6 +6045,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Vytvořit obrázek z hlasového popisu';
 
   @override
+  String goalAgentLifetimeTimePill(String duration) {
+    return '$duration času AI';
+  }
+
+  @override
+  String goalAgentLifetimeTimeTooltip(String calls) {
+    return 'Celoživotní výpočetní čas agenta pro $calls volání modelu.';
+  }
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent % cíle';
   }
@@ -6074,6 +6092,48 @@ class AppLocalizationsCs extends AppLocalizations {
     );
     return '$_temp0';
   }
+
+  @override
+  String goalChatEmpty(String agentName) {
+    return 'Začni konverzaci s agentem $agentName.';
+  }
+
+  @override
+  String get goalChatFailed => 'To se neodeslalo.';
+
+  @override
+  String get goalChatHistoryError => 'Tuto konverzaci teď nelze načíst.';
+
+  @override
+  String goalChatMessageFooter(Object author, Object time) {
+    return '$author · $time';
+  }
+
+  @override
+  String goalChatMessageSemantics(String author, String time, String message) {
+    return '$author, $time: $message';
+  }
+
+  @override
+  String get goalChatPageTitle => 'Konverzace';
+
+  @override
+  String goalChatPlaceholder(String agentName) {
+    return 'Promluv si s agentem $agentName…';
+  }
+
+  @override
+  String goalChatResponding(String agentName) {
+    return '$agentName odpovídá…';
+  }
+
+  @override
+  String goalChatTalkTo(String agentName) {
+    return 'Promluvit si s agentem $agentName';
+  }
+
+  @override
+  String get goalChatYou => 'Ty';
 
   @override
   String get goalCoarseHealthBehind => 'Pozadu';
@@ -6139,6 +6199,19 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalDeleteConfirmButton => 'Smazat cíl';
+
+  @override
+  String get goalDeleteDialogContent =>
+      'Tím se agent cíle vyřadí a odstraní ze tvého seznamu na všech zařízeních. Tuto akci nelze vrátit zpět.';
+
+  @override
+  String get goalDeleteDialogTitle => 'Smazat tento cíl?';
+
+  @override
+  String get goalDeleteMenuItem => 'Smazat cíl';
+
+  @override
   String get goalDetailHealthUnavailable =>
       'Zdraví tohoto cíle se teď nepodařilo načíst.';
 
@@ -6150,7 +6223,17 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailNotFound => 'Tento agent cíle už neexistuje.';
 
   @override
+  String get goalDetailSayingTitle => 'Co říká tvůj agent';
+
+  @override
   String get goalDetailTimelineTitle => 'Interakce';
+
+  @override
+  String get goalDetailWatchingSignals =>
+      'Výše uvedené signály se aktualizují během několika sekund. Agent vidí jen signály uvedené tady.';
+
+  @override
+  String get goalDetailWatchingTitle => 'Sleduje';
 
   @override
   String get goalDockJustNow => 'právě teď';
@@ -6163,6 +6246,24 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalHealthTrendUp => 'Roste';
+
+  @override
+  String goalMetricBarSemantics(
+    String status,
+    Object date,
+    Object value,
+    Object target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      status,
+      {
+        'missing': '$date: bez hodnoty; cíl $target',
+        'met': '$date: $value; cíl $target; splněno',
+        'other': '$date: $value; cíl $target; nesplněno',
+      },
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalNudgeStatusDismissed => 'Odmítnuto';
@@ -6178,6 +6279,67 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalPendingProposalBadge => 'Návrh čeká na posouzení';
+
+  @override
+  String get goalProgressAgesOut => 'dnes vypadne';
+
+  @override
+  String get goalProgressAtRate => 'v tempu';
+
+  @override
+  String get goalProgressCaption => 'posledních 7 dní · posouvá se o půlnoci';
+
+  @override
+  String goalProgressCompactSemantics(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count úspěšných dní za posledních sedm dní',
+      few: '$count úspěšné dny za posledních sedm dní',
+      one: '1 úspěšný den za posledních sedm dní',
+      zero: 'Žádný úspěšný den za posledních sedm dní',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String goalProgressDaysToHealthy(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: '$count dní do zdravého stavu',
+      few: '$count dny do zdravého stavu',
+      one: '1 den do zdravého stavu',
+    );
+    return '$_temp0';
+  }
+
+  @override
+  String get goalProgressDone => 'hotovo';
+
+  @override
+  String get goalProgressHabitDayNoEntry => 'Bez záznamu';
+
+  @override
+  String goalProgressHabitDaySemantics(String date, String outcome) {
+    return '$date: $outcome';
+  }
+
+  @override
+  String goalProgressHabitTarget(int count) {
+    return '$count× za 7 dní';
+  }
+
+  @override
+  String goalProgressHabitTargetWindow(int count, String window) {
+    return '$count× · $window';
+  }
+
+  @override
+  String get goalProgressTitle => 'Tento klouzavý týden';
+
+  @override
+  String get goalProgressToday => 'dnes';
 
   @override
   String get goalStatusAchieved => 'Splněno';

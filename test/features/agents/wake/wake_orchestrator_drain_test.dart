@@ -142,6 +142,57 @@ void main() {
         );
       });
 
+      test('a destroyed goal agent cannot execute a queued wake', () async {
+        when(() => mockRepository.getEntity('goal-1')).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'goal-1',
+            agentId: 'goal-1',
+            kind: 'goal_agent',
+            lifecycle: AgentLifecycle.destroyed,
+          ),
+        );
+        var executions = 0;
+        orchestrator.wakeExecutor = (_, _, _, _) async {
+          executions++;
+          return null;
+        };
+        queue.enqueue(
+          WakeJob(
+            runKey: 'destroyed-goal',
+            agentId: 'goal-1',
+            reason: WakeReason.userMessage.name,
+            initiator: WakeInitiator.user,
+            triggerTokens: const {'goal-chat-message:message-1'},
+            createdAt: DateTime(2024, 3, 15),
+          ),
+        );
+        final completions = <WakeRunCompletion>[];
+        final subscription = orchestrator.runCompletions.listen(
+          completions.add,
+        );
+        addTearDown(subscription.cancel);
+
+        await orchestrator.processNext();
+        await Future<void>.value();
+
+        expect(executions, 0);
+        expect(
+          completions,
+          contains(
+            isA<WakeRunCompletion>()
+                .having((event) => event.runKey, 'runKey', 'destroyed-goal')
+                .having(
+                  (event) => event.status,
+                  'status',
+                  WakeRunStatus.aborted,
+                ),
+          ),
+        );
+        verifyNever(
+          () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
+        );
+      });
+
       glados.Glados(
         glados.any.wakeDrainScenario,
         glados.ExploreConfig(numRuns: 180),

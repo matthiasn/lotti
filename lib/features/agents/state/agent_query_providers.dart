@@ -418,9 +418,10 @@ Future<AgentTokenUsageSummary?> tokenUsageForThread(
 /// 3. Wake-run template version — the `profileId` or `modelId` snapshot
 ///    captured when the wake started. Fallback for older wake runs that
 ///    predate the `resolvedModelId` column.
-/// 4. Live agent config — `profile.thinkingModelId` or `config.modelId` from
-///    the agent instance's current config. Only used for in-flight
-///    threads where the wake run hasn't been created yet.
+/// A thread without persisted usage or a wake run has no model attribution.
+/// In particular, the source-only thread created for a user's chat message
+/// must not inherit the agent's current config: that message did not invoke a
+/// model, and its separately enqueued wake has its own thread and provenance.
 final FutureProviderFamily<String?, (String, String)> modelIdForThreadProvider =
     FutureProvider.autoDispose.family<String?, (String, String)>(
       (ref, arg) => modelIdForThread(ref, arg.$1, arg.$2),
@@ -472,20 +473,6 @@ Future<String?> modelIdForThread(
     // Legacy: use the version's modelId directly.
     if (version?.modelId != null) return version!.modelId;
   }
-
-  // Tier 4: live agent config — for in-flight threads with no wake run yet.
-  final identity = await repository.getEntity(agentId);
-  final config = identity?.mapOrNull(agent: (a) => a.config);
-  final profileId = config?.profileId;
-  if (profileId != null) {
-    final profile = await aiConfigRepo.getConfigById(profileId);
-    if (profile is AiConfigInferenceProfile) {
-      return profile.thinkingModelId;
-    }
-  }
-
-  // Legacy fallback: use the config's modelId directly.
-  if (config?.modelId != null) return config!.modelId;
 
   return null;
 }

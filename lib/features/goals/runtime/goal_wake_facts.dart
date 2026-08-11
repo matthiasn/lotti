@@ -2,6 +2,31 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 
+/// Whether three consecutive attainment points are strictly worsening.
+/// [priorAttainments] is ordered most-recent-first.
+bool goalTrendWorsening(double current, List<double> priorAttainments) {
+  if (priorAttainments.length < 2) return false;
+  return current < priorAttainments[0] &&
+      priorAttainments[0] < priorAttainments[1];
+}
+
+/// Whether deterministic health facts permit an automatic banner.
+///
+/// Off-track goals always qualify. At-risk goals qualify on their first
+/// evaluation or after three strictly worsening attainment points. Keeping
+/// this policy beside the wake facts lets Phase A schedule a replacement when
+/// an activation expires without drifting from Phase B's persistence gate.
+bool automaticGoalAdEligible(
+  GoalWakeFacts facts,
+  List<GoalProgressEntity> priors,
+) =>
+    facts.trackStatus == GoalTrackStatus.offTrack ||
+    (facts.trackStatus == GoalTrackStatus.atRisk &&
+        (priors.isEmpty ||
+            goalTrendWorsening(facts.evaluation.attainment, [
+              for (final row in priors) row.attainment,
+            ])));
+
 /// The deterministic facts one Phase A tick derives for a goal agent
 /// (ADR 0054): everything downstream — escalation, and in PR 3 the FACTS
 /// block and the tool gate — reads these, never raw signals.
@@ -30,10 +55,9 @@ class GoalWakeFacts {
 
   /// Whether this tick warrants waking the LLM tier (Phase B, PR 3).
   ///
-  /// v1 policy: only a status transition is LLM-worthy — an unchanged
-  /// status is the common no-op tick that must cost €0 and write no
-  /// messages. Ad staleness and dialogue triggers join this predicate
-  /// with PR 5's nudge state.
+  /// A status transition is intrinsically LLM-worthy. Phase A separately
+  /// combines this with deterministic banner expiry so an eligible goal can
+  /// replace stale copy without making ordinary unchanged ticks spend money.
   bool get needsEscalation => statusTransitioned;
 }
 
