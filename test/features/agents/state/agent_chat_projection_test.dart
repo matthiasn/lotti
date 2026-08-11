@@ -63,7 +63,6 @@ void main() {
       () => repository.getEntitiesByAgentId(
         'goal-1',
         type: AgentEntityTypes.agentMessage,
-        limit: 50,
       ),
     ).thenAnswer((_) async => [reply, legacyFacts, privateThought, user]);
     when(() => repository.getEntity('payload-user')).thenAnswer(
@@ -108,5 +107,71 @@ void main() {
     ]);
     verifyNever(() => repository.getEntity('payload-thought'));
     verifyNever(() => repository.getEntity('payload-facts'));
+  });
+
+  test('caps after hidden rows are removed and keeps the latest 50 visible '
+      'turns', () async {
+    final repository = MockAgentRepository();
+    final now = DateTime.utc(2026, 8, 11, 9);
+    final hidden = List.generate(
+      55,
+      (index) => AgentDomainEntity.agentMessage(
+        id: 'hidden-$index',
+        agentId: 'goal-1',
+        threadId: 'automatic',
+        kind: AgentMessageKind.thought,
+        createdAt: now.add(Duration(minutes: index)),
+        vectorClock: null,
+        metadata: const AgentMessageMetadata(runKey: 'automatic'),
+      ),
+    );
+    final visible = List.generate(
+      51,
+      (index) => AgentDomainEntity.agentMessage(
+        id: 'visible-$index',
+        agentId: 'goal-1',
+        threadId: 'chat',
+        kind: AgentMessageKind.user,
+        createdAt: now.add(Duration(hours: 2, minutes: index)),
+        vectorClock: null,
+        contentEntryId: 'payload-$index',
+        metadata: const AgentMessageMetadata(),
+      ),
+    );
+    when(
+      () => repository.getEntitiesByAgentId(
+        'goal-1',
+        type: AgentEntityTypes.agentMessage,
+      ),
+    ).thenAnswer((_) async => [...hidden, ...visible]);
+    for (var index = 0; index < visible.length; index++) {
+      when(() => repository.getEntity('payload-$index')).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessagePayload(
+          id: 'payload-$index',
+          agentId: 'goal-1',
+          createdAt: now,
+          vectorClock: null,
+          content: {'text': 'Turn $index'},
+        ),
+      );
+    }
+    final container = ProviderContainer(
+      overrides: [
+        agentRepositoryProvider.overrideWithValue(repository),
+        agentUpdateStreamProvider(
+          'goal-1',
+        ).overrideWith((ref) => const Stream.empty()),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final projection = await container.read(
+      agentChatProjectionProvider('goal-1').future,
+    );
+
+    expect(projection, hasLength(50));
+    expect(projection.first.text, 'Turn 1');
+    expect(projection.last.text, 'Turn 50');
+    verifyNever(() => repository.getEntity('hidden-0'));
   });
 }

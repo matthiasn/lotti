@@ -6226,7 +6226,7 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Segnali: abitudini spuntate, visibili in pochi secondi. L’agente non vede nulla che non spunti.';
+      'I segnali elencati sopra si aggiornano in pochi secondi. L’agente vede solo i segnali indicati qui.';
 
   @override
   String get goalDetailWatchingTitle => 'Osserva';

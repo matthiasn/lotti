@@ -2586,7 +2586,7 @@
   "goalDetailNotFound": "Cet agent d'objectif n'existe plus.",
   "goalDetailSayingTitle": "Ce que dit ton agent",
   "goalDetailTimelineTitle": "Interactions",
-  "goalDetailWatchingSignals": "Signaux : habitudes cochées, visibles en quelques secondes. Ton agent ne voit rien que tu ne coches pas.",
+  "goalDetailWatchingSignals": "Les signaux ci-dessus sont actualisés en quelques secondes. Ton agent ne voit que les signaux indiqués ici.",
   "goalDetailWatchingTitle": "Suit",
   "goalDockJustNow": "à l'instant",
   "goalHealthTrendDown": "En baisse",

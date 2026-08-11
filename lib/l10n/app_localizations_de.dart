@@ -6193,7 +6193,7 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Signale: abgehakte Gewohnheiten, innerhalb von Sekunden sichtbar. Dein Agent sieht nichts, was du nicht abhakt hast.';
+      'Die oben aufgeführten Signale werden innerhalb von Sekunden aktualisiert. Dein Agent sieht nur die hier aufgeführten Signale.';
 
   @override
   String get goalDetailWatchingTitle => 'Beobachtet';

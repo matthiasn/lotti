@@ -2586,7 +2586,7 @@
   "goalDetailNotFound": "Acest agent de obiectiv nu mai există.",
   "goalDetailSayingTitle": "Ce spune agentul dvs.",
   "goalDetailTimelineTitle": "Interacțiuni",
-  "goalDetailWatchingSignals": "Semnale: obiceiuri bifate, vizibile în câteva secunde. Agentul dvs. nu vede nimic din ce nu bifați.",
+  "goalDetailWatchingSignals": "Semnalele de mai sus se actualizează în câteva secunde. Agentul dvs. vede doar semnalele enumerate aici.",
   "goalDetailWatchingTitle": "Urmărește",
   "goalDockJustNow": "chiar acum",
   "goalHealthTrendDown": "În scădere",

@@ -23,8 +23,17 @@ void main() {
       () => service.sendMessage(agentId: 'goal-1', text: 'Keep me honest.'),
     ).thenAnswer((_) async {
       attempts++;
-      if (attempts == 1) throw const GoalChatTurnException('offline');
+      throw const GoalChatTurnException(
+        'offline',
+        messageId: 'message-1',
+      );
     });
+    when(
+      () => service.retryMessage(
+        agentId: 'goal-1',
+        messageId: 'message-1',
+      ),
+    ).thenAnswer((_) async => attempts++);
     final container = ProviderContainer(
       overrides: [goalChatServiceProvider.overrideWithValue(service)],
     );
@@ -42,6 +51,10 @@ void main() {
       container.read(goalChatControllerProvider('goal-1')).failedMessage,
       'Keep me honest.',
     );
+    expect(
+      container.read(goalChatControllerProvider('goal-1')).failedMessageId,
+      'message-1',
+    );
 
     await controller.retry();
     expect(container.read(goalChatControllerProvider('goal-1')).draft, isEmpty);
@@ -50,6 +63,15 @@ void main() {
       isNull,
     );
     expect(attempts, 2);
+    verify(
+      () => service.retryMessage(
+        agentId: 'goal-1',
+        messageId: 'message-1',
+      ),
+    ).called(1);
+    verify(
+      () => service.sendMessage(agentId: 'goal-1', text: 'Keep me honest.'),
+    ).called(1);
   });
 
   test(
@@ -75,6 +97,12 @@ void main() {
         () => service.sendMessage(
           agentId: any(named: 'agentId'),
           text: any(named: 'text'),
+        ),
+      );
+      verifyNever(
+        () => service.retryMessage(
+          agentId: any(named: 'agentId'),
+          messageId: any(named: 'messageId'),
         ),
       );
     },

@@ -18,7 +18,7 @@ import '../../../test_data/test_data.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 
-  final today = DateTime(2026, 8, 11);
+  final today = DateTime.utc(2026, 8, 11);
   DateTime day(int offset) => GoalWindow.dayUtc(
     today.subtract(Duration(days: offset)),
   );
@@ -101,6 +101,44 @@ void main() {
 
     expect(view.metric?.days, hasLength(7));
     expect(view.compactWindow, [true, false, false, false, true, false, false]);
+  });
+
+  test('metric projection follows the criterion day and calendar-month '
+      'windows instead of forcing seven days', () {
+    final dayView = buildGoalProgressView(
+      criteria: const GoalCriterion.metric(
+        criterionId: 'steps',
+        dataType: 'steps',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        target: 8000,
+      ),
+      signals: GoalSignalWindow(
+        quantitativeDailySums: {
+          'steps': {day(0): 9000},
+        },
+      ),
+      reference: today,
+    );
+    final monthView = buildGoalProgressView(
+      criteria: const GoalCriterion.metric(
+        criterionId: 'steps',
+        dataType: 'steps',
+        window: GoalWindow.calendarMonth(),
+        aggregation: GoalAggregation.sum,
+        target: 8000,
+      ),
+      signals: const GoalSignalWindow(),
+      reference: today,
+    );
+
+    expect(dayView.metric?.days, hasLength(1));
+    expect(dayView.metric?.window, const GoalWindow.day());
+    expect(dayView.compactWindow, [true]);
+    expect(monthView.metric?.days, hasLength(31));
+    expect(monthView.metric?.days.first.day, DateTime.utc(2026, 8));
+    expect(monthView.metric?.days.last.day, DateTime.utc(2026, 8, 31));
+    expect(monthView.metric?.window, const GoalWindow.calendarMonth());
   });
 
   test('composite compact strip requires every watched habit on that day', () {

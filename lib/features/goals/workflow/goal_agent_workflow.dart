@@ -108,7 +108,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
       );
     }
     final payload = await _repository.getEntity(message.contentEntryId!);
-    final text = payload is AgentMessagePayloadEntity
+    final text =
+        payload is AgentMessagePayloadEntity &&
+            payload.agentId == agentIdentity.agentId
         ? payload.content['text']
         : null;
     if (text is! String || text.trim().isEmpty) {
@@ -257,7 +259,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // re-arm this transition — a temporarily unconfigured provider must
       // not orphan the period. The retry costs €0 until resolution works
       // (this guard aborts before any inference).
-      await _rearmEscalation(agentId, derivation.periodKey, triggerTokens, now);
+      if (escalationPeriod != null) {
+        await _rearmEscalation(
+          agentId,
+          derivation.periodKey,
+          triggerTokens,
+          now,
+        );
+      }
       return const WakeResult(
         success: false,
         error: 'no inference provider resolves for the goal agent',
@@ -394,6 +403,37 @@ class GoalAgentWorkflow with AgentErrorLogging {
             .whereType<String>()
             .firstOrNull,
       );
+      if (pendingUserMessage != null) {
+        final candidate = strategy.replyToUser ?? strategy.finalResponse;
+        final staleAdRefusal =
+            userRequestedAd &&
+            (strategy.createdAds.isNotEmpty ||
+                strategy.rerunRequests.isNotEmpty) &&
+            _isCooldownRefusal(candidate);
+        if (candidate == null || candidate.trim().isEmpty || staleAdRefusal) {
+          strategy.discardVisibleReply();
+          final replyUsage = await _forceReply(
+            conversationId: conversationId,
+            resolved: resolved,
+            inferenceRepo: inferenceRepo,
+            tools: tools,
+            strategy: strategy,
+            agentId: recordConsumption ? agentId : null,
+            runKey: recordConsumption ? runKey : null,
+            threadId: recordConsumption ? threadId : null,
+            bannerCreated:
+                strategy.createdAds.isNotEmpty ||
+                strategy.rerunRequests.isNotEmpty,
+          );
+          if (replyUsage != null) {
+            usage = usage == null ? replyUsage : usage.merge(replyUsage);
+          }
+        }
+        final visibleReply = strategy.replyToUser ?? strategy.finalResponse;
+        if (visibleReply == null || visibleReply.trim().isEmpty) {
+          throw StateError('interactive goal turn produced no visible reply');
+        }
+      }
 
       final attributionFinalized = await persistOutputs(
         agentId: agentId,
@@ -476,7 +516,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // ONLY when the outputs never committed: a post-commit bookkeeping
       // failure re-armed would re-bill the wake and duplicate its
       // UUID-keyed outputs.
-      if (!outputsCommitted) {
+      if (!outputsCommitted && escalationPeriod != null) {
         await _rearmEscalation(
           agentId,
           derivation.periodKey,
@@ -871,6 +911,62 @@ class GoalAgentWorkflow with AgentErrorLogging {
         error,
         subDomain: 'goalPhaseB',
         message: 'forced goal report retry failed',
+      );
+      return null;
+    }
+  }
+
+  Future<InferenceUsage?> _forceReply({
+    required String conversationId,
+    required ({
+      String modelId,
+      AiConfigInferenceProvider provider,
+      GeminiThinkingMode? geminiThinkingMode,
+    })
+    resolved,
+    required CloudInferenceWrapper inferenceRepo,
+    required List<ChatCompletionTool> tools,
+    required GoalAgentStrategy strategy,
+    required String? agentId,
+    required String? runKey,
+    required String? threadId,
+    required bool bannerCreated,
+  }) async {
+    try {
+      return await _conversationRepository.sendMessage(
+        conversationId: conversationId,
+        message: bannerCreated
+            ? 'A banner was created in this wake. Call reply_to_user now with '
+                  'a brief goal-focused confirmation. Do not mention cooldown.'
+            : 'The user is waiting for an answer. Call reply_to_user now with '
+                  'a brief response focused only on this goal and its FACTS.',
+        model: resolved.modelId,
+        provider: resolved.provider,
+        inferenceRepo: inferenceRepo,
+        tools: [
+          for (final tool in tools)
+            if (tool.function.name == GoalAgentToolNames.replyToUser) tool,
+        ],
+        toolChoice: const ChatCompletionToolChoiceOption.tool(
+          ChatCompletionNamedToolChoice(
+            type: ChatCompletionNamedToolChoiceType.function,
+            function: ChatCompletionFunctionCallOption(
+              name: GoalAgentToolNames.replyToUser,
+            ),
+          ),
+        ),
+        temperature: 0,
+        strategy: strategy,
+        consumptionAgentId: agentId,
+        consumptionWakeRunKey: runKey,
+        consumptionThreadId: threadId,
+        rethrowInferenceErrors: true,
+      );
+    } catch (error, stackTrace) {
+      logError(
+        'forced interactive reply failed',
+        error: error,
+        stackTrace: stackTrace,
       );
       return null;
     }

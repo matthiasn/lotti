@@ -10532,7 +10532,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalDetailWatchingSignals.
   ///
   /// In en, this message translates to:
-  /// **'Signals: habit check-offs, seen within seconds. Your agent can\'t see anything you don\'t check off.'**
+  /// **'Signals listed above update within seconds. Your agent only sees the signals listed here.'**
   String get goalDetailWatchingSignals;
 
   /// No description provided for @goalDetailWatchingTitle.

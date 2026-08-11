@@ -6208,7 +6208,7 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Sinais: hábitos assinalados, visíveis em segundos. O teu agente não vê nada que não assinales.';
+      'Os sinais acima são atualizados em segundos. O teu agente vê apenas os sinais indicados aqui.';
 
   @override
   String get goalDetailWatchingTitle => 'Acompanha';

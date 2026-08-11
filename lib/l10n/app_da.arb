@@ -2836,7 +2836,7 @@
   "goalDetailNotFound": "Denne målagent findes ikke længere.",
   "goalDetailSayingTitle": "Det siger din agent",
   "goalDetailTimelineTitle": "Interaktioner",
-  "goalDetailWatchingSignals": "Signaler: afkrydsede vaner, set inden for sekunder. Din agent kan ikke se noget, du ikke krydser af.",
+  "goalDetailWatchingSignals": "Signalerne ovenfor opdateres inden for sekunder. Din agent ser kun de signaler, der er angivet her.",
   "goalDetailWatchingTitle": "Følger",
   "goalDockJustNow": "lige nu",
   "goalHealthTrendDown": "Falder",

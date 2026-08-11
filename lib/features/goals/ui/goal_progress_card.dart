@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -101,18 +102,28 @@ class GoalProgressCard extends StatelessWidget {
             runSpacing: tokens.spacing.step1,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              Text(
-                context.messages.goalProgressTitle,
-                style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                  color: tokens.colors.text.highEmphasis,
+              if (progress.habits.isNotEmpty ||
+                  progress.metric?.window ==
+                      const GoalWindow.rollingDays(count: 7)) ...[
+                Text(
+                  context.messages.goalProgressTitle,
+                  style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
                 ),
-              ),
-              Text(
-                context.messages.goalProgressCaption,
-                style: tokens.typography.styles.others.caption.copyWith(
-                  color: tokens.colors.text.lowEmphasis,
+                Text(
+                  context.messages.goalProgressCaption,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
                 ),
-              ),
+              ] else if (progress.metric case final metric?)
+                Text(
+                  _metricPeriodLabel(context, metric),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
             ],
           ),
           SizedBox(height: tokens.spacing.step4),
@@ -132,6 +143,16 @@ class GoalProgressCard extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  String _metricPeriodLabel(
+    BuildContext context,
+    GoalMetricProgressView metric,
+  ) {
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final format = DateFormat.MMMd(locale);
+    return '${format.format(metric.days.first.day)} – '
+        '${format.format(metric.days.last.day)}';
   }
 }
 
@@ -481,34 +502,60 @@ class _MetricProgressSeries extends StatelessWidget {
         SizedBox(height: tokens.spacing.step3),
         SizedBox(
           height: tokens.spacing.step10,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              for (var index = 0; index < metric.days.length; index++) ...[
-                if (index > 0) SizedBox(width: tokens.spacing.step2),
-                Expanded(
-                  child: FractionallySizedBox(
-                    heightFactor: maxValue == 0
-                        ? 0
-                        : (metric.days[index].value / maxValue).clamp(0, 1),
-                    alignment: Alignment.bottomCenter,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        color: metric.days[index].value >= metric.target
-                            ? tokens.colors.alert.info.defaultColor
-                            : tokens.colors.background.level03,
-                        borderRadius: BorderRadius.vertical(
-                          top: Radius.circular(tokens.radii.s),
-                        ),
-                      ),
-                    ),
+          child: metric.days.length <= 7
+              ? Row(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: _bars(context, maxValue, expanded: true),
+                )
+              : SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    children: _bars(context, maxValue, expanded: false),
                   ),
                 ),
-              ],
-            ],
-          ),
         ),
       ],
+    );
+  }
+
+  List<Widget> _bars(
+    BuildContext context,
+    num maxValue, {
+    required bool expanded,
+  }) {
+    final tokens = context.designTokens;
+    return [
+      for (var index = 0; index < metric.days.length; index++) ...[
+        if (index > 0) SizedBox(width: tokens.spacing.step2),
+        if (expanded)
+          Expanded(child: _bar(context, metric.days[index], maxValue))
+        else
+          SizedBox(
+            width: ControlSizes.iconChipCompact,
+            child: _bar(context, metric.days[index], maxValue),
+          ),
+      ],
+    ];
+  }
+
+  Widget _bar(BuildContext context, GoalProgressDay day, num maxValue) {
+    final tokens = context.designTokens;
+    return FractionallySizedBox(
+      heightFactor: maxValue == 0
+          ? 0.0
+          : (day.value / maxValue).clamp(0, 1).toDouble(),
+      alignment: Alignment.bottomCenter,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: day.value >= metric.target
+              ? tokens.colors.alert.info.defaultColor
+              : tokens.colors.background.level03,
+          borderRadius: BorderRadius.vertical(
+            top: Radius.circular(tokens.radii.s),
+          ),
+        ),
+      ),
     );
   }
 }

@@ -6217,7 +6217,7 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Signály: odškrtnutí návyků, viditelná během několika sekund. Agent nevidí nic, co neodškrtneš.';
+      'Výše uvedené signály se aktualizují během několika sekund. Agent vidí jen signály uvedené tady.';
 
   @override
   String get goalDetailWatchingTitle => 'Sleduje';

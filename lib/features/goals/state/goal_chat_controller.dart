@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 
 @immutable
@@ -9,21 +10,27 @@ class GoalChatComposerState {
     this.draft = '',
     this.isSending = false,
     this.failedMessage,
+    this.failedMessageId,
   });
 
   final String draft;
   final bool isSending;
   final String? failedMessage;
+  final String? failedMessageId;
 
   GoalChatComposerState copyWith({
     String? draft,
     bool? isSending,
     String? failedMessage,
+    String? failedMessageId,
     bool clearFailure = false,
   }) => GoalChatComposerState(
     draft: draft ?? this.draft,
     isSending: isSending ?? this.isSending,
     failedMessage: clearFailure ? null : failedMessage ?? this.failedMessage,
+    failedMessageId: clearFailure
+        ? null
+        : failedMessageId ?? this.failedMessageId,
   );
 }
 
@@ -63,6 +70,12 @@ class GoalChatController extends Notifier<GoalChatComposerState> {
         ..invalidate(activeGoalNudgesProvider)
         ..invalidate(goalNudgeHistoryProvider(_agentId));
       state = const GoalChatComposerState();
+    } on GoalChatTurnException catch (error) {
+      state = GoalChatComposerState(
+        draft: state.draft,
+        failedMessage: message,
+        failedMessageId: error.messageId,
+      );
     } catch (_) {
       state = GoalChatComposerState(
         draft: state.draft,
@@ -73,8 +86,29 @@ class GoalChatController extends Notifier<GoalChatComposerState> {
 
   Future<void> retry() async {
     final failed = state.failedMessage;
-    if (failed == null || state.isSending) return;
-    state = state.copyWith(draft: failed, clearFailure: true);
-    await send();
+    final messageId = state.failedMessageId;
+    if (failed == null || messageId == null || state.isSending) return;
+    state = state.copyWith(isSending: true, clearFailure: true);
+    try {
+      await ref
+          .read(goalChatServiceProvider)
+          .retryMessage(agentId: _agentId, messageId: messageId);
+      ref
+        ..invalidate(activeGoalNudgesProvider)
+        ..invalidate(goalNudgeHistoryProvider(_agentId));
+      state = const GoalChatComposerState();
+    } on GoalChatTurnException catch (error) {
+      state = GoalChatComposerState(
+        draft: failed,
+        failedMessage: failed,
+        failedMessageId: error.messageId ?? messageId,
+      );
+    } catch (_) {
+      state = GoalChatComposerState(
+        draft: failed,
+        failedMessage: failed,
+        failedMessageId: messageId,
+      );
+    }
   }
 }

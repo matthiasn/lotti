@@ -256,22 +256,30 @@ void main() {
 
   group('deleteGoalAgent', () {
     test('retires the goal through the shared destroyed lifecycle', () async {
+      when(() => agentService.cancelPendingWake(agentId)).thenReturn(null);
+      when(() => agentService.abortRunningWake(agentId)).thenReturn(true);
       when(
         () => agentService.destroyAgent(agentId),
       ).thenAnswer((_) async => true);
 
       expect(await service.deleteGoalAgent(agentId), isTrue);
 
+      verify(() => agentService.cancelPendingWake(agentId)).called(1);
+      verify(() => agentService.abortRunningWake(agentId)).called(1);
       verify(() => agentService.destroyAgent(agentId)).called(1);
     });
 
     test('reports when no goal matched the id', () async {
+      when(() => agentService.cancelPendingWake('missing')).thenReturn(null);
+      when(() => agentService.abortRunningWake('missing')).thenReturn(false);
       when(
         () => agentService.destroyAgent('missing'),
       ).thenAnswer((_) async => false);
 
       expect(await service.deleteGoalAgent('missing'), isFalse);
 
+      verify(() => agentService.cancelPendingWake('missing')).called(1);
+      verify(() => agentService.abortRunningWake('missing')).called(1);
       verify(() => agentService.destroyAgent('missing')).called(1);
     });
   });

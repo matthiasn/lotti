@@ -2586,7 +2586,7 @@
   "goalDetailNotFound": "Diesen Ziel-Agenten gibt es nicht mehr.",
   "goalDetailSayingTitle": "Das sagt dein Agent",
   "goalDetailTimelineTitle": "Interaktionen",
-  "goalDetailWatchingSignals": "Signale: abgehakte Gewohnheiten, innerhalb von Sekunden sichtbar. Dein Agent sieht nichts, was du nicht abhakt hast.",
+  "goalDetailWatchingSignals": "Die oben aufgeführten Signale werden innerhalb von Sekunden aktualisiert. Dein Agent sieht nur die hier aufgeführten Signale.",
   "goalDetailWatchingTitle": "Beobachtet",
   "goalDockJustNow": "gerade eben",
   "goalHealthTrendDown": "Fällt ab",

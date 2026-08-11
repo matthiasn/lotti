@@ -2836,7 +2836,7 @@
   "goalDetailNotFound": "Den här målagenten finns inte längre.",
   "goalDetailSayingTitle": "Det här säger din agent",
   "goalDetailTimelineTitle": "Interaktioner",
-  "goalDetailWatchingSignals": "Signaler: avbockade vanor, synliga inom sekunder. Din agent ser inget som du inte bockar av.",
+  "goalDetailWatchingSignals": "Signalerna ovan uppdateras inom några sekunder. Din agent ser bara signalerna som anges här.",
   "goalDetailWatchingTitle": "Följer",
   "goalDockJustNow": "just nu",
   "goalHealthTrendDown": "Minskar",

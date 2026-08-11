@@ -6171,7 +6171,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Signalen: afgevinkte gewoontes, binnen enkele seconden zichtbaar. Je agent ziet niets wat je niet afvinkt.';
+      'De bovenstaande signalen worden binnen enkele seconden bijgewerkt. Je agent ziet alleen de signalen die hier staan.';
 
   @override
   String get goalDetailWatchingTitle => 'Volgt';

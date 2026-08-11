@@ -657,8 +657,20 @@ class _GoalActionsMenuButton extends ConsumerWidget {
       },
     );
     if (confirmed ?? false) {
-      await ref.read(goalAgentServiceProvider).deleteGoalAgent(agentId);
-      beamToNamed('/agents');
+      try {
+        final deleted = await ref
+            .read(goalAgentServiceProvider)
+            .deleteGoalAgent(agentId);
+        if (!deleted || !context.mounted) return;
+        beamToNamed('/agents');
+      } catch (_) {
+        if (!context.mounted) return;
+        ScaffoldMessenger.maybeOf(context)
+          ?..hideCurrentSnackBar()
+          ..showSnackBar(
+            SnackBar(content: Text(context.messages.goalBannerActionFailed)),
+          );
+      }
     }
   }
 }

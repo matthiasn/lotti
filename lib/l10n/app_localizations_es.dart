@@ -6229,7 +6229,7 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Señales: hábitos marcados, visibles en segundos. Tu agente no puede ver nada que no marques.';
+      'Las señales anteriores se actualizan en segundos. Tu agente solo ve las señales indicadas aquí.';
 
   @override
   String get goalDetailWatchingTitle => 'Observa';

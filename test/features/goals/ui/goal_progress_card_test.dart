@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
+import 'package:lotti/l10n/app_localizations.dart';
 
 import '../../../widget_test_utils.dart';
 
@@ -55,6 +57,37 @@ void main() {
     expect(find.text('today'), findsOneWidget);
   });
 
+  for (final locale in AppLocalizations.supportedLocales) {
+    testWidgets('weekday labels load for ${locale.toLanguageTag()}', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'gym',
+                  name: 'Gym',
+                  targetCount: 1,
+                  days: [
+                    for (var offset = 7; offset >= 0; offset--) day(offset, 0),
+                  ],
+                  successfulWeeks: 0,
+                ),
+              ],
+            ),
+          ),
+          locale: locale,
+        ),
+      );
+
+      expect(tester.takeException(), isNull);
+      expect(find.text('Gym'), findsOneWidget);
+    });
+  }
+
   testWidgets('compact strip reports the number of successful days once in '
       'semantics', (tester) async {
     await tester.pumpWidget(
@@ -96,6 +129,36 @@ void main() {
 
     expect(find.text('Daily steps'), findsOneWidget);
     expect(find.byType(FractionallySizedBox), findsNWidgets(7));
+  });
+
+  testWidgets('a calendar-month metric shows its actual period and scrolls '
+      'all daily bars', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Daily steps',
+              target: 8000,
+              window: const GoalWindow.calendarMonth(),
+              days: [
+                for (var day = 1; day <= 31; day++)
+                  GoalProgressDay(
+                    day: DateTime.utc(2026, 8, day),
+                    value: 5000,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('This rolling week'), findsNothing);
+    expect(find.text('Aug 1 – Aug 31'), findsOneWidget);
+    expect(find.byType(FractionallySizedBox), findsNWidgets(31));
+    expect(find.byType(SingleChildScrollView), findsOneWidget);
   });
 
   testWidgets('a narrow at-rate habit keeps the grid scrollable and marks both '

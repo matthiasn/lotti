@@ -6122,7 +6122,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Signals: habit check-offs, seen within seconds. Your agent can\'t see anything you don\'t check off.';
+      'Signals listed above update within seconds. Your agent only sees the signals listed here.';
 
   @override
   String get goalDetailWatchingTitle => 'Watching';

@@ -633,7 +633,7 @@ void main() {
     expect(find.text('Talk to Move more'), findsNothing);
     expect(find.text('Watching'), findsOneWidget);
     expect(find.text('Morning walk'), findsNWidgets(2));
-    expect(find.textContaining('habit check-offs'), findsOneWidget);
+    expect(find.textContaining('signals listed here'), findsOneWidget);
 
     await tester.drag(find.byType(ListView).first, const Offset(0, -600));
     await tester.pumpAndSettle();
@@ -702,13 +702,19 @@ void main() {
     expect(navigated, ['/agents']);
   });
 
-  testWidgets('confirming delete retires the goal and returns to the list', (
+  testWidgets('delete failures stay on the goal and a later success returns '
+      'to the list', (
     tester,
   ) async {
     final service = MockGoalAgentService();
+    var attempts = 0;
     when(
       () => service.deleteGoalAgent('goal-1'),
-    ).thenAnswer((_) async => true);
+    ).thenAnswer((_) async {
+      attempts++;
+      if (attempts == 1) throw StateError('database unavailable');
+      return true;
+    });
     final navigated = <String>[];
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
@@ -768,7 +774,19 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    verify(() => service.deleteGoalAgent('goal-1')).called(1);
+    expect(find.text("That didn't save — please try again."), findsOneWidget);
+    expect(navigated, isEmpty);
+
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete goal'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.widgetWithText(DesignSystemButton, 'Delete goal'),
+    );
+    await tester.pumpAndSettle();
+
+    verify(() => service.deleteGoalAgent('goal-1')).called(2);
     expect(navigated, ['/agents']);
   });
 

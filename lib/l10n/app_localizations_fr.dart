@@ -6246,7 +6246,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Signaux : habitudes cochées, visibles en quelques secondes. Ton agent ne voit rien que tu ne coches pas.';
+      'Les signaux ci-dessus sont actualisés en quelques secondes. Ton agent ne voit que les signaux indiqués ici.';
 
   @override
   String get goalDetailWatchingTitle => 'Suit';

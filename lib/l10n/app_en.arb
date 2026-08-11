@@ -3435,7 +3435,7 @@
   "@goalDetailTimelineTitle": {
     "description": "Section title of the agent detail interaction timeline."
   },
-  "goalDetailWatchingSignals": "Signals: habit check-offs, seen within seconds. Your agent can't see anything you don't check off.",
+  "goalDetailWatchingSignals": "Signals listed above update within seconds. Your agent only sees the signals listed here.",
   "goalDetailWatchingTitle": "Watching",
   "goalDockJustNow": "just now",
   "@goalDockJustNow": {

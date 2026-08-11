@@ -6253,7 +6253,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Semnale: obiceiuri bifate, vizibile în câteva secunde. Agentul dvs. nu vede nimic din ce nu bifați.';
+      'Semnalele de mai sus se actualizează în câteva secunde. Agentul dvs. vede doar semnalele enumerate aici.';
 
   @override
   String get goalDetailWatchingTitle => 'Urmărește';

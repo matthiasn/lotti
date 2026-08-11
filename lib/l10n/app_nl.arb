@@ -2835,7 +2835,7 @@
   "goalDetailNotFound": "Deze doel-agent bestaat niet meer.",
   "goalDetailSayingTitle": "Wat je agent zegt",
   "goalDetailTimelineTitle": "Interacties",
-  "goalDetailWatchingSignals": "Signalen: afgevinkte gewoontes, binnen enkele seconden zichtbaar. Je agent ziet niets wat je niet afvinkt.",
+  "goalDetailWatchingSignals": "De bovenstaande signalen worden binnen enkele seconden bijgewerkt. Je agent ziet alleen de signalen die hier staan.",
   "goalDetailWatchingTitle": "Volgt",
   "goalDockJustNow": "zojuist",
   "goalHealthTrendDown": "Daalt",

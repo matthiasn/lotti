@@ -41,9 +41,6 @@ Future<List<AgentChatMessage>> agentChatProjection(
   final entities = await repository.getEntitiesByAgentId(
     agentId,
     type: AgentEntityTypes.agentMessage,
-    // The first slice is intentionally bounded. Compound-cursor paging is the
-    // next scale increment; opening chat never performs a full-log read.
-    limit: 50,
   );
   final visible = entities.whereType<AgentMessageEntity>().where(
     (message) =>
@@ -79,5 +76,7 @@ Future<List<AgentChatMessage>> agentChatProjection(
     final byTime = a.createdAt.compareTo(b.createdAt);
     return byTime != 0 ? byTime : a.id.compareTo(b.id);
   });
-  return projected;
+  return projected.length <= 50
+      ? projected
+      : projected.sublist(projected.length - 50);
 }

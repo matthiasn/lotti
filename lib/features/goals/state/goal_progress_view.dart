@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
@@ -41,11 +43,13 @@ class GoalMetricProgressView {
     required this.name,
     required this.target,
     required this.days,
+    this.window = const GoalWindow.rollingDays(count: 7),
   });
 
   final String name;
   final num target;
   final List<GoalProgressDay> days;
+  final GoalWindow window;
 }
 
 class GoalProgressDay {
@@ -93,11 +97,14 @@ class GoalProgressView {
     }
     final series = metric;
     if (series == null) return const [];
+    final periodDays = series.days
+        .where((entry) => !entry.day.isAfter(today))
+        .toList(growable: false);
+    final compactDays = periodDays.length <= 7
+        ? periodDays
+        : periodDays.sublist(periodDays.length - 7);
     return [
-      for (final day in activeDays)
-        series.days.any(
-          (entry) => entry.day == day && entry.value >= series.target,
-        ),
+      for (final day in compactDays) day.value >= series.target,
     ];
   }
 }
@@ -165,6 +172,7 @@ GoalProgressView buildGoalProgressView({
   ];
 
   final metric = metricLeaf;
+  final metricRange = metric?.window.periodRange(reference);
   return GoalProgressView(
     today: today,
     habits: habits,
@@ -175,8 +183,13 @@ GoalProgressView buildGoalProgressView({
                 ? metric.title!.trim()
                 : metric.dataType,
             target: metric.target,
+            window: metric.window,
             days: [
-              for (final day in displayDays.skip(1))
+              for (
+                var day = metricRange!.start;
+                !day.isAfter(metricRange.end);
+                day = day.add(const Duration(days: 1))
+              )
                 GoalProgressDay(
                   day: day,
                   value:
@@ -219,6 +232,16 @@ goalAgentProgressViewProvider = FutureProvider.autoDispose
       final spec = health.spec;
       if (spec == null) return null;
       final reference = clock.now();
+      final nextMidnight = DateTime(
+        reference.year,
+        reference.month,
+        reference.day + 1,
+      );
+      final midnightTimer = Timer(
+        nextMidnight.difference(reference),
+        ref.invalidateSelf,
+      );
+      ref.onDispose(midnightTimer.cancel);
       final signals = await ref
           .watch(goalSignalReaderProvider)
           .read(

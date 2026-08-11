@@ -69,6 +69,14 @@ class GoalChatService {
       ),
     );
 
+    await retryMessage(agentId: agentId, messageId: messageId);
+  }
+
+  /// Re-enqueues the already durable source turn after a failed wake.
+  Future<void> retryMessage({
+    required String agentId,
+    required String messageId,
+  }) async {
     String? runKey;
     final completion = Completer<WakeRunCompletion>();
     final subscription = _orchestrator.runCompletions.listen((event) {
@@ -86,7 +94,10 @@ class GoalChatService {
       );
       final result = await completion.future;
       if (result.status != WakeRunStatus.completed) {
-        throw GoalChatTurnException(result.error?.toString());
+        throw GoalChatTurnException(
+          result.error?.toString(),
+          messageId: messageId,
+        );
       }
     } finally {
       await subscription.cancel();
@@ -95,9 +106,10 @@ class GoalChatService {
 }
 
 class GoalChatTurnException implements Exception {
-  const GoalChatTurnException(this.detail);
+  const GoalChatTurnException(this.detail, {this.messageId});
 
   final String? detail;
+  final String? messageId;
 
   @override
   String toString() => detail ?? 'The goal-agent turn failed.';

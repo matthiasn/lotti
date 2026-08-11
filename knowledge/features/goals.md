@@ -271,8 +271,13 @@ flowchart TD
   creation affordance (the global FAB hides). When a spec is available,
   `goalAgentProgressViewProvider` reads the evaluator's daily aggregates and
   adds a seven-cell compact strip to the list. The detail page expands the
-  same source into a rolling habit/metric grid, reliability tail and explicit
-  Watching section. Every active habit day in that grid — including previous
+  same source into a rolling habit grid or a metric series using the metric
+  criterion's actual day/rolling/week/month range; periods longer than seven
+  days scroll horizontally instead of being relabelled as a trailing week.
+  The provider invalidates itself at the next local midnight so Today,
+  ages-out and window boundaries cannot remain stuck on yesterday. The detail
+  view also carries the reliability tail and explicit Watching section. Every
+  active habit day in that grid — including previous
   days — opens success/missed actions. The write goes through
   `GoalHabitCompletionService` into the existing habit-completion path, so
   privacy, sync and reminder behavior remain shared. Historical corrections
@@ -285,13 +290,18 @@ flowchart TD
   while the agent works. The detail page also carries active banners and the revision-approval
   card (`ChangeSetSummaryCard.selfTargeted`). Mobile opens durable conversation
   at `/agents/details/:agentId/chat`; desktop renders the same
-  `GoalAgentChatPane` beside detail. `agentChatProjectionProvider` bounds the
-  initial read at fifty rows and shows only durable user-authored messages
+  `GoalAgentChatPane` beside detail. The mobile route mounts the composer only
+  for an active goal identity, clears the overlaid navigation bar, and persists
+  the detail route after system/gesture back. `agentChatProjectionProvider`
+  filters the log first, then retains the latest fifty durable visible turns
   (no automatic `runKey`) and content-bearing `reply_to_user` actions;
   thoughts, system FACTS, legacy run-scoped FACTS rows, and tool bookkeeping
   never enter the visible history. Draft state is keep-alive per agent,
   waiting comes from the wake completion, and failure keeps the source turn
-  available for retry. Agent turns render through `AgentMarkdownView`; replies
+  available for retry by re-enqueueing its existing message id rather than
+  duplicating it. Payload ownership is checked before inference, chat failures
+  cannot re-arm scheduled escalations, and a user wake cannot complete without
+  a visible reply. Agent turns render through `AgentMarkdownView`; replies
   over 360 characters or eight line breaks start at an eight-rendered-line
   clamp with a localized Show more / Show less control, while user turns stay
   literal. A successful chat wake explicitly invalidates the
@@ -299,8 +309,10 @@ flowchart TD
   interaction notifier; the colored card therefore appears in the mounted
   desktop split without a route round-trip. Creation supports a steps goal or
   a MULTI-habit routine
-  (`allOf` composite); deletion soft-retires the whole agent through
-  `GoalAgentService.deleteGoalAgent`.
+  (`allOf` composite); deletion cancels queued work, aborts an in-flight local
+  wake, and soft-retires the whole agent through
+  `GoalAgentService.deleteGoalAgent`. The shared drain lifecycle guard rejects
+  any queued non-active goal wake that survives a race or arrives from sync.
 - **Conversation scope is the goal.** The contract identifies the agent as a
   dedicated coach rather than a general assistant. Coding, trivia and other
   unrelated requests receive a short purpose reminder and a redirect to the

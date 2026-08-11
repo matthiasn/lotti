@@ -328,6 +328,134 @@ void main() {
     expect(conversationRepository.sendMessageDelegateCallCount, 0);
   });
 
+  test('a foreign-agent chat payload is rejected before inference', () async {
+    when(() => repository.getEntity('message-foreign')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessage(
+        id: 'message-foreign',
+        agentId: agentId,
+        threadId: 'chat',
+        kind: AgentMessageKind.user,
+        createdAt: now,
+        vectorClock: null,
+        contentEntryId: 'payload-foreign',
+        metadata: const AgentMessageMetadata(),
+      ),
+    );
+    when(() => repository.getEntity('payload-foreign')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'payload-foreign',
+        agentId: 'other-agent',
+        createdAt: now,
+        vectorClock: null,
+        content: const {'text': 'private text'},
+      ),
+    );
+
+    final result = await workflow.executeUserMessage(
+      agentIdentity: identity,
+      runKey: 'chat-run',
+      triggerTokens: const {'goal-chat-message:message-foreign'},
+      threadId: 'chat',
+      messageId: 'message-foreign',
+    );
+
+    expect(result.success, isFalse);
+    expect(result.error, contains('payload is unavailable'));
+    expect(conversationRepository.sendMessageDelegateCallCount, 0);
+  });
+
+  test('a failed chat turn never re-arms the scheduled escalation', () async {
+    stubSpec();
+    when(
+      () => aiConfigRepository.getConfigsByType(AiConfigType.model),
+    ).thenAnswer((_) async => []);
+    when(() => repository.getEntity('message-chat')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessage(
+        id: 'message-chat',
+        agentId: agentId,
+        threadId: 'chat',
+        kind: AgentMessageKind.user,
+        createdAt: now,
+        vectorClock: null,
+        contentEntryId: 'payload-chat',
+        metadata: const AgentMessageMetadata(),
+      ),
+    );
+    when(() => repository.getEntity('payload-chat')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'payload-chat',
+        agentId: agentId,
+        createdAt: now,
+        vectorClock: null,
+        content: const {'text': 'How am I doing?'},
+      ),
+    );
+
+    final result = await workflow.executeUserMessage(
+      agentIdentity: identity,
+      runKey: 'chat-run',
+      triggerTokens: const {'goal-chat-message:message-chat'},
+      threadId: 'chat',
+      messageId: 'message-chat',
+    );
+
+    expect(result.success, isFalse);
+    expect(upserts.whereType<ScheduledWakeEntity>(), isEmpty);
+  });
+
+  test('an interactive wake without a visible reply fails instead of silently '
+      'acknowledging the source turn', () async {
+    stubSpec();
+    stubGlmResolution();
+    when(() => repository.getEntity('message-silent')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessage(
+        id: 'message-silent',
+        agentId: agentId,
+        threadId: 'chat',
+        kind: AgentMessageKind.user,
+        createdAt: now,
+        vectorClock: null,
+        contentEntryId: 'payload-silent',
+        metadata: const AgentMessageMetadata(),
+      ),
+    );
+    when(() => repository.getEntity('payload-silent')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'payload-silent',
+        agentId: agentId,
+        createdAt: now,
+        vectorClock: null,
+        content: const {'text': 'How am I doing?'},
+      ),
+    );
+    conversationRepository
+      ..maxDelegateCalls = 2
+      ..sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async => null;
+
+    final result = await workflow.executeUserMessage(
+      agentIdentity: identity,
+      runKey: 'chat-run',
+      triggerTokens: const {'goal-chat-message:message-silent'},
+      threadId: 'chat',
+      messageId: 'message-silent',
+    );
+
+    expect(result.success, isFalse);
+    expect(result.error, contains('no visible reply'));
+    expect(conversationRepository.sendMessageDelegateCallCount, 2);
+  });
+
   test('a full wake persists FACTS, report + head, the new ad, and token '
       'usage — all attributed to glm-5.2', () async {
     stubSpec();
@@ -507,7 +635,7 @@ void main() {
               ],
               manager: conversationManager,
             );
-          } else {
+          } else if (calls == 2) {
             expect(message, contains('Dismissal cooldown does not block'));
             expect(
               [for (final tool in tools!) tool.function.name],
@@ -530,6 +658,21 @@ void main() {
               ],
               manager: conversationManager,
             );
+          } else {
+            expect(message, contains('A banner was created in this wake'));
+            expect(
+              [for (final tool in tools!) tool.function.name],
+              [GoalAgentToolNames.replyToUser],
+            );
+            expect(toolChoice, isNotNull);
+            await goalStrategy.processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.replyToUser, {
+                  'message': 'Your new banner is live.',
+                }, id: 'call-3'),
+              ],
+              manager: conversationManager,
+            );
           }
           return null;
         };
@@ -546,7 +689,11 @@ void main() {
     );
 
     expect(result.success, isTrue);
-    expect(calls, 2, reason: 'primary turn plus one forced create-tool turn');
+    expect(
+      calls,
+      3,
+      reason: 'primary turn, forced banner, then corrected visible reply',
+    );
     expect(
       upserts.whereType<AgentMessageEntity>().where(
         (message) => message.kind == AgentMessageKind.user,
@@ -564,6 +711,12 @@ void main() {
       reason:
           'a stale cooldown refusal must not become a visible chat bubble; '
           'the content-free action/tool trace may remain in internals',
+    );
+    expect(
+      upserts.whereType<AgentMessagePayloadEntity>().any(
+        (payload) => payload.content['text'] == 'Your new banner is live.',
+      ),
+      isTrue,
     );
     final replacement = upserts.whereType<GoalNudgeEntity>().single;
     expect(replacement.status, GoalNudgeStatus.active);

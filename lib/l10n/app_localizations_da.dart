@@ -6150,7 +6150,7 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Signaler: afkrydsede vaner, set inden for sekunder. Din agent kan ikke se noget, du ikke krydser af.';
+      'Signalerne ovenfor opdateres inden for sekunder. Din agent ser kun de signaler, der er angivet her.';
 
   @override
   String get goalDetailWatchingTitle => 'Følger';

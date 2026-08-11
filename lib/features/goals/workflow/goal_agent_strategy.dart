@@ -100,6 +100,13 @@ class GoalAgentStrategy extends ConversationStrategy
     if (content != null && content.isNotEmpty) _finalResponse = content;
   }
 
+  /// Drops a reply the deterministic workflow proved stale so a pinned
+  /// corrective reply can replace it within the same wake.
+  void discardVisibleReply() {
+    _replyToUser = null;
+    _finalResponse = null;
+  }
+
   @override
   Future<ConversationAction> processToolCalls({
     required List<ChatCompletionMessageToolCall> toolCalls,

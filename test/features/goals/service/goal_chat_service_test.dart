@@ -104,9 +104,57 @@ void main() {
 
     await expectLater(
       service.sendMessage(agentId: 'goal-1', text: 'Try me'),
-      throwsA(isA<GoalChatTurnException>()),
+      throwsA(
+        isA<GoalChatTurnException>().having(
+          (error) => error.messageId,
+          'durable message id',
+          isNotNull,
+        ),
+      ),
     );
     expect(upserts.whereType<AgentMessageEntity>(), hasLength(1));
+  });
+
+  test('retry reuses the existing durable source message', () async {
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: 'goal-1',
+        reason: WakeReason.userMessage.name,
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: false,
+        initiator: WakeInitiator.user,
+      ),
+    ).thenAnswer((_) {
+      scheduleMicrotask(
+        () => completions.add(
+          const WakeRunCompletion(
+            runKey: 'retry-run',
+            status: WakeRunStatus.completed,
+          ),
+        ),
+      );
+      return 'retry-run';
+    });
+
+    await service.retryMessage(agentId: 'goal-1', messageId: 'message-1');
+
+    expect(
+      upserts,
+      isEmpty,
+      reason: 'retry must not duplicate the source turn',
+    );
+    final tokens =
+        verify(
+              () => orchestrator.enqueueManualWake(
+                agentId: 'goal-1',
+                reason: WakeReason.userMessage.name,
+                triggerTokens: captureAny(named: 'triggerTokens'),
+                supersede: false,
+                initiator: WakeInitiator.user,
+              ),
+            ).captured.single
+            as Set<String>;
+    expect(goalChatMessageIdFromTriggerTokens(tokens), 'message-1');
   });
 
   test('ignores blank turns and malformed trigger tokens', () async {

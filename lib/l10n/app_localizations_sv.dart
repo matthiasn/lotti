@@ -6155,7 +6155,7 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalDetailWatchingSignals =>
-      'Signaler: avbockade vanor, synliga inom sekunder. Din agent ser inget som du inte bockar av.';
+      'Signalerna ovan uppdateras inom några sekunder. Din agent ser bara signalerna som anges här.';
 
   @override
   String get goalDetailWatchingTitle => 'Följer';
