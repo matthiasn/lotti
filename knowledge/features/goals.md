@@ -255,7 +255,11 @@ flowchart TD
   thoughts, system FACTS, legacy run-scoped FACTS rows, and tool bookkeeping
   never enter the visible history. Draft state is keep-alive per agent,
   waiting comes from the wake completion, and failure keeps the source turn
-  available for retry. Creation supports a steps goal or a MULTI-habit routine
+  available for retry. A successful chat wake explicitly invalidates the
+  active-banner and history projections because workflow writes bypass the
+  interaction notifier; the colored card therefore appears in the mounted
+  desktop split without a route round-trip. Creation supports a steps goal or
+  a MULTI-habit routine
   (`allOf` composite); deletion soft-retires the whole agent through
   `GoalAgentService.deleteGoalAgent`.
 - **Interaction writes bypass the notifier by design** (they go through

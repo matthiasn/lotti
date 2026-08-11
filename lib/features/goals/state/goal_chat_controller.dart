@@ -55,6 +55,13 @@ class GoalChatController extends Notifier<GoalChatComposerState> {
       await ref
           .read(goalChatServiceProvider)
           .sendMessage(agentId: _agentId, text: message);
+      // Goal-agent workflow writes travel through the sync service rather than
+      // the interaction notifier. Refresh the goal-owned banner projections
+      // as soon as the awaited wake commits so the colored card appears in
+      // this still-mounted split view without a route round-trip.
+      ref
+        ..invalidate(activeGoalNudgesProvider)
+        ..invalidate(goalNudgeHistoryProvider(_agentId));
       state = const GoalChatComposerState();
     } catch (_) {
       state = GoalChatComposerState(

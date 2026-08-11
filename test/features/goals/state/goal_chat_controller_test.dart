@@ -79,4 +79,36 @@ void main() {
       );
     },
   );
+
+  test(
+    'a committed chat wake refreshes the active banner projection',
+    () async {
+      final service = _MockGoalChatService();
+      when(
+        () =>
+            service.sendMessage(agentId: 'goal-1', text: 'New banner please.'),
+      ).thenAnswer((_) async {});
+      var bannerReads = 0;
+      final container = ProviderContainer(
+        overrides: [
+          goalChatServiceProvider.overrideWithValue(service),
+          activeGoalNudgesProvider.overrideWith((ref) async {
+            bannerReads++;
+            return [];
+          }),
+        ],
+      );
+      addTearDown(container.dispose);
+      await container.read(activeGoalNudgesProvider.future);
+      expect(bannerReads, 1);
+
+      final controller = container.read(
+        goalChatControllerProvider('goal-1').notifier,
+      )..updateDraft('New banner please.');
+      await controller.send();
+      await container.read(activeGoalNudgesProvider.future);
+
+      expect(bannerReads, 2);
+    },
+  );
 }
