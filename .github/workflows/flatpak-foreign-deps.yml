@@ -29,6 +29,16 @@ jobs:
       - name: Validate Flutter pin guard
         run: python3 -m unittest check_flutter_pin_test
         working-directory: flatpak
+      - name: Check out pinned flatpak-flutter dependency database
+        run: |
+          set -euo pipefail
+          VERSION=$(awk -F'"' '/^FLATPAK_FLUTTER_VERSION=/ {print $2; exit}' flatpak/prepare_flathub_build.sh)
+          git clone --depth 1 --branch "$VERSION" \
+            https://github.com/TheAppgineer/flatpak-flutter.git \
+            flatpak/flatpak-flutter
+      - name: Validate foreign dependency selection guard
+        run: python3 -m unittest check_foreign_deps_test
+        working-directory: flatpak
       - name: Check Flathub manifest Flutter tag matches .fvmrc
         run: python3 flatpak/check_flutter_pin.py
       - name: Cache Pub Packages
@@ -46,4 +56,7 @@ jobs:
       - name: Get dependencies
         run: flutter pub get --enforce-lockfile
       - name: Validate Flatpak patches
-        run: python3 flatpak/check_foreign_deps.py
+        run: >-
+          python3 flatpak/check_foreign_deps.py
+          --bundled-foreign-deps
+          flatpak/flatpak-flutter/foreign_deps/foreign_deps.json
