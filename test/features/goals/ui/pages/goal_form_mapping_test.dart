@@ -188,4 +188,89 @@ void main() {
       hasLength(rebuilt.criteria.length + 1),
     );
   });
+
+  test('new leaves avoid every id reserved by the loaded criterion tree', () {
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'routine',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'habit-run',
+          habitId: 'gym',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 2,
+        ),
+      ],
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+    final rebuilt =
+        draft.buildCriteria(
+              stepsTitle: 'Average steps per day',
+              habitTargets: const {'gym': 2, 'run': 3},
+            )!
+            as GoalCriterionAllOf;
+
+    expect(
+      rebuilt.criteria.map((criterion) => criterion.criterionId),
+      ['habit-run', 'habit-run-2'],
+    );
+    expect(
+      {
+        rebuilt.criterionId,
+        ...rebuilt.criteria.map((criterion) => criterion.criterionId),
+      },
+      hasLength(rebuilt.criteria.length + 1),
+    );
+  });
+
+  test('a loaded single-child all-of retains its wrapper and title', () {
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'authored-wrapper',
+      title: 'Every part matters',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'habit-gym',
+          habitId: 'gym',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 2,
+        ),
+      ],
+    );
+
+    final rebuilt = GoalFormMapping.fromCriteria(criteria).buildCriteria(
+      stepsTitle: 'Average steps per day',
+      habitTargets: const {'gym': 2},
+    );
+
+    expect(rebuilt, criteria);
+  });
+
+  test('an existing steps leaf retains its stored title', () {
+    const criteria = GoalCriterion.metric(
+      criterionId: 'steps',
+      dataType: 'cumulative_step_count',
+      title: 'My authored step target',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: 9000,
+    );
+
+    final rebuilt = GoalFormMapping.fromCriteria(criteria).buildCriteria(
+      stepsTitle: 'Localized default title',
+      habitTargets: const {},
+      stepsTarget: 10000,
+    );
+
+    expect(
+      rebuilt,
+      const GoalCriterion.metric(
+        criterionId: 'steps',
+        dataType: 'cumulative_step_count',
+        title: 'My authored step target',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 10000,
+      ),
+    );
+  });
 }

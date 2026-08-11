@@ -184,6 +184,7 @@ void main() {
       fixedClock,
       () => service.reviseFromOwner(
         agentId: agentId,
+        baseVersionId: '$agentId:spec-v3',
         displayName: 'Juno',
         title: 'Expedition fitness',
         statement: 'Gym twice and run five times each rolling week.',
@@ -215,6 +216,7 @@ void main() {
 
     final outcome = await service.reviseFromOwner(
       agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
       displayName: 'Steps',
       title: 'Steps',
       statement: 'Average 10,000 steps per day.',
@@ -225,6 +227,26 @@ void main() {
     expect(
       (outcome as GoalSpecRevisionRefused).reason,
       'the owner edit does not change the goal',
+    );
+    expect(upserts, isEmpty);
+  });
+
+  test('an owner edit based on a stale version is refused', () async {
+    stubSpec(version: 4);
+
+    final outcome = await service.reviseFromOwner(
+      agentId: agentId,
+      baseVersionId: '$agentId:spec-v3',
+      displayName: 'Juno',
+      title: 'Movement',
+      statement: 'Move consistently.',
+      criteria: criteria,
+    );
+
+    expect(outcome, isA<GoalSpecRevisionRefused>());
+    expect(
+      (outcome as GoalSpecRevisionRefused).reason,
+      GoalSpecRevisionService.ownerStaleVersionReason,
     );
     expect(upserts, isEmpty);
   });
@@ -251,6 +273,7 @@ void main() {
       );
       var outcome = await service.reviseFromOwner(
         agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
         displayName: 'Juno',
         title: 'Movement',
         statement: 'Move consistently.',
@@ -272,6 +295,7 @@ void main() {
       );
       outcome = await service.reviseFromOwner(
         agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
         displayName: 'Juno',
         title: 'Movement',
         statement: 'Move consistently.',
@@ -323,6 +347,7 @@ void main() {
         fixedClock,
         () => ownerService.reviseFromOwner(
           agentId: agentId,
+          baseVersionId: '$agentId:spec-v1',
           displayName: 'Juno',
           title: 'Move daily',
           statement: 'Average 10,000 steps every day.',

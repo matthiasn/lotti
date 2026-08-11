@@ -6249,9 +6249,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormIntentionPrompt => 'Waar wil je naartoe werken?';
 
   @override
-  String get goalFormKeepAsNote => 'Als notitie bewaren — geen coaching';
-
-  @override
   String get goalFormLooksRight => 'Ziet er goed uit';
 
   @override
@@ -6327,17 +6324,6 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Kies minstens één signaal dat de agent echt kan waarnemen.';
-
-  @override
-  String get goalFormWatchAnotherHabit => 'Nog een gewoonte volgen';
-
-  @override
-  String get goalFormWeeklyCheckIn =>
-      'Wekelijkse check-in — vertel hoe het ging';
-
-  @override
-  String get goalFormWeeklyCheckInDetail =>
-      'Alleen actueel tot ons laatste gesprek';
 
   @override
   String goalFormWeeklyTarget(int count) {

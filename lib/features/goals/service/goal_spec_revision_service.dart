@@ -54,6 +54,8 @@ class GoalSpecRevisionService {
   static const _uuid = Uuid();
   static const String ownerNoChangesReason =
       'the owner edit does not change the goal';
+  static const String ownerStaleVersionReason =
+      'the goal changed after this editor was opened';
 
   Future<GoalSpecRevisionOutcome> reviseFromProposal({
     required String agentId,
@@ -106,9 +108,11 @@ class GoalSpecRevisionService {
   /// verbatim intention, replace the observable criteria, and rename the
   /// goal's conversational persona. History is retained through
   /// [GoalSpecVersionEntity.diffFromVersionId]; the active version is never
-  /// rewritten in place.
+  /// rewritten in place. [baseVersionId] is the head loaded by the editor;
+  /// the save is refused if another writer moved the head in the meantime.
   Future<GoalSpecRevisionOutcome> reviseFromOwner({
     required String agentId,
+    required String baseVersionId,
     required String displayName,
     required String title,
     required String statement,
@@ -151,6 +155,9 @@ class GoalSpecRevisionService {
           return GoalSpecRevisionRefused(
             'spec head ${head.versionId} points at nothing',
           );
+        }
+        if (current.id != baseVersionId) {
+          return const GoalSpecRevisionRefused(ownerStaleVersionReason);
         }
         if (identity.displayName == normalizedDisplayName &&
             current.title == normalizedTitle &&

@@ -233,11 +233,14 @@ flowchart TD
 - **Owner edits are versioned, never in-place.** The explicit edit route uses
   `GoalSpecRevisionService.reviseFromOwner` with the complete user-authored
   title, intention, persona name and criteria tree. It serializes against the
-  current head, refuses a no-op, supersedes the current version and mints
-  `v(n+1)` with `authoredBy: user` and `diffFromVersionId`. The create/edit UI
+  current head, refuses a no-op or a save whose loaded base version is no
+  longer the head, supersedes the current version and mints `v(n+1)` with
+  `authoredBy: user` and `diffFromVersionId`. The create/edit UI
   only rewrites rolling-seven-day habit leaves and the supported at-least
   rolling-average steps metric; richer trees and opposite-direction step
-  criteria are retained exactly and shown read-only. Manual mapping choices
+  criteria are retained exactly and shown read-only. Supported trees retain
+  authored leaf titles, composite wrappers and stable collision-free node ids.
+  Manual mapping choices
   survive back-navigation while the intention is unchanged, and saving
   reconciles selected habits against the latest active-habit stream so a paused
   or removed habit cannot be minted into a dead criterion. After a minted edit,

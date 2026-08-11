@@ -17,7 +17,10 @@ class GoalFormMapping {
     required this.habitTargets,
     required this.habitCriterionIds,
     required this.stepsCriterionId,
+    required this.stepsCriterionTitle,
     required this.compositeCriterionId,
+    required this.compositeTitle,
+    required this.wasComposite,
     required this.unsupportedCriteria,
   });
 
@@ -27,7 +30,10 @@ class GoalFormMapping {
       habitTargets = const {},
       habitCriterionIds = const {},
       stepsCriterionId = 'steps',
+      stepsCriterionTitle = null,
       compositeCriterionId = 'routine',
+      compositeTitle = null,
+      wasComposite = false,
       unsupportedCriteria = null;
 
   factory GoalFormMapping.fromCriteria(GoalCriterion criteria) {
@@ -38,6 +44,7 @@ class GoalFormMapping {
     var watchesSteps = false;
     num stepsTarget = 10000;
     var stepsCriterionId = 'steps';
+    String? stepsCriterionTitle;
     final habitTargets = <String, int>{};
     final habitCriterionIds = <String, String>{};
 
@@ -50,6 +57,7 @@ class GoalFormMapping {
               :final aggregation,
               :final target,
               :final direction,
+              :final title,
             )
             when dataType == 'cumulative_step_count' &&
                 window == const GoalWindow.rollingDays(count: 7) &&
@@ -59,6 +67,7 @@ class GoalFormMapping {
           watchesSteps = true;
           stepsTarget = target;
           stepsCriterionId = criterionId;
+          stepsCriterionTitle = title;
         case GoalCriterionHabit(
               :final criterionId,
               :final habitId,
@@ -76,7 +85,10 @@ class GoalFormMapping {
             habitTargets: const {},
             habitCriterionIds: const {},
             stepsCriterionId: 'steps',
+            stepsCriterionTitle: null,
             compositeCriterionId: 'routine',
+            compositeTitle: null,
+            wasComposite: false,
             unsupportedCriteria: criteria,
           );
       }
@@ -88,10 +100,16 @@ class GoalFormMapping {
       habitTargets: Map.unmodifiable(habitTargets),
       habitCriterionIds: Map.unmodifiable(habitCriterionIds),
       stepsCriterionId: stepsCriterionId,
+      stepsCriterionTitle: stepsCriterionTitle,
       compositeCriterionId: switch (criteria) {
         GoalCriterionAllOf(:final criterionId) => criterionId,
         _ => _availableCompositeCriterionId(leaves),
       },
+      compositeTitle: switch (criteria) {
+        GoalCriterionAllOf(:final title) => title,
+        _ => null,
+      },
+      wasComposite: criteria is GoalCriterionAllOf,
       unsupportedCriteria: null,
     );
   }
@@ -101,7 +119,10 @@ class GoalFormMapping {
   final Map<String, int> habitTargets;
   final Map<String, String> habitCriterionIds;
   final String stepsCriterionId;
+  final String? stepsCriterionTitle;
   final String compositeCriterionId;
+  final String? compositeTitle;
+  final bool wasComposite;
   final GoalCriterion? unsupportedCriteria;
 
   bool get isEditable => unsupportedCriteria == null;
@@ -135,29 +156,48 @@ class GoalFormMapping {
       return null;
     }
 
+    final usedIds = <String>{
+      ...habitCriterionIds.values,
+      if (this.watchesSteps) stepsCriterionId,
+      if (wasComposite || habitTargets.length + (includeSteps ? 1 : 0) > 1)
+        compositeCriterionId,
+    };
+    String allocateId(String preferred) {
+      if (usedIds.add(preferred)) return preferred;
+      var suffix = 2;
+      while (!usedIds.add('$preferred-$suffix')) {
+        suffix++;
+      }
+      return '$preferred-$suffix';
+    }
+
     final leaves = <GoalCriterion>[
       if (includeSteps)
         GoalCriterion.metric(
-          criterionId: stepsCriterionId,
+          criterionId: this.watchesSteps
+              ? stepsCriterionId
+              : allocateId('steps'),
           dataType: 'cumulative_step_count',
-          title: stepsTitle,
+          title: this.watchesSteps ? stepsCriterionTitle : stepsTitle,
           window: const GoalWindow.rollingDays(count: 7),
           aggregation: GoalAggregation.dailySumThenAverage,
           target: resolvedStepsTarget,
         ),
       for (final entry in habitTargets.entries)
         GoalCriterion.habit(
-          criterionId: habitCriterionIds[entry.key] ?? 'habit-${entry.key}',
+          criterionId:
+              habitCriterionIds[entry.key] ?? allocateId('habit-${entry.key}'),
           habitId: entry.key,
           window: const GoalWindow.rollingDays(count: 7),
           targetCount: entry.value,
         ),
     ];
     if (leaves.isEmpty) return null;
-    if (leaves.length == 1) return leaves.single;
+    if (leaves.length == 1 && !wasComposite) return leaves.single;
     return GoalCriterion.allOf(
       criterionId: compositeCriterionId,
       criteria: leaves,
+      title: compositeTitle,
     );
   }
 }

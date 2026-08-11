@@ -729,6 +729,7 @@ void main() {
     when(
       () => revisionService.reviseFromOwner(
         agentId: 'goal-1',
+        baseVersionId: any(named: 'baseVersionId'),
         displayName: any(named: 'displayName'),
         title: any(named: 'title'),
         statement: any(named: 'statement'),
@@ -776,6 +777,7 @@ void main() {
     final captured = verify(
       () => revisionService.reviseFromOwner(
         agentId: 'goal-1',
+        baseVersionId: current.id,
         displayName: captureAny(named: 'displayName'),
         title: 'Weekly movement',
         statement: 'Gym and run every week',
@@ -844,6 +846,7 @@ void main() {
     when(
       () => revisionService.reviseFromOwner(
         agentId: 'goal-1',
+        baseVersionId: any(named: 'baseVersionId'),
         displayName: any(named: 'displayName'),
         title: any(named: 'title'),
         statement: any(named: 'statement'),
@@ -883,6 +886,7 @@ void main() {
     final criteria = verify(
       () => revisionService.reviseFromOwner(
         agentId: 'goal-1',
+        baseVersionId: current.id,
         displayName: 'Juno',
         title: 'Weekly movement',
         statement: 'Gym and run every week',
@@ -960,6 +964,7 @@ void main() {
       when(
         () => revisionService.reviseFromOwner(
           agentId: 'goal-1',
+          baseVersionId: any(named: 'baseVersionId'),
           displayName: any(named: 'displayName'),
           title: any(named: 'title'),
           statement: any(named: 'statement'),
@@ -1015,6 +1020,7 @@ void main() {
     when(
       () => revisionService.reviseFromOwner(
         agentId: 'goal-1',
+        baseVersionId: any(named: 'baseVersionId'),
         displayName: any(named: 'displayName'),
         title: any(named: 'title'),
         statement: any(named: 'statement'),

@@ -55,6 +55,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   var _saving = false;
   String? _derivedFrom;
   String? _derivedTitle;
+  String? _baseVersionId;
   String? _validation;
 
   bool get _editing => widget.agentId != null;
@@ -77,6 +78,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _statement.text = spec.statement;
     _title.text = spec.title;
     _persona.text = identity.displayName;
+    _baseVersionId = spec.id;
     _mapping = GoalFormMapping.fromCriteria(spec.criteria);
     _watchesSteps = _mapping.watchesSteps;
     _stepsTarget.text = NumberFormat.decimalPattern(
@@ -251,8 +253,13 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       }
 
       final revisionService = container.read(goalSpecRevisionServiceProvider);
+      final baseVersionId = _baseVersionId;
+      if (baseVersionId == null) {
+        throw StateError('missing the loaded goal version');
+      }
       final outcome = await revisionService.reviseFromOwner(
         agentId: agentId,
+        baseVersionId: baseVersionId,
         displayName: persona,
         title: title,
         statement: statement,

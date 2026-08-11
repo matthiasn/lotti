@@ -6331,9 +6331,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormIntentionPrompt => 'Spre ce doriți să lucrați?';
 
   @override
-  String get goalFormKeepAsNote => 'Păstrați ca notiță — fără coaching';
-
-  @override
   String get goalFormLooksRight => 'Arată bine';
 
   @override
@@ -6408,17 +6405,6 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Alegeți cel puțin un semnal pe care agentul îl poate observa cu adevărat.';
-
-  @override
-  String get goalFormWatchAnotherHabit => 'Urmăriți un alt obicei';
-
-  @override
-  String get goalFormWeeklyCheckIn =>
-      'Verificare săptămânală — spuneți-mi cum a mers';
-
-  @override
-  String get goalFormWeeklyCheckInDetail =>
-      'Actual doar până la ultima noastră conversație';
 
   @override
   String goalFormWeeklyTarget(int count) {

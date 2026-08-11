@@ -6286,9 +6286,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalFormIntentionPrompt => 'Para que objetivo queres trabalhar?';
 
   @override
-  String get goalFormKeepAsNote => 'Guardar como nota — sem acompanhamento';
-
-  @override
   String get goalFormLooksRight => 'Está certo';
 
   @override
@@ -6362,16 +6359,6 @@ class AppLocalizationsPt extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Escolhe pelo menos um sinal que o agente consiga realmente observar.';
-
-  @override
-  String get goalFormWatchAnotherHabit => 'Observar outro hábito';
-
-  @override
-  String get goalFormWeeklyCheckIn => 'Check-in semanal — conta-me como correu';
-
-  @override
-  String get goalFormWeeklyCheckInDetail =>
-      'Atual apenas até à nossa última conversa';
 
   @override
   String goalFormWeeklyTarget(int count) {

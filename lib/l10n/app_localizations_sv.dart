@@ -6233,9 +6233,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormIntentionPrompt => 'Vad vill du arbeta mot?';
 
   @override
-  String get goalFormKeepAsNote => 'Behåll som anteckning — ingen coachning';
-
-  @override
   String get goalFormLooksRight => 'Ser bra ut';
 
   @override
@@ -6309,17 +6306,6 @@ class AppLocalizationsSv extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Välj minst en signal som agenten faktiskt kan observera.';
-
-  @override
-  String get goalFormWatchAnotherHabit => 'Följ en annan vana';
-
-  @override
-  String get goalFormWeeklyCheckIn =>
-      'Veckovis avstämning — berätta hur det gick';
-
-  @override
-  String get goalFormWeeklyCheckInDetail =>
-      'Bara uppdaterad till vårt senaste samtal';
 
   @override
   String goalFormWeeklyTarget(int count) {

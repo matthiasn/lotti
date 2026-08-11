@@ -6295,9 +6295,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormIntentionPrompt => 'K čemu chceš směřovat?';
 
   @override
-  String get goalFormKeepAsNote => 'Ponechat jako poznámku — bez koučování';
-
-  @override
   String get goalFormLooksRight => 'Vypadá to dobře';
 
   @override
@@ -6372,16 +6369,6 @@ class AppLocalizationsCs extends AppLocalizations {
   @override
   String get goalFormValidationMapping =>
       'Vyber alespoň jeden signál, který agent opravdu dokáže sledovat.';
-
-  @override
-  String get goalFormWatchAnotherHabit => 'Sledovat další návyk';
-
-  @override
-  String get goalFormWeeklyCheckIn => 'Týdenní kontrola — řekni mi, jak to šlo';
-
-  @override
-  String get goalFormWeeklyCheckInDetail =>
-      'Aktuální jen k našemu poslednímu rozhovoru';
 
   @override
   String goalFormWeeklyTarget(int count) {

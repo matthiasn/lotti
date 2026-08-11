@@ -10661,12 +10661,6 @@ abstract class AppLocalizations {
   /// **'What do you want to work toward?'**
   String get goalFormIntentionPrompt;
 
-  /// No description provided for @goalFormKeepAsNote.
-  ///
-  /// In en, this message translates to:
-  /// **'Keep as a note — no coaching'**
-  String get goalFormKeepAsNote;
-
   /// No description provided for @goalFormLooksRight.
   ///
   /// In en, this message translates to:
@@ -10786,24 +10780,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Choose at least one signal the agent can actually observe.'**
   String get goalFormValidationMapping;
-
-  /// No description provided for @goalFormWatchAnotherHabit.
-  ///
-  /// In en, this message translates to:
-  /// **'Watch another habit'**
-  String get goalFormWatchAnotherHabit;
-
-  /// No description provided for @goalFormWeeklyCheckIn.
-  ///
-  /// In en, this message translates to:
-  /// **'Weekly check-in — tell me how it went'**
-  String get goalFormWeeklyCheckIn;
-
-  /// No description provided for @goalFormWeeklyCheckInDetail.
-  ///
-  /// In en, this message translates to:
-  /// **'Only as fresh as our last conversation'**
-  String get goalFormWeeklyCheckInDetail;
 
   /// No description provided for @goalFormWeeklyTarget.
   ///

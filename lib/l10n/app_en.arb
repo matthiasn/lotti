@@ -3488,7 +3488,6 @@
   "goalFormIntentionHelper": "Say it your way — this is how your agent will talk about it.",
   "goalFormIntentionHint": "Get to the gym twice a week, and keep up my morning exercises.",
   "goalFormIntentionPrompt": "What do you want to work toward?",
-  "goalFormKeepAsNote": "Keep as a note — no coaching",
   "goalFormLooksRight": "Looks right",
   "goalFormMappingIntro": "I can only coach what I can see. These check-offs are my eyes:",
   "goalFormMappingTitle": "Here’s what I can watch",
@@ -3530,9 +3529,6 @@
   "goalFormValidationIdentity": "Give the goal and its agent a name.",
   "goalFormValidationIntention": "Describe what you want to work toward first.",
   "goalFormValidationMapping": "Choose at least one signal the agent can actually observe.",
-  "goalFormWatchAnotherHabit": "Watch another habit",
-  "goalFormWeeklyCheckIn": "Weekly check-in — tell me how it went",
-  "goalFormWeeklyCheckInDetail": "Only as fresh as our last conversation",
   "goalFormWeeklyTarget": "{count}× / 7 days",
   "@goalFormWeeklyTarget": {
     "placeholders": {
