@@ -163,11 +163,12 @@ flowchart TD
   digests. Automatic transition ads keep their period/baseline identity;
   chat-created replacements add the durable source message id so a retired
   transition ad cannot silently collide with the requested replacement.
-  An explicit chat request for a new banner is recognized from actual
+  An affirmative chat request for a new banner is recognized from actual
   replacement language in the durable user message before inference and
-  overrides the automatic dismissal cooldown. Courtesy or explanation prompts
-  do not trigger that exception. The current active banner retires only after a
-  sanitized, non-duplicate create or valid retired-ad rerun has been identified,
+  overrides the automatic dismissal cooldown. Negated requests, courtesy, and
+  explanation prompts do not trigger that exception. The current active banner
+  retires only after a sanitized, non-duplicate create or valid retired-ad rerun
+  has been identified,
   so a replayed/invalid candidate cannot leave the goal bannerless. If the
   primary model replies with a cooldown refusal and omits the tool, the workflow
   forces `create_goal_ad` and withholds the now-contradictory refusal. A
@@ -296,7 +297,9 @@ flowchart TD
   never count as successful days.
   The provider invalidates itself at the next local midnight so Today,
   ages-out and window boundaries cannot remain stuck on yesterday. The detail
-  view also carries the reliability tail and explicit Watching section. Every
+  view also carries an explicit Watching section. A reliability tail is shown
+  only for an authored rolling-seven-day habit; other windows do not reinterpret
+  their period as weekly reliability. Every
   habit day in that grid — including previous days — opens success/missed
   actions only when the selected day lies inside the habit's active lifetime
   and is not in the future; future calendar cells stay read-only and the
@@ -317,19 +320,25 @@ flowchart TD
   for an active goal identity, keeps the goal statement visible in its compact
   chat header, clears the overlaid navigation bar, and persists the detail
   route after system/gesture back. `agentChatProjectionProvider`
-  filters the log first, then retains the latest fifty durable visible turns
-  (no automatic `runKey`) and content-bearing `reply_to_user` actions;
+  filters and sorts the log first, retains the latest fifty durable visible
+  candidates, and only then reads their payloads (no automatic `runKey`);
+  projected turns are user messages and content-bearing `reply_to_user` actions;
   thoughts, system FACTS, legacy run-scoped FACTS rows, and tool bookkeeping
-  never enter the visible history. Draft state is keep-alive per agent,
-  waiting comes from the wake completion, and failure keeps the source turn
-  available for retry by re-enqueueing its existing message id rather than
+  never enter the visible history. Visible replies pass through the report
+  sanitizer before persistence, so internal ids and annotations cannot leak
+  into chat. Draft state is keep-alive per agent, waiting comes from the wake
+  completion, and failure keeps the source turn available for retry by
+  re-enqueueing its existing message id rather than
   duplicating it. Payload ownership is checked before inference, chat failures
   cannot re-arm scheduled escalations, and a user wake cannot complete without
   a visible reply. Agent turns render through `AgentMarkdownView`; replies
   over 360 characters or eight line breaks start at an eight-rendered-line
   clamp with a localized Show more / Show less control, while user turns stay
-  literal. A successful chat wake explicitly invalidates the
-  active-banner and history projections because workflow writes bypass the
+  literal. Goal FACTS include the local timestamp, UTC offset, and time-zone name
+  beside their canonical UTC generation time, allowing relative snooze requests
+  to be interpreted against the user's clock. A successful chat wake explicitly
+  invalidates the visible-chat, active-banner, and history projections because
+  workflow writes bypass the
   interaction notifier; the colored card therefore appears in the mounted
   desktop split without a route round-trip. Creation supports a steps goal or
   a MULTI-habit routine
@@ -338,8 +347,13 @@ flowchart TD
   `GoalAgentService.deleteGoalAgent`. The shared drain lifecycle guard rejects
   any queued non-active goal wake that survives a race or arrives from sync and
   emits an aborted completion, so an interactive caller never waits forever for
-  a lifecycle-dropped request. Deletion also removes the goal's in-memory
-  signal subscription, preventing future matching journal updates from
+  a lifecycle-dropped request. Every explicit cancellation or superseding queue
+  removal emits the same aborted completion, so a waiting interactive caller
+  also terminates. A source-message append that committed before an outbox error
+  is reconciled by id and reused rather than duplicated. Deletion first performs
+  the durable lifecycle transition; only a successful transition cancels queued
+  work, aborts an in-flight wake, and removes the goal's in-memory signal
+  subscription, preventing future matching journal updates from
   repeatedly enqueueing work that the lifecycle guard would only discard.
 - **Conversation scope is the goal.** The contract identifies the agent as a
   dedicated coach rather than a general assistant. Coding, trivia and other
@@ -358,8 +372,9 @@ flowchart TD
   energy and carbon when available, otherwise tokens, with water and the full
   breakdown and localized compute duration in the tooltip. A second pill sums
   recorded invocation duration as lifetime compute time, including a localized
-  sub-minute threshold. No model price table or invented monetary estimate is
-  involved.
+  sub-minute threshold. The compute-time pill is withheld when legacy usage has
+  no positive recorded duration. No model price table or invented monetary
+  estimate is involved.
 - **Agent Internals attributes only actual inference.** Conversation wake rows
   resolve their model from persisted token usage first, then the wake-run
   snapshot. A source-only user-message thread has no model label: it did not run

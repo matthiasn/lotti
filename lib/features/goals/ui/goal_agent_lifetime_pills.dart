@@ -26,7 +26,9 @@ class GoalAgentLifetimePills extends ConsumerWidget {
     }
     final tokens = context.designTokens;
     final foreground = tokens.colors.text.mediumEmphasis;
-    final duration = formatConsumptionDuration(context, totals.durationMs);
+    final duration = totals.durationMs > 0
+        ? formatConsumptionDuration(context, totals.durationMs)
+        : null;
 
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step3),
@@ -39,22 +41,23 @@ class GoalAgentLifetimePills extends ConsumerWidget {
             totals: totals,
             foregroundColor: foreground,
           ),
-          Tooltip(
-            message: context.messages.goalAgentLifetimeTimeTooltip(
-              formatCallCount(totals.callCount),
-            ),
-            child: DsPill(
-              variant: DsPillVariant.filled,
-              bordered: true,
-              label: context.messages.goalAgentLifetimeTimePill(duration),
-              labelColor: foreground,
-              leading: Icon(
-                Icons.schedule_rounded,
-                size: IconSizes.xs,
-                color: foreground,
+          if (duration != null)
+            Tooltip(
+              message: context.messages.goalAgentLifetimeTimeTooltip(
+                formatCallCount(totals.callCount),
+              ),
+              child: DsPill(
+                variant: DsPillVariant.filled,
+                bordered: true,
+                label: context.messages.goalAgentLifetimeTimePill(duration),
+                labelColor: foreground,
+                leading: Icon(
+                  Icons.schedule_rounded,
+                  size: IconSizes.xs,
+                  color: foreground,
+                ),
               ),
             ),
-          ),
         ],
       ),
     );

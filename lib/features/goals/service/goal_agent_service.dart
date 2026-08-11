@@ -146,11 +146,13 @@ class GoalAgentService {
   /// Owned goal rows stay available for audit, while the destroyed identity
   /// disappears from active surfaces and no longer receives wake signals.
   Future<bool> deleteGoalAgent(String agentId) async {
+    final destroyed = await _agentService.destroyAgent(agentId);
+    if (!destroyed) return false;
     _agentService
       ..cancelPendingWake(agentId)
       ..abortRunningWake(agentId);
     removeSignalSubscriptions(agentId);
-    return _agentService.destroyAgent(agentId);
+    return true;
   }
 
   /// Drops the agent's runtime subscriptions (paused/archived goals must

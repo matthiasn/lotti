@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
@@ -75,7 +76,8 @@ class GoalChatController extends Notifier<GoalChatComposerState> {
       // this still-mounted split view without a route round-trip.
       ref
         ..invalidate(activeGoalNudgesProvider)
-        ..invalidate(goalNudgeHistoryProvider(_agentId));
+        ..invalidate(goalNudgeHistoryProvider(_agentId))
+        ..invalidate(agentChatProjectionProvider(_agentId));
       state = const GoalChatComposerState();
     } on GoalChatTurnException catch (error) {
       state = GoalChatComposerState(
@@ -103,7 +105,8 @@ class GoalChatController extends Notifier<GoalChatComposerState> {
       await _suppressCommittedSnoozes();
       ref
         ..invalidate(activeGoalNudgesProvider)
-        ..invalidate(goalNudgeHistoryProvider(_agentId));
+        ..invalidate(goalNudgeHistoryProvider(_agentId))
+        ..invalidate(agentChatProjectionProvider(_agentId));
       state = const GoalChatComposerState();
     } on GoalChatTurnException catch (error) {
       state = GoalChatComposerState(

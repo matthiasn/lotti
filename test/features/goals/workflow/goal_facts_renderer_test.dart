@@ -128,6 +128,7 @@ void main() {
     final json = renderedJson();
     expect(json.keys, {
       'generatedAt',
+      'localTime',
       'goal',
       'evaluation',
       'reporting',
@@ -136,6 +137,10 @@ void main() {
       'unansweredUserMessages',
       'observations',
     });
+    final localTime = json['localTime'] as Map<String, dynamic>;
+    expect(localTime['iso8601'], isA<String>());
+    expect(localTime['utcOffsetMinutes'], isA<int>());
+    expect(localTime['timeZoneName'], isA<String>());
     final evaluation = json['evaluation'] as Map<String, dynamic>;
     expect(evaluation['trackStatus'], 'offTrack');
     expect(evaluation['attainment'], 0.64);

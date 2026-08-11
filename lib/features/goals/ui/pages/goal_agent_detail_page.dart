@@ -490,8 +490,8 @@ class _WatchingSection extends StatelessWidget {
                   ),
                 ),
                 Text(
-                  '${context.messages.goalProgressHabitTarget(habit.targetCount)}'
-                  ' · ${habit.successfulWeeks} / 6',
+                  '${goalHabitTargetLabel(context, targetCount: habit.targetCount, window: habit.window)}'
+                  '${habit.successfulWeeks == null ? '' : ' · ${habit.successfulWeeks} / 6'}',
                   style: tokens.typography.styles.others.caption.copyWith(
                     color: tokens.colors.text.mediumEmphasis,
                   ),

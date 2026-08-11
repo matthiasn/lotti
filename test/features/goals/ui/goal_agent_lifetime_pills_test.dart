@@ -84,4 +84,32 @@ void main() {
       findsNothing,
     );
   });
+
+  testWidgets('withholds AI time when legacy calls have no duration', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const Scaffold(body: GoalAgentLifetimePills(agentId: 'goal-1')),
+        overrides: [
+          agentConsumptionTotalsProvider.overrideWith(
+            (ref, agentId) => Stream.value(
+              makeConsumptionTotals(
+                callCount: 2,
+                inputTokens: 100,
+                outputTokens: 50,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('goal-agent-lifetime-pills')),
+      findsOneWidget,
+    );
+    expect(find.textContaining('AI time'), findsNothing);
+  });
 }

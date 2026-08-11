@@ -255,9 +255,11 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           ),
         ),
         Text(
-          habit.window == const GoalWindow.rollingDays(count: 7)
-              ? context.messages.goalProgressHabitTarget(habit.targetCount)
-              : '${habit.targetCount}× · ${_windowLabel(context, habit.window)}',
+          goalHabitTargetLabel(
+            context,
+            targetCount: habit.targetCount,
+            window: habit.window,
+          ),
           style: tokens.typography.styles.others.caption.copyWith(
             color: tokens.colors.text.lowEmphasis,
           ),
@@ -312,9 +314,10 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
         ),
       ],
     );
-    final reliability = _Reliability(
-      successfulWeeks: habit.successfulWeeks,
-    );
+    final successfulWeeks = habit.successfulWeeks;
+    final reliability = successfulWeeks == null
+        ? null
+        : _Reliability(successfulWeeks: successfulWeeks);
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide =
@@ -335,7 +338,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                   ),
                 ),
               ),
-              reliability,
+              ?reliability,
             ],
           );
         }
@@ -365,7 +368,8 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
   }
 }
 
-String _windowLabel(BuildContext context, GoalWindow window) =>
+/// Localized authored cadence used by progress and Watching surfaces.
+String goalWindowLabel(BuildContext context, GoalWindow window) =>
     switch (window) {
       GoalWindowDay() => context.messages.goalWindowSingleDay,
       GoalWindowRollingDays(:final count) =>
@@ -373,6 +377,16 @@ String _windowLabel(BuildContext context, GoalWindow window) =>
       GoalWindowCalendarWeek() => context.messages.goalWindowCalendarWeek,
       GoalWindowCalendarMonth() => context.messages.goalWindowCalendarMonth,
     };
+
+/// Formats one habit's target without reinterpreting non-weekly criteria as a
+/// rolling seven-day goal.
+String goalHabitTargetLabel(
+  BuildContext context, {
+  required int targetCount,
+  required GoalWindow window,
+}) => window == const GoalWindow.rollingDays(count: 7)
+    ? context.messages.goalProgressHabitTarget(targetCount)
+    : '$targetCount× · ${goalWindowLabel(context, window)}';
 
 class _ProgressDayCell extends StatelessWidget {
   const _ProgressDayCell({

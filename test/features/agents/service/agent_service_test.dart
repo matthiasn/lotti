@@ -593,7 +593,14 @@ void main() {
           );
 
         when(() => mockOrchestrator.clearThrottle('agent-1')).thenReturn(null);
-        when(() => mockOrchestrator.queue).thenReturn(queue);
+        when(
+          () => mockOrchestrator.cancelPendingWakes(
+            'agent-1',
+            allWorkspaces: true,
+          ),
+        ).thenAnswer(
+          (_) => queue.removeByAgent('agent-1', allWorkspaces: true),
+        );
 
         expect(queue.removeByAgent('agent-1'), hasLength(1));
         queue.enqueue(
@@ -609,6 +616,12 @@ void main() {
         service.cancelPendingWake('agent-1');
 
         verify(() => mockOrchestrator.clearThrottle('agent-1')).called(1);
+        verify(
+          () => mockOrchestrator.cancelPendingWakes(
+            'agent-1',
+            allWorkspaces: true,
+          ),
+        ).called(1);
         expect(queue.removeByAgent('agent-1'), isEmpty);
       });
     });

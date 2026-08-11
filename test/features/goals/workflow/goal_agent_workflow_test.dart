@@ -251,6 +251,16 @@ void main() {
         isExplicitGoalAdReplacementRequest('I want to snooze this banner.'),
         isFalse,
       );
+      expect(
+        isExplicitGoalAdReplacementRequest("Please don't replace the banner."),
+        isFalse,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest(
+          "I don't want another banner ad.",
+        ),
+        isFalse,
+      );
     },
   );
 
@@ -686,7 +696,9 @@ void main() {
             await goalStrategy.processToolCalls(
               toolCalls: [
                 toolCall(GoalAgentToolNames.replyToUser, {
-                  'message': 'Your new banner is live.',
+                  'message':
+                      'Your new banner is live '
+                      '(id: 123e4567-e89b-12d3-a456-426614174000).',
                 }, id: 'call-3'),
               ],
               manager: conversationManager,

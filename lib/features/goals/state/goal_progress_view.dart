@@ -32,7 +32,10 @@ class GoalHabitProgressView {
   final String name;
   final int targetCount;
   final List<GoalProgressDay> days;
-  final int successfulWeeks;
+
+  /// Successful trailing seven-day periods, available only when the authored
+  /// criterion itself is a rolling seven-day habit.
+  final int? successfulWeeks;
   final GoalWindow window;
   final GoalProgressDay? slippedDay;
 
@@ -311,11 +314,13 @@ GoalHabitProgressView _habitProgressView({
       )
         projection(day),
     ],
-    successfulWeeks: _successfulWeeks(
-      successes: signals.habitSuccessesByDay[habit.habitId] ?? const {},
-      today: today,
-      target: habit.targetCount,
-    ),
+    successfulWeeks: habit.window == const GoalWindow.rollingDays(count: 7)
+        ? _successfulWeeks(
+            successes: signals.habitSuccessesByDay[habit.habitId] ?? const {},
+            today: today,
+            target: habit.targetCount,
+          )
+        : null,
   );
 }
 

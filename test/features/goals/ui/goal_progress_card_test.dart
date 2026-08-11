@@ -280,6 +280,7 @@ void main() {
     expect(find.text('This rolling week'), findsNothing);
     expect(find.text('Aug 1 – Aug 31'), findsOneWidget);
     expect(find.text('2× · calendar month'), findsOneWidget);
+    expect(find.textContaining('/ 6'), findsNothing);
     expect(find.byType(SingleChildScrollView), findsOneWidget);
 
     const todayKey = ValueKey('goal-habit-day-walk-2026-08-11');

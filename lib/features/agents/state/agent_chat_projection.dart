@@ -42,19 +42,31 @@ Future<List<AgentChatMessage>> agentChatProjection(
     agentId,
     type: AgentEntityTypes.agentMessage,
   );
-  final visible = entities.whereType<AgentMessageEntity>().where(
-    (message) =>
-        // Goal chat source turns have no runKey because they exist before the
-        // wake. Older automatic goal wakes stored their internal FACTS blob as
-        // a user row with a runKey; keep those legacy rows out of visible chat.
-        (message.kind == AgentMessageKind.user &&
-            message.metadata.runKey == null) ||
-        (message.kind == AgentMessageKind.action &&
-            message.metadata.toolName ==
-                AgentConversationToolNames.replyToUser),
-  );
+  final visible =
+      entities
+          .whereType<AgentMessageEntity>()
+          .where(
+            (message) =>
+                // Goal chat source turns have no runKey because they exist before
+                // the wake. Older automatic goal wakes stored their internal
+                // FACTS blob as a user row with a runKey; keep those legacy rows
+                // out of visible chat.
+                (message.kind == AgentMessageKind.user &&
+                    message.metadata.runKey == null) ||
+                (message.kind == AgentMessageKind.action &&
+                    message.metadata.toolName ==
+                        AgentConversationToolNames.replyToUser),
+          )
+          .toList()
+        ..sort((a, b) {
+          final byTime = a.createdAt.compareTo(b.createdAt);
+          return byTime != 0 ? byTime : a.id.compareTo(b.id);
+        });
+  final selected = visible.length <= 50
+      ? visible
+      : visible.sublist(visible.length - 50);
   final projected = <AgentChatMessage>[];
-  for (final message in visible) {
+  for (final message in selected) {
     final payloadId = message.contentEntryId;
     if (payloadId == null) continue;
     final payload = await repository.getEntity(payloadId);
@@ -72,11 +84,5 @@ Future<List<AgentChatMessage>> agentChatProjection(
       ),
     );
   }
-  projected.sort((a, b) {
-    final byTime = a.createdAt.compareTo(b.createdAt);
-    return byTime != 0 ? byTime : a.id.compareTo(b.id);
-  });
-  return projected.length <= 50
-      ? projected
-      : projected.sublist(projected.length - 50);
+  return projected;
 }

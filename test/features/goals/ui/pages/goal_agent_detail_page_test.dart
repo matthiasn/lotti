@@ -654,6 +654,20 @@ void main() {
                     ],
                     successfulWeeks: 5,
                   ),
+                  GoalHabitProgressView(
+                    habitId: 'monthly-walk',
+                    name: 'Monthly walk',
+                    targetCount: 20,
+                    window: const GoalWindow.calendarMonth(),
+                    days: [
+                      for (var day = 1; day <= 31; day++)
+                        GoalProgressDay(
+                          day: DateTime.utc(2026, 8, day),
+                          value: day <= 10 ? 1 : 0,
+                        ),
+                    ],
+                    successfulWeeks: null,
+                  ),
                 ],
               );
             },
@@ -690,6 +704,9 @@ void main() {
     expect(find.text('Talk to Move more'), findsNothing);
     expect(find.text('Watching'), findsOneWidget);
     expect(find.text('Morning walk'), findsNWidgets(2));
+    expect(find.text('Monthly walk'), findsNWidgets(2));
+    expect(find.text('20× · calendar month'), findsNWidgets(2));
+    expect(find.textContaining('null / 6'), findsNothing);
     expect(find.textContaining('signals listed here'), findsOneWidget);
 
     await tester.tap(

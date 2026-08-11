@@ -272,19 +272,30 @@ void main() {
     });
 
     test('reports when no goal matched the id', () async {
-      when(() => agentService.cancelPendingWake('missing')).thenReturn(null);
-      when(() => agentService.abortRunningWake('missing')).thenReturn(false);
-      when(() => orchestrator.removeSubscriptions('missing')).thenReturn(null);
       when(
         () => agentService.destroyAgent('missing'),
       ).thenAnswer((_) async => false);
 
       expect(await service.deleteGoalAgent('missing'), isFalse);
 
-      verify(() => agentService.cancelPendingWake('missing')).called(1);
-      verify(() => agentService.abortRunningWake('missing')).called(1);
-      verify(() => orchestrator.removeSubscriptions('missing')).called(1);
       verify(() => agentService.destroyAgent('missing')).called(1);
+      verifyNever(() => agentService.cancelPendingWake('missing'));
+      verifyNever(() => agentService.abortRunningWake('missing'));
+      verifyNever(() => orchestrator.removeSubscriptions('missing'));
+    });
+
+    test('preserves the live runtime when the lifecycle write throws', () {
+      when(
+        () => agentService.destroyAgent('goal-live'),
+      ).thenThrow(StateError('sync write failed'));
+
+      expect(
+        () => service.deleteGoalAgent('goal-live'),
+        throwsA(isA<StateError>()),
+      );
+      verifyNever(() => agentService.cancelPendingWake('goal-live'));
+      verifyNever(() => agentService.abortRunningWake('goal-live'));
+      verifyNever(() => orchestrator.removeSubscriptions('goal-live'));
     });
   });
 }

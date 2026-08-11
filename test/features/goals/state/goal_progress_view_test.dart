@@ -181,6 +181,7 @@ void main() {
       expect(month.days, hasLength(31));
       expect(month.days.first.day, DateTime.utc(2026, 8));
       expect(month.slippedDay, isNull);
+      expect(month.successfulWeeks, isNull);
       expect(rolling.days, hasLength(10));
       expect(rolling.days.first.day, day(9));
       expect(rolling.slippedDay?.day, day(10));

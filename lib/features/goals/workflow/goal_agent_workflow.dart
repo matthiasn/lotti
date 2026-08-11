@@ -1076,6 +1076,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
           ? null
           : candidateAssistantText;
       if (assistantText != null) {
+        final persistedAssistantText = replyToUser
+            ? sanitizeAgentReportText(assistantText)
+            : assistantText;
         final payloadId = _uuid.v4();
         await _syncService.upsertEntity(
           AgentDomainEntity.agentMessagePayload(
@@ -1083,7 +1086,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
             agentId: agentId,
             createdAt: now,
             vectorClock: null,
-            content: <String, Object?>{'text': assistantText},
+            content: <String, Object?>{'text': persistedAssistantText},
           ),
         );
         await _syncService.upsertEntity(
@@ -1553,6 +1556,11 @@ bool isExplicitGoalAdReplacementRequest(String? message) {
   final normalized = message.toLowerCase();
   final mentionsAd = RegExp(r'\b(?:banner|ad|advert)\b').hasMatch(normalized);
   if (!mentionsAd) return false;
+  final declinesReplacement = RegExp(
+    r"\b(?:don't|dont|do not|never)\s+"
+    r'(?:want\s+)?(?:another|a\s+new|replace|show|give|make|create)',
+  ).hasMatch(normalized);
+  if (declinesReplacement) return false;
   final isVisibilityRequest = RegExp(
     r'\b(?:snooze|hide|dismiss|remove|stop|pause)\b',
   ).hasMatch(normalized);

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -116,10 +117,18 @@ void main() {
         messageId: 'message-1',
       ),
     ).thenAnswer((_) async => attempts++);
+    var chatReads = 0;
     final container = ProviderContainer(
-      overrides: [goalChatServiceProvider.overrideWithValue(service)],
+      overrides: [
+        goalChatServiceProvider.overrideWithValue(service),
+        agentChatProjectionProvider('goal-1').overrideWith((ref) async {
+          chatReads++;
+          return [];
+        }),
+      ],
     );
     addTearDown(container.dispose);
+    await container.read(agentChatProjectionProvider('goal-1').future);
     final controller = container.read(
       goalChatControllerProvider('goal-1').notifier,
     );
@@ -139,12 +148,14 @@ void main() {
     );
 
     await controller.retry();
+    await container.read(agentChatProjectionProvider('goal-1').future);
     expect(container.read(goalChatControllerProvider('goal-1')).draft, isEmpty);
     expect(
       container.read(goalChatControllerProvider('goal-1')).failedMessage,
       isNull,
     );
     expect(attempts, 2);
+    expect(chatReads, 2);
     verify(
       () => service.retryMessage(
         agentId: 'goal-1',
@@ -199,6 +210,7 @@ void main() {
             service.sendMessage(agentId: 'goal-1', text: 'New banner please.'),
       ).thenAnswer((_) async {});
       var bannerReads = 0;
+      var chatReads = 0;
       final container = ProviderContainer(
         overrides: [
           goalChatServiceProvider.overrideWithValue(service),
@@ -206,19 +218,27 @@ void main() {
             bannerReads++;
             return [];
           }),
+          agentChatProjectionProvider('goal-1').overrideWith((ref) async {
+            chatReads++;
+            return [];
+          }),
         ],
       );
       addTearDown(container.dispose);
       await container.read(activeGoalNudgesProvider.future);
+      await container.read(agentChatProjectionProvider('goal-1').future);
       expect(bannerReads, 1);
+      expect(chatReads, 1);
 
       final controller = container.read(
         goalChatControllerProvider('goal-1').notifier,
       )..updateDraft('New banner please.');
       await controller.send();
       await container.read(activeGoalNudgesProvider.future);
+      await container.read(agentChatProjectionProvider('goal-1').future);
 
       expect(bannerReads, 2);
+      expect(chatReads, 2);
     },
   );
 

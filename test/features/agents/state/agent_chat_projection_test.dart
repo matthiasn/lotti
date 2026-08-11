@@ -172,6 +172,7 @@ void main() {
     expect(projection, hasLength(50));
     expect(projection.first.text, 'Turn 1');
     expect(projection.last.text, 'Turn 50');
+    verifyNever(() => repository.getEntity('payload-0'));
     verifyNever(() => repository.getEntity('hidden-0'));
   });
 }

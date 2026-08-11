@@ -4,6 +4,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/agents/wake/wake_queue.dart';
+import 'package:lotti/features/agents/wake/wake_runner.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -113,6 +115,127 @@ void main() {
       ),
     );
     expect(upserts.whereType<AgentMessageEntity>(), hasLength(1));
+  });
+
+  test(
+    'continues a turn when the message committed before an outbox error',
+    () async {
+      final repository = MockAgentRepository();
+      when(() => syncService.repository).thenReturn(repository);
+      AgentMessageEntity? committedMessage;
+      when(() => syncService.upsertEntity(any())).thenAnswer((
+        invocation,
+      ) async {
+        final entity =
+            invocation.positionalArguments.first as AgentDomainEntity;
+        upserts.add(entity);
+        if (entity is AgentMessageEntity) {
+          committedMessage = entity;
+          throw StateError('outbox flush failed');
+        }
+      });
+      when(() => repository.getEntity(any())).thenAnswer(
+        (_) async => committedMessage,
+      );
+      when(
+        () => orchestrator.enqueueManualWake(
+          agentId: 'goal-1',
+          reason: WakeReason.userMessage.name,
+          triggerTokens: any(named: 'triggerTokens'),
+          supersede: false,
+          initiator: WakeInitiator.user,
+        ),
+      ).thenAnswer((_) {
+        scheduleMicrotask(
+          () => completions.add(
+            const WakeRunCompletion(
+              runKey: 'reconciled-run',
+              status: WakeRunStatus.completed,
+            ),
+          ),
+        );
+        return 'reconciled-run';
+      });
+
+      await service.sendMessage(agentId: 'goal-1', text: 'One durable turn');
+
+      expect(upserts.whereType<AgentMessageEntity>(), hasLength(1));
+      verify(() => repository.getEntity(committedMessage!.id)).called(1);
+      verify(
+        () => orchestrator.enqueueManualWake(
+          agentId: 'goal-1',
+          reason: WakeReason.userMessage.name,
+          triggerTokens: any(named: 'triggerTokens'),
+          supersede: false,
+          initiator: WakeInitiator.user,
+        ),
+      ).called(1);
+    },
+  );
+
+  test(
+    'a cancelled queued wake completes its chat waiter as aborted',
+    () async {
+      final queue = WakeQueue();
+      final runner = WakeRunner();
+      await runner.tryAcquire('goal-1');
+      addTearDown(() => runner.release('goal-1'));
+      final realOrchestrator = WakeOrchestrator(
+        repository: MockAgentRepository(),
+        queue: queue,
+        runner: runner,
+      );
+      addTearDown(realOrchestrator.stop);
+      final waiting = GoalChatService(
+        syncService,
+        realOrchestrator,
+      ).retryMessage(agentId: 'goal-1', messageId: 'message-1');
+      await pumpEventQueue();
+      expect(queue.length, 1);
+
+      final removed = realOrchestrator.cancelPendingWakes(
+        'goal-1',
+        allWorkspaces: true,
+      );
+
+      expect(removed, hasLength(1));
+      await expectLater(
+        waiting,
+        throwsA(
+          isA<GoalChatTurnException>().having(
+            (error) => error.messageId,
+            'messageId',
+            'message-1',
+          ),
+        ),
+      );
+    },
+  );
+
+  test('a superseding manual wake completes its queued chat waiter', () async {
+    final queue = WakeQueue();
+    final runner = WakeRunner();
+    await runner.tryAcquire('goal-1');
+    addTearDown(() => runner.release('goal-1'));
+    final realOrchestrator = WakeOrchestrator(
+      repository: MockAgentRepository(),
+      queue: queue,
+      runner: runner,
+    );
+    addTearDown(realOrchestrator.stop);
+    final waiting = GoalChatService(
+      syncService,
+      realOrchestrator,
+    ).retryMessage(agentId: 'goal-1', messageId: 'message-1');
+    await pumpEventQueue();
+
+    realOrchestrator.enqueueManualWake(
+      agentId: 'goal-1',
+      reason: 'replacement',
+    );
+
+    await expectLater(waiting, throwsA(isA<GoalChatTurnException>()));
+    expect(queue.length, 1, reason: 'only the replacement remains queued');
   });
 
   test('retry reuses the existing durable source message', () async {

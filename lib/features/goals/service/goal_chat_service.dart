@@ -53,21 +53,36 @@ class GoalChatService {
         content: <String, Object?>{'text': trimmed},
       ),
     );
-    await _syncService.upsertEntity(
-      AgentDomainEntity.agentMessage(
-        id: messageId,
-        agentId: agentId,
-        // The wake gets its own deterministic run/thread id. This source turn
-        // is globally projected by agent and linked to the wake through its
-        // trigger token, so it is durable before inference can begin.
-        threadId: messageId,
-        kind: AgentMessageKind.user,
-        createdAt: now,
-        vectorClock: null,
-        contentEntryId: payloadId,
-        metadata: const AgentMessageMetadata(),
-      ),
-    );
+    final message =
+        AgentDomainEntity.agentMessage(
+              id: messageId,
+              agentId: agentId,
+              // The wake gets its own deterministic run/thread id. This source turn
+              // is globally projected by agent and linked to the wake through its
+              // trigger token, so it is durable before inference can begin.
+              threadId: messageId,
+              kind: AgentMessageKind.user,
+              createdAt: now,
+              vectorClock: null,
+              contentEntryId: payloadId,
+              metadata: const AgentMessageMetadata(),
+            )
+            as AgentMessageEntity;
+    try {
+      await _syncService.upsertEntity(message);
+    } on Object {
+      // A message append can commit its database transaction and then fail
+      // while flushing the sync outbox. Reconcile the deterministic id before
+      // deciding whether this turn needs to be surfaced as a failed append;
+      // otherwise Send would create a duplicate durable user turn.
+      final persisted = await _syncService.repository.getEntity(messageId);
+      if (persisted is! AgentMessageEntity ||
+          persisted.agentId != agentId ||
+          persisted.kind != AgentMessageKind.user ||
+          persisted.contentEntryId != payloadId) {
+        rethrow;
+      }
+    }
 
     await retryMessage(agentId: agentId, messageId: messageId);
   }

@@ -37,7 +37,8 @@ escalation workflow, its code-owned contract, the tool dispatcher, and the
 revision flow that turns an approved `propose_goal_revision` change set
 into a new spec version. User-authored chat turns take the same fact-grounded
 workflow through a throttle-bypassing manual wake: `GoalChatService` persists
-the source turn before enqueueing, and the workflow persists the answer as a
+the source turn before enqueueing, reconciles a committed message when a later
+sync-outbox flush reports failure, and the workflow persists a sanitized answer as a
 `reply_to_user` action that the shared bounded chat projection can display
 without exposing thoughts or tool bookkeeping. The visible layer shipped behind the
 `enable_agents_page` flag: procedural text banners (ADR 0058) on the day
@@ -56,9 +57,11 @@ configured aggregation rather than treating every daily contribution as a
 standalone target, and composite details retain every metric leaf that
 contributes to health. Goal chat stays purpose-bound: unrelated
 general-assistant requests are redirected to the goal rather than answered.
-Health and direction are separate signals, the standing report stays visible
+Weekly reliability is shown only for authored rolling-seven-day habits rather
+than reinterpreting day, rolling-N, or calendar periods. Health and direction are separate signals, the standing report stays visible
 beside active banners, and lifetime AI consumption plus compute time use the
-same governance pills as Task Details. Chat can also snooze the current banner
+same governance pills as Task Details; compute time is withheld when legacy
+calls carry no recorded duration. Chat can also snooze the current banner
 until any requested future time, when that exact banner returns automatically;
 the just-committed snooze is suppressed locally while its durable projection
 reloads.

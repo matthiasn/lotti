@@ -51,6 +51,11 @@ class GoalFactsRenderer {
 
     return _factsBlock({
       'generatedAt': now.toUtc().toIso8601String(),
+      'localTime': {
+        'iso8601': now.toIso8601String(),
+        'utcOffsetMinutes': now.timeZoneOffset.inMinutes,
+        'timeZoneName': now.timeZoneName,
+      },
       'goal': {
         'id': version.agentId,
         'statement': version.statement,
