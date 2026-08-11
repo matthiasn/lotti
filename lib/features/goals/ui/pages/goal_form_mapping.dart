@@ -129,13 +129,7 @@ class GoalFormMapping {
 
   static String _availableCompositeCriterionId(List<GoalCriterion> leaves) {
     final usedIds = {for (final leaf in leaves) leaf.criterionId};
-    if (!usedIds.contains('routine')) return 'routine';
-    if (!usedIds.contains('routine-group')) return 'routine-group';
-    var suffix = 2;
-    while (usedIds.contains('routine-group-$suffix')) {
-      suffix++;
-    }
-    return 'routine-group-$suffix';
+    return usedIds.contains('routine') ? 'routine-group' : 'routine';
   }
 
   /// Builds the exact criterion tree represented by the visible controls.

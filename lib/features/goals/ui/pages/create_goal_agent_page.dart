@@ -55,7 +55,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   var _saving = false;
   String? _derivedFrom;
   String? _derivedTitle;
-  String? _baseVersionId;
+  late String _baseVersionId;
   String? _validation;
 
   bool get _editing => widget.agentId != null;
@@ -253,13 +253,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       }
 
       final revisionService = container.read(goalSpecRevisionServiceProvider);
-      final baseVersionId = _baseVersionId;
-      if (baseVersionId == null) {
-        throw StateError('missing the loaded goal version');
-      }
       final outcome = await revisionService.reviseFromOwner(
         agentId: agentId,
-        baseVersionId: baseVersionId,
+        baseVersionId: _baseVersionId,
         displayName: persona,
         title: title,
         statement: statement,

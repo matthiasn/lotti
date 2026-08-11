@@ -199,6 +199,12 @@ void main() {
           window: GoalWindow.rollingDays(count: 7),
           targetCount: 2,
         ),
+        GoalCriterion.habit(
+          criterionId: 'habit-run-2',
+          habitId: 'swim',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 4,
+        ),
       ],
     );
 
@@ -206,13 +212,13 @@ void main() {
     final rebuilt =
         draft.buildCriteria(
               stepsTitle: 'Average steps per day',
-              habitTargets: const {'gym': 2, 'run': 3},
+              habitTargets: const {'gym': 2, 'swim': 4, 'run': 3},
             )!
             as GoalCriterionAllOf;
 
     expect(
       rebuilt.criteria.map((criterion) => criterion.criterionId),
-      ['habit-run', 'habit-run-2'],
+      ['habit-run', 'habit-run-2', 'habit-run-3'],
     );
     expect(
       {
@@ -220,6 +226,32 @@ void main() {
         ...rebuilt.criteria.map((criterion) => criterion.criterionId),
       },
       hasLength(rebuilt.criteria.length + 1),
+    );
+  });
+
+  test('a newly added steps leaf avoids ids reserved by habits', () {
+    const criteria = GoalCriterion.habit(
+      criterionId: 'steps',
+      habitId: 'gym',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 2,
+    );
+
+    final rebuilt =
+        GoalFormMapping.fromCriteria(criteria).buildCriteria(
+              stepsTitle: 'Average steps per day',
+              habitTargets: const {'gym': 2},
+              watchesSteps: true,
+            )!
+            as GoalCriterionAllOf;
+
+    expect(
+      rebuilt.criteria.map((criterion) => criterion.criterionId),
+      ['steps-2', 'steps'],
+    );
+    expect(
+      (rebuilt.criteria.first as GoalCriterionMetric).title,
+      'Average steps per day',
     );
   });
 
