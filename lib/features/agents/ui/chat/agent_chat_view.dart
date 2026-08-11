@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -123,6 +124,9 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                             bottom: tokens.spacing.cardItemSpacing,
                           ),
                           child: _MessageBubble(
+                            key: ValueKey(
+                              'goal-chat-message-${history[index].id}',
+                            ),
                             message: history[index],
                             agentName: widget.agentName,
                           ),
@@ -190,20 +194,53 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   }
 }
 
-class _MessageBubble extends StatelessWidget {
-  const _MessageBubble({required this.message, required this.agentName});
+class _MessageBubble extends StatefulWidget {
+  const _MessageBubble({
+    required this.message,
+    required this.agentName,
+    super.key,
+  });
 
   final AgentChatMessage message;
   final String agentName;
 
   @override
+  State<_MessageBubble> createState() => _MessageBubbleState();
+}
+
+class _MessageBubbleState extends State<_MessageBubble> {
+  static const _collapsedMaxLines = 8;
+  static const _longReplyCharacterThreshold = 360;
+  static const _longReplyLineThreshold = 8;
+
+  bool _expanded = false;
+
+  @override
+  void didUpdateWidget(covariant _MessageBubble oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.message.id != widget.message.id) {
+      _expanded = false;
+    }
+  }
+
+  bool get _canCollapse {
+    final message = widget.message;
+    if (message.role != AgentChatRole.agent) return false;
+    final lineBreaks = '\n'.allMatches(message.text).length;
+    return message.text.length > _longReplyCharacterThreshold ||
+        lineBreaks >= _longReplyLineThreshold;
+  }
+
+  @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final message = widget.message;
     final isUser = message.role == AgentChatRole.user;
-    final author = isUser ? context.messages.goalChatYou : agentName;
+    final author = isUser ? context.messages.goalChatYou : widget.agentName;
     final time = DateFormat.jm(
       Localizations.localeOf(context).toString(),
     ).format(message.createdAt);
+    final canCollapse = _canCollapse;
     return Semantics(
       container: true,
       label: context.messages.goalChatMessageSemantics(
@@ -232,12 +269,41 @@ class _MessageBubble extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    message.text,
-                    style: tokens.typography.styles.body.bodyMedium.copyWith(
-                      color: tokens.colors.text.highEmphasis,
+                  if (isUser)
+                    Text(
+                      message.text,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    )
+                  else
+                    AgentMarkdownView(
+                      message.text,
+                      maxLines: canCollapse && !_expanded
+                          ? _collapsedMaxLines
+                          : null,
+                      overflow: canCollapse && !_expanded
+                          ? TextOverflow.ellipsis
+                          : null,
+                      style: tokens.typography.styles.body.bodyMedium.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
                     ),
-                  ),
+                  if (canCollapse) ...[
+                    SizedBox(height: tokens.spacing.step1),
+                    DesignSystemButton(
+                      label: _expanded
+                          ? context.messages.aiResponseShowLess
+                          : context.messages.aiResponseShowMore,
+                      onPressed: () => setState(() => _expanded = !_expanded),
+                      variant: DesignSystemButtonVariant.tertiary,
+                      size: DesignSystemButtonSize.dense,
+                      trailingIcon: _expanded
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      alignsLabelToLeadingEdge: true,
+                    ),
+                  ],
                   SizedBox(height: tokens.spacing.step1),
                   Text(
                     '$author · $time',

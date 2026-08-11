@@ -1,3 +1,5 @@
+import 'dart:math';
+
 import 'package:flutter/gestures.dart' show PointerDeviceKind;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -6,6 +8,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
 import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -33,9 +36,11 @@ void main() {
     required String id,
     required String headline,
     String goalTitle = 'Move more',
+    String? tagline,
     String? cta,
     int activationCount = 1,
     GoalNudgeTone tone = GoalNudgeTone.nudge,
+    GoalBannerAnimation animation = GoalBannerAnimation.steady,
   }) => (
     nudge:
         AgentDomainEntity.goalNudge(
@@ -44,9 +49,10 @@ void main() {
               status: GoalNudgeStatus.active,
               brief: GoalNudgeBrief(
                 headline: headline,
+                tagline: tagline,
                 cta: cta,
                 tone: tone,
-                animation: GoalBannerAnimation.steady,
+                animation: animation,
               ),
               briefDigest: id,
               activationCount: activationCount,
@@ -136,6 +142,78 @@ void main() {
             w.constraints?.maxWidth == 4.0,
       ),
       findsNothing,
+    );
+  });
+
+  testWidgets('the task-page dock honors the banner animation preset', (
+    tester,
+  ) async {
+    await pumpDock(tester, [
+      entry(
+        id: 'pulse',
+        headline: 'Animated standing voice',
+        animation: GoalBannerAnimation.pulse,
+      ),
+    ]);
+
+    expect(find.byType(GoalBannerAnimatedText), findsOneWidget);
+    final samples = <double>[];
+    for (var i = 0; i < 4; i++) {
+      samples.add(tester.widget<Opacity>(find.byType(Opacity)).opacity);
+      await tester.pump(const Duration(milliseconds: 750));
+    }
+
+    expect(samples.reduce(max) - samples.reduce(min), greaterThan(0.2));
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('desktop shows full copy while compact preserves its line cap', (
+    tester,
+  ) async {
+    final animated = entry(
+      id: 'pulse',
+      headline: 'Animated standing voice',
+      animation: GoalBannerAnimation.pulse,
+    );
+
+    await pumpDock(tester, [animated]);
+    expect(
+      tester
+          .widget<GoalBannerAnimatedText>(
+            find.byType(GoalBannerAnimatedText),
+          )
+          .maxLines,
+      isNull,
+    );
+
+    await pumpDock(tester, [animated], compact: true);
+    expect(
+      tester
+          .widget<GoalBannerAnimatedText>(
+            find.byType(GoalBannerAnimatedText),
+          )
+          .maxLines,
+      2,
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+  });
+
+  testWidgets('the dock spans its host and renders the authored tagline '
+      'instead of substituting the goal name', (tester) async {
+    await pumpDock(tester, [
+      entry(
+        id: 'tagline',
+        headline: 'Your shoes are getting suspicious.',
+        tagline: 'One walk puts the rumors to bed.',
+        goalTitle: 'Walk',
+      ),
+    ]);
+
+    expect(find.text('One walk puts the rumors to bed.'), findsOneWidget);
+    expect(find.text('Walk'), findsNothing);
+    expect(
+      tester.getSize(find.byType(GoalBannerDock)).width,
+      tester.getSize(find.byType(Scaffold)).width,
     );
   });
 

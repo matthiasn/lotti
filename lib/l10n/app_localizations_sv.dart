@@ -5978,6 +5978,16 @@ class AppLocalizationsSv extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Skapa bild från röstbeskrivning';
 
   @override
+  String goalAgentLifetimeTimePill(String duration) {
+    return '$duration AI-tid';
+  }
+
+  @override
+  String goalAgentLifetimeTimeTooltip(String calls) {
+    return 'Agentens totala beräkningstid för $calls modellanrop.';
+  }
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent % av målet';
   }

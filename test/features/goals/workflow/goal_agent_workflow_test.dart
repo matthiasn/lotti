@@ -282,12 +282,15 @@ void main() {
     );
   });
 
-  Future<WakeResult> run({AgentIdentityEntity? identityOverride}) => withClock(
+  Future<WakeResult> run({
+    AgentIdentityEntity? identityOverride,
+    Set<String> triggerTokens = const {'goal-escalation:2026-08-09'},
+  }) => withClock(
     fixedClock,
     () => workflow.execute(
       agentIdentity: identityOverride ?? identity,
       runKey: 'run-1',
-      triggerTokens: const {'goal-escalation:2026-08-09'},
+      triggerTokens: triggerTokens,
       threadId: 'thread-1',
     ),
   );
@@ -409,8 +412,8 @@ void main() {
     expect(usage.inputTokens, 900);
   });
 
-  test('a durable user-message wake persists its visible reply and a new '
-      'banner after the daily transition banner retired', () async {
+  test('an explicit new-banner message overrides dismissal cooldown even '
+      'when the primary model turn refuses to create one', () async {
     stubSpec();
     stubGlmResolution();
     workflow = _offTrackWorkflow(
@@ -426,23 +429,23 @@ void main() {
       tone: GoalNudgeTone.nudge,
       animation: GoalBannerAnimation.steady,
     );
-    final retiredTransitionBanner = AgentDomainEntity.goalNudge(
+    final dismissedTransitionBanner = AgentDomainEntity.goalNudge(
       id: 'goal_nudge:$agentId:2026-08-09:atRisk:$agentId:spec-v1',
       agentId: agentId,
-      status: GoalNudgeStatus.retired,
+      status: GoalNudgeStatus.dismissed,
       brief: retiredBrief,
       briefDigest: goalBriefDigest(retiredBrief),
       createdAt: now.subtract(const Duration(hours: 2)),
       updatedAt: now.subtract(const Duration(hours: 1)),
       vectorClock: null,
-      retiredAt: now.subtract(const Duration(hours: 1)),
+      dismissedAt: now.subtract(const Duration(hours: 1)),
     );
     when(
       () => repository.getEntitiesByAgentId(
         agentId,
         type: AgentEntityTypes.goalNudge,
       ),
-    ).thenAnswer((_) async => [retiredTransitionBanner]);
+    ).thenAnswer((_) async => [dismissedTransitionBanner]);
     final source = AgentDomainEntity.agentMessage(
       id: 'message-1',
       agentId: agentId,
@@ -462,9 +465,11 @@ void main() {
         agentId: agentId,
         createdAt: now,
         vectorClock: null,
-        content: const {'text': 'How am I doing?'},
+        content: const {'text': 'Please show me another banner ad.'},
       ),
     );
+    conversationRepository.maxDelegateCalls = 3;
+    var calls = 0;
     conversationRepository.sendMessageDelegate =
         ({
           required conversationId,
@@ -477,26 +482,55 @@ void main() {
           temperature = 0.7,
           strategy,
         }) async {
-          expect(message, contains('PENDING USER MESSAGE:\nHow am I doing?'));
-          await (strategy! as GoalAgentStrategy).processToolCalls(
-            toolCalls: [
-              toolCall(GoalAgentToolNames.replyToUser, {
-                'message': 'Your sharper banner is live now.',
-              }),
-              toolCall(
-                GoalAgentToolNames.createGoalAd,
-                {
-                  'headline': 'Your trainers filed a missing-person report.',
-                  'tagline': 'One strong walk gets you moving again.',
-                  'cta': 'Show up today',
-                  'tone': 'roast',
-                  'animation': 'pulse',
-                },
-                id: 'call-2',
+          calls += 1;
+          final goalStrategy = strategy! as GoalAgentStrategy;
+          if (calls == 1) {
+            expect(
+              message,
+              contains(
+                'PENDING USER MESSAGE:\nPlease show me another banner ad.',
               ),
-            ],
-            manager: conversationManager,
-          );
+            );
+            expect(message, contains('overrides dismissal cooldown'));
+            // The primary turn answers and reports, but refuses/forgets the
+            // requested ad. Deterministic policy must force the tool next.
+            await goalStrategy.processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.replyToUser, {
+                  'message': 'Cooldown says no banner right now.',
+                }),
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'offTrack',
+                  'oneLiner': 'The week is below target.',
+                  'tldr': 'One more walk would help.',
+                }, id: 'call-report'),
+              ],
+              manager: conversationManager,
+            );
+          } else {
+            expect(message, contains('Dismissal cooldown does not block'));
+            expect(
+              [for (final tool in tools!) tool.function.name],
+              [GoalAgentToolNames.createGoalAd],
+            );
+            expect(toolChoice, isNotNull);
+            await goalStrategy.processToolCalls(
+              toolCalls: [
+                toolCall(
+                  GoalAgentToolNames.createGoalAd,
+                  {
+                    'headline': 'Your trainers filed a missing-person report.',
+                    'tagline': 'One strong walk gets you moving again.',
+                    'cta': 'Show up today',
+                    'tone': 'roast',
+                    'animation': 'pulse',
+                  },
+                  id: 'call-2',
+                ),
+              ],
+              manager: conversationManager,
+            );
+          }
           return null;
         };
 
@@ -512,6 +546,7 @@ void main() {
     );
 
     expect(result.success, isTrue);
+    expect(calls, 2, reason: 'primary turn plus one forced create-tool turn');
     expect(
       upserts.whereType<AgentMessageEntity>().where(
         (message) => message.kind == AgentMessageKind.user,
@@ -519,16 +554,17 @@ void main() {
       isEmpty,
       reason: 'the source user turn was already durable before the wake',
     );
-    final reply = upserts.whereType<AgentMessageEntity>().singleWhere(
-      (message) =>
-          message.metadata.toolName == AgentConversationToolNames.replyToUser &&
-          message.contentEntryId != null,
+    expect(
+      upserts.whereType<AgentMessagePayloadEntity>().where(
+        (payload) => payload.content.values.any(
+          (value) => value is String && value.contains('Cooldown says no'),
+        ),
+      ),
+      isEmpty,
+      reason:
+          'a stale cooldown refusal must not become a visible chat bubble; '
+          'the content-free action/tool trace may remain in internals',
     );
-    expect(reply.kind, AgentMessageKind.action);
-    final payload = upserts.whereType<AgentMessagePayloadEntity>().singleWhere(
-      (payload) => payload.id == reply.contentEntryId,
-    );
-    expect(payload.content['text'], 'Your sharper banner is live now.');
     final replacement = upserts.whereType<GoalNudgeEntity>().single;
     expect(replacement.status, GoalNudgeStatus.active);
     expect(
@@ -588,6 +624,75 @@ void main() {
     expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
   });
 
+  test('an explicit detail-page refresh forces a standing report even when '
+      'the recomputed status did not change', () async {
+    stubSpec();
+    stubGlmResolution();
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-09')),
+    ).thenAnswer(
+      (_) async => AgentDomainEntity.goalProgress(
+        id: goalProgressId(agentId, '2026-08-09'),
+        agentId: agentId,
+        periodKey: '2026-08-09',
+        trackStatus: GoalTrackStatus.insufficientData,
+        attainment: 0,
+        dataCoverage: 0,
+        satisfied: false,
+        specVersionId: '$agentId:spec-v1',
+        createdAt: now,
+        updatedAt: now,
+        vectorClock: null,
+      ),
+    );
+    conversationRepository.maxDelegateCalls = 2;
+    var calls = 0;
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          calls += 1;
+          if (calls == 1) {
+            expect(message, contains('USER REQUESTED REPORT REFRESH'));
+          } else {
+            expect(message, contains('editing a habit day'));
+            expect(
+              [for (final tool in tools!) tool.function.name],
+              [GoalAgentToolNames.updateGoalReport],
+            );
+            expect(toolChoice, isNotNull);
+            await (strategy! as GoalAgentStrategy).processToolCalls(
+              toolCalls: [
+                toolCall(GoalAgentToolNames.updateGoalReport, {
+                  'status': 'insufficientData',
+                  'oneLiner': 'The edited day is accounted for.',
+                  'tldr': 'The standing report now reflects the correction.',
+                }),
+              ],
+              manager: conversationManager,
+            );
+          }
+          return null;
+        };
+
+    final result = await run(
+      triggerTokens: const {goalReportRefreshTriggerToken},
+    );
+
+    expect(result.success, isTrue);
+    expect(calls, 2, reason: 'primary turn plus one forced report tool turn');
+    final report = upserts.whereType<AgentReportEntity>().single;
+    expect(report.oneLiner, 'The edited day is accounted for.');
+  });
+
   test('persistOutputs: retire is dismissal-terminal-safe, rerun requires a '
       'retired ad and increments the activation count, and a revision '
       'proposal lands as a pending ChangeSet', () async {
@@ -613,7 +718,13 @@ void main() {
       agentId: agentId,
       threadId: 'thread-1',
       runKey: 'run-1',
-      knownAdIds: {'ad-dismissed', 'ad-retired', 'ad-active', 'ad-gone'},
+      knownAdIds: {
+        'ad-dismissed',
+        'ad-retired',
+        'ad-active',
+        'ad-snooze',
+        'ad-gone',
+      },
     );
     when(
       () => repository.getEntitiesByAgentId(
@@ -625,6 +736,7 @@ void main() {
         nudgeRow('ad-dismissed', GoalNudgeStatus.dismissed),
         nudgeRow('ad-retired', GoalNudgeStatus.retired),
         nudgeRow('ad-active', GoalNudgeStatus.active),
+        nudgeRow('ad-snooze', GoalNudgeStatus.active),
       ],
     );
     // The retire loops re-read each row inside the transaction.
@@ -660,6 +772,11 @@ void main() {
           'adId': 'ad-active',
           'reason': 'quota completed',
         }, id: 'c6'),
+        toolCall(GoalAgentToolNames.snoozeGoalAd, {
+          'adId': 'ad-snooze',
+          'until': '2099-08-12T08:30:00Z',
+          'reason': 'user asked for later',
+        }, id: 'c7'),
       ],
       manager: conversationManager,
     );
@@ -687,7 +804,7 @@ void main() {
     // The dismissed ad was NOT retired (terminal), the missing ad was
     // skipped, the active ad was NOT re-run but WAS retired; the retired
     // ad was re-run.
-    expect(written, hasLength(2));
+    expect(written, hasLength(3));
     final retired = written.singleWhere((n) => n.id == 'ad-active');
     expect(retired.status, GoalNudgeStatus.retired);
     expect(retired.provenance['retireReason'], 'quota completed');
@@ -695,6 +812,13 @@ void main() {
     expect(rerun.status, GoalNudgeStatus.active);
     expect(rerun.activationCount, 2);
     expect(rerun.provenance['rerunReason'], 'proven copy');
+    final snoozed = written.singleWhere((n) => n.id == 'ad-snooze');
+    expect(snoozed.status, GoalNudgeStatus.active);
+    expect(
+      snoozed.provenance['snoozedUntil'],
+      '2099-08-12T08:30:00.000Z',
+    );
+    expect(snoozed.provenance['snoozeReason'], 'user asked for later');
 
     final changeSet = upserts.whereType<ChangeSetEntity>().single;
     expect(changeSet.status, ChangeSetStatus.pending);
@@ -1737,6 +1861,149 @@ void main() {
       },
     );
     expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+  });
+
+  test('persistOutputs: an explicit chat ad request overrides dismissal '
+      'cooldown and replaces a rated active banner', () async {
+    stubSpec();
+    _stubBadPrior(repository, agentId, now);
+    final version =
+        await repository.getEntity('$agentId:spec-v1')
+            as GoalSpecVersionEntity?;
+    final derivation = await _offTrackDerivation(repository, version!, now);
+
+    Future<GoalAgentStrategy> creating(String headline) async {
+      final strategy = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: agentId,
+        threadId: 'thread-chat',
+        runKey: 'run-chat',
+        knownAdIds: const {},
+      );
+      await strategy.processToolCalls(
+        toolCalls: [
+          toolCall(GoalAgentToolNames.createGoalAd, {
+            'headline': headline,
+            'tone': 'nudge',
+            'animation': 'pulse',
+          }),
+        ],
+        manager: conversationManager,
+      );
+      return strategy;
+    }
+
+    final dismissed =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-dismissed',
+              agentId: agentId,
+              status: GoalNudgeStatus.dismissed,
+              brief: const GoalNudgeBrief(
+                headline: 'Quiet now.',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'dismissed-digest',
+              createdAt: now.subtract(const Duration(hours: 3)),
+              updatedAt: now.subtract(const Duration(hours: 1)),
+              vectorClock: null,
+              dismissedAt: now.subtract(const Duration(hours: 1)),
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [dismissed]);
+
+    final postDismissalStrategy = await creating(
+      'The requested post-dismissal banner.',
+    );
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-chat-1',
+        threadId: 'thread-chat-1',
+        strategy: postDismissalStrategy,
+        derivation: derivation,
+        now: now,
+        replyToUser: true,
+        userRequestedAd: true,
+        adCreationDiscriminator: 'chat:message-1',
+      ),
+    );
+    final afterDismissal = upserts.whereType<GoalNudgeEntity>().single;
+    expect(afterDismissal.status, GoalNudgeStatus.active);
+    expect(
+      afterDismissal.brief.headline,
+      'The requested post-dismissal banner.',
+    );
+    upserts.clear();
+
+    final ratedActive =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-rated-active',
+              agentId: agentId,
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'Already rated.',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'rated-digest',
+              createdAt: now.subtract(const Duration(hours: 3)),
+              updatedAt: now.subtract(const Duration(hours: 1)),
+              vectorClock: null,
+              activatedAt: now.subtract(const Duration(hours: 3)),
+              ratings: [
+                GoalNudgeRating(
+                  activation: 1,
+                  ratedAt: now.subtract(const Duration(hours: 1)),
+                  rating: 4,
+                ),
+              ],
+            )
+            as GoalNudgeEntity;
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [ratedActive]);
+
+    final postRatingStrategy = await creating('The replacement after rating.');
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-chat-2',
+        threadId: 'thread-chat-2',
+        strategy: postRatingStrategy,
+        derivation: derivation,
+        now: now,
+        replyToUser: true,
+        userRequestedAd: true,
+        adCreationDiscriminator: 'chat:message-2',
+      ),
+    );
+
+    final afterRating = upserts.whereType<GoalNudgeEntity>().toList();
+    expect(afterRating, hasLength(2));
+    final retired = afterRating.singleWhere(
+      (nudge) => nudge.id == 'ad-rated-active',
+    );
+    expect(retired.status, GoalNudgeStatus.retired);
+    expect(
+      retired.provenance['retireReason'],
+      'replaced by explicit chat request',
+    );
+    final replacement = afterRating.singleWhere(
+      (nudge) => nudge.id != 'ad-rated-active',
+    );
+    expect(replacement.status, GoalNudgeStatus.active);
+    expect(replacement.brief.headline, 'The replacement after rating.');
   });
 
   test('persistOutputs: a fresh active row scopes to its own spec version — '
@@ -2887,6 +3154,7 @@ void main() {
         derivation: steadyAtRisk,
         now: now,
         replyToUser: true,
+        userRequestedAd: true,
         adCreationDiscriminator: 'chat:message-1',
       ),
     );

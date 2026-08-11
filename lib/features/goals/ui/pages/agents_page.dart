@@ -264,7 +264,7 @@ class _GoalAgentRow extends ConsumerWidget {
                 Icon(
                   goalHealthDirectionIcon(direction),
                   size: tokens.spacing.step5,
-                  color: color,
+                  color: goalHealthDirectionColor(direction, tokens.colors),
                   // The arrow is the only trend signal in the row; without a
                   // label a screen reader announces nothing for it.
                   semanticLabel: goalHealthDirectionLabel(

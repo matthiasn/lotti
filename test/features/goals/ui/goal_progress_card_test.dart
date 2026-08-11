@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 
@@ -134,5 +135,101 @@ void main() {
 
     expect(find.text('at rate'), findsOneWidget);
     expect(find.byType(SingleChildScrollView), findsOneWidget);
+  });
+
+  testWidgets('tapping a previous habit day records the chosen outcome for '
+      'that exact date', (tester) async {
+    ({DateTime day, String habitId, HabitCompletionType outcome})? selected;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 3,
+                days: [
+                  day(7, 0),
+                  day(6, 0),
+                  day(5, 0),
+                  day(4, 0),
+                  day(3, 0),
+                  day(2, 0),
+                  day(1, 0),
+                  day(0, 0),
+                ],
+                successfulWeeks: 2,
+              ),
+            ],
+          ),
+          onHabitOutcomeSelected:
+              ({
+                required day,
+                required habitId,
+                required outcome,
+              }) async {
+                selected = (day: day, habitId: habitId, outcome: outcome);
+                return true;
+              },
+        ),
+      ),
+    );
+
+    await tester.tap(
+      find.byKey(const ValueKey('goal-habit-day-walk-2026-08-08')),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('Success'), findsOneWidget);
+    expect(find.text('Missed'), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('goal-habit-day-missed')));
+    await tester.pump();
+
+    expect(selected?.habitId, 'walk');
+    expect(selected?.day, DateTime.utc(2026, 8, 8));
+    expect(selected?.outcome, HabitCompletionType.fail);
+  });
+
+  testWidgets('a recorded miss is visibly distinct from an empty day', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 3,
+                days: [
+                  day(7, 0),
+                  day(6, 0),
+                  day(5, 0),
+                  day(4, 0),
+                  day(3, 0),
+                  day(2, 0),
+                  GoalProgressDay(
+                    day: today.subtract(const Duration(days: 1)),
+                    value: 0,
+                    habitCompletionType: HabitCompletionType.fail,
+                  ),
+                  day(0, 0),
+                ],
+                successfulWeeks: 2,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.byKey(const ValueKey('goal-day-missed-walk-2026-08-10')),
+      findsOneWidget,
+    );
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
   });
 }

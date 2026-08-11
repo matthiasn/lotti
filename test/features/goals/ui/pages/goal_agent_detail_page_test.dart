@@ -12,8 +12,10 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -84,7 +86,7 @@ void main() {
               reportOneLiner: null,
               pendingProposals: 0,
               spec: spec,
-              direction: null,
+              direction: GoalHealthDirection.up,
               deficit: null,
               buffer: null,
             ),
@@ -122,6 +124,8 @@ void main() {
     // Runtime atRisk collapses to the handover's coarse Behind vocabulary,
     // and the detail surface never displays a percentage.
     expect(find.text('Behind'), findsOneWidget);
+    expect(find.text('Trending up'), findsOneWidget);
+    expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
     expect(find.text('At risk'), findsNothing);
     expect(find.textContaining('% of target'), findsNothing);
     expect(find.text('This rolling week'), findsOneWidget);
@@ -140,8 +144,16 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Interactions'), findsNothing);
+    final refreshButton = tester.widget<DesignSystemButton>(
+      find.widgetWithText(DesignSystemButton, 'Update now'),
+    );
+    expect(refreshButton.leadingIcon, Icons.refresh_rounded);
+    expect(refreshButton.isLoading, isFalse);
+    expect(refreshButton.onPressed, isNotNull);
 
     await tester.ensureVisible(find.text('Talk to Move more'));
+    await tester.drag(find.byType(ListView).first, const Offset(0, -100));
+    await tester.pumpAndSettle();
     await tester.tap(find.text('Talk to Move more'));
     await tester.pump();
     expect(navigated, ['/agents/details/goal-1/chat']);
@@ -228,8 +240,8 @@ void main() {
     expect(find.textContaining('No report yet'), findsNothing);
   });
 
-  testWidgets("the goal's active banners render here uncapped — only its "
-      'own', (tester) async {
+  testWidgets("the standing report stays surfaced while the goal's active "
+      'banners render uncapped — only its own', (tester) async {
     GoalBannerEntry entry(String agentId, String headline) => (
       nudge:
           AgentDomainEntity.goalNudge(
@@ -249,6 +261,39 @@ void main() {
               as GoalNudgeEntity,
       goalTitle: agentId,
     );
+    final report =
+        AgentDomainEntity.agentReport(
+              id: 'report-goal-1',
+              agentId: 'goal-1',
+              scope: AgentReportScopes.current,
+              createdAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+              oneLiner: 'Three walks remain before Sunday.',
+              tldr: '**Three walks** remain before Sunday.',
+              content:
+                  '## Full report\n\nThe current routine needs three walks.',
+              provenance: const {'specVersionId': 'goal-1:spec-v1'},
+            )
+            as AgentReportEntity;
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const GoalAgentDetailPage(agentId: 'goal-1'),
@@ -260,9 +305,9 @@ void main() {
             (ref) async => (
               trackStatus: GoalTrackStatus.offTrack,
               attainment: 0.4,
-              reportOneLiner: null,
+              reportOneLiner: 'Three walks remain before Sunday.',
               pendingProposals: 0,
-              spec: null,
+              spec: spec,
               direction: null,
               deficit: null,
               buffer: null,
@@ -283,7 +328,9 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+          agentReportHistoryProvider(
+            'goal-1',
+          ).overrideWith((ref) async => [report]),
         ],
       ),
     );
@@ -293,6 +340,12 @@ void main() {
     // the shared exposure tracker: detail views count too.
     expect(find.byType(GoalBannerCard), findsNWidgets(3));
     expect(find.byType(GoalBannerExposureTracker), findsNWidgets(3));
+    expect(find.textContaining('Three walks'), findsOneWidget);
+    expect(find.text('Show more'), findsOneWidget);
+    expect(find.textContaining('The current routine needs'), findsNothing);
+    await tester.tap(find.text('Show more'));
+    await tester.pump();
+    expect(find.textContaining('The current routine needs'), findsOneWidget);
     expect(find.text('The stairs filed a complaint.'), findsOneWidget);
     expect(find.text('Sleep is a skill too.'), findsNothing);
   });
@@ -717,6 +770,54 @@ void main() {
 
     verify(() => service.deleteGoalAgent('goal-1')).called(1);
     expect(navigated, ['/agents']);
+  });
+
+  testWidgets('the overflow menu opens the shared agent internals panel', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          agentStateProvider('goal-1').overrideWith((ref) async => null),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportHistoryProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.pumpAndSettle();
+    expect(find.text('Open agent internals'), findsOneWidget);
+
+    await tester.tap(find.text('Open agent internals'));
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AgentInternalsPanel), findsOneWidget);
+    expect(find.text('Agent internals'), findsOneWidget);
   });
 
   testWidgets('a stale link or non-goal agent renders the not-found state '

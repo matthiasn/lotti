@@ -6037,6 +6037,16 @@ class AppLocalizationsCs extends AppLocalizations {
   String get generateCoverArtSubtitle => 'Vytvořit obrázek z hlasového popisu';
 
   @override
+  String goalAgentLifetimeTimePill(String duration) {
+    return '$duration času AI';
+  }
+
+  @override
+  String goalAgentLifetimeTimeTooltip(String calls) {
+    return 'Celoživotní výpočetní čas agenta pro $calls volání modelu.';
+  }
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent % cíle';
   }

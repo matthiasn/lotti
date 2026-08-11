@@ -6070,6 +6070,16 @@ class AppLocalizationsRo extends AppLocalizations {
       'Creează imagine din descrierea vocală';
 
   @override
+  String goalAgentLifetimeTimePill(String duration) {
+    return '$duration timp AI';
+  }
+
+  @override
+  String goalAgentLifetimeTimeTooltip(String calls) {
+    return 'Timp total de calcul al agentului pentru $calls apeluri de model.';
+  }
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent% din obiectiv';
   }

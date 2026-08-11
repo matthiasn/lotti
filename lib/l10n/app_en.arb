@@ -3227,6 +3227,24 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generate Cover Art",
   "generateCoverArtSubtitle": "Create image from voice description",
+  "goalAgentLifetimeTimePill": "{duration} AI time",
+  "@goalAgentLifetimeTimePill": {
+    "description": "Top-level pill containing a goal agent's lifetime model compute duration.",
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "goalAgentLifetimeTimeTooltip": "Lifetime agent compute time across {calls} model calls.",
+  "@goalAgentLifetimeTimeTooltip": {
+    "description": "Tooltip for a goal agent's lifetime model compute duration.",
+    "placeholders": {
+      "calls": {
+        "type": "String"
+      }
+    }
+  },
   "goalAttainmentLabel": "{percent}% of target",
   "@goalAttainmentLabel": {
     "description": "Attainment summary on an agent card; percent is 0-100.",

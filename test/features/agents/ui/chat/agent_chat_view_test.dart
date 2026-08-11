@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 
 import '../../../../widget_test_utils.dart';
 
@@ -89,6 +91,66 @@ void main() {
     expect(find.text('Juno is replying…'), findsOneWidget);
     await tester.tap(find.text('Try Again'));
     expect(retried, isTrue);
+  });
+
+  testWidgets('renders agent markdown and expands a collapsed long reply', (
+    tester,
+  ) async {
+    final longReply = List.generate(
+      12,
+      (index) => '${index + 1}. **Coaching point ${index + 1}** — details',
+    ).join('\n');
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: AgentChatView(
+            agentId: 'goal-1',
+            agentName: 'Juno',
+            draft: '',
+            isSending: false,
+            onDraftChanged: (_) {},
+            onSend: () {},
+            onRetry: () {},
+          ),
+        ),
+        overrides: [
+          agentChatProjectionProvider('goal-1').overrideWith(
+            (ref) async => [
+              AgentChatMessage(
+                id: 'long-reply',
+                role: AgentChatRole.agent,
+                text: longReply,
+                createdAt: DateTime(2026, 8, 11, 9),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(AgentMarkdownView), findsOneWidget);
+    expect(
+      tester.widget<GptMarkdown>(find.byType(GptMarkdown)).data,
+      longReply,
+    );
+    expect(tester.widget<GptMarkdown>(find.byType(GptMarkdown)).maxLines, 8);
+    expect(find.text('Show more'), findsOneWidget);
+
+    await tester.tap(find.text('Show more'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester.widget<GptMarkdown>(find.byType(GptMarkdown)).maxLines,
+      isNull,
+    );
+    expect(find.text('Show less'), findsOneWidget);
+
+    await tester.tap(find.text('Show less'));
+    await tester.pumpAndSettle();
+
+    expect(tester.widget<GptMarkdown>(find.byType(GptMarkdown)).maxLines, 8);
   });
 
   testWidgets('restores an externally retained draft and submits it from the '

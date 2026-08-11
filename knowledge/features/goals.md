@@ -5,8 +5,8 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: claude-code/opus-4-8, at: 2026-08-11T00:00:00Z }
-stale_after: 2026-10-12
+generated: { by: codex/gpt-5, at: 2026-08-11T01:43:18Z }
+stale_after: 2027-02-22
 sources:
   - id: goals-src
     resource: ../../lib/features/goals
@@ -35,11 +35,11 @@ sources:
   - id: workflow
     resource: ../../lib/features/goals/workflow/goal_agent_workflow.dart
     title: GoalAgentWorkflow — the Phase B LLM tier
-    last_modified: 2026-08-09
+    last_modified: 2026-08-11
   - id: contract
     resource: ../../lib/features/goals/workflow/goal_agent_contract.dart
     title: Goal-agent contract (eval-graduated prompt + tools)
-    last_modified: 2026-08-09
+    last_modified: 2026-08-11
   - id: sync-dispatcher
     resource: ../../lib/features/goals/sync/goal_signal_sync_dispatcher.dart
     title: GoalSignalSyncDispatcher — the sync blind-spot bridge
@@ -73,6 +73,8 @@ flowchart TD
         CAD[cadence ScheduledWakeEntity\nworkspace goal-cadence,\ndaily at 06:00 local] --> MGR[ScheduledWakeManager]
         CHAT[Goal chat composer] --> STORE[persist user message + payload]
         STORE --> USERWAKE[manual userMessage wake\nmessage id trigger token]
+        DAYEDIT[Goal detail day cell\nsuccess or missed] --> HABITWRITE[existing habit completion\npersistence path]
+        HABITWRITE --> SIG
     end
     ORCH --> PA[GoalAgentPhaseA.execute]
     DISP --> PA
@@ -124,21 +126,25 @@ flowchart TD
   success-only counting, and day keys re-stamp the local calendar date as
   midnight UTC. The goal agent must never disagree with the chart the
   user is looking at.
-- **Automatic Phase B is reachable only through the lease; direct chat is an
-  explicit user wake.** Sync-received signals run Phase A directly (the
+- **Automatic Phase B is reachable only through the lease; direct chat and
+  detail-page refreshes are explicit user wakes.** Sync-received signals run Phase A directly (the
   orchestrator deliberately listens local-only); automatic LLM-worthy work
   becomes a `goal-escalation:<periodKey>` scheduled wake whose lease election
   picks exactly one device. A durable source chat turn instead carries a
   `goal-chat-message:<messageId>` trigger on a manual `userMessage` wake. The
   source exists before enqueue, the wake bypasses throttling, and no chat UI
-  owns an inference loop.
+  owns an inference loop. A successful exact-day habit edit also enqueues a
+  workspace-scoped `goal-report-refresh` wake; its workspace does not supersede
+  the ordinary subscription wake, and it routes to Phase B to refresh the
+  standing report even when the coarse status did not change.
 - **Phase B re-derives, never trusts.** The workflow calls the same
   `deriveWakeFacts` Phase A used to arm the escalation and renders every
   number into the FACTS block; the prompt forbids the model to recompute.
   A wake with zero tool calls is legal (the no-op policy row) — the
   strategy never nags for output. Two deterministic exceptions are forced
-  with one pinned retry each: a transition wake missing its report, and
-  policy row P5 (offTrack, no fresh ad, no cooldown) missing its ad.
+  with one pinned retry each: a transition/detail-refresh wake missing its
+  report, and policy row P5 (offTrack, no fresh ad, no cooldown) or an explicit
+  new-banner request missing its ad.
 - **The escalation carries its own baseline and period.** The wake record
   encodes the PRE-transition status as a `goal-baseline:<status>` trigger
   token (Phase A's register write hides it from any re-derivation, and a
@@ -157,10 +163,20 @@ flowchart TD
   digests. Automatic transition ads keep their period/baseline identity;
   chat-created replacements add the durable source message id so a retired
   transition ad cannot silently collide with the requested replacement.
+  An explicit chat request for a new banner is recognized from the durable user
+  message before inference, replaces any active banner, and overrides the
+  automatic dismissal cooldown. If the primary model replies with a cooldown
+  refusal and omits the tool, the workflow forces `create_goal_ad` and withholds
+  the now-contradictory refusal. A temporary-hide request
+  instead calls `snooze_goal_ad` with any future instant: the same active nudge
+  keeps its activation and rating history, stores `snoozedUntil` in provenance,
+  disappears from every banner surface, and returns when the active-banner
+  provider's deadline timer invalidates the projection. A re-run clears stale
+  snooze provenance.
   The three-day worsening requirement remains the automatic `atRisk` gate;
   an interactive `atRisk` wake that emits a structured create/rerun action
-  honors the user's request while still enforcing cooldown, freshness,
-  duplicate-copy and stale-spec guards. Report prose passes
+  honors the user's request while still enforcing duplicate-copy and stale-spec
+  guards. Report prose passes
   `sanitizeAgentReportText`.
 - **The goal spec never mutates in a wake.** `propose_goal_revision`
   lands as a pending ChangeSet for user approval; ad state is validated
@@ -222,6 +238,14 @@ flowchart TD
   returning starts a new episode. Writes per nudge are serialized in
   `GoalNudgeInteractions` so a rapid flush/dismiss pair cannot lose an
   update to a stale read.
+  The dock and the full detail card both render the selected animation through
+  `GoalBannerAnimatedText`; the dock spans its host, desktop shows the authored
+  headline and tagline without truncation, and compact docks keep a measured
+  two-line cap for each. A chat-requested snooze accepts an arbitrary future duration
+  or date/time and automatically restores the exact banner at that deadline.
+  The card keeps `cardPadding` on its lateral and bottom edges but uses
+  `spacing.step2` above the fixed-height action header, preventing the rating
+  and dismissal tap targets from creating a visually double-padded top edge.
 - **The Agents tab** (`enable_agents_page` flag, `/agents`): one card per
   goal agent with health at a glance — a coarse-health chip
   (`coarseHealthOf` collapses the runtime `GoalTrackStatus` into Healthy /
@@ -232,7 +256,9 @@ flowchart TD
   0.02 deadband — withheld when either register is insufficient-data, and only
   for rolling-window goals, since calendar/day windows reset attainment each
   period and a consecutive-register delta there is a boundary reset, not a
-  decline). The row shows a coarse chip rather than a raw attainment
+  decline). The detail header surfaces that independent direction as a second
+  semantic pill, allowing combinations such as Behind + Trending up and
+  Healthy + Trending down. The row shows a coarse chip rather than a raw attainment
   percentage; the one-liner is the agent's own prose, so keeping percentages
   out of it is a matter for the agent's instructions, not widget-level
   filtering. Below the one-liner a rolling-window habit goal shows a
@@ -246,7 +272,17 @@ flowchart TD
   `goalAgentProgressViewProvider` reads the evaluator's daily aggregates and
   adds a seven-cell compact strip to the list. The detail page expands the
   same source into a rolling habit/metric grid, reliability tail and explicit
-  Watching section; it also carries active banners and the revision-approval
+  Watching section. Every active habit day in that grid — including previous
+  days — opens success/missed actions. The write goes through
+  `GoalHabitCompletionService` into the existing habit-completion path, so
+  privacy, sync and reminder behavior remain shared. Historical corrections
+  keep the selected calendar day but use the current wall-clock fields so
+  deterministic entry ids do not collide when an outcome is changed back.
+  The resulting local journal signal wakes Phase A immediately. The detail edit
+  additionally queues a fact-grounded report refresh, so the standing report is
+  updated even without a material status transition; the always-visible Update
+  now control uses the same refresh token and shows the shared running state
+  while the agent works. The detail page also carries active banners and the revision-approval
   card (`ChangeSetSummaryCard.selfTargeted`). Mobile opens durable conversation
   at `/agents/details/:agentId/chat`; desktop renders the same
   `GoalAgentChatPane` beside detail. `agentChatProjectionProvider` bounds the
@@ -255,13 +291,34 @@ flowchart TD
   thoughts, system FACTS, legacy run-scoped FACTS rows, and tool bookkeeping
   never enter the visible history. Draft state is keep-alive per agent,
   waiting comes from the wake completion, and failure keeps the source turn
-  available for retry. A successful chat wake explicitly invalidates the
+  available for retry. Agent turns render through `AgentMarkdownView`; replies
+  over 360 characters or eight line breaks start at an eight-rendered-line
+  clamp with a localized Show more / Show less control, while user turns stay
+  literal. A successful chat wake explicitly invalidates the
   active-banner and history projections because workflow writes bypass the
   interaction notifier; the colored card therefore appears in the mounted
   desktop split without a route round-trip. Creation supports a steps goal or
   a MULTI-habit routine
   (`allOf` composite); deletion soft-retires the whole agent through
   `GoalAgentService.deleteGoalAgent`.
+- **Conversation scope is the goal.** The contract identifies the agent as a
+  dedicated coach rather than a general assistant. Coding, trivia and other
+  unrelated requests receive a short purpose reminder and a redirect to the
+  goal; the agent does not attempt the off-topic answer.
+- **Standing reports and governance remain visible.** The detail page always
+  renders the current report card; active banner interactions appear after it
+  rather than replacing it. Its top-level pills query the AI-consumption ledger
+  by `agentId` over the full recorded lifetime. The shared consumption pill is
+  the same component used by Task Details: provider-reported Melious credits,
+  energy and carbon when available, otherwise tokens, with water and the full
+  breakdown in the tooltip. A second pill sums recorded invocation duration as
+  lifetime compute time. No model price table or invented monetary estimate is
+  involved.
+- **Agent Internals attributes only actual inference.** Conversation wake rows
+  resolve their model from persisted token usage first, then the wake-run
+  snapshot. A source-only user-message thread has no model label: it did not run
+  Gemini (or any model), while the separately enqueued goal wake can correctly
+  show GLM. Live agent config is never projected backward onto a source turn.
 - **Interaction writes bypass the notifier by design** (they go through
   the sync service): the banner handlers invalidate
   `activeGoalNudgesProvider` after dismiss/rate.

@@ -2791,6 +2791,8 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generera omslagskonst",
   "generateCoverArtSubtitle": "Skapa bild från röstbeskrivning",
+  "goalAgentLifetimeTimePill": "{duration} AI-tid",
+  "goalAgentLifetimeTimeTooltip": "Agentens totala beräkningstid för {calls} modellanrop.",
   "goalAttainmentLabel": "{percent} % av målet",
   "goalBannerActionFailed": "Det sparades inte — försök igen.",
   "goalBannerDismissTooltip": "Avfärda",

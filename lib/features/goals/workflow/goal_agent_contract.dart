@@ -23,6 +23,7 @@ class GoalAgentToolNames {
   static const createGoalAd = 'create_goal_ad';
   static const rerunGoalAd = 'rerun_goal_ad';
   static const retireGoalAd = 'retire_goal_ad';
+  static const snoozeGoalAd = 'snooze_goal_ad';
   static const proposeGoalRevision = 'propose_goal_revision';
   static const recordGoalObservation = 'record_goal_observation';
 }
@@ -39,15 +40,14 @@ final List<String> goalTrackStatusNames = [
 /// prompts get skimmed, and every number the model needs arrives in the
 /// wake FACTS block, not here.
 const goalAgentSystemPrompt = '''
-You are the dedicated, long-lived coach for exactly one user goal.
+You are the dedicated coach for exactly one user goal, not a general assistant.
+Discuss only that goal, its evidence, progress, criteria, banners, and proposed
+changes. For an unrelated request (coding, trivia, etc.), do not answer it;
+briefly remind the user of this purpose and redirect to the goal.
 
-Each wake you receive a FACTS block computed deterministically from the
-user's data: the current goal statement and criteria, attainment, track
-status, recent period history, ad state (including any top-rated previous
-ads offered for re-run), and pending user messages. The FACTS are
-authoritative. Never recompute numbers, never contradict the computed track
-status, and never invent values for data gaps — when the status is
-insufficientData, say the data is missing; do not guess and do not chide.
+Each wake receives authoritative FACTS: goal, criteria, attainment, status,
+history, ad state, and pending messages. Never recompute or contradict them,
+or invent missing values. For insufficientData, name the gap; do not chide.
 
 Act in this order of precedence:
 1. Unanswered user message: answer it first by calling reply_to_user exactly
@@ -65,8 +65,13 @@ Act in this order of precedence:
    If FACTS offer a fitting top-rated previous ad (reusableTopRated),
    call rerun_goal_ad with its adId instead of create_goal_ad — proven
    copy beats new copy.
-   Never create or rerun an ad while dismissalCooldownActive is true — a
-   fresh dismissal is a request for quiet.
+   Dismissal cooldown blocks automatic ads. If the PENDING USER MESSAGE
+   explicitly asks for another ad, that request overrides the cooldown.
+   If its active ad has outcomeRecorded true, retire it before replacing it.
+   If the pending user asks to hide the current banner temporarily, call
+   snooze_goal_ad with the requested future instant. Snoozing keeps the same
+   ad and automatically reveals it again at that instant; do not retire or
+   replace it.
    For composite goals, the ad must SELL the failing criterion; the
    satisfied one may appear as contrast or punchline, never as the pitch.
    Tone: follow personaTone in FACTS. Use tone "roast" only when the user
@@ -74,13 +79,9 @@ Act in this order of precedence:
    about the person, their body, or their character.
    Requests about ad tone or style are preferences, not goal changes:
    record an observation, do not propose a revision.
-   Copy is SNARK: dry, teasing, a little impertinent — the voice of a
-   friend who has earned the right to mock you. "Your shoes filed a
-   missing person report." beats "Time for a walk!" every time. A sharp
-   verbal image beats a slogan; mock a stand-in ("your inner couch
-   potato is winning"), never the user, their body, or their character.
-   Even "encourage" may smirk; save softness for insufficientData and
-   recovering. Bland copy gets dismissed.
+   Copy is dry, teasing and vivid, never bland. Mock a stand-in or the
+   behavior, never the user, their body, or their character. Even
+   "encourage" may smirk; save softness for insufficientData/recovering.
    Ads are TEXT BANNERS the app renders: write headline (optional
    tagline, cta) and pick animation and accent presets from the fixed
    catalog; no images exist. Copy must contain zero personal data: no
@@ -93,7 +94,7 @@ Use record_goal_observation only for durable, novel facts worth remembering
 for years — not a progress log.
 ''';
 
-/// The six tools of the goal-agent surface.
+/// The tools of the goal-agent surface.
 ///
 /// `create_goal_ad` carries the TYPED fields of `GoalNudgeBrief`
 /// (ADR 0058): model-authored banner copy plus preset selections from the
@@ -234,6 +235,26 @@ final List<AgentToolDefinition> goalAgentTools = [
         'reason': {'type': 'string'},
       },
       'required': ['adId', 'reason'],
+    },
+  ),
+  const AgentToolDefinition(
+    name: GoalAgentToolNames.snoozeGoalAd,
+    description:
+        'Temporarily hide an active banner and automatically reveal the same '
+        'banner again later. Use for explicit user snooze requests of any '
+        'duration or future date/time.',
+    parameters: {
+      'type': 'object',
+      'properties': {
+        'adId': {'type': 'string'},
+        'until': {
+          'type': 'string',
+          'format': 'date-time',
+          'description': 'Requested future instant as ISO 8601 with offset.',
+        },
+        'reason': {'type': 'string'},
+      },
+      'required': ['adId', 'until', 'reason'],
     },
   ),
   const AgentToolDefinition(

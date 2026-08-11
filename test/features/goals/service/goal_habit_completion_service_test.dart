@@ -1,0 +1,199 @@
+import 'package:clock/clock.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/entry_text.dart';
+import 'package:lotti/classes/goal_trigger_tokens.dart';
+import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
+import 'package:mocktail/mocktail.dart';
+
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
+
+void main() {
+  setUpAll(registerAllFallbackValues);
+
+  late MockJournalDb journalDb;
+  late MockPersistenceLogic persistenceLogic;
+  late MockWakeOrchestrator orchestrator;
+  late GoalHabitCompletionService service;
+
+  final habit = HabitDefinition(
+    id: 'walk',
+    name: 'Walk',
+    description: '',
+    createdAt: DateTime(2026),
+    updatedAt: DateTime(2026),
+    habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
+    vectorClock: null,
+    active: true,
+    private: false,
+    version: '1',
+  );
+
+  setUp(() {
+    journalDb = MockJournalDb();
+    persistenceLogic = MockPersistenceLogic();
+    orchestrator = MockWakeOrchestrator();
+    service = GoalHabitCompletionService(
+      journalDb: journalDb,
+      persistenceLogic: persistenceLogic,
+      orchestrator: orchestrator,
+    );
+    when(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+      ),
+    ).thenReturn('refresh-run');
+    when(() => journalDb.getHabitById('walk')).thenAnswer((_) async => habit);
+    when(
+      () => persistenceLogic.createHabitCompletionEntry(
+        data: any(named: 'data'),
+        habitDefinition: any(named: 'habitDefinition'),
+        comment: any(named: 'comment'),
+      ),
+    ).thenAnswer(
+      (invocation) async {
+        final data = invocation.namedArguments[#data]! as HabitCompletionData;
+        return HabitCompletionEntry(
+          meta: Metadata(
+            id: 'saved',
+            createdAt: data.dateFrom,
+            updatedAt: data.dateFrom,
+            dateFrom: data.dateFrom,
+            dateTo: data.dateTo,
+          ),
+          data: data,
+          entryText: const EntryText(plainText: ''),
+        );
+      },
+    );
+  });
+
+  test('records today at the current time with the selected outcome', () async {
+    final now = DateTime(2026, 8, 11, 14, 30);
+
+    final saved = await withClock(
+      Clock.fixed(now),
+      () => service.record(
+        agentId: 'goal-1',
+        habitId: 'walk',
+        day: DateTime.utc(2026, 8, 11),
+        outcome: HabitCompletionType.success,
+      ),
+    );
+
+    expect(saved, isTrue);
+    final captured =
+        verify(
+              () => persistenceLogic.createHabitCompletionEntry(
+                data: captureAny(named: 'data'),
+                habitDefinition: habit,
+                comment: '',
+              ),
+            ).captured.single
+            as HabitCompletionData;
+    expect(captured.dateFrom, now);
+    expect(captured.dateTo, now);
+    expect(captured.completionType, HabitCompletionType.success);
+    verify(
+      () => orchestrator.enqueueManualWake(
+        agentId: 'goal-1',
+        reason: WakeReason.reanalysis.name,
+        triggerTokens: const {goalReportRefreshTriggerToken},
+        workspaceKey: goalReportRefreshTriggerToken,
+      ),
+    ).called(1);
+  });
+
+  test(
+    'records a historical miss on that date with the current wall-clock time',
+    () async {
+      final saved = await withClock(
+        Clock.fixed(DateTime(2026, 8, 11, 14, 30)),
+        () => service.record(
+          agentId: 'goal-1',
+          habitId: 'walk',
+          day: DateTime.utc(2026, 8, 9),
+          outcome: HabitCompletionType.fail,
+        ),
+      );
+
+      expect(saved, isTrue);
+      final captured =
+          verify(
+                () => persistenceLogic.createHabitCompletionEntry(
+                  data: captureAny(named: 'data'),
+                  habitDefinition: habit,
+                  comment: '',
+                ),
+              ).captured.single
+              as HabitCompletionData;
+      expect(captured.dateFrom, DateTime(2026, 8, 9, 14, 30));
+      expect(captured.completionType, HabitCompletionType.fail);
+    },
+  );
+
+  test('historical corrections get distinct data timestamps so switching '
+      'back to an earlier outcome can persist', () async {
+    for (final now in [
+      DateTime(2026, 8, 11, 14, 30),
+      DateTime(2026, 8, 11, 14, 31),
+    ]) {
+      await withClock(
+        Clock.fixed(now),
+        () => service.record(
+          agentId: 'goal-1',
+          habitId: 'walk',
+          day: DateTime.utc(2026, 8, 9),
+          outcome: HabitCompletionType.success,
+        ),
+      );
+    }
+
+    final captured = verify(
+      () => persistenceLogic.createHabitCompletionEntry(
+        data: captureAny(named: 'data'),
+        habitDefinition: habit,
+        comment: '',
+      ),
+    ).captured.cast<HabitCompletionData>();
+    expect(captured.map((data) => data.dateFrom), [
+      DateTime(2026, 8, 9, 14, 30),
+      DateTime(2026, 8, 9, 14, 31),
+    ]);
+    expect(captured.map((data) => data.dateFrom.toLocal().day).toSet(), {9});
+  });
+
+  test('does not write when the watched habit no longer exists', () async {
+    when(() => journalDb.getHabitById('walk')).thenAnswer((_) async => null);
+
+    final saved = await service.record(
+      agentId: 'goal-1',
+      habitId: 'walk',
+      day: DateTime.utc(2026, 8, 11),
+      outcome: HabitCompletionType.success,
+    );
+
+    expect(saved, isFalse);
+    verifyNever(
+      () => persistenceLogic.createHabitCompletionEntry(
+        data: any(named: 'data'),
+        habitDefinition: any(named: 'habitDefinition'),
+        comment: any(named: 'comment'),
+      ),
+    );
+    verifyNever(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        workspaceKey: any(named: 'workspaceKey'),
+      ),
+    );
+  });
+}

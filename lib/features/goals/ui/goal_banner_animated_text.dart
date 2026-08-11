@@ -14,12 +14,14 @@ class GoalBannerAnimatedText extends StatefulWidget {
     required this.text,
     required this.animation,
     required this.style,
+    this.maxLines = _GoalBannerMotion.defaultMaxLines,
     super.key,
   });
 
   final String text;
   final GoalBannerAnimation animation;
   final TextStyle style;
+  final int? maxLines;
 
   @override
   State<GoalBannerAnimatedText> createState() => _GoalBannerAnimatedTextState();
@@ -36,7 +38,12 @@ abstract final class _GoalBannerMotion {
 
   /// Pulse breathes between these opacities — never below the readable
   /// floor.
-  static const pulseFloorOpacity = 0.75;
+  static const pulseFloorOpacity = 0.55;
+
+  /// A selected marquee must remain visibly a marquee even when concise model
+  /// copy happens to fit the available desktop width. This is motion distance,
+  /// not layout spacing: the line peeks left by this amount at the far end.
+  static const marqueeMinimumTravel = 12.0;
 
   /// Wave bob amplitude in logical pixels, and the per-word phase shift.
   static const waveAmplitude = 2.0;
@@ -54,7 +61,7 @@ abstract final class _GoalBannerMotion {
   /// headline at this many lines (marquee stays single-line by design),
   /// so a runaway headline or large text scaling can never overflow a
   /// fixed-height host like the day page.
-  static const maxLines = 2;
+  static const defaultMaxLines = 2;
 }
 
 class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
@@ -126,8 +133,10 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
   Widget _capped(String text) => Text(
     text,
     style: widget.style,
-    maxLines: _GoalBannerMotion.maxLines,
-    overflow: TextOverflow.ellipsis,
+    maxLines: widget.maxLines,
+    overflow: widget.maxLines == null
+        ? TextOverflow.visible
+        : TextOverflow.ellipsis,
   );
 
   /// Characters appear over the reveal fraction of the cycle, then hold.
@@ -172,7 +181,7 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
       builder: (context, constraints) {
         final painter = TextPainter(
           text: TextSpan(text: widget.text, style: widget.style),
-          maxLines: _GoalBannerMotion.maxLines,
+          maxLines: widget.maxLines,
           textDirection: Directionality.of(context),
           textScaler: MediaQuery.textScalerOf(context),
         )..layout(maxWidth: constraints.maxWidth);
@@ -226,15 +235,10 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
           // unscaled would under-estimate travel under large text.
           textScaler: MediaQuery.textScalerOf(context),
         )..layout();
-        if (painter.width <= constraints.maxWidth) {
-          return Text(
-            widget.text,
-            style: widget.style,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-          );
-        }
-        final travel = painter.width - constraints.maxWidth;
+        final travel = math.max(
+          painter.width - constraints.maxWidth,
+          _GoalBannerMotion.marqueeMinimumTravel,
+        );
         // Ease across, hold at each end (the standard curve both ways).
         final t = MotionCurves.standard.transform(
           (math.sin(_controller.value * 2 * math.pi - math.pi / 2) + 1) / 2,

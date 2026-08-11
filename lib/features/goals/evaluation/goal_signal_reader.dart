@@ -60,6 +60,7 @@ class GoalSignalReader {
     }
 
     final habits = <String, Map<DateTime, int>>{};
+    final habitCompletions = <String, Map<DateTime, HabitCompletionType>>{};
     for (final habitId in needs.habitIds) {
       final entities = await _journalDb.getHabitCompletionsByHabitId(
         habitId: habitId,
@@ -67,19 +68,26 @@ class GoalSignalReader {
         rangeEnd: rangeEnd,
       );
       final byDay = <DateTime, int>{};
+      final completionsByDay = <DateTime, HabitCompletionType>{};
       for (final entity in entities) {
         entity.maybeMap(
           habitCompletion: (completion) {
             // The query already collapsed to the latest completion per
             // day (the habits-UI rule); only success feeds a quota.
-            if (completion.data.completionType == HabitCompletionType.success) {
-              byDay[GoalWindow.dayUtc(completion.data.dateFrom)] = 1;
+            final completionType = completion.data.completionType;
+            final day = GoalWindow.dayUtc(completion.data.dateFrom);
+            if (completionType != null) {
+              completionsByDay[day] = completionType;
+            }
+            if (completionType == HabitCompletionType.success) {
+              byDay[day] = 1;
             }
           },
           orElse: () {},
         );
       }
       habits[habitId] = byDay;
+      habitCompletions[habitId] = completionsByDay;
     }
 
     final measurables = <String, Map<DateTime, num>>{};
@@ -105,6 +113,7 @@ class GoalSignalReader {
     return GoalSignalWindow(
       quantitativeDailySums: quantitative,
       habitSuccessesByDay: habits,
+      habitCompletionsByDay: habitCompletions,
       measurableDailySums: measurables,
     );
   }

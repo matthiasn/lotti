@@ -9,9 +9,20 @@ void main() {
     // The payload lesson: long prompts get skimmed. The eval suite pins
     // the same bound; this pins it for the production import path.
     expect(goalAgentSystemPrompt.length, lessThan(3200));
+    expect(
+      goalAgentSystemPrompt,
+      contains('explicitly asks for another ad'),
+    );
+    expect(goalAgentSystemPrompt, contains('not a general assistant'));
+    expect(
+      goalAgentSystemPrompt,
+      contains(
+        'For an unrelated request (coding, trivia, etc.), do not answer',
+      ),
+    );
   });
 
-  test('the tool surface includes the shared reply carrier and six goal '
+  test('the tool surface includes the shared reply carrier and seven goal '
       'tools', () {
     expect(
       [for (final tool in goalAgentTools) tool.name],
@@ -21,6 +32,7 @@ void main() {
         GoalAgentToolNames.createGoalAd,
         GoalAgentToolNames.rerunGoalAd,
         GoalAgentToolNames.retireGoalAd,
+        GoalAgentToolNames.snoozeGoalAd,
         GoalAgentToolNames.proposeGoalRevision,
         GoalAgentToolNames.recordGoalObservation,
       ],

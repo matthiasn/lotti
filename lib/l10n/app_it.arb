@@ -2791,6 +2791,8 @@
   "geminiThinkingModeMinimalLabel": "Minimo",
   "generateCoverArt": "Generare l'arte della copertura",
   "generateCoverArtSubtitle": "Crea immagine dalla descrizione vocale",
+  "goalAgentLifetimeTimePill": "{duration} di IA",
+  "goalAgentLifetimeTimeTooltip": "Tempo di calcolo totale dell'agente su {calls} chiamate al modello.",
   "goalAttainmentLabel": "{percent}% dell’obiettivo",
   "goalBannerActionFailed": "Non è stato salvato: riprova per favore.",
   "goalBannerDismissTooltip": "Ignora",

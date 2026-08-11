@@ -50,6 +50,7 @@ class GoalFactsRenderer {
     ];
 
     return _factsBlock({
+      'generatedAt': now.toUtc().toIso8601String(),
       'goal': {
         'id': version.agentId,
         'statement': version.statement,
@@ -168,6 +169,10 @@ class GoalFactsRenderer {
       'ageHours': age.inHours,
       'fresh': age < goalAdFreshFor,
       'markedStale': nudge.staleAt != null && !now.isBefore(nudge.staleAt!),
+      'outcomeRecorded': nudge.ratings.any(
+        (rating) => rating.activation == nudge.activationCount,
+      ),
+      'snoozedUntil': ?nudge.provenance['snoozedUntil'],
     };
   }
 

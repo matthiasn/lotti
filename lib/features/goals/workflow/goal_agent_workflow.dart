@@ -30,6 +30,7 @@ import 'package:lotti/features/ai/util/known_models.dart';
 import 'package:lotti/features/ai/util/profile_resolver.dart';
 import 'package:lotti/features/ai_consumption/model/ai_attribution.dart';
 import 'package:lotti/features/ai_consumption/service/ai_attribution_service.dart';
+import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
@@ -136,6 +137,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
+    final reportRefresh = goalReportRefreshRequested(triggerTokens);
+    final userRequestedAd = _explicitNewAdRequest(pendingUserMessage);
 
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
     if (head is! GoalSpecHeadEntity) {
@@ -201,9 +204,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
       trackStatus: derivation.facts.trackStatus,
       previousStatus:
           baseline ??
-          (derivation.priors.isEmpty
-              ? null
-              : derivation.priors.first.trackStatus),
+          (reportRefresh
+              ? derivation.facts.previousStatus
+              : derivation.priors.firstOrNull?.trackStatus),
       evaluation: derivation.facts.evaluation,
       shortTermAttainment: derivation.facts.shortTermAttainment,
     );
@@ -233,9 +236,20 @@ class GoalAgentWorkflow with AgentErrorLogging {
       nudges: nudges,
       observations: observations,
     );
-    final factsBlock = pendingUserMessage == null
+    var factsBlock = pendingUserMessage == null
         ? renderedFacts
         : '$renderedFacts\n\nPENDING USER MESSAGE:\n$pendingUserMessage';
+    if (reportRefresh) {
+      factsBlock =
+          '$factsBlock\n\nUSER REQUESTED REPORT REFRESH AFTER A HABIT EDIT. '
+          'Update the standing report from the authoritative FACTS.';
+    }
+    if (userRequestedAd) {
+      factsBlock =
+          '$factsBlock\n\nUSER EXPLICITLY REQUESTED A NEW BANNER AD. This '
+          'request overrides dismissal cooldown. Create the replacement now; '
+          'do not claim that cooldown is system-wide or immutable.';
+    }
 
     final resolved = await _resolveModel(agentIdentity);
     if (resolved == null) {
@@ -322,10 +336,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
         rethrowInferenceErrors: true,
       );
 
-      // An escalation exists BECAUSE the status transitioned, so a report
-      // is expected — one pinned retry, then accept the partial wake.
-      // (Nothing else is ever forced: a no-op stays legal.)
-      if (facts.statusTransitioned && !strategy.hasReport) {
+      // A transition or explicit detail-page refresh requires a report — one
+      // pinned retry, then accept the partial wake. Ordinary automatic no-ops
+      // remain legal and free of forced output.
+      if ((facts.statusTransitioned || reportRefresh) && !strategy.hasReport) {
         final retryUsage = await _forceReport(
           conversationId: conversationId,
           resolved: resolved,
@@ -335,6 +349,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           agentId: recordConsumption ? agentId : null,
           runKey: recordConsumption ? runKey : null,
           threadId: recordConsumption ? threadId : null,
+          userRequestedRefresh: reportRefresh,
         );
         if (retryUsage != null) {
           usage = usage == null ? retryUsage : usage.merge(retryUsage);
@@ -344,7 +359,14 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // Policy row P5 is deterministic: offTrack + no fresh active ad +
       // no cooldown REQUIRES an ad, and no later wake will re-arm this
       // escalation (the status already persisted). One pinned retry.
-      if (_adRequired(facts, derivation.priors, nudges, strategy, now) &&
+      if (_adRequired(
+            facts,
+            derivation.priors,
+            nudges,
+            strategy,
+            now,
+            userRequestedAd: userRequestedAd,
+          ) &&
           !_hasViableAdAction(strategy, nudges)) {
         final retryUsage = await _forceAd(
           facts: facts,
@@ -356,6 +378,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           agentId: recordConsumption ? agentId : null,
           runKey: recordConsumption ? runKey : null,
           threadId: recordConsumption ? threadId : null,
+          userRequestedAd: userRequestedAd,
         );
         if (retryUsage != null) {
           usage = usage == null ? retryUsage : usage.merge(retryUsage);
@@ -383,6 +406,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           triggerTokens,
         ),
         replyToUser: pendingUserMessage != null,
+        userRequestedAd: userRequestedAd,
         adCreationDiscriminator: chatMessageId == null
             ? null
             : 'chat:$chatMessageId',
@@ -522,6 +546,35 @@ class GoalAgentWorkflow with AgentErrorLogging {
             for (final row in priors) row.attainment,
           ]));
 
+  /// Conservative intent gate for a user-initiated replacement banner.
+  ///
+  /// This is deliberately deterministic: the cooldown override cannot depend
+  /// on the model first agreeing to call `create_goal_ad`, because refusal is
+  /// the exact failure the override must prevent. Snooze/dismiss requests are
+  /// excluded even when they contain words such as "want" or "make".
+  bool _explicitNewAdRequest(String? message) {
+    if (message == null) return false;
+    final normalized = message.toLowerCase();
+    final mentionsAd = RegExp(r'\b(?:banner|ad|advert)\b').hasMatch(normalized);
+    if (!mentionsAd) return false;
+    final isVisibilityRequest = RegExp(
+      r'\b(?:snooze|hide|dismiss|remove|stop|pause)\b',
+    ).hasMatch(normalized);
+    if (isVisibilityRequest) return false;
+    return RegExp(
+      r'\b(?:new|another|replacement|replace|create|make|give|serve|show|want|need|please|pls|plz)\b',
+    ).hasMatch(normalized);
+  }
+
+  bool _isCooldownRefusal(String? message) {
+    if (message == null) return false;
+    final normalized = message.toLowerCase();
+    return normalized.contains('cooldown') &&
+        RegExp(
+          r"\b(?:can't|cannot|unable|refuse|blocked|no banner)\b",
+        ).hasMatch(normalized);
+  }
+
   /// The deterministic ad requirement (policy rows P4/P5): an eligible
   /// status, no fresh active ad surviving this wake's retires, and no
   /// dismissal cooldown.
@@ -530,8 +583,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
     List<GoalProgressEntity> priors,
     List<GoalNudgeEntity> nudges,
     GoalAgentStrategy strategy,
-    DateTime now,
-  ) {
+    DateTime now, {
+    required bool userRequestedAd,
+  }) {
+    if (userRequestedAd) {
+      return facts.trackStatus == GoalTrackStatus.offTrack ||
+          facts.trackStatus == GoalTrackStatus.atRisk;
+    }
     if (!_adsEligible(facts, priors)) return false;
     if (_factsRenderer.dismissalCooldownActive(nudges, now)) return false;
     final retired = {for (final action in strategy.retireRequests) action.adId};
@@ -574,24 +632,40 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required String? agentId,
     required String? runKey,
     required String? threadId,
+    required bool userRequestedAd,
   }) async {
     try {
       return await _conversationRepository.sendMessage(
         conversationId: conversationId,
-        message:
-            'The goal is ${facts.trackStatus.name} with no active banner '
-            'and no cooldown — an ad is REQUIRED (policy). Call '
-            'create_goal_ad now (or rerun_goal_ad if the FACTS offered a '
-            'reusable one).',
+        message: userRequestedAd
+            ? 'The user explicitly requested a NEW banner ad. Dismissal '
+                  'cooldown does not block this user-initiated replacement. '
+                  'Call create_goal_ad now; do not refuse or merely promise '
+                  'that a banner will appear.'
+            : 'The goal is ${facts.trackStatus.name} with no active banner '
+                  'and no cooldown — an ad is REQUIRED (policy). Call '
+                  'create_goal_ad now (or rerun_goal_ad if the FACTS offered '
+                  'a reusable one).',
         model: resolved.modelId,
         provider: resolved.provider,
         inferenceRepo: inferenceRepo,
         tools: [
           for (final tool in tools)
             if (tool.function.name == GoalAgentToolNames.createGoalAd ||
-                tool.function.name == GoalAgentToolNames.rerunGoalAd)
+                (!userRequestedAd &&
+                    tool.function.name == GoalAgentToolNames.rerunGoalAd))
               tool,
         ],
+        toolChoice: userRequestedAd
+            ? const ChatCompletionToolChoiceOption.tool(
+                ChatCompletionNamedToolChoice(
+                  type: ChatCompletionNamedToolChoiceType.function,
+                  function: ChatCompletionFunctionCallOption(
+                    name: GoalAgentToolNames.createGoalAd,
+                  ),
+                ),
+              )
+            : null,
         temperature: 0,
         strategy: strategy,
         consumptionAgentId: agentId,
@@ -758,13 +832,17 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required String? agentId,
     required String? runKey,
     required String? threadId,
+    required bool userRequestedRefresh,
   }) async {
     try {
       return await _conversationRepository.sendMessage(
         conversationId: conversationId,
-        message:
-            'The track status changed this wake. Call update_goal_report '
-            'now with the status from the FACTS block.',
+        message: userRequestedRefresh
+            ? 'The user explicitly requested a standing-report refresh after '
+                  'editing a habit day. Call update_goal_report now with the '
+                  'status and current evidence from the FACTS block.'
+            : 'The track status changed this wake. Call update_goal_report '
+                  'now with the status from the FACTS block.',
         model: resolved.modelId,
         provider: resolved.provider,
         inferenceRepo: inferenceRepo,
@@ -815,6 +893,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required DateTime now,
     String? escalationBaseline,
     bool replyToUser = false,
+    bool userRequestedAd = false,
     String? adCreationDiscriminator,
   }) async {
     final reportId = strategy.hasReport ? _uuid.v4() : null;
@@ -870,13 +949,40 @@ class GoalAgentWorkflow with AgentErrorLogging {
       ];
       final byId = {for (final nudge in nudges) nudge.id: nudge};
 
+      // Snooze is a temporary visibility preference, not a terminal ad
+      // verdict. Keep the same active row and its activation/rating history;
+      // the banner provider reveals it again at the persisted instant without
+      // another model call.
+      for (final action in strategy.snoozeRequests) {
+        final nudge = byId[action.adId];
+        if (nudge == null || nudge.status != GoalNudgeStatus.active) continue;
+        await _syncService.upsertEntity(
+          nudge.copyWith(
+            updatedAt: now,
+            provenance: {
+              ...nudge.provenance,
+              goalBannerSnoozedUntilKey: action.until.toIso8601String(),
+              'snoozeReason': action.reason,
+              'snoozedAt': now.toUtc().toIso8601String(),
+            },
+          ),
+        );
+      }
+
       // Interactive replies are explicit reply_to_user action rows so the
       // durable chat projection can whitelist them without exposing thoughts.
       // Plain final prose remains a compatibility fallback for models that
       // answer before observing the new tool contract.
-      final assistantText = replyToUser
+      final candidateAssistantText = replyToUser
           ? strategy.replyToUser ?? strategy.finalResponse
           : strategy.finalResponse;
+      final assistantText =
+          userRequestedAd &&
+              (strategy.createdAds.isNotEmpty ||
+                  strategy.rerunRequests.isNotEmpty) &&
+              _isCooldownRefusal(candidateAssistantText)
+          ? null
+          : candidateAssistantText;
       if (assistantText != null) {
         final payloadId = _uuid.v4();
         await _syncService.upsertEntity(
@@ -993,6 +1099,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // duplicate copy) still apply.
       final interactiveAdRequested =
           replyToUser &&
+          userRequestedAd &&
           (strategy.createdAds.isNotEmpty || strategy.rerunRequests.isNotEmpty);
       final adsEligible =
           _adsEligible(derivation.facts, derivation.priors) ||
@@ -1044,21 +1151,50 @@ class GoalAgentWorkflow with AgentErrorLogging {
         );
       }
 
-      // A fresh dismissal blocks ALL ad activity — the prompt says so,
-      // but the contract must hold against an imperfect model response,
-      // so it is re-checked at persistence time (ADR 0055's quiet rule).
+      // A fresh dismissal blocks AUTOMATIC ad activity. A later, explicit
+      // chat request supersedes that earlier quiet preference: the structured
+      // create/rerun action is the model's typed evidence that the pending
+      // user message asked for another banner.
       final cooldownActive = _factsRenderer.dismissalCooldownActive(
         nudges,
         now,
       );
+      final cooldownBlocksAds = cooldownActive && !interactiveAdRequested;
       // Automatic ads remain limited to offTrack or worsening atRisk (P4/P5).
       // A structured ad action on an interactive atRisk wake is the explicit
       // user-requested exception computed above.
-      // P6: a fresh active ad blocks a second one. Ads retired in THIS
-      // wake don't count — the retire+create swap (P14) stays legal.
-      final retiredNow = {
+      // A rating evaluates one activation; it does not make the card vanish
+      // immediately. Once the user explicitly asks for another banner,
+      // however, that rated activation is complete and is retired here so the
+      // replacement can land even if the model omitted retire_goal_ad.
+      final explicitlyRetiredNow = {
         for (final action in strategy.retireRequests) action.adId,
       };
+      final replacedRetiredNow = <String>{};
+      if (interactiveAdRequested && !staleSpecWake && adsEligible) {
+        for (final nudge in nudges) {
+          if (nudge.status != GoalNudgeStatus.active ||
+              explicitlyRetiredNow.contains(nudge.id)) {
+            continue;
+          }
+          replacedRetiredNow.add(nudge.id);
+          await _syncService.upsertEntity(
+            nudge.copyWith(
+              status: GoalNudgeStatus.retired,
+              retiredAt: now.toUtc(),
+              updatedAt: now,
+              provenance: {
+                ...nudge.provenance,
+                'retireReason': 'replaced by explicit chat request',
+              },
+            ),
+          );
+        }
+      }
+      // P6: a fresh active ad blocks a second one. Ads retired in THIS
+      // wake don't count — explicit retire+create and rated replacement both
+      // remain legal.
+      final retiredNow = {...explicitlyRetiredNow, ...replacedRetiredNow};
       var freshActiveExists = nudges.any(
         (n) =>
             n.status == GoalNudgeStatus.active &&
@@ -1074,7 +1210,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           logError('rerun suppressed: status does not permit ads');
           continue;
         }
-        if (cooldownActive) {
+        if (cooldownBlocksAds) {
           logError('rerun suppressed: dismissal cooldown active');
           continue;
         }
@@ -1096,7 +1232,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
             updatedAt: now,
             runKey: runKey,
             threadId: threadId,
-            provenance: {...nudge.provenance, 'rerunReason': action.reason},
+            provenance: {
+              ..._withoutGoalBannerSnooze(nudge.provenance),
+              'rerunReason': action.reason,
+            },
           ),
         );
       }
@@ -1135,7 +1274,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           logError('ad creation suppressed: status does not permit ads');
           continue;
         }
-        if (cooldownActive) {
+        if (cooldownBlocksAds) {
           logError('ad creation suppressed: dismissal cooldown active');
           continue;
         }
@@ -1312,3 +1451,13 @@ String goalBriefDigest(GoalNudgeBrief brief) => sha1
       ),
     )
     .toString();
+
+Map<String, String> _withoutGoalBannerSnooze(
+  Map<String, String> provenance,
+) => {
+  for (final entry in provenance.entries)
+    if (entry.key != goalBannerSnoozedUntilKey &&
+        entry.key != 'snoozeReason' &&
+        entry.key != 'snoozedAt')
+      entry.key: entry.value,
+};

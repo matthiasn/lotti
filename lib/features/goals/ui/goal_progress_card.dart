@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
@@ -71,10 +72,22 @@ class _CompactDayCell extends StatelessWidget {
 
 /// Rolling-window detail visual. Habit routines render one row per watched
 /// habit; metric goals render seven bars against the target frame.
+typedef GoalHabitOutcomeSelected =
+    Future<bool> Function({
+      required String habitId,
+      required DateTime day,
+      required HabitCompletionType outcome,
+    });
+
 class GoalProgressCard extends StatelessWidget {
-  const GoalProgressCard({required this.progress, super.key});
+  const GoalProgressCard({
+    required this.progress,
+    this.onHabitOutcomeSelected,
+    super.key,
+  });
 
   final GoalProgressView progress;
+  final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
 
   @override
   Widget build(BuildContext context) {
@@ -106,7 +119,11 @@ class GoalProgressCard extends StatelessWidget {
           if (progress.habits.isNotEmpty)
             for (var index = 0; index < progress.habits.length; index++) ...[
               if (index > 0) SizedBox(height: tokens.spacing.step4),
-              _HabitProgressRow(habit: progress.habits[index]),
+              _HabitProgressRow(
+                habit: progress.habits[index],
+                today: progress.today,
+                onOutcomeSelected: onHabitOutcomeSelected,
+              ),
             ]
           else if (progress.metric case final metric?)
             _MetricProgressSeries(metric: metric),
@@ -118,14 +135,51 @@ class GoalProgressCard extends StatelessWidget {
   }
 }
 
-class _HabitProgressRow extends StatelessWidget {
-  const _HabitProgressRow({required this.habit});
+class _HabitProgressRow extends StatefulWidget {
+  const _HabitProgressRow({
+    required this.habit,
+    required this.today,
+    required this.onOutcomeSelected,
+  });
 
   final GoalHabitProgressView habit;
+  final DateTime today;
+  final GoalHabitOutcomeSelected? onOutcomeSelected;
+
+  @override
+  State<_HabitProgressRow> createState() => _HabitProgressRowState();
+}
+
+class _HabitProgressRowState extends State<_HabitProgressRow> {
+  DateTime? _savingDay;
+
+  Future<void> _recordOutcome(
+    DateTime day,
+    HabitCompletionType outcome,
+  ) async {
+    final callback = widget.onOutcomeSelected;
+    if (callback == null || _savingDay != null) return;
+    setState(() => _savingDay = day);
+    final saved = await callback(
+      habitId: widget.habit.habitId,
+      day: day,
+      outcome: outcome,
+    );
+    if (!mounted) return;
+    setState(() => _savingDay = null);
+    if (!saved) {
+      ScaffoldMessenger.maybeOf(context)
+        ?..hideCurrentSnackBar()
+        ..showSnackBar(
+          SnackBar(content: Text(context.messages.goalBannerActionFailed)),
+        );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final habit = widget.habit;
     final activeDays = habit.days.skip(1).toList(growable: false);
     final locale = Localizations.localeOf(context).toLanguageTag();
     final stateColor = habit.deficit == 0
@@ -185,9 +239,17 @@ class _HabitProgressRow extends StatelessWidget {
             for (var index = 0; index < activeDays.length; index++) ...[
               if (index > 0) SizedBox(width: tokens.spacing.step2),
               _ProgressDayCell(
-                hit: activeDays[index].hasValue,
+                day: activeDays[index],
+                habitId: habit.habitId,
                 today: index == activeDays.length - 1,
                 agingOut: index == 0 && habit.oldestSuccessAgesOutTonight,
+                saving: _savingDay == activeDays[index].day,
+                onOutcomeSelected: widget.onOutcomeSelected == null
+                    ? null
+                    : (outcome) => _recordOutcome(
+                        activeDays[index].day,
+                        outcome,
+                      ),
               ),
             ],
           ],
@@ -197,7 +259,6 @@ class _HabitProgressRow extends StatelessWidget {
     final reliability = _Reliability(
       successfulWeeks: habit.successfulWeeks,
     );
-
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide = constraints.maxWidth >= tokens.spacing.step13 * 3;
@@ -248,18 +309,26 @@ class _HabitProgressRow extends StatelessWidget {
 
 class _ProgressDayCell extends StatelessWidget {
   const _ProgressDayCell({
-    required this.hit,
+    required this.day,
+    required this.habitId,
     required this.today,
     required this.agingOut,
+    required this.saving,
+    required this.onOutcomeSelected,
   });
 
-  final bool hit;
+  final GoalProgressDay day;
+  final String habitId;
   final bool today;
   final bool agingOut;
+  final bool saving;
+  final ValueChanged<HabitCompletionType>? onOutcomeSelected;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final hit = day.hasValue;
+    final missed = day.habitCompletionType == HabitCompletionType.fail;
     final border = agingOut
         ? Border.all(
             color: tokens.colors.alert.warning.defaultColor,
@@ -272,21 +341,74 @@ class _ProgressDayCell extends StatelessWidget {
           )
         : null;
     final cell = Container(
+      key: missed
+          ? ValueKey(
+              'goal-day-missed-$habitId-'
+              '${day.day.toIso8601String().substring(0, 10)}',
+            )
+          : null,
       width: ControlSizes.iconChipCompact,
       height: ControlSizes.iconChipCompact,
       decoration: BoxDecoration(
         color: hit
             ? tokens.colors.interactive.enabled
+            : missed
+            ? tokens.colors.alert.error.defaultColor
             : tokens.colors.background.level03,
         borderRadius: BorderRadius.circular(tokens.radii.s),
         border: border,
       ),
+      child: missed
+          ? Icon(
+              Icons.close_rounded,
+              size: IconSizes.xs,
+              color: tokens.colors.alert.error.ink,
+            )
+          : null,
     );
-    if (!today || hit) return cell;
-    return DsDashedBorder(
-      color: tokens.colors.text.lowEmphasis,
-      radius: tokens.radii.s,
-      child: cell,
+    final decoratedCell = !today || hit
+        ? cell
+        : DsDashedBorder(
+            color: tokens.colors.text.lowEmphasis,
+            radius: tokens.radii.s,
+            child: cell,
+          );
+    final callback = onOutcomeSelected;
+    if (callback == null) return decoratedCell;
+    final date = DateFormat.yMMMd(
+      Localizations.localeOf(context).toLanguageTag(),
+    ).format(day.day);
+    return PopupMenuButton<HabitCompletionType>(
+      key: ValueKey(
+        'goal-habit-day-$habitId-'
+        '${day.day.toIso8601String().substring(0, 10)}',
+      ),
+      enabled: !saving,
+      initialValue: day.habitCompletionType,
+      padding: EdgeInsets.zero,
+      tooltip: date,
+      onSelected: callback,
+      itemBuilder: (context) => [
+        PopupMenuItem(
+          key: const ValueKey('goal-habit-day-success'),
+          value: HabitCompletionType.success,
+          child: Text(context.messages.completeHabitSuccessButton),
+        ),
+        PopupMenuItem(
+          key: const ValueKey('goal-habit-day-missed'),
+          value: HabitCompletionType.fail,
+          child: Text(context.messages.completeHabitFailButton),
+        ),
+      ],
+      child: saving
+          ? SizedBox.square(
+              dimension: ControlSizes.iconChipCompact,
+              child: Padding(
+                padding: EdgeInsets.all(tokens.spacing.step2),
+                child: const CircularProgressIndicator(),
+              ),
+            )
+          : decoratedCell,
     );
   }
 }

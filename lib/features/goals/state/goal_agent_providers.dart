@@ -19,6 +19,7 @@ import 'package:lotti/features/ai/conversation/conversation_repository.dart';
 import 'package:lotti/features/ai/repository/ai_config_repository.dart';
 import 'package:lotti/features/ai/repository/cloud_inference_repository.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/runtime/goal_agent_phase_a.dart';
 import 'package:lotti/features/goals/runtime/goal_runtime_maintenance.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
@@ -91,9 +92,9 @@ final goalAgentWorkflowProvider = Provider<GoalAgentWorkflow>(
 /// goal wakes silently fall back to the task-agent workflow, which the
 /// bootstrap regression test pins against.
 ///
-/// The router: an escalation trigger token selects the lease-elected LLM
-/// tier (Phase B); every other wake — cadence, signals, creation — runs
-/// the deterministic €0 tier (ADR 0054's two-tier contract).
+/// The router: an escalation token or explicit report-refresh token selects
+/// the fact-grounded LLM tier (Phase B); every other wake — cadence, signals,
+/// creation — runs the deterministic €0 tier (ADR 0054's two-tier contract).
 final goalAgentWakeRunnersProvider = Provider<Map<String, AgentWakeRunner>>(
   (ref) => <String, AgentWakeRunner>{
     AgentKinds.goalAgent:
@@ -117,7 +118,8 @@ final goalAgentWakeRunnersProvider = Provider<Map<String, AgentWakeRunner>>(
                   messageId: chatMessageId,
                 );
           }
-          return goalEscalationPeriodFromTriggerTokens(triggerTokens) != null
+          return goalEscalationPeriodFromTriggerTokens(triggerTokens) != null ||
+                  goalReportRefreshRequested(triggerTokens)
               ? ref
                     .read(goalAgentWorkflowProvider)
                     .execute(
@@ -292,10 +294,18 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
           .listAgents(lifecycle: AgentLifecycle.active);
       final repository = ref.watch(agentRepositoryProvider);
       final entries = <GoalBannerEntry>[];
+      final now = clock.now();
+      DateTime? nextDeadline;
+      void considerDeadline(DateTime? deadline) {
+        if (deadline == null || !deadline.isAfter(now)) return;
+        if (nextDeadline == null || deadline.isBefore(nextDeadline!)) {
+          nextDeadline = deadline;
+        }
+      }
+
       for (final identity in agents) {
         if (identity.kind != AgentKinds.goalAgent) continue;
         ref.watch(agentUpdateStreamProvider(identity.agentId));
-        final now = clock.now();
         // A banner created under a superseded spec can sync in AFTER the
         // revision sweep ran — its own provenance is the fence (Phase A
         // also sweeps it to `superseded` on the next wake).
@@ -311,28 +321,25 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
         final activeVersionId = headVersion is GoalSpecVersionEntity
             ? headVersion.id
             : null;
-        final nudges =
-            (await repository.getEntitiesByAgentId(
-              identity.agentId,
-              type: AgentEntityTypes.goalNudge,
-            )).whereType<GoalNudgeEntity>().where(
-              // Staleness is a contract, not a hope (ADR 0055): an ad
-              // past its deadline stops RENDERING immediately, even
-              // though only a later Phase B wake retires the row.
-              (n) {
-                final origin = n.provenance['specVersionId'];
-                return n.deletedAt == null &&
-                    n.status == GoalNudgeStatus.active &&
-                    (n.staleAt == null || now.isBefore(n.staleAt!)) &&
-                    // A spec-tagged banner needs a live head to validate
-                    // against — a missing/dangling head must not admit
-                    // copy that has no goal statement behind it. Only
-                    // untagged legacy rows pass without one.
-                    (origin is! String ||
-                        (activeVersionId != null && origin == activeVersionId));
-              },
-            );
+        final nudges = (await repository.getEntitiesByAgentId(
+          identity.agentId,
+          type: AgentEntityTypes.goalNudge,
+        )).whereType<GoalNudgeEntity>();
         for (final nudge in nudges) {
+          final origin = nudge.provenance['specVersionId'];
+          if (nudge.deletedAt != null ||
+              nudge.status != GoalNudgeStatus.active ||
+              (origin is String &&
+                  (activeVersionId == null || origin != activeVersionId))) {
+            continue;
+          }
+          // Staleness and snooze are both timed visibility boundaries. A
+          // snooze leaves the row active so this exact activation returns.
+          considerDeadline(nudge.staleAt);
+          if (nudge.staleAt != null && !now.isBefore(nudge.staleAt!)) continue;
+          final snoozedUntil = goalBannerSnoozedUntil(nudge);
+          considerDeadline(snoozedUntil);
+          if (goalBannerIsSnoozed(nudge, now)) continue;
           entries.add((nudge: nudge, goalTitle: identity.displayName));
         }
       }
@@ -346,14 +353,9 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
       // `staleAt` would otherwise keep rendering until some unrelated
       // event recomputed this provider. Re-evaluate at the earliest
       // deadline still ahead of us.
-      final nextDeadline = entries
-          .map((e) => e.nudge.staleAt)
-          .whereType<DateTime>()
-          .where((t) => t.isAfter(clock.now()))
-          .fold<DateTime?>(null, (a, b) => a == null || b.isBefore(a) ? b : a);
       if (nextDeadline != null) {
         final timer = Timer(
-          nextDeadline.difference(clock.now()),
+          nextDeadline!.difference(now),
           ref.invalidateSelf,
         );
         ref.onDispose(timer.cancel);

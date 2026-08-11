@@ -5,6 +5,7 @@ import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_actions.dart';
+import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/goal_banner_style.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
@@ -36,7 +37,7 @@ double _textBlockHeight(TextStyle style, int lines, TextScaler scaler) {
 /// Derived entirely from the dock's own design-system dimensions and text
 /// styles, and scale-aware. The tenant row is as tall as the taller of the
 /// [TapTargets.minimum] dismiss target and the copy block — the headline
-/// (`subtitle2`, up to two lines) plus the caption (one line), measured from
+/// (`subtitle2`, up to two lines) plus the tagline (up to two lines), measured
 /// the real text metrics at the current [MediaQuery.textScalerOf] so it grows
 /// correctly with accessibility text. Around it sits the fixed chrome — outer
 /// padding (`step3` both edges), the tenure strip (`step1`), the tenant's own
@@ -60,7 +61,7 @@ double goalBannerDockReservedHeight(BuildContext context) {
         2,
         scaler,
       ) +
-      _textBlockHeight(tokens.typography.styles.others.caption, 1, scaler);
+      _textBlockHeight(tokens.typography.styles.others.caption, 2, scaler);
   final row = textBlock > TapTargets.minimum ? textBlock : TapTargets.minimum;
   // A `step1` cushion absorbs sub-pixel rounding between the sample-glyph
   // measurement and the rendered headline's own metrics (the test pins the
@@ -341,27 +342,34 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     // it re-dirties itself mid-layout when that controller fires during its
     // own size animation. AnimatedSwitcher animates between the dock and an
     // empty box via a SizeTransition it owns, with no such reentrancy.
-    return AnimatedSwitcher(
-      duration: reduceMotion ? Duration.zero : MotionDurations.medium1,
-      switchInCurve: MotionCurves.emphasizedDecelerate,
-      switchOutCurve: MotionCurves.standard,
-      transitionBuilder: (child, animation) => SizeTransition(
-        sizeFactor: animation,
-        alignment: Alignment.topCenter,
-        child: child,
-      ),
-      child: current == null || keyboardUp
-          ? const SizedBox(key: ValueKey('dock-empty'), width: double.infinity)
-          : KeyedSubtree(
-              key: const ValueKey('dock-full'),
-              child: _buildDock(
-                context,
-                tokens,
-                entries,
-                current,
-                reduceMotion,
+    return SizedBox(
+      width: double.infinity,
+      child: AnimatedSwitcher(
+        duration: reduceMotion ? Duration.zero : MotionDurations.medium1,
+        switchInCurve: MotionCurves.emphasizedDecelerate,
+        switchOutCurve: MotionCurves.standard,
+        transitionBuilder: (child, animation) => SizeTransition(
+          sizeFactor: animation,
+          alignment: Alignment.topCenter,
+          child: child,
+        ),
+        child: current == null || keyboardUp
+            ? const SizedBox(
+                key: ValueKey('dock-empty'),
+                width: double.infinity,
+              )
+            : SizedBox(
+                key: const ValueKey('dock-full'),
+                width: double.infinity,
+                child: _buildDock(
+                  context,
+                  tokens,
+                  entries,
+                  current,
+                  reduceMotion,
+                ),
               ),
-            ),
+      ),
     );
   }
 
@@ -553,9 +561,14 @@ class _DockTenant extends ConsumerWidget {
     final tokens = context.designTokens;
     final brief = entry.nudge.brief;
     final ratingDue = GoalNudgeInteractions.ratingDue(entry.nudge);
-    final caption = justNow
-        ? '${entry.goalTitle} · ${context.messages.goalDockJustNow}'
-        : entry.goalTitle;
+    final tagline = brief.tagline?.trim();
+    final caption = tagline == null || tagline.isEmpty
+        ? justNow
+              ? context.messages.goalDockJustNow
+              : null
+        : justNow
+        ? '$tagline · ${context.messages.goalDockJustNow}'
+        : tagline;
 
     return GoalBannerExposureTracker(
       nudgeId: entry.nudge.id,
@@ -577,23 +590,28 @@ class _DockTenant extends ConsumerWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      brief.headline,
-                      maxLines: compact ? 2 : 1,
-                      overflow: TextOverflow.ellipsis,
+                    GoalBannerAnimatedText(
+                      text: brief.headline,
+                      animation: brief.animation,
+                      // Desktop has the room to show the authored headline in
+                      // full. Compact keeps the documented two-line reserve.
+                      maxLines: compact ? 2 : null,
                       style: tokens.typography.styles.subtitle.subtitle2
                           .copyWith(
                             color: tokens.colors.text.highEmphasis,
                           ),
                     ),
-                    Text(
-                      caption,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
+                    if (caption != null)
+                      Text(
+                        caption,
+                        maxLines: compact ? 2 : null,
+                        overflow: compact
+                            ? TextOverflow.ellipsis
+                            : TextOverflow.visible,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.mediumEmphasis,
+                        ),
                       ),
-                    ),
                   ],
                 ),
               ),

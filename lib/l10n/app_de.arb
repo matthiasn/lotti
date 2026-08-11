@@ -2541,6 +2541,8 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Titelbild generieren",
   "generateCoverArtSubtitle": "Bild aus einer Beschreibung erstellen",
+  "goalAgentLifetimeTimePill": "{duration} KI-Zeit",
+  "goalAgentLifetimeTimeTooltip": "Gesamte Rechenzeit des Agenten über {calls} Modellaufrufe.",
   "goalAttainmentLabel": "{percent} % des Ziels",
   "goalBannerActionFailed": "Das wurde nicht gespeichert — bitte versuch es noch einmal.",
   "goalBannerDismissTooltip": "Ausblenden",

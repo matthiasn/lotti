@@ -1,6 +1,7 @@
 import 'dart:convert';
 import 'dart:developer' as developer;
 
+import 'package:clock/clock.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/agents/model/observation_record.dart';
@@ -16,6 +17,9 @@ typedef GoalAdRequest = ({GoalNudgeBrief brief, String? reasonSummary});
 
 /// A retire/rerun request accumulated during the conversation.
 typedef GoalAdAction = ({String adId, String reason});
+
+/// A request to hide one active banner until an exact future instant.
+typedef GoalAdSnooze = ({String adId, DateTime until, String reason});
 
 /// A revision proposal accumulated from `propose_goal_revision`.
 typedef GoalRevisionProposal = ({
@@ -72,6 +76,7 @@ class GoalAgentStrategy extends ConversationStrategy
   final _createdAds = <GoalAdRequest>[];
   final _rerunRequests = <GoalAdAction>[];
   final _retireRequests = <GoalAdAction>[];
+  final _snoozeRequests = <GoalAdSnooze>[];
   final _revisionProposals = <GoalRevisionProposal>[];
   final _observations = <ObservationRecord>[];
 
@@ -85,6 +90,7 @@ class GoalAgentStrategy extends ConversationStrategy
   List<GoalAdRequest> get createdAds => List.unmodifiable(_createdAds);
   List<GoalAdAction> get rerunRequests => List.unmodifiable(_rerunRequests);
   List<GoalAdAction> get retireRequests => List.unmodifiable(_retireRequests);
+  List<GoalAdSnooze> get snoozeRequests => List.unmodifiable(_snoozeRequests);
   List<GoalRevisionProposal> get revisionProposals =>
       List.unmodifiable(_revisionProposals);
   List<ObservationRecord> get observations => List.unmodifiable(_observations);
@@ -137,6 +143,8 @@ class GoalAgentStrategy extends ConversationStrategy
           await _handleAdAction(call, args, manager, _rerunRequests, 'rerun');
         case GoalAgentToolNames.retireGoalAd:
           await _handleAdAction(call, args, manager, _retireRequests, 'retire');
+        case GoalAgentToolNames.snoozeGoalAd:
+          await _handleSnoozeAd(call, args, manager);
         case GoalAgentToolNames.proposeGoalRevision:
           await _handleProposeRevision(call, args, manager);
         case GoalAgentToolNames.recordGoalObservation:
@@ -301,6 +309,45 @@ class GoalAgentStrategy extends ConversationStrategy
     }
     sink.add((adId: adId, reason: reason));
     await _accept(call, manager, 'Ad $verb recorded.');
+  }
+
+  Future<void> _handleSnoozeAd(
+    ChatCompletionMessageToolCall call,
+    Map<String, dynamic> args,
+    ConversationManager manager,
+  ) async {
+    final adId = _trimmed(args['adId']);
+    final reason = _trimmed(args['reason']);
+    final until = DateTime.tryParse(_trimmed(args['until']))?.toUtc();
+    if (adId.isEmpty ||
+        reason.isEmpty ||
+        until == null ||
+        !until.isAfter(clock.now().toUtc())) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: snooze needs a known active adId, a future ISO 8601 '
+            'until instant, and a reason.',
+      );
+      return;
+    }
+    if (!_knownAdIds.contains(adId)) {
+      await _reject(
+        call: call,
+        manager: manager,
+        error:
+            'Error: unknown adId "$adId" — use an adId from the FACTS '
+            'block exactly as given.',
+      );
+      return;
+    }
+    _snoozeRequests.add((adId: adId, until: until, reason: reason));
+    await _accept(
+      call,
+      manager,
+      'Ad snoozed until ${until.toIso8601String()}.',
+    );
   }
 
   Future<void> _handleProposeRevision(

@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
@@ -48,10 +49,15 @@ class GoalMetricProgressView {
 }
 
 class GoalProgressDay {
-  const GoalProgressDay({required this.day, required this.value});
+  const GoalProgressDay({
+    required this.day,
+    required this.value,
+    this.habitCompletionType,
+  });
 
   final DateTime day;
   final num value;
+  final HabitCompletionType? habitCompletionType;
 
   bool get hasValue => value > 0;
 }
@@ -146,6 +152,8 @@ GoalProgressView buildGoalProgressView({
             GoalProgressDay(
               day: day,
               value: signals.habitSuccessesByDay[habit.habitId]?[day] ?? 0,
+              habitCompletionType:
+                  signals.habitCompletionsByDay[habit.habitId]?[day],
             ),
         ],
         successfulWeeks: _successfulWeeks(

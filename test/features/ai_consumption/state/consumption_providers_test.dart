@@ -290,6 +290,61 @@ void main() {
     });
   });
 
+  group('agentConsumptionTotalsProvider', () {
+    test('emits lifetime totals for the requested agent', () async {
+      final totals = makeConsumptionTotals(
+        callCount: 2,
+        totalTokens: 1200,
+        durationMs: 900,
+      );
+      when(
+        () => repository.totalsForAgent('goal-1'),
+      ).thenAnswer((_) async => totals);
+      final container = makeContainer();
+      final sub = container.listen(
+        agentConsumptionTotalsProvider('goal-1'),
+        (_, _) {},
+      );
+      addTearDown(sub.close);
+
+      final emitted = await container.read(
+        agentConsumptionTotalsProvider('goal-1').future,
+      );
+
+      expect(emitted, totals);
+      verify(() => repository.totalsForAgent('goal-1')).called(1);
+    });
+
+    test('refetches after a consumption notification', () async {
+      when(
+        () => repository.totalsForAgent('goal-1'),
+      ).thenAnswer(
+        (_) async => makeConsumptionTotals(callCount: 1, totalTokens: 100),
+      );
+      final container = makeContainer(withNotifications: notifications);
+      final states = <AsyncValue<ConsumptionTotals>>[];
+      final sub = container.listen(
+        agentConsumptionTotalsProvider('goal-1'),
+        (_, next) => states.add(next),
+        fireImmediately: true,
+      );
+      addTearDown(sub.close);
+      await container.read(agentConsumptionTotalsProvider('goal-1').future);
+
+      when(
+        () => repository.totalsForAgent('goal-1'),
+      ).thenAnswer(
+        (_) async => makeConsumptionTotals(callCount: 2, totalTokens: 300),
+      );
+      notificationController.add({aiConsumptionNotification});
+      await pumpEventQueue();
+
+      expect(states.last.value?.callCount, 2);
+      expect(states.last.value?.totalTokens, 300);
+      verify(() => repository.totalsForAgent('goal-1')).called(2);
+    });
+  });
+
   group('consumptionBucketsProvider', () {
     test('fetches window start to the moving end and bucketizes rows per '
         'day and category', () async {

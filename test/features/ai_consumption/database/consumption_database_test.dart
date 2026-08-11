@@ -16,17 +16,19 @@ void main() {
     await db.close();
   });
 
-  test('migrates the schema-v1 event store to attribution schema v2', () async {
-    final directory = Directory.systemTemp.createTempSync('consumption-v1-');
-    addTearDown(() {
-      if (directory.existsSync()) directory.deleteSync(recursive: true);
-    });
-    final sqlite = sqlite3.open(
-      path.join(directory.path, consumptionDbFileName),
-    );
-    // ignore: cascade_invocations
-    sqlite
-      ..execute('''
+  test(
+    'migrates schema v1 through attribution and agent-index schema v3',
+    () async {
+      final directory = Directory.systemTemp.createTempSync('consumption-v1-');
+      addTearDown(() {
+        if (directory.existsSync()) directory.deleteSync(recursive: true);
+      });
+      final sqlite = sqlite3.open(
+        path.join(directory.path, consumptionDbFileName),
+      );
+      // ignore: cascade_invocations
+      sqlite
+        ..execute('''
         CREATE TABLE consumption_events (
           id TEXT NOT NULL PRIMARY KEY,
           parent_id TEXT,
@@ -63,44 +65,46 @@ void main() {
           schema_version INTEGER NOT NULL DEFAULT 1
         )
       ''')
-      ..execute('PRAGMA user_version = 1')
-      ..close();
+        ..execute('PRAGMA user_version = 1')
+        ..close();
 
-    final migrated = ConsumptionDatabase(
-      background: false,
-      documentsDirectoryProvider: () async => directory,
-      tempDirectoryProvider: () async => directory,
-    );
-    addTearDown(migrated.close);
+      final migrated = ConsumptionDatabase(
+        background: false,
+        documentsDirectoryProvider: () async => directory,
+        tempDirectoryProvider: () async => directory,
+      );
+      addTearDown(migrated.close);
 
-    final version = await migrated
-        .customSelect('PRAGMA user_version')
-        .getSingle();
-    final columns = await migrated
-        .customSelect('PRAGMA table_info(consumption_events)')
-        .get();
-    final objects = await migrated
-        .customSelect(
-          "SELECT name FROM sqlite_master WHERE type IN ('table', 'index')",
-        )
-        .get();
-    final names = objects.map((row) => row.read<String>('name')).toSet();
+      final version = await migrated
+          .customSelect('PRAGMA user_version')
+          .getSingle();
+      final columns = await migrated
+          .customSelect('PRAGMA table_info(consumption_events)')
+          .get();
+      final objects = await migrated
+          .customSelect(
+            "SELECT name FROM sqlite_master WHERE type IN ('table', 'index')",
+          )
+          .get();
+      final names = objects.map((row) => row.read<String>('name')).toSet();
 
-    expect(version.read<int>('user_version'), 2);
-    expect(
-      columns.map((row) => row.read<String>('name')),
-      contains('attribution_id'),
-    );
-    expect(
-      names,
-      containsAll(<String>{
-        'ai_work_attributions',
-        'idx_consumption_attribution',
-        'idx_attribution_output',
-        'idx_attribution_task_created',
-        'idx_attribution_actor_created',
-        'idx_attribution_type_created',
-      }),
-    );
-  });
+      expect(version.read<int>('user_version'), 3);
+      expect(
+        columns.map((row) => row.read<String>('name')),
+        contains('attribution_id'),
+      );
+      expect(
+        names,
+        containsAll(<String>{
+          'ai_work_attributions',
+          'idx_consumption_attribution',
+          'idx_attribution_output',
+          'idx_attribution_task_created',
+          'idx_attribution_actor_created',
+          'idx_attribution_type_created',
+          'idx_consumption_agent_created',
+        }),
+      );
+    },
+  );
 }

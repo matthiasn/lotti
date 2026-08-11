@@ -4,14 +4,18 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
+import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
+import 'package:lotti/features/goals/ui/goal_agent_lifetime_pills.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
@@ -119,6 +123,27 @@ class GoalAgentDetailPage extends ConsumerWidget {
     final history =
         ref.watch(goalNudgeHistoryProvider(agentId)).value ??
         const <GoalNudgeEntity>[];
+    final reports =
+        ref.watch(agentReportHistoryProvider(agentId)).value ??
+        const <AgentDomainEntity>[];
+    AgentReportEntity? latestReport;
+    for (final entity in reports) {
+      if (entity is! AgentReportEntity ||
+          entity.scope != AgentReportScopes.current ||
+          entity.deletedAt != null) {
+        continue;
+      }
+      final reportSpecId = entity.provenance['specVersionId'];
+      final matchesSpec =
+          spec != null &&
+          (reportSpecId is String
+              ? reportSpecId == spec.id
+              : !entity.createdAt.isBefore(spec.createdAt));
+      if (matchesSpec) {
+        latestReport = entity;
+        break;
+      }
+    }
     Widget detailList({required bool showChatAction}) => ListView(
       // The mobile shell keeps the bottom navigation overlaid on agents
       // subroutes, so the final content must clear it.
@@ -130,15 +155,43 @@ class GoalAgentDetailPage extends ConsumerWidget {
             DesignSystemBottomNavigationBar.occupiedHeight(context),
       ),
       children: [
-        _GoalHeader(identity: goalIdentity, health: health, spec: spec),
+        _GoalHeader(
+          agentId: agentId,
+          identity: goalIdentity,
+          health: health,
+          spec: spec,
+        ),
         if (progress != null) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
-          GoalProgressCard(progress: progress),
+          GoalProgressCard(
+            progress: progress,
+            onHabitOutcomeSelected:
+                ({
+                  required day,
+                  required habitId,
+                  required outcome,
+                }) async {
+                  final saved = await ref
+                      .read(goalHabitCompletionServiceProvider)
+                      .record(
+                        agentId: agentId,
+                        habitId: habitId,
+                        day: day,
+                        outcome: outcome,
+                      );
+                  if (saved) {
+                    ref.invalidate(goalAgentProgressViewProvider(agentId));
+                  }
+                  return saved;
+                },
+          ),
         ],
         SizedBox(height: tokens.spacing.cardItemSpacing),
         _AgentSayingSection(
+          agentId: agentId,
           healthAsync: healthAsync,
           nudges: nudges,
+          report: latestReport,
         ),
         SizedBox(height: tokens.spacing.cardItemSpacing),
         ChangeSetSummaryCard.selfTargeted(
@@ -171,7 +224,12 @@ class GoalAgentDetailPage extends ConsumerWidget {
         appBar: AppBar(
           leading: backToList,
           title: Text(spec?.title ?? goalIdentity.displayName),
-          actions: [_GoalDeleteMenuButton(agentId: agentId)],
+          actions: [
+            _GoalActionsMenuButton(
+              agentId: agentId,
+              agentName: goalIdentity.displayName,
+            ),
+          ],
         ),
         body: SafeArea(
           child: desktop
@@ -196,11 +254,13 @@ class GoalAgentDetailPage extends ConsumerWidget {
 
 class _GoalHeader extends StatelessWidget {
   const _GoalHeader({
+    required this.agentId,
     required this.identity,
     required this.health,
     required this.spec,
   });
 
+  final String agentId;
   final AgentIdentityEntity identity;
   final GoalAgentHealth? health;
   final GoalSpecVersionEntity? spec;
@@ -231,8 +291,11 @@ class _GoalHeader extends StatelessWidget {
               ),
             ),
             GoalCoarseHealthChip(health: coarse),
+            if (health?.direction case final direction?)
+              GoalHealthDirectionChip(direction: direction),
           ],
         ),
+        GoalAgentLifetimePills(agentId: agentId),
         if (spec?.statement case final statement?) ...[
           SizedBox(height: tokens.spacing.step3),
           Text(
@@ -248,64 +311,150 @@ class _GoalHeader extends StatelessWidget {
   }
 }
 
-class _AgentSayingSection extends StatelessWidget {
+class _AgentSayingSection extends ConsumerWidget {
   const _AgentSayingSection({
+    required this.agentId,
     required this.healthAsync,
     required this.nudges,
+    required this.report,
   });
 
+  final String agentId;
   final AsyncValue<GoalAgentHealth> healthAsync;
   final List<GoalBannerEntry> nudges;
+  final AgentReportEntity? report;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final isRefreshing =
+        ref.watch(agentIsRunningProvider(agentId)).value ?? false;
+    final oneLiner = healthAsync.value?.reportOneLiner;
+    final header = Row(
+      children: [
+        Expanded(
+          child: Text(
+            context.messages.goalDetailSayingTitle,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.alert.warning.ink,
+            ),
+          ),
+        ),
+        DesignSystemButton(
+          label: context.messages.taskAgentUpdateNow,
+          onPressed: () => ref
+              .read(goalHabitCompletionServiceProvider)
+              .requestReportRefresh(agentId),
+          variant: DesignSystemButtonVariant.tertiary,
+          size: DesignSystemButtonSize.dense,
+          leadingIcon: Icons.refresh_rounded,
+          isLoading: isRefreshing,
+        ),
+      ],
+    );
+    final reportCard = _GoalReportCard(
+      report: report,
+      fallback:
+          oneLiner ??
+          (healthAsync.hasError
+              ? context.messages.goalDetailHealthUnavailable
+              : context.messages.goalDetailNoReport),
+      fallbackMuted: oneLiner == null,
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        header,
+        SizedBox(height: tokens.spacing.step2),
+        reportCard,
+        // Every active banner remains reachable here, uncapped. The shell
+        // rotates one slot; this goal-owned surface does not. Banners are an
+        // interaction channel, not a replacement for the standing report.
+        for (var index = 0; index < nudges.length; index++) ...[
+          SizedBox(height: tokens.spacing.step3),
+          GoalBannerExposureTracker(
+            key: ValueKey(
+              '${nudges[index].nudge.id}:'
+              '${nudges[index].nudge.activationCount}',
+            ),
+            nudgeId: nudges[index].nudge.id,
+            child: GoalBannerCard(entry: nudges[index]),
+          ),
+        ],
+      ],
+    );
+  }
+}
+
+class _GoalReportCard extends StatefulWidget {
+  const _GoalReportCard({
+    required this.report,
+    required this.fallback,
+    required this.fallbackMuted,
+  });
+
+  final AgentReportEntity? report;
+  final String fallback;
+  final bool fallbackMuted;
+
+  @override
+  State<_GoalReportCard> createState() => _GoalReportCardState();
+}
+
+class _GoalReportCardState extends State<_GoalReportCard> {
+  bool _expanded = false;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final oneLiner = healthAsync.value?.reportOneLiner;
-    final label = Text(
-      context.messages.goalDetailSayingTitle,
-      style: tokens.typography.styles.others.caption.copyWith(
-        color: tokens.colors.alert.warning.ink,
-      ),
-    );
-    if (nudges.isNotEmpty) {
-      return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          label,
-          SizedBox(height: tokens.spacing.step2),
-          // Every active banner remains reachable here, uncapped. The shell
-          // rotates one slot; this goal-owned surface does not.
-          for (var index = 0; index < nudges.length; index++) ...[
-            if (index > 0) SizedBox(height: tokens.spacing.step3),
-            GoalBannerExposureTracker(
-              key: ValueKey(
-                '${nudges[index].nudge.id}:'
-                '${nudges[index].nudge.activationCount}',
-              ),
-              nudgeId: nudges[index].nudge.id,
-              child: GoalBannerCard(entry: nudges[index]),
-            ),
-          ],
-        ],
-      );
-    }
+    final report = widget.report;
+    final tldr = report?.tldr?.trim();
+    final content = report?.content.trim();
+    final hasTldr = tldr != null && tldr.isNotEmpty;
+    final hasContent = content != null && content.isNotEmpty;
+    final expandable = hasTldr && hasContent;
+    final primary = hasTldr
+        ? tldr
+        : hasContent
+        ? content
+        : widget.fallback;
+
     return DesignSystemSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          label,
-          SizedBox(height: tokens.spacing.step3),
-          Text(
-            oneLiner ??
-                (healthAsync.hasError
-                    ? context.messages.goalDetailHealthUnavailable
-                    : context.messages.goalDetailNoReport),
+          AgentMarkdownView(
+            primary,
             style: tokens.typography.styles.body.bodyMedium.copyWith(
-              color: oneLiner == null
+              color: report == null && widget.fallbackMuted
                   ? tokens.colors.text.lowEmphasis
                   : tokens.colors.text.highEmphasis,
             ),
           ),
+          if (expandable) ...[
+            if (_expanded) ...[
+              SizedBox(height: tokens.spacing.step3),
+              AgentMarkdownView(
+                content,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.highEmphasis,
+                ),
+              ),
+            ],
+            SizedBox(height: tokens.spacing.step1),
+            DesignSystemButton(
+              label: _expanded
+                  ? context.messages.aiResponseShowLess
+                  : context.messages.aiResponseShowMore,
+              onPressed: () => setState(() => _expanded = !_expanded),
+              variant: DesignSystemButtonVariant.tertiary,
+              size: DesignSystemButtonSize.dense,
+              trailingIcon: _expanded
+                  ? Icons.expand_less_rounded
+                  : Icons.expand_more_rounded,
+              alignsLabelToLeadingEdge: true,
+            ),
+          ],
         ],
       ),
     );
@@ -418,12 +567,16 @@ class _GoalHistorySection extends StatelessWidget {
   }
 }
 
-enum _GoalDetailMenuAction { delete }
+enum _GoalDetailMenuAction { internals, delete }
 
-class _GoalDeleteMenuButton extends ConsumerWidget {
-  const _GoalDeleteMenuButton({required this.agentId});
+class _GoalActionsMenuButton extends ConsumerWidget {
+  const _GoalActionsMenuButton({
+    required this.agentId,
+    required this.agentName,
+  });
 
   final String agentId;
+  final String agentName;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -433,11 +586,34 @@ class _GoalDeleteMenuButton extends ConsumerWidget {
       icon: const Icon(Icons.more_vert_rounded),
       onSelected: (action) {
         switch (action) {
+          case _GoalDetailMenuAction.internals:
+            Navigator.of(context).push(
+              AgentInternalsPanel.route(
+                context: context,
+                agentId: agentId,
+                agentName: agentName,
+              ),
+            );
           case _GoalDetailMenuAction.delete:
             _confirmAndDelete(context, ref);
         }
       },
       itemBuilder: (context) => [
+        PopupMenuItem<_GoalDetailMenuAction>(
+          value: _GoalDetailMenuAction.internals,
+          child: Row(
+            children: [
+              const Icon(Icons.tune_rounded),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Text(
+                  context.messages.aiCardOpenAgentInternals,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
+          ),
+        ),
         PopupMenuItem<_GoalDetailMenuAction>(
           value: _GoalDetailMenuAction.delete,
           child: Row(

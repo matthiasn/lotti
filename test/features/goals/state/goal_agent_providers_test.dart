@@ -242,6 +242,18 @@ void main() {
     expect(phaseB.success, isFalse);
     expect(phaseB.error, contains('no inference provider'));
 
+    // A report refresh requested by the goal-detail habit editor follows the
+    // same fact-grounded Phase B path even when the status itself did not
+    // transition.
+    final reportRefresh = await runner(
+      agentIdentity: goalIdentity(agentId),
+      runKey: 'run-refresh',
+      triggerTokens: const {goalReportRefreshTriggerToken},
+      threadId: 'thread-refresh',
+    );
+    expect(reportRefresh.success, isFalse);
+    expect(reportRefresh.error, contains('no inference provider'));
+
     // The same wake without the escalation token stays on the €0 tier and
     // succeeds without any inference plumbing.
     when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
@@ -713,6 +725,13 @@ void main() {
       (_) async => [
         nudgeRow('ad-old', GoalNudgeStatus.active, DateTime(2026, 8, 8)),
         nudgeRow('ad-new', GoalNudgeStatus.active, DateTime(2026, 8, 10)),
+        nudgeRow(
+          'ad-snoozed',
+          GoalNudgeStatus.active,
+          DateTime(2026, 8, 11),
+        ).copyWith(
+          provenance: const {'snoozedUntil': '2099-08-11T12:00:00.000Z'},
+        ),
         nudgeRow('ad-gone', GoalNudgeStatus.dismissed, DateTime(2026, 8, 9)),
       ],
     );
@@ -1500,6 +1519,66 @@ void main() {
           container.read(activeGoalNudgesProvider).value,
           isEmpty,
           reason: 'the staleness contract holds without an external event',
+        );
+      });
+    });
+  });
+
+  test('a snoozed banner automatically returns at its deadline without an '
+      'agent notification', () {
+    final start = DateTime.utc(2026, 8, 10, 12);
+    fakeAsync((async) {
+      withClock(Clock(() => start.add(async.elapsed)), () {
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+        when(
+          () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.goalNudge(
+                  id: 'ad-snoozed',
+                  agentId: 'goal-a',
+                  status: GoalNudgeStatus.active,
+                  brief: const GoalNudgeBrief(
+                    headline: 'h',
+                    tone: GoalNudgeTone.nudge,
+                    animation: GoalBannerAnimation.steady,
+                  ),
+                  briefDigest: 'd',
+                  createdAt: start,
+                  updatedAt: start,
+                  vectorClock: null,
+                  staleAt: start.add(const Duration(days: 1)),
+                  provenance: {
+                    'snoozedUntil': start
+                        .add(const Duration(hours: 1))
+                        .toIso8601String(),
+                  },
+                )
+                as GoalNudgeEntity,
+          ],
+        );
+
+        final flagSub = container.listen(
+          configFlagProvider(enableAgentsPageFlag),
+          (_, _) {},
+        );
+        addTearDown(flagSub.close);
+        final sub = container.listen(activeGoalNudgesProvider, (_, _) {});
+        addTearDown(sub.close);
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 1))
+          ..flushMicrotasks();
+        expect(container.read(activeGoalNudgesProvider).value, isEmpty);
+
+        async
+          ..elapse(const Duration(hours: 1, seconds: 1))
+          ..flushMicrotasks();
+        expect(
+          container.read(activeGoalNudgesProvider).value?.single.nudge.id,
+          'ad-snoozed',
         );
       });
     });

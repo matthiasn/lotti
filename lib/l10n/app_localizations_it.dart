@@ -6046,6 +6046,16 @@ class AppLocalizationsIt extends AppLocalizations {
       'Crea immagine dalla descrizione vocale';
 
   @override
+  String goalAgentLifetimeTimePill(String duration) {
+    return '$duration di IA';
+  }
+
+  @override
+  String goalAgentLifetimeTimeTooltip(String calls) {
+    return 'Tempo di calcolo totale dell\'agente su $calls chiamate al modello.';
+  }
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent% dell’obiettivo';
   }

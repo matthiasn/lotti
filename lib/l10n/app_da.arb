@@ -2791,6 +2791,8 @@
   "geminiThinkingModeMinimalLabel": "Minimal",
   "generateCoverArt": "Generer coverkunst",
   "generateCoverArtSubtitle": "Opret billede ud fra stemmebeskrivelse",
+  "goalAgentLifetimeTimePill": "{duration} AI-tid",
+  "goalAgentLifetimeTimeTooltip": "Samlet beregningstid for agenten på tværs af {calls} modelkald.",
   "goalAttainmentLabel": "{percent} % af målet",
   "goalBannerActionFailed": "Det blev ikke gemt — prøv venligst igen.",
   "goalBannerDismissTooltip": "Afvis",

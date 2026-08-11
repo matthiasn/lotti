@@ -26,6 +26,14 @@ void main() {
     expect(isGoalEscalationWorkspace(goalCadenceWorkspaceKey), isFalse);
   });
 
+  test('report refresh is an explicit opt-in trigger', () {
+    expect(
+      goalReportRefreshRequested(const {goalReportRefreshTriggerToken}),
+      isTrue,
+    );
+    expect(goalReportRefreshRequested(const {'gym-habit'}), isFalse);
+  });
+
   test('the baseline token round-trips the pre-transition status', () {
     expect(goalEscalationBaselineToken('offTrack'), 'goal-baseline:offTrack');
     expect(

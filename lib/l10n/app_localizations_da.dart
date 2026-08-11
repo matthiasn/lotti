@@ -5973,6 +5973,16 @@ class AppLocalizationsDa extends AppLocalizations {
       'Opret billede ud fra stemmebeskrivelse';
 
   @override
+  String goalAgentLifetimeTimePill(String duration) {
+    return '$duration AI-tid';
+  }
+
+  @override
+  String goalAgentLifetimeTimeTooltip(String calls) {
+    return 'Samlet beregningstid for agenten på tværs af $calls modelkald.';
+  }
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent % af målet';
   }

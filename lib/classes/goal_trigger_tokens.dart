@@ -9,6 +9,16 @@ library;
 /// every run (recurrence by re-arm; no schema change).
 const goalCadenceWorkspaceKey = 'goal-cadence';
 
+/// User-initiated report refresh after an exact-day habit edit.
+///
+/// This routes the wake through the fact-grounded LLM tier so the standing
+/// report visibly acknowledges the edit. Background and synced habit writes
+/// carry no such token and remain on the deterministic €0 path.
+const goalReportRefreshTriggerToken = 'goal-report-refresh';
+
+bool goalReportRefreshRequested(Set<String> triggerTokens) =>
+    triggerTokens.contains(goalReportRefreshTriggerToken);
+
 /// Prefix of the per-period escalation workspaces. Escalation records are
 /// lease-elected: exactly one device runs the LLM tier for a given
 /// period's transition.

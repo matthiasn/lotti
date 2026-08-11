@@ -2541,6 +2541,8 @@
   "geminiThinkingModeMinimalLabel": "Minim",
   "generateCoverArt": "Generează copertă",
   "generateCoverArtSubtitle": "Creează imagine din descrierea vocală",
+  "goalAgentLifetimeTimePill": "{duration} timp AI",
+  "goalAgentLifetimeTimeTooltip": "Timp total de calcul al agentului pentru {calls} apeluri de model.",
   "goalAttainmentLabel": "{percent}% din obiectiv",
   "goalBannerActionFailed": "Nu s-a salvat — vă rugăm să încercați din nou.",
   "goalBannerDismissTooltip": "Închideți",

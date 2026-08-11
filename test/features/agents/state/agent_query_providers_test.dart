@@ -1780,51 +1780,57 @@ void main() {
         );
       }
 
-      test('tier 4: falls back to live agent config profile', () async {
-        stubDefaults();
+      test(
+        'source-only thread does not inherit the live profile model',
+        () async {
+          stubDefaults();
 
-        final agent = makeTestIdentity(
-          config: const AgentConfig(profileId: 'profile-1'),
-        );
-        when(
-          () => mockRepository.getEntity(kTestAgentId),
-        ).thenAnswer((_) async => agent);
-        when(
-          () => mockAiConfigRepo.getConfigById('profile-1'),
-        ).thenAnswer(
-          (_) async => AiConfig.inferenceProfile(
-            id: 'profile-1',
-            name: 'Local Ollama',
-            thinkingModelId: 'qwen3.5:9b',
-            createdAt: DateTime(2024, 3, 15),
-          ),
-        );
+          final agent = makeTestIdentity(
+            config: const AgentConfig(profileId: 'profile-1'),
+          );
+          when(
+            () => mockRepository.getEntity(kTestAgentId),
+          ).thenAnswer((_) async => agent);
+          when(
+            () => mockAiConfigRepo.getConfigById('profile-1'),
+          ).thenAnswer(
+            (_) async => AiConfig.inferenceProfile(
+              id: 'profile-1',
+              name: 'Local Ollama',
+              thinkingModelId: 'qwen3.5:9b',
+              createdAt: DateTime(2024, 3, 15),
+            ),
+          );
 
-        final container = createContainer();
-        final result = await container.read(
-          modelIdForThreadProvider((kTestAgentId, 'thread-abc')).future,
-        );
+          final container = createContainer();
+          final result = await container.read(
+            modelIdForThreadProvider((kTestAgentId, 'thread-abc')).future,
+          );
 
-        expect(result, 'qwen3.5:9b');
-      });
+          expect(result, isNull);
+        },
+      );
 
-      test('tier 4: falls back to live agent config modelId', () async {
-        stubDefaults();
+      test(
+        'source-only thread does not inherit the live config modelId',
+        () async {
+          stubDefaults();
 
-        final agent = makeTestIdentity(
-          config: const AgentConfig(modelId: 'models/gemini-3-pro'),
-        );
-        when(
-          () => mockRepository.getEntity(kTestAgentId),
-        ).thenAnswer((_) async => agent);
+          final agent = makeTestIdentity(
+            config: const AgentConfig(modelId: 'models/gemini-3-pro'),
+          );
+          when(
+            () => mockRepository.getEntity(kTestAgentId),
+          ).thenAnswer((_) async => agent);
 
-        final container = createContainer();
-        final result = await container.read(
-          modelIdForThreadProvider((kTestAgentId, 'thread-abc')).future,
-        );
+          final container = createContainer();
+          final result = await container.read(
+            modelIdForThreadProvider((kTestAgentId, 'thread-abc')).future,
+          );
 
-        expect(result, 'models/gemini-3-pro');
-      });
+          expect(result, isNull);
+        },
+      );
 
       test('returns null when nothing resolves', () async {
         stubDefaults();

@@ -341,6 +341,7 @@ ConsumptionTotals makeConsumptionTotals({
   double energyKwh = 0,
   double carbonGCo2 = 0,
   double waterLiters = 0,
+  int durationMs = 0,
 }) => ConsumptionTotals(
   callCount: callCount,
   impactCallCount: impactCallCount,
@@ -353,6 +354,7 @@ ConsumptionTotals makeConsumptionTotals({
   energyKwh: energyKwh,
   carbonGCo2: carbonGCo2,
   waterLiters: waterLiters,
+  durationMs: durationMs,
 );
 
 ConsumptionMetricRow makeMetricRow({

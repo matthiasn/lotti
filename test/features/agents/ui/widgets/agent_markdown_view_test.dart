@@ -16,11 +16,18 @@ Future<void> _pumpView(
   WidgetTester tester,
   String text, {
   TextStyle? style,
+  int? maxLines,
+  TextOverflow? overflow,
   ThemeData? theme,
 }) async {
   await tester.pumpWidget(
     makeTestableWidgetWithScaffold(
-      AgentMarkdownView(text, style: style),
+      AgentMarkdownView(
+        text,
+        style: style,
+        maxLines: maxLines,
+        overflow: overflow,
+      ),
       theme: theme,
     ),
   );
@@ -54,6 +61,23 @@ void main() {
         find.byType(GptMarkdown),
       );
       expect(gptMarkdown.data, markdownText);
+    });
+
+    testWidgets('forwards an optional line clamp to the markdown renderer', (
+      tester,
+    ) async {
+      await _pumpView(
+        tester,
+        'A long answer',
+        maxLines: 8,
+        overflow: TextOverflow.ellipsis,
+      );
+
+      final gptMarkdown = tester.widget<GptMarkdown>(
+        find.byType(GptMarkdown),
+      );
+      expect(gptMarkdown.maxLines, 8);
+      expect(gptMarkdown.overflow, TextOverflow.ellipsis);
     });
 
     testWidgets('applies custom style to body text when provided', (

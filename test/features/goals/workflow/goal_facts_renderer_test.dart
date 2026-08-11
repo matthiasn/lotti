@@ -127,6 +127,7 @@ void main() {
   test('renders the exact section vocabulary the evals validated', () {
     final json = renderedJson();
     expect(json.keys, {
+      'generatedAt',
       'goal',
       'evaluation',
       'reporting',
@@ -162,6 +163,11 @@ void main() {
   });
 
   test('active ads carry freshness; a stale-marked ad is exposed as such', () {
+    final recordedOutcome = GoalNudgeRating(
+      activation: 1,
+      ratedAt: now.subtract(const Duration(hours: 1)),
+      rating: 4,
+    );
     final json = renderedJson(
       nudges: [
         nudge(
@@ -169,6 +175,7 @@ void main() {
           status: GoalNudgeStatus.active,
           activatedAt: now.subtract(const Duration(hours: 6)),
           staleAt: now.add(const Duration(hours: 66)),
+          ratings: [recordedOutcome],
         ),
         nudge(
           id: 'ad-stale',
@@ -185,9 +192,11 @@ void main() {
     final fresh = active.singleWhere((a) => a['adId'] == 'ad-fresh');
     expect(fresh['fresh'], isTrue);
     expect(fresh['markedStale'], isFalse);
+    expect(fresh['outcomeRecorded'], isTrue);
     final stale = active.singleWhere((a) => a['adId'] == 'ad-stale');
     expect(stale['fresh'], isFalse);
     expect(stale['markedStale'], isTrue);
+    expect(stale['outcomeRecorded'], isFalse);
   });
 
   test('only retired ads with mean rating >= 4 are offered for re-run, '

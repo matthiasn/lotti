@@ -44,9 +44,19 @@ without exposing thoughts or tool bookkeeping. The visible layer shipped behind 
 and habits pages (`ui/goal_banner_*`), and an Agents tab (`ui/pages/`)
 with per-goal health at a glance, deterministic rolling-window progress,
 proposal approval, goal creation/deletion, and durable conversation as a
-pushed phone page or desktop peer pane. Voice, paging beyond the newest fifty
-visible turns, search, and inline nudge cards remain later conversation
-increments; the plan of record is
+pushed phone page or desktop peer pane. Agent replies retain their Markdown
+structure, while long replies start compact and can be expanded in place.
+The detail grid can record success or a miss on any active day through the
+normal habit-completion path; these edits wake the deterministic evaluator and
+queue a standing-report refresh, with an Update now fallback visible beside the
+report. Goal chat stays purpose-bound: unrelated general-assistant requests are
+redirected to the goal rather than answered.
+Health and direction are separate signals, the standing report stays visible
+beside active banners, and lifetime AI consumption plus compute time use the
+same governance pills as Task Details. Chat can also snooze the current banner
+until any requested future time, when that exact banner returns automatically.
+Voice, paging beyond the newest fifty visible turns, search, and inline nudge
+cards remain later conversation increments; the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.
 
 Runtime map: [knowledge/features/goals.md](../../../knowledge/features/goals.md).

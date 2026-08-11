@@ -5992,6 +5992,16 @@ class AppLocalizationsNl extends AppLocalizations {
       'Afbeelding aanmaken van spraakbeschrijving';
 
   @override
+  String goalAgentLifetimeTimePill(String duration) {
+    return '$duration AI-tijd';
+  }
+
+  @override
+  String goalAgentLifetimeTimeTooltip(String calls) {
+    return 'Totale rekentijd van de agent voor $calls modelaanroepen.';
+  }
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent% van het doel';
   }

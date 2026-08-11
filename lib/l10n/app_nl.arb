@@ -2790,6 +2790,8 @@
   "geminiThinkingModeMinimalLabel": "Minimaal",
   "generateCoverArt": "Omslagkunst genereren",
   "generateCoverArtSubtitle": "Afbeelding aanmaken van spraakbeschrijving",
+  "goalAgentLifetimeTimePill": "{duration} AI-tijd",
+  "goalAgentLifetimeTimeTooltip": "Totale rekentijd van de agent voor {calls} modelaanroepen.",
   "goalAttainmentLabel": "{percent}% van het doel",
   "goalBannerActionFailed": "Dat is niet opgeslagen — probeer het opnieuw.",
   "goalBannerDismissTooltip": "Verbergen",

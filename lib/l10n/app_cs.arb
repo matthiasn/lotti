@@ -2548,6 +2548,8 @@
   "geminiThinkingModeMinimalLabel": "Minimální",
   "generateCoverArt": "Vytvořit obálku",
   "generateCoverArtSubtitle": "Vytvořit obrázek z hlasového popisu",
+  "goalAgentLifetimeTimePill": "{duration} času AI",
+  "goalAgentLifetimeTimeTooltip": "Celoživotní výpočetní čas agenta pro {calls} volání modelu.",
   "goalAttainmentLabel": "{percent} % cíle",
   "goalBannerActionFailed": "To se neuložilo — zkus to prosím znovu.",
   "goalBannerDismissTooltip": "Zavřít",

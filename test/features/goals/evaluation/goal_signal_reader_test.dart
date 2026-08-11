@@ -210,6 +210,14 @@ void main() {
         window.habitSuccessesByDay['gym-habit'],
         {DateTime.utc(2026, 8, 3): 1},
       );
+      expect(
+        window.habitCompletionsByDay['gym-habit'],
+        {
+          DateTime.utc(2026, 8, 3): HabitCompletionType.success,
+          DateTime.utc(2026, 8, 5): HabitCompletionType.skip,
+          DateTime.utc(2026, 8, 6): HabitCompletionType.fail,
+        },
+      );
     },
   );
 

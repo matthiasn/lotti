@@ -8,13 +8,27 @@ import 'package:lotti/utils/markdown_link_utils.dart';
 /// mapped to `heading.heading3` / `subtitle.subtitle1` / `subtitle.subtitle2`,
 /// and a compact, non-interactive checkbox style mirroring the checklist row.
 class AgentMarkdownView extends StatelessWidget {
-  const AgentMarkdownView(this.text, {this.style, super.key});
+  const AgentMarkdownView(
+    this.text, {
+    this.style,
+    this.maxLines,
+    this.overflow,
+    super.key,
+  });
 
   final String text;
 
   /// Optional override for the body text style. When null, uses the
   /// editor-aligned `body.bodySmall` token from the design system.
   final TextStyle? style;
+
+  /// Optional clamp forwarded to the shared Markdown renderer. This lets
+  /// compact surfaces preview rich agent output without flattening it back to
+  /// plain text.
+  final int? maxLines;
+
+  /// Overflow treatment used when [maxLines] clamps the rendered Markdown.
+  final TextOverflow? overflow;
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +80,8 @@ class AgentMarkdownView extends StatelessWidget {
         child: GptMarkdown(
           text,
           style: bodyStyle,
+          maxLines: maxLines,
+          overflow: overflow,
           onLinkTap: handleMarkdownLinkTap,
           linkBuilder: buildMarkdownLink,
         ),

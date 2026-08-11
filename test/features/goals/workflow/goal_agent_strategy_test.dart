@@ -1,5 +1,6 @@
 import 'dart:convert';
 
+import 'package:clock/clock.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
@@ -227,6 +228,63 @@ void main() {
     );
     expect(strategy.retireRequests.single.adId, 'ad-known');
     expect(strategy.rerunRequests, isEmpty);
+    expect(rejection(), contains('unknown adId'));
+  });
+
+  test('snooze accepts any requested future instant for a known ad', () async {
+    final now = DateTime.utc(2026, 8, 11, 12);
+    await withClock(
+      Clock.fixed(now),
+      () => strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-12T08:30:00+02:00',
+              'reason': 'user asked for tomorrow morning',
+            },
+          ),
+        ],
+        manager: manager,
+      ),
+    );
+
+    final request = strategy.snoozeRequests.single;
+    expect(request.adId, 'ad-known');
+    expect(request.until, DateTime.utc(2026, 8, 12, 6, 30));
+    expect(request.reason, 'user asked for tomorrow morning');
+  });
+
+  test('snooze rejects past deadlines and unknown ads', () async {
+    await withClock(
+      Clock.fixed(DateTime.utc(2026, 8, 11, 12)),
+      () => strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            id: 'past',
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-11T11:59:00Z',
+              'reason': 'past',
+            },
+          ),
+          _call(
+            id: 'unknown',
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'invented',
+              'until': '2026-08-11T13:00:00Z',
+              'reason': 'later',
+            },
+          ),
+        ],
+        manager: manager,
+      ),
+    );
+
+    expect(strategy.snoozeRequests, isEmpty);
     expect(rejection(), contains('unknown adId'));
   });
 

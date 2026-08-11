@@ -6013,6 +6013,16 @@ class AppLocalizationsDe extends AppLocalizations {
       'Bild aus einer Beschreibung erstellen';
 
   @override
+  String goalAgentLifetimeTimePill(String duration) {
+    return '$duration KI-Zeit';
+  }
+
+  @override
+  String goalAgentLifetimeTimeTooltip(String calls) {
+    return 'Gesamte Rechenzeit des Agenten über $calls Modellaufrufe.';
+  }
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent % des Ziels';
   }

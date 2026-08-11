@@ -63,7 +63,13 @@ class GoalBannerCard extends ConsumerWidget {
                 border: Border.all(color: style.border),
               ),
               child: Padding(
-                padding: EdgeInsets.all(tokens.spacing.cardPadding),
+                key: const ValueKey('goal-banner-content-padding'),
+                padding: EdgeInsets.fromLTRB(
+                  tokens.spacing.cardPadding,
+                  tokens.spacing.step2,
+                  tokens.spacing.cardPadding,
+                  tokens.spacing.cardPadding,
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [

@@ -20,12 +20,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   routine watching one or more habits. Goal conversations are durable rather
   than session-bound: phones open a pushed chat page, desktop keeps it beside
   the goal detail, drafts survive navigation, and failed turns can be retried
-  without losing the user's message. When a goal genuinely slips, its
+  without losing the user's message; Markdown is rendered, long replies start
+  collapsed, and off-topic questions are redirected to the goal rather than
+  answered as a general assistant. Past days in the rolling grid can be marked
+  successful or missed and immediately refresh the standing report, which can
+  also be refreshed manually and expanded in full. The header reuses Task
+  Details' AI-consumption pill and adds lifetime compute time. When a goal genuinely slips, its
   agent speaks up through a small text banner in a shell-level dock that rides
   above the navigation — one rotating slot shared across the Tasks, Daily OS and
-  Habits tabs, coloured by the agent's tone so doing well reads at a glance,
+  Habits tabs, full-width with its headline and tagline intact, coloured by the
+  agent's tone and animated through code-owned presets so doing well reads at a glance,
   dismissible (a dismissal quiets that goal for the rest of the day), and rated
-  per showing so the agent learns which nudges actually help.
+  per showing so the agent learns which nudges actually help. Chat can snooze
+  the same banner until any requested future time, while an explicit request
+  for a new banner overrides the earlier dismissal cooldown.
 - **Vision models can use task images when writing coding prompts.** Choosing an
   image-capable model such as Kimi K3 now offers the task's attached images as
   visual context, with up to ten selections. Text-only models keep the existing

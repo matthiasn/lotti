@@ -10259,6 +10259,18 @@ abstract class AppLocalizations {
   /// **'Create image from voice description'**
   String get generateCoverArtSubtitle;
 
+  /// Top-level pill containing a goal agent's lifetime model compute duration.
+  ///
+  /// In en, this message translates to:
+  /// **'{duration} AI time'**
+  String goalAgentLifetimeTimePill(String duration);
+
+  /// Tooltip for a goal agent's lifetime model compute duration.
+  ///
+  /// In en, this message translates to:
+  /// **'Lifetime agent compute time across {calls} model calls.'**
+  String goalAgentLifetimeTimeTooltip(String calls);
+
   /// Attainment summary on an agent card; percent is 0-100.
   ///
   /// In en, this message translates to:
