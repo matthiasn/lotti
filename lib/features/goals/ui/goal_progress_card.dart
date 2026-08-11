@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -109,11 +111,13 @@ class GoalProgressCard extends StatelessWidget {
     return DesignSystemSectionCard(
       child: LayoutBuilder(
         builder: (context, constraints) {
+          final firstHabit = progress.habits.firstOrNull;
           final showWeekdayHeader =
               usesRollingWeek &&
-              progress.habits.isNotEmpty &&
-              progress.habits.first.days.length <= 7 &&
-              constraints.maxWidth >= tokens.spacing.step13 * 4;
+              firstHabit != null &&
+              firstHabit.days.length <= 7 &&
+              constraints.maxWidth >=
+                  _habitGridWideMinimum(context, firstHabit.days);
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -201,6 +205,62 @@ class GoalProgressCard extends StatelessWidget {
   }
 }
 
+({double width, double height}) _weekdayLabelMetrics(
+  BuildContext context,
+  List<GoalProgressDay> days,
+) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final style = context.designTokens.typography.styles.others.caption;
+  final scaler = MediaQuery.textScalerOf(context);
+  var width = 0.0;
+  var height = 0.0;
+  for (final day in days) {
+    final painter = TextPainter(
+      text: TextSpan(text: DateFormat.E(locale).format(day.day), style: style),
+      textDirection: Directionality.of(context),
+      textScaler: scaler,
+      maxLines: 1,
+    )..layout();
+    width = math.max(width, painter.width);
+    height = math.max(height, painter.height);
+  }
+  return (width: width, height: height);
+}
+
+double _dayTrackPitch(BuildContext context, List<GoalProgressDay> days) {
+  final tokens = context.designTokens;
+  final defaultPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
+  final labelWidth = _weekdayLabelMetrics(context, days).width;
+  final expandedPitch = labelWidth + tokens.spacing.step1;
+  return expandedPitch > defaultPitch + tokens.spacing.step3
+      ? expandedPitch
+      : defaultPitch;
+}
+
+double _dayTrackWidth(BuildContext context, List<GoalProgressDay> days) {
+  if (days.isEmpty) return 0;
+  return ControlSizes.iconChipCompact +
+      _dayTrackPitch(context, days) * (days.length - 1);
+}
+
+double _habitGridWideMinimum(
+  BuildContext context,
+  List<GoalProgressDay> days,
+) {
+  final spacing = context.designTokens.spacing;
+  return spacing.step13 * 2 + spacing.step3 * 2 + _dayTrackWidth(context, days);
+}
+
+double _textWidth(BuildContext context, String text, TextStyle style) {
+  final painter = TextPainter(
+    text: TextSpan(text: text, style: style),
+    textDirection: Directionality.of(context),
+    textScaler: MediaQuery.textScalerOf(context),
+    maxLines: 1,
+  )..layout();
+  return painter.width;
+}
+
 class _HabitWeekdayHeader extends StatelessWidget {
   const _HabitWeekdayHeader({required this.habit});
 
@@ -210,14 +270,16 @@ class _HabitWeekdayHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final locale = Localizations.localeOf(context).toLanguageTag();
+    final metrics = _weekdayLabelMetrics(context, habit.days);
+    final pitch = _dayTrackPitch(context, habit.days);
     return Row(
       children: [
         SizedBox(width: tokens.spacing.step13),
         SizedBox(width: tokens.spacing.step3),
         _DayTrack(
-          height: IconSizes.s,
+          height: math.max(IconSizes.s, metrics.height),
           itemExtent: ControlSizes.iconChipCompact,
-          pitch: ControlSizes.iconChipCompact + tokens.spacing.step2,
+          pitch: pitch,
           children: [
             for (final day in habit.days)
               SizedBox(
@@ -226,11 +288,16 @@ class _HabitWeekdayHeader extends StatelessWidget {
                   '${day.day.toIso8601String().substring(0, 10)}',
                 ),
                 width: ControlSizes.iconChipCompact,
-                child: Text(
-                  DateFormat.E(locale).format(day.day),
-                  textAlign: TextAlign.center,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
+                child: OverflowBox(
+                  maxWidth: double.infinity,
+                  child: Text(
+                    DateFormat.E(locale).format(day.day),
+                    maxLines: 1,
+                    softWrap: false,
+                    textAlign: TextAlign.center,
+                    style: tokens.typography.styles.others.caption.copyWith(
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
                   ),
                 ),
               ),
@@ -263,6 +330,7 @@ class _DayTrack extends StatelessWidget {
       width: width,
       height: height,
       child: Stack(
+        clipBehavior: Clip.none,
         children: [
           for (var index = 0; index < children.length; index++)
             Positioned(
@@ -335,6 +403,20 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     final note = habit.deficit == 0
         ? context.messages.goalProgressAtRate
         : context.messages.goalProgressDaysToHealthy(habit.deficit);
+    final cadence = goalHabitTargetLabel(
+      context,
+      targetCount: habit.targetCount,
+      window: habit.window,
+    );
+    final nameStyle = tokens.typography.styles.body.bodySmall.copyWith(
+      color: tokens.colors.text.highEmphasis,
+    );
+    final cadenceStyle = tokens.typography.styles.others.caption.copyWith(
+      color: tokens.colors.text.lowEmphasis,
+    );
+    final noteStyle = tokens.typography.styles.others.caption.copyWith(
+      color: stateColor,
+    );
 
     final identity = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -343,28 +425,19 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           habit.name,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.highEmphasis,
-          ),
+          style: nameStyle,
         ),
-        Text(
-          goalHabitTargetLabel(
-            context,
-            targetCount: habit.targetCount,
-            window: habit.window,
-          ),
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
-          ),
-        ),
+        Text(cadence, style: cadenceStyle),
       ],
     );
-    Widget cells() {
+    Widget cells({required bool alignWithWeekdays}) {
       const itemExtent = ControlSizes.iconChipCompact;
       return _DayTrack(
         height: itemExtent,
         itemExtent: itemExtent,
-        pitch: itemExtent + tokens.spacing.step2,
+        pitch: alignWithWeekdays
+            ? _dayTrackPitch(context, activeDays)
+            : itemExtent + tokens.spacing.step2,
         children: [
           for (var index = 0; index < activeDays.length; index++)
             _ProgressDayCell(
@@ -396,77 +469,63 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
       builder: (context, constraints) {
         final wide =
             activeDays.length <= 7 &&
-            constraints.maxWidth >= tokens.spacing.step13 * 4;
+            constraints.maxWidth >= _habitGridWideMinimum(context, activeDays);
         if (wide) {
           return Row(
             children: [
               SizedBox(width: tokens.spacing.step13, child: identity),
               SizedBox(width: tokens.spacing.step3),
-              cells(),
+              cells(alignWithWeekdays: true),
               SizedBox(width: tokens.spacing.step3),
               Expanded(
                 child: Text(
                   note,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: stateColor,
-                  ),
+                  style: noteStyle,
                 ),
               ),
               ?reliability,
             ],
           );
         }
+        final inlineHeaderWidth =
+            _textWidth(context, habit.name, nameStyle) +
+            tokens.spacing.step2 +
+            _textWidth(context, cadence, cadenceStyle) +
+            tokens.spacing.step3 +
+            _textWidth(context, note, noteStyle);
+        final cadenceFitsInline = inlineHeaderWidth <= constraints.maxWidth;
         return Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Row(
               children: [
                 Expanded(
-                  child: Row(
-                    children: [
-                      Flexible(
-                        flex: 2,
-                        child: Text(
-                          habit.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.body.bodySmall
-                              .copyWith(
-                                color: tokens.colors.text.highEmphasis,
-                              ),
-                        ),
-                      ),
-                      SizedBox(width: tokens.spacing.step2),
-                      Flexible(
-                        child: Text(
-                          goalHabitTargetLabel(
-                            context,
-                            targetCount: habit.targetCount,
-                            window: habit.window,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: tokens.colors.text.lowEmphasis,
-                              ),
-                        ),
-                      ),
-                    ],
+                  child: Text(
+                    habit.name,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: nameStyle,
                   ),
                 ),
+                if (cadenceFitsInline) ...[
+                  SizedBox(width: tokens.spacing.step2),
+                  Text(cadence, maxLines: 1, style: cadenceStyle),
+                ],
+                SizedBox(width: tokens.spacing.step3),
                 Text(
                   note,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: stateColor,
-                  ),
+                  style: noteStyle,
                 ),
               ],
             ),
+            if (!cadenceFitsInline) ...[
+              SizedBox(height: tokens.spacing.step1),
+              Text(cadence, style: cadenceStyle),
+            ],
             SizedBox(height: tokens.spacing.step2),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: cells(),
+              child: cells(alignWithWeekdays: false),
             ),
           ],
         );

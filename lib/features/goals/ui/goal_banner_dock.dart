@@ -31,6 +31,25 @@ double _textBlockHeight(TextStyle style, int lines, TextScaler scaler) {
   return painter.height * lines;
 }
 
+/// Applies the render-time visibility contract shared by the dock and the
+/// shell lane that reserves space for it.
+List<GoalBannerEntry> visibleGoalBannerEntries({
+  required Iterable<GoalBannerEntry>? entries,
+  required Set<String> locallyDismissedIds,
+  required Map<String, DateTime> locallySnoozedDeadlines,
+  DateTime? now,
+}) {
+  final instant = now ?? clock.now();
+  return [
+    for (final entry in entries ?? const <GoalBannerEntry>[])
+      if ((entry.nudge.staleAt == null ||
+              instant.isBefore(entry.nudge.staleAt!)) &&
+          !locallyDismissedIds.contains(entry.nudge.id) &&
+          locallySnoozedDeadlines[entry.nudge.id]?.isAfter(instant) != true)
+        entry,
+  ];
+}
+
 /// Clearance the compact (mobile) dock claims above the bottom bar when a
 /// goal is speaking — the shell reserves it in the overlay-height scope so
 /// page content and FABs never sit underneath (handover 1b's reserved lane).
@@ -55,6 +74,7 @@ double goalBannerDockReservedHeight(
   final tokens = context.designTokens;
   final spacing = tokens.spacing;
   final scaler = MediaQuery.textScalerOf(context);
+  final animationsDisabled = MediaQuery.disableAnimationsOf(context);
   final activeBriefs = briefs.toList(growable: false);
   final multi = activeBriefs.length > 1;
   final chrome =
@@ -73,7 +93,8 @@ double goalBannerDockReservedHeight(
   final availableWidth = measuredWidth > 0 ? measuredWidth : 0.0;
   var textBlock = 0.0;
   for (final brief in activeBriefs) {
-    final height = brief.animation == GoalBannerAnimation.marquee
+    final height =
+        brief.animation == GoalBannerAnimation.marquee && !animationsDisabled
         ? _textBlockHeight(
             tokens.typography.styles.subtitle.subtitle2,
             1,
@@ -194,17 +215,13 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     // Same render-time contract as every banner surface: retained data
     // survives a failed background refresh, but stale copy never renders,
     // and locally dismissed ids stay suppressed.
-    final now = clock.now();
-    final locallyDismissed = ref.read(locallyDismissedNudgeIdsProvider);
-    final locallySnoozed = ref.read(locallySnoozedNudgeDeadlinesProvider);
-    return [
-      for (final entry in raw ?? const <GoalBannerEntry>[])
-        if ((entry.nudge.staleAt == null ||
-                now.isBefore(entry.nudge.staleAt!)) &&
-            !locallyDismissed.contains(entry.nudge.id) &&
-            locallySnoozed[entry.nudge.id]?.isAfter(now) != true)
-          entry,
-    ];
+    return visibleGoalBannerEntries(
+      entries: raw,
+      locallyDismissedIds: ref.read(locallyDismissedNudgeIdsProvider),
+      locallySnoozedDeadlines: ref.read(
+        locallySnoozedNudgeDeadlinesProvider,
+      ),
+    );
   }
 
   void _advance() {

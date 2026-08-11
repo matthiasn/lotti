@@ -600,6 +600,130 @@ void main() {
   );
 
   testWidgets(
+    'weekday labels expand their pitch at large text scale without losing '
+    'cell alignment',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(2)),
+              child: GoalProgressCard(
+                progress: GoalProgressView(
+                  today: today,
+                  habits: [
+                    GoalHabitProgressView(
+                      habitId: 'walk',
+                      name: 'Walk',
+                      targetCount: 3,
+                      days: [
+                        for (var offset = 6; offset >= 0; offset--)
+                          day(offset, 0),
+                      ],
+                      successfulWeeks: 2,
+                    ),
+                  ],
+                ),
+                onHabitOutcomeSelected:
+                    ({
+                      required day,
+                      required habitId,
+                      required outcome,
+                    }) async => true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+      final defaultPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
+      Rect? previousLabelRect;
+      double? previousCellCenter;
+      for (var offset = 6; offset >= 0; offset--) {
+        final date = today
+            .subtract(Duration(days: offset))
+            .toIso8601String()
+            .substring(0, 10);
+        final marker = find.byKey(
+          ValueKey('goal-habit-weekday-walk-$date'),
+        );
+        final label = find.descendant(of: marker, matching: find.byType(Text));
+        final cell = find.byKey(ValueKey('goal-habit-day-walk-$date'));
+        final labelRect = tester.getRect(label);
+        final cellCenter = tester.getCenter(cell).dx;
+        expect(tester.getCenter(marker).dx, closeTo(cellCenter, 0.01));
+        if (previousLabelRect != null) {
+          expect(
+            previousLabelRect.right,
+            lessThanOrEqualTo(labelRect.left),
+            reason: 'scaled weekday labels must not overlap',
+          );
+        }
+        if (previousCellCenter != null) {
+          expect(
+            cellCenter - previousCellCenter,
+            greaterThan(defaultPitch),
+            reason: 'only accessibility scaling should loosen the handoff grid',
+          );
+        }
+        previousLabelRect = labelRect;
+        previousCellCenter = cellCenter;
+      }
+    },
+  );
+
+  testWidgets('a narrow authored cadence moves intact below the habit name', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 260,
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                habits: [
+                  GoalHabitProgressView(
+                    habitId: 'walk',
+                    name: 'A deliberately long habit name',
+                    targetCount: 4,
+                    window: const GoalWindow.rollingDays(count: 10),
+                    days: [
+                      for (var offset = 9; offset >= 0; offset--)
+                        day(offset, offset < 4 ? 1 : 0),
+                    ],
+                    successfulWeeks: 2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final cadenceFinder = find.text('4× · rolling 10 days');
+    final cadence = tester.widget<Text>(cadenceFinder);
+    expect(cadence.maxLines, isNull);
+    expect(cadence.overflow, isNot(TextOverflow.ellipsis));
+    expect(
+      tester.getTopLeft(cadenceFinder).dy,
+      greaterThan(
+        tester.getTopLeft(find.text('A deliberately long habit name')).dy,
+      ),
+      reason: 'the full authored cadence gets its own row when space is tight',
+    );
+  });
+
+  testWidgets(
     'compact habit day follows the mobile handoff and ignores its current outcome',
     (
       tester,
@@ -653,9 +777,12 @@ void main() {
       );
       expect(
         tester.getCenter(find.text('Walk')).dy,
-        closeTo(tester.getCenter(find.text('1× per 7 days')).dy, 0.01),
-        reason: 'mobile identity and cadence share the handoff header row',
+        lessThan(tester.getCenter(find.text('1× per 7 days')).dy),
+        reason: 'the complete cadence moves below when the row cannot fit it',
       );
+      final cadence = tester.widget<Text>(find.text('1× per 7 days'));
+      expect(cadence.maxLines, isNull);
+      expect(cadence.overflow, isNot(TextOverflow.ellipsis));
 
       await tester.tap(find.byKey(dayKey));
       await tester.pumpAndSettle();

@@ -42,6 +42,7 @@ void main() {
     int activationCount = 1,
     GoalNudgeTone tone = GoalNudgeTone.nudge,
     GoalBannerAnimation animation = GoalBannerAnimation.steady,
+    DateTime? staleAt,
   }) => (
     nudge:
         AgentDomainEntity.goalNudge(
@@ -57,6 +58,7 @@ void main() {
               ),
               briefDigest: id,
               activationCount: activationCount,
+              staleAt: staleAt,
               createdAt: DateTime(2026, 8, 9),
               updatedAt: DateTime(2026, 8, 9),
               vectorClock: null,
@@ -125,6 +127,29 @@ void main() {
       await tester.pump(const Duration(milliseconds: 150));
     }
   }
+
+  test('visibility filtering is shared by the dock and its reserved lane', () {
+    final now = DateTime.utc(2026, 8, 11, 12);
+    final visible = visibleGoalBannerEntries(
+      entries: [
+        entry(id: 'visible', headline: 'Visible voice'),
+        entry(
+          id: 'stale',
+          headline: 'Stale voice',
+          staleAt: now.subtract(const Duration(minutes: 1)),
+        ),
+        entry(id: 'dismissed', headline: 'Dismissed voice'),
+        entry(id: 'snoozed', headline: 'Snoozed voice'),
+      ],
+      locallyDismissedIds: const {'dismissed'},
+      locallySnoozedDeadlines: {
+        'snoozed': now.add(const Duration(hours: 1)),
+      },
+      now: now,
+    );
+
+    expect(visible.map((entry) => entry.nudge.id), ['visible']);
+  });
 
   testWidgets('a single tenant just sits: no dots, no auto-advance after '
       'a full tenure', (tester) async {
@@ -369,6 +394,68 @@ void main() {
       reason: 'reserve must clear the 2× dock',
     );
   });
+
+  testWidgets(
+    'reduced-motion marquee reserves its full wrapped compact headline',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final headline = List.filled(
+        2,
+        'Reduced motion keeps every authored banner word visible in place.',
+      ).join(' ');
+      final marquee = entry(
+        id: 'marquee',
+        headline: headline,
+        animation: GoalBannerAnimation.marquee,
+      );
+      _TestEntries.initial = [marquee];
+      late double reserved;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(disableAnimations: true),
+              child: Builder(
+                builder: (context) {
+                  reserved = goalBannerDockReservedHeight(
+                    context,
+                    briefs: [marquee.nudge.brief],
+                  );
+                  return const Scaffold(
+                    bottomNavigationBar: GoalBannerDock(compact: true),
+                  );
+                },
+              ),
+            ),
+          ),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final animated = find.byType(GoalBannerAnimatedText);
+      final animatedWidget = tester.widget<GoalBannerAnimatedText>(animated);
+      final linePainter = TextPainter(
+        text: TextSpan(text: 'Xg', style: animatedWidget.style),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+      expect(tester.getSize(animated).height, greaterThan(linePainter.height));
+      expect(
+        reserved,
+        greaterThanOrEqualTo(
+          tester.getSize(find.byType(GoalBannerDock)).height,
+        ),
+      );
+    },
+  );
 
   testWidgets('two tenants rotate round-robin on the tenure clock, and '
       'wrap', (tester) async {
