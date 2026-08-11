@@ -414,10 +414,8 @@ void main() {
           expect(retractionDecision.actor, DecisionActor.agent);
           expect(
             retractionDecision.retractionReason,
-            allOf(
-              contains('propose_goal_revision_v2'),
-              contains('failed while applying'),
-            ),
+            'Confirmed propose_goal_revision_v2 proposal failed while '
+            'applying.',
           );
           final retractedSet = captured[3] as ChangeSetEntity;
           expect(retractedSet.items.single.status, ChangeItemStatus.retracted);
