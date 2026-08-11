@@ -101,5 +101,9 @@ void main() {
 
     expect(find.text('12.3K tokens'), findsOneWidget);
     expect(find.byType(DsPill), findsOneWidget);
+    expect(
+      tester.widget<Tooltip>(find.byType(Tooltip)).message,
+      isNot(contains('Compute time')),
+    );
   });
 }

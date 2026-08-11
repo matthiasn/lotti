@@ -73,9 +73,10 @@ String consumptionSummaryTooltip(
       formatTokenCount(totals.inputTokens),
       formatTokenCount(totals.outputTokens),
     ),
-    messages.aiConsumptionDurationLine(
-      formatConsumptionDuration(context, totals.durationMs),
-    ),
+    if (totals.durationMs > 0)
+      messages.aiConsumptionDurationLine(
+        formatConsumptionDuration(context, totals.durationMs),
+      ),
     if (totals.impactCallCount > 0) ...[
       messages.aiConsumptionImpactLine(
         formatEnergyKwh(totals.energyKwh),

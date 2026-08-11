@@ -13,7 +13,7 @@ import 'package:lotti/features/tasks/ui/widgets/task_showcase_palette.dart';
 /// chrome.
 ///
 /// The tooltip carries the full detail: call/measured counts, token split,
-/// energy/CO₂e/water, and cost. Data comes from
+/// recorded compute time, energy/CO₂e/water, and cost. Data comes from
 /// [taskConsumptionTotalsProvider], which refreshes on
 /// `aiConsumptionNotification` (local writes and inbound sync alike).
 class TaskConsumptionChip extends ConsumerWidget {
