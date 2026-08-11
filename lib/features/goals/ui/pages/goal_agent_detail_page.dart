@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
@@ -215,6 +216,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
       ],
     );
     final desktop = isDesktopLayout(context);
+    final chatAvailable = goalIdentity.lifecycle == AgentLifecycle.active;
     return popSafe(
       Scaffold(
         appBar: AppBar(
@@ -228,7 +230,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
           ],
         ),
         body: SafeArea(
-          child: desktop
+          child: desktop && chatAvailable
               ? Row(
                   children: [
                     Expanded(flex: 3, child: detailList(showChatAction: false)),
@@ -241,7 +243,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
                     ),
                   ],
                 )
-              : detailList(showChatAction: true),
+              : detailList(showChatAction: !desktop && chatAvailable),
         ),
       ),
     );

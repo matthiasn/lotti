@@ -293,9 +293,13 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
               _ProgressDayCell(
                 day: activeDays[index],
                 habitId: habit.habitId,
-                today: index == activeDays.length - 1,
+                today: DateUtils.isSameDay(
+                  activeDays[index].day,
+                  widget.today,
+                ),
                 agingOut: index == 0 && habit.oldestSuccessAgesOutTonight,
                 saving: _savingDay == activeDays[index].day,
+                enabled: !activeDays[index].day.isAfter(widget.today),
                 onOutcomeSelected: widget.onOutcomeSelected == null
                     ? null
                     : (outcome) => _recordOutcome(
@@ -377,6 +381,7 @@ class _ProgressDayCell extends StatelessWidget {
     required this.today,
     required this.agingOut,
     required this.saving,
+    required this.enabled,
     required this.onOutcomeSelected,
   });
 
@@ -385,6 +390,7 @@ class _ProgressDayCell extends StatelessWidget {
   final bool today;
   final bool agingOut;
   final bool saving;
+  final bool enabled;
   final ValueChanged<HabitCompletionType>? onOutcomeSelected;
 
   @override
@@ -448,7 +454,7 @@ class _ProgressDayCell extends StatelessWidget {
       ),
       dimension: TapTargets.minimum,
       child: PopupMenuButton<HabitCompletionType>(
-        enabled: !saving,
+        enabled: enabled && !saving,
         initialValue: day.habitCompletionType,
         padding: EdgeInsets.zero,
         tooltip: date,

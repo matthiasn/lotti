@@ -45,9 +45,11 @@ class GoalHabitCompletionService {
 
     final now = clock.now();
     final selectedDay = DateTime(day.year, day.month, day.day);
+    final today = DateTime(now.year, now.month, now.day);
     final activeFrom = habitDefinition.activeFrom;
     final activeUntil = habitDefinition.activeUntil;
     if (!habitDefinition.active ||
+        selectedDay.isAfter(today) ||
         (activeFrom != null &&
             selectedDay.isBefore(
               DateTime(activeFrom.year, activeFrom.month, activeFrom.day),

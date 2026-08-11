@@ -218,17 +218,21 @@ void main() {
       habit.copyWith(activeUntil: DateTime(2026, 8, 10)),
       DateTime(2026, 8, 11),
     ),
+    ('day is in the future', habit, DateTime(2026, 8, 12)),
   ]) {
     test('does not write when $description', () async {
       when(
         () => journalDb.getHabitById('walk'),
       ).thenAnswer((_) async => definition);
 
-      final saved = await service.record(
-        agentId: 'goal-1',
-        habitId: 'walk',
-        day: selectedDay,
-        outcome: HabitCompletionType.success,
+      final saved = await withClock(
+        Clock.fixed(DateTime(2026, 8, 11, 14, 30)),
+        () => service.record(
+          agentId: 'goal-1',
+          habitId: 'walk',
+          day: selectedDay,
+          outcome: HabitCompletionType.success,
+        ),
       );
 
       expect(saved, isFalse);

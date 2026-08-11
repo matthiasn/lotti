@@ -48,9 +48,10 @@ pushed phone page or desktop peer pane. Agent replies retain their Markdown
 structure, while long replies start compact and can be expanded in place.
 The detail grid follows each habit's authored day, rolling, week, or month
 window and can record success or a miss on any day inside the habit's active
-lifetime through the normal habit-completion path; these edits wake the
+lifetime through the normal habit-completion path; current and past edits wake the
 deterministic evaluator and queue a standing-report refresh, with an Update now
-fallback visible beside the report. Metric strips preserve the evaluator's
+fallback visible beside the report, while future calendar cells remain
+read-only. Metric strips preserve the evaluator's
 configured aggregation rather than treating every daily contribution as a
 standalone target, and composite details retain every metric leaf that
 contributes to health. Goal chat stays purpose-bound: unrelated

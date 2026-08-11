@@ -298,7 +298,9 @@ flowchart TD
   ages-out and window boundaries cannot remain stuck on yesterday. The detail
   view also carries the reliability tail and explicit Watching section. Every
   habit day in that grid — including previous days — opens success/missed
-  actions only when the selected day lies inside the habit's active lifetime.
+  actions only when the selected day lies inside the habit's active lifetime
+  and is not in the future; future calendar cells stay read-only and the
+  persistence service enforces the same boundary.
   Selecting the already-recorded outcome is a no-op. The write goes through
   `GoalHabitCompletionService` into the existing habit-completion path, so
   privacy, sync and reminder behavior remain shared. Historical corrections
@@ -342,7 +344,10 @@ flowchart TD
 - **Conversation scope is the goal.** The contract identifies the agent as a
   dedicated coach rather than a general assistant. Coding, trivia and other
   unrelated requests receive a short purpose reminder and a redirect to the
-  goal; the agent does not attempt the off-topic answer.
+  goal; the agent does not attempt the off-topic answer. Chat entry points are
+  mounted only for active goal agents. If the spec head moves while an
+  interactive inference is running, output fencing fails the wake so the
+  durable user turn remains retryable instead of completing without a reply.
 - **Standing reports and governance remain visible.** The detail page always
   renders the report referenced by the authoritative current-scope report head;
   a delayed historical row cannot displace it merely by carrying a later local

@@ -669,6 +669,52 @@ void main() {
     expect(find.text('Dismissed'), findsOneWidget);
   });
 
+  testWidgets('desktop withholds chat from a dormant goal agent', (
+    tester,
+  ) async {
+    const desktopSize = Size(1400, 1000);
+    setTestSurfaceSize(tester, desktopSize);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        mediaQueryData: const MediaQueryData(size: desktopSize),
+        overrides: [
+          agentIdentityProvider('goal-1').overrideWith(
+            (ref) async => goalIdentity.copyWith(
+              lifecycle: AgentLifecycle.dormant,
+            ),
+          ),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+          activeGoalNudgesProvider.overrideWith((ref) async => []),
+          goalNudgeHistoryProvider('goal-1').overrideWith((ref) async => []),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Move more'), findsNWidgets(2));
+    expect(find.byType(GoalAgentChatPane), findsNothing);
+    expect(find.text('Talk to Move more'), findsNothing);
+  });
+
   testWidgets('a completed system-back pop persists the Agents root '
       'through NavService — and canPop stays true for the iOS gesture', (
     tester,

@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
@@ -214,6 +215,7 @@ void main() {
   testWidgets('a calendar-month habit shows and scrolls its authored period', (
     tester,
   ) async {
+    final outcomes = <(DateTime, HabitCompletionType)>[];
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         GoalProgressCard(
@@ -236,6 +238,11 @@ void main() {
               ),
             ],
           ),
+          onHabitOutcomeSelected:
+              ({required day, required habitId, required outcome}) async {
+                outcomes.add((day, outcome));
+                return true;
+              },
         ),
       ),
     );
@@ -244,6 +251,34 @@ void main() {
     expect(find.text('Aug 1 – Aug 31'), findsOneWidget);
     expect(find.text('2× · calendar month'), findsOneWidget);
     expect(find.byType(SingleChildScrollView), findsOneWidget);
+
+    const todayKey = ValueKey('goal-habit-day-walk-2026-08-11');
+    const finalDayKey = ValueKey('goal-habit-day-walk-2026-08-31');
+    expect(
+      find.descendant(
+        of: find.byKey(todayKey),
+        matching: find.byType(DsDashedBorder),
+      ),
+      findsOneWidget,
+    );
+    final futureButton = tester.widget<PopupMenuButton<HabitCompletionType>>(
+      find.descendant(
+        of: find.byKey(finalDayKey),
+        matching: find.byType(PopupMenuButton<HabitCompletionType>),
+      ),
+    );
+    expect(futureButton.enabled, isFalse);
+    expect(
+      find.descendant(
+        of: find.byKey(finalDayKey),
+        matching: find.byType(DsDashedBorder),
+      ),
+      findsNothing,
+    );
+    await tester.ensureVisible(find.byKey(finalDayKey));
+    await tester.pumpAndSettle();
+    expect(find.byKey(finalDayKey), findsOneWidget);
+    expect(outcomes, isEmpty);
   });
 
   testWidgets('an at-most metric highlights the value at its ceiling', (

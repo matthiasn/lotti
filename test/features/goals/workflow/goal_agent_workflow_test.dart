@@ -1696,6 +1696,72 @@ void main() {
     );
   });
 
+  test(
+    'persistOutputs: an interactive turn fenced by a concurrent revision '
+    'fails instead of silently leaving its durable user turn unanswered',
+    () async {
+      stubSpec();
+      _stubBadPrior(repository, agentId, now);
+      final version =
+          await repository.getEntity('$agentId:spec-v1')
+              as GoalSpecVersionEntity?;
+      final derivation = await _offTrackDerivation(repository, version!, now);
+      when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+        (_) async => AgentDomainEntity.goalSpecHead(
+          id: goalSpecHeadId(agentId),
+          agentId: agentId,
+          versionId: '$agentId:spec-v2',
+          updatedAt: now,
+          vectorClock: null,
+        ),
+      );
+      final strategy = GoalAgentStrategy(
+        syncService: syncService,
+        agentId: agentId,
+        threadId: 'thread-chat',
+        runKey: 'run-chat',
+        knownAdIds: const {},
+      );
+      await strategy.processToolCalls(
+        toolCalls: [
+          toolCall(GoalAgentToolNames.replyToUser, {
+            'message': 'This reply belongs to the old goal.',
+          }),
+        ],
+        manager: conversationManager,
+      );
+
+      await expectLater(
+        withClock(
+          fixedClock,
+          () => workflow.persistOutputs(
+            agentId: agentId,
+            runKey: 'run-chat',
+            threadId: 'thread-chat',
+            strategy: strategy,
+            derivation: derivation,
+            now: now,
+            replyToUser: true,
+          ),
+        ),
+        throwsA(
+          isA<StateError>().having(
+            (error) => error.message,
+            'message',
+            contains('concurrent spec revision'),
+          ),
+        ),
+      );
+      expect(
+        upserts.whereType<AgentMessageEntity>().where(
+          (message) => message.contentEntryId != null,
+        ),
+        isEmpty,
+      );
+      expect(upserts.whereType<AgentMessagePayloadEntity>(), isEmpty);
+    },
+  );
+
   test('persistOutputs: a superseded-spec wake keeps its report as history '
       'but touches NO banners and never advances the head', () async {
     stubSpec();

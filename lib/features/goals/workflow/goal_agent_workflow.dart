@@ -1513,6 +1513,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
         'outputs fenced: spec head moved while the wake ran against '
         '${derivation.version.id}',
       );
+      if (replyToUser) {
+        throw StateError(
+          'interactive goal turn was fenced by a concurrent spec revision',
+        );
+      }
       return false;
     }
 
