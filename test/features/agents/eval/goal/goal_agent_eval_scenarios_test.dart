@@ -409,8 +409,10 @@ void main() {
       expect(goalAgentSystemPrompt.length, lessThan(3200));
       expect(goalAgentSystemPrompt, contains('insufficientData'));
       expect(goalAgentSystemPrompt, contains('rerun_goal_ad'));
+      expect(goalAgentSystemPrompt, contains('snooze_goal_ad'));
       expect(goalAgentSystemPrompt, contains('roast'));
-      expect(goalAgentSystemPrompt, contains('dismissalCooldownActive'));
+      expect(goalAgentSystemPrompt, contains('Dismissal cooldown'));
+      expect(goalAgentSystemPrompt, contains('not a general assistant'));
     });
 
     test('numberTerms accepts the groupings models actually emit', () {

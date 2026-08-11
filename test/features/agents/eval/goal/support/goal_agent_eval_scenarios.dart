@@ -124,6 +124,7 @@ const List<String> _allGoalToolNames = [
   GoalAgentToolNames.createGoalAd,
   GoalAgentToolNames.rerunGoalAd,
   GoalAgentToolNames.retireGoalAd,
+  GoalAgentToolNames.snoozeGoalAd,
   GoalAgentToolNames.proposeGoalRevision,
   GoalAgentToolNames.recordGoalObservation,
 ];
