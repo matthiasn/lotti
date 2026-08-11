@@ -3454,10 +3454,6 @@
   },
   "goalDetailWatchingSignals": "Signals listed above update within seconds. Your agent only sees the signals listed here.",
   "goalDetailWatchingTitle": "Watching",
-  "goalDockJustNow": "just now",
-  "@goalDockJustNow": {
-    "description": "Freshness marker on the goal dock caption when a completion acknowledgment just took the slot"
-  },
   "goalHealthTrendDown": "Trending down",
   "@goalHealthTrendDown": {
     "description": "Screen-reader label for the falling trend arrow on a goal-agent list row."

@@ -6190,9 +6190,6 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Volgt';
 
   @override
-  String get goalDockJustNow => 'zojuist';
-
-  @override
   String get goalHealthTrendDown => 'Daalt';
 
   @override

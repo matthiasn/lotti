@@ -28,8 +28,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   Details' AI-consumption pill and adds lifetime compute time. When a goal genuinely slips, its
   agent speaks up through a small text banner in a shell-level dock that rides
   above the navigation — one rotating slot shared across the Tasks, Daily OS and
-  Habits tabs, full-width with its headline and tagline intact, coloured by the
-  agent's tone and animated through code-owned presets so doing well reads at a glance,
+  Habits tabs, full-width with its complete animated headline, coloured by the
+  agent's tone so doing well reads at a glance; the compact dock keeps only
+  that voice and its trailing dismiss action, without repeating agent identity,
   dismissible (a dismissal quiets that goal for the rest of the day), and rated
   per showing so the agent learns which nudges actually help. Chat can snooze
   the same banner until any requested future time, while an explicit request

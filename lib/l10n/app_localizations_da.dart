@@ -6169,9 +6169,6 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Følger';
 
   @override
-  String get goalDockJustNow => 'lige nu';
-
-  @override
   String get goalHealthTrendDown => 'Falder';
 
   @override

@@ -10559,12 +10559,6 @@ abstract class AppLocalizations {
   /// **'Watching'**
   String get goalDetailWatchingTitle;
 
-  /// Freshness marker on the goal dock caption when a completion acknowledgment just took the slot
-  ///
-  /// In en, this message translates to:
-  /// **'just now'**
-  String get goalDockJustNow;
-
   /// Screen-reader label for the falling trend arrow on a goal-agent list row.
   ///
   /// In en, this message translates to:

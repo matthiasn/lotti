@@ -6245,9 +6245,6 @@ class AppLocalizationsIt extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Osserva';
 
   @override
-  String get goalDockJustNow => 'proprio ora';
-
-  @override
   String get goalHealthTrendDown => 'In calo';
 
   @override

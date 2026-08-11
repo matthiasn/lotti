@@ -6236,9 +6236,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Sleduje';
 
   @override
-  String get goalDockJustNow => 'právě teď';
-
-  @override
   String get goalHealthTrendDown => 'Klesá';
 
   @override

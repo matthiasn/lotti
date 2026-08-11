@@ -6248,9 +6248,6 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Observa';
 
   @override
-  String get goalDockJustNow => 'ahora mismo';
-
-  @override
   String get goalHealthTrendDown => 'A la baja';
 
   @override

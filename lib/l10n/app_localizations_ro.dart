@@ -6272,9 +6272,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Urmărește';
 
   @override
-  String get goalDockJustNow => 'chiar acum';
-
-  @override
   String get goalHealthTrendDown => 'În scădere';
 
   @override

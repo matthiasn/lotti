@@ -6174,9 +6174,6 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Följer';
 
   @override
-  String get goalDockJustNow => 'just nu';
-
-  @override
   String get goalHealthTrendDown => 'Minskar';
 
   @override

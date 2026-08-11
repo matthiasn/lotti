@@ -6227,9 +6227,6 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Acompanha';
 
   @override
-  String get goalDockJustNow => 'agora mesmo';
-
-  @override
   String get goalHealthTrendDown => 'Em queda';
 
   @override
