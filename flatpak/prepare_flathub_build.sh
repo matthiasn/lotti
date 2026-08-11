@@ -61,6 +61,13 @@ PY
   fi
 fi
 
+# Refuse version-sensitive native fallback entries before generating an
+# invalid manifest. This needs the merged flatpak-flutter database but not a
+# populated Pub cache, so it also runs in the release workflow.
+"$PYTHON" "$SCRIPT_DIR/check_foreign_deps.py" \
+  --bundled-foreign-deps "$TOOL_FOREIGN_DEPS/foreign_deps.json" \
+  --selection-only
+
 # Clean and create work dir
 rm -rf "$WORK_DIR"
 mkdir -p "$WORK_DIR" "$OUTPUT_DIR"

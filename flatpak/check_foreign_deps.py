@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import argparse
 import json
 import os
 import re
@@ -33,7 +34,25 @@ class PatchCheck:
     options: list[str]
 
 
-def main() -> int:
+def main(argv: list[str] | None = None) -> int:
+    parser = argparse.ArgumentParser()
+    parser.add_argument(
+        "--bundled-foreign-deps",
+        type=Path,
+        help=(
+            "flatpak-flutter foreign_deps.json to validate against the local "
+            "overlay"
+        ),
+    )
+    parser.add_argument(
+        "--selection-only",
+        action="store_true",
+        help="validate version selection without requiring a populated Pub cache",
+    )
+    args = parser.parse_args(argv)
+    if args.selection_only and args.bundled_foreign_deps is None:
+        parser.error("--selection-only requires --bundled-foreign-deps")
+
     repo_root = Path(__file__).resolve().parents[1]
     flatpak_dir = repo_root / "flatpak"
     pub_cache = Path(os.environ.get("PUB_CACHE", "~/.pub-cache")).expanduser()
@@ -43,7 +62,21 @@ def main() -> int:
     checks: list[PatchCheck] = []
 
     overlay_path = flatpak_dir / "flatpak_flutter_extra" / "foreign_deps.json"
+    overlay_data: dict[str, Any] = {}
     if overlay_path.exists():
+        overlay_data = _read_json_object(overlay_path)
+
+    if args.bundled_foreign_deps is not None:
+        bundled_data = _read_json_object(args.bundled_foreign_deps)
+        failures.extend(
+            validate_native_fallbacks(
+                bundled_foreign_deps=bundled_data,
+                overlay_foreign_deps=overlay_data,
+                locked_packages=locked_packages,
+            )
+        )
+
+    if overlay_path.exists() and not args.selection_only:
         checks.extend(
             _checks_from_versioned_foreign_deps(
                 overlay_path=overlay_path,
@@ -55,7 +88,7 @@ def main() -> int:
         )
 
     foreign_path = flatpak_dir / "foreign.json"
-    if foreign_path.exists():
+    if foreign_path.exists() and not args.selection_only:
         checks.extend(
             _checks_from_foreign_json(
                 foreign_path=foreign_path,
@@ -66,8 +99,9 @@ def main() -> int:
             )
         )
 
-    for check in checks:
-        failures.extend(_run_patch_check(check))
+    if not args.selection_only:
+        for check in checks:
+            failures.extend(_run_patch_check(check))
 
     if failures:
         print("Flatpak foreign dependency validation failed:", file=sys.stderr)
@@ -75,8 +109,83 @@ def main() -> int:
             print(f"- {failure}", file=sys.stderr)
         return 1
 
+    if args.selection_only:
+        print("Validated Flatpak foreign dependency version selection.")
+        return 0
+
     print(f"Validated {len(checks)} Flatpak foreign dependency patch(es).")
     return 0
+
+
+def validate_native_fallbacks(
+    *,
+    bundled_foreign_deps: dict[str, Any],
+    overlay_foreign_deps: dict[str, Any],
+    locked_packages: dict[str, LockedPackage],
+) -> list[str]:
+    """Reject version-sensitive native entries reused for newer packages.
+
+    ``flatpak-flutter`` deliberately selects the newest compatible entry when
+    it has no exact version. That is safe for nested tool patches such as the
+    shared cargokit patch, but package-root patches and prebuilt native files
+    are tied to the package's source layout and release artifacts.
+    """
+    merged: dict[str, Any] = {
+        name: dict(versions) if isinstance(versions, dict) else versions
+        for name, versions in bundled_foreign_deps.items()
+    }
+    for name, versions in overlay_foreign_deps.items():
+        if name.startswith("_") or not isinstance(versions, dict):
+            continue
+        existing = merged.setdefault(name, {})
+        if isinstance(existing, dict):
+            existing.update(versions)
+
+    failures: list[str] = []
+    for name, locked in locked_packages.items():
+        if locked.source != "hosted":
+            continue
+
+        versions = merged.get(name)
+        if not isinstance(versions, dict):
+            continue
+
+        selected = _flatpak_flutter_selected_version(
+            versions.keys(),
+            locked.version,
+        )
+        if selected is None or selected == locked.version:
+            continue
+
+        if _has_version_sensitive_native_sources(versions[selected]):
+            failures.append(
+                f"{name} is locked at {locked.version}, but flatpak-flutter "
+                f"would reuse the native package-root entry for {selected}; "
+                "add an exact foreign_deps overlay entry"
+            )
+
+    return failures
+
+
+def _has_version_sensitive_native_sources(entry: Any) -> bool:
+    if not isinstance(entry, dict):
+        return False
+    manifest = entry.get("manifest")
+    if not isinstance(manifest, dict):
+        return False
+    sources = manifest.get("sources")
+    if not isinstance(sources, list):
+        return False
+
+    for source in sources:
+        if not isinstance(source, dict):
+            continue
+        source_type = source.get("type")
+        if source_type in {"archive", "file"}:
+            return True
+        if source_type == "patch" and source.get("dest") == "$PUB_DEV":
+            return True
+    return False
 
 
 def _read_pubspec_lock(path: Path) -> dict[str, LockedPackage]:

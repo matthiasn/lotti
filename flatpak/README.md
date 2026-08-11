@@ -211,16 +211,22 @@ make check_flatpak_foreign_deps
 ```
 
 The check parses `pubspec.lock`, verifies that local overlay entries match the
-locked versions, and dry-runs every Flatpak patch against the actual Pub cache
-package directory. CI runs the same check for pull requests touching Flatpak or
-dependency files.
+locked versions, rejects version-sensitive native fallbacks selected from the
+pinned `flatpak-flutter` database, and dry-runs every Flatpak patch against the
+actual Pub cache package directory. CI runs the same check for pull requests
+touching Flatpak or dependency files. The prepare script also runs the fallback
+selection guard before manifest generation, when the merged tool database is
+available but the Pub cache may not be populated.
 
 Some upstream packages ship patched files with CRLF line endings. Keep those
 patches generated from the upstream file's real line endings so the Flathub
 builder's plain `patch -p1` invocation applies them.
 
-Current version-specific native patches include:
+Current version-specific native inputs and patches include:
 
+- `sqlite3 3.5.1`: preloads the hash-matched Linux library for each architecture
+  into the package hook's shared cache. This version validates and reuses an
+  existing matching library, so it needs no source patch.
 - `sqlite3_flutter_libs 0.5.42`: pins the SQLite archive hash so CMake uses the
   source downloaded during Flatpak's network-enabled source phase.
 - `objectbox_flutter_libs 5.3.1` and `5.3.2`: pins the per-architecture
