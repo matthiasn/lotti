@@ -196,4 +196,57 @@ void main() {
       ),
     );
   });
+
+  for (final (description, definition, selectedDay) in [
+    (
+      'habit is inactive',
+      habit.copyWith(active: false),
+      DateTime(2026, 8, 11),
+    ),
+    (
+      'day is before the habit starts',
+      habit.copyWith(activeFrom: DateTime(2026, 8, 10)),
+      DateTime(2026, 8, 9),
+    ),
+    (
+      'day is the exclusive habit end date',
+      habit.copyWith(activeUntil: DateTime(2026, 8, 10)),
+      DateTime(2026, 8, 10),
+    ),
+    (
+      'day is after the habit end date',
+      habit.copyWith(activeUntil: DateTime(2026, 8, 10)),
+      DateTime(2026, 8, 11),
+    ),
+  ]) {
+    test('does not write when $description', () async {
+      when(
+        () => journalDb.getHabitById('walk'),
+      ).thenAnswer((_) async => definition);
+
+      final saved = await service.record(
+        agentId: 'goal-1',
+        habitId: 'walk',
+        day: selectedDay,
+        outcome: HabitCompletionType.success,
+      );
+
+      expect(saved, isFalse);
+      verifyNever(
+        () => persistenceLogic.createHabitCompletionEntry(
+          data: any(named: 'data'),
+          habitDefinition: any(named: 'habitDefinition'),
+          comment: any(named: 'comment'),
+        ),
+      );
+      verifyNever(
+        () => orchestrator.enqueueManualWake(
+          agentId: any(named: 'agentId'),
+          reason: any(named: 'reason'),
+          triggerTokens: any(named: 'triggerTokens'),
+          workspaceKey: any(named: 'workspaceKey'),
+        ),
+      );
+    });
+  }
 }

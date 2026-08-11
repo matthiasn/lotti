@@ -3,6 +3,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -29,7 +30,6 @@ void main() {
                 name: 'Gym',
                 targetCount: 3,
                 days: [
-                  day(7, 1),
                   day(6, 1),
                   day(5, 0),
                   day(4, 0),
@@ -73,7 +73,7 @@ void main() {
                   name: 'Gym',
                   targetCount: 1,
                   days: [
-                    for (var offset = 7; offset >= 0; offset--) day(offset, 0),
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
                   ],
                   successfulWeeks: 0,
                 ),
@@ -162,6 +162,41 @@ void main() {
     expect(find.byType(SingleChildScrollView), findsOneWidget);
   });
 
+  testWidgets('a calendar-month habit shows and scrolls its authored period', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 2,
+                window: const GoalWindow.calendarMonth(),
+                days: [
+                  for (var date = 1; date <= 31; date++)
+                    GoalProgressDay(
+                      day: DateTime.utc(2026, 8, date),
+                      value: 0,
+                    ),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('This rolling week'), findsNothing);
+    expect(find.text('Aug 1 – Aug 31'), findsOneWidget);
+    expect(find.text('2× · calendar month'), findsOneWidget);
+    expect(find.byType(SingleChildScrollView), findsOneWidget);
+  });
+
   testWidgets('an at-most metric highlights the value at its ceiling', (
     tester,
   ) async {
@@ -207,7 +242,6 @@ void main() {
                     name: 'Walk',
                     targetCount: 2,
                     days: [
-                      day(7, 0),
                       day(6, 1),
                       day(5, 0),
                       day(4, 0),
@@ -244,7 +278,6 @@ void main() {
                 name: 'Walk',
                 targetCount: 3,
                 days: [
-                  day(7, 0),
                   day(6, 0),
                   day(5, 0),
                   day(4, 0),
@@ -284,6 +317,64 @@ void main() {
     expect(selected?.outcome, HabitCompletionType.fail);
   });
 
+  testWidgets(
+    'habit day has a full tap target and ignores its current outcome',
+    (
+      tester,
+    ) async {
+      final outcomes = <HabitCompletionType>[];
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 1,
+                  days: [
+                    for (var offset = 6; offset > 0; offset--) day(offset, 0),
+                    GoalProgressDay(
+                      day: today,
+                      value: 1,
+                      habitCompletionType: HabitCompletionType.success,
+                    ),
+                  ],
+                  successfulWeeks: 1,
+                ),
+              ],
+            ),
+            onHabitOutcomeSelected:
+                ({required day, required habitId, required outcome}) async {
+                  outcomes.add(outcome);
+                  return true;
+                },
+          ),
+        ),
+      );
+
+      const dayKey = ValueKey('goal-habit-day-walk-2026-08-11');
+      expect(tester.getSize(find.byKey(dayKey)).width, TapTargets.minimum);
+      expect(tester.getSize(find.byKey(dayKey)).height, TapTargets.minimum);
+
+      await tester.tap(find.byKey(dayKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('goal-habit-day-success')));
+      await tester.pumpAndSettle();
+
+      expect(outcomes, isEmpty);
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+
+      await tester.tap(find.byKey(dayKey));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('goal-habit-day-missed')));
+      await tester.pump();
+
+      expect(outcomes, [HabitCompletionType.fail]);
+    },
+  );
+
   testWidgets('a recorded miss is visibly distinct from an empty day', (
     tester,
   ) async {
@@ -298,7 +389,6 @@ void main() {
                 name: 'Walk',
                 targetCount: 3,
                 days: [
-                  day(7, 0),
                   day(6, 0),
                   day(5, 0),
                   day(4, 0),
@@ -341,7 +431,7 @@ void main() {
                   name: 'Walk',
                   targetCount: 1,
                   days: [
-                    for (var offset = 7; offset >= 0; offset--) day(offset, 0),
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
                   ],
                   successfulWeeks: 0,
                 ),
@@ -366,7 +456,12 @@ void main() {
     expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(
       tester
-          .widget<PopupMenuButton<HabitCompletionType>>(find.byKey(dayKey))
+          .widget<PopupMenuButton<HabitCompletionType>>(
+            find.descendant(
+              of: find.byKey(dayKey),
+              matching: find.byType(PopupMenuButton<HabitCompletionType>),
+            ),
+          )
           .enabled,
       isTrue,
     );

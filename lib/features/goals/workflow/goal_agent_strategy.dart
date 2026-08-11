@@ -44,9 +44,11 @@ class GoalAgentStrategy extends ConversationStrategy
     required this.agentId,
     required this.threadId,
     required this.runKey,
-    required this._knownAdIds,
+    required Set<String> knownAdIds,
+    Set<String>? activeAdIds,
     this.expectedStatus,
-  });
+  }) : _knownAdIds = knownAdIds,
+       _activeAdIds = activeAdIds ?? knownAdIds;
 
   @override
   final AgentSyncService syncService;
@@ -61,6 +63,11 @@ class GoalAgentStrategy extends ConversationStrategy
   /// may reference, so a hallucinated id fails in-conversation instead of
   /// corrupting the library.
   final Set<String> _knownAdIds;
+
+  /// Ad ids that are currently rendered. Snoozing is only meaningful for
+  /// this subset; reusable or retired library entries remain valid rerun
+  /// targets but cannot be hidden from a surface where they are not shown.
+  final Set<String> _activeAdIds;
 
   /// The deterministic track status of this wake's FACTS. The contract
   /// declares it authoritative, so a report claiming any other status is
@@ -339,13 +346,13 @@ class GoalAgentStrategy extends ConversationStrategy
       );
       return;
     }
-    if (!_knownAdIds.contains(adId)) {
+    if (!_activeAdIds.contains(adId)) {
       await _reject(
         call: call,
         manager: manager,
         error:
-            'Error: unknown adId "$adId" — use an adId from the FACTS '
-            'block exactly as given.',
+            'Error: adId "$adId" is not active — snooze an active adId '
+            'from the FACTS block exactly as given.',
       );
       return;
     }

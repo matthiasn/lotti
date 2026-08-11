@@ -2,6 +2,9 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
@@ -36,6 +39,25 @@ void main() {
             )
             as AgentIdentityEntity;
     final navigated = <String>[];
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Walk',
+              statement: 'Walk three times in every rolling week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
 
@@ -52,7 +74,7 @@ void main() {
               attainment: null,
               reportOneLiner: null,
               pendingProposals: 0,
-              spec: null,
+              spec: spec,
               direction: null,
               deficit: null,
               buffer: null,
@@ -67,6 +89,10 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.widgetWithText(AppBar, 'Juno'), findsOneWidget);
+    expect(
+      find.text('Walk three times in every rolling week.'),
+      findsOneWidget,
+    );
     final chatPadding = tester.widget<Padding>(
       find.byWidgetPredicate(
         (widget) => widget is Padding && widget.child is GoalAgentChatPane,

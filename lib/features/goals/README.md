@@ -46,11 +46,14 @@ with per-goal health at a glance, deterministic rolling-window progress,
 proposal approval, goal creation/deletion, and durable conversation as a
 pushed phone page or desktop peer pane. Agent replies retain their Markdown
 structure, while long replies start compact and can be expanded in place.
-The detail grid can record success or a miss on any active day through the
-normal habit-completion path; these edits wake the deterministic evaluator and
-queue a standing-report refresh, with an Update now fallback visible beside the
-report. Goal chat stays purpose-bound: unrelated general-assistant requests are
-redirected to the goal rather than answered.
+The detail grid follows each habit's authored day, rolling, week, or month
+window and can record success or a miss on any day inside the habit's active
+lifetime through the normal habit-completion path; these edits wake the
+deterministic evaluator and queue a standing-report refresh, with an Update now
+fallback visible beside the report. Metric strips preserve the evaluator's
+configured aggregation rather than treating every daily contribution as a
+standalone target. Goal chat stays purpose-bound: unrelated general-assistant
+requests are redirected to the goal rather than answered.
 Health and direction are separate signals, the standing report stays visible
 beside active banners, and lifetime AI consumption plus compute time use the
 same governance pills as Task Details. Chat can also snooze the current banner

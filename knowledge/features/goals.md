@@ -171,8 +171,9 @@ flowchart TD
   so a replayed/invalid candidate cannot leave the goal bannerless. If the
   primary model replies with a cooldown refusal and omits the tool, the workflow
   forces `create_goal_ad` and withholds the now-contradictory refusal. A
-  temporary-hide request
-  instead calls `snooze_goal_ad` with any future instant: the same active nudge
+  temporary-hide request instead calls `snooze_goal_ad` with any future
+  instant and an id from the active-ad subset (a retired reusable ad is not a
+  snooze target): the same active nudge
   keeps its activation and rating history, stores `snoozedUntil` in provenance,
   disappears from every banner surface, and returns when the active-banner
   provider's deadline timer invalidates the projection. Snooze extends the
@@ -277,17 +278,23 @@ flowchart TD
   creation affordance (the global FAB hides). When a spec is available,
   `goalAgentProgressViewProvider` reads the evaluator's daily aggregates and
   adds a seven-cell compact strip to the list. The detail page expands the
-  same source into a rolling habit grid or a metric series using the metric
-  criterion's actual day/rolling/week/month range; periods longer than seven
-  days scroll horizontally instead of being relabelled as a trailing week. The
+  same source into a habit grid or metric series using each leaf criterion's
+  actual day/rolling/week/month range; rolling habit projections keep the
+  immediately preceding slipped day separate from active-period arithmetic,
+  and periods longer than seven days scroll horizontally instead of being
+  relabelled as a trailing week. Metric satisfaction is folded with the same
+  configured aggregation (`sum`, `count`, average, or max) as
+  `GoalProgressEvaluator`, rather than comparing each raw daily contribution
+  with the period target. The
   compact strip evaluates `allOf`, `anyOf`, and `atLeastCount` as authored and
   respects `atLeast` versus `atMost` metric direction; missing metric samples
   never count as successful days.
   The provider invalidates itself at the next local midnight so Today,
   ages-out and window boundaries cannot remain stuck on yesterday. The detail
   view also carries the reliability tail and explicit Watching section. Every
-  active habit day in that grid — including previous
-  days — opens success/missed actions. The write goes through
+  habit day in that grid — including previous days — opens success/missed
+  actions only when the selected day lies inside the habit's active lifetime.
+  Selecting the already-recorded outcome is a no-op. The write goes through
   `GoalHabitCompletionService` into the existing habit-completion path, so
   privacy, sync and reminder behavior remain shared. Historical corrections
   keep the selected calendar day but use the current wall-clock fields so
@@ -300,8 +307,9 @@ flowchart TD
   card (`ChangeSetSummaryCard.selfTargeted`). Mobile opens durable conversation
   at `/agents/details/:agentId/chat`; desktop renders the same
   `GoalAgentChatPane` beside detail. The mobile route mounts the composer only
-  for an active goal identity, clears the overlaid navigation bar, and persists
-  the detail route after system/gesture back. `agentChatProjectionProvider`
+  for an active goal identity, keeps the goal statement visible in its compact
+  chat header, clears the overlaid navigation bar, and persists the detail
+  route after system/gesture back. `agentChatProjectionProvider`
   filters the log first, then retains the latest fifty durable visible turns
   (no automatic `runKey`) and content-bearing `reply_to_user` actions;
   thoughts, system FACTS, legacy run-scoped FACTS rows, and tool bookkeeping
@@ -321,7 +329,9 @@ flowchart TD
   (`allOf` composite); deletion cancels queued work, aborts an in-flight local
   wake, and soft-retires the whole agent through
   `GoalAgentService.deleteGoalAgent`. The shared drain lifecycle guard rejects
-  any queued non-active goal wake that survives a race or arrives from sync.
+  any queued non-active goal wake that survives a race or arrives from sync and
+  emits an aborted completion, so an interactive caller never waits forever for
+  a lifecycle-dropped request.
 - **Conversation scope is the goal.** The contract identifies the agent as a
   dedicated coach rather than a general assistant. Coding, trivia and other
   unrelated requests receive a short purpose reminder and a redirect to the

@@ -44,6 +44,20 @@ class GoalHabitCompletionService {
     if (habitDefinition == null) return false;
 
     final now = clock.now();
+    final selectedDay = DateTime(day.year, day.month, day.day);
+    final activeFrom = habitDefinition.activeFrom;
+    final activeUntil = habitDefinition.activeUntil;
+    if (!habitDefinition.active ||
+        (activeFrom != null &&
+            selectedDay.isBefore(
+              DateTime(activeFrom.year, activeFrom.month, activeFrom.day),
+            )) ||
+        (activeUntil != null &&
+            !selectedDay.isBefore(
+              DateTime(activeUntil.year, activeUntil.month, activeUntil.day),
+            ))) {
+      return false;
+    }
     final isToday =
         day.year == now.year && day.month == now.month && day.day == now.day;
     final recordedAt = isToday

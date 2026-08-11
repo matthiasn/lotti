@@ -296,9 +296,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
     // The ids retire/rerun may legally reference: exactly what the FACTS
     // block offered (active ads + the reusable library).
-    final knownAdIds = {
+    final activeAdIds = {
       for (final n in nudges.where((n) => n.status == GoalNudgeStatus.active))
         n.id,
+    };
+    final knownAdIds = {
+      ...activeAdIds,
       for (final n in _factsRenderer.reusableTopRated(nudges)) n.id,
     };
     final strategy = GoalAgentStrategy(
@@ -307,6 +310,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       threadId: threadId,
       runKey: runKey,
       knownAdIds: knownAdIds,
+      activeAdIds: activeAdIds,
       // The deterministic status is authoritative: a report claiming
       // anything else is rejected in-conversation.
       expectedStatus: facts.trackStatus,

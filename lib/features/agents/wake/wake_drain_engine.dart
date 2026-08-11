@@ -135,6 +135,7 @@ extension WakeDrainEngine on WakeOrchestrator {
               '${DomainLogger.sanitizeId(job.agentId)}',
               subDomain: 'drain',
             );
+            _emitRunCompletion(job, WakeRunStatus.aborted);
             continue;
           }
 

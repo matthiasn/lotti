@@ -93,6 +93,13 @@ class GoalProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
+    final habitWindow = progress.habits.firstOrNull?.window;
+    final usesRollingWeek =
+        progress.habits.isNotEmpty &&
+            progress.habits.every(
+              (habit) => habit.window == const GoalWindow.rollingDays(count: 7),
+            ) ||
+        progress.metric?.window == const GoalWindow.rollingDays(count: 7);
     return DesignSystemSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -102,9 +109,7 @@ class GoalProgressCard extends StatelessWidget {
             runSpacing: tokens.spacing.step1,
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
-              if (progress.habits.isNotEmpty ||
-                  progress.metric?.window ==
-                      const GoalWindow.rollingDays(count: 7)) ...[
+              if (usesRollingWeek) ...[
                 Text(
                   context.messages.goalProgressTitle,
                   style: tokens.typography.styles.subtitle.subtitle1.copyWith(
@@ -120,6 +125,13 @@ class GoalProgressCard extends StatelessWidget {
               ] else if (progress.metric case final metric?)
                 Text(
                   _metricPeriodLabel(context, metric),
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                )
+              else if (habitWindow != null && progress.habits.isNotEmpty)
+                Text(
+                  _periodLabel(context, progress.habits.first.days),
                   style: tokens.typography.styles.others.caption.copyWith(
                     color: tokens.colors.text.lowEmphasis,
                   ),
@@ -149,10 +161,13 @@ class GoalProgressCard extends StatelessWidget {
     BuildContext context,
     GoalMetricProgressView metric,
   ) {
+    return _periodLabel(context, metric.days);
+  }
+
+  String _periodLabel(BuildContext context, List<GoalProgressDay> days) {
     final locale = Localizations.localeOf(context).toLanguageTag();
     final format = DateFormat.MMMd(locale);
-    return '${format.format(metric.days.first.day)} – '
-        '${format.format(metric.days.last.day)}';
+    return '${format.format(days.first.day)} – ${format.format(days.last.day)}';
   }
 }
 
@@ -207,7 +222,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final habit = widget.habit;
-    final activeDays = habit.days.skip(1).toList(growable: false);
+    final activeDays = habit.days;
     final locale = Localizations.localeOf(context).toLanguageTag();
     final stateColor = habit.deficit == 0
         ? tokens.colors.alert.success.ink
@@ -232,7 +247,9 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           ),
         ),
         Text(
-          context.messages.goalProgressHabitTarget(habit.targetCount),
+          habit.window == const GoalWindow.rollingDays(count: 7)
+              ? context.messages.goalProgressHabitTarget(habit.targetCount)
+              : '${habit.targetCount}× · ${_windowLabel(context, habit.window)}',
           style: tokens.typography.styles.others.caption.copyWith(
             color: tokens.colors.text.lowEmphasis,
           ),
@@ -288,7 +305,9 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     );
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide = constraints.maxWidth >= tokens.spacing.step13 * 3;
+        final wide =
+            activeDays.length <= 7 &&
+            constraints.maxWidth >= tokens.spacing.step13 * 4;
         if (wide) {
           return Row(
             children: [
@@ -333,6 +352,15 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     );
   }
 }
+
+String _windowLabel(BuildContext context, GoalWindow window) =>
+    switch (window) {
+      GoalWindowDay() => context.messages.goalWindowSingleDay,
+      GoalWindowRollingDays(:final count) =>
+        context.messages.goalWindowRollingDays(count),
+      GoalWindowCalendarWeek() => context.messages.goalWindowCalendarWeek,
+      GoalWindowCalendarMonth() => context.messages.goalWindowCalendarMonth,
+    };
 
 class _ProgressDayCell extends StatelessWidget {
   const _ProgressDayCell({
@@ -405,37 +433,44 @@ class _ProgressDayCell extends StatelessWidget {
     final date = DateFormat.yMMMd(
       Localizations.localeOf(context).toLanguageTag(),
     ).format(day.day);
-    return PopupMenuButton<HabitCompletionType>(
+    return SizedBox.square(
       key: ValueKey(
         'goal-habit-day-$habitId-'
         '${day.day.toIso8601String().substring(0, 10)}',
       ),
-      enabled: !saving,
-      initialValue: day.habitCompletionType,
-      padding: EdgeInsets.zero,
-      tooltip: date,
-      onSelected: callback,
-      itemBuilder: (context) => [
-        PopupMenuItem(
-          key: const ValueKey('goal-habit-day-success'),
-          value: HabitCompletionType.success,
-          child: Text(context.messages.completeHabitSuccessButton),
+      dimension: TapTargets.minimum,
+      child: PopupMenuButton<HabitCompletionType>(
+        enabled: !saving,
+        initialValue: day.habitCompletionType,
+        padding: EdgeInsets.zero,
+        tooltip: date,
+        onSelected: (outcome) {
+          if (outcome != day.habitCompletionType) callback(outcome);
+        },
+        itemBuilder: (context) => [
+          PopupMenuItem(
+            key: const ValueKey('goal-habit-day-success'),
+            value: HabitCompletionType.success,
+            child: Text(context.messages.completeHabitSuccessButton),
+          ),
+          PopupMenuItem(
+            key: const ValueKey('goal-habit-day-missed'),
+            value: HabitCompletionType.fail,
+            child: Text(context.messages.completeHabitFailButton),
+          ),
+        ],
+        child: Center(
+          child: saving
+              ? SizedBox.square(
+                  dimension: ControlSizes.iconChipCompact,
+                  child: Padding(
+                    padding: EdgeInsets.all(tokens.spacing.step2),
+                    child: const CircularProgressIndicator(),
+                  ),
+                )
+              : decoratedCell,
         ),
-        PopupMenuItem(
-          key: const ValueKey('goal-habit-day-missed'),
-          value: HabitCompletionType.fail,
-          child: Text(context.messages.completeHabitFailButton),
-        ),
-      ],
-      child: saving
-          ? SizedBox.square(
-              dimension: ControlSizes.iconChipCompact,
-              child: Padding(
-                padding: EdgeInsets.all(tokens.spacing.step2),
-                child: const CircularProgressIndicator(),
-              ),
-            )
-          : decoratedCell,
+      ),
     );
   }
 }

@@ -7,13 +7,16 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 
-/// One habit row in the rolling-window visual used by the Agents list and
-/// goal detail page. [days] contains the slipped day first, followed by the
-/// active trailing seven-day window ending at [GoalProgressView.today].
+/// One habit row in the period visual used by the Agents list and goal detail.
+///
+/// [days] is exactly the criterion's active period. Rolling windows also keep
+/// the immediately preceding [slippedDay] so callers can explain what just
+/// left the window without corrupting the active-period progress math.
 class GoalHabitProgressView {
   const GoalHabitProgressView({
     required this.habitId,
@@ -21,6 +24,8 @@ class GoalHabitProgressView {
     required this.targetCount,
     required this.days,
     required this.successfulWeeks,
+    this.window = const GoalWindow.rollingDays(count: 7),
+    this.slippedDay,
   });
 
   final String habitId;
@@ -28,22 +33,33 @@ class GoalHabitProgressView {
   final int targetCount;
   final List<GoalProgressDay> days;
   final int successfulWeeks;
+  final GoalWindow window;
+  final GoalProgressDay? slippedDay;
 
-  int get successesInWindow =>
-      days.skip(1).where((day) => day.value > 0).length;
+  int get successesInWindow => switch (window) {
+    GoalWindowRollingDays() => days.where((day) => day.value > 0).length,
+    _ => days.fold(0, (total, day) => total + day.value.toInt()),
+  };
 
   int get deficit => (targetCount - successesInWindow).clamp(0, targetCount);
 
   bool get oldestSuccessAgesOutTonight =>
-      successesInWindow >= targetCount && days[1].value > 0;
+      window is GoalWindowRollingDays &&
+      successesInWindow >= targetCount &&
+      days.isNotEmpty &&
+      days.first.value > 0;
 }
 
-/// The metric-series variant of the same trailing-seven-day frame.
+/// Metric contributions for the criterion's actual evaluation period.
+/// [GoalProgressDay.targetSatisfied] carries the evaluator's aggregate verdict
+/// for the period anchored at that day; bars must not compare a raw daily
+/// contribution with a multi-day target.
 class GoalMetricProgressView {
   const GoalMetricProgressView({
     required this.name,
     required this.target,
     required this.days,
+    this.aggregation = GoalAggregation.dailySumThenAverage,
     this.window = const GoalWindow.rollingDays(count: 7),
     this.direction = GoalDirection.atLeast,
   });
@@ -51,11 +67,13 @@ class GoalMetricProgressView {
   final String name;
   final num target;
   final List<GoalProgressDay> days;
+  final GoalAggregation aggregation;
   final GoalWindow window;
   final GoalDirection direction;
 
   bool meetsTarget(GoalProgressDay day) =>
-      day.isObserved && _meetsTarget(day.value, target, direction);
+      day.isObserved &&
+      (day.targetSatisfied ?? _meetsTarget(day.value, target, direction));
 }
 
 class GoalProgressDay {
@@ -64,12 +82,14 @@ class GoalProgressDay {
     required this.value,
     this.habitCompletionType,
     this.isObserved = true,
+    this.targetSatisfied,
   });
 
   final DateTime day;
   final num value;
   final HabitCompletionType? habitCompletionType;
   final bool isObserved;
+  final bool? targetSatisfied;
 
   bool get hasValue => value > 0;
 }
@@ -133,20 +153,8 @@ bool _criterionMetOnDay(
 ) => switch (criterion) {
   GoalCriterionHabit(:final habitId) =>
     (signals.habitSuccessesByDay[habitId]?[day] ?? 0) > 0,
-  GoalCriterionMetric(:final dataType, :final target, :final direction) =>
-    signals.quantitativeDailySums[dataType]?.containsKey(day) == true &&
-        _meetsTarget(
-          signals.quantitativeDailySums[dataType]![day]!,
-          target,
-          direction,
-        ),
-  GoalCriterionMeasurable(:final dataTypeId, :final target, :final direction) =>
-    signals.measurableDailySums[dataTypeId]?.containsKey(day) == true &&
-        _meetsTarget(
-          signals.measurableDailySums[dataTypeId]![day]!,
-          target,
-          direction,
-        ),
+  GoalCriterionMetric() || GoalCriterionMeasurable() =>
+    const GoalProgressEvaluator().evaluate(criterion, signals, day).satisfied,
   GoalCriterionAllOf(criteria: final children) => children.every(
     (child) => _criterionMetOnDay(child, signals, day),
   ),
@@ -171,10 +179,6 @@ GoalProgressView buildGoalProgressView({
   Map<String, String> habitNames = const {},
 }) {
   final today = GoalWindow.dayUtc(reference);
-  final displayDays = [
-    for (var offset = 7; offset >= 0; offset--)
-      today.subtract(Duration(days: offset)),
-  ];
   final habitLeaves = <GoalCriterionHabit>[];
   GoalCriterionMetric? metricLeaf;
 
@@ -200,26 +204,12 @@ GoalProgressView buildGoalProgressView({
   visit(criteria);
   final habits = [
     for (final habit in habitLeaves)
-      GoalHabitProgressView(
-        habitId: habit.habitId,
-        name: habit.title?.trim().isNotEmpty == true
-            ? habit.title!.trim()
-            : habitNames[habit.habitId] ?? habit.habitId,
-        targetCount: habit.targetCount,
-        days: [
-          for (final day in displayDays)
-            GoalProgressDay(
-              day: day,
-              value: signals.habitSuccessesByDay[habit.habitId]?[day] ?? 0,
-              habitCompletionType:
-                  signals.habitCompletionsByDay[habit.habitId]?[day],
-            ),
-        ],
-        successfulWeeks: _successfulWeeks(
-          successes: signals.habitSuccessesByDay[habit.habitId] ?? const {},
-          today: today,
-          target: habit.targetCount,
-        ),
+      _habitProgressView(
+        habit: habit,
+        signals: signals,
+        reference: reference,
+        today: today,
+        habitNames: habitNames,
       ),
   ];
 
@@ -251,6 +241,7 @@ GoalProgressView buildGoalProgressView({
             target: metric.target,
             window: metric.window,
             direction: metric.direction,
+            aggregation: metric.aggregation,
             days: [
               for (
                 var day = metricRange!.start;
@@ -265,9 +256,51 @@ GoalProgressView buildGoalProgressView({
                       signals.quantitativeDailySums[metric.dataType]
                           ?.containsKey(day) ??
                       false,
+                  targetSatisfied: const GoalProgressEvaluator()
+                      .evaluate(metric, signals, day)
+                      .satisfied,
                 ),
             ],
           ),
+  );
+}
+
+GoalHabitProgressView _habitProgressView({
+  required GoalCriterionHabit habit,
+  required GoalSignalWindow signals,
+  required DateTime reference,
+  required DateTime today,
+  required Map<String, String> habitNames,
+}) {
+  final range = habit.window.periodRange(reference);
+  GoalProgressDay projection(DateTime day) => GoalProgressDay(
+    day: day,
+    value: signals.habitSuccessesByDay[habit.habitId]?[day] ?? 0,
+    habitCompletionType: signals.habitCompletionsByDay[habit.habitId]?[day],
+  );
+  return GoalHabitProgressView(
+    habitId: habit.habitId,
+    name: habit.title?.trim().isNotEmpty == true
+        ? habit.title!.trim()
+        : habitNames[habit.habitId] ?? habit.habitId,
+    targetCount: habit.targetCount,
+    window: habit.window,
+    slippedDay: habit.window is GoalWindowRollingDays
+        ? projection(range.start.subtract(const Duration(days: 1)))
+        : null,
+    days: [
+      for (
+        var day = range.start;
+        !day.isAfter(range.end);
+        day = day.add(const Duration(days: 1))
+      )
+        projection(day),
+    ],
+    successfulWeeks: _successfulWeeks(
+      successes: signals.habitSuccessesByDay[habit.habitId] ?? const {},
+      today: today,
+      target: habit.targetCount,
+    ),
   );
 }
 

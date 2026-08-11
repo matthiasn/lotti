@@ -166,10 +166,28 @@ void main() {
             createdAt: DateTime(2024, 3, 15),
           ),
         );
+        final completions = <WakeRunCompletion>[];
+        final subscription = orchestrator.runCompletions.listen(
+          completions.add,
+        );
+        addTearDown(subscription.cancel);
 
         await orchestrator.processNext();
+        await Future<void>.value();
 
         expect(executions, 0);
+        expect(
+          completions,
+          contains(
+            isA<WakeRunCompletion>()
+                .having((event) => event.runKey, 'runKey', 'destroyed-goal')
+                .having(
+                  (event) => event.status,
+                  'status',
+                  WakeRunStatus.aborted,
+                ),
+          ),
+        );
         verifyNever(
           () => mockRepository.insertWakeRun(entry: any(named: 'entry')),
         );

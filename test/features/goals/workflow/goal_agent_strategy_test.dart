@@ -285,7 +285,38 @@ void main() {
     );
 
     expect(strategy.snoozeRequests, isEmpty);
-    expect(rejection(), contains('unknown adId'));
+    expect(rejection(), contains('is not active'));
+  });
+
+  test('snooze rejects a known reusable ad that is not active', () async {
+    final activeOnly = GoalAgentStrategy(
+      syncService: syncService,
+      agentId: 'goal-1',
+      threadId: 'thread-1',
+      runKey: 'run-1',
+      knownAdIds: const {'ad-active', 'ad-reusable'},
+      activeAdIds: const {'ad-active'},
+    );
+
+    await withClock(
+      Clock.fixed(DateTime.utc(2026, 8, 11, 12)),
+      () => activeOnly.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-reusable',
+              'until': '2026-08-11T13:00:00Z',
+              'reason': 'hide it',
+            },
+          ),
+        ],
+        manager: manager,
+      ),
+    );
+
+    expect(activeOnly.snoozeRequests, isEmpty);
+    expect(rejection(), contains('is not active'));
   });
 
   test('only ONE revision proposal per wake is accepted', () async {

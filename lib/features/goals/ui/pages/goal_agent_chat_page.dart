@@ -45,7 +45,6 @@ class GoalAgentChatPage extends ConsumerWidget {
                 ),
                 child: GoalAgentChatPane(
                   agentId: agentId,
-                  showHeader: false,
                 ),
               )
             : Center(child: Text(context.messages.goalDetailHealthUnavailable)),

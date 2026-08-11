@@ -23,7 +23,7 @@ void main() {
     today.subtract(Duration(days: offset)),
   );
 
-  test('habit projection keeps the slipped day, active window, deficit and '
+  test('habit projection separates the slipped day, active window, deficit and '
       'six-week reliability on the evaluator signal source', () {
     final successes = <DateTime, int>{
       day(7): 1,
@@ -49,8 +49,9 @@ void main() {
 
     final habit = view.habits.single;
     expect(habit.name, 'Gym');
-    expect(habit.days, hasLength(8));
-    expect(habit.days.first.day, day(7), reason: 'slipped day stays visible');
+    expect(habit.days, hasLength(7));
+    expect(habit.days.first.day, day(6));
+    expect(habit.slippedDay?.day, day(7));
     expect(habit.successesInWindow, 3);
     expect(habit.deficit, 1);
     expect(habit.oldestSuccessAgesOutTonight, isFalse);
@@ -100,7 +101,8 @@ void main() {
     );
 
     expect(view.metric?.days, hasLength(7));
-    expect(view.compactWindow, [true, false, false, false, true, false, false]);
+    expect(view.metric?.aggregation, GoalAggregation.dailySumThenAverage);
+    expect(view.compactWindow, [true, false, false, false, true, false, true]);
   });
 
   test('an at-most metric marks values at or below its ceiling', () {
@@ -123,9 +125,67 @@ void main() {
 
     expect(view.metric?.direction, GoalDirection.atMost);
     expect(view.compactWindow.take(5), everyElement(isFalse));
-    expect(view.compactWindow.last, isTrue);
+    expect(view.compactWindow.last, isFalse);
     expect(view.compactWindow[5], isFalse);
   });
+
+  test('sum and count metrics compare the aggregated rolling period', () {
+    GoalProgressView build(GoalAggregation aggregation) =>
+        buildGoalProgressView(
+          criteria: GoalCriterion.metric(
+            criterionId: 'sessions',
+            dataType: 'sessions',
+            window: const GoalWindow.rollingDays(count: 5),
+            aggregation: aggregation,
+            target: 5,
+          ),
+          signals: GoalSignalWindow(
+            quantitativeDailySums: {
+              'sessions': {
+                for (var offset = 4; offset >= 0; offset--) day(offset): 1,
+              },
+            },
+          ),
+          reference: today,
+        );
+
+    final sum = build(GoalAggregation.sum);
+    final count = build(GoalAggregation.count);
+
+    expect(sum.metric?.aggregation, GoalAggregation.sum);
+    expect(sum.compactWindow, [false, false, false, false, true]);
+    expect(count.metric?.aggregation, GoalAggregation.count);
+    expect(count.compactWindow, [false, false, false, false, true]);
+  });
+
+  test(
+    'habit projection follows day, calendar-month and rolling-N windows',
+    () {
+      GoalHabitProgressView project(GoalWindow window) => buildGoalProgressView(
+        criteria: GoalCriterion.habit(
+          criterionId: 'walk',
+          habitId: 'walk',
+          window: window,
+          targetCount: 1,
+        ),
+        signals: const GoalSignalWindow(),
+        reference: today,
+      ).habits.single;
+
+      final daily = project(const GoalWindow.day());
+      final month = project(const GoalWindow.calendarMonth());
+      final rolling = project(const GoalWindow.rollingDays(count: 10));
+
+      expect(daily.days, hasLength(1));
+      expect(daily.slippedDay, isNull);
+      expect(month.days, hasLength(31));
+      expect(month.days.first.day, DateTime.utc(2026, 8));
+      expect(month.slippedDay, isNull);
+      expect(rolling.days, hasLength(10));
+      expect(rolling.days.first.day, day(9));
+      expect(rolling.slippedDay?.day, day(10));
+    },
+  );
 
   test('metric projection follows the criterion day and calendar-month '
       'windows instead of forcing seven days', () {
@@ -370,7 +430,7 @@ void main() {
 
     expect(view?.today, DateTime.utc(2026, 8, 11));
     expect(view?.habits.single.name, habitFlossing.name);
-    expect(view?.habits.single.days, hasLength(8));
+    expect(view?.habits.single.days, hasLength(7));
     verify(() => db.getHabitById(habitFlossing.id)).called(1);
   });
 
