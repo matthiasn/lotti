@@ -10589,6 +10589,12 @@ abstract class AppLocalizations {
   /// **'Decrease weekly target'**
   String get goalFormDecreaseTarget;
 
+  /// No description provided for @goalFormDefaultPersonaName.
+  ///
+  /// In en, this message translates to:
+  /// **'Juno'**
+  String get goalFormDefaultPersonaName;
+
   /// No description provided for @goalFormEditTitle.
   ///
   /// In en, this message translates to:

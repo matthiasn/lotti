@@ -107,15 +107,22 @@ void main() {
     GoalSpecVersionEntity? editSpec,
     bool identityFails = false,
     bool healthFails = false,
+    bool identityMissing = false,
+    bool healthMissing = false,
   }) => [
     goalAgentServiceProvider.overrideWithValue(agentService),
     goalSpecRevisionServiceProvider.overrideWithValue(revisionService),
     habitsRepositoryProvider.overrideWithValue(habitsRepository),
-    if (editSpec != null || identityFails || healthFails) ...[
+    if (editSpec != null ||
+        identityFails ||
+        healthFails ||
+        identityMissing ||
+        healthMissing) ...[
       agentIdentityProvider(
         'goal-1',
       ).overrideWith((ref) async {
         if (identityFails) throw StateError('identity unavailable');
+        if (identityMissing) return null;
         return _identity;
       }),
       goalAgentHealthProvider('goal-1').overrideWith(
@@ -126,7 +133,7 @@ void main() {
             attainment: 0.5,
             reportOneLiner: null,
             pendingProposals: 0,
-            spec: editSpec,
+            spec: healthMissing ? null : editSpec,
             direction: GoalHealthDirection.flat,
             deficit: null,
             buffer: null,
@@ -300,6 +307,13 @@ void main() {
       find.byKey(const ValueKey('goal-form-steps-target')),
       findsOneWidget,
     );
+    final stepsField = tester.widget<TextField>(
+      find.descendant(
+        of: find.byKey(const ValueKey('goal-form-steps-target')),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(stepsField.keyboardType, TextInputType.number);
     expect(find.text('automatic step count'), findsOneWidget);
   });
 
@@ -829,6 +843,101 @@ void main() {
       expect(find.text('Save new version'), findsNothing);
     });
   }
+
+  for (final missingPart in ['identity', 'health']) {
+    testWidgets('editing stops loading when the goal $missingPart is missing', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(
+            identityMissing: missingPart == 'identity',
+            healthMissing: missingPart == 'health',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text("Couldn't load this goal's health right now."),
+        findsOneWidget,
+      );
+      expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+  }
+
+  testWidgets(
+    'editing preserves loaded habits while the active-habit stream is pending',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final habits = StreamController<List<HabitDefinition>>();
+      addTearDown(habits.close);
+      when(
+        habitsRepository.watchHabitDefinitions,
+      ).thenAnswer((_) => habits.stream);
+      const criteria = GoalCriterion.allOf(
+        criterionId: 'routine',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'habit-gym',
+            habitId: 'gym',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 2,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'steps',
+            dataType: 'cumulative_step_count',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 9000,
+          ),
+        ],
+      );
+      final current = _spec(criteria: criteria);
+      when(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: current.id,
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      ).thenAnswer(
+        (_) async => const GoalSpecRevisionRefused(
+          'the owner edit does not change the goal',
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(editSpec: current),
+        ),
+      );
+      await tester.pump();
+      await tester.tap(find.text('Continue'));
+      await tester.pump();
+      await tester.tap(find.text('Looks right'));
+      await tester.pump();
+      await tester.tap(find.text('Save new version'));
+      await tester.pump();
+
+      verify(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: current.id,
+          displayName: 'Juno',
+          title: 'Weekly movement',
+          statement: 'Gym and run every week',
+          criteria: criteria,
+        ),
+      ).called(1);
+    },
+  );
 
   testWidgets('editing preserves an unsupported mapping while renaming', (
     tester,

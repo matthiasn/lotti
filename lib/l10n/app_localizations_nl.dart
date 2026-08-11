@@ -6206,6 +6206,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormDecreaseTarget => 'Weekdoel verlagen';
 
   @override
+  String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
   String get goalFormEditTitle => 'Doel bewerken';
 
   @override

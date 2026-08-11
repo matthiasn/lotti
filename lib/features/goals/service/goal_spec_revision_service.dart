@@ -7,8 +7,10 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/goals/service/goal_revision_apply.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:uuid/uuid.dart';
 
 /// The outcome of a user-approved goal revision.
@@ -110,6 +112,8 @@ class GoalSpecRevisionService {
   /// [GoalSpecVersionEntity.diffFromVersionId]; the active version is never
   /// rewritten in place. [baseVersionId] is the head loaded by the editor;
   /// the save is refused if another writer moved the head in the meantime.
+  /// A successful owner edit also retracts pending agent-authored revision
+  /// proposals so an older suggestion cannot later overwrite the new spec.
   Future<GoalSpecRevisionOutcome> reviseFromOwner({
     required String agentId,
     required String baseVersionId,
@@ -319,6 +323,10 @@ class GoalSpecRevisionService {
       head.copyWith(versionId: versionId, updatedAt: now),
     );
 
+    if (authoredBy == 'user') {
+      await _retractPendingRevisionProposals(agentId: agentId, now: now);
+    }
+
     // Ads pitched for the superseded goal must not keep running beside
     // the revised statement until their own staleAt: every nudge that
     // has not reached a terminal state moves to `superseded` with the
@@ -372,5 +380,42 @@ class GoalSpecRevisionService {
       version: minted,
       changeSummaries: changeSummaries,
     );
+  }
+
+  Future<void> _retractPendingRevisionProposals({
+    required String agentId,
+    required DateTime now,
+  }) async {
+    final pendingSets = await _repository.getPendingChangeSets(
+      agentId,
+      taskId: agentId,
+    );
+    for (final changeSet in pendingSets) {
+      var changed = false;
+      final items = changeSet.items
+          .map((item) {
+            if (item.status != ChangeItemStatus.pending ||
+                item.toolName != GoalAgentToolNames.proposeGoalRevision) {
+              return item;
+            }
+            changed = true;
+            return item.copyWith(status: ChangeItemStatus.retracted);
+          })
+          .toList(growable: false);
+      if (!changed) continue;
+
+      final status = ChangeItem.deriveSetStatus(items);
+      await _syncService.upsertEntity(
+        changeSet.copyWith(
+          items: items,
+          status: status,
+          resolvedAt: ChangeItem.deriveResolvedAt(
+            newStatus: status,
+            existingResolvedAt: changeSet.resolvedAt,
+            now: now,
+          ),
+        ),
+      );
+    }
   }
 }

@@ -2596,6 +2596,7 @@
   "goalFormContinue": "Continuer",
   "goalFormCostHonesty": "Utilise ton fournisseur d’IA configuré. La consommation réelle apparaît dans les indicateurs de consommation totale de cet objectif.",
   "goalFormDecreaseTarget": "Réduire l’objectif hebdomadaire",
+  "goalFormDefaultPersonaName": "Juno",
   "goalFormEditTitle": "Modifier l’objectif",
   "goalFormEditVersion": "Cela lance la version {version}. Ton historique est conservé.",
   "goalFormExampleGym": "aller à la salle deux fois par semaine",

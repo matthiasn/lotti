@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -63,6 +64,12 @@ void main() {
       () => repository.getEntitiesByAgentId(
         any(),
         type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getPendingChangeSets(
+        any(),
+        taskId: any(named: 'taskId'),
       ),
     ).thenAnswer((_) async => []);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
@@ -249,6 +256,85 @@ void main() {
       GoalSpecRevisionService.ownerStaleVersionReason,
     );
     expect(upserts, isEmpty);
+  });
+
+  test('an owner edit retracts pending goal revision proposals', () async {
+    stubSpec();
+    final pending =
+        AgentDomainEntity.changeSet(
+              id: 'goal-revision-set',
+              agentId: agentId,
+              taskId: agentId,
+              threadId: 'thread-1',
+              runKey: 'run-1',
+              status: ChangeSetStatus.pending,
+              items: const [
+                ChangeItem(
+                  toolName: 'propose_goal_revision',
+                  args: {
+                    'changes': {'targetValue': 3},
+                  },
+                  humanSummary: 'Lower the target',
+                ),
+                ChangeItem(
+                  toolName: 'reply_to_user',
+                  args: {'message': 'Keep this pending'},
+                  humanSummary: 'Unrelated proposal',
+                ),
+                ChangeItem(
+                  toolName: 'propose_goal_revision',
+                  args: {
+                    'changes': {'targetValue': 4},
+                  },
+                  humanSummary: 'Already retracted proposal',
+                  status: ChangeItemStatus.retracted,
+                ),
+              ],
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as ChangeSetEntity;
+    final unrelated = pending.copyWith(
+      id: 'unrelated-set',
+      items: const [
+        ChangeItem(
+          toolName: 'reply_to_user',
+          args: {'message': 'Still pending'},
+          humanSummary: 'Another unrelated proposal',
+        ),
+      ],
+    );
+    final fullyMatching = pending.copyWith(
+      id: 'fully-matching-set',
+      items: [pending.items.first],
+    );
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => [pending, fullyMatching, unrelated]);
+
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromOwner(
+        agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
+        displayName: 'Juno',
+        title: 'Movement',
+        statement: 'Move consistently.',
+        criteria: criteria,
+      ),
+    );
+
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    final retired = upserts.whereType<ChangeSetEntity>().toList();
+    expect(retired.map((set) => set.id), [pending.id, fullyMatching.id]);
+    expect(retired.first.status, ChangeSetStatus.partiallyResolved);
+    expect(retired.first.resolvedAt, isNull);
+    expect(retired.first.items.first.status, ChangeItemStatus.retracted);
+    expect(retired.first.items[1].status, ChangeItemStatus.pending);
+    expect(retired.first.items.last.status, ChangeItemStatus.retracted);
+    expect(retired.last.status, ChangeSetStatus.resolved);
+    expect(retired.last.resolvedAt, now);
+    expect(retired.last.items.single.status, ChangeItemStatus.retracted);
   });
 
   test(

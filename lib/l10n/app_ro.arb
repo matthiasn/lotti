@@ -2596,6 +2596,7 @@
   "goalFormContinue": "Continuați",
   "goalFormCostHonesty": "Folosește furnizorul de IA configurat de dvs. Consumul real apare în indicatorii de consum total ai acestui obiectiv.",
   "goalFormDecreaseTarget": "Reduceți ținta săptămânală",
+  "goalFormDefaultPersonaName": "Juno",
   "goalFormEditTitle": "Editați obiectivul",
   "goalFormEditVersion": "Aceasta pornește versiunea {version}. Istoricul dvs. este păstrat.",
   "goalFormExampleGym": "sală de două ori pe săptămână",

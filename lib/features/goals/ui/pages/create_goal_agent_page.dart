@@ -43,7 +43,7 @@ enum _GoalFormStep { intention, mapping, confirmation }
 class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   final _statement = TextEditingController();
   final _title = TextEditingController();
-  final _persona = TextEditingController(text: 'Juno');
+  final _persona = TextEditingController();
   final _stepsTarget = TextEditingController(text: '10000');
   _GoalFormStep _step = _GoalFormStep.intention;
   var _mapping = const GoalFormMapping.empty();
@@ -52,6 +52,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   var _watchesSteps = false;
   var _showAllHabits = false;
   var _initialized = false;
+  var _defaultPersonaInitialized = false;
   var _saving = false;
   String? _derivedFrom;
   String? _derivedTitle;
@@ -59,6 +60,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   String? _validation;
 
   bool get _editing => widget.agentId != null;
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_editing && !_defaultPersonaInitialized) {
+      _persona.text = context.messages.goalFormDefaultPersonaName;
+      _defaultPersonaInitialized = true;
+    }
+  }
 
   @override
   void dispose() {
@@ -180,10 +190,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   }
 
   void _reconcileHabitTargets() {
-    final currentHabits = ref.read(_habitDefinitionsProvider).value;
-    final activeHabitIds = {
-      for (final habit in currentHabits ?? _knownHabits) habit.id,
-    };
+    final habitsAsync = ref.read(_habitDefinitionsProvider);
+    final currentHabits = habitsAsync.value;
+    if (currentHabits == null || habitsAsync.hasError) return;
+    final activeHabitIds = {for (final habit in currentHabits) habit.id};
     _habitTargets.removeWhere(
       (habitId, _) => !activeHabitIds.contains(habitId),
     );
@@ -319,7 +329,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       editSpec = healthAsync.value?.spec;
       if (identity is AgentIdentityEntity && editSpec != null) {
         _initializeEdit(identity, editSpec);
-      } else if (identityAsync.hasError || healthAsync.hasError) {
+      } else if (identityAsync.hasError ||
+          healthAsync.hasError ||
+          (!identityAsync.isLoading && identity == null) ||
+          (!healthAsync.isLoading && editSpec == null)) {
         return Scaffold(
           appBar: AppBar(
             leading: BackButton(onPressed: _back),
@@ -683,6 +696,7 @@ class _MappingStep extends StatelessWidget {
                         controller: stepsTarget,
                         label: messages.goalCreateStepsTargetLabel,
                         leadingIcon: Icons.directions_walk_rounded,
+                        keyboardType: TextInputType.number,
                       ),
                     ),
                   ],

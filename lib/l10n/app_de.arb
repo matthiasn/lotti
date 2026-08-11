@@ -2596,6 +2596,7 @@
   "goalFormContinue": "Weiter",
   "goalFormCostHonesty": "Verwendet deinen konfigurierten KI-Anbieter. Die tatsächliche Nutzung siehst du in den Verbrauchsanzeigen für die gesamte Laufzeit dieses Ziels.",
   "goalFormDecreaseTarget": "Wochenziel verringern",
+  "goalFormDefaultPersonaName": "Juno",
   "goalFormEditTitle": "Ziel bearbeiten",
   "goalFormEditVersion": "Damit beginnt Version {version}. Dein Verlauf bleibt erhalten.",
   "goalFormExampleGym": "zweimal pro Woche ins Fitnessstudio",

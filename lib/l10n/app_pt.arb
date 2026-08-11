@@ -2852,6 +2852,7 @@
   "goalFormContinue": "Continuar",
   "goalFormCostHonesty": "Usa o teu fornecedor de IA configurado. O consumo real aparece nos indicadores de consumo total deste objetivo.",
   "goalFormDecreaseTarget": "Diminuir a meta semanal",
+  "goalFormDefaultPersonaName": "Juno",
   "goalFormEditTitle": "Editar meta",
   "goalFormEditVersion": "Isto inicia a versão {version}. O teu histórico é mantido.",
   "goalFormExampleGym": "ginásio duas vezes por semana",

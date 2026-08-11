@@ -2603,6 +2603,7 @@
   "goalFormContinue": "Pokračovat",
   "goalFormCostHonesty": "Používá tvého nastaveného poskytovatele AI. Skutečnou spotřebu uvidíš v přehledu celoživotní spotřeby tohoto cíle.",
   "goalFormDecreaseTarget": "Snížit týdenní cíl",
+  "goalFormDefaultPersonaName": "Juno",
   "goalFormEditTitle": "Upravit cíl",
   "goalFormEditVersion": "Tím vznikne verze {version}. Historie zůstane zachovaná.",
   "goalFormExampleGym": "dvakrát týdně do posilovny",

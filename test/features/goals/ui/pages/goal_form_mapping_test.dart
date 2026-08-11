@@ -247,10 +247,10 @@ void main() {
 
     expect(
       rebuilt.criteria.map((criterion) => criterion.criterionId),
-      ['steps-2', 'steps'],
+      ['steps', 'steps-2'],
     );
     expect(
-      (rebuilt.criteria.first as GoalCriterionMetric).title,
+      (rebuilt.criteria.last as GoalCriterionMetric).title,
       'Average steps per day',
     );
   });
@@ -304,5 +304,59 @@ void main() {
         target: 10000,
       ),
     );
+  });
+
+  test('existing habit leaves retain authored titles', () {
+    const criteria = GoalCriterion.habit(
+      criterionId: 'habit-gym',
+      habitId: 'gym',
+      title: 'Strength practice',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 2,
+    );
+
+    final rebuilt = GoalFormMapping.fromCriteria(criteria).buildCriteria(
+      stepsTitle: 'Average steps per day',
+      habitTargets: const {'gym': 3},
+    );
+
+    expect(
+      rebuilt,
+      const GoalCriterion.habit(
+        criterionId: 'habit-gym',
+        habitId: 'gym',
+        title: 'Strength practice',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 3,
+      ),
+    );
+  });
+
+  test('an editable mixed tree retains its authored leaf order', () {
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'routine',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'habit-gym',
+          habitId: 'gym',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 2,
+        ),
+        GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 9000,
+        ),
+      ],
+    );
+
+    final rebuilt = GoalFormMapping.fromCriteria(criteria).buildCriteria(
+      stepsTitle: 'Average steps per day',
+      habitTargets: const {'gym': 2},
+    );
+
+    expect(rebuilt, criteria);
   });
 }

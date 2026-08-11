@@ -3459,6 +3459,7 @@
   "goalFormContinue": "Continue",
   "goalFormCostHonesty": "Uses your configured AI provider. Actual usage appears in this goal’s lifetime consumption pills.",
   "goalFormDecreaseTarget": "Decrease weekly target",
+  "goalFormDefaultPersonaName": "Juno",
   "goalFormEditTitle": "Edit goal",
   "goalFormEditVersion": "This starts version {version}. Your history is kept.",
   "@goalFormEditVersion": {

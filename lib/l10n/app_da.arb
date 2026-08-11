@@ -2853,6 +2853,7 @@
   "goalFormContinue": "Fortsæt",
   "goalFormCostHonesty": "Bruger din valgte AI-udbyder. Det faktiske forbrug vises i målets samlede forbrugsmærker.",
   "goalFormDecreaseTarget": "Sænk ugemålet",
+  "goalFormDefaultPersonaName": "Juno",
   "goalFormEditTitle": "Rediger mål",
   "goalFormEditVersion": "Dette starter version {version}. Din historik bevares.",
   "goalFormExampleGym": "træn to gange om ugen",

@@ -6252,6 +6252,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormDecreaseTarget => 'Snížit týdenní cíl';
 
   @override
+  String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
   String get goalFormEditTitle => 'Upravit cíl';
 
   @override

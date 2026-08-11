@@ -6243,6 +6243,9 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalFormDecreaseTarget => 'Diminuir a meta semanal';
 
   @override
+  String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
   String get goalFormEditTitle => 'Editar meta';
 
   @override

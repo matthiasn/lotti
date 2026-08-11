@@ -402,9 +402,11 @@ flowchart TD
   observable proxy exists. Confirmation names the goal and its conversational
   persona and states the inference-cost contract. Editing opens from the goal
   detail menu, preloads the current values, explains the next immutable version,
-  and preserves version history. A supported MULTI-habit routine is stored as
-  an `allOf` composite; deletion cancels queued work, aborts an in-flight local
-  wake, and soft-retires the whole agent through
+  and preserves version history. A successful owner edit retracts any pending
+  agent-authored goal-revision proposal based on the old version, preventing a
+  later approval from overwriting the owner's newer intent. A supported
+  MULTI-habit routine is stored as an `allOf` composite; deletion cancels queued
+  work, aborts an in-flight local wake, and soft-retires the whole agent through
   `GoalAgentService.deleteGoalAgent`. The shared drain lifecycle guard rejects
   any queued non-active goal wake that survives a race or arrives from sync and
   emits an aborted completion, so an interactive caller never waits forever for

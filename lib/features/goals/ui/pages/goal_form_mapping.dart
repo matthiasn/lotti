@@ -2,6 +2,8 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 
+typedef _LeafOrderEntry = ({String? habitId, bool isSteps});
+
 /// Lossless bridge between the goal criterion tree and WP5's observable
 /// mapping controls.
 ///
@@ -16,11 +18,13 @@ class GoalFormMapping {
     required this.stepsTarget,
     required this.habitTargets,
     required this.habitCriterionIds,
+    required this.habitCriterionTitles,
     required this.stepsCriterionId,
     required this.stepsCriterionTitle,
     required this.compositeCriterionId,
     required this.compositeTitle,
     required this.wasComposite,
+    required this._leafOrder,
     required this.unsupportedCriteria,
   });
 
@@ -29,11 +33,13 @@ class GoalFormMapping {
       stepsTarget = 10000,
       habitTargets = const {},
       habitCriterionIds = const {},
+      habitCriterionTitles = const {},
       stepsCriterionId = 'steps',
       stepsCriterionTitle = null,
       compositeCriterionId = 'routine',
       compositeTitle = null,
       wasComposite = false,
+      _leafOrder = const [],
       unsupportedCriteria = null;
 
   factory GoalFormMapping.fromCriteria(GoalCriterion criteria) {
@@ -47,6 +53,8 @@ class GoalFormMapping {
     String? stepsCriterionTitle;
     final habitTargets = <String, int>{};
     final habitCriterionIds = <String, String>{};
+    final habitCriterionTitles = <String, String?>{};
+    final leafOrder = <_LeafOrderEntry>[];
 
     for (final leaf in leaves) {
       switch (leaf) {
@@ -68,27 +76,33 @@ class GoalFormMapping {
           stepsTarget = target;
           stepsCriterionId = criterionId;
           stepsCriterionTitle = title;
+          leafOrder.add((habitId: null, isSteps: true));
         case GoalCriterionHabit(
               :final criterionId,
               :final habitId,
               :final window,
               :final targetCount,
+              :final title,
             )
             when window == const GoalWindow.rollingDays(count: 7) &&
                 !habitTargets.containsKey(habitId):
           habitTargets[habitId] = targetCount;
           habitCriterionIds[habitId] = criterionId;
+          habitCriterionTitles[habitId] = title;
+          leafOrder.add((habitId: habitId, isSteps: false));
         default:
           return GoalFormMapping._(
             watchesSteps: false,
             stepsTarget: 10000,
             habitTargets: const {},
             habitCriterionIds: const {},
+            habitCriterionTitles: const {},
             stepsCriterionId: 'steps',
             stepsCriterionTitle: null,
             compositeCriterionId: 'routine',
             compositeTitle: null,
             wasComposite: false,
+            leafOrder: const [],
             unsupportedCriteria: criteria,
           );
       }
@@ -99,6 +113,7 @@ class GoalFormMapping {
       stepsTarget: stepsTarget,
       habitTargets: Map.unmodifiable(habitTargets),
       habitCriterionIds: Map.unmodifiable(habitCriterionIds),
+      habitCriterionTitles: Map.unmodifiable(habitCriterionTitles),
       stepsCriterionId: stepsCriterionId,
       stepsCriterionTitle: stepsCriterionTitle,
       compositeCriterionId: switch (criteria) {
@@ -110,6 +125,7 @@ class GoalFormMapping {
         _ => null,
       },
       wasComposite: criteria is GoalCriterionAllOf,
+      leafOrder: List.unmodifiable(leafOrder),
       unsupportedCriteria: null,
     );
   }
@@ -118,11 +134,13 @@ class GoalFormMapping {
   final num stepsTarget;
   final Map<String, int> habitTargets;
   final Map<String, String> habitCriterionIds;
+  final Map<String, String?> habitCriterionTitles;
   final String stepsCriterionId;
   final String? stepsCriterionTitle;
   final String compositeCriterionId;
   final String? compositeTitle;
   final bool wasComposite;
+  final List<_LeafOrderEntry> _leafOrder;
   final GoalCriterion? unsupportedCriteria;
 
   bool get isEditable => unsupportedCriteria == null;
@@ -165,27 +183,47 @@ class GoalFormMapping {
       return '$preferred-$suffix';
     }
 
-    final leaves = <GoalCriterion>[
-      if (includeSteps)
-        GoalCriterion.metric(
-          criterionId: this.watchesSteps
-              ? stepsCriterionId
-              : allocateId('steps'),
-          dataType: 'cumulative_step_count',
-          title: this.watchesSteps ? stepsCriterionTitle : stepsTitle,
-          window: const GoalWindow.rollingDays(count: 7),
-          aggregation: GoalAggregation.dailySumThenAverage,
-          target: resolvedStepsTarget,
-        ),
+    final stepsLeaf = includeSteps
+        ? GoalCriterion.metric(
+            criterionId: this.watchesSteps
+                ? stepsCriterionId
+                : allocateId('steps'),
+            dataType: 'cumulative_step_count',
+            title: this.watchesSteps ? stepsCriterionTitle : stepsTitle,
+            window: const GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: resolvedStepsTarget,
+          )
+        : null;
+    final habitLeaves = {
       for (final entry in habitTargets.entries)
-        GoalCriterion.habit(
+        entry.key: GoalCriterion.habit(
           criterionId:
               habitCriterionIds[entry.key] ?? allocateId('habit-${entry.key}'),
           habitId: entry.key,
+          title: habitCriterionTitles[entry.key],
           window: const GoalWindow.rollingDays(count: 7),
           targetCount: entry.value,
         ),
-    ];
+    };
+    final orderedHabitIds = <String>{};
+    var stepsAdded = false;
+    final leaves = <GoalCriterion>[];
+    for (final entry in _leafOrder) {
+      if (entry.isSteps && stepsLeaf != null && !stepsAdded) {
+        leaves.add(stepsLeaf);
+        stepsAdded = true;
+      } else if (entry.habitId case final habitId?) {
+        final habit = habitLeaves[habitId];
+        if (habit != null && orderedHabitIds.add(habitId)) {
+          leaves.add(habit);
+        }
+      }
+    }
+    if (stepsLeaf != null && !stepsAdded) leaves.add(stepsLeaf);
+    for (final entry in habitLeaves.entries) {
+      if (!orderedHabitIds.contains(entry.key)) leaves.add(entry.value);
+    }
     if (leaves.isEmpty) return null;
     if (leaves.length == 1 && !wasComposite) return leaves.single;
     return GoalCriterion.allOf(

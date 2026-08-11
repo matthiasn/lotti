@@ -6190,6 +6190,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormDecreaseTarget => 'Sänk veckomålet';
 
   @override
+  String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
   String get goalFormEditTitle => 'Redigera mål';
 
   @override

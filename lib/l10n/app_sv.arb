@@ -2853,6 +2853,7 @@
   "goalFormContinue": "Fortsätt",
   "goalFormCostHonesty": "Använder din konfigurerade AI-leverantör. Den faktiska förbrukningen visas i målets livstidsmätare.",
   "goalFormDecreaseTarget": "Sänk veckomålet",
+  "goalFormDefaultPersonaName": "Juno",
   "goalFormEditTitle": "Redigera mål",
   "goalFormEditVersion": "Det här startar version {version}. Din historik sparas.",
   "goalFormExampleGym": "gymma två gånger i veckan",

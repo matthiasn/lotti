@@ -2852,6 +2852,7 @@
   "goalFormContinue": "Doorgaan",
   "goalFormCostHonesty": "Gebruikt je ingestelde AI-provider. Het werkelijke verbruik staat in de verbruikspillen over de hele looptijd van dit doel.",
   "goalFormDecreaseTarget": "Weekdoel verlagen",
+  "goalFormDefaultPersonaName": "Juno",
   "goalFormEditTitle": "Doel bewerken",
   "goalFormEditVersion": "Hiermee start versie {version}. Je geschiedenis blijft bewaard.",
   "goalFormExampleGym": "twee keer per week naar de sportschool",

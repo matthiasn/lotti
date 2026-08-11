@@ -15,10 +15,10 @@ enum DesignSystemTextInputSize {
 /// Sized by [DesignSystemTextInputSize] (small/medium). Drives an external
 /// [controller] or owns an internal one, reports edits via [onChanged]/
 /// [onSubmitted], and tracks focus/hover styling. Supports [obscureText],
-/// [autofocus], [textCapitalization], a tappable [trailingIcon] via
-/// [onTrailingIconTap] (which requires [trailingIconTooltip]), and an
-/// [errorText] that switches the field to its error state. [enabled] toggles
-/// interactivity.
+/// [autofocus], [keyboardType], [textCapitalization], a tappable
+/// [trailingIcon] via [onTrailingIconTap] (which requires
+/// [trailingIconTooltip]), and an [errorText] that switches the field to its
+/// error state. [enabled] toggles interactivity.
 class DesignSystemTextInput extends StatefulWidget {
   const DesignSystemTextInput({
     this.controller,
@@ -34,6 +34,7 @@ class DesignSystemTextInput extends StatefulWidget {
     this.enabled = true,
     this.obscureText = false,
     this.autofocus = false,
+    this.keyboardType,
     this.textCapitalization = TextCapitalization.none,
     this.onChanged,
     this.onSubmitted,
@@ -66,6 +67,7 @@ class DesignSystemTextInput extends StatefulWidget {
   final bool enabled;
   final bool obscureText;
   final bool autofocus;
+  final TextInputType? keyboardType;
   final TextCapitalization textCapitalization;
   final ValueChanged<String>? onChanged;
   final ValueChanged<String>? onSubmitted;
@@ -167,6 +169,7 @@ class _DesignSystemTextInputState extends State<DesignSystemTextInput> {
                     enabled: widget.enabled,
                     obscureText: widget.obscureText,
                     autofocus: widget.autofocus,
+                    keyboardType: widget.keyboardType,
                     textCapitalization: widget.textCapitalization,
                     onChanged: widget.onChanged,
                     onSubmitted: widget.onSubmitted,

@@ -6288,6 +6288,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormDecreaseTarget => 'Reduceți ținta săptămânală';
 
   @override
+  String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
   String get goalFormEditTitle => 'Editați obiectivul';
 
   @override

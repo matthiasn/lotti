@@ -6228,6 +6228,9 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalFormDecreaseTarget => 'Wochenziel verringern';
 
   @override
+  String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
   String get goalFormEditTitle => 'Ziel bearbeiten';
 
   @override
