@@ -56,7 +56,9 @@ lifetime through the normal habit-completion path while the goal remains active;
 current and past edits wake the
 deterministic evaluator and queue a standing-report refresh, with an Update now
 fallback visible beside the report, while future calendar cells remain
-read-only. Metric strips preserve the evaluator's configured aggregation
+read-only. On desktop the rolling-seven-day rows share one localized weekday
+header and keep compact visual spacing while retaining full-size tap targets.
+Metric strips preserve the evaluator's configured aggregation
 rather than treating every daily contribution as a standalone target;
 composite details retain every metric and measurable leaf that contributes to
 health. Their compact cells combine accomplishment and rolling success: a day
@@ -77,9 +79,12 @@ for a banner, a missing-banner report, or a short affirmative reply to the
 agent's banner offer can create or re-run a banner immediately without the
 follow-up wake retiring it, including positive or recovery copy when the goal
 is not behind. Localized requests use the model's typed banner action as the
-language-independent authorization at persistence. A new at-risk goal receives its first banner
-without waiting for a multi-day decline. The desktop banner tenant fills the
-dock's available width.
+language-independent authorization at persistence. A new at-risk goal receives
+its first banner without waiting for a multi-day decline. When an active banner
+ages out while the goal still qualifies for automatic copy, the next
+deterministic tick expires it and re-arms Phase B for a replacement; healthy
+expiry remains model-free. The desktop banner tenant fills the dock's available
+width.
 Voice, paging beyond the newest fifty visible turns, search, and inline nudge
 cards remain later conversation increments; the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.

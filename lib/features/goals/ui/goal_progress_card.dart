@@ -107,63 +107,81 @@ class GoalProgressCard extends StatelessWidget {
           (window) => window == const GoalWindow.rollingDays(count: 7),
         );
     return DesignSystemSectionCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Wrap(
-            spacing: tokens.spacing.step3,
-            runSpacing: tokens.spacing.step1,
-            crossAxisAlignment: WrapCrossAlignment.center,
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final showWeekdayHeader =
+              usesRollingWeek &&
+              progress.habits.isNotEmpty &&
+              progress.habits.first.days.length <= 7 &&
+              constraints.maxWidth >= tokens.spacing.step13 * 4;
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              if (usesRollingWeek) ...[
-                Text(
-                  context.messages.goalProgressTitle,
-                  style: tokens.typography.styles.subtitle.subtitle1.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                Text(
-                  context.messages.goalProgressCaption,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-              ] else if (progress.metric case final metric?)
-                Text(
-                  _metricPeriodLabel(context, metric),
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                )
-              else if (habitWindow != null && progress.habits.isNotEmpty)
-                Text(
-                  _periodLabel(context, progress.habits.first.days),
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-            ],
-          ),
-          SizedBox(height: tokens.spacing.step4),
-          if (progress.habits.isNotEmpty)
-            for (var index = 0; index < progress.habits.length; index++) ...[
-              if (index > 0) SizedBox(height: tokens.spacing.step3),
-              _HabitProgressRow(
-                habit: progress.habits[index],
-                today: progress.today,
-                onOutcomeSelected: onHabitOutcomeSelected,
+              Wrap(
+                spacing: tokens.spacing.step3,
+                runSpacing: tokens.spacing.step1,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  if (usesRollingWeek) ...[
+                    Text(
+                      context.messages.goalProgressTitle,
+                      style: tokens.typography.styles.subtitle.subtitle1
+                          .copyWith(
+                            color: tokens.colors.text.highEmphasis,
+                          ),
+                    ),
+                    Text(
+                      context.messages.goalProgressCaption,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                  ] else if (progress.metric case final metric?)
+                    Text(
+                      _metricPeriodLabel(context, metric),
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    )
+                  else if (habitWindow != null && progress.habits.isNotEmpty)
+                    Text(
+                      _periodLabel(context, progress.habits.first.days),
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
+                    ),
+                ],
               ),
+              SizedBox(height: tokens.spacing.step3),
+              if (showWeekdayHeader) ...[
+                _HabitWeekdayHeader(habit: progress.habits.first),
+                SizedBox(height: tokens.spacing.step2),
+              ],
+              if (progress.habits.isNotEmpty)
+                for (
+                  var index = 0;
+                  index < progress.habits.length;
+                  index++
+                ) ...[
+                  if (index > 0) SizedBox(height: tokens.spacing.step3),
+                  _HabitProgressRow(
+                    habit: progress.habits[index],
+                    today: progress.today,
+                    onOutcomeSelected: onHabitOutcomeSelected,
+                  ),
+                ],
+              for (var index = 0; index < progress.metrics.length; index++) ...[
+                if (progress.habits.isNotEmpty || index > 0)
+                  SizedBox(height: tokens.spacing.step4),
+                _MetricProgressSeries(metric: progress.metrics[index]),
+              ],
+              if (progress.habits.isNotEmpty) ...[
+                SizedBox(height: tokens.spacing.step4),
+                const _ProgressLegend(),
+              ],
             ],
-          for (var index = 0; index < progress.metrics.length; index++) ...[
-            if (progress.habits.isNotEmpty || index > 0)
-              SizedBox(height: tokens.spacing.step4),
-            _MetricProgressSeries(metric: progress.metrics[index]),
-          ],
-          if (progress.habits.isNotEmpty) ...[
-            SizedBox(height: tokens.spacing.step4),
-            const _ProgressLegend(),
-          ],
-        ],
+          );
+        },
       ),
     );
   }
@@ -179,6 +197,76 @@ class GoalProgressCard extends StatelessWidget {
     final locale = Localizations.localeOf(context).toLanguageTag();
     final format = DateFormat.MMMd(locale);
     return '${format.format(days.first.day)} – ${format.format(days.last.day)}';
+  }
+}
+
+class _HabitWeekdayHeader extends StatelessWidget {
+  const _HabitWeekdayHeader({required this.habit});
+
+  final GoalHabitProgressView habit;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    return Row(
+      children: [
+        SizedBox(width: tokens.spacing.step13),
+        SizedBox(width: tokens.spacing.step4),
+        _DayTrack(
+          height: IconSizes.s,
+          children: [
+            for (final day in habit.days)
+              SizedBox(
+                key: ValueKey(
+                  'goal-habit-weekday-${habit.habitId}-'
+                  '${day.day.toIso8601String().substring(0, 10)}',
+                ),
+                width: TapTargets.minimum,
+                child: Text(
+                  DateFormat.E(locale).format(day.day),
+                  textAlign: TextAlign.center,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+/// Keeps the visual day cells close to the handoff's compact grid while each
+/// interactive child retains the design-system minimum tap-target bounds.
+class _DayTrack extends StatelessWidget {
+  const _DayTrack({required this.height, required this.children});
+
+  final double height;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) {
+    if (children.isEmpty) return const SizedBox.shrink();
+    final tokens = context.designTokens;
+    final pitch = TapTargets.minimum - tokens.spacing.step1;
+    final width = TapTargets.minimum + pitch * (children.length - 1);
+    return SizedBox(
+      width: width,
+      height: height,
+      child: Stack(
+        children: [
+          for (var index = 0; index < children.length; index++)
+            Positioned(
+              left: pitch * index,
+              width: TapTargets.minimum,
+              height: height,
+              child: Center(child: children[index]),
+            ),
+        ],
+      ),
+    );
   }
 }
 
@@ -234,21 +322,12 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     final tokens = context.designTokens;
     final habit = widget.habit;
     final activeDays = habit.days;
-    final locale = Localizations.localeOf(context).toLanguageTag();
     final stateColor = habit.deficit == 0
         ? tokens.colors.alert.success.ink
         : tokens.colors.alert.warning.ink;
     final note = habit.deficit == 0
         ? context.messages.goalProgressAtRate
         : context.messages.goalProgressDaysToHealthy(habit.deficit);
-    final labels = [
-      for (final day in activeDays)
-        DateFormat.E(locale).format(day.day).characters.first,
-    ];
-    final interactive = widget.onOutcomeSelected != null;
-    final daySlotWidth = interactive
-        ? TapTargets.minimum
-        : ControlSizes.iconChipCompact;
 
     final identity = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -273,58 +352,27 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
         ),
       ],
     );
-    final cells = Column(
+    final cells = _DayTrack(
+      height: TapTargets.minimum,
       children: [
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var index = 0; index < labels.length; index++) ...[
-              if (!interactive && index > 0)
-                SizedBox(width: tokens.spacing.step2),
-              SizedBox(
-                key: ValueKey(
-                  'goal-habit-weekday-${habit.habitId}-'
-                  '${activeDays[index].day.toIso8601String().substring(0, 10)}',
-                ),
-                width: daySlotWidth,
-                child: Text(
-                  labels[index],
-                  textAlign: TextAlign.center,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
+        for (var index = 0; index < activeDays.length; index++)
+          _ProgressDayCell(
+            day: activeDays[index],
+            habitId: habit.habitId,
+            today: DateUtils.isSameDay(
+              activeDays[index].day,
+              widget.today,
+            ),
+            agingOut: index == 0 && habit.oldestSuccessAgesOutTonight,
+            saving: _savingDay == activeDays[index].day,
+            enabled: !activeDays[index].day.isAfter(widget.today),
+            onOutcomeSelected: widget.onOutcomeSelected == null
+                ? null
+                : (outcome) => _recordOutcome(
+                    activeDays[index].day,
+                    outcome,
                   ),
-                ),
-              ),
-            ],
-          ],
-        ),
-        SizedBox(height: tokens.spacing.step1),
-        Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var index = 0; index < activeDays.length; index++) ...[
-              if (!interactive && index > 0)
-                SizedBox(width: tokens.spacing.step2),
-              _ProgressDayCell(
-                day: activeDays[index],
-                habitId: habit.habitId,
-                today: DateUtils.isSameDay(
-                  activeDays[index].day,
-                  widget.today,
-                ),
-                agingOut: index == 0 && habit.oldestSuccessAgesOutTonight,
-                saving: _savingDay == activeDays[index].day,
-                enabled: !activeDays[index].day.isAfter(widget.today),
-                onOutcomeSelected: widget.onOutcomeSelected == null
-                    ? null
-                    : (outcome) => _recordOutcome(
-                        activeDays[index].day,
-                        outcome,
-                      ),
-              ),
-            ],
-          ],
-        ),
+          ),
       ],
     );
     final successfulWeeks = habit.successfulWeeks;

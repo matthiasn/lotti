@@ -108,6 +108,12 @@ flowchart TD
 - **Transitions compare against the last persisted status** — today's own
   earlier row first, yesterday's otherwise — so an escalation wake that
   re-runs Phase A is a no-op, not a self-re-arming loop.
+- **Banner expiry can be LLM-worthy without a status transition.** Phase A's
+  deterministic staleness sweep records an overdue active banner as expired.
+  When the unchanged goal still qualifies for automatic copy (off track, or
+  at risk on the initial/worsening path), that expiry re-arms the period's
+  escalation so Phase B creates or reuses a replacement. Healthy expiry stays
+  a EUR0 maintenance event.
 - **The register and its escalation commit in one transaction.** A register
   write acknowledging a transition without its escalation would be
   permanent: the next run reads the new status as `previousStatus` and

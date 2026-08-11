@@ -139,6 +139,44 @@ void main() {
     ),
   );
 
+  GoalNudgeEntity staleNudge() =>
+      AgentDomainEntity.goalNudge(
+            id: 'ad-overdue',
+            agentId: agentId,
+            status: GoalNudgeStatus.active,
+            brief: const GoalNudgeBrief(
+              headline: 'Old copy',
+              tone: GoalNudgeTone.nudge,
+              animation: GoalBannerAnimation.steady,
+            ),
+            briefDigest: 'old-copy',
+            createdAt: DateTime(2026, 8, 5),
+            updatedAt: DateTime(2026, 8, 5),
+            vectorClock: null,
+            staleAt: DateTime(2026, 8, 7, 9),
+          )
+          as GoalNudgeEntity;
+
+  GoalProgressEntity progressRow({
+    required String periodKey,
+    required GoalTrackStatus status,
+    required double attainment,
+  }) =>
+      AgentDomainEntity.goalProgress(
+            id: goalProgressId(agentId, periodKey),
+            agentId: agentId,
+            periodKey: periodKey,
+            trackStatus: status,
+            attainment: attainment,
+            dataCoverage: 1,
+            satisfied: status == GoalTrackStatus.onTrack,
+            specVersionId: '$agentId:spec-v1',
+            createdAt: DateTime.parse('${periodKey}T06:00:00'),
+            updatedAt: DateTime.parse('${periodKey}T06:00:00'),
+            vectorClock: null,
+          )
+          as GoalProgressEntity;
+
   test('an active ad past its staleAt is expired by the wake — the '
       "clock's verdict lands on the row, stamped with the deadline", () async {
     stubSpec();
@@ -182,6 +220,83 @@ void main() {
       reason:
           'the deadline itself, not this device wall clock — '
           'every sweeping device writes the identical verdict',
+    );
+  });
+
+  test('an expired banner re-arms Phase B when an unchanged off-track goal '
+      'still qualifies for automatic copy', () async {
+    stubSpec();
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer((_) async => [staleNudge()]);
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+    ).thenAnswer(
+      (_) async => progressRow(
+        periodKey: '2026-08-08',
+        status: GoalTrackStatus.offTrack,
+        attainment: 0.6,
+      ),
+    );
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-07')),
+    ).thenAnswer(
+      (_) async => progressRow(
+        periodKey: '2026-08-07',
+        status: GoalTrackStatus.offTrack,
+        attainment: 0.6,
+      ),
+    );
+    final badWeek = GoalSignalWindow(
+      quantitativeDailySums: {
+        'cumulative_step_count': {
+          for (var day = 2; day <= 8; day++) DateTime.utc(2026, 8, day): 6000,
+        },
+      },
+    );
+
+    await run(badWeek);
+
+    expect(
+      upserts.whereType<GoalNudgeEntity>().single.status,
+      GoalNudgeStatus.expired,
+    );
+    expect(
+      upserts.whereType<ScheduledWakeEntity>().where(
+        (wake) => isGoalEscalationWorkspace(wake.workspaceKey),
+      ),
+      hasLength(1),
+      reason: 'Phase B must now create or reuse the replacement banner',
+    );
+  });
+
+  test('an expired banner stays a €0 maintenance event when unchanged '
+      'health no longer permits automatic copy', () async {
+    stubSpec();
+    when(
+      () => repository.getEntitiesByAgentId(agentId, type: 'goalNudge'),
+    ).thenAnswer((_) async => [staleNudge()]);
+    when(
+      () => repository.getEntity(goalProgressId(agentId, '2026-08-08')),
+    ).thenAnswer(
+      (_) async => progressRow(
+        periodKey: '2026-08-08',
+        status: GoalTrackStatus.onTrack,
+        attainment: 1,
+      ),
+    );
+
+    await run(onTrackSignals());
+
+    expect(
+      upserts.whereType<GoalNudgeEntity>().single.status,
+      GoalNudgeStatus.expired,
+    );
+    expect(
+      upserts.whereType<ScheduledWakeEntity>().where(
+        (wake) => isGoalEscalationWorkspace(wake.workspaceKey),
+      ),
+      isEmpty,
     );
   });
 

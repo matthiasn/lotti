@@ -694,12 +694,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// forbids ads — succeeding, recovering or data-gapped users are never
   /// chided.
   bool _adsEligible(GoalWakeFacts facts, List<GoalProgressEntity> priors) =>
-      facts.trackStatus == GoalTrackStatus.offTrack ||
-      (facts.trackStatus == GoalTrackStatus.atRisk &&
-          (priors.isEmpty ||
-              _factsRenderer.trendWorsening(facts.evaluation.attainment, [
-                for (final row in priors) row.attainment,
-              ])));
+      automaticGoalAdEligible(facts, priors);
 
   bool _isCooldownRefusal(String? message) {
     if (message == null) return false;

@@ -78,7 +78,11 @@ class GoalAgentPhaseA {
     }
 
     await _rearmCadence(agentId, now);
-    await _expireStaleNudges(agentId, now, activeVersionId: version.id);
+    final activeAdExpired = await _expireStaleNudges(
+      agentId,
+      now,
+      activeVersionId: version.id,
+    );
 
     final startDate = version.startDate;
     if (startDate != null &&
@@ -97,6 +101,9 @@ class GoalAgentPhaseA {
     final periodKey = derivation.periodKey;
     final existingToday = derivation.existingToday;
     final evaluation = facts.evaluation;
+    final needsEscalation =
+        facts.needsEscalation ||
+        (activeAdExpired && automaticGoalAdEligible(facts, derivation.priors));
 
     // One transaction: a register write acknowledging the transition
     // without its escalation would be permanent — the next run reads the
@@ -124,11 +131,11 @@ class GoalAgentPhaseA {
         periodKey: periodKey,
         existing: existingToday,
       );
-      if (facts.needsEscalation) {
+      if (needsEscalation) {
         await _armEscalation(agentId, now, periodKey, facts.previousStatus);
       }
     });
-    if (facts.needsEscalation && !fenced) {
+    if (needsEscalation && !fenced) {
       _onEscalationArmed?.call();
     }
 
@@ -142,11 +149,12 @@ class GoalAgentPhaseA {
   /// `expiredAt` is the deadline itself (not this device's wall clock),
   /// and the resolver's terminal dominance makes concurrent sweeps
   /// converge.
-  Future<void> _expireStaleNudges(
+  Future<bool> _expireStaleNudges(
     String agentId,
     DateTime now, {
     required String activeVersionId,
   }) async {
+    var activeAdExpired = false;
     // Read and write in ONE transaction: a dismissal landing between a
     // pre-read and the expiry write would be erased by the stale
     // snapshot — and a same-host overwrite carries a newer vector clock,
@@ -200,8 +208,10 @@ class GoalAgentPhaseA {
             updatedAt: now,
           ),
         );
+        activeAdExpired = true;
       }
     });
+    return activeAdExpired;
   }
 
   /// One deterministic derivation pass: signals → evaluation → policy →

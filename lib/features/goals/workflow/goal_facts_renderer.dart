@@ -121,10 +121,7 @@ class GoalFactsRenderer {
   /// least two prior periods (three data points, each below the one
   /// before it) — the FACTS key policy row P4 keys on.
   bool trendWorsening(double current, List<double> priorAttainments) {
-    if (priorAttainments.length < 2) return false;
-    // priors are most-recent-first: current < prior[0] < prior[1].
-    return current < priorAttainments[0] &&
-        priorAttainments[0] < priorAttainments[1];
+    return goalTrendWorsening(current, priorAttainments);
   }
 
   /// A dismissal blocks all ad activity for the rest of that LOCAL

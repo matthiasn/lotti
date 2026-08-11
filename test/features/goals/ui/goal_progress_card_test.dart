@@ -527,7 +527,8 @@ void main() {
   });
 
   testWidgets(
-    'interactive weekday markers stay centered over their day cells',
+    'the handoff-style weekday header uses full abbreviations and stays '
+    'centered over a compact interactive grid',
     (
       tester,
     ) async {
@@ -555,6 +556,9 @@ void main() {
         ),
       );
 
+      expect(find.text('Wed'), findsOneWidget);
+      expect(find.text('W'), findsNothing);
+      double? previousCenter;
       for (var offset = 6; offset >= 0; offset--) {
         final date = today
             .subtract(Duration(days: offset))
@@ -569,6 +573,15 @@ void main() {
           closeTo(tester.getCenter(cell).dx, 0.01),
           reason: '$date marker must align with its interactive cell',
         );
+        final center = tester.getCenter(cell).dx;
+        if (previousCenter != null) {
+          expect(
+            center - previousCenter,
+            lessThan(TapTargets.minimum),
+            reason: 'neighboring tap targets overlap to keep the grid tight',
+          );
+        }
+        previousCenter = center;
       }
     },
   );
