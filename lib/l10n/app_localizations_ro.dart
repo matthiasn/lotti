@@ -6272,6 +6272,153 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Urmărește';
 
   @override
+  String get goalFormChooseHabit => 'Alegeți un obicei existent';
+
+  @override
+  String get goalFormConfirmTitle => 'Faceți cunoștință cu agentul dvs.';
+
+  @override
+  String get goalFormContinue => 'Continuați';
+
+  @override
+  String get goalFormCostHonesty =>
+      'Folosește furnizorul de IA configurat de dvs. Consumul real apare în indicatorii de consum total ai acestui obiectiv.';
+
+  @override
+  String get goalFormDecreaseTarget => 'Reduceți ținta săptămânală';
+
+  @override
+  String get goalFormEditTitle => 'Editați obiectivul';
+
+  @override
+  String goalFormEditVersion(int version) {
+    return 'Aceasta pornește versiunea $version. Istoricul dvs. este păstrat.';
+  }
+
+  @override
+  String get goalFormExampleGym => 'sală de două ori pe săptămână';
+
+  @override
+  String get goalFormExampleRead => 'citit înainte de culcare';
+
+  @override
+  String get goalFormExampleWalk => 'mai multe plimbări';
+
+  @override
+  String get goalFormFooter =>
+      'Puteți redenumi, reajusta, întrerupe sau șterge oricând acest obiectiv.';
+
+  @override
+  String goalFormHabitCadence(String habit, int count) {
+    return '$habit ($count× pe săptămână)';
+  }
+
+  @override
+  String get goalFormHabitSignal => 'bifarea obiceiului';
+
+  @override
+  String get goalFormIncreaseTarget => 'Creșteți ținta săptămânală';
+
+  @override
+  String get goalFormIntentionHelper =>
+      'Spuneți-o în felul dvs. — așa va vorbi agentul despre ea.';
+
+  @override
+  String get goalFormIntentionHint =>
+      'Să merg la sală de două ori pe săptămână și să continui exercițiile de dimineață.';
+
+  @override
+  String get goalFormIntentionPrompt => 'Spre ce doriți să lucrați?';
+
+  @override
+  String get goalFormKeepAsNote => 'Păstrați ca notiță — fără coaching';
+
+  @override
+  String get goalFormLooksRight => 'Arată bine';
+
+  @override
+  String get goalFormMappingIntro =>
+      'Pot oferi coaching doar pentru ce pot vedea. Aceste bifări sunt ochii mei:';
+
+  @override
+  String get goalFormMappingTitle => 'Iată ce pot urmări';
+
+  @override
+  String get goalFormNoHabits => 'Nu există încă obiceiuri active disponibile.';
+
+  @override
+  String get goalFormOpenHabits => 'Creați mai întâi un obicei';
+
+  @override
+  String get goalFormPersonaLabel => 'Numele agentului';
+
+  @override
+  String goalFormProgress(int step) {
+    return 'Pasul $step din 3';
+  }
+
+  @override
+  String get goalFormRefusalBody =>
+      'Ar trebui să ghicesc, iar eu nu ofer coaching pe presupuneri. Alegeți un indicator observabil sau reformulați intenția.';
+
+  @override
+  String get goalFormRefusalFooter =>
+      'Un agent care nu vă poate vedea obiectivul spune asta — nu se preface niciodată.';
+
+  @override
+  String get goalFormRefusalTitle =>
+      'Nu pot vedea această intenție — nimic din ce urmăresc nu îmi spune că s-a întâmplat.';
+
+  @override
+  String goalFormRestatement(String signals) {
+    return 'Voi urmări $signals într-o săptămână glisantă — și voi interveni doar când ajută.';
+  }
+
+  @override
+  String get goalFormRollingNote =>
+      'Săptămână glisantă — mereu ultimele 7 zile. Numărătoarea este separată pentru fiecare obicei; fără weekenduri moarte sau săptămâni pierdute.';
+
+  @override
+  String get goalFormSaveChanges => 'Salvați versiunea nouă';
+
+  @override
+  String goalFormStepsCadence(String target) {
+    return '$target pași pe zi';
+  }
+
+  @override
+  String get goalFormUnsupportedCriteria =>
+      'Acest obiectiv folosește o asociere pe care editorul nu o poate modifica în siguranță. Puteți totuși redenumi obiectivul, intenția și agentul.';
+
+  @override
+  String get goalFormValidationIdentity =>
+      'Dați un nume obiectivului și agentului său.';
+
+  @override
+  String get goalFormValidationIntention =>
+      'Descrieți mai întâi spre ce doriți să lucrați.';
+
+  @override
+  String get goalFormValidationMapping =>
+      'Alegeți cel puțin un semnal pe care agentul îl poate observa cu adevărat.';
+
+  @override
+  String get goalFormWatchAnotherHabit => 'Urmăriți un alt obicei';
+
+  @override
+  String get goalFormWeeklyCheckIn =>
+      'Verificare săptămânală — spuneți-mi cum a mers';
+
+  @override
+  String get goalFormWeeklyCheckInDetail =>
+      'Actual doar până la ultima noastră conversație';
+
+  @override
+  String goalFormWeeklyTarget(int count) {
+    return '$count× / 7 zile';
+  }
+
+  @override
   String get goalHealthTrendDown => 'În scădere';
 
   @override

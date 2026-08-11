@@ -1,11 +1,16 @@
-import 'dart:async';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
@@ -15,6 +20,9 @@ import 'package:mocktail/mocktail.dart';
 import '../../../../helpers/fallbacks.dart';
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+
+class _MockGoalSpecRevisionService extends Mock
+    implements GoalSpecRevisionService {}
 
 HabitDefinition _habit(String id, String name) => HabitDefinition(
   id: id,
@@ -29,31 +37,102 @@ HabitDefinition _habit(String id, String name) => HabitDefinition(
   version: '1',
 );
 
+GoalSpecVersionEntity _spec({
+  int version = 3,
+  GoalCriterion criteria = const GoalCriterion.allOf(
+    criterionId: 'routine',
+    criteria: [
+      GoalCriterion.habit(
+        criterionId: 'habit-gym',
+        habitId: 'gym',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 2,
+      ),
+      GoalCriterion.habit(
+        criterionId: 'habit-run',
+        habitId: 'run',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 5,
+      ),
+    ],
+  ),
+}) =>
+    AgentDomainEntity.goalSpecVersion(
+          id: 'goal-1:spec-v$version',
+          agentId: 'goal-1',
+          version: version,
+          status: GoalSpecVersionStatus.active,
+          authoredBy: 'user',
+          title: 'Weekly movement',
+          statement: 'Gym and run every week',
+          criteria: criteria,
+          createdAt: DateTime(2026, 8, 11),
+          vectorClock: null,
+        )
+        as GoalSpecVersionEntity;
+
+final _identity =
+    AgentDomainEntity.agent(
+          id: 'goal-1',
+          agentId: 'goal-1',
+          kind: AgentKinds.goalAgent,
+          displayName: 'Juno',
+          lifecycle: AgentLifecycle.active,
+          mode: AgentInteractionMode.autonomous,
+          allowedCategoryIds: const {},
+          currentStateId: 'goal-1:state',
+          config: const AgentConfig(),
+          createdAt: DateTime(2026),
+          updatedAt: DateTime(2026),
+          vectorClock: null,
+        )
+        as AgentIdentityEntity;
+
 void main() {
   setUpAll(() {
     registerAllFallbackValues();
     registerFallbackValue(
-      const GoalCriterion.allOf(criterionId: 'f', criteria: []),
+      const GoalCriterion.allOf(criterionId: 'fallback', criteria: []),
     );
   });
 
-  late MockGoalAgentService service;
+  late MockGoalAgentService agentService;
   late MockHabitsRepository habitsRepository;
+  late _MockGoalSpecRevisionService revisionService;
 
-  List<Override> overrides() => [
-    goalAgentServiceProvider.overrideWithValue(service),
+  List<Override> overrides({GoalSpecVersionEntity? editSpec}) => [
+    goalAgentServiceProvider.overrideWithValue(agentService),
+    goalSpecRevisionServiceProvider.overrideWithValue(revisionService),
     habitsRepositoryProvider.overrideWithValue(habitsRepository),
+    if (editSpec != null) ...[
+      agentIdentityProvider(
+        'goal-1',
+      ).overrideWith((ref) async => _identity),
+      goalAgentHealthProvider('goal-1').overrideWith(
+        (ref) async => (
+          trackStatus: GoalTrackStatus.atRisk,
+          attainment: 0.5,
+          reportOneLiner: null,
+          pendingProposals: 0,
+          spec: editSpec,
+          direction: GoalHealthDirection.flat,
+          deficit: null,
+          buffer: null,
+        ),
+      ),
+    ],
   ];
 
   setUp(() {
-    service = MockGoalAgentService();
+    agentService = MockGoalAgentService();
     habitsRepository = MockHabitsRepository();
+    revisionService = _MockGoalSpecRevisionService();
     when(habitsRepository.watchHabitDefinitions).thenAnswer(
-      (_) => Stream.value([_habit('h-gym', 'Gym'), _habit('h-run', 'Run')]),
+      (_) => Stream.value([_habit('gym', 'Gym'), _habit('run', 'Run')]),
     );
   });
 
-  testWidgets('an empty form validates instead of creating', (tester) async {
+  testWidgets('requires a speakable intention before mapping', (tester) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const CreateGoalAgentPage(),
@@ -61,71 +140,43 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Create agent'));
+
+    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
+
     expect(
-      find.text('Give the goal a name and at least one criterion.'),
+      find.text('Describe what you want to work toward first.'),
       findsOneWidget,
     );
+    expect(find.text('What do you want to work toward?'), findsOneWidget);
     verifyNever(
-      () => service.createGoalAgent(
+      () => agentService.createGoalAgent(
         title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
         statement: any(named: 'statement'),
         criteria: any(named: 'criteria'),
       ),
     );
   });
 
-  testWidgets('a steps goal creates a rolling-week metric criterion', (
+  testWidgets('maps habits and creates independent rolling-week targets', (
     tester,
   ) async {
-    var captured = <dynamic>[];
-    when(
-      () => service.createGoalAgent(
-        title: any(named: 'title'),
-        statement: any(named: 'statement'),
-        criteria: any(named: 'criteria'),
-      ),
-    ).thenAnswer((invocation) async {
-      captured = [
-        invocation.namedArguments[#title],
-        invocation.namedArguments[#criteria],
-      ];
-      throw StateError('stop before navigation');
-    });
-
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        const CreateGoalAgentPage(),
-        overrides: overrides(),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Move more');
-    await tester.tap(find.text('Create agent'));
-    await tester.pumpAndSettle();
-
-    expect(captured.first, 'Move more');
-    final criteria = captured[1] as GoalCriterionMetric;
-    expect(criteria.dataType, 'cumulative_step_count');
-    expect(criteria.title, 'Average steps per day');
-    expect(criteria.target, 10000);
-  });
-
-  testWidgets('picking two habits builds the allOf composite — the '
-      'multi-habit goal', (tester) async {
     tester.view.physicalSize = const Size(900, 2200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    GoalCriterion? captured;
+    GoalCriterion? capturedCriteria;
+    String? capturedDisplayName;
     when(
-      () => service.createGoalAgent(
+      () => agentService.createGoalAgent(
         title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
         statement: any(named: 'statement'),
         criteria: any(named: 'criteria'),
       ),
     ).thenAnswer((invocation) async {
-      captured = invocation.namedArguments[#criteria] as GoalCriterion;
+      capturedCriteria = invocation.namedArguments[#criteria] as GoalCriterion;
+      capturedDisplayName = invocation.namedArguments[#displayName] as String;
       throw StateError('stop before navigation');
     });
 
@@ -136,294 +187,167 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Routine');
-    await tester.tap(find.text('Habit routine'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Gym'));
-    await tester.tap(find.text('Run'));
-    await tester.pumpAndSettle();
     await tester.enterText(
-      find.byKey(const ValueKey('goal-habit-target-h-gym')),
-      '2',
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym and Run every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Here’s what I can watch'), findsOneWidget);
+    expect(find.text('3× / 7 days', skipOffstage: false), findsNWidgets(2));
+    await tester.tap(find.byKey(const ValueKey('goal-form-decrease-gym')));
+    await tester.tap(find.byKey(const ValueKey('goal-form-increase-run')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-increase-run')));
+    await tester.pumpAndSettle();
+    expect(find.text('2× / 7 days', skipOffstage: false), findsOneWidget);
+    expect(find.text('5× / 7 days', skipOffstage: false), findsOneWidget);
+
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    expect(find.text('Meet your agent'), findsOneWidget);
+    expect(
+      find.textContaining('Gym (2× a week) · Run (5× a week)'),
+      findsOneWidget,
     );
     await tester.enterText(
-      find.byKey(const ValueKey('goal-habit-target-h-run')),
-      '5',
+      find.byKey(const ValueKey('goal-form-persona')),
+      'Mika',
     );
     await tester.tap(find.text('Create agent'));
     await tester.pumpAndSettle();
 
-    final composite = captured! as GoalCriterionAllOf;
-    expect(composite.criteria, hasLength(2));
-    expect(
-      composite.criteria.whereType<GoalCriterionHabit>().map((h) => h.habitId),
-      containsAll(['h-gym', 'h-run']),
-    );
+    expect(capturedDisplayName, 'Mika');
+    final composite = capturedCriteria! as GoalCriterionAllOf;
     expect(
       {
         for (final habit in composite.criteria.whereType<GoalCriterionHabit>())
           habit.habitId: habit.targetCount,
       },
-      {'h-gym': 2, 'h-run': 5},
+      {'gym': 2, 'run': 5},
     );
-    // Habit leaves are built on a rolling 7-day window (the deficit/buffer
-    // health model), not a resetting calendar week.
     expect(
       composite.criteria.whereType<GoalCriterionHabit>().every(
-        (h) => h.window == const GoalWindow.rollingDays(count: 7),
+        (habit) => habit.window == const GoalWindow.rollingDays(count: 7),
       ),
       isTrue,
     );
   });
 
-  testWidgets('one habit stays a single leaf; unchecking removes it', (
+  testWidgets('refuses an unobservable intention and offers real signals', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Be more patient with people',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining('I can’t see this intention'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('I’d be guessing'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pumpAndSettle();
+    expect(find.text('Gym'), findsOneWidget);
+    expect(find.text('Run'), findsOneWidget);
+  });
+
+  testWidgets('editing loads distinct targets and mints the next version', (
     tester,
   ) async {
     tester.view.physicalSize = const Size(900, 2200);
     tester.view.devicePixelRatio = 1;
     addTearDown(tester.view.reset);
-    GoalCriterion? captured;
-    when(
-      () => service.createGoalAgent(
-        title: any(named: 'title'),
-        statement: any(named: 'statement'),
-        criteria: any(named: 'criteria'),
-      ),
-    ).thenAnswer((invocation) async {
-      captured = invocation.namedArguments[#criteria] as GoalCriterion;
-      throw StateError('stop before navigation');
-    });
-
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        const CreateGoalAgentPage(),
-        overrides: overrides(),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Routine');
-    await tester.tap(find.text('Habit routine'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Gym'));
-    await tester.tap(find.text('Run'));
-    await tester.pumpAndSettle();
-    // Change of heart: Run comes back out.
-    await tester.tap(find.text('Run'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Create agent'));
-    await tester.pumpAndSettle();
-
-    final leaf = captured! as GoalCriterionHabit;
-    expect(leaf.habitId, 'h-gym');
-  });
-
-  testWidgets('a habit deactivated by sync after being ticked is pruned '
-      'from the created goal', (tester) async {
-    tester.view.physicalSize = const Size(900, 2200);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
-    final habitsController = StreamController<List<HabitDefinition>>();
-    addTearDown(habitsController.close);
-    when(
-      habitsRepository.watchHabitDefinitions,
-    ).thenAnswer((_) => habitsController.stream);
-    GoalCriterion? captured;
-    when(
-      () => service.createGoalAgent(
-        title: any(named: 'title'),
-        statement: any(named: 'statement'),
-        criteria: any(named: 'criteria'),
-      ),
-    ).thenAnswer((invocation) async {
-      captured = invocation.namedArguments[#criteria] as GoalCriterion;
-      throw StateError('stop before navigation');
-    });
-
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        const CreateGoalAgentPage(),
-        overrides: overrides(),
-      ),
-    );
-    habitsController.add([_habit('h-gym', 'Gym'), _habit('h-run', 'Run')]);
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Routine');
-    await tester.tap(find.text('Habit routine'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Gym'));
-    await tester.tap(find.text('Run'));
-    await tester.pumpAndSettle();
-
-    // Sync pauses the Run habit while the form is still open.
-    habitsController.add([_habit('h-gym', 'Gym')]);
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Create agent'));
-    await tester.pumpAndSettle();
-
-    // The stale selection is reconciled: only the still-active habit
-    // reaches the goal, as a single leaf rather than a composite.
-    final leaf = captured! as GoalCriterionHabit;
-    expect(leaf.habitId, 'h-gym');
-  });
-
-  testWidgets('a failed habit stream shows the load-failure notice instead '
-      'of a silently empty picker', (tester) async {
-    when(
-      habitsRepository.watchHabitDefinitions,
-    ).thenAnswer((_) => Stream.error(StateError('db unavailable')));
-
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        const CreateGoalAgentPage(),
-        overrides: overrides(),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Habit routine'));
-    await tester.pumpAndSettle();
-
-    expect(
-      find.text(
-        "Couldn't load your habits right now — try again in a "
-        'moment.',
-      ),
-      findsOneWidget,
-    );
-    expect(find.byType(CheckboxListTile), findsNothing);
-  });
-
-  testWidgets('a completed system-back pop persists the Agents root '
-      'through NavService', (tester) async {
+    final current = _spec();
+    final revised = _spec(version: 4);
     final navigated = <String>[];
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        const SizedBox.shrink(),
-        overrides: overrides(),
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer(
+      (_) async => GoalSpecRevisionMinted(
+        version: revised,
+        changeSummaries: const ['persona name updated'],
       ),
     );
-    unawaited(
-      tester
-          .state<NavigatorState>(find.byType(Navigator))
-          .push(
-            MaterialPageRoute<void>(
-              builder: (_) => const CreateGoalAgentPage(),
-            ),
-          ),
-    );
-    await tester.pumpAndSettle();
-    await tester.state<NavigatorState>(find.byType(Navigator)).maybePop();
-    await tester.pumpAndSettle();
-    expect(navigated, ['/agents']);
-  });
+    when(
+      () => agentService.refreshAfterRevision(
+        agentId: 'goal-1',
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenReturn(null);
 
-  testWidgets('a count above seven is rejected with its own message '
-      '— one success per day makes eight unsatisfiable', (tester) async {
-    tester.view.physicalSize = const Size(900, 2200);
-    tester.view.devicePixelRatio = 1;
-    addTearDown(tester.view.reset);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        const CreateGoalAgentPage(),
-        overrides: overrides(),
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
       ),
     );
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Routine');
-    await tester.tap(find.text('Habit routine'));
+    expect(find.text('Gym and run every week'), findsOneWidget);
+    await tester.tap(find.text('Continue'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Gym'));
-    await tester.pumpAndSettle();
-    await tester.enterText(
-      find.byKey(const ValueKey('goal-habit-target-h-gym')),
-      '8',
-    );
-    await tester.tap(find.text('Create agent'));
-    await tester.pumpAndSettle();
+    expect(find.text('2× / 7 days', skipOffstage: false), findsOneWidget);
+    expect(find.text('5× / 7 days', skipOffstage: false), findsOneWidget);
 
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
     expect(
-      find.text('The count must be between 1 and 7.'),
+      find.text('This starts version 4. Your history is kept.'),
       findsOneWidget,
     );
-    verifyNever(
-      () => service.createGoalAgent(
-        title: any(named: 'title'),
-        statement: any(named: 'statement'),
-        criteria: any(named: 'criteria'),
-      ),
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-persona')),
+      'Mika',
     );
-  });
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
 
-  testWidgets('a conventionally grouped step target parses through the '
-      'active locale instead of collapsing to the group prefix', (
-    tester,
-  ) async {
-    num? captured;
-    when(
-      () => service.createGoalAgent(
-        title: any(named: 'title'),
-        statement: any(named: 'statement'),
-        criteria: any(named: 'criteria'),
+    final captured = verify(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        displayName: captureAny(named: 'displayName'),
+        title: 'Weekly movement',
+        statement: 'Gym and run every week',
+        criteria: captureAny(named: 'criteria'),
       ),
-    ).thenAnswer((invocation) async {
-      captured =
-          ((invocation.namedArguments[#criteria] as GoalCriterion)
-                  as GoalCriterionMetric)
-              .target;
-      throw StateError('stop before navigation');
-    });
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        const CreateGoalAgentPage(),
-        overrides: overrides(),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Steps');
-    // The English harness locale groups with commas.
-    await tester.enterText(find.byType(TextField).last, '10,000');
-    await tester.tap(find.text('Create agent'));
-    await tester.pumpAndSettle();
-    expect(captured, 10000);
-  });
-
-  testWidgets('a target NumberFormat rejects falls back to num.tryParse '
-      'instead of failing validation', (tester) async {
-    num? captured;
-    when(
-      () => service.createGoalAgent(
-        title: any(named: 'title'),
-        statement: any(named: 'statement'),
-        criteria: any(named: 'criteria'),
-      ),
-    ).thenAnswer((invocation) async {
-      captured =
-          ((invocation.namedArguments[#criteria] as GoalCriterion)
-                  as GoalCriterionMetric)
-              .target;
-      throw StateError('stop before navigation');
-    });
-    await tester.pumpWidget(
-      makeTestableWidgetNoScroll(
-        const CreateGoalAgentPage(),
-        overrides: overrides(),
-      ),
-    );
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).first, 'Steps');
-    // `NumberFormat.decimalPattern('en').parse` throws a FormatException on
-    // scientific notation — the fallback then hands it to `num.tryParse`,
-    // which does understand it. If the fallback were missing, this would hit
-    // the missing-criterion validation message instead of creating a goal.
-    await tester.enterText(find.byType(TextField).last, '1e3');
-    await tester.tap(find.text('Create agent'));
-    await tester.pumpAndSettle();
-
+    ).captured;
+    expect(captured.first, 'Mika');
+    final criteria = captured.last as GoalCriterionAllOf;
     expect(
-      find.text('Give the goal a name and at least one criterion.'),
-      findsNothing,
+      {
+        for (final habit in criteria.criteria.whereType<GoalCriterionHabit>())
+          habit.habitId: habit.targetCount,
+      },
+      {'gym': 2, 'run': 5},
     );
-    expect(captured, 1000);
+    verify(
+      () => agentService.refreshAfterRevision(
+        agentId: 'goal-1',
+        criteria: revised.criteria,
+      ),
+    ).called(1);
+    expect(navigated, contains('/agents/details/goal-1'));
   });
 }

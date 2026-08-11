@@ -159,6 +159,76 @@ void main() {
     expect(head.updatedAt, now);
   });
 
+  test('an owner edit mints a user-authored version, updates the persona, '
+      'and preserves independently authored habit targets', () async {
+    stubSpec(version: 3);
+    const revisedCriteria = GoalCriterion.allOf(
+      criterionId: 'routine',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'habit-gym',
+          habitId: 'gym',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 2,
+        ),
+        GoalCriterion.habit(
+          criterionId: 'habit-run',
+          habitId: 'run',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 5,
+        ),
+      ],
+    );
+
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromOwner(
+        agentId: agentId,
+        displayName: 'Juno',
+        title: 'Expedition fitness',
+        statement: 'Gym twice and run five times each rolling week.',
+        criteria: revisedCriteria,
+      ),
+    );
+
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    final minted = (outcome as GoalSpecRevisionMinted).version;
+    expect(minted.version, 4);
+    expect(minted.authoredBy, 'user');
+    expect(minted.title, 'Expedition fitness');
+    expect(
+      minted.statement,
+      'Gym twice and run five times each rolling week.',
+    );
+    expect(minted.criteria, revisedCriteria);
+    expect(minted.diffFromVersionId, '$agentId:spec-v3');
+    expect(
+      upserts.whereType<AgentIdentityEntity>().single.displayName,
+      'Juno',
+    );
+    expect(outcome.changeSummaries, contains('goal criteria updated'));
+  });
+
+  test('an owner edit that changes nothing is refused without resetting '
+      'goal history', () async {
+    stubSpec();
+
+    final outcome = await service.reviseFromOwner(
+      agentId: agentId,
+      displayName: 'Steps',
+      title: 'Steps',
+      statement: 'Average 10,000 steps per day.',
+      criteria: criteria,
+    );
+
+    expect(outcome, isA<GoalSpecRevisionRefused>());
+    expect(
+      (outcome as GoalSpecRevisionRefused).reason,
+      'the owner edit does not change the goal',
+    );
+    expect(upserts, isEmpty);
+  });
+
   test("a minted revision supersedes the old spec's live nudges — the "
       'revised goal never runs beside advice for the superseded one', () async {
     stubSpec();

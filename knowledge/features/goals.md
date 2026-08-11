@@ -40,6 +40,10 @@ sources:
     resource: ../../lib/features/goals/workflow/goal_agent_contract.dart
     title: Goal-agent contract (eval-graduated prompt + tools)
     last_modified: 2026-08-11
+  - id: create-edit
+    resource: ../../lib/features/goals/ui/pages/create_goal_agent_page.dart
+    title: Goal create/edit flow — intention, observable mapping and confirmation
+    last_modified: 2026-08-11
   - id: sync-dispatcher
     resource: ../../lib/features/goals/sync/goal_signal_sync_dispatcher.dart
     title: GoalSignalSyncDispatcher — the sync blind-spot bridge
@@ -226,6 +230,15 @@ flowchart TD
   signal subscription re-registers from the NEW criteria; on other
   devices the synced-in head triggers the same re-registration through
   the sync processor's identity re-offer.
+- **Owner edits are versioned, never in-place.** The explicit edit route uses
+  `GoalSpecRevisionService.reviseFromOwner` with the complete user-authored
+  title, intention, persona name and criteria tree. It serializes against the
+  current head, refuses a no-op, supersedes the current version and mints
+  `v(n+1)` with `authoredBy: user` and `diffFromVersionId`. The create/edit UI
+  only rewrites rolling-seven-day habit leaves and the supported steps metric;
+  richer trees are retained exactly and shown read-only. After a minted edit,
+  the runtime re-registers the new signal set and enqueues an immediate
+  `goal revised` wake so the report and health do not describe the old spec.
 - **Nudge accumulators are CRDTs.** Dismissal is terminal in the
   concurrent resolver, and exposure counters (per-host G-counters),
   rating histories and shown-at watermarks merge losslessly on concurrent
@@ -375,9 +388,15 @@ flowchart TD
   ids are deterministic per `(agentId, runKey)`; if the output transaction
   committed and only the deferred outbox flush failed, the reply is re-read as
   the commit marker and the turn completes without another billed inference.
-  Creation supports a steps goal or a MULTI-habit routine whose selected
-  habits each carry their own rolling-seven-day target
-  (`allOf` composite); deletion cancels queued work, aborts an in-flight local
+  Creation and owner editing share a three-stage intention → mapping →
+  confirmation route. The mapping stage matches observable active habits and
+  the supported steps metric, gives every selected habit its own one-to-seven
+  rolling-week cadence, and explicitly refuses an intention for which no
+  observable proxy exists. Confirmation names the goal and its conversational
+  persona and states the inference-cost contract. Editing opens from the goal
+  detail menu, preloads the current values, explains the next immutable version,
+  and preserves version history. A supported MULTI-habit routine is stored as
+  an `allOf` composite; deletion cancels queued work, aborts an in-flight local
   wake, and soft-retires the whole agent through
   `GoalAgentService.deleteGoalAgent`. The shared drain lifecycle guard rejects
   any queued non-active goal wake that survives a race or arrives from sync and

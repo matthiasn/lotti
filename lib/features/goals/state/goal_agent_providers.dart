@@ -238,18 +238,9 @@ final goalChangeSetConfirmationServiceProvider =
               }
               ref
                   .read(goalAgentServiceProvider)
-                  .registerSignalSubscription(
-                    changeSet.agentId,
-                    version.criteria,
-                  );
-              // One immediate deterministic evaluation over the data that
-              // already exists — revised health must not stay blank until
-              // tomorrow's cadence tick (the creation-time behavior).
-              ref
-                  .read(wakeOrchestratorProvider)
-                  .enqueueManualWake(
+                  .refreshAfterRevision(
                     agentId: changeSet.agentId,
-                    reason: 'goal revision approved',
+                    criteria: version.criteria,
                   );
               // The revision sweep superseded the old spec's banners, but
               // the banner provider's per-agent stream dependency is

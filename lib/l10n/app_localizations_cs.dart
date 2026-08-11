@@ -6236,6 +6236,152 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Sleduje';
 
   @override
+  String get goalFormChooseHabit => 'Vyber existující návyk';
+
+  @override
+  String get goalFormConfirmTitle => 'Seznam se se svým agentem';
+
+  @override
+  String get goalFormContinue => 'Pokračovat';
+
+  @override
+  String get goalFormCostHonesty =>
+      'Používá tvého nastaveného poskytovatele AI. Skutečnou spotřebu uvidíš v přehledu celoživotní spotřeby tohoto cíle.';
+
+  @override
+  String get goalFormDecreaseTarget => 'Snížit týdenní cíl';
+
+  @override
+  String get goalFormEditTitle => 'Upravit cíl';
+
+  @override
+  String goalFormEditVersion(int version) {
+    return 'Tím vznikne verze $version. Historie zůstane zachovaná.';
+  }
+
+  @override
+  String get goalFormExampleGym => 'dvakrát týdně do posilovny';
+
+  @override
+  String get goalFormExampleRead => 'číst před spaním';
+
+  @override
+  String get goalFormExampleWalk => 'víc chodit';
+
+  @override
+  String get goalFormFooter =>
+      'Cíl můžeš kdykoli přejmenovat, upravit, pozastavit nebo smazat.';
+
+  @override
+  String goalFormHabitCadence(String habit, int count) {
+    return '$habit ($count× týdně)';
+  }
+
+  @override
+  String get goalFormHabitSignal => 'odškrtnutí návyku';
+
+  @override
+  String get goalFormIncreaseTarget => 'Zvýšit týdenní cíl';
+
+  @override
+  String get goalFormIntentionHelper =>
+      'Řekni to po svém — tak o tom bude tvůj agent mluvit.';
+
+  @override
+  String get goalFormIntentionHint =>
+      'Dvakrát týdně jít do posilovny a držet se ranního cvičení.';
+
+  @override
+  String get goalFormIntentionPrompt => 'K čemu chceš směřovat?';
+
+  @override
+  String get goalFormKeepAsNote => 'Ponechat jako poznámku — bez koučování';
+
+  @override
+  String get goalFormLooksRight => 'Vypadá to dobře';
+
+  @override
+  String get goalFormMappingIntro =>
+      'Můžu koučovat jen to, co vidím. Tato odškrtnutí jsou moje oči:';
+
+  @override
+  String get goalFormMappingTitle => 'Tohle můžu sledovat';
+
+  @override
+  String get goalFormNoHabits =>
+      'Zatím nejsou k dispozici žádné aktivní návyky.';
+
+  @override
+  String get goalFormOpenHabits => 'Nejdřív vytvořit návyk';
+
+  @override
+  String get goalFormPersonaLabel => 'Jméno agenta';
+
+  @override
+  String goalFormProgress(int step) {
+    return 'Krok $step ze 3';
+  }
+
+  @override
+  String get goalFormRefusalBody =>
+      'Musel bych hádat a podle domněnek nekoučuji. Vyber pozorovatelnou náhradu nebo záměr přeformuluj.';
+
+  @override
+  String get goalFormRefusalFooter =>
+      'Agent, který tvůj cíl nevidí, to řekne — nikdy nic nepředstírá.';
+
+  @override
+  String get goalFormRefusalTitle =>
+      'Tento záměr nevidím — nic, co sleduji, mi neřekne, že se uskutečnil.';
+
+  @override
+  String goalFormRestatement(String signals) {
+    return 'Budu sledovat $signals v průběžném týdnu — a ozvu se jen tehdy, když to pomůže.';
+  }
+
+  @override
+  String get goalFormRollingNote =>
+      'Průběžný týden — vždy posledních 7 dní. Počty platí pro každý návyk zvlášť; žádné mrtvé víkendy ani ztracené týdny.';
+
+  @override
+  String get goalFormSaveChanges => 'Uložit novou verzi';
+
+  @override
+  String goalFormStepsCadence(String target) {
+    return '$target kroků denně';
+  }
+
+  @override
+  String get goalFormUnsupportedCriteria =>
+      'Tento cíl používá mapování, které editor nedokáže bezpečně změnit. Stále můžeš přejmenovat cíl, záměr a agenta.';
+
+  @override
+  String get goalFormValidationIdentity => 'Pojmenuj cíl i jeho agenta.';
+
+  @override
+  String get goalFormValidationIntention =>
+      'Nejdřív popiš, k čemu chceš směřovat.';
+
+  @override
+  String get goalFormValidationMapping =>
+      'Vyber alespoň jeden signál, který agent opravdu dokáže sledovat.';
+
+  @override
+  String get goalFormWatchAnotherHabit => 'Sledovat další návyk';
+
+  @override
+  String get goalFormWeeklyCheckIn => 'Týdenní kontrola — řekni mi, jak to šlo';
+
+  @override
+  String get goalFormWeeklyCheckInDetail =>
+      'Aktuální jen k našemu poslednímu rozhovoru';
+
+  @override
+  String goalFormWeeklyTarget(int count) {
+    return '$count× / 7 dní';
+  }
+
+  @override
   String get goalHealthTrendDown => 'Klesá';
 
   @override

@@ -16,6 +16,7 @@ class AgentsLocation extends BeamLocation<BeamState> {
     '/agents',
     '/agents/create',
     '/agents/details/:agentId',
+    '/agents/details/:agentId/edit',
     '/agents/details/:agentId/chat',
   ];
 
@@ -46,6 +47,12 @@ class AgentsLocation extends BeamLocation<BeamState> {
           key: ValueKey('agents-details-$agentId-chat'),
           title: messages.goalChatPageTitle,
           child: GoalAgentChatPage(agentId: agentId),
+        ),
+      if (agentId != null && state.uri.path.endsWith('/edit'))
+        BeamPage(
+          key: ValueKey('agents-details-$agentId-edit'),
+          title: messages.goalFormEditTitle,
+          child: CreateGoalAgentPage(agentId: agentId),
         ),
     ];
   }

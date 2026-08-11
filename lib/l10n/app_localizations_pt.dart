@@ -6227,6 +6227,151 @@ class AppLocalizationsPt extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Acompanha';
 
   @override
+  String get goalFormChooseHabit => 'Escolher um hábito existente';
+
+  @override
+  String get goalFormConfirmTitle => 'Conhece o teu agente';
+
+  @override
+  String get goalFormContinue => 'Continuar';
+
+  @override
+  String get goalFormCostHonesty =>
+      'Usa o teu fornecedor de IA configurado. O consumo real aparece nos indicadores de consumo total deste objetivo.';
+
+  @override
+  String get goalFormDecreaseTarget => 'Diminuir a meta semanal';
+
+  @override
+  String get goalFormEditTitle => 'Editar meta';
+
+  @override
+  String goalFormEditVersion(int version) {
+    return 'Isto inicia a versão $version. O teu histórico é mantido.';
+  }
+
+  @override
+  String get goalFormExampleGym => 'ginásio duas vezes por semana';
+
+  @override
+  String get goalFormExampleRead => 'ler antes de dormir';
+
+  @override
+  String get goalFormExampleWalk => 'caminhar mais';
+
+  @override
+  String get goalFormFooter =>
+      'Podes renomear, reajustar, pausar ou eliminar esta meta a qualquer momento.';
+
+  @override
+  String goalFormHabitCadence(String habit, int count) {
+    return '$habit ($count× por semana)';
+  }
+
+  @override
+  String get goalFormHabitSignal => 'registo do hábito';
+
+  @override
+  String get goalFormIncreaseTarget => 'Aumentar a meta semanal';
+
+  @override
+  String get goalFormIntentionHelper =>
+      'Diz à tua maneira — é assim que o teu agente falará sobre isto.';
+
+  @override
+  String get goalFormIntentionHint =>
+      'Ir ao ginásio duas vezes por semana e manter os exercícios matinais.';
+
+  @override
+  String get goalFormIntentionPrompt => 'Para que objetivo queres trabalhar?';
+
+  @override
+  String get goalFormKeepAsNote => 'Guardar como nota — sem acompanhamento';
+
+  @override
+  String get goalFormLooksRight => 'Está certo';
+
+  @override
+  String get goalFormMappingIntro =>
+      'Só te posso acompanhar no que consigo ver. Estes registos são os meus olhos:';
+
+  @override
+  String get goalFormMappingTitle => 'Eis o que consigo observar';
+
+  @override
+  String get goalFormNoHabits => 'Ainda não há hábitos ativos disponíveis.';
+
+  @override
+  String get goalFormOpenHabits => 'Criar primeiro um hábito';
+
+  @override
+  String get goalFormPersonaLabel => 'Nome do agente';
+
+  @override
+  String goalFormProgress(int step) {
+    return 'Passo $step de 3';
+  }
+
+  @override
+  String get goalFormRefusalBody =>
+      'Teria de adivinhar, e não faço acompanhamento com suposições. Escolhe um indicador observável ou reformula a intenção.';
+
+  @override
+  String get goalFormRefusalFooter =>
+      'Um agente que não consegue ver a tua meta diz isso — nunca finge.';
+
+  @override
+  String get goalFormRefusalTitle =>
+      'Não consigo ver esta intenção — nada do que observo me diz que aconteceu.';
+
+  @override
+  String goalFormRestatement(String signals) {
+    return 'Vou observar $signals ao longo de uma semana móvel — e só falar quando ajudar.';
+  }
+
+  @override
+  String get goalFormRollingNote =>
+      'Semana móvel — sempre os últimos 7 dias. As contagens são por hábito; sem fins de semana mortos nem semanas perdidas.';
+
+  @override
+  String get goalFormSaveChanges => 'Guardar nova versão';
+
+  @override
+  String goalFormStepsCadence(String target) {
+    return '$target passos por dia';
+  }
+
+  @override
+  String get goalFormUnsupportedCriteria =>
+      'Esta meta usa um mapeamento que este editor não consegue alterar em segurança. Ainda podes renomear a meta, a intenção e o agente.';
+
+  @override
+  String get goalFormValidationIdentity => 'Dá um nome à meta e ao agente.';
+
+  @override
+  String get goalFormValidationIntention =>
+      'Primeiro descreve para que objetivo queres trabalhar.';
+
+  @override
+  String get goalFormValidationMapping =>
+      'Escolhe pelo menos um sinal que o agente consiga realmente observar.';
+
+  @override
+  String get goalFormWatchAnotherHabit => 'Observar outro hábito';
+
+  @override
+  String get goalFormWeeklyCheckIn => 'Check-in semanal — conta-me como correu';
+
+  @override
+  String get goalFormWeeklyCheckInDetail =>
+      'Atual apenas até à nossa última conversa';
+
+  @override
+  String goalFormWeeklyTarget(int count) {
+    return '$count× / 7 dias';
+  }
+
+  @override
   String get goalHealthTrendDown => 'Em queda';
 
   @override

@@ -169,6 +169,12 @@ void main() {
       () => completionService.requestReportRefresh('goal-1'),
     ).called(1);
 
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Edit goal'));
+    expect(navigated, ['/agents/details/goal-1/edit']);
+    navigated.clear();
+
     await tester.ensureVisible(find.text('Talk to Move more'));
     await tester.drag(find.byType(ListView).first, const Offset(0, -100));
     await tester.pumpAndSettle();

@@ -231,6 +231,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
             _GoalActionsMenuButton(
               agentId: agentId,
               agentName: goalIdentity.displayName,
+              canEdit: isActive && spec != null,
             ),
           ],
         ),
@@ -582,16 +583,18 @@ class _GoalHistorySection extends StatelessWidget {
   }
 }
 
-enum _GoalDetailMenuAction { internals, delete }
+enum _GoalDetailMenuAction { edit, internals, delete }
 
 class _GoalActionsMenuButton extends ConsumerWidget {
   const _GoalActionsMenuButton({
     required this.agentId,
     required this.agentName,
+    required this.canEdit,
   });
 
   final String agentId;
   final String agentName;
+  final bool canEdit;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -601,6 +604,8 @@ class _GoalActionsMenuButton extends ConsumerWidget {
       icon: const Icon(Icons.more_vert_rounded),
       onSelected: (action) {
         switch (action) {
+          case _GoalDetailMenuAction.edit:
+            beamToNamed('/agents/details/$agentId/edit');
           case _GoalDetailMenuAction.internals:
             Navigator.of(context).push(
               AgentInternalsPanel.route(
@@ -614,6 +619,22 @@ class _GoalActionsMenuButton extends ConsumerWidget {
         }
       },
       itemBuilder: (context) => [
+        if (canEdit)
+          PopupMenuItem<_GoalDetailMenuAction>(
+            value: _GoalDetailMenuAction.edit,
+            child: Row(
+              children: [
+                const Icon(Icons.edit_outlined),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Text(
+                    context.messages.goalFormEditTitle,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
         PopupMenuItem<_GoalDetailMenuAction>(
           value: _GoalDetailMenuAction.internals,
           child: Row(
