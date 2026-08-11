@@ -159,8 +159,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           matchedHabits.map((habit) => MapEntry(habit.id, 3)),
         );
       _deriveTitle(habits);
+      _derivedFrom = statement;
       if (habitsFingerprint != null) {
-        _derivedFrom = statement;
         _derivedHabitsFingerprint = habitsFingerprint;
       }
     }

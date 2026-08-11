@@ -640,7 +640,6 @@ void main() {
     tester,
   ) async {
     final habits = StreamController<List<HabitDefinition>>();
-    addTearDown(habits.close);
     when(
       habitsRepository.watchHabitDefinitions,
     ).thenAnswer((_) => habits.stream);
@@ -673,6 +672,53 @@ void main() {
           .selected,
       isTrue,
     );
+    await habits.close();
+    await tester.pump();
+  });
+
+  testWidgets('manual mapping survives while the habit snapshot is pending', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final habits = StreamController<List<HabitDefinition>>();
+    when(
+      habitsRepository.watchHabitDefinitions,
+    ).thenAnswer((_) => habits.stream);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Build a consistent routine',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pump();
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-steps-row')));
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pump();
+    await tester.tap(find.text('Continue'));
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      findsOneWidget,
+    );
+    await habits.close();
+    await tester.pump();
   });
 
   testWidgets('habit labels do not match inside unrelated words', (
@@ -972,7 +1018,6 @@ void main() {
       tester.view.devicePixelRatio = 1;
       addTearDown(tester.view.reset);
       final habits = StreamController<List<HabitDefinition>>();
-      addTearDown(habits.close);
       when(
         habitsRepository.watchHabitDefinitions,
       ).thenAnswer((_) => habits.stream);
@@ -1034,6 +1079,8 @@ void main() {
           criteria: criteria,
         ),
       ).called(1);
+      await habits.close();
+      await tester.pump();
     },
   );
 
