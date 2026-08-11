@@ -409,6 +409,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   }
 
   void _back() {
+    if (_saving) return;
+
     if (_step.index > _GoalFormStep.intention.index) {
       setState(() {
         _step = _GoalFormStep.values[_step.index - 1];
@@ -492,7 +494,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          leading: BackButton(onPressed: _back),
+          leading: BackButton(onPressed: _saving ? null : _back),
           title: Text(pageTitle),
         ),
         body: SafeArea(
