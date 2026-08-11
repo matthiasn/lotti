@@ -439,6 +439,9 @@ void main() {
       'minted, head moved, and the signal subscription re-registered from '
       'the NEW criteria', () async {
     const agentId = 'goal-rev';
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => goalIdentity(agentId));
     final changeSet =
         AgentDomainEntity.changeSet(
               id: 'cs-1',
@@ -576,6 +579,9 @@ void main() {
   test('a confirmed revision whose spec cannot be read back logs the '
       'skipped re-registration instead of failing silently', () async {
     const agentId = 'goal-gone';
+    when(
+      () => repository.getEntity(agentId),
+    ).thenAnswer((_) async => goalIdentity(agentId));
     final logger = container.read(domainLoggerProvider) as MockDomainLogger;
     when(
       () => logger.error(
