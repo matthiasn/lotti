@@ -47,6 +47,14 @@ class _FakeReader extends GoalSignalReader {
   }) async => window;
 }
 
+class _CommitThenThrowSyncService extends MockAgentSyncService {
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) async {
+    await action();
+    throw StateError('deferred outbox flush failed');
+  }
+}
+
 GoalAgentWorkflow _offTrackWorkflow(
   MockAgentRepository repository,
   MockAgentSyncService syncService,
@@ -3794,6 +3802,77 @@ void main() {
       ),
       isEmpty,
       reason: 'no re-arm: the wake must not be re-billed',
+    );
+  });
+
+  test('an interactive reply committed before an outbox failure completes '
+      'without retrying inference', () async {
+    stubSpec();
+    stubGlmResolution();
+    syncService = _CommitThenThrowSyncService();
+    when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
+      upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
+    });
+    workflow = GoalAgentWorkflow(
+      repository: repository,
+      syncService: syncService,
+      phaseA: GoalAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        signalReader: _FakeReader(),
+      ),
+      conversationRepository: conversationRepository,
+      cloudInferenceRepository: cloudInferenceRepository,
+      aiConfigRepository: aiConfigRepository,
+    );
+    final replyId = goalAgentReplyMessageId(agentId, 'chat-run');
+    when(() => repository.getEntity(replyId)).thenAnswer((_) async {
+      final replies = upserts.whereType<AgentMessageEntity>().where(
+        (message) => message.id == replyId,
+      );
+      return replies.isEmpty ? null : replies.single;
+    });
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          await (strategy! as GoalAgentStrategy).processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.replyToUser, {
+                'message': 'One more walk closes the gap.',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          return const InferenceUsage(inputTokens: 100, outputTokens: 10);
+        };
+
+    final result = await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'chat-run',
+        triggerTokens: const {},
+        threadId: 'chat',
+        pendingUserMessage: 'How am I doing?',
+      ),
+    );
+
+    expect(result.success, isTrue);
+    expect(conversationRepository.sendMessageDelegateCallCount, 1);
+    expect(
+      upserts.whereType<AgentMessageEntity>().where(
+        (message) => message.id == replyId,
+      ),
+      hasLength(1),
     );
   });
 

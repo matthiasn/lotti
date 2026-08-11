@@ -582,94 +582,99 @@ class _DockTenant extends ConsumerWidget {
 
     return GoalBannerExposureTracker(
       nudgeId: entry.nudge.id,
-      child: InkWell(
-        key: const ValueKey('goal-banner-dock-tenant'),
-        onTap: () => beamToNamed('/agents/details/${entry.nudge.agentId}'),
-        child: Padding(
-          padding: EdgeInsets.symmetric(
-            horizontal: tokens.spacing.cardPadding,
-            vertical: tokens.spacing.step3,
-          ),
-          child: Row(
-            children: [
-              GoalBannerPersonaChip.forStyle(
-                monogram: GoalBannerPersonaChip.monogramFor(entry.goalTitle),
-                style: style,
-              ),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                key: const ValueKey('goal-banner-copy-region'),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    GoalBannerAnimatedText(
-                      text: brief.headline,
-                      animation: brief.animation,
-                      // Desktop has the room to show the authored headline in
-                      // full. Compact keeps the documented two-line reserve.
-                      maxLines: compact ? 2 : null,
-                      style: tokens.typography.styles.subtitle.subtitle2
-                          .copyWith(
-                            color: tokens.colors.text.highEmphasis,
-                          ),
-                    ),
-                    if (caption != null)
-                      Text(
-                        caption,
-                        maxLines: compact ? 2 : null,
-                        overflow: compact
-                            ? TextOverflow.ellipsis
-                            : TextOverflow.visible,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-              if (!compact && brief.cta != null) ...[
-                SizedBox(width: tokens.spacing.step3),
-                // CTA copy is contractually 2–4 words. Keep it intrinsic so
-                // it cannot claim a flex share and arbitrarily cap the banner
-                // copy at half the dock.
-                GoalBannerCtaPill(
-                  label: brief.cta!,
+      child: Semantics(
+        container: true,
+        label: context.messages.goalBannerSemanticLabel(entry.goalTitle),
+        child: InkWell(
+          key: const ValueKey('goal-banner-dock-tenant'),
+          onTap: () => beamToNamed('/agents/details/${entry.nudge.agentId}'),
+          child: Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.cardPadding,
+              vertical: tokens.spacing.step3,
+            ),
+            child: Row(
+              children: [
+                GoalBannerPersonaChip.forStyle(
+                  monogram: GoalBannerPersonaChip.monogramFor(entry.goalTitle),
                   style: style,
-                  onTap: () => beamToNamed(
-                    '/agents/details/${entry.nudge.agentId}',
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  key: const ValueKey('goal-banner-copy-region'),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      GoalBannerAnimatedText(
+                        text: brief.headline,
+                        animation: brief.animation,
+                        // Desktop has the room to show the authored headline in
+                        // full. Compact keeps the documented two-line reserve.
+                        maxLines: compact ? 2 : null,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                            ),
+                      ),
+                      if (caption != null)
+                        Text(
+                          caption,
+                          maxLines: compact ? 2 : null,
+                          overflow: compact
+                              ? TextOverflow.ellipsis
+                              : TextOverflow.visible,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                    ],
                   ),
                 ),
-              ],
-              if (!compact)
+                if (!compact && brief.cta != null) ...[
+                  SizedBox(width: tokens.spacing.step3),
+                  // CTA copy is contractually 2–4 words. Keep it intrinsic so
+                  // it cannot claim a flex share and arbitrarily cap the banner
+                  // copy at half the dock.
+                  GoalBannerCtaPill(
+                    label: brief.cta!,
+                    style: style,
+                    onTap: () => beamToNamed(
+                      '/agents/details/${entry.nudge.agentId}',
+                    ),
+                  ),
+                ],
+                if (!compact)
+                  SizedBox(
+                    width: TapTargets.minimum,
+                    height: TapTargets.minimum,
+                    child: ratingDue
+                        ? IconButton(
+                            onPressed: onRate,
+                            tooltip: context.messages.goalBannerRateTooltip,
+                            icon: Icon(
+                              Icons.star_outline_rounded,
+                              size: tokens.spacing.step5,
+                              color: tokens.colors.text.lowEmphasis,
+                            ),
+                          )
+                        : null,
+                  ),
                 SizedBox(
                   width: TapTargets.minimum,
                   height: TapTargets.minimum,
-                  child: ratingDue
-                      ? IconButton(
-                          onPressed: onRate,
-                          tooltip: context.messages.goalBannerRateTooltip,
-                          icon: Icon(
-                            Icons.star_outline_rounded,
-                            size: tokens.spacing.step5,
-                            color: tokens.colors.text.lowEmphasis,
-                          ),
-                        )
-                      : null,
-                ),
-              SizedBox(
-                width: TapTargets.minimum,
-                height: TapTargets.minimum,
-                child: IconButton(
-                  onPressed: onDismiss,
-                  tooltip: context.messages.goalBannerDismissTooltip,
-                  icon: Icon(
-                    Icons.close_rounded,
-                    size: tokens.spacing.step5,
-                    color: tokens.colors.text.lowEmphasis,
+                  child: IconButton(
+                    onPressed: onDismiss,
+                    tooltip: context.messages.goalBannerDismissTooltip,
+                    icon: Icon(
+                      Icons.close_rounded,
+                      size: tokens.spacing.step5,
+                      color: tokens.colors.text.lowEmphasis,
+                    ),
                   ),
                 ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),

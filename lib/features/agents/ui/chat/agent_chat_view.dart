@@ -249,6 +249,7 @@ class _MessageBubbleState extends State<_MessageBubble> {
     final canCollapse = _canCollapse;
     return Semantics(
       container: true,
+      explicitChildNodes: canCollapse,
       label: context.messages.goalChatMessageSemantics(
         author,
         time,
@@ -276,23 +277,29 @@ class _MessageBubbleState extends State<_MessageBubble> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   if (isUser)
-                    Text(
-                      message.text,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.highEmphasis,
+                    ExcludeSemantics(
+                      child: Text(
+                        message.text,
+                        style: tokens.typography.styles.body.bodyMedium
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                            ),
                       ),
                     )
                   else
-                    AgentMarkdownView(
-                      message.text,
-                      maxLines: canCollapse && !_expanded
-                          ? _collapsedMaxLines
-                          : null,
-                      overflow: canCollapse && !_expanded
-                          ? TextOverflow.ellipsis
-                          : null,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.highEmphasis,
+                    ExcludeSemantics(
+                      child: AgentMarkdownView(
+                        message.text,
+                        maxLines: canCollapse && !_expanded
+                            ? _collapsedMaxLines
+                            : null,
+                        overflow: canCollapse && !_expanded
+                            ? TextOverflow.ellipsis
+                            : null,
+                        style: tokens.typography.styles.body.bodyMedium
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                            ),
                       ),
                     ),
                   if (canCollapse) ...[
@@ -311,10 +318,12 @@ class _MessageBubbleState extends State<_MessageBubble> {
                     ),
                   ],
                   SizedBox(height: tokens.spacing.step1),
-                  Text(
-                    context.messages.goalChatMessageFooter(author, time),
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
+                  ExcludeSemantics(
+                    child: Text(
+                      context.messages.goalChatMessageFooter(author, time),
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.lowEmphasis,
+                      ),
                     ),
                   ),
                 ],

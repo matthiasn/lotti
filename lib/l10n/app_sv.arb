@@ -2865,6 +2865,7 @@
   "goalProgressDaysToHealthy": "{count, plural, =1{1 dag till hälsosam} other{{count} dagar till hälsosam}}",
   "goalProgressDone": "klart",
   "goalProgressHabitTarget": "{count}× per 7 dagar",
+  "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressTitle": "Den här rullande veckan",
   "goalProgressToday": "i dag",
   "goalStatusAchieved": "Uppnått",

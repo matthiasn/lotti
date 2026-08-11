@@ -4,6 +4,8 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/entry_text.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:mocktail/mocktail.dart';
@@ -15,6 +17,7 @@ void main() {
   setUpAll(registerAllFallbackValues);
 
   late MockJournalDb journalDb;
+  late MockAgentRepository agentRepository;
   late MockPersistenceLogic persistenceLogic;
   late MockWakeOrchestrator orchestrator;
   late GoalHabitCompletionService service;
@@ -31,16 +34,37 @@ void main() {
     private: false,
     version: '1',
   );
+  final activeGoal =
+      AgentDomainEntity.agent(
+            id: 'goal-1',
+            agentId: 'goal-1',
+            kind: 'goal',
+            displayName: 'Walk goal',
+            lifecycle: AgentLifecycle.active,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: '',
+            config: const AgentConfig(),
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+            vectorClock: null,
+          )
+          as AgentIdentityEntity;
 
   setUp(() {
+    agentRepository = MockAgentRepository();
     journalDb = MockJournalDb();
     persistenceLogic = MockPersistenceLogic();
     orchestrator = MockWakeOrchestrator();
     service = GoalHabitCompletionService(
+      agentRepository: agentRepository,
       journalDb: journalDb,
       persistenceLogic: persistenceLogic,
       orchestrator: orchestrator,
     );
+    when(
+      () => agentRepository.getEntity('goal-1'),
+    ).thenAnswer((_) async => activeGoal);
     when(
       () => orchestrator.enqueueManualWake(
         agentId: any(named: 'agentId'),
@@ -193,6 +217,29 @@ void main() {
         reason: any(named: 'reason'),
         triggerTokens: any(named: 'triggerTokens'),
         workspaceKey: any(named: 'workspaceKey'),
+      ),
+    );
+  });
+
+  test('does not write when the goal agent is no longer active', () async {
+    when(() => agentRepository.getEntity('goal-1')).thenAnswer(
+      (_) async => activeGoal.copyWith(lifecycle: AgentLifecycle.dormant),
+    );
+
+    final saved = await service.record(
+      agentId: 'goal-1',
+      habitId: 'walk',
+      day: DateTime.utc(2026, 8, 11),
+      outcome: HabitCompletionType.success,
+    );
+
+    expect(saved, isFalse);
+    verifyNever(() => journalDb.getHabitById(any()));
+    verifyNever(
+      () => persistenceLogic.createHabitCompletionEntry(
+        data: any(named: 'data'),
+        habitDefinition: any(named: 'habitDefinition'),
+        comment: any(named: 'comment'),
       ),
     );
   });

@@ -108,6 +108,7 @@ void main() {
     expect(captured.first, 'Move more');
     final criteria = captured[1] as GoalCriterionMetric;
     expect(criteria.dataType, 'cumulative_step_count');
+    expect(criteria.title, 'Average steps per day');
     expect(criteria.target, 10000);
   });
 

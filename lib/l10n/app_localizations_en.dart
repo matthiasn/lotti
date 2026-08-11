@@ -6226,6 +6226,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String goalProgressHabitTargetWindow(int count, String window) {
+    return '$count× · $window';
+  }
+
+  @override
   String get goalProgressTitle => 'This rolling week';
 
   @override

@@ -40,7 +40,9 @@ workflow through a throttle-bypassing manual wake: `GoalChatService` persists
 the source turn before enqueueing, reconciles a committed message when a later
 sync-outbox flush reports failure, and the workflow persists a sanitized answer as a
 `reply_to_user` action that the shared bounded chat projection can display
-without exposing thoughts or tool bookkeeping. The visible layer shipped behind the
+without exposing thoughts or tool bookkeeping. Reply rows use stable per-wake
+ids, so a transaction that commits before its deferred outbox flush fails is
+recognized as complete instead of rerunning inference. The visible layer shipped behind the
 `enable_agents_page` flag: procedural text banners (ADR 0058) on the day
 and habits pages (`ui/goal_banner_*`), and an Agents tab (`ui/pages/`)
 with per-goal health at a glance, deterministic rolling-window progress,
@@ -49,7 +51,8 @@ pushed phone page or desktop peer pane. Agent replies retain their Markdown
 structure, while long replies start compact and can be expanded in place.
 The detail grid follows each habit's authored day, rolling, week, or month
 window and can record success or a miss on any day inside the habit's active
-lifetime through the normal habit-completion path; current and past edits wake the
+lifetime through the normal habit-completion path while the goal remains active;
+current and past edits wake the
 deterministic evaluator and queue a standing-report refresh, with an Update now
 fallback visible beside the report, while future calendar cells remain
 read-only. Metric strips preserve the evaluator's configured aggregation
@@ -59,6 +62,8 @@ health. Their compact cells combine accomplishment and rolling success: a day
 is green when the rolling criterion was satisfied then, or when the authored
 routine was fully completed on that day. Goal chat stays purpose-bound: unrelated
 general-assistant requests are redirected to the goal rather than answered.
+Habit-routine creation assigns the rolling-seven-day frequency independently
+for every selected habit rather than applying one shared count.
 Weekly reliability is shown only for authored rolling-seven-day habits rather
 than reinterpreting day, rolling-N, or calendar periods. Health and direction are separate signals, the standing report stays visible
 beside active banners, and lifetime AI consumption plus compute time use the

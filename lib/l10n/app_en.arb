@@ -3519,6 +3519,18 @@
       }
     }
   },
+  "goalProgressHabitTargetWindow": "{count}× · {window}",
+  "@goalProgressHabitTargetWindow": {
+    "description": "Target caption for one habit using its authored time window.",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "window": {
+        "type": "String"
+      }
+    }
+  },
   "goalProgressTitle": "This rolling week",
   "goalProgressToday": "today",
   "goalStatusAchieved": "Achieved",

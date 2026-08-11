@@ -2608,6 +2608,7 @@
   "goalProgressDaysToHealthy": "{count, plural, =1{1 Tag bis gesund} other{{count} Tage bis gesund}}",
   "goalProgressDone": "erledigt",
   "goalProgressHabitTarget": "{count}× pro 7 Tage",
+  "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressTitle": "Diese rollierende Woche",
   "goalProgressToday": "heute",
   "goalStatusAchieved": "Erreicht",

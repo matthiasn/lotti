@@ -391,6 +391,31 @@ void main() {
     expect(barColor('2026-08-10'), isNot(barColor('2026-08-11')));
   });
 
+  testWidgets('an observed zero keeps a visible success baseline', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Cigarettes',
+              target: 0,
+              direction: GoalDirection.atMost,
+              days: [day(1, 1), day(0, 0)],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final zeroBar = tester.widget<FractionallySizedBox>(
+      find.byKey(const ValueKey('goal-metric-bar-2026-08-11')),
+    );
+    expect(zeroBar.heightFactor, greaterThan(0));
+  });
+
   testWidgets('a narrow at-rate habit keeps the grid scrollable and marks both '
       'the aging success and today', (tester) async {
     await tester.pumpWidget(
@@ -478,6 +503,7 @@ void main() {
       ),
     );
     expect(menuButton.position, PopupMenuPosition.under);
+    expect(menuButton.menuPadding, EdgeInsets.zero);
     expect(menuButton.shape, isA<RoundedRectangleBorder>());
     expect(menuButton.constraints?.hasTightWidth, isTrue);
 

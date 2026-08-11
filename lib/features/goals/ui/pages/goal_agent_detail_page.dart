@@ -164,25 +164,26 @@ class GoalAgentDetailPage extends ConsumerWidget {
           SizedBox(height: tokens.spacing.cardItemSpacing),
           GoalProgressCard(
             progress: progress,
-            onHabitOutcomeSelected:
-                ({
-                  required day,
-                  required habitId,
-                  required outcome,
-                }) async {
-                  final saved = await ref
-                      .read(goalHabitCompletionServiceProvider)
-                      .record(
-                        agentId: agentId,
-                        habitId: habitId,
-                        day: day,
-                        outcome: outcome,
-                      );
-                  if (saved) {
-                    ref.invalidate(goalAgentProgressViewProvider(agentId));
-                  }
-                  return saved;
-                },
+            onHabitOutcomeSelected: !isActive
+                ? null
+                : ({
+                    required day,
+                    required habitId,
+                    required outcome,
+                  }) async {
+                    final saved = await ref
+                        .read(goalHabitCompletionServiceProvider)
+                        .record(
+                          agentId: agentId,
+                          habitId: habitId,
+                          day: day,
+                          outcome: outcome,
+                        );
+                    if (saved) {
+                      ref.invalidate(goalAgentProgressViewProvider(agentId));
+                    }
+                    return saved;
+                  },
           ),
         ],
         SizedBox(height: tokens.spacing.cardItemSpacing),

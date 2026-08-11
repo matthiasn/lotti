@@ -751,6 +751,7 @@ void main() {
     tester,
   ) async {
     const desktopSize = Size(1400, 1000);
+    final today = DateTime.utc(2026, 8, 11);
     setTestSurfaceSize(tester, desktopSize);
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -775,6 +776,26 @@ void main() {
             ),
           ),
           activeGoalNudgesProvider.overrideWith((ref) async => []),
+          goalAgentProgressViewProvider('goal-1').overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 3,
+                  successfulWeeks: null,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--)
+                      GoalProgressDay(
+                        day: today.subtract(Duration(days: offset)),
+                        value: 0,
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
           goalNudgeHistoryProvider('goal-1').overrideWith((ref) async => []),
           selfTargetedPendingChangeSetsProvider(
             'goal-1',
@@ -792,6 +813,7 @@ void main() {
     expect(find.byType(GoalAgentChatPane), findsNothing);
     expect(find.text('Talk to Move more'), findsNothing);
     expect(find.text('Update now'), findsNothing);
+    expect(find.byType(PopupMenuButton<HabitCompletionType>), findsNothing);
   });
 
   testWidgets('a first health load failure does not claim a data-gap verdict', (

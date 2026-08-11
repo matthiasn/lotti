@@ -2615,6 +2615,7 @@
   "goalProgressDaysToHealthy": "{count, plural, =1{1 den do zdravého stavu} few{{count} dny do zdravého stavu} other{{count} dní do zdravého stavu}}",
   "goalProgressDone": "hotovo",
   "goalProgressHabitTarget": "{count}× za 7 dní",
+  "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressTitle": "Tento klouzavý týden",
   "goalProgressToday": "dnes",
   "goalStatusAchieved": "Splněno",

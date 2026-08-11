@@ -318,6 +318,8 @@ flowchart TD
   actions only when the selected day lies inside the habit's active lifetime
   and is not in the future; future calendar cells stay read-only and the
   persistence service enforces the same boundary.
+  Both the detail callback and persistence service gate edits on an active goal
+  identity, so a dormant or destroyed direct route cannot mutate habit history.
   Selecting the already-recorded outcome is a no-op. The write goes through
   `GoalHabitCompletionService` into the existing habit-completion path, so
   privacy, sync and reminder behavior remain shared. Historical corrections
@@ -356,8 +358,12 @@ flowchart TD
   invalidates the visible-chat, active-banner, and history projections because
   workflow writes bypass the
   interaction notifier; the colored card therefore appears in the mounted
-  desktop split without a route round-trip. Creation supports a steps goal or
-  a MULTI-habit routine
+  desktop split without a route round-trip. Interactive reply payload/message
+  ids are deterministic per `(agentId, runKey)`; if the output transaction
+  committed and only the deferred outbox flush failed, the reply is re-read as
+  the commit marker and the turn completes without another billed inference.
+  Creation supports a steps goal or a MULTI-habit routine whose selected
+  habits each carry their own rolling-seven-day target
   (`allOf` composite); deletion cancels queued work, aborts an in-flight local
   wake, and soft-retires the whole agent through
   `GoalAgentService.deleteGoalAgent`. The shared drain lifecycle guard rejects

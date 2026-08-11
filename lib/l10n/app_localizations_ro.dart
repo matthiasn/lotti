@@ -6360,6 +6360,11 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String goalProgressHabitTargetWindow(int count, String window) {
+    return '$count× · $window';
+  }
+
+  @override
   String get goalProgressTitle => 'Această săptămână glisantă';
 
   @override

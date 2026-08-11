@@ -10666,6 +10666,12 @@ abstract class AppLocalizations {
   /// **'{count}× per 7 days'**
   String goalProgressHabitTarget(int count);
 
+  /// Target caption for one habit using its authored time window.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}× · {window}'**
+  String goalProgressHabitTargetWindow(int count, String window);
+
   /// No description provided for @goalProgressTitle.
   ///
   /// In en, this message translates to:

@@ -2864,6 +2864,7 @@
   "goalProgressDaysToHealthy": "{count, plural, =1{1 dag tot gezond} other{{count} dagen tot gezond}}",
   "goalProgressDone": "gedaan",
   "goalProgressHabitTarget": "{count}× per 7 dagen",
+  "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressTitle": "Deze lopende week",
   "goalProgressToday": "vandaag",
   "goalStatusAchieved": "Behaald",

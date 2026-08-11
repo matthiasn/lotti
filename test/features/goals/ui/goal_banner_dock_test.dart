@@ -129,6 +129,10 @@ void main() {
       'a full tenure', (tester) async {
     await pumpDock(tester, [entry(id: 'a', headline: 'Only voice')]);
     expect(find.text('Only voice'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel(RegExp('Goal banner for Move more')),
+      findsOneWidget,
+    );
 
     await tester.pump(goalBannerDockTenure + const Duration(seconds: 1));
     expect(find.text('Only voice'), findsOneWidget);

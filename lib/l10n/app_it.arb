@@ -2865,6 +2865,7 @@
   "goalProgressDaysToHealthy": "{count, plural, =1{1 giorno per essere in forma} other{{count} giorni per essere in forma}}",
   "goalProgressDone": "fatto",
   "goalProgressHabitTarget": "{count}× ogni 7 giorni",
+  "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressTitle": "Questa settimana mobile",
   "goalProgressToday": "oggi",
   "goalStatusAchieved": "Raggiunto",

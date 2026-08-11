@@ -46,6 +46,21 @@ import 'package:uuid/uuid.dart';
 /// contract, not a hope).
 const goalAdLifetime = Duration(hours: 72);
 
+/// Stable output IDs let a wake recognize that its interactive reply's
+/// transaction committed even when the deferred sync-outbox flush failed.
+@visibleForTesting
+String goalAgentReplyMessageId(String agentId, String runKey) =>
+    const Uuid().v5(
+      Namespace.url.value,
+      'lotti://goal-agent/$agentId/$runKey/reply',
+    );
+
+String _goalAgentReplyPayloadId(String agentId, String runKey) =>
+    const Uuid().v5(
+      Namespace.url.value,
+      'lotti://goal-agent/$agentId/$runKey/reply-payload',
+    );
+
 /// How many recent observations feed the FACTS block.
 const goalObservationLookback = 12;
 
@@ -491,23 +506,41 @@ class GoalAgentWorkflow with AgentErrorLogging {
         }
       }
 
-      final attributionFinalized = await persistOutputs(
-        agentId: agentId,
-        runKey: runKey,
-        threadId: threadId,
-        strategy: strategy,
-        derivation: derivation,
-        now: now,
-        escalationBaseline: goalEscalationBaselineFromTriggerTokens(
-          triggerTokens,
-        ),
-        replyToUser: pendingUserMessage != null,
-        userRequestedAd: userRequestedAd,
-        adCreationDiscriminator: chatMessageId == null
-            ? null
-            : 'chat:$chatMessageId',
-      );
-      outputsCommitted = true;
+      var attributionFinalized = false;
+      try {
+        attributionFinalized = await persistOutputs(
+          agentId: agentId,
+          runKey: runKey,
+          threadId: threadId,
+          strategy: strategy,
+          derivation: derivation,
+          now: now,
+          escalationBaseline: goalEscalationBaselineFromTriggerTokens(
+            triggerTokens,
+          ),
+          replyToUser: pendingUserMessage != null,
+          userRequestedAd: userRequestedAd,
+          adCreationDiscriminator: chatMessageId == null
+              ? null
+              : 'chat:$chatMessageId',
+        );
+        outputsCommitted = true;
+      } catch (error, stackTrace) {
+        final replyCommitted =
+            pendingUserMessage != null &&
+            await _interactiveReplyCommitted(agentId, runKey);
+        if (!replyCommitted) rethrow;
+        // runInTransaction commits the whole output batch before its deferred
+        // outbox flush. The durable reply is therefore a transaction marker:
+        // do not fail/retry inference and duplicate the user-visible turn.
+        outputsCommitted = true;
+        attributionFinalized = strategy.hasReport;
+        logError(
+          'goal outputs committed before deferred outbox flush failed',
+          error: error,
+          stackTrace: stackTrace,
+        );
+      }
       if (!attributionFinalized && recordConsumption) {
         // No report → no output carrier: close the wake's attribution
         // session explicitly or it looks perpetually in-flight in the
@@ -582,6 +615,19 @@ class GoalAgentWorkflow with AgentErrorLogging {
       }
       return WakeResult(success: false, error: error.toString());
     }
+  }
+
+  Future<bool> _interactiveReplyCommitted(
+    String agentId,
+    String runKey,
+  ) async {
+    final entity = await _repository.getEntity(
+      goalAgentReplyMessageId(agentId, runKey),
+    );
+    return entity is AgentMessageEntity &&
+        entity.agentId == agentId &&
+        entity.metadata.runKey == runKey &&
+        entity.metadata.toolName == AgentConversationToolNames.replyToUser;
   }
 
   /// Re-arms the period's escalation as pending, due at the current
@@ -1128,7 +1174,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
         final persistedAssistantText = replyToUser
             ? sanitizeAgentReportText(assistantText)
             : assistantText;
-        final payloadId = _uuid.v4();
+        final payloadId = replyToUser
+            ? _goalAgentReplyPayloadId(agentId, runKey)
+            : _uuid.v4();
         await _syncService.upsertEntity(
           AgentDomainEntity.agentMessagePayload(
             id: payloadId,
@@ -1140,7 +1188,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
         );
         await _syncService.upsertEntity(
           AgentDomainEntity.agentMessage(
-            id: _uuid.v4(),
+            id: replyToUser
+                ? goalAgentReplyMessageId(agentId, runKey)
+                : _uuid.v4(),
             agentId: agentId,
             threadId: threadId,
             kind: replyToUser

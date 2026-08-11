@@ -399,7 +399,10 @@ String goalHabitTargetLabel(
   required GoalWindow window,
 }) => window == const GoalWindow.rollingDays(count: 7)
     ? context.messages.goalProgressHabitTarget(targetCount)
-    : '$targetCount× · ${goalWindowLabel(context, window)}';
+    : context.messages.goalProgressHabitTargetWindow(
+        targetCount,
+        goalWindowLabel(context, window),
+      );
 
 class _ProgressDayCell extends StatelessWidget {
   const _ProgressDayCell({
@@ -484,6 +487,7 @@ class _ProgressDayCell extends StatelessWidget {
         enabled: enabled && !saving,
         initialValue: day.habitCompletionType,
         padding: EdgeInsets.zero,
+        menuPadding: EdgeInsets.zero,
         position: PopupMenuPosition.under,
         offset: Offset(0, tokens.spacing.step2),
         color: tokens.colors.background.level01,
@@ -669,6 +673,14 @@ class _MetricProgressSeries extends StatelessWidget {
         : metric.meetsTarget(day)
         ? 'met'
         : 'missed';
+    final rawHeightFactor = maxValue == 0
+        ? 0.0
+        : (day.value / maxValue).clamp(0, 1).toDouble();
+    final minimumObservedHeight = tokens.spacing.step2 / tokens.spacing.step10;
+    final heightFactor =
+        day.isObserved && rawHeightFactor < minimumObservedHeight
+        ? minimumObservedHeight
+        : rawHeightFactor;
     return Semantics(
       label: context.messages.goalMetricBarSemantics(
         status,
@@ -681,9 +693,7 @@ class _MetricProgressSeries extends StatelessWidget {
           key: ValueKey(
             'goal-metric-bar-${day.day.toIso8601String().substring(0, 10)}',
           ),
-          heightFactor: maxValue == 0
-              ? 0.0
-              : (day.value / maxValue).clamp(0, 1).toDouble(),
+          heightFactor: heightFactor,
           alignment: Alignment.bottomCenter,
           child: DecoratedBox(
             decoration: BoxDecoration(

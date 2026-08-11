@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_trigger_tokens.dart';
 import 'package:lotti/database/database.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -17,11 +19,13 @@ import 'package:lotti/providers/service_providers.dart';
 /// scheduling instead of introducing a goal-specific completion record.
 class GoalHabitCompletionService {
   const GoalHabitCompletionService({
+    required this.agentRepository,
     required this.journalDb,
     required this.persistenceLogic,
     required this.orchestrator,
   });
 
+  final AgentRepository agentRepository;
   final JournalDb journalDb;
   final PersistenceLogic persistenceLogic;
   final WakeOrchestrator orchestrator;
@@ -40,6 +44,12 @@ class GoalHabitCompletionService {
     required DateTime day,
     required HabitCompletionType outcome,
   }) async {
+    final identity = await agentRepository.getEntity(agentId);
+    if (identity is! AgentIdentityEntity ||
+        identity.lifecycle != AgentLifecycle.active) {
+      return false;
+    }
+
     final habitDefinition = await journalDb.getHabitById(habitId);
     if (habitDefinition == null) return false;
 
@@ -100,6 +110,7 @@ class GoalHabitCompletionService {
 
 final goalHabitCompletionServiceProvider = Provider<GoalHabitCompletionService>(
   (ref) => GoalHabitCompletionService(
+    agentRepository: ref.watch(agentRepositoryProvider),
     journalDb: ref.watch(journalDbProvider),
     persistenceLogic: getIt<PersistenceLogic>(),
     orchestrator: ref.watch(wakeOrchestratorProvider),

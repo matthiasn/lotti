@@ -78,6 +78,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         return GoalCriterion.metric(
           criterionId: 'steps',
           dataType: 'cumulative_step_count',
+          title: context.messages.goalCreateStepsTargetLabel,
           window: const GoalWindow.rollingDays(count: 7),
           aggregation: GoalAggregation.dailySumThenAverage,
           target: target,

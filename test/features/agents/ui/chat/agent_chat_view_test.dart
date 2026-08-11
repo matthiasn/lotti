@@ -42,6 +42,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Juno à 09:00'), findsOneWidget);
+    expect(
+      find.bySemanticsLabel('Juno, 09:00 : On y va.'),
+      findsOneWidget,
+    );
+    expect(find.bySemanticsLabel('On y va.'), findsNothing);
+    expect(find.bySemanticsLabel('Juno à 09:00'), findsNothing);
   });
 
   testWidgets('renders persisted roles and forwards a composed message', (
