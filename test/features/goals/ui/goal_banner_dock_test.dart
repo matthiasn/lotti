@@ -617,6 +617,27 @@ void main() {
     expect(find.text('Stale voice'), findsNothing);
   });
 
+  testWidgets('a local snooze hides only its retained banner immediately', (
+    tester,
+  ) async {
+    await pumpDock(tester, [
+      entry(id: 'a', headline: 'Quiet now'),
+      entry(id: 'b', headline: 'Still here'),
+    ]);
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(GoalBannerDock)),
+      listen: false,
+    );
+
+    container
+        .read(locallySnoozedNudgeDeadlinesProvider.notifier)
+        .add('a', DateTime.utc(2099));
+    await settleTransition(tester);
+
+    expect(find.text('Quiet now'), findsNothing);
+    expect(find.text('Still here'), findsOneWidget);
+  });
+
   testWidgets('zero tenants render nothing at all', (tester) async {
     await pumpDock(tester, const []);
     expect(find.byTooltip('Dismiss'), findsNothing);

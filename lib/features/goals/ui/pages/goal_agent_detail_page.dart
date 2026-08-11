@@ -110,6 +110,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
     // never expired copy — whose tracker would keep counting exposure.
     final bannerNow = clock.now();
     final locallyDismissed = ref.watch(locallyDismissedNudgeIdsProvider);
+    final locallySnoozed = ref.watch(locallySnoozedNudgeDeadlinesProvider);
     final nudges = [
       for (final entry
           in ref.watch(activeGoalNudgesProvider).value ??
@@ -117,7 +118,8 @@ class GoalAgentDetailPage extends ConsumerWidget {
         if (entry.nudge.agentId == agentId &&
             (entry.nudge.staleAt == null ||
                 bannerNow.isBefore(entry.nudge.staleAt!)) &&
-            !locallyDismissed.contains(entry.nudge.id))
+            !locallyDismissed.contains(entry.nudge.id) &&
+            locallySnoozed[entry.nudge.id]?.isAfter(bannerNow) != true)
           entry,
     ];
     final history =

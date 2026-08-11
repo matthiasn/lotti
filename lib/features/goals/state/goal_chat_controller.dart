@@ -1,6 +1,12 @@
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 
@@ -62,6 +68,7 @@ class GoalChatController extends Notifier<GoalChatComposerState> {
       await ref
           .read(goalChatServiceProvider)
           .sendMessage(agentId: _agentId, text: message);
+      await _suppressCommittedSnoozes();
       // Goal-agent workflow writes travel through the sync service rather than
       // the interaction notifier. Refresh the goal-owned banner projections
       // as soon as the awaited wake commits so the colored card appears in
@@ -93,6 +100,7 @@ class GoalChatController extends Notifier<GoalChatComposerState> {
       await ref
           .read(goalChatServiceProvider)
           .retryMessage(agentId: _agentId, messageId: messageId);
+      await _suppressCommittedSnoozes();
       ref
         ..invalidate(activeGoalNudgesProvider)
         ..invalidate(goalNudgeHistoryProvider(_agentId));
@@ -109,6 +117,36 @@ class GoalChatController extends Notifier<GoalChatComposerState> {
         failedMessage: failed,
         failedMessageId: messageId,
       );
+    }
+  }
+
+  /// Reads the just-committed goal rows directly before invalidating the async
+  /// projection. This is a render-time safety net only; durable snooze state
+  /// remains authoritative and the normal provider reload still follows.
+  Future<void> _suppressCommittedSnoozes() async {
+    try {
+      final rows = await ref
+          .read(agentRepositoryProvider)
+          .getEntitiesByAgentId(
+            _agentId,
+            type: AgentEntityTypes.goalNudge,
+          );
+      final now = clock.now();
+      final local = ref.read(
+        locallySnoozedNudgeDeadlinesProvider.notifier,
+      );
+      for (final nudge in rows.whereType<GoalNudgeEntity>()) {
+        final until = goalBannerSnoozedUntil(nudge);
+        if (nudge.status == GoalNudgeStatus.active &&
+            until != null &&
+            until.isAfter(now)) {
+          local.add(nudge.id, until);
+        }
+      }
+    } on Object {
+      // Best effort: a failed direct read must not turn a committed chat wake
+      // into a failed user turn. The invalidated durable projection remains
+      // the authoritative fallback.
     }
   }
 }

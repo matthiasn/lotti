@@ -174,11 +174,13 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     // and locally dismissed ids stay suppressed.
     final now = clock.now();
     final locallyDismissed = ref.read(locallyDismissedNudgeIdsProvider);
+    final locallySnoozed = ref.read(locallySnoozedNudgeDeadlinesProvider);
     return [
       for (final entry in raw ?? const <GoalBannerEntry>[])
         if ((entry.nudge.staleAt == null ||
                 now.isBefore(entry.nudge.staleAt!)) &&
-            !locallyDismissed.contains(entry.nudge.id))
+            !locallyDismissed.contains(entry.nudge.id) &&
+            locallySnoozed[entry.nudge.id]?.isAfter(now) != true)
           entry,
     ];
   }
@@ -299,6 +301,11 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
       })
       // Local dismissals bypass the async provider — reconcile on those too.
       ..listen(locallyDismissedNudgeIdsProvider, (_, _) {
+        setState(
+          () => _reconcile(_visible(ref.read(activeGoalNudgesProvider).value)),
+        );
+      })
+      ..listen(locallySnoozedNudgeDeadlinesProvider, (_, _) {
         setState(
           () => _reconcile(_visible(ref.read(activeGoalNudgesProvider).value)),
         );

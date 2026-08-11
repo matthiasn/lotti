@@ -1,9 +1,16 @@
+import 'package:clock/clock.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/goals/service/goal_chat_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_chat_controller.dart';
 import 'package:mocktail/mocktail.dart';
+
+import '../../../mocks/mocks.dart';
 
 class _MockGoalChatService extends Mock implements GoalChatService {}
 
@@ -139,4 +146,65 @@ void main() {
       expect(bannerReads, 2);
     },
   );
+
+  test('a committed snooze immediately suppresses only that banner', () async {
+    final service = _MockGoalChatService();
+    final repository = MockAgentRepository();
+    final now = DateTime.utc(2026, 8, 11, 12);
+    final until = now.add(const Duration(hours: 3));
+    when(
+      () => service.sendMessage(agentId: 'goal-1', text: 'Snooze this ad.'),
+    ).thenAnswer((_) async {});
+    when(
+      () => repository.getEntitiesByAgentId(
+        'goal-1',
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer(
+      (_) async => [
+        _nudge(
+          id: 'snoozed',
+          provenance: {'snoozedUntil': until.toIso8601String()},
+        ),
+        _nudge(id: 'still-visible'),
+      ],
+    );
+    final container = ProviderContainer(
+      overrides: [
+        goalChatServiceProvider.overrideWithValue(service),
+        agentRepositoryProvider.overrideWithValue(repository),
+      ],
+    );
+    addTearDown(container.dispose);
+    final controller = container.read(
+      goalChatControllerProvider('goal-1').notifier,
+    )..updateDraft('Snooze this ad.');
+
+    await withClock(Clock.fixed(now), controller.send);
+
+    expect(container.read(locallySnoozedNudgeDeadlinesProvider), {
+      'snoozed': until,
+    });
+  });
 }
+
+GoalNudgeEntity _nudge({
+  required String id,
+  Map<String, String> provenance = const {},
+}) =>
+    AgentDomainEntity.goalNudge(
+          id: id,
+          agentId: 'goal-1',
+          status: GoalNudgeStatus.active,
+          brief: const GoalNudgeBrief(
+            headline: 'Keep walking',
+            tone: GoalNudgeTone.nudge,
+            animation: GoalBannerAnimation.steady,
+          ),
+          briefDigest: id,
+          createdAt: DateTime(2026, 8, 11),
+          updatedAt: DateTime(2026, 8, 11),
+          vectorClock: null,
+          provenance: provenance,
+        )
+        as GoalNudgeEntity;

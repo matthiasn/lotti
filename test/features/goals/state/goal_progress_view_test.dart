@@ -316,6 +316,40 @@ void main() {
     expect(view.compactWindow.last, isTrue);
   });
 
+  test('composite progress preserves every metric leaf', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.allOf(
+        criterionId: 'metrics',
+        criteria: [
+          GoalCriterion.metric(
+            criterionId: 'steps',
+            dataType: 'steps',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.sum,
+            target: 50000,
+            title: 'Steps',
+          ),
+          GoalCriterion.metric(
+            criterionId: 'sleep',
+            dataType: 'sleep',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 8,
+            title: 'Sleep',
+          ),
+        ],
+      ),
+      signals: const GoalSignalWindow(),
+      reference: today,
+    );
+
+    expect(view.metrics.map((metric) => metric.name), ['Steps', 'Sleep']);
+    expect(view.metrics.map((metric) => metric.aggregation), [
+      GoalAggregation.sum,
+      GoalAggregation.dailySumThenAverage,
+    ]);
+  });
+
   test('at-least-count requires the configured number of daily children', () {
     final view = buildGoalProgressView(
       criteria: const GoalCriterion.atLeastCount(

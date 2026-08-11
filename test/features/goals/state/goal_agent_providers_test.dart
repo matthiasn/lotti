@@ -1524,6 +1524,23 @@ void main() {
     });
   });
 
+  test('a local snooze deadline removes itself exactly on time', () {
+    final start = DateTime.utc(2026, 8, 11, 12);
+    fakeAsync((async) {
+      withClock(Clock(() => start.add(async.elapsed)), () {
+        container
+            .read(locallySnoozedNudgeDeadlinesProvider.notifier)
+            .add('ad-1', start.add(const Duration(minutes: 15)));
+
+        expect(container.read(locallySnoozedNudgeDeadlinesProvider), {
+          'ad-1': start.add(const Duration(minutes: 15)),
+        });
+        async.elapse(const Duration(minutes: 15));
+        expect(container.read(locallySnoozedNudgeDeadlinesProvider), isEmpty);
+      });
+    });
+  });
+
   test('a snoozed banner automatically returns at its deadline without an '
       'agent notification', () {
     final start = DateTime.utc(2026, 8, 10, 12);

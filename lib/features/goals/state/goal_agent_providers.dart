@@ -395,6 +395,42 @@ locallyDismissedNudgeIdsProvider =
       name: 'locallyDismissedNudgeIdsProvider',
     );
 
+/// Snooze deadlines learned from a just-committed chat wake before the async
+/// active-banner projection has reloaded. Banner surfaces subtract these ids
+/// from retained data, so a background refresh cannot flash the old active row
+/// throughout its quiet interval. Each deadline removes itself on time.
+class LocallySnoozedNudgeDeadlines extends Notifier<Map<String, DateTime>> {
+  final _timers = <String, Timer>{};
+
+  @override
+  Map<String, DateTime> build() {
+    ref.onDispose(() {
+      for (final timer in _timers.values) {
+        timer.cancel();
+      }
+    });
+    return const {};
+  }
+
+  void add(String id, DateTime until) {
+    final now = clock.now();
+    if (!until.isAfter(now)) return;
+    _timers[id]?.cancel();
+    state = {...state, id: until};
+    _timers[id] = Timer(until.difference(now), () {
+      _timers.remove(id);
+      state = Map.of(state)..remove(id);
+    });
+  }
+}
+
+final NotifierProvider<LocallySnoozedNudgeDeadlines, Map<String, DateTime>>
+locallySnoozedNudgeDeadlinesProvider =
+    NotifierProvider<LocallySnoozedNudgeDeadlines, Map<String, DateTime>>(
+      LocallySnoozedNudgeDeadlines.new,
+      name: 'locallySnoozedNudgeDeadlinesProvider',
+    );
+
 /// Fire-and-forget exposure flush, captured by the banner's tracker
 /// while its element is live and safe to call from `dispose`.
 typedef GoalNudgeInteractionsFlush =

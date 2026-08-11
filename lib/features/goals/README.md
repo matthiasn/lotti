@@ -52,12 +52,15 @@ lifetime through the normal habit-completion path; these edits wake the
 deterministic evaluator and queue a standing-report refresh, with an Update now
 fallback visible beside the report. Metric strips preserve the evaluator's
 configured aggregation rather than treating every daily contribution as a
-standalone target. Goal chat stays purpose-bound: unrelated general-assistant
-requests are redirected to the goal rather than answered.
+standalone target, and composite details retain every metric leaf that
+contributes to health. Goal chat stays purpose-bound: unrelated
+general-assistant requests are redirected to the goal rather than answered.
 Health and direction are separate signals, the standing report stays visible
 beside active banners, and lifetime AI consumption plus compute time use the
 same governance pills as Task Details. Chat can also snooze the current banner
-until any requested future time, when that exact banner returns automatically.
+until any requested future time, when that exact banner returns automatically;
+the just-committed snooze is suppressed locally while its durable projection
+reloads.
 Voice, paging beyond the newest fifty visible turns, search, and inline nudge
 cards remain later conversation increments; the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.

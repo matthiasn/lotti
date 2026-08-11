@@ -95,17 +95,20 @@ class GoalProgressDay {
 }
 
 class GoalProgressView {
-  const GoalProgressView({
+  GoalProgressView({
     required this.today,
     this.habits = const [],
-    this.metric,
+    GoalMetricProgressView? metric,
+    List<GoalMetricProgressView> metrics = const [],
     this.compositeCompactWindow,
-  });
+  }) : metrics = metric == null ? metrics : [metric, ...metrics];
 
   final DateTime today;
   final List<GoalHabitProgressView> habits;
-  final GoalMetricProgressView? metric;
+  final List<GoalMetricProgressView> metrics;
   final List<bool>? compositeCompactWindow;
+
+  GoalMetricProgressView? get metric => metrics.firstOrNull;
 
   /// The compact list-row picture. Composite routines preserve their `all`,
   /// `any`, or `at least N` semantics; a single habit uses its own series.
@@ -180,14 +183,14 @@ GoalProgressView buildGoalProgressView({
 }) {
   final today = GoalWindow.dayUtc(reference);
   final habitLeaves = <GoalCriterionHabit>[];
-  GoalCriterionMetric? metricLeaf;
+  final metricLeaves = <GoalCriterionMetric>[];
 
   void visit(GoalCriterion criterion) {
     switch (criterion) {
       case final GoalCriterionHabit habit:
         habitLeaves.add(habit);
       case final GoalCriterionMetric metric:
-        metricLeaf ??= metric;
+        metricLeaves.add(metric);
       case GoalCriterionMeasurable():
         // The detail visual for measured values follows once their unit/name
         // presentation is available; the evaluator still renders health.
@@ -213,8 +216,6 @@ GoalProgressView buildGoalProgressView({
       ),
   ];
 
-  final metric = metricLeaf;
-  final metricRange = metric?.window.periodRange(reference);
   final compositeCompactWindow = switch (criteria) {
     GoalCriterionAllOf() ||
     GoalCriterionAnyOf() ||
@@ -232,36 +233,50 @@ GoalProgressView buildGoalProgressView({
     today: today,
     habits: habits,
     compositeCompactWindow: compositeCompactWindow,
-    metric: metric == null
-        ? null
-        : GoalMetricProgressView(
-            name: metric.title?.trim().isNotEmpty == true
-                ? metric.title!.trim()
-                : metric.dataType,
-            target: metric.target,
-            window: metric.window,
-            direction: metric.direction,
-            aggregation: metric.aggregation,
-            days: [
-              for (
-                var day = metricRange!.start;
-                !day.isAfter(metricRange.end);
-                day = day.add(const Duration(days: 1))
-              )
-                GoalProgressDay(
-                  day: day,
-                  value:
-                      signals.quantitativeDailySums[metric.dataType]?[day] ?? 0,
-                  isObserved:
-                      signals.quantitativeDailySums[metric.dataType]
-                          ?.containsKey(day) ??
-                      false,
-                  targetSatisfied: const GoalProgressEvaluator()
-                      .evaluate(metric, signals, day)
-                      .satisfied,
-                ),
-            ],
-          ),
+    metrics: [
+      for (final metric in metricLeaves)
+        _metricProgressView(
+          metric: metric,
+          signals: signals,
+          reference: reference,
+        ),
+    ],
+  );
+}
+
+GoalMetricProgressView _metricProgressView({
+  required GoalCriterionMetric metric,
+  required GoalSignalWindow signals,
+  required DateTime reference,
+}) {
+  final range = metric.window.periodRange(reference);
+  return GoalMetricProgressView(
+    name: metric.title?.trim().isNotEmpty == true
+        ? metric.title!.trim()
+        : metric.dataType,
+    target: metric.target,
+    window: metric.window,
+    direction: metric.direction,
+    aggregation: metric.aggregation,
+    days: [
+      for (
+        var day = range.start;
+        !day.isAfter(range.end);
+        day = day.add(const Duration(days: 1))
+      )
+        GoalProgressDay(
+          day: day,
+          value: signals.quantitativeDailySums[metric.dataType]?[day] ?? 0,
+          isObserved:
+              signals.quantitativeDailySums[metric.dataType]?.containsKey(
+                day,
+              ) ??
+              false,
+          targetSatisfied: const GoalProgressEvaluator()
+              .evaluate(metric, signals, day)
+              .satisfied,
+        ),
+    ],
   );
 }
 

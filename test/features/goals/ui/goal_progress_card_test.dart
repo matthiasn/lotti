@@ -130,6 +130,55 @@ void main() {
 
     expect(find.text('Daily steps'), findsOneWidget);
     expect(find.byType(FractionallySizedBox), findsNWidgets(7));
+    expect(find.text('done'), findsNothing);
+    expect(find.text('ages out tonight'), findsNothing);
+    expect(find.text('today'), findsNothing);
+  });
+
+  testWidgets('mixed composite renders habit and every metric series', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 1,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+            metrics: [
+              GoalMetricProgressView(
+                name: 'Steps',
+                target: 50000,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+              ),
+              GoalMetricProgressView(
+                name: 'Sleep',
+                target: 8,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Walk'), findsOneWidget);
+    expect(find.text('Steps'), findsOneWidget);
+    expect(find.text('Sleep'), findsOneWidget);
+    expect(find.byType(FractionallySizedBox), findsNWidgets(14));
   });
 
   testWidgets('a calendar-month metric shows its actual period and scrolls '

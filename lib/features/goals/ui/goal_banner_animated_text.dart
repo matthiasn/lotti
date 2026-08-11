@@ -2,7 +2,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
-import 'package:lotti/features/design_system/theme/motion_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 
 /// Renders a banner headline through one of the code-owned animation
 /// presets (ADR 0058: the model *selects*, code *implements*).
@@ -39,11 +39,6 @@ abstract final class _GoalBannerMotion {
   /// Pulse breathes between these opacities — never below the readable
   /// floor.
   static const pulseFloorOpacity = 0.55;
-
-  /// A selected marquee must remain visibly a marquee even when concise model
-  /// copy happens to fit the available desktop width. This is motion distance,
-  /// not layout spacing: the line peeks left by this amount at the far end.
-  static const marqueeMinimumTravel = 12.0;
 
   /// Wave bob amplitude in logical pixels, and the per-word phase shift.
   static const waveAmplitude = 2.0;
@@ -237,7 +232,7 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
         )..layout();
         final travel = math.max(
           painter.width - constraints.maxWidth,
-          _GoalBannerMotion.marqueeMinimumTravel,
+          context.designTokens.spacing.step4,
         );
         // Ease across, hold at each end (the standard curve both ways).
         final t = MotionCurves.standard.transform(

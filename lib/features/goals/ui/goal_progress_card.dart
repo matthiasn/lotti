@@ -94,12 +94,15 @@ class GoalProgressCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final habitWindow = progress.habits.firstOrNull?.window;
+    final windows = [
+      for (final habit in progress.habits) habit.window,
+      for (final metric in progress.metrics) metric.window,
+    ];
     final usesRollingWeek =
-        progress.habits.isNotEmpty &&
-            progress.habits.every(
-              (habit) => habit.window == const GoalWindow.rollingDays(count: 7),
-            ) ||
-        progress.metric?.window == const GoalWindow.rollingDays(count: 7);
+        windows.isNotEmpty &&
+        windows.every(
+          (window) => window == const GoalWindow.rollingDays(count: 7),
+        );
     return DesignSystemSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -147,11 +150,16 @@ class GoalProgressCard extends StatelessWidget {
                 today: progress.today,
                 onOutcomeSelected: onHabitOutcomeSelected,
               ),
-            ]
-          else if (progress.metric case final metric?)
-            _MetricProgressSeries(metric: metric),
-          SizedBox(height: tokens.spacing.step4),
-          const _ProgressLegend(),
+            ],
+          for (var index = 0; index < progress.metrics.length; index++) ...[
+            if (progress.habits.isNotEmpty || index > 0)
+              SizedBox(height: tokens.spacing.step4),
+            _MetricProgressSeries(metric: progress.metrics[index]),
+          ],
+          if (progress.habits.isNotEmpty) ...[
+            SizedBox(height: tokens.spacing.step4),
+            const _ProgressLegend(),
+          ],
         ],
       ),
     );

@@ -179,7 +179,10 @@ flowchart TD
   provider's deadline timer invalidates the projection. Snooze extends the
   activation's `staleAt` past that reveal instant so the hidden interval cannot
   consume its remaining visible lifetime. A re-run clears stale snooze
-  provenance.
+  provenance. After a chat wake commits, the controller reads the persisted
+  snooze deadlines into a short-lived local suppression map before invalidating
+  the async projection; retained stale-while-revalidate data therefore cannot
+  flash the hidden banner, and unrelated active banners remain visible.
   The three-day worsening requirement remains the automatic `atRisk` gate;
   an interactive `atRisk` wake that emits a structured create/rerun action
   honors the user's request while still enforcing duplicate-copy and stale-spec
@@ -285,7 +288,9 @@ flowchart TD
   relabelled as a trailing week. Metric satisfaction is folded with the same
   configured aggregation (`sum`, `count`, average, or max) as
   `GoalProgressEvaluator`, rather than comparing each raw daily contribution
-  with the period target. The
+  with the period target. Composite detail keeps every metric leaf instead of
+  silently collapsing the evidence to the first one, and the habit-only legend
+  is omitted when no habit grid is rendered. The
   compact strip evaluates `allOf`, `anyOf`, and `atLeastCount` as authored and
   respects `atLeast` versus `atMost` metric direction; missing metric samples
   never count as successful days.
@@ -331,7 +336,9 @@ flowchart TD
   `GoalAgentService.deleteGoalAgent`. The shared drain lifecycle guard rejects
   any queued non-active goal wake that survives a race or arrives from sync and
   emits an aborted completion, so an interactive caller never waits forever for
-  a lifecycle-dropped request.
+  a lifecycle-dropped request. Deletion also removes the goal's in-memory
+  signal subscription, preventing future matching journal updates from
+  repeatedly enqueueing work that the lifecycle guard would only discard.
 - **Conversation scope is the goal.** The contract identifies the agent as a
   dedicated coach rather than a general assistant. Coding, trivia and other
   unrelated requests receive a short purpose reminder and a redirect to the

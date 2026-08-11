@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
@@ -359,6 +360,20 @@ void main() {
     expect(find.textContaining('The current routine needs'), findsOneWidget);
     expect(find.text('The stairs filed a complaint.'), findsOneWidget);
     expect(find.text('Sleep is a skill too.'), findsNothing);
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(GoalAgentDetailPage)),
+      listen: false,
+    );
+    container
+        .read(locallySnoozedNudgeDeadlinesProvider.notifier)
+        .add('ad-goal-1-The stairs filed a complaint.', DateTime.utc(2099));
+    await tester.pump();
+
+    expect(find.byType(GoalBannerCard), findsNWidgets(2));
+    expect(find.text('The stairs filed a complaint.'), findsNothing);
+    expect(find.text('Shoes miss you.'), findsOneWidget);
+    expect(find.text('Third day on the couch.'), findsOneWidget);
   });
 
   testWidgets('a banner past its staleAt is filtered out at render time even '

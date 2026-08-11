@@ -258,6 +258,7 @@ void main() {
     test('retires the goal through the shared destroyed lifecycle', () async {
       when(() => agentService.cancelPendingWake(agentId)).thenReturn(null);
       when(() => agentService.abortRunningWake(agentId)).thenReturn(true);
+      when(() => orchestrator.removeSubscriptions(agentId)).thenReturn(null);
       when(
         () => agentService.destroyAgent(agentId),
       ).thenAnswer((_) async => true);
@@ -266,12 +267,14 @@ void main() {
 
       verify(() => agentService.cancelPendingWake(agentId)).called(1);
       verify(() => agentService.abortRunningWake(agentId)).called(1);
+      verify(() => orchestrator.removeSubscriptions(agentId)).called(1);
       verify(() => agentService.destroyAgent(agentId)).called(1);
     });
 
     test('reports when no goal matched the id', () async {
       when(() => agentService.cancelPendingWake('missing')).thenReturn(null);
       when(() => agentService.abortRunningWake('missing')).thenReturn(false);
+      when(() => orchestrator.removeSubscriptions('missing')).thenReturn(null);
       when(
         () => agentService.destroyAgent('missing'),
       ).thenAnswer((_) async => false);
@@ -280,6 +283,7 @@ void main() {
 
       verify(() => agentService.cancelPendingWake('missing')).called(1);
       verify(() => agentService.abortRunningWake('missing')).called(1);
+      verify(() => orchestrator.removeSubscriptions('missing')).called(1);
       verify(() => agentService.destroyAgent('missing')).called(1);
     });
   });

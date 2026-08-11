@@ -149,6 +149,7 @@ class GoalAgentService {
     _agentService
       ..cancelPendingWake(agentId)
       ..abortRunningWake(agentId);
+    removeSignalSubscriptions(agentId);
     return _agentService.destroyAgent(agentId);
   }
 
