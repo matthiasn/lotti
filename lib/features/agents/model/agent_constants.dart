@@ -92,10 +92,10 @@ abstract final class AgentReportScopes {
   static const current = 'current';
 }
 
-/// `author` attribution stamped on entities a non-task agent produces.
+/// Shared `author` attribution values stamped on agent-domain entities.
 ///
-/// Distinguishes machine-authored content — the evolution agent's outputs vs.
-/// `system`-generated bookkeeping — so the UI and prompts can label provenance.
+/// Distinguishes owner-authored versions, machine-authored content, and
+/// `system`-generated bookkeeping so UI, sync, and prompts can label provenance.
 abstract final class AgentAuthors {
   static const user = 'user';
   static const evolutionAgent = 'evolution_agent';

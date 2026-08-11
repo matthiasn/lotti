@@ -903,7 +903,9 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
 
   /// Mutable head pointer for the active goal spec version.
   ///
-  /// Deterministic id `goal_spec_head:<agentId>` (`goalSpecHeadId`), LWW.
+  /// Deterministic id `goal_spec_head:<agentId>` (`goalSpecHeadId`). Concurrent
+  /// heads choose the higher spec ordinal, then direct owner intent over an
+  /// agent-approved revision at the same ordinal; other ties use generic LWW.
   /// "State your current goal" is a head→version read — zero inference.
   const factory AgentDomainEntity.goalSpecHead({
     required String id,
