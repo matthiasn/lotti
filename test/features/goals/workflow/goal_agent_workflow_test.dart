@@ -261,6 +261,29 @@ void main() {
         ),
         isFalse,
       );
+      expect(
+        isExplicitGoalAdReplacementRequest("I don't want a banner."),
+        isFalse,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest('I see no banner.'),
+        isTrue,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest(
+          'yes now',
+          previousAssistantMessage:
+              "If you'd like a fresh banner right now, just say the word.",
+        ),
+        isTrue,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest(
+          'yes now',
+          previousAssistantMessage: 'Want to squeeze in a walk today?',
+        ),
+        isFalse,
+      );
     },
   );
 
@@ -568,8 +591,8 @@ void main() {
     expect(usage.inputTokens, 900);
   });
 
-  test('an explicit new-banner message overrides dismissal cooldown even '
-      'when the primary model turn refuses to create one', () async {
+  test('a contextual yes-now banner request overrides dismissal cooldown '
+      'and cannot retire the requested banner', () async {
     stubSpec();
     stubGlmResolution();
     workflow = _offTrackWorkflow(
@@ -621,7 +644,41 @@ void main() {
         agentId: agentId,
         createdAt: now,
         vectorClock: null,
-        content: const {'text': 'Please show me another banner ad.'},
+        content: const {'text': 'yes now'},
+      ),
+    );
+    final priorReply =
+        AgentDomainEntity.agentMessage(
+              id: 'prior-reply',
+              agentId: agentId,
+              threadId: 'prior-thread',
+              kind: AgentMessageKind.action,
+              createdAt: now.subtract(const Duration(minutes: 1)),
+              vectorClock: null,
+              contentEntryId: 'prior-reply-payload',
+              metadata: const AgentMessageMetadata(
+                toolName: AgentConversationToolNames.replyToUser,
+              ),
+            )
+            as AgentMessageEntity;
+    when(
+      () => repository.getMessagesByKind(
+        agentId,
+        AgentMessageKind.action,
+        limit: 12,
+      ),
+    ).thenAnswer((_) async => [priorReply]);
+    when(() => repository.getEntity('prior-reply-payload')).thenAnswer(
+      (_) async => AgentDomainEntity.agentMessagePayload(
+        id: 'prior-reply-payload',
+        agentId: agentId,
+        createdAt: now.subtract(const Duration(minutes: 1)),
+        vectorClock: null,
+        content: const {
+          'text':
+              "If you'd like me to put a fresh banner up right now, just "
+              'say the word.',
+        },
       ),
     );
     conversationRepository.maxDelegateCalls = 3;
@@ -643,9 +700,7 @@ void main() {
           if (calls == 1) {
             expect(
               message,
-              contains(
-                'PENDING USER MESSAGE:\nPlease show me another banner ad.',
-              ),
+              contains('PENDING USER MESSAGE:\nyes now'),
             );
             expect(message, contains('overrides dismissal cooldown'));
             // The primary turn answers and reports, but refuses/forgets the

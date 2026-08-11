@@ -119,14 +119,57 @@ class GoalAgentWorkflow with AgentErrorLogging {
         error: 'goal chat source payload is unavailable',
       );
     }
+    final pendingUserMessage = text.trim();
+    final previousAssistantMessage =
+        _isShortGoalAdAffirmation(pendingUserMessage.toLowerCase())
+        ? await _previousVisibleAssistantText(
+            agentIdentity.agentId,
+            before: message.createdAt,
+          )
+        : null;
     return execute(
       agentIdentity: agentIdentity,
       runKey: runKey,
       triggerTokens: triggerTokens,
       threadId: threadId,
-      pendingUserMessage: text.trim(),
+      pendingUserMessage: pendingUserMessage,
+      previousAssistantMessage: previousAssistantMessage,
       chatMessageId: messageId,
     );
+  }
+
+  Future<String?> _previousVisibleAssistantText(
+    String agentId, {
+    required DateTime before,
+  }) async {
+    final actions =
+        (await _repository.getMessagesByKind(
+              agentId,
+              AgentMessageKind.action,
+              limit: 12,
+            ))
+            .where(
+              (message) =>
+                  message.deletedAt == null &&
+                  !message.createdAt.isAfter(before) &&
+                  message.metadata.toolName ==
+                      AgentConversationToolNames.replyToUser &&
+                  message.contentEntryId != null,
+            )
+            .toList()
+          ..sort((a, b) {
+            final byTime = b.createdAt.compareTo(a.createdAt);
+            return byTime != 0 ? byTime : b.id.compareTo(a.id);
+          });
+    for (final action in actions) {
+      final payload = await _repository.getEntity(action.contentEntryId!);
+      final text =
+          payload is AgentMessagePayloadEntity && payload.agentId == agentId
+          ? payload.content['text']
+          : null;
+      if (text is String && text.trim().isNotEmpty) return text.trim();
+    }
+    return null;
   }
 
   Future<WakeResult> execute({
@@ -135,6 +178,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required Set<String> triggerTokens,
     required String threadId,
     String? pendingUserMessage,
+    String? previousAssistantMessage,
     String? chatMessageId,
   }) async {
     final agentId = agentIdentity.agentId;
@@ -142,6 +186,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     final reportRefresh = goalReportRefreshRequested(triggerTokens);
     final userRequestedAd = isExplicitGoalAdReplacementRequest(
       pendingUserMessage,
+      previousAssistantMessage: previousAssistantMessage,
     );
 
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
@@ -1548,17 +1593,24 @@ class GoalAgentWorkflow with AgentErrorLogging {
 /// Conservative deterministic gate for a user-initiated replacement banner.
 ///
 /// Cooldown overrides cannot depend on the model first agreeing to call the ad
-/// tool. Courtesy words and questions about an existing banner are not enough:
-/// the message must carry actual replacement intent, and visibility requests
-/// such as snooze or dismiss always win.
-bool isExplicitGoalAdReplacementRequest(String? message) {
+/// tool. A missing-banner report, or a short affirmation immediately following
+/// the agent's banner offer, also carries replacement intent. Visibility
+/// requests such as snooze or dismiss always win.
+bool isExplicitGoalAdReplacementRequest(
+  String? message, {
+  String? previousAssistantMessage,
+}) {
   if (message == null) return false;
-  final normalized = message.toLowerCase();
+  final normalized = message.toLowerCase().trim();
+  if (_isShortGoalAdAffirmation(normalized) &&
+      _offersGoalBanner(previousAssistantMessage)) {
+    return true;
+  }
   final mentionsAd = RegExp(r'\b(?:banner|ad|advert)\b').hasMatch(normalized);
   if (!mentionsAd) return false;
   final declinesReplacement = RegExp(
     r"\b(?:don't|dont|do not|never)\s+"
-    r'(?:want\s+)?(?:another|a\s+new|replace|show|give|make|create)',
+    r'(?:want|need|replace|show|give|make|create|serve)\b',
   ).hasMatch(normalized);
   if (declinesReplacement) return false;
   final isVisibilityRequest = RegExp(
@@ -1571,7 +1623,28 @@ bool isExplicitGoalAdReplacementRequest(String? message) {
   final qualifiedRequest = RegExp(
     r'\b(?:show|want|need)\b.*\b(?:new|another|replacement)\b',
   ).hasMatch(normalized);
-  return directReplacementVerb || qualifiedRequest;
+  final reportsMissingBanner = RegExp(
+    r'\b(?:see|have|got)\s+no\s+(?:banner|ad|advert)\b|'
+    r'\b(?:banner|ad|advert)\s+(?:is\s+)?(?:missing|not\s+(?:showing|visible))\b|'
+    r"\bwhere(?:'s|\s+is)\s+(?:my\s+|the\s+)?(?:banner|ad|advert)\b",
+  ).hasMatch(normalized);
+  return directReplacementVerb || qualifiedRequest || reportsMissingBanner;
+}
+
+bool _isShortGoalAdAffirmation(String message) => RegExp(
+  r'^(?:yes|yep|yeah|sure|ok|okay|please|do\s+it|go\s+ahead|make\s+it\s+happen)'
+  r'(?:[,.]?\s+(?:please|now))?[.!]*$',
+).hasMatch(message);
+
+bool _offersGoalBanner(String? message) {
+  if (message == null) return false;
+  final normalized = message.toLowerCase();
+  if (!RegExp(r'\b(?:banner|ad|advert)\b').hasMatch(normalized)) return false;
+  return RegExp(
+    r"\b(?:if\s+you(?:'d|\s+would)?\s+(?:like|want)|want\s+me\s+to|"
+    r'would\s+you\s+like|shall\s+i|should\s+i|say\s+the\s+word|'
+    r'ask\s+me|tell\s+me)\b',
+  ).hasMatch(normalized);
 }
 
 /// The report sanitizer applied to every copy field a banner renders.

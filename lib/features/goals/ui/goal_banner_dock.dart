@@ -396,16 +396,19 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     final radius = BorderRadius.circular(tokens.radii.m);
     final multi = entries.length > 1;
 
-    Widget tenant = _DockTenant(
+    Widget tenant = SizedBox(
       key: ValueKey(
         'dock-${current.nudge.id}-${current.nudge.activationCount}',
       ),
-      entry: current,
-      style: style,
-      compact: widget.compact,
-      justNow: _jumpedId == current.nudge.id,
-      onDismiss: () => dismissGoalBanner(context, ref, current),
-      onRate: () => showGoalBannerRatingSheet(context, ref, current),
+      width: double.infinity,
+      child: _DockTenant(
+        entry: current,
+        style: style,
+        compact: widget.compact,
+        justNow: _jumpedId == current.nudge.id,
+        onDismiss: () => dismissGoalBanner(context, ref, current),
+        onRate: () => showGoalBannerRatingSheet(context, ref, current),
+      ),
     );
 
     if (widget.compact) {
@@ -429,6 +432,7 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
             color: style.fill,
             borderRadius: radius,
             child: Ink(
+              key: const ValueKey('goal-banner-dock-frame'),
               decoration: BoxDecoration(
                 borderRadius: radius,
                 border: Border.all(color: style.border),
@@ -553,7 +557,6 @@ class _DockTenant extends ConsumerWidget {
     required this.justNow,
     required this.onDismiss,
     required this.onRate,
-    super.key,
   });
 
   final GoalBannerEntry entry;
@@ -580,6 +583,7 @@ class _DockTenant extends ConsumerWidget {
     return GoalBannerExposureTracker(
       nudgeId: entry.nudge.id,
       child: InkWell(
+        key: const ValueKey('goal-banner-dock-tenant'),
         onTap: () => beamToNamed('/agents/details/${entry.nudge.agentId}'),
         child: Padding(
           padding: EdgeInsets.symmetric(
@@ -628,11 +632,15 @@ class _DockTenant extends ConsumerWidget {
                 // ellipsis actually engages — a bare Row child would be
                 // measured at full intrinsic width and overflow the dock.
                 Flexible(
-                  child: GoalBannerCtaPill(
-                    label: brief.cta!,
-                    style: style,
-                    onTap: () =>
-                        beamToNamed('/agents/details/${entry.nudge.agentId}'),
+                  child: Align(
+                    alignment: Alignment.centerRight,
+                    child: GoalBannerCtaPill(
+                      label: brief.cta!,
+                      style: style,
+                      onTap: () => beamToNamed(
+                        '/agents/details/${entry.nudge.agentId}',
+                      ),
+                    ),
                   ),
                 ),
               ],

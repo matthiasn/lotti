@@ -163,10 +163,14 @@ flowchart TD
   digests. Automatic transition ads keep their period/baseline identity;
   chat-created replacements add the durable source message id so a retired
   transition ad cannot silently collide with the requested replacement.
-  An affirmative chat request for a new banner is recognized from actual
-  replacement language in the durable user message before inference and
-  overrides the automatic dismissal cooldown. Negated requests, courtesy, and
-  explanation prompts do not trigger that exception. The current active banner
+  An affirmative chat request for a new banner is recognized from replacement
+  language or a missing-banner report in the durable user message before
+  inference. A short affirmation also qualifies when the immediately preceding
+  visible assistant reply offered a banner. These interactive requests override
+  the automatic dismissal cooldown and remain ad-eligible for the whole wake,
+  so its persistence pass cannot retire the banner it just created. Negated
+  requests, unrelated courtesy, and explanation prompts do not trigger that
+  exception. The current active banner
   retires only after a sanitized, non-duplicate create or valid retired-ad rerun
   has been identified,
   so a replayed/invalid candidate cannot leave the goal bannerless. If the
@@ -250,7 +254,8 @@ flowchart TD
   `GoalNudgeInteractions` so a rapid flush/dismiss pair cannot lose an
   update to a stale read.
   The dock and the full detail card both render the selected animation through
-  `GoalBannerAnimatedText`; the dock spans its host, desktop shows the authored
+  `GoalBannerAnimatedText`; the dock and its animated tenant span their host,
+  desktop shows the authored
   headline and tagline without truncation, and compact docks keep a measured
   two-line cap for each. A chat-requested snooze accepts an arbitrary future duration
   or date/time and automatically restores the exact banner at that deadline.

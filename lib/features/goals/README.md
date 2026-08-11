@@ -64,7 +64,10 @@ same governance pills as Task Details; compute time is withheld when legacy
 calls carry no recorded duration. Chat can also snooze the current banner
 until any requested future time, when that exact banner returns automatically;
 the just-committed snooze is suppressed locally while its durable projection
-reloads.
+reloads. Dismissal cooldown applies to automatic banners only: a direct
+missing-banner request, or a short affirmative reply to the agent's banner
+offer, can create or re-run a banner immediately without the follow-up wake
+retiring it. The desktop banner tenant fills the dock's available width.
 Voice, paging beyond the newest fifty visible turns, search, and inline nudge
 cards remain later conversation increments; the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.

@@ -217,6 +217,30 @@ void main() {
     );
   });
 
+  testWidgets('the desktop tenant uses the full banner frame width', (
+    tester,
+  ) async {
+    await pumpDock(tester, [
+      entry(
+        id: 'wide',
+        headline: 'Ghost feet detected',
+        tagline: 'Your sneakers would like the whole available lane.',
+        cta: 'Go touch grass',
+      ),
+    ]);
+
+    final frame = find.byKey(const ValueKey('goal-banner-dock-frame'));
+    final tenant = find.byKey(const ValueKey('goal-banner-dock-tenant'));
+    expect(frame, findsOneWidget);
+    expect(tenant, findsOneWidget);
+    final frameRect = tester.getRect(frame);
+    final tenantRect = tester.getRect(tenant);
+    expect(tenantRect.center.dx, frameRect.center.dx);
+    expect(tenantRect.width, closeTo(frameRect.width, 2));
+    final dismissRect = tester.getRect(find.byTooltip('Dismiss'));
+    expect(frameRect.right - dismissRect.right, lessThan(24));
+  });
+
   testWidgets('the reserved lane covers the rendered compact dock at every '
       'text scale — two-line headline AND the multi-tenant dot row', (
     tester,
