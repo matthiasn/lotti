@@ -1553,6 +1553,14 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get aiConsumptionDurationLessThanMinute => 'Minder dan 1 min';
+
+  @override
+  String aiConsumptionDurationLine(String duration) {
+    return 'Rekentijd: $duration';
+  }
+
+  @override
   String aiConsumptionImpactLine(String energy, String carbon, String water) {
     return 'Effect: $energy · $carbon CO2e $water water';
   }

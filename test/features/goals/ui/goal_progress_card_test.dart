@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
@@ -161,6 +162,35 @@ void main() {
     expect(find.byType(SingleChildScrollView), findsOneWidget);
   });
 
+  testWidgets('an at-most metric highlights the value at its ceiling', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Screen time',
+              target: 60,
+              direction: GoalDirection.atMost,
+              days: [day(1, 61), day(0, 60)],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    Color barColor(String date) {
+      final bar = tester.widget<FractionallySizedBox>(
+        find.byKey(ValueKey('goal-metric-bar-$date')),
+      );
+      return ((bar.child! as DecoratedBox).decoration as BoxDecoration).color!;
+    }
+
+    expect(barColor('2026-08-10'), isNot(barColor('2026-08-11')));
+  });
+
   testWidgets('a narrow at-rate habit keeps the grid scrollable and marks both '
       'the aging success and today', (tester) async {
     await tester.pumpWidget(
@@ -294,5 +324,51 @@ void main() {
       findsOneWidget,
     );
     expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+  });
+
+  testWidgets('a failed completion save clears the busy state and reports it', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 1,
+                  days: [
+                    for (var offset = 7; offset >= 0; offset--) day(offset, 0),
+                  ],
+                  successfulWeeks: 0,
+                ),
+              ],
+            ),
+            onHabitOutcomeSelected:
+                ({required day, required habitId, required outcome}) async {
+                  throw StateError('database write failed');
+                },
+          ),
+        ),
+      ),
+    );
+
+    const dayKey = ValueKey('goal-habit-day-walk-2026-08-08');
+    await tester.tap(find.byKey(dayKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-habit-day-success')));
+    await tester.pumpAndSettle();
+
+    expect(find.text("That didn't save — please try again."), findsOneWidget);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
+    expect(
+      tester
+          .widget<PopupMenuButton<HabitCompletionType>>(find.byKey(dayKey))
+          .enabled,
+      isTrue,
+    );
   });
 }

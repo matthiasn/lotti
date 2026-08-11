@@ -235,4 +235,55 @@ void main() {
       expect(find.textContaining('Start a conversation'), findsNothing);
     },
   );
+
+  testWidgets('editing a draft does not pull a scrolled conversation down', (
+    tester,
+  ) async {
+    var draft = '';
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        StatefulBuilder(
+          builder: (context, setState) => Scaffold(
+            body: SizedBox(
+              height: 420,
+              child: AgentChatView(
+                agentId: 'goal-1',
+                agentName: 'Juno',
+                draft: draft,
+                isSending: false,
+                onDraftChanged: (value) => setState(() => draft = value),
+                onSend: () {},
+                onRetry: () {},
+              ),
+            ),
+          ),
+        ),
+        overrides: [
+          agentChatProjectionProvider('goal-1').overrideWith(
+            (ref) async => [
+              for (var index = 0; index < 30; index++)
+                AgentChatMessage(
+                  id: '$index',
+                  role: AgentChatRole.agent,
+                  text: 'Message $index with enough text to occupy a row.',
+                  createdAt: DateTime(2026, 8, 11, 9, index),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.drag(find.byType(ListView), const Offset(0, 5000));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Message 0'), findsOneWidget);
+
+    await tester.enterText(find.byType(TextField), 'Still reading');
+    await tester.pump();
+    await tester.pump();
+
+    expect(find.textContaining('Message 0'), findsOneWidget);
+    expect(find.textContaining('Message 29'), findsNothing);
+  });
 }

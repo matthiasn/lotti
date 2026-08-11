@@ -1556,6 +1556,14 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get aiConsumptionDurationLessThanMinute => 'Méně než 1 min';
+
+  @override
+  String aiConsumptionDurationLine(String duration) {
+    return 'Doba výpočtu: $duration';
+  }
+
+  @override
   String aiConsumptionImpactLine(String energy, String carbon, String water) {
     return 'Dopad: $energy · $carbon CO₂e · $water vody';
   }

@@ -638,6 +638,8 @@
   "aiConsumptionAttributionReference": "Zuordnung {id}",
   "aiConsumptionCallsLine": "KI-Aufrufe: {count} · Impact gemessen bei {measured}",
   "aiConsumptionCostLine": "Kosten: {cost}",
+  "aiConsumptionDurationLessThanMinute": "Unter 1 Min.",
+  "aiConsumptionDurationLine": "Rechenzeit: {duration}",
   "aiConsumptionImpactLine": "Impact: {energy} · {carbon} CO₂e · {water} Wasser",
   "aiConsumptionLedgerCap": "Zeigt die neuesten {limit} Aufrufe in diesem Zeitraum",
   "aiConsumptionLedgerTitle": "Letzte Aufrufe",

@@ -2718,6 +2718,18 @@ abstract class AppLocalizations {
   /// **'Cost: {cost}'**
   String aiConsumptionCostLine(String cost);
 
+  /// No description provided for @aiConsumptionDurationLessThanMinute.
+  ///
+  /// In en, this message translates to:
+  /// **'Less than 1 min'**
+  String get aiConsumptionDurationLessThanMinute;
+
+  /// No description provided for @aiConsumptionDurationLine.
+  ///
+  /// In en, this message translates to:
+  /// **'Compute time: {duration}'**
+  String aiConsumptionDurationLine(String duration);
+
   /// No description provided for @aiConsumptionImpactLine.
   ///
   /// In en, this message translates to:

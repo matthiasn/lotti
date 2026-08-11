@@ -113,7 +113,7 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
         ],
       ),
     );
@@ -186,7 +186,7 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
         ],
       ),
     );
@@ -228,7 +228,7 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
         ],
       ),
     );
@@ -275,6 +275,13 @@ void main() {
               provenance: const {'specVersionId': 'goal-1:spec-v1'},
             )
             as AgentReportEntity;
+    final delayedHistoricalReport = report.copyWith(
+      id: 'report-delayed-history',
+      createdAt: DateTime(2026, 8, 11),
+      oneLiner: 'Delayed historical report must not replace the head.',
+      tldr: 'Delayed historical report must not replace the head.',
+      content: 'Delayed historical report must not replace the head.',
+    );
     final spec =
         AgentDomainEntity.goalSpecVersion(
               id: 'goal-1:spec-v1',
@@ -328,9 +335,12 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportHistoryProvider(
+          agentReportProvider(
             'goal-1',
-          ).overrideWith((ref) async => [report]),
+          ).overrideWith((ref) async => report),
+          agentReportHistoryProvider('goal-1').overrideWith(
+            (ref) async => [delayedHistoricalReport, report],
+          ),
         ],
       ),
     );
@@ -341,6 +351,7 @@ void main() {
     expect(find.byType(GoalBannerCard), findsNWidgets(3));
     expect(find.byType(GoalBannerExposureTracker), findsNWidgets(3));
     expect(find.textContaining('Three walks'), findsOneWidget);
+    expect(find.textContaining('Delayed historical report'), findsNothing);
     expect(find.text('Show more'), findsOneWidget);
     expect(find.textContaining('The current routine needs'), findsNothing);
     await tester.tap(find.text('Show more'));
@@ -415,9 +426,9 @@ void main() {
             agentMessagesByThreadProvider(
               'goal-1',
             ).overrideWith((ref) async => {}),
-            agentReportHistoryProvider(
+            agentReportProvider(
               'goal-1',
-            ).overrideWith((ref) async => []),
+            ).overrideWith((ref) async => null),
           ],
         ),
       );
@@ -448,7 +459,7 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
         ],
       ),
     );
@@ -510,7 +521,7 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
         ],
       ),
     );
@@ -620,7 +631,7 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
           agentChatProjectionProvider(
             'goal-1',
           ).overrideWith((ref) async => const []),
@@ -675,7 +686,7 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
         ],
       ),
     );
@@ -745,7 +756,7 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
         ],
       ),
     );
@@ -819,9 +830,9 @@ void main() {
           agentMessagesByThreadProvider(
             'goal-1',
           ).overrideWith((ref) async => {}),
-          agentReportHistoryProvider(
+          agentReportProvider(
             'goal-1',
-          ).overrideWith((ref) async => []),
+          ).overrideWith((ref) async => null),
         ],
       ),
     );

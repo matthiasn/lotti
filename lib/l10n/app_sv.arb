@@ -736,6 +736,15 @@
       }
     }
   },
+  "aiConsumptionDurationLessThanMinute": "Mindre än 1 min",
+  "aiConsumptionDurationLine": "Beräkningstid: {duration}",
+  "@aiConsumptionDurationLine": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
   "aiConsumptionImpactLine": "Påverkan: {energy} · {carbon} CO₂e · {water} vatten",
   "@aiConsumptionImpactLine": {
     "placeholders": {

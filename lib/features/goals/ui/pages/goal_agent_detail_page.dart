@@ -123,25 +123,19 @@ class GoalAgentDetailPage extends ConsumerWidget {
     final history =
         ref.watch(goalNudgeHistoryProvider(agentId)).value ??
         const <GoalNudgeEntity>[];
-    final reports =
-        ref.watch(agentReportHistoryProvider(agentId)).value ??
-        const <AgentDomainEntity>[];
+    final report = ref.watch(agentReportProvider(agentId)).value;
     AgentReportEntity? latestReport;
-    for (final entity in reports) {
-      if (entity is! AgentReportEntity ||
-          entity.scope != AgentReportScopes.current ||
-          entity.deletedAt != null) {
-        continue;
-      }
-      final reportSpecId = entity.provenance['specVersionId'];
+    if (report is AgentReportEntity &&
+        report.scope == AgentReportScopes.current &&
+        report.deletedAt == null) {
+      final reportSpecId = report.provenance['specVersionId'];
       final matchesSpec =
           spec != null &&
           (reportSpecId is String
               ? reportSpecId == spec.id
-              : !entity.createdAt.isBefore(spec.createdAt));
+              : !report.createdAt.isBefore(spec.createdAt));
       if (matchesSpec) {
-        latestReport = entity;
-        break;
+        latestReport = report;
       }
     }
     Widget detailList({required bool showChatAction}) => ListView(

@@ -736,6 +736,15 @@
       }
     }
   },
+  "aiConsumptionDurationLessThanMinute": "Meno di 1 min",
+  "aiConsumptionDurationLine": "Tempo di calcolo: {duration}",
+  "@aiConsumptionDurationLine": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
   "aiConsumptionImpactLine": "Impatto: {energy} · {carbon} CO2e · {water} acqua",
   "@aiConsumptionImpactLine": {
     "placeholders": {

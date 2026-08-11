@@ -645,6 +645,8 @@
   "aiConsumptionAttributionReference": "Atribuce {id}",
   "aiConsumptionCallsLine": "AI volání: {count} · dopad změřen u {measured}",
   "aiConsumptionCostLine": "Náklady: {cost}",
+  "aiConsumptionDurationLessThanMinute": "Méně než 1 min",
+  "aiConsumptionDurationLine": "Doba výpočtu: {duration}",
   "aiConsumptionImpactLine": "Dopad: {energy} · {carbon} CO₂e · {water} vody",
   "aiConsumptionLedgerCap": "Zobrazuje nejnovějších {limit} volání v tomto období",
   "aiConsumptionLedgerTitle": "Nedávná volání",

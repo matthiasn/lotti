@@ -40,16 +40,23 @@ class AgentChatView extends ConsumerStatefulWidget {
 class _AgentChatViewState extends ConsumerState<AgentChatView> {
   late final TextEditingController _controller;
   final _scrollController = ScrollController();
+  String? _lastMessageId;
+  bool _wasSending = false;
 
   @override
   void initState() {
     super.initState();
     _controller = TextEditingController(text: widget.draft);
+    _wasSending = widget.isSending;
   }
 
   @override
   void didUpdateWidget(covariant AgentChatView oldWidget) {
     super.didUpdateWidget(oldWidget);
+    if (oldWidget.agentId != widget.agentId) {
+      _lastMessageId = null;
+      _wasSending = widget.isSending;
+    }
     if (_controller.text != widget.draft) {
       _controller
         ..text = widget.draft
@@ -78,7 +85,14 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
       agentChatProjectionProvider(widget.agentId),
     );
     final messages = historyAsync.value;
-    if (messages != null) _scrollToLatest();
+    final latestMessageId = messages?.lastOrNull?.id;
+    final shouldScroll =
+        messages != null &&
+        (_lastMessageId != latestMessageId ||
+            (!_wasSending && widget.isSending));
+    _lastMessageId = latestMessageId;
+    _wasSending = widget.isSending;
+    if (shouldScroll) _scrollToLatest();
 
     return Column(
       children: [

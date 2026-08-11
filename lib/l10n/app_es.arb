@@ -638,6 +638,8 @@
   "aiConsumptionAttributionReference": "Atribución {id}",
   "aiConsumptionCallsLine": "Llamadas de IA: {count} · impacto medido en {measured}",
   "aiConsumptionCostLine": "Coste: {cost}",
+  "aiConsumptionDurationLessThanMinute": "Menos de 1 min",
+  "aiConsumptionDurationLine": "Tiempo de cálculo: {duration}",
   "aiConsumptionImpactLine": "Impacto: {energy} · {carbon} CO₂e · {water} de agua",
   "aiConsumptionLedgerCap": "Mostrando las {limit} llamadas más recientes de este período",
   "aiConsumptionLedgerTitle": "Llamadas recientes",

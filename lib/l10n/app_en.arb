@@ -1055,6 +1055,15 @@
       }
     }
   },
+  "aiConsumptionDurationLessThanMinute": "Less than 1 min",
+  "aiConsumptionDurationLine": "Compute time: {duration}",
+  "@aiConsumptionDurationLine": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
   "aiConsumptionImpactLine": "Impact: {energy} · {carbon} CO₂e · {water} water",
   "@aiConsumptionImpactLine": {
     "placeholders": {

@@ -103,6 +103,30 @@ void main() {
     expect(view.compactWindow, [true, false, false, false, true, false, false]);
   });
 
+  test('an at-most metric marks values at or below its ceiling', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.metric(
+        criterionId: 'screen-time',
+        dataType: 'screen-time',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        target: 60,
+        direction: GoalDirection.atMost,
+      ),
+      signals: GoalSignalWindow(
+        quantitativeDailySums: {
+          'screen-time': {day(1): 61, day(0): 60},
+        },
+      ),
+      reference: today,
+    );
+
+    expect(view.metric?.direction, GoalDirection.atMost);
+    expect(view.compactWindow.take(5), everyElement(isFalse));
+    expect(view.compactWindow.last, isTrue);
+    expect(view.compactWindow[5], isFalse);
+  });
+
   test('metric projection follows the criterion day and calendar-month '
       'windows instead of forcing seven days', () {
     final dayView = buildGoalProgressView(
@@ -214,13 +238,61 @@ void main() {
           ),
         ],
       ),
-      signals: const GoalSignalWindow(),
+      signals: GoalSignalWindow(
+        habitSuccessesByDay: {
+          'walk-id': {day(1): 1},
+        },
+        quantitativeDailySums: {
+          'steps': {day(0): 9000},
+        },
+      ),
       reference: today,
     );
 
     expect(view.habits.single.name, 'walk-id');
     expect(view.metric?.name, 'steps');
     expect(view.metric?.days, hasLength(7));
+    expect(view.compactWindow[5], isTrue);
+    expect(view.compactWindow.last, isTrue);
+  });
+
+  test('at-least-count requires the configured number of daily children', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.atLeastCount(
+        criterionId: 'two-of-three',
+        successes: 2,
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'a',
+            habitId: 'a',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 1,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'b',
+            habitId: 'b',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 1,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'c',
+            habitId: 'c',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 1,
+          ),
+        ],
+      ),
+      signals: GoalSignalWindow(
+        habitSuccessesByDay: {
+          'a': {day(1): 1, day(0): 1},
+          'b': {day(0): 1},
+        },
+      ),
+      reference: today,
+    );
+
+    expect(view.compactWindow[5], isFalse);
+    expect(view.compactWindow.last, isTrue);
   });
 
   test('provider reads the active spec, resolves habit names and preserves the '

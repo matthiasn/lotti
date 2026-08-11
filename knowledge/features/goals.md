@@ -163,16 +163,22 @@ flowchart TD
   digests. Automatic transition ads keep their period/baseline identity;
   chat-created replacements add the durable source message id so a retired
   transition ad cannot silently collide with the requested replacement.
-  An explicit chat request for a new banner is recognized from the durable user
-  message before inference, replaces any active banner, and overrides the
-  automatic dismissal cooldown. If the primary model replies with a cooldown
-  refusal and omits the tool, the workflow forces `create_goal_ad` and withholds
-  the now-contradictory refusal. A temporary-hide request
+  An explicit chat request for a new banner is recognized from actual
+  replacement language in the durable user message before inference and
+  overrides the automatic dismissal cooldown. Courtesy or explanation prompts
+  do not trigger that exception. The current active banner retires only after a
+  sanitized, non-duplicate create or valid retired-ad rerun has been identified,
+  so a replayed/invalid candidate cannot leave the goal bannerless. If the
+  primary model replies with a cooldown refusal and omits the tool, the workflow
+  forces `create_goal_ad` and withholds the now-contradictory refusal. A
+  temporary-hide request
   instead calls `snooze_goal_ad` with any future instant: the same active nudge
   keeps its activation and rating history, stores `snoozedUntil` in provenance,
   disappears from every banner surface, and returns when the active-banner
-  provider's deadline timer invalidates the projection. A re-run clears stale
-  snooze provenance.
+  provider's deadline timer invalidates the projection. Snooze extends the
+  activation's `staleAt` past that reveal instant so the hidden interval cannot
+  consume its remaining visible lifetime. A re-run clears stale snooze
+  provenance.
   The three-day worsening requirement remains the automatic `atRisk` gate;
   an interactive `atRisk` wake that emits a structured create/rerun action
   honors the user's request while still enforcing duplicate-copy and stale-spec
@@ -273,7 +279,10 @@ flowchart TD
   adds a seven-cell compact strip to the list. The detail page expands the
   same source into a rolling habit grid or a metric series using the metric
   criterion's actual day/rolling/week/month range; periods longer than seven
-  days scroll horizontally instead of being relabelled as a trailing week.
+  days scroll horizontally instead of being relabelled as a trailing week. The
+  compact strip evaluates `allOf`, `anyOf`, and `atLeastCount` as authored and
+  respects `atLeast` versus `atMost` metric direction; missing metric samples
+  never count as successful days.
   The provider invalidates itself at the next local midnight so Today,
   ages-out and window boundaries cannot remain stuck on yesterday. The detail
   view also carries the reliability tail and explicit Watching section. Every
@@ -318,13 +327,16 @@ flowchart TD
   unrelated requests receive a short purpose reminder and a redirect to the
   goal; the agent does not attempt the off-topic answer.
 - **Standing reports and governance remain visible.** The detail page always
-  renders the current report card; active banner interactions appear after it
-  rather than replacing it. Its top-level pills query the AI-consumption ledger
+  renders the report referenced by the authoritative current-scope report head;
+  a delayed historical row cannot displace it merely by carrying a later local
+  timestamp. Active banner interactions appear after the report rather than
+  replacing it. Its top-level pills query the AI-consumption ledger
   by `agentId` over the full recorded lifetime. The shared consumption pill is
   the same component used by Task Details: provider-reported Melious credits,
   energy and carbon when available, otherwise tokens, with water and the full
-  breakdown in the tooltip. A second pill sums recorded invocation duration as
-  lifetime compute time. No model price table or invented monetary estimate is
+  breakdown and localized compute duration in the tooltip. A second pill sums
+  recorded invocation duration as lifetime compute time, including a localized
+  sub-minute threshold. No model price table or invented monetary estimate is
   involved.
 - **Agent Internals attributes only actual inference.** Conversation wake rows
   resolve their model from persisted token usage first, then the wake-run

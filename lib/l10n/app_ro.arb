@@ -638,6 +638,8 @@
   "aiConsumptionAttributionReference": "Atribuire {id}",
   "aiConsumptionCallsLine": "Apeluri AI: {count} · impact măsurat pentru {measured}",
   "aiConsumptionCostLine": "Cost: {cost}",
+  "aiConsumptionDurationLessThanMinute": "Sub 1 min",
+  "aiConsumptionDurationLine": "Timp de calcul: {duration}",
   "aiConsumptionImpactLine": "Impact: {energy} · {carbon} CO₂e · {water} apă",
   "aiConsumptionLedgerCap": "Se afișează cele mai noi {limit} apeluri din această perioadă",
   "aiConsumptionLedgerTitle": "Apeluri recente",

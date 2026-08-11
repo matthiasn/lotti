@@ -22,6 +22,7 @@ void main() {
       energyKwh: 0.012,
       carbonGCo2: 3.4,
       waterLiters: 0.012,
+      durationMs: 3660000,
     );
 
     await tester.pumpWidget(
@@ -42,9 +43,34 @@ void main() {
       tooltip.message,
       'AI calls: 3 · impact measured for 2\n'
       'Tokens: ${formatTokenCount(1200)} in · ${formatTokenCount(800)} out\n'
+      'Compute time: 1h 1m\n'
       'Impact: ${formatEnergyKwh(0.012)} · ${formatCarbonGrams(3.4)} CO₂e · '
       '${formatWaterLiters(0.012)} water\n'
       'Cost: ${formatCredits(0.42)}',
+    );
+  });
+
+  testWidgets('localizes a non-zero sub-minute compute duration', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: ConsumptionSummaryPill(
+            totals: makeConsumptionTotals(
+              callCount: 1,
+              durationMs: 1200,
+            ),
+            foregroundColor: foreground,
+          ),
+        ),
+        locale: const Locale('de'),
+      ),
+    );
+
+    expect(
+      tester.widget<Tooltip>(find.byType(Tooltip)).message,
+      contains('Rechenzeit: Unter 1 Min.'),
     );
   });
 

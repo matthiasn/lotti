@@ -236,6 +236,24 @@ void main() {
 
   setUpAll(registerAllFallbackValues);
 
+  test(
+    'banner replacement intent excludes courtesy and explanation prompts',
+    () {
+      expect(
+        isExplicitGoalAdReplacementRequest('Please explain this banner.'),
+        isFalse,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest('Please show me another banner ad.'),
+        isTrue,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest('I want to snooze this banner.'),
+        isFalse,
+      );
+    },
+  );
+
   setUp(() {
     repository = MockAgentRepository();
     syncService = MockAgentSyncService();
@@ -972,6 +990,11 @@ void main() {
       '2099-08-12T08:30:00.000Z',
     );
     expect(snoozed.provenance['snoozeReason'], 'user asked for later');
+    expect(
+      snoozed.staleAt,
+      DateTime.utc(2099, 8, 12, 8, 30).add(goalAdLifetime),
+      reason: 'the banner must remain live after its snooze expires',
+    );
 
     final changeSet = upserts.whereType<ChangeSetEntity>().single;
     expect(changeSet.status, ChangeSetStatus.pending);
@@ -2095,17 +2118,18 @@ void main() {
     );
     upserts.clear();
 
+    const ratedBrief = GoalNudgeBrief(
+      headline: 'Already rated.',
+      tone: GoalNudgeTone.nudge,
+      animation: GoalBannerAnimation.steady,
+    );
     final ratedActive =
         AgentDomainEntity.goalNudge(
               id: 'ad-rated-active',
               agentId: agentId,
               status: GoalNudgeStatus.active,
-              brief: const GoalNudgeBrief(
-                headline: 'Already rated.',
-                tone: GoalNudgeTone.nudge,
-                animation: GoalBannerAnimation.steady,
-              ),
-              briefDigest: 'rated-digest',
+              brief: ratedBrief,
+              briefDigest: goalBriefDigest(ratedBrief),
               createdAt: now.subtract(const Duration(hours: 3)),
               updatedAt: now.subtract(const Duration(hours: 1)),
               vectorClock: null,
@@ -2157,6 +2181,35 @@ void main() {
     );
     expect(replacement.status, GoalNudgeStatus.active);
     expect(replacement.brief.headline, 'The replacement after rating.');
+
+    upserts.clear();
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [ratedActive]);
+    final duplicateStrategy = await creating('Already rated.');
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-chat-3',
+        threadId: 'thread-chat-3',
+        strategy: duplicateStrategy,
+        derivation: derivation,
+        now: now,
+        replyToUser: true,
+        userRequestedAd: true,
+        adCreationDiscriminator: 'chat:message-3',
+      ),
+    );
+
+    expect(
+      upserts.whereType<GoalNudgeEntity>(),
+      isEmpty,
+      reason: 'a duplicate candidate must not retire the active banner',
+    );
   });
 
   test('persistOutputs: a fresh active row scopes to its own spec version — '

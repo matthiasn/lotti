@@ -181,13 +181,19 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     final callback = widget.onOutcomeSelected;
     if (callback == null || _savingDay != null) return;
     setState(() => _savingDay = day);
-    final saved = await callback(
-      habitId: widget.habit.habitId,
-      day: day,
-      outcome: outcome,
-    );
+    var saved = false;
+    try {
+      saved = await callback(
+        habitId: widget.habit.habitId,
+        day: day,
+        outcome: outcome,
+      );
+    } on Object {
+      saved = false;
+    } finally {
+      if (mounted) setState(() => _savingDay = null);
+    }
     if (!mounted) return;
-    setState(() => _savingDay = null);
     if (!saved) {
       ScaffoldMessenger.maybeOf(context)
         ?..hideCurrentSnackBar()
@@ -542,13 +548,16 @@ class _MetricProgressSeries extends StatelessWidget {
   Widget _bar(BuildContext context, GoalProgressDay day, num maxValue) {
     final tokens = context.designTokens;
     return FractionallySizedBox(
+      key: ValueKey(
+        'goal-metric-bar-${day.day.toIso8601String().substring(0, 10)}',
+      ),
       heightFactor: maxValue == 0
           ? 0.0
           : (day.value / maxValue).clamp(0, 1).toDouble(),
       alignment: Alignment.bottomCenter,
       child: DecoratedBox(
         decoration: BoxDecoration(
-          color: day.value >= metric.target
+          color: metric.meetsTarget(day)
               ? tokens.colors.alert.info.defaultColor
               : tokens.colors.background.level03,
           borderRadius: BorderRadius.vertical(

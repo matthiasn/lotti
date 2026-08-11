@@ -140,7 +140,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
     final reportRefresh = goalReportRefreshRequested(triggerTokens);
-    final userRequestedAd = _explicitNewAdRequest(pendingUserMessage);
+    final userRequestedAd = isExplicitGoalAdReplacementRequest(
+      pendingUserMessage,
+    );
 
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
     if (head is! GoalSpecHeadEntity) {
@@ -585,26 +587,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
           _factsRenderer.trendWorsening(facts.evaluation.attainment, [
             for (final row in priors) row.attainment,
           ]));
-
-  /// Conservative intent gate for a user-initiated replacement banner.
-  ///
-  /// This is deliberately deterministic: the cooldown override cannot depend
-  /// on the model first agreeing to call `create_goal_ad`, because refusal is
-  /// the exact failure the override must prevent. Snooze/dismiss requests are
-  /// excluded even when they contain words such as "want" or "make".
-  bool _explicitNewAdRequest(String? message) {
-    if (message == null) return false;
-    final normalized = message.toLowerCase();
-    final mentionsAd = RegExp(r'\b(?:banner|ad|advert)\b').hasMatch(normalized);
-    if (!mentionsAd) return false;
-    final isVisibilityRequest = RegExp(
-      r'\b(?:snooze|hide|dismiss|remove|stop|pause)\b',
-    ).hasMatch(normalized);
-    if (isVisibilityRequest) return false;
-    return RegExp(
-      r'\b(?:new|another|replacement|replace|create|make|give|serve|show|want|need|please|pls|plz)\b',
-    ).hasMatch(normalized);
-  }
 
   bool _isCooldownRefusal(String? message) {
     if (message == null) return false;
@@ -1055,6 +1037,16 @@ class GoalAgentWorkflow with AgentErrorLogging {
         await _syncService.upsertEntity(
           nudge.copyWith(
             updatedAt: now,
+            // Snoozing pauses the useful lifetime of this activation. Extend
+            // staleness beyond the reveal instant so a long snooze cannot
+            // expire invisibly and therefore never reappear.
+            staleAt:
+                nudge.staleAt == null ||
+                    nudge.staleAt!.isBefore(
+                      action.until.toUtc().add(goalAdLifetime),
+                    )
+                ? action.until.toUtc().add(goalAdLifetime)
+                : nudge.staleAt,
             provenance: {
               ...nudge.provenance,
               goalBannerSnoozedUntilKey: action.until.toIso8601String(),
@@ -1256,6 +1248,29 @@ class GoalAgentWorkflow with AgentErrorLogging {
         now,
       );
       final cooldownBlocksAds = cooldownActive && !interactiveAdRequested;
+      // Validate replacement material before retiring the currently visible
+      // banner. A duplicate/replayed create request is not a replacement and
+      // must leave the active activation intact.
+      final seenDigests = {
+        for (final nudge in nudges) nudge.briefDigest,
+      };
+      final creationId =
+          'goal_nudge:$agentId:${derivation.periodKey}:'
+          '${adCreationDiscriminator ?? escalationBaseline ?? derivation.facts.previousStatus?.name ?? 'first'}:'
+          '${derivation.version.id}';
+      final hasViableCreatedReplacement =
+          !allRows.any((nudge) => nudge.id == creationId) &&
+          strategy.createdAds.any(
+            (request) => !seenDigests.contains(
+              goalBriefDigest(_sanitizeBrief(request.brief)),
+            ),
+          );
+      final hasViableRerunReplacement = strategy.rerunRequests.any(
+        (action) => byId[action.adId]?.status == GoalNudgeStatus.retired,
+      );
+      final hasViableInteractiveReplacement =
+          interactiveAdRequested &&
+          (hasViableCreatedReplacement || hasViableRerunReplacement);
       // Automatic ads remain limited to offTrack or worsening atRisk (P4/P5).
       // A structured ad action on an interactive atRisk wake is the explicit
       // user-requested exception computed above.
@@ -1267,7 +1282,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
         for (final action in strategy.retireRequests) action.adId,
       };
       final replacedRetiredNow = <String>{};
-      if (interactiveAdRequested && !staleSpecWake && adsEligible) {
+      if (hasViableInteractiveReplacement && !staleSpecWake && adsEligible) {
         for (final nudge in nudges) {
           if (nudge.status != GoalNudgeStatus.active ||
               explicitlyRetiredNow.contains(nudge.id)) {
@@ -1338,9 +1353,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
       // Near-duplicate guard: the digest exists to stop the same copy
       // accumulating rows — across the library and within one response.
-      final seenDigests = {
-        for (final nudge in nudges) nudge.briefDigest,
-      };
       // Automatic creation ids derive from the LOGICAL escalation — its
       // period plus the ARMING baseline carried on the wake's trigger tokens —
       // never from locally observed row counts (which differ across
@@ -1355,10 +1367,6 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // same-day recurrence differs by baseline, and a same-day REVISION
       // producing the same baseline differs by spec — so the skip below
       // can never starve the revised goal of its required banner.
-      final creationId =
-          'goal_nudge:$agentId:${derivation.periodKey}:'
-          '${adCreationDiscriminator ?? escalationBaseline ?? derivation.facts.previousStatus?.name ?? 'first'}:'
-          '${derivation.version.id}';
       for (final request in strategy.createdAds) {
         if (staleSpecWake) {
           logError(
@@ -1523,6 +1531,30 @@ class GoalAgentWorkflow with AgentErrorLogging {
     }
     return attributionFinalized;
   }
+}
+
+/// Conservative deterministic gate for a user-initiated replacement banner.
+///
+/// Cooldown overrides cannot depend on the model first agreeing to call the ad
+/// tool. Courtesy words and questions about an existing banner are not enough:
+/// the message must carry actual replacement intent, and visibility requests
+/// such as snooze or dismiss always win.
+bool isExplicitGoalAdReplacementRequest(String? message) {
+  if (message == null) return false;
+  final normalized = message.toLowerCase();
+  final mentionsAd = RegExp(r'\b(?:banner|ad|advert)\b').hasMatch(normalized);
+  if (!mentionsAd) return false;
+  final isVisibilityRequest = RegExp(
+    r'\b(?:snooze|hide|dismiss|remove|stop|pause)\b',
+  ).hasMatch(normalized);
+  if (isVisibilityRequest) return false;
+  final directReplacementVerb = RegExp(
+    r'\b(?:new|another|replacement|replace|create|make|give|serve)\b',
+  ).hasMatch(normalized);
+  final qualifiedRequest = RegExp(
+    r'\b(?:show|want|need)\b.*\b(?:new|another|replacement)\b',
+  ).hasMatch(normalized);
+  return directReplacementVerb || qualifiedRequest;
 }
 
 /// The report sanitizer applied to every copy field a banner renders.

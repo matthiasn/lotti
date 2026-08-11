@@ -223,7 +223,7 @@ class _GoalBannerAnimatedTextState extends State<GoalBannerAnimatedText>
     );
   }
 
-  /// Scrolls only when the text overflows its line; otherwise steady.
+  /// Scrolls overflow distance, or a small minimum distance for concise copy.
   Widget _marquee() {
     return LayoutBuilder(
       builder: (context, constraints) {

@@ -3,6 +3,7 @@ import 'package:lotti/features/ai_consumption/logic/consumption_formatting.dart'
 import 'package:lotti/features/ai_consumption/model/consumption_aggregation_models.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// The canonical lifetime consumption pill shared by task and agent surfaces.
@@ -72,6 +73,9 @@ String consumptionSummaryTooltip(
       formatTokenCount(totals.inputTokens),
       formatTokenCount(totals.outputTokens),
     ),
+    messages.aiConsumptionDurationLine(
+      formatConsumptionDuration(context, totals.durationMs),
+    ),
     if (totals.impactCallCount > 0) ...[
       messages.aiConsumptionImpactLine(
         formatEnergyKwh(totals.energyKwh),
@@ -82,4 +86,12 @@ String consumptionSummaryTooltip(
     ],
   ];
   return lines.join('\n');
+}
+
+/// Locale-aware compact duration shared by consumption governance surfaces.
+String formatConsumptionDuration(BuildContext context, int durationMs) {
+  if (durationMs > 0 && durationMs < Duration.millisecondsPerMinute) {
+    return context.messages.aiConsumptionDurationLessThanMinute;
+  }
+  return formatDurationSummary(durationMs ~/ Duration.millisecondsPerSecond);
 }

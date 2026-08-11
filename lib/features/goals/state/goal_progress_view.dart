@@ -5,6 +5,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -44,12 +45,17 @@ class GoalMetricProgressView {
     required this.target,
     required this.days,
     this.window = const GoalWindow.rollingDays(count: 7),
+    this.direction = GoalDirection.atLeast,
   });
 
   final String name;
   final num target;
   final List<GoalProgressDay> days;
   final GoalWindow window;
+  final GoalDirection direction;
+
+  bool meetsTarget(GoalProgressDay day) =>
+      day.isObserved && _meetsTarget(day.value, target, direction);
 }
 
 class GoalProgressDay {
@@ -57,11 +63,13 @@ class GoalProgressDay {
     required this.day,
     required this.value,
     this.habitCompletionType,
+    this.isObserved = true,
   });
 
   final DateTime day;
   final num value;
   final HabitCompletionType? habitCompletionType;
+  final bool isObserved;
 
   bool get hasValue => value > 0;
 }
@@ -71,16 +79,19 @@ class GoalProgressView {
     required this.today,
     this.habits = const [],
     this.metric,
+    this.compositeCompactWindow,
   });
 
   final DateTime today;
   final List<GoalHabitProgressView> habits;
   final GoalMetricProgressView? metric;
+  final List<bool>? compositeCompactWindow;
 
-  /// The compact list-row picture. A composite routine is healthy on a day
-  /// only when every watched habit succeeded; a single habit uses its own
-  /// series. Metric goals report whether that day's value cleared the target.
+  /// The compact list-row picture. Composite routines preserve their `all`,
+  /// `any`, or `at least N` semantics; a single habit uses its own series.
+  /// Metric goals respect their at-least/at-most direction.
   List<bool> get compactWindow {
+    if (compositeCompactWindow case final compact?) return compact;
     final activeDays = [
       for (var offset = 6; offset >= 0; offset--)
         GoalWindow.dayUtc(today.subtract(Duration(days: offset))),
@@ -104,10 +115,51 @@ class GoalProgressView {
         ? periodDays
         : periodDays.sublist(periodDays.length - 7);
     return [
-      for (final day in compactDays) day.value >= series.target,
+      for (final day in compactDays) series.meetsTarget(day),
     ];
   }
 }
+
+bool _meetsTarget(num value, num target, GoalDirection direction) =>
+    switch (direction) {
+      GoalDirection.atLeast => value >= target,
+      GoalDirection.atMost => value <= target,
+    };
+
+bool _criterionMetOnDay(
+  GoalCriterion criterion,
+  GoalSignalWindow signals,
+  DateTime day,
+) => switch (criterion) {
+  GoalCriterionHabit(:final habitId) =>
+    (signals.habitSuccessesByDay[habitId]?[day] ?? 0) > 0,
+  GoalCriterionMetric(:final dataType, :final target, :final direction) =>
+    signals.quantitativeDailySums[dataType]?.containsKey(day) == true &&
+        _meetsTarget(
+          signals.quantitativeDailySums[dataType]![day]!,
+          target,
+          direction,
+        ),
+  GoalCriterionMeasurable(:final dataTypeId, :final target, :final direction) =>
+    signals.measurableDailySums[dataTypeId]?.containsKey(day) == true &&
+        _meetsTarget(
+          signals.measurableDailySums[dataTypeId]![day]!,
+          target,
+          direction,
+        ),
+  GoalCriterionAllOf(criteria: final children) => children.every(
+    (child) => _criterionMetOnDay(child, signals, day),
+  ),
+  GoalCriterionAnyOf(criteria: final children) => children.any(
+    (child) => _criterionMetOnDay(child, signals, day),
+  ),
+  GoalCriterionAtLeastCount(
+    criteria: final children,
+    successes: final requiredSuccesses,
+  ) =>
+    children.where((child) => _criterionMetOnDay(child, signals, day)).length >=
+        requiredSuccesses,
+};
 
 /// Builds the presentation projection from the same daily aggregates the
 /// deterministic evaluator uses. This keeps the grid and the runtime verdict
@@ -173,9 +225,23 @@ GoalProgressView buildGoalProgressView({
 
   final metric = metricLeaf;
   final metricRange = metric?.window.periodRange(reference);
+  final compositeCompactWindow = switch (criteria) {
+    GoalCriterionAllOf() ||
+    GoalCriterionAnyOf() ||
+    GoalCriterionAtLeastCount() => [
+      for (var offset = 6; offset >= 0; offset--)
+        _criterionMetOnDay(
+          criteria,
+          signals,
+          GoalWindow.dayUtc(today.subtract(Duration(days: offset))),
+        ),
+    ],
+    _ => null,
+  };
   return GoalProgressView(
     today: today,
     habits: habits,
+    compositeCompactWindow: compositeCompactWindow,
     metric: metric == null
         ? null
         : GoalMetricProgressView(
@@ -184,6 +250,7 @@ GoalProgressView buildGoalProgressView({
                 : metric.dataType,
             target: metric.target,
             window: metric.window,
+            direction: metric.direction,
             days: [
               for (
                 var day = metricRange!.start;
@@ -194,6 +261,10 @@ GoalProgressView buildGoalProgressView({
                   day: day,
                   value:
                       signals.quantitativeDailySums[metric.dataType]?[day] ?? 0,
+                  isObserved:
+                      signals.quantitativeDailySums[metric.dataType]
+                          ?.containsKey(day) ??
+                      false,
                 ),
             ],
           ),

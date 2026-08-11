@@ -43,6 +43,27 @@ void main() {
     );
   });
 
+  testWidgets('uses the localized sub-minute duration in the lifetime pill', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const Scaffold(body: GoalAgentLifetimePills(agentId: 'goal-1')),
+        locale: const Locale('de'),
+        overrides: [
+          agentConsumptionTotalsProvider.overrideWith(
+            (ref, agentId) => Stream.value(
+              makeConsumptionTotals(callCount: 1, durationMs: 1200),
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pump();
+
+    expect(find.text('Unter 1 Min. KI-Zeit'), findsOneWidget);
+  });
+
   testWidgets('hides governance pills when the agent has no calls', (
     tester,
   ) async {

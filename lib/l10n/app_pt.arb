@@ -735,6 +735,15 @@
       }
     }
   },
+  "aiConsumptionDurationLessThanMinute": "Menos de 1 min",
+  "aiConsumptionDurationLine": "Tempo de processamento: {duration}",
+  "@aiConsumptionDurationLine": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
   "aiConsumptionImpactLine": "Impacto: {energy} · {carbon} CO₂e · {water} água",
   "@aiConsumptionImpactLine": {
     "placeholders": {

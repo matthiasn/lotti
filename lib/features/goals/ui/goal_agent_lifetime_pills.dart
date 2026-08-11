@@ -5,7 +5,6 @@ import 'package:lotti/features/ai_consumption/state/consumption_providers.dart';
 import 'package:lotti/features/ai_consumption/ui/widgets/consumption_summary_pill.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
-import 'package:lotti/features/insights/ui/widgets/insights_format.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
 /// Top-level lifetime governance for one goal agent.
@@ -27,9 +26,7 @@ class GoalAgentLifetimePills extends ConsumerWidget {
     }
     final tokens = context.designTokens;
     final foreground = tokens.colors.text.mediumEmphasis;
-    final duration = _formatComputeDuration(
-      Duration(milliseconds: totals.durationMs),
-    );
+    final duration = formatConsumptionDuration(context, totals.durationMs);
 
     return Padding(
       padding: EdgeInsets.only(top: tokens.spacing.step3),
@@ -62,9 +59,4 @@ class GoalAgentLifetimePills extends ConsumerWidget {
       ),
     );
   }
-}
-
-String _formatComputeDuration(Duration duration) {
-  if (duration > Duration.zero && duration.inMinutes == 0) return '<1m';
-  return formatDurationSummary(duration.inSeconds);
 }
