@@ -2860,6 +2860,7 @@
   "goalProgressAgesOut": "esce stasera",
   "goalProgressAtRate": "al ritmo",
   "goalProgressCaption": "ultimi 7 giorni · scorre a mezzanotte",
+  "goalProgressCompactCaption": "scorre a mezzanotte",
   "goalProgressCompactSemantics": "{count, plural, =0{Nessun giorno riuscito nella finestra di sette giorni} =1{1 giorno riuscito nella finestra di sette giorni} other{{count} giorni riusciti nella finestra di sette giorni}}",
   "goalProgressDaysToHealthy": "{count, plural, =1{1 giorno per essere in forma} other{{count} giorni per essere in forma}}",
   "goalProgressDone": "fatto",

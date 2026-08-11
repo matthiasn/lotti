@@ -6316,6 +6316,9 @@ class AppLocalizationsFr extends AppLocalizations {
   String get goalProgressCaption => '7 derniers jours · glisse à minuit';
 
   @override
+  String get goalProgressCompactCaption => 'glisse à minuit';
+
+  @override
   String goalProgressCompactSemantics(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

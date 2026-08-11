@@ -10636,6 +10636,12 @@ abstract class AppLocalizations {
   /// **'trailing 7 days · slides at midnight'**
   String get goalProgressCaption;
 
+  /// No description provided for @goalProgressCompactCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'slides at midnight'**
+  String get goalProgressCompactCaption;
+
   /// Screen-reader summary of the compact seven-day progress strip.
   ///
   /// In en, this message translates to:

@@ -118,45 +118,75 @@ class GoalProgressCard extends StatelessWidget {
               firstHabit.days.length <= 7 &&
               constraints.maxWidth >=
                   _habitGridWideMinimum(context, firstHabit.days);
+          final compactHabitLayout =
+              usesRollingWeek && firstHabit != null && !showWeekdayHeader;
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Wrap(
-                spacing: tokens.spacing.step3,
-                runSpacing: tokens.spacing.step1,
-                crossAxisAlignment: WrapCrossAlignment.center,
-                children: [
-                  if (usesRollingWeek) ...[
-                    Text(
-                      context.messages.goalProgressTitle,
-                      style: tokens.typography.styles.subtitle.subtitle1
-                          .copyWith(
-                            color: tokens.colors.text.highEmphasis,
-                          ),
-                    ),
-                    Text(
-                      context.messages.goalProgressCaption,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
+              if (compactHabitLayout)
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(
+                        context.messages.goalProgressTitle,
+                        style: tokens.typography.styles.subtitle.subtitle2
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                            ),
                       ),
                     ),
-                  ] else if (progress.metric case final metric?)
-                    Text(
-                      _metricPeriodLabel(context, metric),
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
-                      ),
-                    )
-                  else if (habitWindow != null && progress.habits.isNotEmpty)
-                    Text(
-                      _periodLabel(context, progress.habits.first.days),
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
+                    SizedBox(width: tokens.spacing.step3),
+                    Expanded(
+                      child: Text(
+                        context.messages.goalProgressCompactCaption,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
                       ),
                     ),
-                ],
+                  ],
+                )
+              else
+                Wrap(
+                  spacing: tokens.spacing.step3,
+                  runSpacing: tokens.spacing.step1,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  children: [
+                    if (usesRollingWeek) ...[
+                      Text(
+                        context.messages.goalProgressTitle,
+                        style: tokens.typography.styles.subtitle.subtitle1
+                            .copyWith(
+                              color: tokens.colors.text.highEmphasis,
+                            ),
+                      ),
+                      Text(
+                        context.messages.goalProgressCaption,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
+                      ),
+                    ] else if (progress.metric case final metric?)
+                      Text(
+                        _metricPeriodLabel(context, metric),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
+                      )
+                    else if (habitWindow != null && progress.habits.isNotEmpty)
+                      Text(
+                        _periodLabel(context, progress.habits.first.days),
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
+                      ),
+                  ],
+                ),
+              SizedBox(
+                height: compactHabitLayout
+                    ? tokens.spacing.step2
+                    : tokens.spacing.step3,
               ),
-              SizedBox(height: tokens.spacing.step3),
               if (showWeekdayHeader) ...[
                 _HabitWeekdayHeader(habit: progress.habits.first),
                 SizedBox(height: tokens.spacing.step2),
@@ -168,7 +198,11 @@ class GoalProgressCard extends StatelessWidget {
                   index++
                 ) ...[
                   if (index > 0 && !showWeekdayHeader)
-                    SizedBox(height: tokens.spacing.step3),
+                    SizedBox(
+                      height: compactHabitLayout
+                          ? tokens.spacing.step2
+                          : tokens.spacing.step3,
+                    ),
                   _HabitProgressRow(
                     habit: progress.habits[index],
                     today: progress.today,
@@ -181,7 +215,11 @@ class GoalProgressCard extends StatelessWidget {
                 _MetricProgressSeries(metric: progress.metrics[index]),
               ],
               if (progress.habits.isNotEmpty) ...[
-                SizedBox(height: tokens.spacing.step4),
+                SizedBox(
+                  height: compactHabitLayout
+                      ? tokens.spacing.step3
+                      : tokens.spacing.step4,
+                ),
                 const _ProgressLegend(),
               ],
             ],
@@ -500,18 +538,25 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           children: [
             Row(
               children: [
-                Expanded(
-                  child: Text(
+                if (cadenceFitsInline) ...[
+                  Text(
                     habit.name,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: nameStyle,
                   ),
-                ),
-                if (cadenceFitsInline) ...[
                   SizedBox(width: tokens.spacing.step2),
                   Text(cadence, maxLines: 1, style: cadenceStyle),
-                ],
+                  const Spacer(),
+                ] else
+                  Expanded(
+                    child: Text(
+                      habit.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: nameStyle,
+                    ),
+                  ),
                 SizedBox(width: tokens.spacing.step3),
                 Text(
                   note,
@@ -523,7 +568,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
               SizedBox(height: tokens.spacing.step1),
               Text(cadence, style: cadenceStyle),
             ],
-            SizedBox(height: tokens.spacing.step2),
+            SizedBox(height: tokens.spacing.step1),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               child: cells(alignWithWeekdays: false),

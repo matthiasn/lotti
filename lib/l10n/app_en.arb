@@ -3487,6 +3487,7 @@
   "goalProgressAgesOut": "ages out tonight",
   "goalProgressAtRate": "at rate",
   "goalProgressCaption": "trailing 7 days · slides at midnight",
+  "goalProgressCompactCaption": "slides at midnight",
   "goalProgressCompactSemantics": "{count, plural, =0{No successful days in the trailing seven-day window} =1{1 successful day in the trailing seven-day window} other{{count} successful days in the trailing seven-day window}}",
   "@goalProgressCompactSemantics": {
     "description": "Screen-reader summary of the compact seven-day progress strip.",

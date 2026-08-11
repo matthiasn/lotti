@@ -6241,6 +6241,9 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalProgressCaption => 'laatste 7 dagen · schuift om middernacht';
 
   @override
+  String get goalProgressCompactCaption => 'schuift om middernacht';
+
+  @override
   String goalProgressCompactSemantics(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

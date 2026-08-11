@@ -6324,6 +6324,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'ultimele 7 zile · glisează la miezul nopții';
 
   @override
+  String get goalProgressCompactCaption => 'glisează la miezul nopții';
+
+  @override
   String goalProgressCompactSemantics(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

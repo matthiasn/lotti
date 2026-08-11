@@ -2603,6 +2603,7 @@
   "goalProgressAgesOut": "iese în această seară",
   "goalProgressAtRate": "în ritm",
   "goalProgressCaption": "ultimele 7 zile · glisează la miezul nopții",
+  "goalProgressCompactCaption": "glisează la miezul nopții",
   "goalProgressCompactSemantics": "{count, plural, =0{Nicio zi reușită în intervalul de șapte zile} =1{1 zi reușită în intervalul de șapte zile} few{{count} zile reușite în intervalul de șapte zile} other{{count} de zile reușite în intervalul de șapte zile}}",
   "goalProgressDaysToHealthy": "{count, plural, =1{1 zi până la sănătos} few{{count} zile până la sănătos} other{{count} de zile până la sănătos}}",
   "goalProgressDone": "realizat",

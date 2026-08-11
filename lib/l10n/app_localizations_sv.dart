@@ -6225,6 +6225,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalProgressCaption => 'senaste 7 dagarna · flyttas vid midnatt';
 
   @override
+  String get goalProgressCompactCaption => 'flyttas vid midnatt';
+
+  @override
   String goalProgressCompactSemantics(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

@@ -2859,6 +2859,7 @@
   "goalProgressAgesOut": "sai esta noite",
   "goalProgressAtRate": "no ritmo",
   "goalProgressCaption": "últimos 7 dias · avança à meia-noite",
+  "goalProgressCompactCaption": "avança à meia-noite",
   "goalProgressCompactSemantics": "{count, plural, =0{Nenhum dia concluído na janela de sete dias} =1{1 dia concluído na janela de sete dias} other{{count} dias concluídos na janela de sete dias}}",
   "goalProgressDaysToHealthy": "{count, plural, =1{1 dia para saudável} other{{count} dias para saudável}}",
   "goalProgressDone": "feito",

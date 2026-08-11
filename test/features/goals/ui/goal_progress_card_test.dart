@@ -680,6 +680,63 @@ void main() {
     },
   );
 
+  testWidgets('phone handoff keeps compact habit metadata and cells tight', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 358,
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                habits: [
+                  GoalHabitProgressView(
+                    habitId: 'gym',
+                    name: 'Gym',
+                    targetCount: 4,
+                    days: [
+                      for (var offset = 6; offset >= 0; offset--)
+                        day(offset, offset < 4 ? 1 : 0),
+                    ],
+                    successfulWeeks: 2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final context = tester.element(find.byType(GoalProgressCard));
+    final spacing = context.designTokens.spacing;
+    final title = find.text('This rolling week');
+    final caption = find.text('slides at midnight');
+    final name = find.text('Gym');
+    final cadence = find.text('4× per 7 days');
+    final firstCell = find.byKey(
+      const ValueKey('goal-habit-day-visual-gym-2026-08-05'),
+    );
+
+    expect(
+      tester.getCenter(title).dy,
+      closeTo(tester.getCenter(caption).dy, 0.01),
+      reason: 'the compact handoff keeps its card heading on one line',
+    );
+    expect(
+      tester.getTopLeft(cadence).dx - tester.getTopRight(name).dx,
+      closeTo(spacing.step2, 0.01),
+      reason: 'cadence belongs to the habit name, not the status column',
+    );
+    expect(
+      tester.getTopLeft(firstCell).dy - tester.getBottomLeft(name).dy,
+      closeTo(spacing.step1, 0.01),
+      reason: 'the mobile grid follows the handoff compact vertical rhythm',
+    );
+  });
+
   testWidgets('a narrow authored cadence moves intact below the habit name', (
     tester,
   ) async {
