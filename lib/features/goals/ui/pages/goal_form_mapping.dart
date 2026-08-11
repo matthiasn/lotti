@@ -85,6 +85,8 @@ class GoalFormMapping {
               :final title,
             )
             when window == const GoalWindow.rollingDays(count: 7) &&
+                targetCount >= 1 &&
+                targetCount <= 7 &&
                 !habitTargets.containsKey(habitId):
           habitTargets[habitId] = targetCount;
           habitCriterionIds[habitId] = criterionId;

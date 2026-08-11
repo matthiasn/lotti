@@ -398,15 +398,18 @@ flowchart TD
   Creation and owner editing share a three-stage intention → mapping →
   confirmation route. The mapping stage matches observable active habits and
   the supported steps metric, gives every selected habit its own one-to-seven
-  rolling-week cadence, and explicitly refuses an intention for which no
-  observable proxy exists. Confirmation names the goal and its conversational
-  persona and states the inference-cost contract. Editing opens from the goal
-  detail menu, preloads the current values, explains the next immutable version,
-  and preserves version history. A successful owner edit retracts any pending
-  agent-authored goal-revision proposal based on the old version, preventing a
-  later approval from overwriting the owner's newer intent. A supported
-  MULTI-habit routine is stored as an `allOf` composite; deletion cancels queued
-  work, aborts an in-flight local wake, and soft-retires the whole agent through
+  rolling-week cadence, waits for the active-habit snapshot before caching a
+  match, uses whole-word matching, and explicitly refuses an intention for which
+  no observable proxy exists. Existing criteria outside the form's representable
+  range stay losslessly read-only. Confirmation names the goal and its
+  conversational persona and states the inference-cost contract. Editing opens
+  only for active goal agents, preloads the current values, explains the next
+  immutable version, and preserves version history. A successful owner edit
+  retracts any pending agent-authored goal-revision proposal based on the old
+  version, preventing a later approval from overwriting the owner's newer
+  intent. A supported MULTI-habit routine is stored as an `allOf` composite;
+  deletion cancels queued work, aborts an in-flight local wake, and soft-retires
+  the whole agent through
   `GoalAgentService.deleteGoalAgent`. The shared drain lifecycle guard rejects
   any queued non-active goal wake that survives a race or arrives from sync and
   emits an aborted completion, so an interactive caller never waits forever for

@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
@@ -56,6 +58,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   var _saving = false;
   String? _derivedFrom;
   String? _derivedTitle;
+  String? _derivedHabitsFingerprint;
   late String _baseVersionId;
   String? _validation;
 
@@ -120,9 +123,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final intention = _statement.text.trim().toLowerCase();
     final normalizedLabel = label.trim().toLowerCase();
     if (normalizedLabel.isEmpty) return false;
-    if (intention.contains(normalizedLabel)) return true;
+    if (intention == normalizedLabel) return true;
     return _words(normalizedLabel).intersection(_words(intention)).isNotEmpty;
   }
+
+  String _habitsFingerprint(List<HabitDefinition> habits) =>
+      habits.map((habit) => '${habit.id}\u0000${habit.name}').join('\u0001');
 
   void _mapIntention(List<HabitDefinition> habits) {
     final statement = _statement.text.trim();
@@ -133,7 +139,14 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       return;
     }
 
-    if (!_editing && _derivedFrom != statement) {
+    final habitsAsync = ref.read(_habitDefinitionsProvider);
+    final habitsFingerprint = habitsAsync.hasError || habitsAsync.value == null
+        ? null
+        : _habitsFingerprint(habits);
+    final habitsChanged =
+        habitsFingerprint != null &&
+        habitsFingerprint != _derivedHabitsFingerprint;
+    if (!_editing && (_derivedFrom != statement || habitsChanged)) {
       final matchedHabits = [
         for (final habit in habits)
           if (_matchesIntention(habit.name)) habit,
@@ -146,7 +159,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           matchedHabits.map((habit) => MapEntry(habit.id, 3)),
         );
       _deriveTitle(habits);
-      _derivedFrom = statement;
+      if (habitsFingerprint != null) {
+        _derivedFrom = statement;
+        _derivedHabitsFingerprint = habitsFingerprint;
+      }
     }
 
     setState(() {
@@ -327,10 +343,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       final healthAsync = ref.watch(goalAgentHealthProvider(widget.agentId!));
       final identity = identityAsync.value;
       editSpec = healthAsync.value?.spec;
-      if (identity is AgentIdentityEntity && editSpec != null) {
+      final isActiveGoal =
+          identity is AgentIdentityEntity &&
+          identity.kind == AgentKinds.goalAgent &&
+          identity.lifecycle == AgentLifecycle.active;
+      if (isActiveGoal && editSpec != null) {
         _initializeEdit(identity, editSpec);
       } else if (identityAsync.hasError ||
           healthAsync.hasError ||
+          (identity != null && !isActiveGoal) ||
           (!identityAsync.isLoading && identity == null) ||
           (!healthAsync.isLoading && editSpec == null)) {
         return Scaffold(

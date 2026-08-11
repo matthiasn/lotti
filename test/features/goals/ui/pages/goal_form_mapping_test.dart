@@ -134,6 +134,27 @@ void main() {
     );
   });
 
+  test('a habit target above the form range stays losslessly read-only', () {
+    const criteria = GoalCriterion.habit(
+      criterionId: 'habit-gym',
+      habitId: 'gym',
+      title: 'Legacy strength target',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 8,
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+
+    expect(draft.isEditable, isFalse);
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Average steps per day',
+        habitTargets: const {},
+      ),
+      criteria,
+    );
+  });
+
   test(
     'an at-most steps criterion stays read-only and preserves direction',
     () {

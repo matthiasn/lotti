@@ -109,6 +109,7 @@ void main() {
     bool healthFails = false,
     bool identityMissing = false,
     bool healthMissing = false,
+    AgentLifecycle identityLifecycle = AgentLifecycle.active,
   }) => [
     goalAgentServiceProvider.overrideWithValue(agentService),
     goalSpecRevisionServiceProvider.overrideWithValue(revisionService),
@@ -123,7 +124,7 @@ void main() {
       ).overrideWith((ref) async {
         if (identityFails) throw StateError('identity unavailable');
         if (identityMissing) return null;
-        return _identity;
+        return _identity.copyWith(lifecycle: identityLifecycle);
       }),
       goalAgentHealthProvider('goal-1').overrideWith(
         (ref) async {
@@ -635,6 +636,79 @@ void main() {
     expect(title.controller.text, 'Run');
   });
 
+  testWidgets('a pending habit snapshot is rematched after it resolves', (
+    tester,
+  ) async {
+    final habits = StreamController<List<HabitDefinition>>();
+    addTearDown(habits.close);
+    when(
+      habitsRepository.watchHabitDefinitions,
+    ).thenAnswer((_) => habits.stream);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pump();
+    expect(find.byKey(const ValueKey('goal-form-habit-gym')), findsNothing);
+
+    await tester.tap(find.byType(BackButton));
+    habits.add([_habit('gym', 'Gym')]);
+    await tester.pump();
+    await tester.tap(find.text('Continue'));
+    await tester.pump();
+
+    expect(
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(const ValueKey('goal-form-habit-gym')),
+          )
+          .selected,
+      isTrue,
+    );
+  });
+
+  testWidgets('habit labels do not match inside unrelated words', (
+    tester,
+  ) async {
+    when(habitsRepository.watchHabitDefinitions).thenAnswer(
+      (_) => Stream.value([_habit('read', 'Read'), _habit('run', 'Run')]),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'I already walk daily and eat brunch mindfully',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pumpAndSettle();
+
+    for (final habitId in ['read', 'run']) {
+      expect(
+        tester
+            .widget<DesignSystemSelectionRow>(
+              find.byKey(ValueKey('goal-form-habit-$habitId')),
+            )
+            .selected,
+        isFalse,
+      );
+    }
+  });
+
   testWidgets('refuses an unobservable intention and offers real signals', (
     tester,
   ) async {
@@ -864,6 +938,30 @@ void main() {
         findsOneWidget,
       );
       expect(find.byType(CircularProgressIndicator), findsNothing);
+    });
+  }
+
+  for (final lifecycle in [AgentLifecycle.dormant, AgentLifecycle.destroyed]) {
+    testWidgets('editing blocks a ${lifecycle.name} goal', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(
+            editSpec: _spec(),
+            identityLifecycle: lifecycle,
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text("Couldn't load this goal's health right now."),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('goal-form-intention')),
+        findsNothing,
+      );
     });
   }
 
