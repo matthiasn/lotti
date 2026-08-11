@@ -30,19 +30,20 @@ and break a later test in the same file or in an optimized local suite. Almost
 every rule below exists because of that.
 
 Unsharded `very_good test` runs use the optimizer by default: it generates a
-single `.test_optimizer.dart` importing every test file into one isolate. The
-ten-way standard CI lane deliberately passes `--no-optimization`, because Very
+single `.test_optimizer.dart` importing every test file into one isolate. Very
 Good CLI does not yet support sharding independently generated optimized bundles
-across runners. Flutter therefore shards test files deterministically and gives
-each file its own isolate in that lane. This keeps test execution and merged
-coverage complete while local optimized runs continue to expose cross-file leaks.
+across runners because their filesystem ordering can differ. The ten-way
+standard CI lane therefore uses `tool/ci/generate_test_optimizer.dart` to create
+the same sorted bundle in every job before `package:test` slices that one stable
+suite into shards. Tests within a shard still share an isolate, while execution
+and merged coverage remain complete.
 
 Two consequences:
 
-- **A file-level leak remains order-sensitive.** It can break a later test in the
-  same file, and an optimized local run can expose cross-file leakage.
-- **Passing a file alone proves less than it looks.** CI adds a different shard
-  environment, while an optimized suite adds shared process state across files.
+- **A leak's victim is order-sensitive.** It can break a later test in the same
+  optimized shard or local suite.
+- **Passing a file alone proves less than it looks.** CI and optimized local runs
+  add shared process state across files.
 
 `test/flutter_test_config.dart` registers global teardown for exactly this
 reason. It resets Mocktail's matcher state and restores the process-wide test
