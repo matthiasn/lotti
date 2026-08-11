@@ -151,8 +151,13 @@ void main() {
       });
 
       test(
-        'initializes with unassigned category selected when showTasks=true and no categories exist',
+        'starts with no category filter when showTasks=true and no categories '
+        'exist',
         () {
+          // Regression: this used to pre-select the "Unassigned" sentinel
+          // (`{''}`), which a fresh install surfaced as an inexplicable active
+          // filter chip — and which kept hiding the first task once
+          // onboarding created areas and filed it under one.
           fakeAsync((async) {
             // Mock no categories
             when(
@@ -162,7 +167,7 @@ void main() {
             final state = container.read(journalPageControllerProvider(true));
 
             // Verify immediately after construction
-            expect(state.selectedCategoryIds, equals(<String>{''}));
+            expect(state.selectedCategoryIds, equals(<String>{}));
 
             async.elapse(const Duration(milliseconds: 100));
             async.flushMicrotasks();

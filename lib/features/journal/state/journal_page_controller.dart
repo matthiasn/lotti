@@ -141,15 +141,15 @@ class JournalPageController extends Notifier<JournalPageState>
       _handleNavIndex,
     );
 
-    // Initialize category selection for tasks tab
-    if (_showTasks) {
-      final allCategoryIds = entitiesCacheService.sortedCategories
-          .map((e) => e.id)
-          .toSet();
-      if (allCategoryIds.isEmpty) {
-        _selectedCategoryIds = {''};
-      }
-    }
+    // No implicit category filter. The tasks tab used to pre-select the
+    // "Unassigned" sentinel (`{''}`) when no categories existed yet — exactly
+    // the fresh-install state — which surfaced as an inexplicable active
+    // filter chip, and kept hiding the first task the moment onboarding
+    // created areas and filed it under one. A filter is only ever what the
+    // user picked. A `{''}` restored by `_loadPersistedFilters()` is
+    // deliberately honored, not migrated away: persistence only writes on
+    // explicit filter actions, and a saved Unassigned selection is
+    // indistinguishable from a deliberately chosen one.
 
     // Create pagination controller
     final controller = _createPagingController()..fetchNextPage();

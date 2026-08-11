@@ -369,6 +369,127 @@ void main() {
     expect(find.text('Gemini'), findsOneWidget);
   });
 
+  group('API-key step under the software keyboard', () {
+    // Regression: the onboarding scaffold used to set
+    // `resizeToAvoidBottomInset: false`, so the keyboard the autofocused
+    // key field summoned slid over the bottom-anchored panel and covered
+    // the very field (and Connect button) it was raised for.
+    const keyboardHeight = 336.0;
+
+    /// Drives the modal to the API-key step, then raises the keyboard.
+    ///
+    /// [mqSize] selects the scaffold's layout branch (narrow bottom sheet
+    /// below 600px, centered dialog at or above it); [surface] keeps the
+    /// render surface tall enough that the lower controls stay tappable,
+    /// mirroring [openWelcome].
+    Future<void> raiseKeyboard(
+      WidgetTester tester, {
+      Size surface = const Size(390, 1000),
+      Size mqSize = const Size(390, 844),
+    }) async {
+      tester.view
+        ..physicalSize = surface
+        ..devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final data = MediaQueryData(size: mqSize, disableAnimations: true);
+      await tester.pumpWidget(
+        makeTestableWidget(host(), mediaQueryData: data),
+      );
+      await tester.tap(find.text('open'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Choose your AI brain'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Melious.ai'));
+      await tester.pumpAndSettle();
+      expect(find.text('Paste your API key'), findsOneWidget);
+
+      // The keyboard arrives as a bottom view inset on the same MediaQuery
+      // the scaffold reads; re-pumping the identical host preserves the
+      // navigator and the open modal route.
+      await tester.pumpWidget(
+        makeTestableWidget(
+          host(),
+          mediaQueryData: data.copyWith(
+            viewInsets: const EdgeInsets.only(bottom: keyboardHeight),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+    }
+
+    // The keyboard's top edge in layout coordinates. The render surface is
+    // taller than `mq.size` here (see [openWelcome]), and layout follows the
+    // surface — so measure against the view, not the MediaQuery size.
+    double keyboardTop(WidgetTester tester) =>
+        tester.view.physicalSize.height / tester.view.devicePixelRatio -
+        keyboardHeight;
+
+    testWidgets('keeps the key field above the keyboard', (tester) async {
+      await raiseKeyboard(tester);
+
+      final field = tester.getRect(find.byType(TextField));
+      expect(
+        field.bottom,
+        lessThanOrEqualTo(keyboardTop(tester)),
+        reason:
+            'the autofocused API-key field must not sit under the software '
+            'keyboard it summoned',
+      );
+    });
+
+    testWidgets('keeps the Connect button reachable', (tester) async {
+      await raiseKeyboard(tester);
+
+      final connect = find.text('Connect');
+      expect(connect, findsOneWidget);
+      // The button may start scrolled out of the compressed viewport; it
+      // must be reachable by scroll rather than parked under the keyboard.
+      await tester.ensureVisible(connect);
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.getRect(connect).bottom,
+        lessThanOrEqualTo(keyboardTop(tester)),
+      );
+    });
+
+    testWidgets('holds on the wide layout too (centered dialog branch)', (
+      tester,
+    ) async {
+      // An iPad software keyboard hits the >=600px branch, which centers the
+      // panel instead of bottom-anchoring it; the same inset invariant must
+      // hold there.
+      await raiseKeyboard(
+        tester,
+        surface: const Size(1024, 1000),
+        mqSize: const Size(1024, 844),
+      );
+
+      final field = tester.getRect(find.byType(TextField));
+      expect(
+        field.bottom,
+        lessThanOrEqualTo(keyboardTop(tester)),
+        reason:
+            'the centered wide-layout panel must also make room for the '
+            'keyboard',
+      );
+
+      // The field alone can sit above the keyboard by centering luck; the
+      // Connect button at the panel's bottom edge is what the resize
+      // actually rescues on this branch — without it, the full-height
+      // viewport has nothing to scroll and the button stays parked under
+      // the keyboard.
+      final connect = find.text('Connect');
+      await tester.ensureVisible(connect);
+      await tester.pumpAndSettle();
+      expect(
+        tester.getRect(connect).bottom,
+        lessThanOrEqualTo(keyboardTop(tester)),
+      );
+    });
+  });
+
   testWidgets('skipping invokes onDismiss and records welcomeSkipped', (
     tester,
   ) async {

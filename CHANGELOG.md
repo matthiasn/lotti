@@ -44,6 +44,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   task titles, and sits between the title and status pills on task details, so
   the same compact context is visible without opening the full AI summary card.
 
+### Fixed
+- **The task list no longer starts with an "Unassigned" filter.** A fresh
+  install pre-selected the Unassigned category filter, which read as an
+  inexplicable active chip — and kept hiding your first task the moment
+  onboarding created areas and filed it under one. No filter is set until you
+  pick one.
+- **The onboarding API-key field stays above the keyboard.** Choosing your own
+  AI provider during onboarding summoned the keyboard over the very field it
+  was meant to fill; the panel now makes room for the keyboard like every
+  other input surface in the app.
+
 ## [1.0.5]
 ### Changed
 - **The 1-on-1 with an agent now looks like one screen rather than several.**

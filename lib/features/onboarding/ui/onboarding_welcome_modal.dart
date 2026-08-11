@@ -271,7 +271,12 @@ class _OnboardingScaffold extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      resizeToAvoidBottomInset: false,
+      // Resize for the software keyboard, like every other modal surface in
+      // the app (see `modal_utils.dart`): the API-key step autofocuses its
+      // text field, and without this the bottom-anchored panel stays put and
+      // the keyboard covers the field it just summoned. The scroll views
+      // above then let the focused field pull itself into view.
+      resizeToAvoidBottomInset: true,
       // Tapping anywhere outside the panel closes the flow, the same as tapping
       // the dim barrier — `onSkip` pops the route and the post-pop logic records
       // skip vs. connected appropriately.
