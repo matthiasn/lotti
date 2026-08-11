@@ -310,6 +310,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   }
 
   Future<void> _save() async {
+    if (_saving) return;
+
     final messages = context.messages;
     final container = ProviderScope.containerOf(context, listen: false);
     final title = _title.text.trim();
@@ -319,11 +321,18 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       setState(() => _validation = messages.goalFormValidationIdentity);
       return;
     }
+    setState(() {
+      _saving = true;
+      _validation = null;
+    });
     try {
       await _reconcilePersistedHabitTargets();
     } on Object {
       if (mounted) {
-        setState(() => _validation = messages.goalCreateFailed);
+        setState(() {
+          _saving = false;
+          _validation = messages.goalCreateFailed;
+        });
       }
       return;
     }
@@ -339,14 +348,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
             stepsTarget: stepsTarget,
           );
     if (criteria == null) {
-      setState(() => _validation = messages.goalFormValidationMapping);
+      setState(() {
+        _saving = false;
+        _validation = messages.goalFormValidationMapping;
+      });
       return;
     }
-
-    setState(() {
-      _saving = true;
-      _validation = null;
-    });
     final goalAgentService = container.read(goalAgentServiceProvider);
     try {
       final agentId = widget.agentId;
@@ -554,6 +561,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                           preservesCriteria: !_mapping.isEditable,
                           editVersion: editSpec?.version,
                           validation: _validation,
+                          enabled: !_saving,
                         ),
                       },
                     ],
@@ -953,6 +961,7 @@ class _ConfirmationStep extends StatelessWidget {
     required this.preservesCriteria,
     required this.editVersion,
     required this.validation,
+    required this.enabled,
   });
 
   final TextEditingController title;
@@ -961,6 +970,7 @@ class _ConfirmationStep extends StatelessWidget {
   final bool preservesCriteria;
   final int? editVersion;
   final String? validation;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -979,6 +989,7 @@ class _ConfirmationStep extends StatelessWidget {
           controller: persona,
           label: messages.goalFormPersonaLabel,
           leadingIcon: Icons.auto_awesome_rounded,
+          enabled: enabled,
         ),
         SizedBox(height: tokens.spacing.step4),
         DesignSystemTextInput(
@@ -987,6 +998,7 @@ class _ConfirmationStep extends StatelessWidget {
           label: messages.goalCreateNameLabel,
           leadingIcon: Icons.flag_outlined,
           errorText: validation,
+          enabled: enabled,
         ),
         SizedBox(height: tokens.spacing.step5),
         DesignSystemSectionCard(

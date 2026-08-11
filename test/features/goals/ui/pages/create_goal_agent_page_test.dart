@@ -1435,6 +1435,81 @@ void main() {
     );
   });
 
+  testWidgets('an integrity lookup makes the edit busy and deduplicates save', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const criteria = GoalCriterion.habit(
+      criterionId: 'habit-gym',
+      habitId: 'gym',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 2,
+    );
+    final current = _spec(criteria: criteria);
+    final integrityLookup = Completer<HabitDefinition?>();
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('gym'),
+    ).thenAnswer((_) => integrityLookup.future);
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: current.id,
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer(
+      (_) async => const GoalSpecRevisionRefused(
+        GoalSpecRevisionService.ownerNoChangesReason,
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+
+    final saveLabel = find.text('Save new version');
+    await tester.tap(saveLabel);
+    await tester.tap(saveLabel);
+    await tester.pump();
+
+    TextField inputInside(String key) => tester.widget<TextField>(
+      find.descendant(
+        of: find.byKey(ValueKey(key)),
+        matching: find.byType(TextField),
+      ),
+    );
+    expect(inputInside('goal-form-persona').enabled, isFalse);
+    expect(inputInside('goal-form-title').enabled, isFalse);
+    verify(() => habitsRepository.getHabitByIdForIntegrity('gym')).called(1);
+
+    integrityLookup.complete(_habit('gym', 'Gym'));
+    await tester.pump();
+    await tester.pump();
+
+    verify(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: current.id,
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).called(1);
+  });
+
   testWidgets('editing preserves an unsupported mapping while renaming', (
     tester,
   ) async {

@@ -412,6 +412,7 @@ void main() {
           expect(captured, hasLength(4));
           final retractionDecision = captured[2] as ChangeDecisionEntity;
           expect(retractionDecision.verdict, ChangeDecisionVerdict.retracted);
+          expect(retractionDecision.actor, DecisionActor.agent);
           expect(
             retractionDecision.retractionReason,
             allOf(
