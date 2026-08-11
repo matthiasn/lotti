@@ -1,0 +1,405 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
+import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
+
+void main() {
+  test(
+    'round-trips a mixed observable goal without flattening habit targets',
+    () {
+      const criteria = GoalCriterion.allOf(
+        criterionId: 'routine-v3',
+        criteria: [
+          GoalCriterion.metric(
+            criterionId: 'steps-v3',
+            dataType: 'cumulative_step_count',
+            title: 'Average steps per day',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 8500,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'gym-v3',
+            habitId: 'gym',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 2,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'run-v3',
+            habitId: 'run',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 5,
+          ),
+        ],
+      );
+
+      final draft = GoalFormMapping.fromCriteria(criteria);
+
+      expect(draft.isEditable, isTrue);
+      expect(draft.watchesSteps, isTrue);
+      expect(draft.stepsTarget, 8500);
+      expect(draft.habitTargets, {'gym': 2, 'run': 5});
+      expect(
+        draft.buildCriteria(
+          stepsTitle: 'Average steps per day',
+          habitTargets: {'gym': 3, 'run': 6},
+        ),
+        const GoalCriterion.allOf(
+          criterionId: 'routine-v3',
+          criteria: [
+            GoalCriterion.metric(
+              criterionId: 'steps-v3',
+              dataType: 'cumulative_step_count',
+              title: 'Average steps per day',
+              window: GoalWindow.rollingDays(count: 7),
+              aggregation: GoalAggregation.dailySumThenAverage,
+              target: 8500,
+            ),
+            GoalCriterion.habit(
+              criterionId: 'gym-v3',
+              habitId: 'gym',
+              window: GoalWindow.rollingDays(count: 7),
+              targetCount: 3,
+            ),
+            GoalCriterion.habit(
+              criterionId: 'run-v3',
+              habitId: 'run',
+              window: GoalWindow.rollingDays(count: 7),
+              targetCount: 6,
+            ),
+          ],
+        ),
+      );
+    },
+  );
+
+  test('new habits receive stable leaf ids and retain their own counts', () {
+    const draft = GoalFormMapping.empty();
+
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Average steps per day',
+        habitTargets: {'gym': 2, 'morning': 5},
+      ),
+      const GoalCriterion.allOf(
+        criterionId: 'routine',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'habit-gym',
+            habitId: 'gym',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 2,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'habit-morning',
+            habitId: 'morning',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 5,
+          ),
+        ],
+      ),
+    );
+  });
+
+  test('an unsupported criterion is preserved and cannot be flattened', () {
+    const criteria = GoalCriterion.anyOf(
+      criterionId: 'flexible',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'gym',
+          habitId: 'gym',
+          window: GoalWindow.calendarWeek(),
+          targetCount: 2,
+        ),
+        GoalCriterion.metric(
+          criterionId: 'distance',
+          dataType: 'walking_distance',
+          window: GoalWindow.calendarWeek(),
+          aggregation: GoalAggregation.sum,
+          target: 20,
+        ),
+      ],
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+
+    expect(draft.isEditable, isFalse);
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Average steps per day',
+        habitTargets: const {},
+      ),
+      criteria,
+    );
+  });
+
+  test('a habit target above the form range stays losslessly read-only', () {
+    const criteria = GoalCriterion.habit(
+      criterionId: 'habit-gym',
+      habitId: 'gym',
+      title: 'Legacy strength target',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 8,
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+
+    expect(draft.isEditable, isFalse);
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Average steps per day',
+        habitTargets: const {},
+      ),
+      criteria,
+    );
+  });
+
+  test(
+    'an at-most steps criterion stays read-only and preserves direction',
+    () {
+      const criteria = GoalCriterion.metric(
+        criterionId: 'steps-cap',
+        dataType: 'cumulative_step_count',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 12000,
+        direction: GoalDirection.atMost,
+      );
+
+      final draft = GoalFormMapping.fromCriteria(criteria);
+
+      expect(draft.isEditable, isFalse);
+      expect(
+        draft.buildCriteria(
+          stepsTitle: 'Average steps per day',
+          habitTargets: const {},
+        ),
+        criteria,
+      );
+    },
+  );
+
+  test('a non-positive steps target stays losslessly read-only', () {
+    const criteria = GoalCriterion.metric(
+      criterionId: 'steps-zero',
+      dataType: 'cumulative_step_count',
+      title: 'Legacy zero target',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: 0,
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+
+    expect(draft.isEditable, isFalse);
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Average steps per day',
+        habitTargets: const {},
+      ),
+      criteria,
+    );
+  });
+
+  test('a composite added around a routine leaf receives a distinct id', () {
+    const criteria = GoalCriterion.habit(
+      criterionId: 'routine',
+      habitId: 'gym',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 2,
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+    final rebuilt =
+        draft.buildCriteria(
+              stepsTitle: 'Average steps per day',
+              habitTargets: const {'gym': 2, 'run': 3},
+            )!
+            as GoalCriterionAllOf;
+
+    expect(rebuilt.criterionId, isNot('routine'));
+    expect(
+      rebuilt.criteria.map((criterion) => criterion.criterionId).toSet(),
+      contains('routine'),
+    );
+    expect(
+      {
+        rebuilt.criterionId,
+        ...rebuilt.criteria.map((criterion) => criterion.criterionId),
+      },
+      hasLength(rebuilt.criteria.length + 1),
+    );
+  });
+
+  test('new leaves avoid every id reserved by the loaded criterion tree', () {
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'routine',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'habit-run',
+          habitId: 'gym',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 2,
+        ),
+        GoalCriterion.habit(
+          criterionId: 'habit-run-2',
+          habitId: 'swim',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 4,
+        ),
+      ],
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+    final rebuilt =
+        draft.buildCriteria(
+              stepsTitle: 'Average steps per day',
+              habitTargets: const {'gym': 2, 'swim': 4, 'run': 3},
+            )!
+            as GoalCriterionAllOf;
+
+    expect(
+      rebuilt.criteria.map((criterion) => criterion.criterionId),
+      ['habit-run', 'habit-run-2', 'habit-run-3'],
+    );
+    expect(
+      {
+        rebuilt.criterionId,
+        ...rebuilt.criteria.map((criterion) => criterion.criterionId),
+      },
+      hasLength(rebuilt.criteria.length + 1),
+    );
+  });
+
+  test('a newly added steps leaf avoids ids reserved by habits', () {
+    const criteria = GoalCriterion.habit(
+      criterionId: 'steps',
+      habitId: 'gym',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 2,
+    );
+
+    final rebuilt =
+        GoalFormMapping.fromCriteria(criteria).buildCriteria(
+              stepsTitle: 'Average steps per day',
+              habitTargets: const {'gym': 2},
+              watchesSteps: true,
+            )!
+            as GoalCriterionAllOf;
+
+    expect(
+      rebuilt.criteria.map((criterion) => criterion.criterionId),
+      ['steps', 'steps-2'],
+    );
+    expect(
+      (rebuilt.criteria.last as GoalCriterionMetric).title,
+      'Average steps per day',
+    );
+  });
+
+  test('a loaded single-child all-of retains its wrapper and title', () {
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'authored-wrapper',
+      title: 'Every part matters',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'habit-gym',
+          habitId: 'gym',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 2,
+        ),
+      ],
+    );
+
+    final rebuilt = GoalFormMapping.fromCriteria(criteria).buildCriteria(
+      stepsTitle: 'Average steps per day',
+      habitTargets: const {'gym': 2},
+    );
+
+    expect(rebuilt, criteria);
+  });
+
+  test('an existing steps leaf retains its stored title', () {
+    const criteria = GoalCriterion.metric(
+      criterionId: 'steps',
+      dataType: 'cumulative_step_count',
+      title: 'My authored step target',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: 9000,
+    );
+
+    final rebuilt = GoalFormMapping.fromCriteria(criteria).buildCriteria(
+      stepsTitle: 'Localized default title',
+      habitTargets: const {},
+      stepsTarget: 10000,
+    );
+
+    expect(
+      rebuilt,
+      const GoalCriterion.metric(
+        criterionId: 'steps',
+        dataType: 'cumulative_step_count',
+        title: 'My authored step target',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 10000,
+      ),
+    );
+  });
+
+  test('existing habit leaves retain authored titles', () {
+    const criteria = GoalCriterion.habit(
+      criterionId: 'habit-gym',
+      habitId: 'gym',
+      title: 'Strength practice',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 2,
+    );
+
+    final rebuilt = GoalFormMapping.fromCriteria(criteria).buildCriteria(
+      stepsTitle: 'Average steps per day',
+      habitTargets: const {'gym': 3},
+    );
+
+    expect(
+      rebuilt,
+      const GoalCriterion.habit(
+        criterionId: 'habit-gym',
+        habitId: 'gym',
+        title: 'Strength practice',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 3,
+      ),
+    );
+  });
+
+  test('an editable mixed tree retains its authored leaf order', () {
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'routine',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'habit-gym',
+          habitId: 'gym',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 2,
+        ),
+        GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'cumulative_step_count',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 9000,
+        ),
+      ],
+    );
+
+    final rebuilt = GoalFormMapping.fromCriteria(criteria).buildCriteria(
+      stepsTitle: 'Average steps per day',
+      habitTargets: const {'gym': 2},
+    );
+
+    expect(rebuilt, criteria);
+  });
+}

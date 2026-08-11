@@ -153,6 +153,23 @@ void main() {
       expect(changedText, 'Hello');
     });
 
+    testWidgets('passes the requested keyboard type to the text field', (
+      tester,
+    ) async {
+      await _pumpInput(
+        tester,
+        const DesignSystemTextInput(
+          label: 'Count',
+          keyboardType: TextInputType.number,
+        ),
+      );
+
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).keyboardType,
+        TextInputType.number,
+      );
+    });
+
     testWidgets('labels an actionable trailing icon for screen readers', (
       tester,
     ) async {

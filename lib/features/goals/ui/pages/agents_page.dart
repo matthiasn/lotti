@@ -12,9 +12,9 @@ import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// The flag-gated Agents tab (design handover 1c): one row per goal agent —
-/// persona chip, name, coarse health chip, needs-you badge, the agent's
-/// standing one-liner (events-and-time language, never a percentage), and a
-/// direction arrow. The empty state is the only full-screen shell allowed:
+/// persona chip, active-spec goal title, coarse health chip, needs-you badge,
+/// the agent's standing one-liner (events-and-time language, never a
+/// percentage), and a direction arrow. The empty state is the only full-screen shell allowed:
 /// a first-run explainer of what a goal agent is.
 class AgentsPage extends ConsumerWidget {
   const AgentsPage({super.key});
@@ -212,7 +212,7 @@ class _GoalAgentRow extends ConsumerWidget {
                       crossAxisAlignment: WrapCrossAlignment.center,
                       children: [
                         Text(
-                          identity.displayName,
+                          health?.spec?.title ?? identity.displayName,
                           style: tokens.typography.styles.subtitle.subtitle1
                               .copyWith(
                                 color: tokens.colors.text.highEmphasis,

@@ -56,7 +56,7 @@ void main() {
       );
     }
 
-    test('pathPatterns cover list, create, detail and chat', () {
+    test('pathPatterns cover list, create, detail, edit and chat', () {
       final location = AgentsLocation(
         RouteInformation(uri: Uri.parse('/agents')),
       );
@@ -64,6 +64,7 @@ void main() {
         '/agents',
         '/agents/create',
         '/agents/details/:agentId',
+        '/agents/details/:agentId/edit',
         '/agents/details/:agentId/chat',
       ]);
     });
@@ -106,6 +107,18 @@ void main() {
       final chat = pages.last.child as GoalAgentChatPage;
       expect(chat.agentId, 'goal-1');
       expect(pages.last.title, 'Conversation');
+    });
+
+    testWidgets('an edit path reuses the create flow with the agent id', (
+      tester,
+    ) async {
+      final pages = await pagesFor(tester, '/agents/details/goal-1/edit', {
+        'agentId': 'goal-1',
+      });
+      expect(pages, hasLength(3));
+      final edit = pages.last.child as CreateGoalAgentPage;
+      expect(edit.agentId, 'goal-1');
+      expect(pages.last.title, 'Edit goal');
     });
   });
 
@@ -202,7 +215,24 @@ void main() {
       habitsRepository = MockHabitsRepository();
       when(
         habitsRepository.watchHabitDefinitions,
-      ).thenAnswer((_) => Stream.value(const <HabitDefinition>[]));
+      ).thenAnswer(
+        (_) => Stream.value([
+          HabitDefinition(
+            id: 'gym',
+            name: 'Gym',
+            description: '',
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+            habitSchedule: const HabitSchedule.daily(
+              requiredCompletions: 1,
+            ),
+            vectorClock: null,
+            active: true,
+            private: false,
+            version: '1',
+          ),
+        ]),
+      );
     });
 
     testWidgets('card tap opens the agent detail page', (tester) async {
@@ -236,6 +266,7 @@ void main() {
       when(
         () => service.createGoalAgent(
           title: any(named: 'title'),
+          displayName: any(named: 'displayName'),
           statement: any(named: 'statement'),
           criteria: any(named: 'criteria'),
         ),
@@ -247,7 +278,14 @@ void main() {
       await tester.pumpAndSettle();
       expect(find.byType(CreateGoalAgentPage), findsOneWidget);
 
-      await tester.enterText(find.byType(TextField).first, 'Move more');
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Gym twice a week',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Looks right'));
+      await tester.pumpAndSettle();
       await tester.tap(find.text('Create agent'));
       await tester.pumpAndSettle();
 

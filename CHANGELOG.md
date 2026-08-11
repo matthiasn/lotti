@@ -17,7 +17,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   in hand. From there you can inspect the same rolling week as a day-by-day
   grid, see which habits the agent is watching, approve or reject its
   proposals, delete a goal, and create new goals: a daily-steps target or a
-  routine watching one or more habits. Goal conversations are durable rather
+  routine watching one or more habits. Creation starts with the user's own
+  intention, maps it only to signals Lotti can actually observe, gives every
+  habit its own weekly cadence, and confirms the goal and agent name. Existing
+  goals use the same flow for edits, with every save creating a new version and
+  retaining history. Goal conversations are durable rather
   than session-bound: phones open a pushed chat page, desktop keeps it beside
   the goal detail, drafts survive navigation, and failed turns can be retried
   without losing the user's message; Markdown is rendered, long replies start

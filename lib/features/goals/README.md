@@ -64,10 +64,19 @@ rather than treating every daily contribution as a standalone target;
 composite details retain every metric and measurable leaf that contributes to
 health. Their compact cells combine accomplishment and rolling success: a day
 is green when the rolling criterion was satisfied then, or when the authored
-routine was fully completed on that day. Goal chat stays purpose-bound: unrelated
-general-assistant requests are redirected to the goal rather than answered.
-Habit-routine creation assigns the rolling-seven-day frequency independently
-for every selected habit rather than applying one shared count.
+routine was fully completed on that day. Goal creation now follows the designed
+intention → observable mapping → confirmation flow. Each watched habit has its
+own rolling-seven-day cadence, unobservable intentions receive an honest
+refusal instead of a fictional measurement, and the user names both the goal
+and its conversational persona. The same flow edits an active goal from its
+detail menu. Owner edits preserve criterion identities where possible, retain
+unsupported or out-of-range criterion trees read-only, keep already-authored
+habit criteria when privacy hides them from the picker, and mint a new
+immutable spec version before re-registering signals and waking the agent. A
+stale editor returns to the refreshed goal instead of offering a retry that
+cannot succeed. Goal chat stays
+purpose-bound: unrelated general-assistant requests are redirected to the goal
+rather than answered.
 Weekly reliability is shown only for authored rolling-seven-day habits rather
 than reinterpreting day, rolling-N, or calendar periods. Health and direction are separate signals, the standing report stays visible
 beside active banners, and lifetime AI consumption plus compute time use the

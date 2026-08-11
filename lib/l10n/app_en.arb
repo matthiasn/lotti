@@ -3454,6 +3454,90 @@
   },
   "goalDetailWatchingSignals": "Signals listed above update within seconds. Your agent only sees the signals listed here.",
   "goalDetailWatchingTitle": "Watching",
+  "goalFormChooseHabit": "Choose an existing habit",
+  "goalFormConfirmTitle": "Meet your agent",
+  "goalFormContinue": "Continue",
+  "goalFormCostHonesty": "Uses your configured AI provider. Actual usage appears in this goal’s lifetime consumption pills.",
+  "goalFormDecreaseTarget": "Decrease weekly target",
+  "goalFormDefaultPersonaName": "Juno",
+  "goalFormEditTitle": "Edit goal",
+  "goalFormEditVersion": "This starts version {version}. Your history is kept.",
+  "@goalFormEditVersion": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "goalFormExampleGym": "gym twice a week",
+  "goalFormExampleRead": "read before bed",
+  "goalFormExampleWalk": "walk more",
+  "goalFormFooter": "You can rename, retarget, pause or delete this goal anytime.",
+  "goalFormHabitCadence": "{habit} ({count}× a week)",
+  "@goalFormHabitCadence": {
+    "placeholders": {
+      "habit": {
+        "type": "String"
+      },
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "goalFormHabitSignal": "habit check-off",
+  "goalFormIncreaseTarget": "Increase weekly target",
+  "goalFormIntentionHelper": "Say it your way — this is how your agent will talk about it.",
+  "goalFormIntentionHint": "Get to the gym twice a week, and keep up my morning exercises.",
+  "goalFormIntentionPrompt": "What do you want to work toward?",
+  "goalFormLooksRight": "Looks right",
+  "goalFormMappingIntro": "I can only coach what I can see. These check-offs are my eyes:",
+  "goalFormMappingTitle": "Here’s what I can watch",
+  "goalFormNoHabits": "No active habits are available yet.",
+  "goalFormOpenHabits": "Create a habit first",
+  "goalFormPersonaLabel": "Agent name",
+  "goalFormPreservedCriteriaSummary": "The existing signals and schedule will be preserved exactly.",
+  "goalFormProgress": "Step {step} of 3",
+  "@goalFormProgress": {
+    "placeholders": {
+      "step": {
+        "type": "int"
+      }
+    }
+  },
+  "goalFormRefusalBody": "I’d be guessing, and I don’t coach on guesses. Pick an observable proxy or rewrite the intention.",
+  "goalFormRefusalFooter": "An agent that can’t see your goal says so — it never pretends.",
+  "goalFormRefusalTitle": "I can’t see this intention — nothing I can watch tells me it happened.",
+  "goalFormRestatement": "I’ll watch {signals} over a rolling week — and speak up only when it helps.",
+  "@goalFormRestatement": {
+    "placeholders": {
+      "signals": {
+        "type": "String"
+      }
+    }
+  },
+  "goalFormRollingNote": "Rolling week — the trailing 7 days, always. Counts are per habit; no dead weekends, no lost weeks.",
+  "goalFormSaveChanges": "Save new version",
+  "goalFormStepsCadence": "{target} steps a day",
+  "@goalFormStepsCadence": {
+    "placeholders": {
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "goalFormStepsSignal": "automatic step count",
+  "goalFormUnsupportedCriteria": "This goal uses a mapping this editor can’t safely rewrite. You can still rename the goal, its intention and its agent.",
+  "goalFormValidationIdentity": "Give the goal and its agent a name.",
+  "goalFormValidationIntention": "Describe what you want to work toward first.",
+  "goalFormValidationMapping": "Choose at least one signal the agent can actually observe.",
+  "goalFormWeeklyTarget": "{count}× / 7 days",
+  "@goalFormWeeklyTarget": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
   "goalHealthTrendDown": "Trending down",
   "@goalHealthTrendDown": {
     "description": "Screen-reader label for the falling trend arrow on a goal-agent list row."

@@ -40,6 +40,10 @@ sources:
     resource: ../../lib/features/goals/workflow/goal_agent_contract.dart
     title: Goal-agent contract (eval-graduated prompt + tools)
     last_modified: 2026-08-11
+  - id: create-edit
+    resource: ../../lib/features/goals/ui/pages/create_goal_agent_page.dart
+    title: Goal create/edit flow — intention, observable mapping and confirmation
+    last_modified: 2026-08-11
   - id: sync-dispatcher
     resource: ../../lib/features/goals/sync/goal_signal_sync_dispatcher.dart
     title: GoalSignalSyncDispatcher — the sync blind-spot bridge
@@ -226,6 +230,22 @@ flowchart TD
   signal subscription re-registers from the NEW criteria; on other
   devices the synced-in head triggers the same re-registration through
   the sync processor's identity re-offer.
+- **Owner edits are versioned, never in-place.** The explicit edit route uses
+  `GoalSpecRevisionService.reviseFromOwner` with the complete user-authored
+  title, intention, persona name and criteria tree. It serializes against the
+  current head, refuses a no-op or a save whose loaded base version is no
+  longer the head, supersedes the current version and mints `v(n+1)` with
+  `authoredBy: user` and `diffFromVersionId`. The create/edit UI
+  only rewrites rolling-seven-day habit leaves and the supported at-least
+  rolling-average steps metric; richer trees and opposite-direction step
+  criteria are retained exactly and shown read-only. Supported trees retain
+  authored leaf titles, composite wrappers and stable collision-free node ids.
+  Manual mapping choices
+  survive back-navigation while the intention is unchanged, and saving
+  reconciles selected habits against the latest active-habit stream so a paused
+  or removed habit cannot be minted into a dead criterion. After a minted edit,
+  the runtime re-registers the new signal set and enqueues an immediate
+  `goal revised` wake so the report and health do not describe the old spec.
 - **Nudge accumulators are CRDTs.** Dismissal is terminal in the
   concurrent resolver, and exposure counters (per-host G-counters),
   rating histories and shown-at watermarks merge losslessly on concurrent
@@ -375,10 +395,26 @@ flowchart TD
   ids are deterministic per `(agentId, runKey)`; if the output transaction
   committed and only the deferred outbox flush failed, the reply is re-read as
   the commit marker and the turn completes without another billed inference.
-  Creation supports a steps goal or a MULTI-habit routine whose selected
-  habits each carry their own rolling-seven-day target
-  (`allOf` composite); deletion cancels queued work, aborts an in-flight local
-  wake, and soft-retires the whole agent through
+  Creation and owner editing share a three-stage intention → mapping →
+  confirmation route. The mapping stage matches observable active habits and
+  the supported steps metric, gives every selected habit its own one-to-seven
+  rolling-week cadence, waits for the active-habit snapshot before caching a
+  match, uses whole-word matching that excludes generic cadence terms, and
+  explicitly refuses an intention for which no observable proxy exists.
+  Existing criteria outside the form's representable range stay losslessly
+  read-only. An edit also retains already-authored habit criteria omitted from
+  the privacy-filtered picker, so a persona-only change cannot rewrite the
+  goal. Confirmation names the goal and its
+  conversational persona and states the inference-cost contract. Editing opens
+  only for active goal agents, preloads the current values, explains the next
+  immutable version, and preserves version history. A successful owner edit
+  retracts any pending agent-authored goal-revision proposal based on the old
+  version, preventing a later approval from overwriting the owner's newer
+  intent. A supported MULTI-habit routine is stored as an `allOf` composite;
+  when another writer moves the spec head first, the stale editor returns to
+  the refreshed goal details instead of retrying against the obsolete base;
+  deletion cancels queued work, aborts an in-flight local wake, and soft-retires
+  the whole agent through
   `GoalAgentService.deleteGoalAgent`. The shared drain lifecycle guard rejects
   any queued non-active goal wake that survives a race or arrives from sync and
   emits an aborted completion, so an interactive caller never waits forever for
@@ -390,6 +426,8 @@ flowchart TD
   work, aborts an in-flight wake, and removes the goal's in-memory signal
   subscription, preventing future matching journal updates from
   repeatedly enqueueing work that the lifecycle guard would only discard.
+  Goal-list rows and banner semantics resolve the active spec title; the
+  identity display name remains the conversational persona used by chat.
 - **Conversation scope is the goal.** The contract identifies the agent as a
   dedicated coach rather than a general assistant. Coding, trivia and other
   unrelated requests receive a short purpose reminder and a redirect to the

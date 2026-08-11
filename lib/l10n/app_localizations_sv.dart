@@ -6174,6 +6174,148 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Följer';
 
   @override
+  String get goalFormChooseHabit => 'Välj en befintlig vana';
+
+  @override
+  String get goalFormConfirmTitle => 'Möt din agent';
+
+  @override
+  String get goalFormContinue => 'Fortsätt';
+
+  @override
+  String get goalFormCostHonesty =>
+      'Använder din konfigurerade AI-leverantör. Den faktiska förbrukningen visas i målets livstidsmätare.';
+
+  @override
+  String get goalFormDecreaseTarget => 'Sänk veckomålet';
+
+  @override
+  String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormEditTitle => 'Redigera mål';
+
+  @override
+  String goalFormEditVersion(int version) {
+    return 'Det här startar version $version. Din historik sparas.';
+  }
+
+  @override
+  String get goalFormExampleGym => 'gymma två gånger i veckan';
+
+  @override
+  String get goalFormExampleRead => 'läsa före läggdags';
+
+  @override
+  String get goalFormExampleWalk => 'promenera mer';
+
+  @override
+  String get goalFormFooter =>
+      'Du kan när som helst byta namn, justera, pausa eller ta bort målet.';
+
+  @override
+  String goalFormHabitCadence(String habit, int count) {
+    return '$habit ($count× i veckan)';
+  }
+
+  @override
+  String get goalFormHabitSignal => 'vanemarkering';
+
+  @override
+  String get goalFormIncreaseTarget => 'Höj veckomålet';
+
+  @override
+  String get goalFormIntentionHelper =>
+      'Säg det på ditt sätt — så kommer din agent att prata om det.';
+
+  @override
+  String get goalFormIntentionHint =>
+      'Gymma två gånger i veckan och hålla fast vid mina morgonövningar.';
+
+  @override
+  String get goalFormIntentionPrompt => 'Vad vill du arbeta mot?';
+
+  @override
+  String get goalFormLooksRight => 'Ser bra ut';
+
+  @override
+  String get goalFormMappingIntro =>
+      'Jag kan bara coacha det jag kan se. De här markeringarna är mina ögon:';
+
+  @override
+  String get goalFormMappingTitle => 'Det här kan jag följa';
+
+  @override
+  String get goalFormNoHabits => 'Det finns inga aktiva vanor ännu.';
+
+  @override
+  String get goalFormOpenHabits => 'Skapa en vana först';
+
+  @override
+  String get goalFormPersonaLabel => 'Agentens namn';
+
+  @override
+  String get goalFormPreservedCriteriaSummary =>
+      'Befintliga signaler och schemat bevaras exakt.';
+
+  @override
+  String goalFormProgress(int step) {
+    return 'Steg $step av 3';
+  }
+
+  @override
+  String get goalFormRefusalBody =>
+      'Jag skulle behöva gissa, och jag coachar inte på gissningar. Välj en observerbar ersättning eller skriv om avsikten.';
+
+  @override
+  String get goalFormRefusalFooter =>
+      'En agent som inte kan se ditt mål säger det — den låtsas aldrig.';
+
+  @override
+  String get goalFormRefusalTitle =>
+      'Jag kan inte se den här avsikten — inget jag följer visar att den hände.';
+
+  @override
+  String goalFormRestatement(String signals) {
+    return 'Jag följer $signals över en rullande vecka — och säger bara till när det hjälper.';
+  }
+
+  @override
+  String get goalFormRollingNote =>
+      'Rullande vecka — alltid de senaste 7 dagarna. Antal gäller per vana; inga döda helger, inga förlorade veckor.';
+
+  @override
+  String get goalFormSaveChanges => 'Spara ny version';
+
+  @override
+  String goalFormStepsCadence(String target) {
+    return '$target steg om dagen';
+  }
+
+  @override
+  String get goalFormStepsSignal => 'automatisk stegräkning';
+
+  @override
+  String get goalFormUnsupportedCriteria =>
+      'Målet använder en koppling som redigeraren inte säkert kan ändra. Du kan fortfarande byta namn på målet, avsikten och agenten.';
+
+  @override
+  String get goalFormValidationIdentity => 'Ge målet och agenten ett namn.';
+
+  @override
+  String get goalFormValidationIntention =>
+      'Beskriv först vad du vill arbeta mot.';
+
+  @override
+  String get goalFormValidationMapping =>
+      'Välj minst en signal som agenten faktiskt kan observera.';
+
+  @override
+  String goalFormWeeklyTarget(int count) {
+    return '$count× / 7 dagar';
+  }
+
+  @override
   String get goalHealthTrendDown => 'Minskar';
 
   @override

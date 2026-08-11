@@ -112,6 +112,7 @@ void main() {
       'subscribes to the goal signals', () async {
     final identity = await service.createGoalAgent(
       title: 'Gym 3×/week',
+      displayName: 'Juno',
       statement: 'Train at the station gym three times per week.',
       criteria: criteria,
       agentId: agentId,
@@ -151,12 +152,43 @@ void main() {
     // 120-second coalescing window (the user's tap must be acknowledged
     // in seconds).
     expect(subscription.drainImmediately, isTrue);
+    verify(
+      () => agentService.createAgent(
+        kind: AgentKinds.goalAgent,
+        displayName: 'Juno',
+        config: const AgentConfig(),
+        agentId: agentId,
+      ),
+    ).called(1);
   });
 
   test('removeSignalSubscriptions drops the agent from the orchestrator', () {
     when(() => orchestrator.removeSubscriptions(any())).thenReturn(null);
     service.removeSignalSubscriptions(agentId);
     verify(() => orchestrator.removeSubscriptions(agentId)).called(1);
+  });
+
+  test('refreshAfterRevision re-registers changed signals and wakes the goal '
+      'immediately', () {
+    const revised = GoalCriterion.habit(
+      criterionId: 'run',
+      habitId: 'run-habit',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 5,
+    );
+
+    service.refreshAfterRevision(agentId: agentId, criteria: revised);
+
+    final subscription =
+        verify(() => orchestrator.addSubscription(captureAny())).captured.single
+            as AgentSubscription;
+    expect(subscription.matchEntityIds, {'run-habit'});
+    verify(
+      () => orchestrator.enqueueManualWake(
+        agentId: agentId,
+        reason: 'goal revised',
+      ),
+    ).called(1);
   });
 
   test(

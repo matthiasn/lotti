@@ -741,6 +741,38 @@ void main() {
         nudgeRow('ad-gone', GoalNudgeStatus.dismissed, DateTime(2026, 8, 9)),
       ],
     );
+    when(
+      () => repository.getEntity(goalSpecHeadId('goal-a')),
+    ).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId('goal-a'),
+        agentId: 'goal-a',
+        versionId: 'goal-a:spec-v1',
+        updatedAt: DateTime(2026, 8, 11),
+        vectorClock: null,
+      ),
+    );
+    when(
+      () => repository.getEntity('goal-a:spec-v1'),
+    ).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecVersion(
+        id: 'goal-a:spec-v1',
+        agentId: 'goal-a',
+        version: 1,
+        status: GoalSpecVersionStatus.active,
+        authoredBy: 'user',
+        title: 'Walk daily',
+        statement: 'Walk every day.',
+        criteria: const GoalCriterion.habit(
+          criterionId: 'walk',
+          habitId: 'walk',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 5,
+        ),
+        createdAt: DateTime(2026, 8, 11),
+        vectorClock: null,
+      ),
+    );
 
     // Warm the rollout flag and KEEP it alive: the gate reads the
     // stream's latest value, and an autodisposed flag provider would be
@@ -756,7 +788,7 @@ void main() {
       [for (final entry in entries) entry.nudge.id],
       ['ad-new', 'ad-old'],
     );
-    expect(entries.first.goalTitle, 'goal-a');
+    expect(entries.first.goalTitle, 'Walk daily');
 
     // An ad past its staleAt stops rendering even while still `active`.
     when(

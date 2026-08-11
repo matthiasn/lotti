@@ -10559,6 +10559,240 @@ abstract class AppLocalizations {
   /// **'Watching'**
   String get goalDetailWatchingTitle;
 
+  /// No description provided for @goalFormChooseHabit.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose an existing habit'**
+  String get goalFormChooseHabit;
+
+  /// No description provided for @goalFormConfirmTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Meet your agent'**
+  String get goalFormConfirmTitle;
+
+  /// No description provided for @goalFormContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get goalFormContinue;
+
+  /// No description provided for @goalFormCostHonesty.
+  ///
+  /// In en, this message translates to:
+  /// **'Uses your configured AI provider. Actual usage appears in this goal’s lifetime consumption pills.'**
+  String get goalFormCostHonesty;
+
+  /// No description provided for @goalFormDecreaseTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Decrease weekly target'**
+  String get goalFormDecreaseTarget;
+
+  /// No description provided for @goalFormDefaultPersonaName.
+  ///
+  /// In en, this message translates to:
+  /// **'Juno'**
+  String get goalFormDefaultPersonaName;
+
+  /// No description provided for @goalFormEditTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit goal'**
+  String get goalFormEditTitle;
+
+  /// No description provided for @goalFormEditVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'This starts version {version}. Your history is kept.'**
+  String goalFormEditVersion(int version);
+
+  /// No description provided for @goalFormExampleGym.
+  ///
+  /// In en, this message translates to:
+  /// **'gym twice a week'**
+  String get goalFormExampleGym;
+
+  /// No description provided for @goalFormExampleRead.
+  ///
+  /// In en, this message translates to:
+  /// **'read before bed'**
+  String get goalFormExampleRead;
+
+  /// No description provided for @goalFormExampleWalk.
+  ///
+  /// In en, this message translates to:
+  /// **'walk more'**
+  String get goalFormExampleWalk;
+
+  /// No description provided for @goalFormFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'You can rename, retarget, pause or delete this goal anytime.'**
+  String get goalFormFooter;
+
+  /// No description provided for @goalFormHabitCadence.
+  ///
+  /// In en, this message translates to:
+  /// **'{habit} ({count}× a week)'**
+  String goalFormHabitCadence(String habit, int count);
+
+  /// No description provided for @goalFormHabitSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'habit check-off'**
+  String get goalFormHabitSignal;
+
+  /// No description provided for @goalFormIncreaseTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Increase weekly target'**
+  String get goalFormIncreaseTarget;
+
+  /// No description provided for @goalFormIntentionHelper.
+  ///
+  /// In en, this message translates to:
+  /// **'Say it your way — this is how your agent will talk about it.'**
+  String get goalFormIntentionHelper;
+
+  /// No description provided for @goalFormIntentionHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Get to the gym twice a week, and keep up my morning exercises.'**
+  String get goalFormIntentionHint;
+
+  /// No description provided for @goalFormIntentionPrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'What do you want to work toward?'**
+  String get goalFormIntentionPrompt;
+
+  /// No description provided for @goalFormLooksRight.
+  ///
+  /// In en, this message translates to:
+  /// **'Looks right'**
+  String get goalFormLooksRight;
+
+  /// No description provided for @goalFormMappingIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'I can only coach what I can see. These check-offs are my eyes:'**
+  String get goalFormMappingIntro;
+
+  /// No description provided for @goalFormMappingTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Here’s what I can watch'**
+  String get goalFormMappingTitle;
+
+  /// No description provided for @goalFormNoHabits.
+  ///
+  /// In en, this message translates to:
+  /// **'No active habits are available yet.'**
+  String get goalFormNoHabits;
+
+  /// No description provided for @goalFormOpenHabits.
+  ///
+  /// In en, this message translates to:
+  /// **'Create a habit first'**
+  String get goalFormOpenHabits;
+
+  /// No description provided for @goalFormPersonaLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Agent name'**
+  String get goalFormPersonaLabel;
+
+  /// No description provided for @goalFormPreservedCriteriaSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'The existing signals and schedule will be preserved exactly.'**
+  String get goalFormPreservedCriteriaSummary;
+
+  /// No description provided for @goalFormProgress.
+  ///
+  /// In en, this message translates to:
+  /// **'Step {step} of 3'**
+  String goalFormProgress(int step);
+
+  /// No description provided for @goalFormRefusalBody.
+  ///
+  /// In en, this message translates to:
+  /// **'I’d be guessing, and I don’t coach on guesses. Pick an observable proxy or rewrite the intention.'**
+  String get goalFormRefusalBody;
+
+  /// No description provided for @goalFormRefusalFooter.
+  ///
+  /// In en, this message translates to:
+  /// **'An agent that can’t see your goal says so — it never pretends.'**
+  String get goalFormRefusalFooter;
+
+  /// No description provided for @goalFormRefusalTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'I can’t see this intention — nothing I can watch tells me it happened.'**
+  String get goalFormRefusalTitle;
+
+  /// No description provided for @goalFormRestatement.
+  ///
+  /// In en, this message translates to:
+  /// **'I’ll watch {signals} over a rolling week — and speak up only when it helps.'**
+  String goalFormRestatement(String signals);
+
+  /// No description provided for @goalFormRollingNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Rolling week — the trailing 7 days, always. Counts are per habit; no dead weekends, no lost weeks.'**
+  String get goalFormRollingNote;
+
+  /// No description provided for @goalFormSaveChanges.
+  ///
+  /// In en, this message translates to:
+  /// **'Save new version'**
+  String get goalFormSaveChanges;
+
+  /// No description provided for @goalFormStepsCadence.
+  ///
+  /// In en, this message translates to:
+  /// **'{target} steps a day'**
+  String goalFormStepsCadence(String target);
+
+  /// No description provided for @goalFormStepsSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'automatic step count'**
+  String get goalFormStepsSignal;
+
+  /// No description provided for @goalFormUnsupportedCriteria.
+  ///
+  /// In en, this message translates to:
+  /// **'This goal uses a mapping this editor can’t safely rewrite. You can still rename the goal, its intention and its agent.'**
+  String get goalFormUnsupportedCriteria;
+
+  /// No description provided for @goalFormValidationIdentity.
+  ///
+  /// In en, this message translates to:
+  /// **'Give the goal and its agent a name.'**
+  String get goalFormValidationIdentity;
+
+  /// No description provided for @goalFormValidationIntention.
+  ///
+  /// In en, this message translates to:
+  /// **'Describe what you want to work toward first.'**
+  String get goalFormValidationIntention;
+
+  /// No description provided for @goalFormValidationMapping.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one signal the agent can actually observe.'**
+  String get goalFormValidationMapping;
+
+  /// No description provided for @goalFormWeeklyTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'{count}× / 7 days'**
+  String goalFormWeeklyTarget(int count);
+
   /// Screen-reader label for the falling trend arrow on a goal-agent list row.
   ///
   /// In en, this message translates to:

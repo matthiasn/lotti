@@ -1,4 +1,5 @@
 import 'package:clock/clock.dart';
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_spec_validator.dart';
@@ -6,8 +7,10 @@ import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
 import 'package:lotti/features/goals/service/goal_revision_apply.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:uuid/uuid.dart';
 
 /// The outcome of a user-approved goal revision.
@@ -51,6 +54,10 @@ class GoalSpecRevisionService {
   final AgentRepository _repository;
   final AgentSyncService _syncService;
   static const _uuid = Uuid();
+  static const String ownerNoChangesReason =
+      'the owner edit does not change the goal';
+  static const String ownerStaleVersionReason =
+      'the goal changed after this editor was opened';
 
   Future<GoalSpecRevisionOutcome> reviseFromProposal({
     required String agentId,
@@ -85,6 +92,112 @@ class GoalSpecRevisionService {
         final version = await _repository.getEntity(head.versionId);
         if (version is GoalSpecVersionEntity &&
             version.authoredBy == AgentKinds.goalAgent &&
+            version.createdAt == now) {
+          return GoalSpecRevisionMinted(
+            version: version,
+            changeSummaries: const ['(committed before a sync error)'],
+          );
+        }
+      }
+      rethrow;
+    }
+  }
+
+  /// Applies an explicit owner edit as a new immutable goal version.
+  ///
+  /// Unlike an agent proposal, this path receives the complete authored
+  /// shape from the create/edit flow. It may rename the goal, change the
+  /// verbatim intention, replace the observable criteria, and rename the
+  /// goal's conversational persona. History is retained through
+  /// [GoalSpecVersionEntity.diffFromVersionId]; the active version is never
+  /// rewritten in place. [baseVersionId] is the head loaded by the editor;
+  /// the save is refused if another writer moved the head in the meantime.
+  /// A successful owner edit also retracts pending agent-authored revision
+  /// proposals so an older suggestion cannot later overwrite the new spec.
+  Future<GoalSpecRevisionOutcome> reviseFromOwner({
+    required String agentId,
+    required String baseVersionId,
+    required String displayName,
+    required String title,
+    required String statement,
+    required GoalCriterion criteria,
+  }) async {
+    final normalizedDisplayName = displayName.trim();
+    final normalizedTitle = title.trim();
+    final normalizedStatement = statement.trim();
+    if (normalizedDisplayName.isEmpty ||
+        normalizedTitle.isEmpty ||
+        normalizedStatement.isEmpty) {
+      return const GoalSpecRevisionRefused(
+        'the persona, goal name, and intention must not be blank',
+      );
+    }
+    final issues = GoalSpecValidator.criterionIssues(criteria);
+    if (issues.isNotEmpty) {
+      return GoalSpecRevisionRefused(
+        'the revised criteria fail validation: ${issues.join('; ')}',
+      );
+    }
+
+    final now = clock.now();
+    try {
+      return await _syncService.runInTransaction(() async {
+        final identity = await _repository.getEntity(agentId);
+        if (identity is! AgentIdentityEntity ||
+            identity.kind != AgentKinds.goalAgent ||
+            identity.lifecycle != AgentLifecycle.active) {
+          return const GoalSpecRevisionRefused('goal agent is not active');
+        }
+        final head = await _repository.getEntity(goalSpecHeadId(agentId));
+        if (head is! GoalSpecHeadEntity) {
+          return const GoalSpecRevisionRefused(
+            'the goal no longer exists (no spec head)',
+          );
+        }
+        final current = await _repository.getEntity(head.versionId);
+        if (current is! GoalSpecVersionEntity) {
+          return GoalSpecRevisionRefused(
+            'spec head ${head.versionId} points at nothing',
+          );
+        }
+        if (current.id != baseVersionId) {
+          return const GoalSpecRevisionRefused(ownerStaleVersionReason);
+        }
+        if (identity.displayName == normalizedDisplayName &&
+            current.title == normalizedTitle &&
+            current.statement == normalizedStatement &&
+            current.criteria == criteria) {
+          return const GoalSpecRevisionRefused(ownerNoChangesReason);
+        }
+
+        final summaries = <String>[
+          if (identity.displayName != normalizedDisplayName)
+            'persona name updated',
+          if (current.title != normalizedTitle) 'goal name updated',
+          if (current.statement != normalizedStatement) 'intention updated',
+          if (current.criteria != criteria) 'goal criteria updated',
+        ];
+        return _mintRevision(
+          identity: identity,
+          head: head,
+          current: current,
+          displayName: normalizedDisplayName,
+          title: normalizedTitle,
+          statement: normalizedStatement,
+          criteria: criteria,
+          authoredBy: 'user',
+          rationale: 'Owner edited the goal.',
+          sourceThreadId: null,
+          changeSummaries: summaries,
+          now: now,
+        );
+      });
+    } catch (error) {
+      final head = await _repository.getEntity(goalSpecHeadId(agentId));
+      if (head is GoalSpecHeadEntity) {
+        final version = await _repository.getEntity(head.versionId);
+        if (version is GoalSpecVersionEntity &&
+            version.authoredBy == 'user' &&
             version.createdAt == now) {
           return GoalSpecRevisionMinted(
             version: version,
@@ -137,6 +250,37 @@ class GoalSpecRevisionService {
       );
     }
 
+    return _mintRevision(
+      identity: identity,
+      head: head,
+      current: current,
+      displayName: identity.displayName,
+      title: current.title,
+      statement: current.statement,
+      criteria: revised,
+      authoredBy: AgentKinds.goalAgent,
+      rationale: rationale,
+      sourceThreadId: sourceThreadId,
+      changeSummaries: applied.changeSummaries,
+      now: now,
+    );
+  }
+
+  Future<GoalSpecRevisionOutcome> _mintRevision({
+    required AgentIdentityEntity identity,
+    required GoalSpecHeadEntity head,
+    required GoalSpecVersionEntity current,
+    required String displayName,
+    required String title,
+    required String statement,
+    required GoalCriterion criteria,
+    required String authoredBy,
+    required String rationale,
+    required String? sourceThreadId,
+    required List<String> changeSummaries,
+    required DateTime now,
+  }) async {
+    final agentId = identity.agentId;
     final nextVersion = current.version + 1;
     // The id carries a random suffix: two DISCONNECTED replicas approving
     // different proposals both mint a v$nextVersion, and deterministic
@@ -152,10 +296,10 @@ class GoalSpecRevisionService {
               agentId: agentId,
               version: nextVersion,
               status: GoalSpecVersionStatus.active,
-              authoredBy: AgentKinds.goalAgent,
-              title: current.title,
-              statement: current.statement,
-              criteria: revised,
+              authoredBy: authoredBy,
+              title: title,
+              statement: statement,
+              criteria: criteria,
               createdAt: now,
               vectorClock: null,
               sourceSessionId: sourceThreadId,
@@ -166,6 +310,11 @@ class GoalSpecRevisionService {
             )
             as GoalSpecVersionEntity;
 
+    if (identity.displayName != displayName) {
+      await _syncService.upsertEntity(
+        identity.copyWith(displayName: displayName, updatedAt: now),
+      );
+    }
     await _syncService.upsertEntity(
       current.copyWith(status: GoalSpecVersionStatus.superseded),
     );
@@ -173,6 +322,10 @@ class GoalSpecRevisionService {
     await _syncService.upsertEntity(
       head.copyWith(versionId: versionId, updatedAt: now),
     );
+
+    if (authoredBy == 'user') {
+      await _retractPendingRevisionProposals(agentId: agentId, now: now);
+    }
 
     // Ads pitched for the superseded goal must not keep running beside
     // the revised statement until their own staleAt: every nudge that
@@ -225,7 +378,44 @@ class GoalSpecRevisionService {
 
     return GoalSpecRevisionMinted(
       version: minted,
-      changeSummaries: applied.changeSummaries,
+      changeSummaries: changeSummaries,
     );
+  }
+
+  Future<void> _retractPendingRevisionProposals({
+    required String agentId,
+    required DateTime now,
+  }) async {
+    final pendingSets = await _repository.getPendingChangeSets(
+      agentId,
+      taskId: agentId,
+    );
+    for (final changeSet in pendingSets) {
+      var changed = false;
+      final items = changeSet.items
+          .map((item) {
+            if (item.status != ChangeItemStatus.pending ||
+                item.toolName != GoalAgentToolNames.proposeGoalRevision) {
+              return item;
+            }
+            changed = true;
+            return item.copyWith(status: ChangeItemStatus.retracted);
+          })
+          .toList(growable: false);
+      if (!changed) continue;
+
+      final status = ChangeItem.deriveSetStatus(items);
+      await _syncService.upsertEntity(
+        changeSet.copyWith(
+          items: items,
+          status: status,
+          resolvedAt: ChangeItem.deriveResolvedAt(
+            newStatus: status,
+            existingResolvedAt: changeSet.resolvedAt,
+            now: now,
+          ),
+        ),
+      );
+    }
   }
 }

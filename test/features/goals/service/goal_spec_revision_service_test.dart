@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -63,6 +64,12 @@ void main() {
       () => repository.getEntitiesByAgentId(
         any(),
         type: any(named: 'type'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => repository.getPendingChangeSets(
+        any(),
+        taskId: any(named: 'taskId'),
       ),
     ).thenAnswer((_) async => []);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
@@ -158,6 +165,290 @@ void main() {
     expect(head.versionId, minted.id);
     expect(head.updatedAt, now);
   });
+
+  test('an owner edit mints a user-authored version, updates the persona, '
+      'and preserves independently authored habit targets', () async {
+    stubSpec(version: 3);
+    const revisedCriteria = GoalCriterion.allOf(
+      criterionId: 'routine',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'habit-gym',
+          habitId: 'gym',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 2,
+        ),
+        GoalCriterion.habit(
+          criterionId: 'habit-run',
+          habitId: 'run',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 5,
+        ),
+      ],
+    );
+
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromOwner(
+        agentId: agentId,
+        baseVersionId: '$agentId:spec-v3',
+        displayName: 'Juno',
+        title: 'Expedition fitness',
+        statement: 'Gym twice and run five times each rolling week.',
+        criteria: revisedCriteria,
+      ),
+    );
+
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    final minted = (outcome as GoalSpecRevisionMinted).version;
+    expect(minted.version, 4);
+    expect(minted.authoredBy, 'user');
+    expect(minted.title, 'Expedition fitness');
+    expect(
+      minted.statement,
+      'Gym twice and run five times each rolling week.',
+    );
+    expect(minted.criteria, revisedCriteria);
+    expect(minted.diffFromVersionId, '$agentId:spec-v3');
+    expect(
+      upserts.whereType<AgentIdentityEntity>().single.displayName,
+      'Juno',
+    );
+    expect(outcome.changeSummaries, contains('goal criteria updated'));
+  });
+
+  test('an owner edit that changes nothing is refused without resetting '
+      'goal history', () async {
+    stubSpec();
+
+    final outcome = await service.reviseFromOwner(
+      agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
+      displayName: 'Steps',
+      title: 'Steps',
+      statement: 'Average 10,000 steps per day.',
+      criteria: criteria,
+    );
+
+    expect(outcome, isA<GoalSpecRevisionRefused>());
+    expect(
+      (outcome as GoalSpecRevisionRefused).reason,
+      'the owner edit does not change the goal',
+    );
+    expect(upserts, isEmpty);
+  });
+
+  test('an owner edit based on a stale version is refused', () async {
+    stubSpec(version: 4);
+
+    final outcome = await service.reviseFromOwner(
+      agentId: agentId,
+      baseVersionId: '$agentId:spec-v3',
+      displayName: 'Juno',
+      title: 'Movement',
+      statement: 'Move consistently.',
+      criteria: criteria,
+    );
+
+    expect(outcome, isA<GoalSpecRevisionRefused>());
+    expect(
+      (outcome as GoalSpecRevisionRefused).reason,
+      GoalSpecRevisionService.ownerStaleVersionReason,
+    );
+    expect(upserts, isEmpty);
+  });
+
+  test('an owner edit retracts pending goal revision proposals', () async {
+    stubSpec();
+    final pending =
+        AgentDomainEntity.changeSet(
+              id: 'goal-revision-set',
+              agentId: agentId,
+              taskId: agentId,
+              threadId: 'thread-1',
+              runKey: 'run-1',
+              status: ChangeSetStatus.pending,
+              items: const [
+                ChangeItem(
+                  toolName: 'propose_goal_revision',
+                  args: {
+                    'changes': {'targetValue': 3},
+                  },
+                  humanSummary: 'Lower the target',
+                ),
+                ChangeItem(
+                  toolName: 'reply_to_user',
+                  args: {'message': 'Keep this pending'},
+                  humanSummary: 'Unrelated proposal',
+                ),
+                ChangeItem(
+                  toolName: 'propose_goal_revision',
+                  args: {
+                    'changes': {'targetValue': 4},
+                  },
+                  humanSummary: 'Already retracted proposal',
+                  status: ChangeItemStatus.retracted,
+                ),
+              ],
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as ChangeSetEntity;
+    final unrelated = pending.copyWith(
+      id: 'unrelated-set',
+      items: const [
+        ChangeItem(
+          toolName: 'reply_to_user',
+          args: {'message': 'Still pending'},
+          humanSummary: 'Another unrelated proposal',
+        ),
+      ],
+    );
+    final fullyMatching = pending.copyWith(
+      id: 'fully-matching-set',
+      items: [pending.items.first],
+    );
+    when(
+      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+    ).thenAnswer((_) async => [pending, fullyMatching, unrelated]);
+
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromOwner(
+        agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
+        displayName: 'Juno',
+        title: 'Movement',
+        statement: 'Move consistently.',
+        criteria: criteria,
+      ),
+    );
+
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    final retired = upserts.whereType<ChangeSetEntity>().toList();
+    expect(retired.map((set) => set.id), [pending.id, fullyMatching.id]);
+    expect(retired.first.status, ChangeSetStatus.partiallyResolved);
+    expect(retired.first.resolvedAt, isNull);
+    expect(retired.first.items.first.status, ChangeItemStatus.retracted);
+    expect(retired.first.items[1].status, ChangeItemStatus.pending);
+    expect(retired.first.items.last.status, ChangeItemStatus.retracted);
+    expect(retired.last.status, ChangeSetStatus.resolved);
+    expect(retired.last.resolvedAt, now);
+    expect(retired.last.items.single.status, ChangeItemStatus.retracted);
+  });
+
+  test(
+    'an owner edit refuses invalid criteria and a dangling spec head',
+    () async {
+      const invalid = GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'duplicate',
+            habitId: 'gym',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 2,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'duplicate',
+            habitId: 'run',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+        ],
+      );
+      var outcome = await service.reviseFromOwner(
+        agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
+        displayName: 'Juno',
+        title: 'Movement',
+        statement: 'Move consistently.',
+        criteria: invalid,
+      );
+      expect(
+        (outcome as GoalSpecRevisionRefused).reason,
+        contains('fail validation'),
+      );
+
+      when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+        (_) async => AgentDomainEntity.goalSpecHead(
+          id: goalSpecHeadId(agentId),
+          agentId: agentId,
+          versionId: 'missing',
+          updatedAt: DateTime(2026, 8),
+          vectorClock: null,
+        ),
+      );
+      outcome = await service.reviseFromOwner(
+        agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
+        displayName: 'Juno',
+        title: 'Movement',
+        statement: 'Move consistently.',
+        criteria: criteria,
+      );
+      expect(
+        (outcome as GoalSpecRevisionRefused).reason,
+        contains('points at nothing'),
+      );
+      expect(upserts, isEmpty);
+    },
+  );
+
+  test(
+    'an owner edit reconciles a revision committed before sync failed',
+    () async {
+      stubSpec();
+      final failing = _CommitThenThrowSyncService();
+      when(() => failing.upsertEntity(any())).thenAnswer((invocation) async {
+        upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
+      });
+      final ownerService = GoalSpecRevisionService(
+        repository: repository,
+        syncService: failing,
+      );
+      when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+        (_) async =>
+            upserts.whereType<GoalSpecHeadEntity>().lastOrNull ??
+            AgentDomainEntity.goalSpecHead(
+              id: goalSpecHeadId(agentId),
+              agentId: agentId,
+              versionId: '$agentId:spec-v1',
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+            ),
+      );
+      when(
+        () => repository.getEntity(any(that: startsWith('$agentId:spec-v2'))),
+      ).thenAnswer(
+        (invocation) async => upserts
+            .whereType<GoalSpecVersionEntity>()
+            .where(
+              (version) => version.id == invocation.positionalArguments.first,
+            )
+            .lastOrNull,
+      );
+
+      final outcome = await withClock(
+        fixedClock,
+        () => ownerService.reviseFromOwner(
+          agentId: agentId,
+          baseVersionId: '$agentId:spec-v1',
+          displayName: 'Juno',
+          title: 'Move daily',
+          statement: 'Average 10,000 steps every day.',
+          criteria: criteria,
+        ),
+      );
+
+      expect(outcome, isA<GoalSpecRevisionMinted>());
+      expect(
+        (outcome as GoalSpecRevisionMinted).changeSummaries,
+        ['(committed before a sync error)'],
+      );
+      expect(outcome.version.authoredBy, 'user');
+    },
+  );
 
   test("a minted revision supersedes the old spec's live nudges — the "
       'revised goal never runs beside advice for the superseded one', () async {

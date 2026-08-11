@@ -43,12 +43,13 @@ void main() {
     GoalHealthDirection? direction,
     int? deficit,
     int? buffer,
+    GoalSpecVersionEntity? spec,
   }) => (
     trackStatus: trackStatus,
     attainment: null,
     reportOneLiner: reportOneLiner,
     pendingProposals: pendingProposals,
-    spec: null,
+    spec: spec,
     direction: direction,
     deficit: deficit,
     buffer: buffer,
@@ -152,6 +153,56 @@ void main() {
       'Trending up',
     );
   });
+
+  testWidgets(
+    'a row uses the goal title while retaining the persona identity',
+    (
+      tester,
+    ) async {
+      final spec =
+          AgentDomainEntity.goalSpecVersion(
+                id: 'goal-fit:spec-v1',
+                agentId: 'goal-fit',
+                version: 1,
+                status: GoalSpecVersionStatus.active,
+                authoredBy: 'user',
+                title: 'Walk daily',
+                statement: 'Walk every day.',
+                criteria: const GoalCriterion.habit(
+                  criterionId: 'walk',
+                  habitId: 'walk',
+                  window: GoalWindow.rollingDays(count: 7),
+                  targetCount: 5,
+                ),
+                createdAt: DateTime(2026),
+                vectorClock: null,
+              )
+              as GoalSpecVersionEntity;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const AgentsPage(),
+          overrides: [
+            activeGoalAgentsProvider.overrideWith(
+              (ref) async => [identity('goal-fit', 'Juno')],
+            ),
+            goalAgentHealthProvider('goal-fit').overrideWith(
+              (ref) async => health(
+                trackStatus: GoalTrackStatus.onTrack,
+                spec: spec,
+              ),
+            ),
+            goalAgentProgressViewProvider(
+              'goal-fit',
+            ).overrideWith((ref) async => null),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('Walk daily'), findsOneWidget);
+      expect(find.text('Juno'), findsNothing);
+    },
+  );
 
   testWidgets('a rolling-window goal shows a deterministic recovery hint when '
       'behind, and a buffer hint when at rate', (tester) async {

@@ -45,6 +45,7 @@ class GoalAgentService {
     required String title,
     required String statement,
     required GoalCriterion criteria,
+    String? displayName,
     DateTime? startDate,
     DateTime? targetDate,
     String? rationale,
@@ -71,7 +72,9 @@ class GoalAgentService {
         }
         final identity = await _agentService.createAgent(
           kind: AgentKinds.goalAgent,
-          displayName: title,
+          displayName: displayName?.trim().isNotEmpty ?? false
+              ? displayName!.trim()
+              : title,
           config: const AgentConfig(),
           agentId: agentId,
         );
@@ -159,6 +162,19 @@ class GoalAgentService {
   /// stop waking on signals; a re-activation re-registers).
   void removeSignalSubscriptions(String agentId) =>
       _orchestrator.removeSubscriptions(agentId);
+
+  /// Rebinds the runtime to an owner- or agent-authored spec revision and
+  /// evaluates it immediately against the evidence that already exists.
+  void refreshAfterRevision({
+    required String agentId,
+    required GoalCriterion criteria,
+  }) {
+    registerSignalSubscription(agentId, criteria);
+    _orchestrator.enqueueManualWake(
+      agentId: agentId,
+      reason: 'goal revised',
+    );
+  }
 
   /// Evidence-triggered wakes: the goal agent listens to exactly the
   /// signals its criteria reference — leaf dataTypes, habitIds and

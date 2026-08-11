@@ -6169,6 +6169,148 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Følger';
 
   @override
+  String get goalFormChooseHabit => 'Vælg en eksisterende vane';
+
+  @override
+  String get goalFormConfirmTitle => 'Mød din agent';
+
+  @override
+  String get goalFormContinue => 'Fortsæt';
+
+  @override
+  String get goalFormCostHonesty =>
+      'Bruger din valgte AI-udbyder. Det faktiske forbrug vises i målets samlede forbrugsmærker.';
+
+  @override
+  String get goalFormDecreaseTarget => 'Sænk ugemålet';
+
+  @override
+  String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormEditTitle => 'Rediger mål';
+
+  @override
+  String goalFormEditVersion(int version) {
+    return 'Dette starter version $version. Din historik bevares.';
+  }
+
+  @override
+  String get goalFormExampleGym => 'træn to gange om ugen';
+
+  @override
+  String get goalFormExampleRead => 'læs før sengetid';
+
+  @override
+  String get goalFormExampleWalk => 'gå mere';
+
+  @override
+  String get goalFormFooter =>
+      'Du kan når som helst omdøbe, justere, sætte på pause eller slette dette mål.';
+
+  @override
+  String goalFormHabitCadence(String habit, int count) {
+    return '$habit ($count× om ugen)';
+  }
+
+  @override
+  String get goalFormHabitSignal => 'vaneafkrydsning';
+
+  @override
+  String get goalFormIncreaseTarget => 'Hæv ugemålet';
+
+  @override
+  String get goalFormIntentionHelper =>
+      'Sig det på din måde — sådan taler din agent om det.';
+
+  @override
+  String get goalFormIntentionHint =>
+      'Træn to gange om ugen, og hold fast i mine morgenøvelser.';
+
+  @override
+  String get goalFormIntentionPrompt => 'Hvad vil du arbejde hen imod?';
+
+  @override
+  String get goalFormLooksRight => 'Det ser rigtigt ud';
+
+  @override
+  String get goalFormMappingIntro =>
+      'Jeg kan kun coache det, jeg kan se. Disse afkrydsninger er mine øjne:';
+
+  @override
+  String get goalFormMappingTitle => 'Her er det, jeg kan følge';
+
+  @override
+  String get goalFormNoHabits => 'Der er endnu ingen aktive vaner.';
+
+  @override
+  String get goalFormOpenHabits => 'Opret en vane først';
+
+  @override
+  String get goalFormPersonaLabel => 'Agentens navn';
+
+  @override
+  String get goalFormPreservedCriteriaSummary =>
+      'De eksisterende signaler og tidsplanen bevares uændret.';
+
+  @override
+  String goalFormProgress(int step) {
+    return 'Trin $step af 3';
+  }
+
+  @override
+  String get goalFormRefusalBody =>
+      'Jeg ville skulle gætte, og jeg coacher ikke på gæt. Vælg et observerbart alternativ, eller omskriv intentionen.';
+
+  @override
+  String get goalFormRefusalFooter =>
+      'En agent, der ikke kan se dit mål, siger det — den lader aldrig som om.';
+
+  @override
+  String get goalFormRefusalTitle =>
+      'Jeg kan ikke se denne intention — intet, jeg følger, fortæller mig, at det skete.';
+
+  @override
+  String goalFormRestatement(String signals) {
+    return 'Jeg følger $signals over en rullende uge — og siger kun til, når det hjælper.';
+  }
+
+  @override
+  String get goalFormRollingNote =>
+      'Rullende uge — altid de seneste 7 dage. Antal gælder pr. vane; ingen døde weekender, ingen tabte uger.';
+
+  @override
+  String get goalFormSaveChanges => 'Gem ny version';
+
+  @override
+  String goalFormStepsCadence(String target) {
+    return '$target skridt om dagen';
+  }
+
+  @override
+  String get goalFormStepsSignal => 'automatisk skridttælling';
+
+  @override
+  String get goalFormUnsupportedCriteria =>
+      'Dette mål bruger en kobling, som editoren ikke sikkert kan ændre. Du kan stadig omdøbe målet, intentionen og agenten.';
+
+  @override
+  String get goalFormValidationIdentity => 'Giv målet og agenten et navn.';
+
+  @override
+  String get goalFormValidationIntention =>
+      'Beskriv først, hvad du vil arbejde hen imod.';
+
+  @override
+  String get goalFormValidationMapping =>
+      'Vælg mindst ét signal, som agenten faktisk kan observere.';
+
+  @override
+  String goalFormWeeklyTarget(int count) {
+    return '$count× / 7 dage';
+  }
+
+  @override
   String get goalHealthTrendDown => 'Falder';
 
   @override

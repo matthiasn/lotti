@@ -238,18 +238,9 @@ final goalChangeSetConfirmationServiceProvider =
               }
               ref
                   .read(goalAgentServiceProvider)
-                  .registerSignalSubscription(
-                    changeSet.agentId,
-                    version.criteria,
-                  );
-              // One immediate deterministic evaluation over the data that
-              // already exists — revised health must not stay blank until
-              // tomorrow's cadence tick (the creation-time behavior).
-              ref
-                  .read(wakeOrchestratorProvider)
-                  .enqueueManualWake(
+                  .refreshAfterRevision(
                     agentId: changeSet.agentId,
-                    reason: 'goal revision approved',
+                    criteria: version.criteria,
                   );
               // The revision sweep superseded the old spec's banners, but
               // the banner provider's per-agent stream dependency is
@@ -341,7 +332,12 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
           final snoozedUntil = goalBannerSnoozedUntil(nudge);
           considerDeadline(snoozedUntil);
           if (goalBannerIsSnoozed(nudge, now)) continue;
-          entries.add((nudge: nudge, goalTitle: identity.displayName));
+          entries.add((
+            nudge: nudge,
+            goalTitle: headVersion is GoalSpecVersionEntity
+                ? headVersion.title
+                : identity.displayName,
+          ));
         }
       }
       entries.sort(
