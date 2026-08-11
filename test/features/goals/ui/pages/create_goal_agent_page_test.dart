@@ -1287,6 +1287,53 @@ void main() {
     expect(savedHabits.single.habitId, 'gym');
   });
 
+  testWidgets('an integrity lookup failure keeps the edit open and unsaved', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const hiddenCriteria = GoalCriterion.habit(
+      criterionId: 'habit-private',
+      habitId: 'private-habit',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 4,
+    );
+    final current = _spec(criteria: hiddenCriteria);
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('private-habit'),
+    ).thenThrow(StateError('database unavailable'));
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+
+    expect(
+      find.text('Saving the goal failed — please try again.'),
+      findsOneWidget,
+    );
+    verifyNever(
+      () => revisionService.reviseFromOwner(
+        agentId: any(named: 'agentId'),
+        baseVersionId: any(named: 'baseVersionId'),
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
+  });
+
   testWidgets('editing preserves an unsupported mapping while renaming', (
     tester,
   ) async {
