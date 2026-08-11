@@ -663,13 +663,14 @@ void main() {
   });
 
   group('ToolExecutionResult', () {
-    test('defaults policyDenied to false', () {
+    test('defaults policy and retryability flags to false', () {
       const result = ToolExecutionResult(
         success: true,
         output: 'ok',
       );
 
       expect(result.policyDenied, isFalse);
+      expect(result.nonRetryable, isFalse);
       expect(result.mutatedEntityId, isNull);
       expect(result.errorMessage, isNull);
     });
@@ -681,6 +682,7 @@ void main() {
         mutatedEntityId: 'ent-1',
         errorMessage: 'err',
         policyDenied: true,
+        nonRetryable: true,
       );
 
       expect(result.success, isFalse);
@@ -688,6 +690,7 @@ void main() {
       expect(result.mutatedEntityId, equals('ent-1'));
       expect(result.errorMessage, equals('err'));
       expect(result.policyDenied, isTrue);
+      expect(result.nonRetryable, isTrue);
     });
 
     test('fromHandlerResult maps a write result onto the entity id', () {

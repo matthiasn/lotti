@@ -556,7 +556,7 @@ void main() {
         taskId: 'goal-001',
         items: const [
           ChangeItem(
-            toolName: 'propose_goal_revision',
+            toolName: 'propose_goal_revision_v2',
             args: {
               'changes': {'targetValue': 8000},
               'rationale': 'ease off',

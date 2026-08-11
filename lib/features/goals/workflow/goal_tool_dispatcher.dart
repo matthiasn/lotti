@@ -4,11 +4,12 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 
 /// Applies ACCEPTED goal change-set items (the `EventToolDispatcher`
 /// shape): the confirmation service persists the decision, then hands the
-/// item here. One case today — `propose_goal_revision`, whose acceptance
+/// item here. One case today — `propose_goal_revision_v2`, whose acceptance
 /// mints a new spec version and moves the head.
 ///
-/// Refusals return `success: false` so the proposal stays unresolved
-/// instead of half-applying (the accept-after-delete posture).
+/// Refusals return `success: false` and `nonRetryable: true`, allowing the
+/// confirmation service to retract a proposal whose immutable arguments can
+/// never apply instead of leaving a dead retry action.
 class GoalToolDispatcher {
   GoalToolDispatcher({required this._revisionService});
 
@@ -22,6 +23,13 @@ class GoalToolDispatcher {
     switch (toolName) {
       case GoalAgentToolNames.proposeGoalRevision:
         return _handleProposeGoalRevision(args, agentId);
+      case GoalAgentToolNames.legacyProposeGoalRevision:
+        return const ToolExecutionResult(
+          success: false,
+          output: 'Error: this goal revision proposal uses an obsolete format',
+          errorMessage: 'Obsolete goal revision proposal',
+          nonRetryable: true,
+        );
       default:
         return ToolExecutionResult(
           success: false,
@@ -41,6 +49,7 @@ class GoalToolDispatcher {
         success: false,
         output: 'Error: the proposal carries no changes object',
         errorMessage: 'Missing changes',
+        nonRetryable: true,
       );
     }
     final rationaleValue = args['rationale'];
@@ -55,6 +64,7 @@ class GoalToolDispatcher {
         success: false,
         output: 'Error: the proposal carries no originating goal version',
         errorMessage: 'Missing originating goal version',
+        nonRetryable: true,
       );
     }
 
@@ -78,6 +88,7 @@ class GoalToolDispatcher {
         success: false,
         output: 'Error: $reason',
         errorMessage: reason,
+        nonRetryable: true,
       ),
     };
   }

@@ -1,7 +1,7 @@
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_window.dart';
 
-/// The result of applying a `propose_goal_revision` changes payload to a
+/// The result of applying a `propose_goal_revision_v2` changes payload to a
 /// criteria tree: either a revised tree plus a human summary of what
 /// changed, or a rejection reason the approval surface can show.
 sealed class GoalRevisionResult {
@@ -26,7 +26,7 @@ class GoalRevisionRejected extends GoalRevisionResult {
   final String reason;
 }
 
-/// Applies the model-proposed `changes` map (the `propose_goal_revision`
+/// Applies the model-proposed `changes` map (the `propose_goal_revision_v2`
 /// tool contract: `metric`, `targetValue`, `period`, `cadence`,
 /// `successCriteria`) to [criteria].
 ///

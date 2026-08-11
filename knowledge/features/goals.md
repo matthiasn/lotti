@@ -211,7 +211,7 @@ flowchart TD
   honors the user's request while still enforcing duplicate-copy and stale-spec
   guards. Report prose passes
   `sanitizeAgentReportText`.
-- **The goal spec never mutates in a wake.** `propose_goal_revision`
+- **The goal spec never mutates in a wake.** `propose_goal_revision_v2`
   lands as a pending ChangeSet for user approval and persists the originating
   immutable spec version in its tool arguments; ad state is validated
   in-conversation against the ids the FACTS offered, and all outputs
@@ -226,7 +226,12 @@ flowchart TD
   goal_agent`, `diffFromVersionId`, the proposal's rationale) and moves
   the head in one transaction. Approval refuses the item when that persisted
   base version is no longer the current head, including proposals that arrive
-  late from an offline peer. Grace history resets naturally: Phase A's
+  late from an offline peer. The v2 tool name is also the capability fence for
+  mixed client versions: an older client does not recognize or apply it, while
+  a current client rejects and auto-retracts legacy v1 proposals. Malformed or
+  stale v2 proposals are deterministic failures and are likewise retracted,
+  rather than restored to a pending state that can never succeed. Grace history
+  resets naturally: Phase A's
   prior-row streak breaks at the version change. The revision service rechecks
   that the identity is still an active goal inside the serialized path;
   inactive details hide the approval card as well. After acceptance the

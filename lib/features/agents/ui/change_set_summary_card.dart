@@ -415,7 +415,8 @@ class _ChangeItemTileState extends ConsumerState<_ChangeItemTile> {
         // Goal proposals face non-technical review — a raw tool id would
         // leak the wire vocabulary into every locale. (Literal spelling:
         // features/agents must not import goals.)
-        _item.toolName == 'propose_goal_revision'
+        (_item.toolName == 'propose_goal_revision' ||
+                _item.toolName == 'propose_goal_revision_v2')
             ? context.messages.agentToolGoalRevisionLabel
             : _item.toolName,
         style: context.textTheme.bodySmall?.copyWith(

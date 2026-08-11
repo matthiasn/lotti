@@ -170,6 +170,62 @@ void main() {
     expect(head.updatedAt, now);
   });
 
+  test(
+    'an agent proposal mint leaves other pending proposals untouched',
+    () async {
+      stubSpec();
+      final pending =
+          AgentDomainEntity.changeSet(
+                id: 'pending-revision',
+                agentId: agentId,
+                taskId: agentId,
+                threadId: 'thread-1',
+                runKey: 'run-1',
+                status: ChangeSetStatus.pending,
+                items: const [
+                  ChangeItem(
+                    toolName: GoalAgentToolNames.proposeGoalRevision,
+                    args: {
+                      'baseVersionId': '$agentId:spec-v1',
+                      'changes': {'targetValue': 7000},
+                    },
+                    humanSummary: 'Lower the target again',
+                  ),
+                ],
+                createdAt: DateTime(2026, 8),
+                vectorClock: null,
+              )
+              as ChangeSetEntity;
+      when(
+        () => repository.getEntitiesByAgentIdAndSubtypes(
+          agentId,
+          type: AgentEntityTypes.changeSet,
+          subtypes: any(named: 'subtypes'),
+        ),
+      ).thenAnswer((_) async => [pending]);
+
+      final outcome = await withClock(
+        fixedClock,
+        () => service.reviseFromProposal(
+          agentId: agentId,
+          baseVersionId: '$agentId:spec-v1',
+          changes: {'targetValue': 8000},
+          rationale: 'ease off',
+        ),
+      );
+
+      expect(outcome, isA<GoalSpecRevisionMinted>());
+      expect(upserts.whereType<ChangeSetEntity>(), isEmpty);
+      verifyNever(
+        () => repository.getEntitiesByAgentIdAndSubtypes(
+          any(),
+          type: any(named: 'type'),
+          subtypes: any(named: 'subtypes'),
+        ),
+      );
+    },
+  );
+
   test('an owner edit mints a user-authored version, updates the persona, '
       'and preserves independently authored habit targets', () async {
     stubSpec(version: 3);

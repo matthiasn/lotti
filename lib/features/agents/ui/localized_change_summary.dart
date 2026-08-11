@@ -76,7 +76,8 @@ String? localizedChangeSummary(
 
   // The literal spelling, not GoalAgentToolNames: `features/agents`
   // must not import goals (the plug-in direction the arch test pins).
-  'propose_goal_revision' => _goalRevision(messages, args),
+  'propose_goal_revision' ||
+  'propose_goal_revision_v2' => _goalRevision(messages, args),
 
   ProjectAgentToolNames.recommendNextSteps => _recommendNextSteps(
     messages,

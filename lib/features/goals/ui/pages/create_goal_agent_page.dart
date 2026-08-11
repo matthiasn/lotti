@@ -256,24 +256,28 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _reconcileHabitTargets();
     if (!_editing) return;
 
-    final habitsAsync = ref.read(_habitDefinitionsProvider);
-    final currentHabits = habitsAsync.value;
-    if (currentHabits == null || habitsAsync.hasError) return;
-
-    final visibleHabitIds = {for (final habit in currentHabits) habit.id};
-    final hiddenLoadedIds = _mapping.habitTargets.keys
+    final persistedSelectedIds = _mapping.habitTargets.keys
         .where(_habitTargets.containsKey)
-        .where((habitId) => !visibleHabitIds.contains(habitId))
         .toList(growable: false);
-    if (hiddenLoadedIds.isEmpty) return;
+    if (persistedSelectedIds.isEmpty) return;
 
     final repository = ref.read(habitsRepositoryProvider);
-    for (final habitId in hiddenLoadedIds) {
-      final habit = await repository.getHabitByIdForIntegrity(habitId);
+    final resolvedHabits = await Future.wait([
+      for (final habitId in persistedSelectedIds)
+        repository.getHabitByIdForIntegrity(habitId),
+    ]);
+    for (var index = 0; index < persistedSelectedIds.length; index++) {
+      final habitId = persistedSelectedIds[index];
+      final habit = resolvedHabits[index];
       if (habit == null || !habit.active || habit.deletedAt != null) {
         _habitTargets.remove(habitId);
       }
     }
+    if (!mounted) return;
+
+    // The visible stream can refresh while integrity reads are in flight.
+    // Reconcile newly selected (non-persisted) habits against its latest value.
+    _reconcileHabitTargets();
   }
 
   void _invalidateGoalViews(ProviderContainer container, String agentId) {
@@ -323,6 +327,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       }
       return;
     }
+    if (!mounted) return;
+
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
     final criteria = _watchesSteps && (stepsTarget == null || stepsTarget <= 0)
         ? null

@@ -35,10 +35,10 @@ class GoalSpecRevisionRefused extends GoalSpecRevisionOutcome {
   final String reason;
 }
 
-/// Mints a new goal spec version from an APPROVED `propose_goal_revision`
-/// ChangeSet item and moves the head — the ONLY path that ever changes a
-/// goal after creation (ADR 0053: the coach never quietly moves its own
-/// goalposts; the user's approval is what runs this).
+/// Mints a new goal spec version from an APPROVED `propose_goal_revision_v2`
+/// ChangeSet item or an explicit owner edit, then moves the head. These are the
+/// only paths that change a goal after creation (ADR 0053: the coach never
+/// quietly moves its own goalposts; approval or direct editing is required).
 ///
 /// The soul-version-ops pattern: everything in one transaction — supersede
 /// the current version, mint `version + 1` with full provenance
@@ -61,6 +61,12 @@ class GoalSpecRevisionService {
   static const String proposalStaleVersionReason =
       'the goal changed after this proposal was created';
 
+  /// Applies an approved agent proposal against the exact goal version from
+  /// which it was authored.
+  ///
+  /// Callers must pass that originating version as [baseVersionId]. The save
+  /// is refused when the current head no longer matches, preventing a stale
+  /// synced proposal from overwriting a newer owner or agent revision.
   Future<GoalSpecRevisionOutcome> reviseFromProposal({
     required String agentId,
     required String baseVersionId,
@@ -410,7 +416,7 @@ class GoalSpecRevisionService {
       final items = changeSet.items
           .map((item) {
             if (item.status != ChangeItemStatus.pending ||
-                item.toolName != GoalAgentToolNames.proposeGoalRevision) {
+                !GoalAgentToolNames.isGoalRevisionProposal(item.toolName)) {
               return item;
             }
             changed = true;

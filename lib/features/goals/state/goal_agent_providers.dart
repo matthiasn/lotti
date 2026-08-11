@@ -183,7 +183,7 @@ final goalSignalSyncListenerProvider = Provider<GoalSignalSyncListener>(
   name: 'goalSignalSyncListenerProvider',
 );
 
-/// Revision minting for accepted `propose_goal_revision` proposals.
+/// Revision minting for accepted `propose_goal_revision_v2` proposals.
 final goalSpecRevisionServiceProvider = Provider<GoalSpecRevisionService>(
   (ref) => GoalSpecRevisionService(
     repository: ref.watch(agentRepositoryProvider),
@@ -208,7 +208,7 @@ final goalChangeSetConfirmationServiceProvider =
         domainLogger: ref.watch(domainLoggerProvider),
         onConfirmedDecision:
             ({required changeSet, required item, required decision}) async {
-              if (item.toolName != GoalAgentToolNames.proposeGoalRevision) {
+              if (!GoalAgentToolNames.isGoalRevisionProposal(item.toolName)) {
                 return;
               }
               final repository = ref.read(agentRepositoryProvider);

@@ -31,10 +31,10 @@ typedef ChangeSetResolvedCallback =
 /// - Some items resolved → [ChangeSetStatus.partiallyResolved]
 ///
 /// Failed confirmations normally revert to [ChangeItemStatus.pending] so the
-/// user can retry. Stale `update_running_timer` confirmations are the
-/// exception: once the active timer has changed, retrying the same proposal is
-/// invalid, so the service records an agent retraction and removes it from the
-/// open suggestion list.
+/// user can retry. A dispatcher can mark a deterministic failure as
+/// [ToolExecutionResult.nonRetryable]; stale `update_running_timer`
+/// confirmations are also recognized here for backward compatibility. These
+/// failures are recorded as agent retractions and removed from the open list.
 ///
 /// For task-split workflows, manages cross-item ID resolution:
 /// when `create_follow_up_task` succeeds, the placeholder→actual mapping
@@ -153,7 +153,7 @@ class ChangeSetConfirmationService {
 
     // 2. Execute the tool call. If dispatch fails, either revert the status
     //    back to pending so the user can retry, or retract non-retryable stale
-    //    timer proposals that can never succeed after the active timer changed.
+    //    proposals that can never succeed with their immutable arguments.
     late final ToolExecutionResult result;
     var dispatchThrew = false;
     try {
@@ -198,7 +198,7 @@ class ChangeSetConfirmationService {
           toolName: item.toolName,
           verdict: ChangeDecisionVerdict.retracted,
           actor: DecisionActor.agent,
-          retractionReason: _failedConfirmationRetractionReason(result),
+          retractionReason: _failedConfirmationRetractionReason(item, result),
           humanSummary: item.humanSummary,
           args: item.args,
         );
@@ -324,6 +324,7 @@ class ChangeSetConfirmationService {
     ToolExecutionResult result, {
     required bool dispatchThrew,
   }) {
+    if (result.nonRetryable) return true;
     if (item.toolName != TaskAgentToolNames.updateRunningTimer) {
       return false;
     }
@@ -335,15 +336,16 @@ class ChangeSetConfirmationService {
   }
 
   static String _failedConfirmationRetractionReason(
+    ChangeItem item,
     ToolExecutionResult result,
   ) {
     final detail = (result.errorMessage?.trim().isNotEmpty ?? false)
         ? result.errorMessage!.trim()
         : result.output.trim();
     if (detail.isEmpty) {
-      return 'Confirmed update_running_timer proposal failed while applying.';
+      return 'Confirmed ${item.toolName} proposal failed while applying.';
     }
-    return 'Confirmed update_running_timer proposal failed while applying: '
+    return 'Confirmed ${item.toolName} proposal failed while applying: '
         '$detail';
   }
 

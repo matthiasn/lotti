@@ -140,6 +140,7 @@ void main() {
     );
     expect(result.success, isFalse);
     expect(result.errorMessage, contains('unrecognized period'));
+    expect(result.nonRetryable, isTrue);
     expect(upserts, isEmpty);
   });
 
@@ -153,6 +154,7 @@ void main() {
       );
       expect(noChanges.success, isFalse);
       expect(noChanges.errorMessage, 'Missing changes');
+      expect(noChanges.nonRetryable, isTrue);
 
       final noBaseVersion = await dispatcher.dispatch(
         GoalAgentToolNames.proposeGoalRevision,
@@ -164,10 +166,24 @@ void main() {
       );
       expect(noBaseVersion.success, isFalse);
       expect(noBaseVersion.errorMessage, 'Missing originating goal version');
+      expect(noBaseVersion.nonRetryable, isTrue);
+
+      final legacy = await dispatcher.dispatch(
+        GoalAgentToolNames.legacyProposeGoalRevision,
+        {
+          'changes': {'targetValue': 8000},
+          'rationale': 'r',
+        },
+        agentId,
+      );
+      expect(legacy.success, isFalse);
+      expect(legacy.errorMessage, 'Obsolete goal revision proposal');
+      expect(legacy.nonRetryable, isTrue);
 
       final unknown = await dispatcher.dispatch('made_up_tool', {}, agentId);
       expect(unknown.success, isFalse);
       expect(unknown.errorMessage, contains('not registered'));
+      expect(unknown.nonRetryable, isFalse);
     },
   );
 
@@ -191,6 +207,7 @@ void main() {
         result.errorMessage,
         GoalSpecRevisionService.proposalStaleVersionReason,
       );
+      expect(result.nonRetryable, isTrue);
       expect(upserts, isEmpty);
     },
   );

@@ -42,9 +42,19 @@ void main() {
         tool.name,
         tool.name == GoalAgentToolNames.replyToUser
             ? AgentConversationToolNames.replyToUser
-            : matches(RegExp(r'^[a-z]+_goal_[a-z_]+$')),
+            : matches(RegExp(r'^[a-z]+_goal_[a-z0-9_]+$')),
       );
     }
+    expect(
+      GoalAgentToolNames.proposeGoalRevision,
+      'propose_goal_revision_v2',
+    );
+    expect(
+      GoalAgentToolNames.isGoalRevisionProposal(
+        GoalAgentToolNames.legacyProposeGoalRevision,
+      ),
+      isTrue,
+    );
   });
 
   test('the enum vocabularies are derived from the real enums — the '

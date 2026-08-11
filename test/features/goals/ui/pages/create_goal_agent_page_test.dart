@@ -1136,6 +1136,7 @@ void main() {
           criteria: criteria,
         ),
       ).called(1);
+      verify(() => habitsRepository.getHabitByIdForIntegrity('gym')).called(1);
       await habits.close();
       await tester.pump();
     },
@@ -1287,6 +1288,55 @@ void main() {
     expect(savedHabits.single.habitId, 'gym');
   });
 
+  testWidgets(
+    'editing drops a visible habit that became inactive before save',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const criteria = GoalCriterion.habit(
+        criterionId: 'habit-gym',
+        habitId: 'gym',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 2,
+      );
+      final current = _spec(criteria: criteria);
+      when(
+        () => habitsRepository.getHabitByIdForIntegrity('gym'),
+      ).thenAnswer((_) async => _habit('gym', 'Gym', active: false));
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(editSpec: current),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Looks right'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save new version'));
+      await tester.pump();
+
+      expect(
+        find.text('Choose at least one signal the agent can actually observe.'),
+        findsOneWidget,
+      );
+      verify(() => habitsRepository.getHabitByIdForIntegrity('gym')).called(1);
+      verifyNever(
+        () => revisionService.reviseFromOwner(
+          agentId: any(named: 'agentId'),
+          baseVersionId: any(named: 'baseVersionId'),
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      );
+    },
+  );
+
   testWidgets('an integrity lookup failure keeps the edit open and unsaved', (
     tester,
   ) async {
@@ -1322,6 +1372,57 @@ void main() {
       find.text('Saving the goal failed — please try again.'),
       findsOneWidget,
     );
+    expect(
+      find.byKey(const ValueKey('goal-form-title')),
+      findsOneWidget,
+    );
+    verifyNever(
+      () => revisionService.reviseFromOwner(
+        agentId: any(named: 'agentId'),
+        baseVersionId: any(named: 'baseVersionId'),
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
+  });
+
+  testWidgets('a disposed edit abandons a pending integrity lookup', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const hiddenCriteria = GoalCriterion.habit(
+      criterionId: 'habit-private',
+      habitId: 'private-habit',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 4,
+    );
+    final integrityLookup = Completer<HabitDefinition?>();
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('private-habit'),
+    ).thenAnswer((_) => integrityLookup.future);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: _spec(criteria: hiddenCriteria)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    integrityLookup.complete(_habit('private-habit', 'Private habit'));
+    await tester.pump();
+
     verifyNever(
       () => revisionService.reviseFromOwner(
         agentId: any(named: 'agentId'),

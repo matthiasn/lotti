@@ -24,8 +24,18 @@ class GoalAgentToolNames {
   static const rerunGoalAd = 'rerun_goal_ad';
   static const retireGoalAd = 'retire_goal_ad';
   static const snoozeGoalAd = 'snooze_goal_ad';
-  static const proposeGoalRevision = 'propose_goal_revision';
+
+  /// Legacy unfenced proposal contract. New clients never emit or apply it;
+  /// retaining the name lets them retract proposals synced from older builds.
+  static const legacyProposeGoalRevision = 'propose_goal_revision';
+
+  /// Versioned proposal contract whose persisted arguments include the goal
+  /// spec version against which the proposal was authored.
+  static const proposeGoalRevision = 'propose_goal_revision_v2';
   static const recordGoalObservation = 'record_goal_observation';
+
+  static bool isGoalRevisionProposal(String toolName) =>
+      toolName == proposeGoalRevision || toolName == legacyProposeGoalRevision;
 }
 
 /// Track-status vocabulary of the report tool — the deterministic
@@ -53,7 +63,7 @@ Act in this order of precedence:
 1. Unanswered user message: call reply_to_user exactly once first. When asked,
    restate goal and criteria exactly from FACTS.
 2. Goal-change requests: restate the current goal, then call
-   propose_goal_revision exactly once. For vague musings, ask one clarifying
+   propose_goal_revision_v2 exactly once. For vague musings, ask one clarifying
    question. Never change the goal another way.
 3. Ads: retire_goal_ad when FACTS mark the active ad stale (back on pace,
    quota completed, or recovering). With no fresh active ad, an ad is REQUIRED
