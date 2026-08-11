@@ -70,8 +70,11 @@ own rolling-seven-day cadence, unobservable intentions receive an honest
 refusal instead of a fictional measurement, and the user names both the goal
 and its conversational persona. The same flow edits an active goal from its
 detail menu. Owner edits preserve criterion identities where possible, retain
-unsupported criterion trees read-only, and mint a new immutable spec version
-before re-registering signals and waking the agent. Goal chat stays
+unsupported or out-of-range criterion trees read-only, keep already-authored
+habit criteria when privacy hides them from the picker, and mint a new
+immutable spec version before re-registering signals and waking the agent. A
+stale editor returns to the refreshed goal instead of offering a retry that
+cannot succeed. Goal chat stays
 purpose-bound: unrelated general-assistant requests are redirected to the goal
 rather than answered.
 Weekly reliability is shown only for authored rolling-seven-day habits rather

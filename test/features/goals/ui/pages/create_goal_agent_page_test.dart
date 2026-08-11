@@ -755,6 +755,49 @@ void main() {
     }
   });
 
+  testWidgets('generic cadence words do not select an unrelated habit', (
+    tester,
+  ) async {
+    when(habitsRepository.watchHabitDefinitions).thenAnswer(
+      (_) => Stream.value([
+        _habit('meditate', 'Meditate daily'),
+        _habit('walk', 'Walk'),
+      ]),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Walk daily',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pumpAndSettle();
+
+    expect(
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(const ValueKey('goal-form-habit-meditate')),
+          )
+          .selected,
+      isFalse,
+    );
+    expect(
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(const ValueKey('goal-form-habit-walk')),
+          )
+          .selected,
+      isTrue,
+    );
+  });
+
   testWidgets('refuses an unobservable intention and offers real signals', (
     tester,
   ) async {
@@ -1084,6 +1127,65 @@ void main() {
     },
   );
 
+  testWidgets('editing preserves a habit omitted from the visible snapshot', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const hiddenCriteria = GoalCriterion.habit(
+      criterionId: 'habit-private',
+      habitId: 'private-habit',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 4,
+    );
+    final current = _spec(criteria: hiddenCriteria);
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: current.id,
+        displayName: 'Mika',
+        title: current.title,
+        statement: current.statement,
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer(
+      (_) async => const GoalSpecRevisionRefused(
+        GoalSpecRevisionService.ownerNoChangesReason,
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-persona')),
+      'Mika',
+    );
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+
+    final criteria = verify(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: current.id,
+        displayName: 'Mika',
+        title: current.title,
+        statement: current.statement,
+        criteria: captureAny(named: 'criteria'),
+      ),
+    ).captured.single;
+    expect(criteria, hiddenCriteria);
+  });
+
   testWidgets('editing preserves an unsupported mapping while renaming', (
     tester,
   ) async {
@@ -1309,6 +1411,55 @@ void main() {
         agentId: any(named: 'agentId'),
         criteria: any(named: 'criteria'),
       ),
+    );
+  });
+
+  testWidgets('a stale edit returns to the refreshed goal details', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: any(named: 'baseVersionId'),
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer(
+      (_) async => const GoalSpecRevisionRefused(
+        GoalSpecRevisionService.ownerStaleVersionReason,
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: _spec()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-title')),
+      'New name',
+    );
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+
+    expect(navigated, ['/agents/details/goal-1']);
+    expect(
+      find.text('Saving the goal failed — please try again.'),
+      findsNothing,
     );
   });
 }

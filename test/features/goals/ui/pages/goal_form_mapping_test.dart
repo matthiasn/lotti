@@ -180,6 +180,28 @@ void main() {
     },
   );
 
+  test('a non-positive steps target stays losslessly read-only', () {
+    const criteria = GoalCriterion.metric(
+      criterionId: 'steps-zero',
+      dataType: 'cumulative_step_count',
+      title: 'Legacy zero target',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.dailySumThenAverage,
+      target: 0,
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+
+    expect(draft.isEditable, isFalse);
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Average steps per day',
+        habitTargets: const {},
+      ),
+      criteria,
+    );
+  });
+
   test('a composite added around a routine leaf receives a distinct id', () {
     const criteria = GoalCriterion.habit(
       criterionId: 'routine',

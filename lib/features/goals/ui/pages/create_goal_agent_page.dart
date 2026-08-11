@@ -43,6 +43,34 @@ class CreateGoalAgentPage extends ConsumerStatefulWidget {
 enum _GoalFormStep { intention, mapping, confirmation }
 
 class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
+  static const _genericIntentionWords = {
+    'and',
+    'consistent',
+    'consistently',
+    'daily',
+    'day',
+    'days',
+    'each',
+    'every',
+    'goal',
+    'habit',
+    'month',
+    'monthly',
+    'months',
+    'per',
+    'regular',
+    'regularly',
+    'routine',
+    'time',
+    'times',
+    'week',
+    'weekly',
+    'weeks',
+    'year',
+    'yearly',
+    'years',
+  };
+
   final _statement = TextEditingController();
   final _title = TextEditingController();
   final _persona = TextEditingController();
@@ -124,7 +152,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final normalizedLabel = label.trim().toLowerCase();
     if (normalizedLabel.isEmpty) return false;
     if (intention == normalizedLabel) return true;
-    return _words(normalizedLabel).intersection(_words(intention)).isNotEmpty;
+    final distinctiveLabelWords = _words(
+      normalizedLabel,
+    ).difference(_genericIntentionWords);
+    return distinctiveLabelWords.intersection(_words(intention)).isNotEmpty;
   }
 
   String _habitsFingerprint(List<HabitDefinition> habits) =>
@@ -210,9 +241,24 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final currentHabits = habitsAsync.value;
     if (currentHabits == null || habitsAsync.hasError) return;
     final activeHabitIds = {for (final habit in currentHabits) habit.id};
+    final loadedHabitIds = _editing
+        ? _mapping.habitTargets.keys.toSet()
+        : const <String>{};
     _habitTargets.removeWhere(
-      (habitId, _) => !activeHabitIds.contains(habitId),
+      (habitId, _) =>
+          !activeHabitIds.contains(habitId) &&
+          !loadedHabitIds.contains(habitId),
     );
+  }
+
+  void _invalidateGoalViews(ProviderContainer container, String agentId) {
+    container
+      ..invalidate(agentIdentityProvider(agentId))
+      ..invalidate(goalAgentHealthProvider(agentId))
+      ..invalidate(goalAgentProgressViewProvider(agentId))
+      ..invalidate(activeGoalAgentsProvider)
+      ..invalidate(activeGoalNudgesProvider)
+      ..invalidate(goalNudgeHistoryProvider(agentId));
   }
 
   String _signalDescription(List<HabitDefinition> habits) {
@@ -294,16 +340,16 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         );
       } else if (outcome case GoalSpecRevisionRefused(
         :final reason,
+      ) when reason == GoalSpecRevisionService.ownerStaleVersionReason) {
+        _invalidateGoalViews(container, agentId);
+        if (mounted) beamToNamed('/agents/details/$agentId');
+        return;
+      } else if (outcome case GoalSpecRevisionRefused(
+        :final reason,
       ) when reason != GoalSpecRevisionService.ownerNoChangesReason) {
         throw StateError(reason);
       }
-      container
-        ..invalidate(agentIdentityProvider(agentId))
-        ..invalidate(goalAgentHealthProvider(agentId))
-        ..invalidate(goalAgentProgressViewProvider(agentId))
-        ..invalidate(activeGoalAgentsProvider)
-        ..invalidate(activeGoalNudgesProvider)
-        ..invalidate(goalNudgeHistoryProvider(agentId));
+      _invalidateGoalViews(container, agentId);
       if (mounted) beamToNamed('/agents/details/$agentId');
     } on Object {
       if (mounted) {

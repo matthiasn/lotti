@@ -71,6 +71,7 @@ class GoalFormMapping {
                 window == const GoalWindow.rollingDays(count: 7) &&
                 aggregation == GoalAggregation.dailySumThenAverage &&
                 direction == GoalDirection.atLeast &&
+                target > 0 &&
                 !watchesSteps:
           watchesSteps = true;
           stepsTarget = target;
