@@ -11,7 +11,8 @@ import 'package:mocktail/mocktail.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
-  test('projects only durable user turns and reply_to_user actions', () async {
+  test('projects only durable user turns and reply_to_user actions while '
+      'hiding legacy FACTS rows', () async {
     final repository = MockAgentRepository();
     final now = DateTime(2026, 8, 11, 9);
     AgentMessageEntity message({
@@ -19,6 +20,7 @@ void main() {
       required AgentMessageKind kind,
       required String payloadId,
       String? toolName,
+      String? runKey,
     }) =>
         AgentDomainEntity.agentMessage(
               id: id,
@@ -28,7 +30,10 @@ void main() {
               createdAt: now.add(Duration(minutes: id == 'user' ? 0 : 1)),
               vectorClock: null,
               contentEntryId: payloadId,
-              metadata: AgentMessageMetadata(toolName: toolName),
+              metadata: AgentMessageMetadata(
+                toolName: toolName,
+                runKey: runKey,
+              ),
             )
             as AgentMessageEntity;
 
@@ -48,13 +53,19 @@ void main() {
       kind: AgentMessageKind.thought,
       payloadId: 'payload-thought',
     );
+    final legacyFacts = message(
+      id: 'legacy-facts',
+      kind: AgentMessageKind.user,
+      payloadId: 'payload-facts',
+      runKey: 'automatic-run',
+    );
     when(
       () => repository.getEntitiesByAgentId(
         'goal-1',
         type: AgentEntityTypes.agentMessage,
         limit: 50,
       ),
-    ).thenAnswer((_) async => [reply, privateThought, user]);
+    ).thenAnswer((_) async => [reply, legacyFacts, privateThought, user]);
     when(() => repository.getEntity('payload-user')).thenAnswer(
       (_) async => AgentDomainEntity.agentMessagePayload(
         id: 'payload-user',
@@ -96,5 +107,6 @@ void main() {
       AgentChatRole.agent,
     ]);
     verifyNever(() => repository.getEntity('payload-thought'));
+    verifyNever(() => repository.getEntity('payload-facts'));
   });
 }

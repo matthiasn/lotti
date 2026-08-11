@@ -8,6 +8,14 @@ import 'package:mocktail/mocktail.dart';
 class _MockGoalChatService extends Mock implements GoalChatService {}
 
 void main() {
+  test('composer copyWith can retain an explicit failure', () {
+    final state = const GoalChatComposerState().copyWith(
+      failedMessage: 'Keep me honest.',
+    );
+
+    expect(state.failedMessage, 'Keep me honest.');
+  });
+
   test('keeps a failed draft for retry and clears it after success', () async {
     final service = _MockGoalChatService();
     var attempts = 0;
@@ -43,4 +51,32 @@ void main() {
     );
     expect(attempts, 2);
   });
+
+  test(
+    'empty sends and retries are no-ops while editing clears failure',
+    () async {
+      final service = _MockGoalChatService();
+      final container = ProviderContainer(
+        overrides: [goalChatServiceProvider.overrideWithValue(service)],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(
+        goalChatControllerProvider('goal-1').notifier,
+      );
+
+      await controller.send();
+      await controller.retry();
+      controller.updateDraft('Fresh thought');
+
+      final state = container.read(goalChatControllerProvider('goal-1'));
+      expect(state.draft, 'Fresh thought');
+      expect(state.failedMessage, isNull);
+      verifyNever(
+        () => service.sendMessage(
+          agentId: any(named: 'agentId'),
+          text: any(named: 'text'),
+        ),
+      );
+    },
+  );
 }

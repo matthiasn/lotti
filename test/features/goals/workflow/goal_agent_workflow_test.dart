@@ -380,10 +380,14 @@ void main() {
     // null owners rather than attribute an unmeasured wake.
     expect(conversationRepository.lastConsumptionAgentId, isNull);
 
-    final userMessages = upserts.whereType<AgentMessageEntity>().where(
-      (m) => m.kind == AgentMessageKind.user,
+    final contextMessages = upserts.whereType<AgentMessageEntity>().where(
+      (m) => m.kind == AgentMessageKind.system,
     );
-    expect(userMessages, hasLength(1), reason: 'the FACTS blob is inspectable');
+    expect(
+      contextMessages,
+      hasLength(1),
+      reason: 'the FACTS blob is inspectable but not user-authored',
+    );
 
     final report = upserts.whereType<AgentReportEntity>().single;
     expect(report.tldr, 'The rolling week slid well under target.');
@@ -405,10 +409,40 @@ void main() {
     expect(usage.inputTokens, 900);
   });
 
-  test('a durable user-message wake injects the source turn and persists only '
-      'the visible reply carrier', () async {
+  test('a durable user-message wake persists its visible reply and a new '
+      'banner after the daily transition banner retired', () async {
     stubSpec();
     stubGlmResolution();
+    workflow = _offTrackWorkflow(
+      repository,
+      syncService,
+      conversationRepository,
+      cloudInferenceRepository,
+      aiConfigRepository,
+    );
+    _stubBadPrior(repository, agentId, now);
+    const retiredBrief = GoalNudgeBrief(
+      headline: 'Below target.',
+      tone: GoalNudgeTone.nudge,
+      animation: GoalBannerAnimation.steady,
+    );
+    final retiredTransitionBanner = AgentDomainEntity.goalNudge(
+      id: 'goal_nudge:$agentId:2026-08-09:atRisk:$agentId:spec-v1',
+      agentId: agentId,
+      status: GoalNudgeStatus.retired,
+      brief: retiredBrief,
+      briefDigest: goalBriefDigest(retiredBrief),
+      createdAt: now.subtract(const Duration(hours: 2)),
+      updatedAt: now.subtract(const Duration(hours: 1)),
+      vectorClock: null,
+      retiredAt: now.subtract(const Duration(hours: 1)),
+    );
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => [retiredTransitionBanner]);
     final source = AgentDomainEntity.agentMessage(
       id: 'message-1',
       agentId: agentId,
@@ -447,8 +481,19 @@ void main() {
           await (strategy! as GoalAgentStrategy).processToolCalls(
             toolCalls: [
               toolCall(GoalAgentToolNames.replyToUser, {
-                'message': 'You need one more strong day to recover.',
+                'message': 'Your sharper banner is live now.',
               }),
+              toolCall(
+                GoalAgentToolNames.createGoalAd,
+                {
+                  'headline': 'Your trainers filed a missing-person report.',
+                  'tagline': 'One strong walk gets you moving again.',
+                  'cta': 'Show up today',
+                  'tone': 'roast',
+                  'animation': 'pulse',
+                },
+                id: 'call-2',
+              ),
             ],
             manager: conversationManager,
           );
@@ -483,7 +528,17 @@ void main() {
     final payload = upserts.whereType<AgentMessagePayloadEntity>().singleWhere(
       (payload) => payload.id == reply.contentEntryId,
     );
-    expect(payload.content['text'], 'You need one more strong day to recover.');
+    expect(payload.content['text'], 'Your sharper banner is live now.');
+    final replacement = upserts.whereType<GoalNudgeEntity>().single;
+    expect(replacement.status, GoalNudgeStatus.active);
+    expect(
+      replacement.id,
+      'goal_nudge:$agentId:2026-08-09:chat:message-1:$agentId:spec-v1',
+    );
+    expect(
+      replacement.brief.headline,
+      'Your trainers filed a missing-person report.',
+    );
   });
 
   test('a first-evaluation wake that ends without a report gets exactly one '

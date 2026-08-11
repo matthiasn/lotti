@@ -122,6 +122,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       triggerTokens: triggerTokens,
       threadId: threadId,
       pendingUserMessage: text.trim(),
+      chatMessageId: messageId,
     );
   }
 
@@ -131,6 +132,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required Set<String> triggerTokens,
     required String threadId,
     String? pendingUserMessage,
+    String? chatMessageId,
   }) async {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
@@ -381,6 +383,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
           triggerTokens,
         ),
         replyToUser: pendingUserMessage != null,
+        adCreationDiscriminator: chatMessageId == null
+            ? null
+            : 'chat:$chatMessageId',
       );
       outputsCommitted = true;
       if (!attributionFinalized && recordConsumption) {
@@ -730,7 +735,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
         id: _uuid.v4(),
         agentId: agentId,
         threadId: threadId,
-        kind: AgentMessageKind.user,
+        kind: AgentMessageKind.system,
         createdAt: now,
         vectorClock: null,
         contentEntryId: payloadId,
@@ -810,6 +815,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     required DateTime now,
     String? escalationBaseline,
     bool replyToUser = false,
+    String? adCreationDiscriminator,
   }) async {
     final reportId = strategy.hasReport ? _uuid.v4() : null;
     final attributionEnvelope = await prepareAgentReportAttribution(
@@ -1090,13 +1096,15 @@ class GoalAgentWorkflow with AgentErrorLogging {
       final seenDigests = {
         for (final nudge in nudges) nudge.briefDigest,
       };
-      // The creation id derives from the LOGICAL escalation — its period
-      // plus the ARMING baseline carried on the wake's trigger tokens —
+      // Automatic creation ids derive from the LOGICAL escalation — its
+      // period plus the ARMING baseline carried on the wake's trigger tokens —
       // never from locally observed row counts (which differ across
       // partitions) nor from the re-derived previousStatus (which is
       // post-register and would collide when the same status recurs in
-      // one day). Duplicate executions of one escalation share both and
-      // converge; a same-day recurrence carries a different baseline.
+      // one day). An interactive turn instead uses its durable message id:
+      // after an earlier banner retired, a user-requested replacement must
+      // not collide with that transition's terminal row. Duplicate executions
+      // of either wake still converge on the same id.
       // Period + arming baseline + originating spec version: duplicate
       // executions of one escalation converge (identical everything), a
       // same-day recurrence differs by baseline, and a same-day REVISION
@@ -1104,7 +1112,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // can never starve the revised goal of its required banner.
       final creationId =
           'goal_nudge:$agentId:${derivation.periodKey}:'
-          '${escalationBaseline ?? derivation.facts.previousStatus?.name ?? 'first'}:'
+          '${adCreationDiscriminator ?? escalationBaseline ?? derivation.facts.previousStatus?.name ?? 'first'}:'
           '${derivation.version.id}';
       for (final request in strategy.createdAds) {
         if (staleSpecWake) {

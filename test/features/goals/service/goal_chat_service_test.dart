@@ -108,4 +108,34 @@ void main() {
     );
     expect(upserts.whereType<AgentMessageEntity>(), hasLength(1));
   });
+
+  test('ignores blank turns and malformed trigger tokens', () async {
+    await service.sendMessage(agentId: 'goal-1', text: '   ');
+
+    expect(upserts, isEmpty);
+    verifyNever(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: any(named: 'supersede'),
+        initiator: any(named: 'initiator'),
+      ),
+    );
+    expect(
+      goalChatMessageIdFromTriggerTokens(const {
+        'unrelated',
+        'goal-chat-message:',
+      }),
+      isNull,
+    );
+  });
+
+  test('turn failures retain a useful fallback description', () {
+    expect(
+      const GoalChatTurnException(null).toString(),
+      'The goal-agent turn failed.',
+    );
+    expect(const GoalChatTurnException('offline').toString(), 'offline');
+  });
 }

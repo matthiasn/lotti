@@ -96,4 +96,43 @@ void main() {
     expect(find.text('Daily steps'), findsOneWidget);
     expect(find.byType(FractionallySizedBox), findsNWidgets(7));
   });
+
+  testWidgets('a narrow at-rate habit keeps the grid scrollable and marks both '
+      'the aging success and today', (tester) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 260,
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                habits: [
+                  GoalHabitProgressView(
+                    habitId: 'walk',
+                    name: 'Walk',
+                    targetCount: 2,
+                    days: [
+                      day(7, 0),
+                      day(6, 1),
+                      day(5, 0),
+                      day(4, 0),
+                      day(3, 0),
+                      day(2, 0),
+                      day(1, 0),
+                      day(0, 1),
+                    ],
+                    successfulWeeks: 6,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('at rate'), findsOneWidget);
+    expect(find.byType(SingleChildScrollView), findsOneWidget);
+  });
 }

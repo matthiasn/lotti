@@ -154,7 +154,10 @@ flowchart TD
   must count), and suppresses creates/re-runs during the same-day dismissal
   cooldown, while a fresh active ad exists (ads retired in the same wake
   don't count — the P14 swap stays legal), and for duplicate brief
-  digests. Report prose passes `sanitizeAgentReportText`.
+  digests. Automatic transition ads keep their period/baseline identity;
+  chat-created replacements add the durable source message id so a retired
+  transition ad cannot silently collide with the requested replacement.
+  Report prose passes `sanitizeAgentReportText`.
 - **The goal spec never mutates in a wake.** `propose_goal_revision`
   lands as a pending ChangeSet for user approval; ad state is validated
   in-conversation against the ids the FACTS offered, and all outputs
@@ -243,12 +246,13 @@ flowchart TD
   card (`ChangeSetSummaryCard.selfTargeted`). Mobile opens durable conversation
   at `/agents/details/:agentId/chat`; desktop renders the same
   `GoalAgentChatPane` beside detail. `agentChatProjectionProvider` bounds the
-  initial read at fifty rows and shows only durable user messages and
-  content-bearing `reply_to_user` actions; thoughts and tool bookkeeping never
-  enter the visible history. Draft state is keep-alive per agent, waiting comes
-  from the wake completion, and failure keeps the source turn available for
-  retry. Creation supports a steps goal or a MULTI-habit routine (`allOf`
-  composite); deletion soft-retires the whole agent through
+  initial read at fifty rows and shows only durable user-authored messages
+  (no automatic `runKey`) and content-bearing `reply_to_user` actions;
+  thoughts, system FACTS, legacy run-scoped FACTS rows, and tool bookkeeping
+  never enter the visible history. Draft state is keep-alive per agent,
+  waiting comes from the wake completion, and failure keeps the source turn
+  available for retry. Creation supports a steps goal or a MULTI-habit routine
+  (`allOf` composite); deletion soft-retires the whole agent through
   `GoalAgentService.deleteGoalAgent`.
 - **Interaction writes bypass the notifier by design** (they go through
   the sync service): the banner handlers invalidate

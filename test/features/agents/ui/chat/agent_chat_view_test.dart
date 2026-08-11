@@ -90,4 +90,87 @@ void main() {
     await tester.tap(find.text('Try Again'));
     expect(retried, isTrue);
   });
+
+  testWidgets('restores an externally retained draft and submits it from the '
+      'keyboard', (tester) async {
+    var draft = '';
+    var sent = false;
+    late StateSetter rebuild;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        StatefulBuilder(
+          builder: (context, setState) {
+            rebuild = setState;
+            return Scaffold(
+              body: AgentChatView(
+                agentId: 'goal-1',
+                agentName: 'Juno',
+                draft: draft,
+                isSending: false,
+                onDraftChanged: (value) => setState(() => draft = value),
+                onSend: () => sent = true,
+                onRetry: () {},
+              ),
+            );
+          },
+        ),
+        overrides: [
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    rebuild(() => draft = 'Recovered draft');
+    await tester.pump();
+    expect(
+      tester.widget<TextField>(find.byType(TextField)).controller?.text,
+      'Recovered draft',
+    );
+
+    tester
+        .widget<TextField>(find.byType(TextField))
+        .onSubmitted
+        ?.call('Recovered draft');
+    await tester.pump();
+    expect(sent, isTrue);
+  });
+
+  testWidgets(
+    'distinguishes a failed history load from an empty conversation',
+    (
+      tester,
+    ) async {
+      final harness = makeTestableWidgetWithContainer(
+        Scaffold(
+          body: AgentChatView(
+            agentId: 'goal-1',
+            agentName: 'Juno',
+            draft: '',
+            isSending: false,
+            onDraftChanged: (_) {},
+            onSend: () {},
+            onRetry: () {},
+          ),
+        ),
+        overrides: [
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => throw StateError('database offline')),
+        ],
+        retry: (_, _) => null,
+      );
+      addTearDown(harness.container.dispose);
+      await tester.pumpWidget(harness.widget);
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text("Couldn't load this conversation right now."),
+        findsOneWidget,
+      );
+      expect(find.textContaining('Start a conversation'), findsNothing);
+    },
+  );
 }

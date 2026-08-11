@@ -1,11 +1,23 @@
+import 'package:clock/clock.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:mocktail/mocktail.dart';
+
+import '../../../helpers/fallbacks.dart';
+import '../../../mocks/mocks.dart';
+import '../../../test_data/test_data.dart';
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   final today = DateTime(2026, 8, 11);
   DateTime day(int offset) => GoalWindow.dayUtc(
     today.subtract(Duration(days: offset)),
@@ -129,4 +141,154 @@ void main() {
       true,
     ]);
   });
+
+  test('alternative composite shapes collect their visible leaves and ignore '
+      'unsupported measurable presentation', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.anyOf(
+        criterionId: 'options',
+        criteria: [
+          GoalCriterion.atLeastCount(
+            criterionId: 'pick-one',
+            successes: 1,
+            criteria: [
+              GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk-id',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 2,
+              ),
+              GoalCriterion.metric(
+                criterionId: 'steps',
+                dataType: 'steps',
+                window: GoalWindow.rollingDays(count: 7),
+                aggregation: GoalAggregation.dailySumThenAverage,
+                target: 8000,
+              ),
+            ],
+          ),
+          GoalCriterion.measurable(
+            criterionId: 'weight',
+            dataTypeId: 'weight-id',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.sum,
+            target: 80,
+          ),
+        ],
+      ),
+      signals: const GoalSignalWindow(),
+      reference: today,
+    );
+
+    expect(view.habits.single.name, 'walk-id');
+    expect(view.metric?.name, 'steps');
+    expect(view.metric?.days, hasLength(7));
+  });
+
+  test('provider reads the active spec, resolves habit names and preserves the '
+      'fixed evaluation date', () async {
+    final reference = DateTime(2026, 8, 11, 14);
+    final db = MockJournalDb();
+    when(
+      () => db.getHabitCompletionsByHabitId(
+        habitId: any(named: 'habitId'),
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => db.getHabitById(habitFlossing.id),
+    ).thenAnswer((_) async => habitFlossing);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Floss consistently',
+              statement: 'Floss twice each rolling week.',
+              criteria: GoalCriterion.anyOf(
+                criterionId: 'either',
+                criteria: [
+                  GoalCriterion.atLeastCount(
+                    criterionId: 'one-of-one',
+                    successes: 1,
+                    criteria: [
+                      GoalCriterion.allOf(
+                        criterionId: 'routine',
+                        criteria: [
+                          GoalCriterion.habit(
+                            criterionId: 'floss',
+                            habitId: habitFlossing.id,
+                            window: const GoalWindow.rollingDays(count: 7),
+                            targetCount: 2,
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              createdAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final container = ProviderContainer(
+      overrides: [
+        journalDbProvider.overrideWithValue(db),
+        goalAgentHealthProvider('goal-1').overrideWith(
+          (ref) async => (
+            trackStatus: GoalTrackStatus.onTrack,
+            attainment: 1.0,
+            reportOneLiner: null,
+            pendingProposals: 0,
+            spec: spec,
+            direction: null,
+            deficit: 0,
+            buffer: 1,
+          ),
+        ),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final view = await withClock(
+      Clock.fixed(reference),
+      () => container.read(goalAgentProgressViewProvider('goal-1').future),
+    );
+
+    expect(view?.today, DateTime.utc(2026, 8, 11));
+    expect(view?.habits.single.name, habitFlossing.name);
+    expect(view?.habits.single.days, hasLength(8));
+    verify(() => db.getHabitById(habitFlossing.id)).called(1);
+  });
+
+  test(
+    'provider returns no presentation when the goal has no active spec',
+    () async {
+      final container = ProviderContainer(
+        overrides: [
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: null,
+              attainment: null,
+              reportOneLiner: null,
+              pendingProposals: 0,
+              spec: null,
+              direction: null,
+              deficit: null,
+              buffer: null,
+            ),
+          ),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      expect(
+        await container.read(goalAgentProgressViewProvider('goal-1').future),
+        isNull,
+      );
+    },
+  );
 }

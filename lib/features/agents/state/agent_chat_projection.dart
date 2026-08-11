@@ -47,7 +47,11 @@ Future<List<AgentChatMessage>> agentChatProjection(
   );
   final visible = entities.whereType<AgentMessageEntity>().where(
     (message) =>
-        message.kind == AgentMessageKind.user ||
+        // Goal chat source turns have no runKey because they exist before the
+        // wake. Older automatic goal wakes stored their internal FACTS blob as
+        // a user row with a runKey; keep those legacy rows out of visible chat.
+        (message.kind == AgentMessageKind.user &&
+            message.metadata.runKey == null) ||
         (message.kind == AgentMessageKind.action &&
             message.metadata.toolName ==
                 AgentConversationToolNames.replyToUser),

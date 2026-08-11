@@ -11,11 +11,13 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
+import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
@@ -44,6 +46,9 @@ void main() {
           as AgentIdentityEntity;
   testWidgets('renders the health header and no-report hint without an empty '
       'timeline section', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
     final spec =
         AgentDomainEntity.goalSpecVersion(
               id: 'goal-1:spec-v1',
@@ -135,6 +140,11 @@ void main() {
       findsOneWidget,
     );
     expect(find.text('Interactions'), findsNothing);
+
+    await tester.ensureVisible(find.text('Talk to Move more'));
+    await tester.tap(find.text('Talk to Move more'));
+    await tester.pump();
+    expect(navigated, ['/agents/details/goal-1/chat']);
   });
 
   testWidgets('a standing report renders its one-liner instead of the '
@@ -456,6 +466,130 @@ void main() {
     expect(find.text('Dismissed'), findsOneWidget);
   });
 
+  testWidgets('desktop keeps chat beside watched habits and complete banner '
+      'history', (tester) async {
+    const desktopSize = Size(1400, 1000);
+    setTestSurfaceSize(tester, desktopSize);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk twice each rolling week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 2,
+              ),
+              createdAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    GoalNudgeEntity history(
+      String id,
+      String headline,
+      GoalNudgeStatus status,
+    ) =>
+        AgentDomainEntity.goalNudge(
+              id: id,
+              agentId: 'goal-1',
+              status: status,
+              brief: GoalNudgeBrief(
+                headline: headline,
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'digest-$id',
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    final today = DateTime.utc(2026, 8, 11);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        mediaQueryData: const MediaQueryData(size: desktopSize),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.onTrack,
+              attainment: 1.0,
+              reportOneLiner: 'Two walks landed this week.',
+              pendingProposals: 0,
+              spec: spec,
+              direction: null,
+              deficit: 0,
+              buffer: 1,
+            ),
+          ),
+          goalAgentProgressViewProvider('goal-1').overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Morning walk',
+                  targetCount: 2,
+                  days: [
+                    for (var offset = 7; offset >= 0; offset--)
+                      GoalProgressDay(
+                        day: today.subtract(Duration(days: offset)),
+                        value: offset == 6 || offset == 0 ? 1 : 0,
+                      ),
+                  ],
+                  successfulWeeks: 5,
+                ),
+              ],
+            ),
+          ),
+          goalNudgeHistoryProvider('goal-1').overrideWith(
+            (ref) async => [
+              history('old-1', 'Shoes by the door.', GoalNudgeStatus.retired),
+              history(
+                'old-2',
+                'One lap still counts.',
+                GoalNudgeStatus.dismissed,
+              ),
+            ],
+          ),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportHistoryProvider('goal-1').overrideWith((ref) async => []),
+          agentChatProjectionProvider(
+            'goal-1',
+          ).overrideWith((ref) async => const []),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.byType(GoalAgentChatPane), findsOneWidget);
+    expect(find.text('Talk to Move more'), findsNothing);
+    expect(find.text('Watching'), findsOneWidget);
+    expect(find.text('Morning walk'), findsNWidgets(2));
+    expect(find.textContaining('habit check-offs'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -600));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('Shoes by the door.'), findsOneWidget);
+    expect(find.textContaining('One lap still counts.'), findsOneWidget);
+    expect(find.text('Retired'), findsOneWidget);
+    expect(find.text('Dismissed'), findsOneWidget);
+  });
+
   testWidgets('a completed system-back pop persists the Agents root '
       'through NavService — and canPop stays true for the iOS gesture', (
     tester,
@@ -565,6 +699,16 @@ void main() {
 
     expect(find.text('Delete this goal?'), findsOneWidget);
     verifyNever(() => service.deleteGoalAgent(any()));
+
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Cancel'));
+    await tester.pumpAndSettle();
+    expect(find.text('Delete this goal?'), findsNothing);
+    verifyNever(() => service.deleteGoalAgent(any()));
+
+    await tester.tap(find.byIcon(Icons.more_vert_rounded));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Delete goal'));
+    await tester.pumpAndSettle();
 
     await tester.tap(
       find.widgetWithText(DesignSystemButton, 'Delete goal'),

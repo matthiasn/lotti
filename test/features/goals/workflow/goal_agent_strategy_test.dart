@@ -82,6 +82,24 @@ void main() {
     expect(rejection(), contains('at most once'));
   });
 
+  test(
+    'reply_to_user rejects blank copy instead of creating an empty bubble',
+    () async {
+      await strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.replyToUser,
+            args: {'message': '   '},
+          ),
+        ],
+        manager: manager,
+      );
+
+      expect(strategy.replyToUser, isNull);
+      expect(rejection(), contains('non-empty message'));
+    },
+  );
+
   test('update_goal_report accumulates the validated report', () async {
     await strategy.processToolCalls(
       toolCalls: [
