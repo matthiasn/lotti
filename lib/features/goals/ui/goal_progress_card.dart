@@ -147,7 +147,7 @@ class GoalProgressCard extends StatelessWidget {
           SizedBox(height: tokens.spacing.step4),
           if (progress.habits.isNotEmpty)
             for (var index = 0; index < progress.habits.length; index++) ...[
-              if (index > 0) SizedBox(height: tokens.spacing.step4),
+              if (index > 0) SizedBox(height: tokens.spacing.step3),
               _HabitProgressRow(
                 habit: progress.habits[index],
                 today: progress.today,
@@ -245,6 +245,10 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
       for (final day in activeDays)
         DateFormat.E(locale).format(day.day).characters.first,
     ];
+    final interactive = widget.onOutcomeSelected != null;
+    final daySlotWidth = interactive
+        ? TapTargets.minimum
+        : ControlSizes.iconChipCompact;
 
     final identity = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -275,9 +279,14 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           mainAxisSize: MainAxisSize.min,
           children: [
             for (var index = 0; index < labels.length; index++) ...[
-              if (index > 0) SizedBox(width: tokens.spacing.step2),
+              if (!interactive && index > 0)
+                SizedBox(width: tokens.spacing.step2),
               SizedBox(
-                width: ControlSizes.iconChipCompact,
+                key: ValueKey(
+                  'goal-habit-weekday-${habit.habitId}-'
+                  '${activeDays[index].day.toIso8601String().substring(0, 10)}',
+                ),
+                width: daySlotWidth,
                 child: Text(
                   labels[index],
                   textAlign: TextAlign.center,
@@ -289,12 +298,13 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
             ],
           ],
         ),
-        SizedBox(height: tokens.spacing.step2),
+        SizedBox(height: tokens.spacing.step1),
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             for (var index = 0; index < activeDays.length; index++) ...[
-              if (index > 0) SizedBox(width: tokens.spacing.step2),
+              if (!interactive && index > 0)
+                SizedBox(width: tokens.spacing.step2),
               _ProgressDayCell(
                 day: activeDays[index],
                 habitId: habit.habitId,
@@ -433,8 +443,8 @@ class _ProgressDayCell extends StatelessWidget {
               '${day.day.toIso8601String().substring(0, 10)}',
             )
           : null,
-      width: ControlSizes.iconChipCompact,
-      height: ControlSizes.iconChipCompact,
+      width: ControlSizes.iconChip,
+      height: ControlSizes.iconChip,
       decoration: BoxDecoration(
         color: hit
             ? tokens.colors.interactive.enabled
@@ -474,6 +484,14 @@ class _ProgressDayCell extends StatelessWidget {
         enabled: enabled && !saving,
         initialValue: day.habitCompletionType,
         padding: EdgeInsets.zero,
+        position: PopupMenuPosition.under,
+        offset: Offset(0, tokens.spacing.step2),
+        color: tokens.colors.background.level01,
+        surfaceTintColor: Colors.transparent,
+        constraints: BoxConstraints.tightFor(width: tokens.spacing.step13),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(tokens.radii.s),
+        ),
         tooltip: date,
         onSelected: (outcome) {
           if (outcome != day.habitCompletionType) callback(outcome);
@@ -482,18 +500,48 @@ class _ProgressDayCell extends StatelessWidget {
           PopupMenuItem(
             key: const ValueKey('goal-habit-day-success'),
             value: HabitCompletionType.success,
-            child: Text(context.messages.completeHabitSuccessButton),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.check_rounded,
+                  size: IconSizes.s,
+                  color: tokens.colors.alert.success.ink,
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Text(
+                  context.messages.completeHabitSuccessButton,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                ),
+              ],
+            ),
           ),
           PopupMenuItem(
             key: const ValueKey('goal-habit-day-missed'),
             value: HabitCompletionType.fail,
-            child: Text(context.messages.completeHabitFailButton),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.close_rounded,
+                  size: IconSizes.s,
+                  color: tokens.colors.alert.error.ink,
+                ),
+                SizedBox(width: tokens.spacing.step3),
+                Text(
+                  context.messages.completeHabitFailButton,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                ),
+              ],
+            ),
           ),
         ],
         child: Center(
           child: saving
               ? SizedBox.square(
-                  dimension: ControlSizes.iconChipCompact,
+                  dimension: ControlSizes.iconChip,
                   child: Padding(
                     padding: EdgeInsets.all(tokens.spacing.step2),
                     child: const CircularProgressIndicator(),

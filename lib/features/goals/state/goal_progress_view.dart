@@ -156,7 +156,36 @@ bool _criterionMetOnDay(
   GoalCriterion criterion,
   GoalSignalWindow signals,
   DateTime day,
-) => const GoalProgressEvaluator().evaluate(criterion, signals, day).satisfied;
+) =>
+    _criterionCompletedOnDay(criterion, signals, day) ||
+    const GoalProgressEvaluator().evaluate(criterion, signals, day).satisfied;
+
+bool _criterionCompletedOnDay(
+  GoalCriterion criterion,
+  GoalSignalWindow signals,
+  DateTime day,
+) => switch (criterion) {
+  // The compact strip is an accomplishment history, not a second health
+  // verdict: a rolling habit contributes when it was completed on this day.
+  GoalCriterionHabit(:final habitId) =>
+    (signals.habitSuccessesByDay[habitId]?[day] ?? 0) > 0,
+  GoalCriterionMetric() || GoalCriterionMeasurable() =>
+    const GoalProgressEvaluator().evaluate(criterion, signals, day).satisfied,
+  GoalCriterionAllOf(criteria: final children) => children.every(
+    (child) => _criterionCompletedOnDay(child, signals, day),
+  ),
+  GoalCriterionAnyOf(criteria: final children) => children.any(
+    (child) => _criterionCompletedOnDay(child, signals, day),
+  ),
+  GoalCriterionAtLeastCount(
+    criteria: final children,
+    successes: final requiredSuccesses,
+  ) =>
+    children
+            .where((child) => _criterionCompletedOnDay(child, signals, day))
+            .length >=
+        requiredSuccesses,
+};
 
 /// Builds the presentation projection from the same daily aggregates the
 /// deterministic evaluator uses. This keeps the grid and the runtime verdict

@@ -468,12 +468,25 @@ void main() {
       ),
     );
 
-    await tester.tap(
-      find.byKey(const ValueKey('goal-habit-day-walk-2026-08-08')),
+    final dayFinder = find.byKey(
+      const ValueKey('goal-habit-day-walk-2026-08-08'),
     );
+    final menuButton = tester.widget<PopupMenuButton<HabitCompletionType>>(
+      find.descendant(
+        of: dayFinder,
+        matching: find.byType(PopupMenuButton<HabitCompletionType>),
+      ),
+    );
+    expect(menuButton.position, PopupMenuPosition.under);
+    expect(menuButton.shape, isA<RoundedRectangleBorder>());
+    expect(menuButton.constraints?.hasTightWidth, isTrue);
+
+    await tester.tap(dayFinder);
     await tester.pumpAndSettle();
     expect(find.text('Success'), findsOneWidget);
     expect(find.text('Missed'), findsOneWidget);
+    expect(find.byIcon(Icons.check_rounded), findsOneWidget);
+    expect(find.byIcon(Icons.close_rounded), findsOneWidget);
     await tester.tap(find.byKey(const ValueKey('goal-habit-day-missed')));
     await tester.pump();
 
@@ -481,6 +494,53 @@ void main() {
     expect(selected?.day, DateTime.utc(2026, 8, 8));
     expect(selected?.outcome, HabitCompletionType.fail);
   });
+
+  testWidgets(
+    'interactive weekday markers stay centered over their day cells',
+    (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 3,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                  ],
+                  successfulWeeks: 2,
+                ),
+              ],
+            ),
+            onHabitOutcomeSelected:
+                ({required day, required habitId, required outcome}) async =>
+                    true,
+          ),
+        ),
+      );
+
+      for (var offset = 6; offset >= 0; offset--) {
+        final date = today
+            .subtract(Duration(days: offset))
+            .toIso8601String()
+            .substring(0, 10);
+        final marker = find.byKey(
+          ValueKey('goal-habit-weekday-walk-$date'),
+        );
+        final cell = find.byKey(ValueKey('goal-habit-day-walk-$date'));
+        expect(
+          tester.getCenter(marker).dx,
+          closeTo(tester.getCenter(cell).dx, 0.01),
+          reason: '$date marker must align with its interactive cell',
+        );
+      }
+    },
+  );
 
   testWidgets(
     'habit day has a full tap target and ignores its current outcome',

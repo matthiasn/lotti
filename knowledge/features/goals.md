@@ -170,8 +170,10 @@ flowchart TD
   the durable user message before inference. A short affirmation also qualifies
   when the immediately preceding visible assistant reply offered a banner.
   These interactive requests override
-  the automatic dismissal cooldown and remain ad-eligible for the whole wake,
-  so its persistence pass cannot retire the banner it just created. Negated
+  the automatic dismissal cooldown and automatic health gates, and remain
+  ad-eligible for the whole wake, so a recovering or healthy goal can serve
+  explicitly requested positive copy without its persistence pass retiring the
+  banner it just created. Negated
   requests, unrelated courtesy, and explanation prompts do not trigger that
   exception. The current active banner
   retires only after a sanitized, non-duplicate create or valid retired-ad rerun
@@ -300,9 +302,12 @@ flowchart TD
   with the period target. Composite detail keeps every metric and measurable
   leaf instead of silently collapsing the evidence to the first one, and the
   habit-only legend is omitted when no habit grid is rendered. The compact
-  strip delegates each authored `allOf`, `anyOf`, and `atLeastCount` tree to
-  `GoalProgressEvaluator`, so habit quotas retain their rolling-window meaning;
-  it also respects `atLeast` versus `atMost` numeric direction, and missing
+  strip combines rolling success with daily accomplishment: a cell is green
+  when `GoalProgressEvaluator` says the rolling criterion was satisfied as of
+  that day, or when the authored `allOf`, `anyOf`, or `atLeastCount` tree folds
+  to true over that day's habit completions. A fully completed routine day can
+  therefore be green while the current goal remains Behind or Restarting.
+  Numeric leaves still respect `atLeast` versus `atMost` direction, and missing
   samples never count as successful days.
   The provider invalidates itself at the next local midnight so Today,
   ages-out and window boundaries cannot remain stuck on yesterday. The detail

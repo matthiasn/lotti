@@ -598,6 +598,7 @@ class _DockTenant extends ConsumerWidget {
               ),
               SizedBox(width: tokens.spacing.step3),
               Expanded(
+                key: const ValueKey('goal-banner-copy-region'),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -628,19 +629,14 @@ class _DockTenant extends ConsumerWidget {
               ),
               if (!compact && brief.cta != null) ...[
                 SizedBox(width: tokens.spacing.step3),
-                // Flexible so a long CTA is bounded by the row and its own
-                // ellipsis actually engages — a bare Row child would be
-                // measured at full intrinsic width and overflow the dock.
-                Flexible(
-                  child: Align(
-                    alignment: Alignment.centerRight,
-                    child: GoalBannerCtaPill(
-                      label: brief.cta!,
-                      style: style,
-                      onTap: () => beamToNamed(
-                        '/agents/details/${entry.nudge.agentId}',
-                      ),
-                    ),
+                // CTA copy is contractually 2–4 words. Keep it intrinsic so
+                // it cannot claim a flex share and arbitrarily cap the banner
+                // copy at half the dock.
+                GoalBannerCtaPill(
+                  label: brief.cta!,
+                  style: style,
+                  onTap: () => beamToNamed(
+                    '/agents/details/${entry.nudge.agentId}',
                   ),
                 ),
               ],

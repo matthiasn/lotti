@@ -323,11 +323,44 @@ void main() {
     expect(view.metric?.days, hasLength(7));
     expect(view.metrics.map((metric) => metric.name), ['steps', 'weight-id']);
     expect(view.metrics.last.days.last.value, 81);
-    expect(view.compactWindow[5], isFalse);
+    expect(view.compactWindow[5], isTrue);
     expect(view.compactWindow.last, isTrue);
   });
 
-  test('composite habit quotas use the evaluator window at each day', () {
+  test('composite strip rewards a fully completed day independently of the '
+      'rolling quota', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.allOf(
+        criterionId: 'routine',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'walk',
+            habitId: 'walk',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'stretch',
+            habitId: 'stretch',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+        ],
+      ),
+      signals: GoalSignalWindow(
+        habitSuccessesByDay: {
+          'walk': {day(2): 1, day(1): 1},
+          'stretch': {day(3): 1, day(1): 1},
+        },
+      ),
+      reference: today,
+    );
+
+    expect(view.compactWindow[5], isTrue);
+    expect(view.compactWindow.last, isFalse);
+  });
+
+  test('composite strip stays green when the rolling quota is met', () {
     final view = buildGoalProgressView(
       criteria: const GoalCriterion.allOf(
         criterionId: 'routine',

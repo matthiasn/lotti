@@ -664,10 +664,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     DateTime now, {
     required bool userRequestedAd,
   }) {
-    if (userRequestedAd) {
-      return facts.trackStatus == GoalTrackStatus.offTrack ||
-          facts.trackStatus == GoalTrackStatus.atRisk;
-    }
+    if (userRequestedAd) return true;
     if (!_adsEligible(facts, priors)) return false;
     if (_factsRenderer.dismissalCooldownActive(nudges, now)) return false;
     final retired = {for (final action in strategy.retireRequests) action.adId};
@@ -1241,17 +1238,15 @@ class GoalAgentWorkflow with AgentErrorLogging {
           derivation.version.status != GoalSpecVersionStatus.active;
       // The trend gate is for AUTOMATIC at-risk ads. In chat, a create/rerun
       // tool call is the model's structured response to the user's explicit
-      // request, so atRisk is eligible even before a three-day decline. The
-      // remaining persistence guards (cooldown, stale spec, fresh active ad,
-      // duplicate copy) still apply.
+      // request, so every current track status is eligible. The remaining
+      // persistence guards (stale spec and duplicate copy) still apply.
       final interactiveAdRequested =
           replyToUser &&
           userRequestedAd &&
           (strategy.createdAds.isNotEmpty || strategy.rerunRequests.isNotEmpty);
       final adsEligible =
           _adsEligible(derivation.facts, derivation.priors) ||
-          (interactiveAdRequested &&
-              derivation.facts.trackStatus == GoalTrackStatus.atRisk);
+          interactiveAdRequested;
       if (!staleSpecWake && !adsEligible) {
         final modelRetired = {
           for (final action in strategy.retireRequests) action.adId,

@@ -55,8 +55,9 @@ fallback visible beside the report, while future calendar cells remain
 read-only. Metric strips preserve the evaluator's configured aggregation
 rather than treating every daily contribution as a standalone target;
 composite details retain every metric and measurable leaf that contributes to
-health, and their compact cells use the authoritative evaluator for authored
-quotas. Goal chat stays purpose-bound: unrelated
+health. Their compact cells combine accomplishment and rolling success: a day
+is green when the rolling criterion was satisfied then, or when the authored
+routine was fully completed on that day. Goal chat stays purpose-bound: unrelated
 general-assistant requests are redirected to the goal rather than answered.
 Weekly reliability is shown only for authored rolling-seven-day habits rather
 than reinterpreting day, rolling-N, or calendar periods. Health and direction are separate signals, the standing report stays visible
@@ -68,7 +69,8 @@ the just-committed snooze is suppressed locally while its durable projection
 reloads. Dismissal cooldown applies to automatic banners only: a direct request
 for a banner, a missing-banner report, or a short affirmative reply to the
 agent's banner offer can create or re-run a banner immediately without the
-follow-up wake retiring it. A new at-risk goal receives its first banner
+follow-up wake retiring it, including positive or recovery copy when the goal
+is not behind. A new at-risk goal receives its first banner
 without waiting for a multi-day decline. The desktop banner tenant fills the
 dock's available width.
 Voice, paging beyond the newest fifty visible turns, search, and inline nudge

@@ -2233,7 +2233,7 @@ void main() {
   });
 
   test('persistOutputs: an explicit chat ad request overrides dismissal '
-      'cooldown and replaces a rated active banner', () async {
+      'cooldown, replaces a rated banner, and permits recovery copy', () async {
     stubSpec();
     _stubBadPrior(repository, agentId, now);
     final version =
@@ -2402,6 +2402,47 @@ void main() {
       upserts.whereType<GoalNudgeEntity>(),
       isEmpty,
       reason: 'a duplicate candidate must not retire the active banner',
+    );
+
+    when(
+      () => repository.getEntitiesByAgentId(
+        agentId,
+        type: AgentEntityTypes.goalNudge,
+      ),
+    ).thenAnswer((_) async => []);
+    final recovering = GoalWakeDerivation(
+      version: derivation.version,
+      facts: GoalWakeFacts(
+        trackStatus: GoalTrackStatus.recovering,
+        previousStatus: GoalTrackStatus.atRisk,
+        evaluation: derivation.facts.evaluation,
+        shortTermAttainment: derivation.facts.shortTermAttainment,
+      ),
+      periodKey: derivation.periodKey,
+      priors: derivation.priors,
+      existingToday: derivation.existingToday,
+    );
+    final recoveryStrategy = await creating(
+      'Recovery deserves a banner too.',
+    );
+    await withClock(
+      fixedClock,
+      () => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-chat-4',
+        threadId: 'thread-chat-4',
+        strategy: recoveryStrategy,
+        derivation: recovering,
+        now: now,
+        replyToUser: true,
+        userRequestedAd: true,
+        adCreationDiscriminator: 'chat:message-4',
+      ),
+    );
+    expect(upserts.whereType<GoalNudgeEntity>(), hasLength(1));
+    expect(
+      upserts.whereType<GoalNudgeEntity>().single.status,
+      GoalNudgeStatus.active,
     );
   });
 

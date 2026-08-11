@@ -239,6 +239,13 @@ void main() {
     expect(tenantRect.width, closeTo(frameRect.width, 2));
     final dismissRect = tester.getRect(find.byTooltip('Dismiss'));
     expect(frameRect.right - dismissRect.right, lessThan(24));
+    expect(
+      tester
+          .getSize(find.byKey(const ValueKey('goal-banner-copy-region')))
+          .width,
+      greaterThan(frameRect.width * 0.45),
+      reason: 'a short CTA must not reserve half the dock from the copy',
+    );
   });
 
   testWidgets('the reserved lane covers the rendered compact dock at every '

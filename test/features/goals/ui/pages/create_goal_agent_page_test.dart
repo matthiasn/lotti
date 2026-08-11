@@ -141,6 +141,14 @@ void main() {
     await tester.tap(find.text('Gym'));
     await tester.tap(find.text('Run'));
     await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-habit-target-h-gym')),
+      '2',
+    );
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-habit-target-h-run')),
+      '5',
+    );
     await tester.tap(find.text('Create agent'));
     await tester.pumpAndSettle();
 
@@ -151,10 +159,11 @@ void main() {
       containsAll(['h-gym', 'h-run']),
     );
     expect(
-      composite.criteria.whereType<GoalCriterionHabit>().every(
-        (h) => h.targetCount == 3,
-      ),
-      isTrue,
+      {
+        for (final habit in composite.criteria.whereType<GoalCriterionHabit>())
+          habit.habitId: habit.targetCount,
+      },
+      {'h-gym': 2, 'h-run': 5},
     );
     // Habit leaves are built on a rolling 7-day window (the deficit/buffer
     // health model), not a resetting calendar week.
@@ -323,9 +332,12 @@ void main() {
     await tester.enterText(find.byType(TextField).first, 'Routine');
     await tester.tap(find.text('Habit routine'));
     await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).last, '8');
     await tester.tap(find.text('Gym'));
     await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-habit-target-h-gym')),
+      '8',
+    );
     await tester.tap(find.text('Create agent'));
     await tester.pumpAndSettle();
 

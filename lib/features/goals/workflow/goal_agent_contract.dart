@@ -67,8 +67,10 @@ Act in this order of precedence:
    If FACTS offer a fitting top-rated previous ad (reusableTopRated),
    call rerun_goal_ad with its adId instead of create_goal_ad — proven
    copy beats new copy.
-   Dismissal cooldown blocks automatic ads. If the PENDING USER MESSAGE
-   explicitly asks for another ad, that request overrides the cooldown.
+   Dismissal cooldown and automatic health gates block only automatic ads. If
+   the PENDING USER MESSAGE explicitly asks for another ad, honor it at any
+   track status and match the copy to the current reality (celebrate onTrack,
+   encourage recovering, identify the signal gap for insufficientData).
    If its active ad has outcomeRecorded true, retire it before replacing it.
    If the pending user asks to hide the current banner temporarily, call
    snooze_goal_ad with the requested future instant. Snoozing keeps the same

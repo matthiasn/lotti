@@ -486,29 +486,36 @@ class _WatchingSection extends StatelessWidget {
             ),
           ),
           SizedBox(height: tokens.spacing.step3),
-          for (final habit in progress.habits) ...[
-            Wrap(
-              spacing: tokens.spacing.step2,
-              runSpacing: tokens.spacing.step1,
-              children: [
-                Text(
-                  habit.name,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-                Text(
-                  '${goalHabitTargetLabel(context, targetCount: habit.targetCount, window: habit.window)}'
-                  '${habit.successfulWeeks == null ? '' : ' · ${habit.successfulWeeks} / 6'}',
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.mediumEmphasis,
-                  ),
-                ),
-              ],
+          for (var index = 0; index < progress.habits.length; index++) ...[
+            if (index > 0) SizedBox(height: tokens.spacing.step3),
+            Builder(
+              builder: (context) {
+                final habit = progress.habits[index];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      habit.name,
+                      key: ValueKey('goal-watching-name-${habit.habitId}'),
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      '${goalHabitTargetLabel(context, targetCount: habit.targetCount, window: habit.window)}'
+                      '${habit.successfulWeeks == null ? '' : ' · ${habit.successfulWeeks} / 6'}',
+                      key: ValueKey('goal-watching-meta-${habit.habitId}'),
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
-            SizedBox(height: tokens.spacing.step2),
           ],
-          SizedBox(height: tokens.spacing.step2),
+          SizedBox(height: tokens.spacing.step3),
           Text(
             context.messages.goalDetailWatchingSignals,
             style: tokens.typography.styles.others.caption.copyWith(

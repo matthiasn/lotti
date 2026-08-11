@@ -5,6 +5,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
@@ -14,8 +15,9 @@ import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
 
 /// The dogfooding creation form: a steps goal (daily average over a
 /// rolling week) or a habit routine watching ONE OR MORE habits, each
-/// completed N times within a trailing rolling seven-day window (an `allOf`
-/// composite — the multi-habit shape the criteria model always supported).
+/// with its own completion target in a trailing rolling seven-day window (an
+/// `allOf` composite — the multi-habit shape the criteria model always
+/// supported).
 class CreateGoalAgentPage extends ConsumerStatefulWidget {
   const CreateGoalAgentPage({super.key});
 
@@ -30,7 +32,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   final _name = TextEditingController();
   final _statement = TextEditingController();
   final _stepsTarget = TextEditingController(text: '10000');
-  final _habitCount = TextEditingController(text: '3');
+  final _habitTargets = <String, TextEditingController>{};
   _GoalKind _kind = _GoalKind.steps;
   final _selectedHabitIds = <String>{};
   String? _validation;
@@ -41,9 +43,17 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _name.dispose();
     _statement.dispose();
     _stepsTarget.dispose();
-    _habitCount.dispose();
+    for (final controller in _habitTargets.values) {
+      controller.dispose();
+    }
     super.dispose();
   }
+
+  TextEditingController _habitTargetController(String habitId) =>
+      _habitTargets.putIfAbsent(
+        habitId,
+        () => TextEditingController(text: '3'),
+      );
 
   /// The conventional grouped form ("10.000" in German, "10,000" in
   /// English) must not silently collapse to ten — the field is localized
@@ -73,27 +83,23 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           target: target,
         );
       case _GoalKind.habits:
-        final count = int.tryParse(_habitCount.text.trim());
-        // At most 7: the signal reader collapses completions to one
-        // success per local day, so a rolling seven-day window can never
-        // observe more — a higher count would mint an unsatisfiable goal.
-        if (count == null ||
-            count < 1 ||
-            count > 7 ||
-            _selectedHabitIds.isEmpty) {
-          return null;
-        }
+        if (_selectedHabitIds.isEmpty) return null;
         final leaves = [
           for (final habitId in _selectedHabitIds)
-            GoalCriterion.habit(
-              criterionId: 'habit-$habitId',
-              habitId: habitId,
-              // Rolling 7-day window: the deficit/buffer health model (a
-              // continuous trailing count, no calendar-quota dead zone).
-              window: const GoalWindow.rollingDays(count: 7),
-              targetCount: count,
-            ),
+            if (int.tryParse(
+                  _habitTargetController(habitId).text.trim(),
+                )
+                case final count? when count >= 1 && count <= 7)
+              GoalCriterion.habit(
+                criterionId: 'habit-$habitId',
+                habitId: habitId,
+                // Rolling 7-day window: the deficit/buffer health model (a
+                // continuous trailing count, no calendar-quota dead zone).
+                window: const GoalWindow.rollingDays(count: 7),
+                targetCount: count,
+              ),
         ];
+        if (leaves.length != _selectedHabitIds.length) return null;
         return leaves.length == 1
             ? leaves.single
             : GoalCriterion.allOf(criterionId: 'routine', criteria: leaves);
@@ -114,11 +120,16 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _selectedHabitIds.retainWhere(activeIds.contains);
     final criteria = _buildCriteria();
     if (name.isEmpty || criteria == null) {
-      final habitCount = int.tryParse(_habitCount.text.trim());
       final countOutOfRange =
           _kind == _GoalKind.habits &&
-          habitCount != null &&
-          (habitCount < 1 || habitCount > 7);
+          _selectedHabitIds.any((habitId) {
+            final count = int.tryParse(
+              _habitTargetController(habitId).text.trim(),
+            );
+            // The signal reader collapses completions to one success per
+            // local day, so a seven-day window cannot satisfy a higher value.
+            return count == null || count < 1 || count > 7;
+          });
       setState(
         () => _validation = countOutOfRange
             ? context.messages.goalCreateHabitCountRange
@@ -244,14 +255,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                   ),
                 )
               else ...[
-                TextField(
-                  controller: _habitCount,
-                  keyboardType: TextInputType.number,
-                  decoration: InputDecoration(
-                    labelText: messages.goalCreateHabitCountLabel,
-                  ),
-                ),
-                SizedBox(height: tokens.spacing.step4),
                 Text(
                   messages.goalCreateHabitsLabel,
                   style: tokens.typography.styles.subtitle.subtitle2.copyWith(
@@ -267,18 +270,40 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                     ),
                   ),
                 ],
-                for (final habit in habits)
-                  CheckboxListTile(
-                    value: _selectedHabitIds.contains(habit.id),
-                    title: Text(habit.name),
-                    onChanged: (checked) => setState(() {
-                      if (checked ?? false) {
-                        _selectedHabitIds.add(habit.id);
-                      } else {
-                        _selectedHabitIds.remove(habit.id);
-                      }
-                    }),
+                for (final habit in habits) ...[
+                  SizedBox(height: tokens.spacing.step3),
+                  DesignSystemSectionCard(
+                    padding: EdgeInsets.all(tokens.spacing.step3),
+                    child: Column(
+                      children: [
+                        CheckboxListTile(
+                          contentPadding: EdgeInsets.zero,
+                          value: _selectedHabitIds.contains(habit.id),
+                          title: Text(habit.name),
+                          onChanged: (checked) => setState(() {
+                            if (checked ?? false) {
+                              _selectedHabitIds.add(habit.id);
+                              _habitTargetController(habit.id);
+                            } else {
+                              _selectedHabitIds.remove(habit.id);
+                            }
+                          }),
+                        ),
+                        if (_selectedHabitIds.contains(habit.id)) ...[
+                          SizedBox(height: tokens.spacing.step2),
+                          TextField(
+                            key: ValueKey('goal-habit-target-${habit.id}'),
+                            controller: _habitTargetController(habit.id),
+                            keyboardType: TextInputType.number,
+                            decoration: InputDecoration(
+                              labelText: messages.goalCreateHabitCountLabel,
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ),
+                ],
               ],
               if (_validation != null) ...[
                 SizedBox(height: tokens.spacing.step3),

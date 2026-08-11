@@ -708,6 +708,20 @@ void main() {
     expect(find.text('20× · calendar month'), findsNWidgets(2));
     expect(find.textContaining('null / 6'), findsNothing);
     expect(find.textContaining('signals listed here'), findsOneWidget);
+    expect(
+      tester
+          .getCenter(
+            find.byKey(const ValueKey('goal-watching-meta-walk')),
+          )
+          .dy,
+      greaterThan(
+        tester
+            .getCenter(
+              find.byKey(const ValueKey('goal-watching-name-walk')),
+            )
+            .dy,
+      ),
+    );
 
     await tester.tap(
       find.byKey(const ValueKey('goal-habit-day-walk-2026-08-08')),
