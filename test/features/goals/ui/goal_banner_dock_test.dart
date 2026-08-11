@@ -457,6 +457,60 @@ void main() {
     },
   );
 
+  testWidgets('moving marquee reserves its rendered single-line lane', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final marquee = entry(
+      id: 'marquee',
+      headline: List.filled(
+        2,
+        'The moving headline remains one complete horizontal line.',
+      ).join(' '),
+      animation: GoalBannerAnimation.marquee,
+    );
+    _TestEntries.initial = [marquee];
+    late double reserved;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Builder(
+          builder: (context) {
+            reserved = goalBannerDockReservedHeight(
+              context,
+              briefs: [marquee.nudge.brief],
+            );
+            return const Scaffold(
+              bottomNavigationBar: GoalBannerDock(compact: true),
+            );
+          },
+        ),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final animated = find.byType(GoalBannerAnimatedText);
+    final animatedWidget = tester.widget<GoalBannerAnimatedText>(animated);
+    final linePainter = TextPainter(
+      text: TextSpan(text: 'Xg', style: animatedWidget.style),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    expect(
+      tester.getSize(animated).height,
+      closeTo(linePainter.height, 0.01),
+    );
+    expect(
+      reserved,
+      greaterThanOrEqualTo(tester.getSize(find.byType(GoalBannerDock)).height),
+    );
+  });
+
   testWidgets('two tenants rotate round-robin on the tenure clock, and '
       'wrap', (tester) async {
     await pumpDock(tester, [
