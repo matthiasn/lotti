@@ -24,25 +24,25 @@ sources:
 
 # The constraint that shapes everything
 
-**On CI, every test in a shard shares one isolate — so a leak can fail a test in a
-file you never touched.** A timer, stream subscription, database handle or
-unconsumed Mocktail matcher left behind outlives its own test and breaks a later,
-unrelated one. Almost every rule below exists because of that.
+**A test owns every process-wide resource it mutates.** A timer, stream
+subscription, database handle or unconsumed Mocktail matcher can outlive its test
+and break a later test in the same file or in an optimized local suite. Almost
+every rule below exists because of that.
 
-The mechanism is `very_good test`'s **optimizer, which is on by default** and which
-CI does not disable: it generates a single `.test_optimizer.dart` importing every
-test file, and `package:test` then slices *that one suite* into the ten shards. So
-`--concurrency` is not what bounds the blast radius, and the isolation you get
-under a plain `fvm flutter test <file>` locally — one isolate per file — is **not**
-what CI runs.
+Unsharded `very_good test` runs use the optimizer by default: it generates a
+single `.test_optimizer.dart` importing every test file into one isolate. The
+ten-way standard CI lane deliberately passes `--no-optimization`, because Very
+Good CLI does not yet support sharding independently generated optimized bundles
+across runners. Flutter therefore shards test files deterministically and gives
+each file its own isolate in that lane. This keeps test execution and merged
+coverage complete while local optimized runs continue to expose cross-file leaks.
 
 Two consequences:
 
-- **A leak's victim is not deterministic.** Which test breaks depends on the
-  bundle order inside a shard, which is why these failures show up on one
-  machine or one shard and not another.
-- **Passing locally proves less than it looks.** A file that passes alone can
-  still be the file that breaks CI.
+- **A file-level leak remains order-sensitive.** It can break a later test in the
+  same file, and an optimized local run can expose cross-file leakage.
+- **Passing a file alone proves less than it looks.** CI adds a different shard
+  environment, while an optimized suite adds shared process state across files.
 
 `test/flutter_test_config.dart` registers global teardown for exactly this
 reason. It resets Mocktail's matcher state and restores the process-wide test

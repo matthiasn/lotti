@@ -398,7 +398,7 @@ The `tags` argument is a passthrough to `package:test`'s `test()`. It works the 
 ### Why the tag matters for CI
 
 CI runs two parallel test lanes — a ten-shard standard matrix plus a Glados job — followed by a final Codecov status job gated on both:
-- **Unit & Widget Tests** — ten shards of `very_good test --coverage --exclude-tags glados -- --total-shards=10 --shard-index=N` (fast feedback, all non-property tests)
+- **Unit & Widget Tests** — ten shards of `very_good test --no-optimization --coverage --exclude-tags glados -- --total-shards=10 --shard-index=N` (fast feedback, all non-property tests). The optimized bundle is deliberately disabled because Very Good CLI does not yet support sharding it across independent runners; each runner otherwise generates the bundle from filesystem order and can execute a different slice.
 - **Glados Property Tests** — `very_good test --coverage --tags glados` (CPU-bound, runs longer in parallel)
 
 A new Glados test without `tags: 'glados'` will run in the standard suite, slowing fast feedback for everyone. The split also lets us upload separate codecov flags (`standard`, `glados`) while still merging all ten standard shards plus Glados into the project total. Codecov status publishing is manually triggered by a final CI job after every coverage upload job succeeds, so PRs do not show transient project coverage from only the Glados report or a partial standard shard set.
@@ -416,10 +416,10 @@ make test               # full suite, no filtering — same as before
 To reproduce one standard CI shard locally, run:
 
 ```bash
-very_good test --coverage --exclude-tags glados -- --total-shards=10 --shard-index=0
+very_good test --no-optimization --coverage --exclude-tags glados -- --total-shards=10 --shard-index=0
 ```
 
-Replace `0` with any shard index from `1` through `9` for the other shards. The `--` terminator forwards the sharding arguments to the underlying `flutter test` command; the equals-form arguments keep Very Good's test optimizer enabled because no forwarded argument looks like a positional test-file target. The Make test-suite targets (`test`, `test_standard`, `test_glados`, and their `coverage_*` variants) use `very_good test` to match CI behavior. Run `make activate_very_good` once on a fresh checkout.
+Replace `0` with any shard index from `1` through `9` for the other shards. The `--` terminator forwards the sharding arguments to the underlying `flutter test` command. The standard CI lane disables Very Good's optimizer so Flutter shards deterministic test files rather than ten independently generated optimized bundles. The Make test-suite targets (`test`, `test_standard`, `test_glados`, and their `coverage_*` variants) continue to use optimized `very_good test` runs when they are not sharded. Run `make activate_very_good` once on a fresh checkout.
 
 ### Picking `numRuns`
 

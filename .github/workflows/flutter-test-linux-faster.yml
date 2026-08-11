@@ -58,7 +58,12 @@ jobs:
         run: dart pub global activate very_good_cli
       - name: Run Flutter tests (standard)
         run: |
-          very_good test --coverage --exclude-tags glados -- \
+          # Very Good's optimized bundle does not support CI sharding yet:
+          # https://github.com/VeryGoodOpenSource/very_good_cli/issues/1538
+          # Use Flutter's file-isolated sharding so every runner sees the same
+          # deterministic test-file order and the ten coverage reports merge
+          # without gaps or duplicates.
+          very_good test --no-optimization --coverage --exclude-tags glados -- \
             --total-shards=10 \
             --shard-index=${{ matrix.shard_index }}
       - uses: codecov/codecov-action@v7
