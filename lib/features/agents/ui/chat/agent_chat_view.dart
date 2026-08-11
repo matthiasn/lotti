@@ -229,14 +229,6 @@ class _MessageBubbleState extends State<_MessageBubble> {
 
   bool _expanded = false;
 
-  @override
-  void didUpdateWidget(covariant _MessageBubble oldWidget) {
-    super.didUpdateWidget(oldWidget);
-    if (oldWidget.message.id != widget.message.id) {
-      _expanded = false;
-    }
-  }
-
   bool get _canCollapse {
     final message = widget.message;
     if (message.role != AgentChatRole.agent) return false;

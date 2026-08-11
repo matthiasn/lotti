@@ -867,7 +867,12 @@ void main() {
   test('persistOutputs: retire is dismissal-terminal-safe, rerun requires a '
       'retired ad and increments the activation count, and a revision '
       'proposal lands as a pending ChangeSet', () async {
-    GoalNudgeEntity nudgeRow(String id, GoalNudgeStatus status) =>
+    GoalNudgeEntity nudgeRow(
+      String id,
+      GoalNudgeStatus status, {
+      DateTime? staleAt,
+      Map<String, String> provenance = const {},
+    }) =>
         AgentDomainEntity.goalNudge(
               id: id,
               agentId: agentId,
@@ -880,7 +885,9 @@ void main() {
               briefDigest: 'd',
               createdAt: DateTime(2026, 8),
               updatedAt: DateTime(2026, 8),
+              staleAt: staleAt,
               vectorClock: null,
+              provenance: provenance,
             )
             as GoalNudgeEntity;
 
@@ -894,6 +901,7 @@ void main() {
         'ad-retired',
         'ad-active',
         'ad-snooze',
+        'ad-snooze-long',
         'ad-gone',
       },
     );
@@ -905,9 +913,23 @@ void main() {
     ).thenAnswer(
       (_) async => [
         nudgeRow('ad-dismissed', GoalNudgeStatus.dismissed),
-        nudgeRow('ad-retired', GoalNudgeStatus.retired),
+        nudgeRow(
+          'ad-retired',
+          GoalNudgeStatus.retired,
+          provenance: const {
+            'snoozedUntil': '2026-08-10T08:30:00.000Z',
+            'snoozeReason': 'old snooze',
+            'snoozedAt': '2026-08-09T08:30:00.000Z',
+            'campaign': 'morning-walk',
+          },
+        ),
         nudgeRow('ad-active', GoalNudgeStatus.active),
         nudgeRow('ad-snooze', GoalNudgeStatus.active),
+        nudgeRow(
+          'ad-snooze-long',
+          GoalNudgeStatus.active,
+          staleAt: DateTime.utc(2100),
+        ),
       ],
     );
     // The retire loops re-read each row inside the transaction.
@@ -948,6 +970,11 @@ void main() {
           'until': '2099-08-12T08:30:00Z',
           'reason': 'user asked for later',
         }, id: 'c7'),
+        toolCall(GoalAgentToolNames.snoozeGoalAd, {
+          'adId': 'ad-snooze-long',
+          'until': '2099-08-12T08:30:00Z',
+          'reason': 'keep the longer lifetime',
+        }, id: 'c8'),
       ],
       manager: conversationManager,
     );
@@ -975,7 +1002,7 @@ void main() {
     // The dismissed ad was NOT retired (terminal), the missing ad was
     // skipped, the active ad was NOT re-run but WAS retired; the retired
     // ad was re-run.
-    expect(written, hasLength(3));
+    expect(written, hasLength(4));
     final retired = written.singleWhere((n) => n.id == 'ad-active');
     expect(retired.status, GoalNudgeStatus.retired);
     expect(retired.provenance['retireReason'], 'quota completed');
@@ -983,6 +1010,10 @@ void main() {
     expect(rerun.status, GoalNudgeStatus.active);
     expect(rerun.activationCount, 2);
     expect(rerun.provenance['rerunReason'], 'proven copy');
+    expect(rerun.provenance['campaign'], 'morning-walk');
+    expect(rerun.provenance, isNot(contains('snoozedUntil')));
+    expect(rerun.provenance, isNot(contains('snoozeReason')));
+    expect(rerun.provenance, isNot(contains('snoozedAt')));
     final snoozed = written.singleWhere((n) => n.id == 'ad-snooze');
     expect(snoozed.status, GoalNudgeStatus.active);
     expect(
@@ -994,6 +1025,12 @@ void main() {
       snoozed.staleAt,
       DateTime.utc(2099, 8, 12, 8, 30).add(goalAdLifetime),
       reason: 'the banner must remain live after its snooze expires',
+    );
+    final longLived = written.singleWhere((n) => n.id == 'ad-snooze-long');
+    expect(
+      longLived.staleAt,
+      DateTime.utc(2100),
+      reason: 'snoozing must never shorten an existing useful lifetime',
     );
 
     final changeSet = upserts.whereType<ChangeSetEntity>().single;

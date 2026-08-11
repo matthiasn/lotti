@@ -4,6 +4,7 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
@@ -18,6 +19,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
@@ -29,6 +31,9 @@ import 'package:mocktail/mocktail.dart';
 
 import '../../../../mocks/mocks.dart';
 import '../../../../widget_test_utils.dart';
+
+class _MockGoalHabitCompletionService extends Mock
+    implements GoalHabitCompletionService {}
 
 void main() {
   final goalIdentity =
@@ -49,6 +54,10 @@ void main() {
           as AgentIdentityEntity;
   testWidgets('renders the health header and no-report hint without an empty '
       'timeline section', (tester) async {
+    final completionService = _MockGoalHabitCompletionService();
+    when(
+      () => completionService.requestReportRefresh('goal-1'),
+    ).thenReturn('refresh-run');
     final navigated = <String>[];
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
@@ -115,6 +124,9 @@ void main() {
             'goal-1',
           ).overrideWith((ref) async => {}),
           agentReportProvider('goal-1').overrideWith((ref) async => null),
+          goalHabitCompletionServiceProvider.overrideWithValue(
+            completionService,
+          ),
         ],
       ),
     );
@@ -151,6 +163,10 @@ void main() {
     expect(refreshButton.leadingIcon, Icons.refresh_rounded);
     expect(refreshButton.isLoading, isFalse);
     expect(refreshButton.onPressed, isNotNull);
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Update now'));
+    verify(
+      () => completionService.requestReportRefresh('goal-1'),
+    ).called(1);
 
     await tester.ensureVisible(find.text('Talk to Move more'));
     await tester.drag(find.byType(ListView).first, const Offset(0, -100));
@@ -273,7 +289,6 @@ void main() {
               tldr: '**Three walks** remain before Sunday.',
               content:
                   '## Full report\n\nThe current routine needs three walks.',
-              provenance: const {'specVersionId': 'goal-1:spec-v1'},
             )
             as AgentReportEntity;
     final delayedHistoricalReport = report.copyWith(
@@ -549,6 +564,15 @@ void main() {
       'history', (tester) async {
     const desktopSize = Size(1400, 1000);
     setTestSurfaceSize(tester, desktopSize);
+    final completionService = _MockGoalHabitCompletionService();
+    when(
+      () => completionService.record(
+        agentId: 'goal-1',
+        habitId: 'walk',
+        day: DateTime.utc(2026, 8, 8),
+        outcome: HabitCompletionType.fail,
+      ),
+    ).thenAnswer((_) async => true);
     final spec =
         AgentDomainEntity.goalSpecVersion(
               id: 'goal-1:spec-v1',
@@ -589,6 +613,7 @@ void main() {
             )
             as GoalNudgeEntity;
     final today = DateTime.utc(2026, 8, 11);
+    var progressReads = 0;
 
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
@@ -611,24 +636,27 @@ void main() {
             ),
           ),
           goalAgentProgressViewProvider('goal-1').overrideWith(
-            (ref) async => GoalProgressView(
-              today: today,
-              habits: [
-                GoalHabitProgressView(
-                  habitId: 'walk',
-                  name: 'Morning walk',
-                  targetCount: 2,
-                  days: [
-                    for (var offset = 7; offset >= 0; offset--)
-                      GoalProgressDay(
-                        day: today.subtract(Duration(days: offset)),
-                        value: offset == 6 || offset == 0 ? 1 : 0,
-                      ),
-                  ],
-                  successfulWeeks: 5,
-                ),
-              ],
-            ),
+            (ref) async {
+              progressReads++;
+              return GoalProgressView(
+                today: today,
+                habits: [
+                  GoalHabitProgressView(
+                    habitId: 'walk',
+                    name: 'Morning walk',
+                    targetCount: 2,
+                    days: [
+                      for (var offset = 7; offset >= 0; offset--)
+                        GoalProgressDay(
+                          day: today.subtract(Duration(days: offset)),
+                          value: offset == 6 || offset == 0 ? 1 : 0,
+                        ),
+                    ],
+                    successfulWeeks: 5,
+                  ),
+                ],
+              );
+            },
           ),
           goalNudgeHistoryProvider('goal-1').overrideWith(
             (ref) async => [
@@ -650,6 +678,9 @@ void main() {
           agentChatProjectionProvider(
             'goal-1',
           ).overrideWith((ref) async => const []),
+          goalHabitCompletionServiceProvider.overrideWithValue(
+            completionService,
+          ),
         ],
       ),
     );
@@ -660,6 +691,22 @@ void main() {
     expect(find.text('Watching'), findsOneWidget);
     expect(find.text('Morning walk'), findsNWidgets(2));
     expect(find.textContaining('signals listed here'), findsOneWidget);
+
+    await tester.tap(
+      find.byKey(const ValueKey('goal-habit-day-walk-2026-08-08')),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-habit-day-missed')));
+    await tester.pumpAndSettle();
+    verify(
+      () => completionService.record(
+        agentId: 'goal-1',
+        habitId: 'walk',
+        day: DateTime.utc(2026, 8, 8),
+        outcome: HabitCompletionType.fail,
+      ),
+    ).called(1);
+    expect(progressReads, 2);
 
     await tester.drag(find.byType(ListView).first, const Offset(0, -600));
     await tester.pumpAndSettle();

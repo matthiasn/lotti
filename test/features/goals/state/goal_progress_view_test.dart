@@ -223,6 +223,11 @@ void main() {
     expect(monthView.metric?.days.first.day, DateTime.utc(2026, 8));
     expect(monthView.metric?.days.last.day, DateTime.utc(2026, 8, 31));
     expect(monthView.metric?.window, const GoalWindow.calendarMonth());
+    expect(
+      monthView.compactWindow,
+      hasLength(7),
+      reason: 'the list-row summary is capped to the latest seven days',
+    );
   });
 
   test('composite compact strip requires every watched habit on that day', () {

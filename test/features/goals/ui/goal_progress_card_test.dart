@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -57,6 +59,34 @@ void main() {
     expect(find.text('done'), findsOneWidget);
     expect(find.text('ages out tonight'), findsOneWidget);
     expect(find.text('today'), findsOneWidget);
+  });
+
+  testWidgets('an authored rolling window keeps its actual cadence label', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 4,
+                window: const GoalWindow.rollingDays(count: 10),
+                days: [
+                  for (var offset = 9; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('4× · rolling 10 days'), findsOneWidget);
   });
 
   for (final locale in AppLocalizations.supportedLocales) {
@@ -549,5 +579,63 @@ void main() {
           .enabled,
       isTrue,
     );
+  });
+
+  testWidgets('a pending completion disables that day and shows progress', (
+    tester,
+  ) async {
+    final completion = Completer<bool>();
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            habits: [
+              GoalHabitProgressView(
+                habitId: 'walk',
+                name: 'Walk',
+                targetCount: 1,
+                days: [
+                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                ],
+                successfulWeeks: 0,
+              ),
+            ],
+          ),
+          onHabitOutcomeSelected:
+              ({required day, required habitId, required outcome}) =>
+                  completion.future,
+        ),
+      ),
+    );
+
+    const dayKey = ValueKey('goal-habit-day-walk-2026-08-08');
+    await tester.tap(find.byKey(dayKey));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-habit-day-success')));
+    await tester.pump();
+
+    expect(
+      find.descendant(
+        of: find.byKey(dayKey),
+        matching: find.byType(CircularProgressIndicator),
+      ),
+      findsOneWidget,
+    );
+    expect(
+      tester
+          .widget<PopupMenuButton<HabitCompletionType>>(
+            find.descendant(
+              of: find.byKey(dayKey),
+              matching: find.byType(PopupMenuButton<HabitCompletionType>),
+            ),
+          )
+          .enabled,
+      isFalse,
+    );
+
+    completion.complete(true);
+    await tester.pumpAndSettle();
+    expect(find.byType(CircularProgressIndicator), findsNothing);
   });
 }

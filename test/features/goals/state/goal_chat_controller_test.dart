@@ -16,12 +16,87 @@ class _MockGoalChatService extends Mock implements GoalChatService {}
 
 void main() {
   test('composer copyWith can retain an explicit failure', () {
-    final state = const GoalChatComposerState().copyWith(
+    final failed = const GoalChatComposerState().copyWith(
       failedMessage: 'Keep me honest.',
+      failedMessageId: 'message-1',
     );
+    final retained = failed.copyWith(draft: 'Still here');
+    final cleared = retained.copyWith(clearFailure: true);
 
-    expect(state.failedMessage, 'Keep me honest.');
+    expect(retained.failedMessage, 'Keep me honest.');
+    expect(retained.failedMessageId, 'message-1');
+    expect(cleared.failedMessage, isNull);
+    expect(cleared.failedMessageId, isNull);
   });
+
+  test(
+    'keeps the draft when an unexpected send failure has no turn id',
+    () async {
+      final service = _MockGoalChatService();
+      when(
+        () => service.sendMessage(agentId: 'goal-1', text: 'Try this.'),
+      ).thenThrow(StateError('database unavailable'));
+      final container = ProviderContainer(
+        overrides: [goalChatServiceProvider.overrideWithValue(service)],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(
+        goalChatControllerProvider('goal-1').notifier,
+      )..updateDraft('Try this.');
+
+      await controller.send();
+
+      final state = container.read(goalChatControllerProvider('goal-1'));
+      expect(state.draft, 'Try this.');
+      expect(state.failedMessage, 'Try this.');
+      expect(state.failedMessageId, isNull);
+    },
+  );
+
+  test(
+    'retry preserves the durable turn id across typed and unknown errors',
+    () async {
+      final service = _MockGoalChatService();
+      when(
+        () => service.sendMessage(agentId: 'goal-1', text: 'Keep trying.'),
+      ).thenThrow(
+        const GoalChatTurnException('offline', messageId: 'message-1'),
+      );
+      var retryAttempts = 0;
+      when(
+        () => service.retryMessage(
+          agentId: 'goal-1',
+          messageId: 'message-1',
+        ),
+      ).thenAnswer((_) async {
+        retryAttempts++;
+        if (retryAttempts == 1) {
+          throw const GoalChatTurnException('still offline');
+        }
+        throw StateError('database unavailable');
+      });
+      final container = ProviderContainer(
+        overrides: [goalChatServiceProvider.overrideWithValue(service)],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(
+        goalChatControllerProvider('goal-1').notifier,
+      )..updateDraft('Keep trying.');
+      await controller.send();
+
+      await controller.retry();
+      var state = container.read(goalChatControllerProvider('goal-1'));
+      expect(state.failedMessage, 'Keep trying.');
+      expect(state.failedMessageId, 'message-1');
+
+      await controller.retry();
+      state = container.read(goalChatControllerProvider('goal-1'));
+      expect(state.draft, 'Keep trying.');
+      expect(state.failedMessage, 'Keep trying.');
+      expect(state.failedMessageId, 'message-1');
+      expect(retryAttempts, 2);
+    },
+  );
 
   test('keeps a failed draft for retry and clears it after success', () async {
     final service = _MockGoalChatService();

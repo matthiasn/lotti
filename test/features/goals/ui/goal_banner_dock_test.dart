@@ -384,6 +384,7 @@ void main() {
       entry(
         id: 'c',
         headline: 'Walk done. That’s the rhythm.',
+        tagline: 'One more outing keeps the streak alive.',
         goalTitle: 'Walk more',
       ),
     ];
@@ -391,7 +392,10 @@ void main() {
     await settleTransition(tester);
 
     expect(find.text('Walk done. That’s the rhythm.'), findsOneWidget);
-    expect(find.textContaining('just now'), findsOneWidget);
+    expect(
+      find.text('One more outing keeps the streak alive. · just now'),
+      findsOneWidget,
+    );
 
     // The marker is for THAT tenure only.
     await tester.pump(goalBannerDockTenure);
