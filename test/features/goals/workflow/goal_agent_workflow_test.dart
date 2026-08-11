@@ -2859,6 +2859,42 @@ void main() {
     );
     expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
 
+    // At risk without a three-day decline is ineligible for an automatic ad,
+    // but the same structured create action is honored when it comes from an
+    // interactive turn: the user explicitly asked for the banner.
+    final steadyAtRisk = await _offTrackDerivation(repository, version!, now);
+    expect(steadyAtRisk.facts.trackStatus, GoalTrackStatus.atRisk);
+    await withClock(
+      fixedClock,
+      () async => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-1',
+        threadId: 'thread-1',
+        strategy: await creating('Automatic at-risk banner.'),
+        derivation: steadyAtRisk,
+        now: now,
+      ),
+    );
+    expect(upserts.whereType<GoalNudgeEntity>(), isEmpty);
+
+    await withClock(
+      fixedClock,
+      () async => workflow.persistOutputs(
+        agentId: agentId,
+        runKey: 'run-chat',
+        threadId: 'thread-chat',
+        strategy: await creating('One more walk. Make it count.'),
+        derivation: steadyAtRisk,
+        now: now,
+        replyToUser: true,
+        adCreationDiscriminator: 'chat:message-1',
+      ),
+    );
+    final requested = upserts.whereType<GoalNudgeEntity>().single;
+    expect(requested.status, GoalNudgeStatus.active);
+    expect(requested.brief.headline, 'One more walk. Make it count.');
+    upserts.clear();
+
     // atRisk with a strictly worsening trend (good prior days, bad today):
     // eligible — and the persisted copy is sanitized.
     for (final (period, attainment) in [
@@ -2883,7 +2919,7 @@ void main() {
         ),
       );
     }
-    final atRisk = await _offTrackDerivation(repository, version!, now);
+    final atRisk = await _offTrackDerivation(repository, version, now);
     expect(atRisk.facts.trackStatus, GoalTrackStatus.atRisk);
     await withClock(
       fixedClock,

@@ -986,8 +986,19 @@ class GoalAgentWorkflow with AgentErrorLogging {
       // them via the fresh-active guard).
       final staleSpecWake =
           derivation.version.status != GoalSpecVersionStatus.active;
-      if (!staleSpecWake &&
-          !_adsEligible(derivation.facts, derivation.priors)) {
+      // The trend gate is for AUTOMATIC at-risk ads. In chat, a create/rerun
+      // tool call is the model's structured response to the user's explicit
+      // request, so atRisk is eligible even before a three-day decline. The
+      // remaining persistence guards (cooldown, stale spec, fresh active ad,
+      // duplicate copy) still apply.
+      final interactiveAdRequested =
+          replyToUser &&
+          (strategy.createdAds.isNotEmpty || strategy.rerunRequests.isNotEmpty);
+      final adsEligible =
+          _adsEligible(derivation.facts, derivation.priors) ||
+          (interactiveAdRequested &&
+              derivation.facts.trackStatus == GoalTrackStatus.atRisk);
+      if (!staleSpecWake && !adsEligible) {
         final modelRetired = {
           for (final action in strategy.retireRequests) action.adId,
         };
@@ -1040,10 +1051,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
         nudges,
         now,
       );
-      // The authoritative status permits ads only for offTrack or a
-      // worsening atRisk (P4/P5) — an imperfect model response must not
-      // chide a succeeding, recovering or data-gapped user.
-      final adsEligible = _adsEligible(derivation.facts, derivation.priors);
+      // Automatic ads remain limited to offTrack or worsening atRisk (P4/P5).
+      // A structured ad action on an interactive atRisk wake is the explicit
+      // user-requested exception computed above.
       // P6: a fresh active ad blocks a second one. Ads retired in THIS
       // wake don't count — the retire+create swap (P14) stays legal.
       final retiredNow = {

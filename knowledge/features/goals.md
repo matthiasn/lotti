@@ -157,7 +157,11 @@ flowchart TD
   digests. Automatic transition ads keep their period/baseline identity;
   chat-created replacements add the durable source message id so a retired
   transition ad cannot silently collide with the requested replacement.
-  Report prose passes `sanitizeAgentReportText`.
+  The three-day worsening requirement remains the automatic `atRisk` gate;
+  an interactive `atRisk` wake that emits a structured create/rerun action
+  honors the user's request while still enforcing cooldown, freshness,
+  duplicate-copy and stale-spec guards. Report prose passes
+  `sanitizeAgentReportText`.
 - **The goal spec never mutates in a wake.** `propose_goal_revision`
   lands as a pending ChangeSet for user approval; ad state is validated
   in-conversation against the ids the FACTS offered, and all outputs
