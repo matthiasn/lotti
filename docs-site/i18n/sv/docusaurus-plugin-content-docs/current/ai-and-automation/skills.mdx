@@ -33,12 +33,17 @@ erbjuder en åtgärd som kräver en inspelning.
 5. Fortsätt arbeta medan inferensen pågår; resultatet kopplas till den
    relevanta uppgiften eller posten när det är klart.
 
-Den tillgängliga menyn ändras med kontexten:
+Lotti levererar fem sorters färdigheter och menyn visar dem posten stöder:
 
-- uppgifter kan erbjuda text- och uppgiftskontextåtgärder;
-- ljudposter kan erbjuda transkription och ljudmedvetna åtgärder;
-- bilder kan erbjuda visuell analys; och
-- textposter kan erbjuda prompt- eller genereringsåtgärder som tar emot text.
+| Färdighet | Visas på |
+| --- | --- |
+| **Transkription** | ljudposter |
+| **Bildanalys** | bilder |
+| **Bildgenerering** | ljud- och textposter som är kopplade till en uppgift |
+| **Promptgenerering** | allt med text — anteckningar, ljud, bilder, uppgifter |
+| **Bildpromptgenerering** | allt med text, som ovan |
+
+Saknas en åtgärd du väntade dig stöder posttypen inte den färdigheten — eller så tilldelar ingen profil den en modell.
 
 Vissa färdigheter behöver en länkad uppgift eftersom de läser bredare
 uppgiftskontext eller skriver tillbaka sitt resultat till den uppgiften. Om en

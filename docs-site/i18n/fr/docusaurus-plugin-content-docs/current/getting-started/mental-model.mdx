@@ -66,9 +66,13 @@ Un agent peut lire le contexte que tu lui fournis, se faire un avis, résumer un
 tâche confuse et proposer la prochaine modification utile. Son rapport est un
 avis dont l’origine est traçable, pas un nouveau fait dans ton historique. Les
 modifications proposées pour une tâche, une liste de contrôle, un statut ou une
-date attendent que tu les confirmes ou les écartes. Les exceptions étroites sont
-un titre ou une langue initiaux pour une tâche encore vide — ensuite, la même
-règle d’approbation humaine s’applique.
+date attendent que tu les confirmes ou les écartes. Les exceptions sont le titre
+et la langue : chacun est appliqué immédiatement lorsque *ce champ* est encore
+vide et que l’agent le renseigne pour la première fois. Le reste de la tâche peut
+être plein de travail — une tâche avec une description, des listes de contrôle et
+du temps enregistré, mais sans langue définie, verra sa première langue appliquée
+sans qu’on te demande. Dès qu’un champ a une valeur, la même règle d’approbation
+humaine s’applique.
 
 Ce n’est pas une formule de politesse ajoutée à une consigne. Lotti sépare le journal
 personnel et la mémoire de travail de l’agent, afin que celui-ci ne puisse pas

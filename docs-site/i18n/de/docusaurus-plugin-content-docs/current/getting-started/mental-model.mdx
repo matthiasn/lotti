@@ -66,9 +66,12 @@ Ein Agent kann den Kontext lesen, den du ihm gibst, sich eine Meinung bilden,
 eine unübersichtliche Aufgabe zusammenfassen und eine sinnvolle Änderung
 vorschlagen. Er darf deine Aufzeichnung nicht heimlich ändern. Vorgeschlagene
 Änderungen an Aufgabe, Checkliste, Status oder Datum warten darauf, dass du sie
-bestätigst oder verwirfst. Die engen Ausnahmen sind ein erster Titel oder eine
-erste Sprache für eine sonst leere Aufgabe – danach gilt dieselbe Regel der
-menschlichen Freigabe.
+bestätigst oder verwirfst. Die Ausnahmen sind der Titel und die Sprache: Beide
+werden sofort übernommen, wenn *dieses Feld* noch leer ist und der Agent es zum
+ersten Mal setzt. Der Rest der Aufgabe darf dabei voller Arbeit sein – eine
+Aufgabe mit Beschreibung, Checklisten und erfasster Zeit, aber ohne gesetzte
+Sprache, erhält ihre erste Sprache ohne Rückfrage. Sobald ein Feld einen Wert
+hat, gilt dieselbe Regel der menschlichen Freigabe.
 
 Das ist nicht bloß Höflichkeit im Prompt. Lotti hält persönliches Logbuch und
 Arbeitsgedächtnis der Agenten getrennt, sodass der Agent deine Geschichte nicht

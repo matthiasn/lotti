@@ -13,7 +13,7 @@ Lotti-cloud: den konfigurerede Matrix-tjeneste videresender ende-til-ende
 krypterede payloads mellem dine enheder, mens hver enhed beholder sin egen
 lokale kopi.
 
-Åbn **Indstillinger → Synkronisering** for at se de tilgængelige opsætnings-,
+Åbn **Indstillinger → Synkroniseringsindstillinger** for at se de tilgængelige opsætnings-,
 tilstands- og gendannelsessider. Tallet ved siden af **Sync Outbox** er
 arbejde, der endnu ikke er nået frem til synkroniseringstjenesten.
 
@@ -22,6 +22,14 @@ arbejde, der endnu ikke er nået frem til synkroniseringstjenesten.
   alt="Lottis synkroniseringsindstillinger med provisioneret synkronisering, enhedsidentitet, tilbagefyldning, statistik, udbakke, konflikter og vedligeholdelse"
   caption="Synkroniseringshubben holder hverdagsstatus tæt på diagnostik og gendannelsesværktøjer. Project Waddle har i øjeblikket tre udbakke-elementer at inspicere."
 />
+
+## Hvad synkroniseres, og hvad bliver
+
+| Synkroniseres mellem dine enheder | Bliver på den ene enhed |
+| --- | --- |
+| Journalposter og opgaver og forbindelserne mellem dem · kategorier, etiketter, vaner, dashboards og målbare ting · AI-udbydere, -modeller og -profiler (inklusive sletninger) · gemte opgavefiltre · konfigurationsflag · valg af lyst/mørkt tema · enhedsprofiler · dit Daily OS-navn · notifikationer og deres læsestatus · opgaveagenter og deres links · AI-forbrugsposter (tokens, omkostning, energi) | Tale-til-tekst-stemme og -hastighed · panelbredder · AI-samtidighedsgrænser · agenttimere · undtagelser for dagsplanlægning |
+
+To detaljer værd at kende. Ikke alt, der synkroniseres, er journaldata: din enhedsprofil og dit Daily OS-navn rejser som enhedspræferencer og er undtaget fra hulregistrering. Og afledte tal sendes aldrig — et gemt opgavefilter synkroniseres, men de opgavetal, der beregnes ud fra det, genberegnes på hver enhed.
 
 ## Se dine enheder
 
@@ -67,8 +75,8 @@ enhedsnavnene, før du prøver igen.
 
 ## Navngiv enheder og annoncér kapaciteter
 
-**Synkroniseringsnodeprofilen** identificerer den aktuelle enhed over for
-resten af synkroniseringsgruppen. Giv den et navn, der udpeger den fysiske
+**Denne enhed** — “Enhedsnavn og funktioner” — identificerer den aktuelle
+enhed over for resten af synkroniseringsgruppen. Giv den et navn, der udpeger den fysiske
 maskine, såsom "Mission Control Mac" i stedet for "Desktop".
 
 <ManualScreenshot

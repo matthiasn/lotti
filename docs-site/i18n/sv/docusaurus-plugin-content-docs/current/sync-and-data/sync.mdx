@@ -12,7 +12,7 @@ flyttar inte huvudregistret till ett Lotti-moln: den konfigurerade
 Matrix-tjänsten reläar änd-till-änd-krypterade laster mellan dina enheter
 medan varje enhet behåller sin egen lokala kopia.
 
-Öppna **Inställningar → Synk** för att se de tillgängliga sidorna för
+Öppna **Inställningar → Synkroniseringsinställningar** för att se de tillgängliga sidorna för
 uppsättning, hälsa och återställning. Siffran bredvid **Utbox** är arbete som
 ännu inte nått synktjänsten.
 
@@ -21,6 +21,14 @@ uppsättning, hälsa och återställning. Siffran bredvid **Utbox** är arbete s
   alt="Lottis synkinställningar med provisionerad synk, enhetsidentitet, återfyllning, statistik, utbox, konflikter och underhåll"
   caption="Synknavet håller vardagsstatus nära diagnostik- och återställningsverktyg. Project Waddle har just nu tre utboxobjekt att inspektera."
 />
+
+## Vad som synkroniseras och vad som stannar
+
+| Synkroniseras mellan dina enheter | Stannar på den enskilda enheten |
+| --- | --- |
+| Loggboksposter och uppgifter samt länkarna mellan dem · kategorier, etiketter, vanor, instrumentpaneler och mätbara egenskaper · AI-leverantörer, -modeller och -profiler (inklusive raderingar) · sparade uppgiftsfilter · konfigurationsflaggor · val av ljust/mörkt tema · enhetsprofiler · ditt Daily OS-namn · aviseringar och deras lässtatus · uppgiftsagenter och deras länkar · AI-användningsposter (tokens, kostnad, energi) | Röst och hastighet för uppläsning · panelbredder · gränser för AI-samtidighet · agenternas begränsningstimers · undantag för dagsplanering |
+
+Två detaljer värda att känna till. Allt som synkroniseras är inte loggboksdata: din enhetsprofil och ditt Daily OS-namn färdas som enhetsinställningar och omfattas inte av luckdetektering. Och härledda tal skickas aldrig — ett sparat uppgiftsfilter synkroniseras, men antalen som beräknas ur det räknas om på varje enhet.
 
 ## Se dina enheter
 
@@ -66,8 +74,8 @@ du försöker igen.
 
 ## Namnge enheter och annonsera förmågor
 
-**Synknodprofil** identifierar den aktuella enheten för resten av
-synkgruppen. Ge den ett namn som skiljer den fysiska maskinen åt, som
+**Den här apparaten** (”Enhetsnamn och funktioner”) identifierar den aktuella
+enheten för resten av synkgruppen. Ge den ett namn som skiljer den fysiska maskinen åt, som
 ”Mission Control Mac” i stället för ”Skrivbord”.
 
 <ManualScreenshot

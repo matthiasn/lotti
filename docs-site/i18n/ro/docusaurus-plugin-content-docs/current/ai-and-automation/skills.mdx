@@ -23,12 +23,17 @@ Abilitățile AI sunt acțiuni denumite, cu instrucțiuni și cerințe de intrar
 4. Dacă Lotti oferă un selector de model sau mod de raționament, confirmați valoarea implicită sau alegeți o suprascriere punctuală.
 5. Continuați munca în timp ce inferența rulează; rezultatul se atașează sarcinii sau înregistrării relevante când este gata.
 
-Meniul disponibil se schimbă odată cu contextul:
+Lotti include cinci tipuri de competențe, iar meniul le oferă pe cele acceptate de înregistrare:
 
-- sarcinile pot oferi acțiuni de text și acțiuni cu contextul sarcinii;
-- înregistrările audio pot oferi transcriere și acțiuni adaptate conținutului audio;
-- imaginile pot oferi analiză vizuală; iar
-- înregistrările text pot oferi acțiuni de prompt sau generare care acceptă text.
+| Competență | Apare la |
+| --- | --- |
+| **Transcriere** | înregistrări audio |
+| **Analiză de imagine** | imagini |
+| **Generare de imagine** | înregistrări audio și text legate de o sarcină |
+| **Generare de prompt** | orice conține text — notițe, audio, imagini, sarcini |
+| **Generare de prompt pentru imagine** | orice conține text, ca mai sus |
+
+Dacă lipsește o acțiune la care vă așteptați, tipul înregistrării nu acceptă acea competență — sau niciun profil nu îi atribuie un model.
 
 Unele abilități au nevoie de o sarcină legată fiindcă citesc contextul mai larg al sarcinii sau scriu rezultatul înapoi în aceasta. Dacă lipsește o acțiune, verificați mai întâi tipul înregistrării și legătura cu sarcina, apoi verificați că profilul de inferență activ are un model pentru capabilitatea necesară.
 

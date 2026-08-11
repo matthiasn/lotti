@@ -66,9 +66,12 @@ Um agente pode ler o contexto que você fornece, formar uma opinião, resumir
 uma tarefa bagunçada e propor uma próxima mudança útil. O relatório dele é uma
 opinião com procedência, não um fato novo na sua história. Alterações
 propostas de tarefa, lista de verificação, status ou data aguardam que você as
-confirme ou descarte. As exceções pontuais são um título ou idioma inicial
-para uma tarefa ainda vazia – depois disso, vale a mesma regra de aprovação
-humana.
+confirme ou descarte. As exceções são o título e o idioma: cada um é aplicado
+imediatamente quando *aquele campo* ainda está vazio e o agente o define pela
+primeira vez. O restante da tarefa pode estar cheio de trabalho — uma tarefa com
+descrição, listas de verificação e tempo registrado, mas sem idioma definido,
+tem o primeiro idioma aplicado sem perguntar. Depois que um campo tem valor,
+vale a mesma regra de aprovação humana.
 
 Isso não é mera cortesia embutida em um prompt. Lotti mantém o diário de bordo
 pessoal e a memória de trabalho do agente separados, para que o agente não

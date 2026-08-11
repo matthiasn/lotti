@@ -33,12 +33,17 @@ Bild keine Aktion, die eine Aufnahme benötigt.
 5. Arbeite weiter, während die Inferenz läuft. Das Ergebnis wird anschließend
    an die passende Aufgabe oder den Eintrag angehängt.
 
-Das Menü ändert sich mit dem Kontext:
+Lotti bringt fünf Arten von Fähigkeiten mit; das Menü zeigt die, die der Eintrag unterstützt:
 
-- Aufgaben können Text- und aufgabenbezogene Aktionen anbieten;
-- Audioeinträge können Transkription und audiofähige Aktionen anbieten;
-- Bilder können visuell analysiert werden; und
-- Texteinträge können Prompt- oder Erzeugungsaktionen für Text anbieten.
+| Fähigkeit | Erscheint bei |
+| --- | --- |
+| **Transkription** | Audioeinträgen |
+| **Bildanalyse** | Bildern |
+| **Bilderzeugung** | Audio- und Texteinträgen, die mit einer Aufgabe verknüpft sind |
+| **Prompt-Erzeugung** | allem mit Text — Notizen, Audio, Bildern, Aufgaben |
+| **Bild-Prompt-Erzeugung** | allem mit Text, wie oben |
+
+Fehlt eine erwartete Aktion, unterstützt der Eintragstyp diese Fähigkeit nicht – oder kein Profil weist ihr ein Modell zu.
 
 Manche Fähigkeiten brauchen eine verknüpfte Aufgabe, weil sie weiteren
 Aufgabenkontext lesen oder ihr Ergebnis dorthin schreiben. Fehlt eine Aktion,

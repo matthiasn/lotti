@@ -50,6 +50,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   agent's one-line take uses the AI accent in task lists, appears beneath linked
   task titles, and sits between the title and status pills on task details, so
   the same compact context is visible without opening the full AI summary card.
+- **The Manual now matches the app it documents.** An audit of every English
+  page against the source found the recorded facts had drifted, and the
+  corrections landed in all eleven languages: transcription offers every
+  supported language rather than the three the Manual listed; the **Language**
+  setting is described as what it is — the app's own language, not just the
+  Manual link — and no longer enumerates a stale subset; Settings paths name
+  the branch they actually live under (**Definitions**, **Sync Settings**,
+  **Advanced Settings → Config Flags**); Habits and Dashboards say up front
+  that they are switched off by default and how to turn them on; destinations
+  are called what the app calls them (**Logbook**, **Insights**, **DailyOS**);
+  and the agent auto-apply exception is stated precisely — the *field* being
+  set must be empty, which is wider than the "otherwise empty task" the Manual
+  promised. Sync gains a table of what syncs and what stays on the device, the
+  five AI skills are named rather than gestured at, and the first-device page
+  leads with its homeserver prerequisite.
 
 ## [1.0.5]
 ### Changed

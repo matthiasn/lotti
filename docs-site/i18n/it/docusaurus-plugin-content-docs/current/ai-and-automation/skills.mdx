@@ -33,13 +33,17 @@ che richiede una registrazione.
 5. Continua a lavorare mentre l'inferenza gira; il risultato viene allegato
    all'attività o alla voce pertinente quando è completo.
 
-Il menu disponibile cambia con il contesto:
+Lotti include cinque tipi di competenze e il menu offre quelle supportate dalla voce:
 
-- le attività possono offrire azioni di testo e sul contesto dell'attività;
-- le voci audio possono offrire trascrizione e azioni consapevoli dell'audio;
-- le immagini possono offrire analisi visiva; e
-- le voci di testo possono offrire azioni di prompt o generazione che accettano
-  testo.
+| Competenza | Compare su |
+| --- | --- |
+| **Trascrizione** | voci audio |
+| **Analisi immagine** | immagini |
+| **Generazione immagine** | voci audio e di testo collegate a un'attività |
+| **Generazione prompt** | qualsiasi cosa con testo: note, audio, immagini, attività |
+| **Generazione prompt immagine** | qualsiasi cosa con testo, come sopra |
+
+Se manca un'azione che ti aspetti, il tipo di voce non supporta quella competenza — oppure nessun profilo le assegna un modello.
 
 Alcune competenze hanno bisogno di un'attività collegata perché leggono un
 contesto di attività più ampio o vi scrivono il risultato. Se un'azione manca,
