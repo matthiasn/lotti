@@ -1,6 +1,7 @@
 import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -30,42 +31,88 @@ double _textBlockHeight(TextStyle style, int lines, TextScaler scaler) {
   return painter.height * lines;
 }
 
+/// Applies the render-time visibility contract shared by the dock and the
+/// shell lane that reserves space for it.
+List<GoalBannerEntry> visibleGoalBannerEntries({
+  required Iterable<GoalBannerEntry>? entries,
+  required Set<String> locallyDismissedIds,
+  required Map<String, DateTime> locallySnoozedDeadlines,
+  DateTime? now,
+}) {
+  final instant = now ?? clock.now();
+  return [
+    for (final entry in entries ?? const <GoalBannerEntry>[])
+      if ((entry.nudge.staleAt == null ||
+              instant.isBefore(entry.nudge.staleAt!)) &&
+          !locallyDismissedIds.contains(entry.nudge.id) &&
+          locallySnoozedDeadlines[entry.nudge.id]?.isAfter(instant) != true)
+        entry,
+  ];
+}
+
 /// Clearance the compact (mobile) dock claims above the bottom bar when a
 /// goal is speaking — the shell reserves it in the overlay-height scope so
 /// page content and FABs never sit underneath (handover 1b's reserved lane).
 ///
 /// Derived entirely from the dock's own design-system dimensions and text
 /// styles, and scale-aware. The tenant row is as tall as the taller of the
-/// [TapTargets.minimum] dismiss target and the copy block — the headline
-/// (`subtitle2`, up to two lines) plus the tagline (up to two lines), measured
-/// the real text metrics at the current [MediaQuery.textScalerOf] so it grows
-/// correctly with accessibility text. Around it sits the fixed chrome — outer
-/// padding (`step3` both edges), the tenure strip (`step1`), the tenant's own
-/// vertical padding (`step3` both edges) — and the multi-tenant dot-row footer
+/// [TapTargets.minimum] dismiss target and the tallest active authored
+/// headline, measured at the dock's real compact width and current
+/// [MediaQuery.textScalerOf]. The dock never caps the headline. Around it sits
+/// the chrome — outer padding (`step3` both edges), the tenure-strip slot
+/// (`step1`), the tenant's own vertical padding (`step3` both edges) — and the
+/// multi-tenant dot-row footer
 /// (`step2` dot + `step2` bottom padding), always included so a two-plus-goal
 /// dock never under-clears. `goal_banner_dock_test.dart` asserts the reserve
 /// covers the actual rendered dock at 1× and 2×, single- and multi-tenant.
 /// Collapses to zero reserve when no goal speaks (the caller only adds it
 /// while the dock is speaking).
-double goalBannerDockReservedHeight(BuildContext context) {
+double goalBannerDockReservedHeight(
+  BuildContext context, {
+  required Iterable<GoalNudgeBrief> briefs,
+}) {
   final tokens = context.designTokens;
   final spacing = tokens.spacing;
   final scaler = MediaQuery.textScalerOf(context);
+  final animationsDisabled = MediaQuery.disableAnimationsOf(context);
+  final activeBriefs = briefs.toList(growable: false);
+  final multi = activeBriefs.length > 1;
   final chrome =
       spacing.step3 * 4 + // outer + tenant vertical padding, both edges
-      spacing.step1; // tenure strip
-  final footer = spacing.step2 * 2; // dot row + its bottom padding
-  final textBlock =
-      _textBlockHeight(
-        tokens.typography.styles.subtitle.subtitle2,
-        2,
-        scaler,
-      ) +
-      _textBlockHeight(tokens.typography.styles.others.caption, 2, scaler);
+      spacing.step1; // tenure-strip slot
+  final footer = multi
+      ? spacing.step2 *
+            2 // dot row + its bottom padding
+      : 0;
+  final reservedHorizontally =
+      spacing.step3 * 2 + // outer dock padding
+      spacing.cardPadding + // tenant leading padding
+      spacing.step2 + // tenant trailing padding
+      TapTargets.minimum; // dismiss target
+  final measuredWidth = MediaQuery.sizeOf(context).width - reservedHorizontally;
+  final availableWidth = measuredWidth > 0 ? measuredWidth : 0.0;
+  var textBlock = 0.0;
+  for (final brief in activeBriefs) {
+    final height =
+        brief.animation == GoalBannerAnimation.marquee && !animationsDisabled
+        ? _textBlockHeight(
+            tokens.typography.styles.subtitle.subtitle2,
+            1,
+            scaler,
+          )
+        : (TextPainter(
+            text: TextSpan(
+              text: brief.headline,
+              style: tokens.typography.styles.subtitle.subtitle2,
+            ),
+            textDirection: Directionality.of(context),
+            textScaler: scaler,
+          )..layout(maxWidth: availableWidth)).height;
+    if (height > textBlock) textBlock = height;
+  }
   final row = textBlock > TapTargets.minimum ? textBlock : TapTargets.minimum;
-  // A `step1` cushion absorbs sub-pixel rounding between the sample-glyph
-  // measurement and the rendered headline's own metrics (the test pins the
-  // reserve to the real rendered dock, so this stays honest, not padding).
+  // A `step1` cushion absorbs sub-pixel rounding between TextPainter and the
+  // rendered animation wrapper.
   return chrome + footer + row + spacing.step1;
 }
 
@@ -93,7 +140,7 @@ double goalBannerDockReservedHeight(BuildContext context) {
 class GoalBannerDock extends ConsumerStatefulWidget {
   const GoalBannerDock({required this.compact, super.key});
 
-  /// Phone layout: two-line headline, X only, swipe to dismiss.
+  /// Phone layout: complete animated headline, X only, swipe to dismiss.
   final bool compact;
 
   @override
@@ -113,10 +160,6 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
   bool _backgrounded = false;
 
   String? _currentId;
-
-  /// The tenant that queue-jumped on a fresh acknowledgment — its caption
-  /// carries "· just now" for that one tenure.
-  String? _jumpedId;
 
   /// activationCount per nudge id, for detecting re-runs (which jump the
   /// queue exactly like new banners: fresh copy is an acknowledgment).
@@ -172,17 +215,13 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     // Same render-time contract as every banner surface: retained data
     // survives a failed background refresh, but stale copy never renders,
     // and locally dismissed ids stay suppressed.
-    final now = clock.now();
-    final locallyDismissed = ref.read(locallyDismissedNudgeIdsProvider);
-    final locallySnoozed = ref.read(locallySnoozedNudgeDeadlinesProvider);
-    return [
-      for (final entry in raw ?? const <GoalBannerEntry>[])
-        if ((entry.nudge.staleAt == null ||
-                now.isBefore(entry.nudge.staleAt!)) &&
-            !locallyDismissed.contains(entry.nudge.id) &&
-            locallySnoozed[entry.nudge.id]?.isAfter(now) != true)
-          entry,
-    ];
+    return visibleGoalBannerEntries(
+      entries: raw,
+      locallyDismissedIds: ref.read(locallyDismissedNudgeIdsProvider),
+      locallySnoozedDeadlines: ref.read(
+        locallySnoozedNudgeDeadlinesProvider,
+      ),
+    );
   }
 
   void _advance() {
@@ -193,7 +232,6 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     );
     setState(() {
       _currentId = entries[(currentIndex + 1) % entries.length].nudge.id;
-      _jumpedId = null;
     });
     _restartTenure(entries.length);
   }
@@ -211,7 +249,6 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
   void _reconcile(List<GoalBannerEntry> entries) {
     if (entries.isEmpty) {
       _currentId = null;
-      _jumpedId = null;
       _seenActivations.clear();
       _tenure.stop();
       return;
@@ -242,7 +279,6 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     );
     if (jumpTo != null) {
       _currentId = jumpTo;
-      _jumpedId = jumpTo;
       _restartTenure(entries.length);
       return;
     }
@@ -253,7 +289,6 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
       // — rewinding would replay a banner the user just moved past.
       _currentId =
           _successorOf(_currentId, entries)?.nudge.id ?? entries.first.nudge.id;
-      _jumpedId = null;
       _restartTenure(entries.length);
     } else if (entries.length == 1) {
       // Fell to a lone tenant: it just sits, no cycle. (A new arrival takes
@@ -405,7 +440,6 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
         entry: current,
         style: style,
         compact: widget.compact,
-        justNow: _jumpedId == current.nudge.id,
         onDismiss: () => dismissGoalBanner(context, ref, current),
         onRate: () => showGoalBannerRatingSheet(context, ref, current),
       ),
@@ -548,13 +582,12 @@ class _TenurePainter extends CustomPainter {
   bool shouldRepaint(_TenurePainter oldDelegate) => oldDelegate.color != color;
 }
 
-/// One tenant's condensed row: chip · headline/caption · CTA · star · X.
+/// One tenant's condensed row: complete animated headline · actions · X.
 class _DockTenant extends ConsumerWidget {
   const _DockTenant({
     required this.entry,
     required this.style,
     required this.compact,
-    required this.justNow,
     required this.onDismiss,
     required this.onRate,
   });
@@ -562,7 +595,6 @@ class _DockTenant extends ConsumerWidget {
   final GoalBannerEntry entry;
   final GoalBannerStyle style;
   final bool compact;
-  final bool justNow;
   final VoidCallback onDismiss;
   final VoidCallback onRate;
 
@@ -571,14 +603,6 @@ class _DockTenant extends ConsumerWidget {
     final tokens = context.designTokens;
     final brief = entry.nudge.brief;
     final ratingDue = GoalNudgeInteractions.ratingDue(entry.nudge);
-    final tagline = brief.tagline?.trim();
-    final caption = tagline == null || tagline.isEmpty
-        ? justNow
-              ? context.messages.goalDockJustNow
-              : null
-        : justNow
-        ? '$tagline · ${context.messages.goalDockJustNow}'
-        : tagline;
 
     return GoalBannerExposureTracker(
       nudgeId: entry.nudge.id,
@@ -589,46 +613,23 @@ class _DockTenant extends ConsumerWidget {
           key: const ValueKey('goal-banner-dock-tenant'),
           onTap: () => beamToNamed('/agents/details/${entry.nudge.agentId}'),
           child: Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: tokens.spacing.cardPadding,
-              vertical: tokens.spacing.step3,
+            padding: EdgeInsets.only(
+              left: tokens.spacing.cardPadding,
+              top: tokens.spacing.step3,
+              right: tokens.spacing.step2,
+              bottom: tokens.spacing.step3,
             ),
             child: Row(
               children: [
-                GoalBannerPersonaChip.forStyle(
-                  monogram: GoalBannerPersonaChip.monogramFor(entry.goalTitle),
-                  style: style,
-                ),
-                SizedBox(width: tokens.spacing.step3),
                 Expanded(
                   key: const ValueKey('goal-banner-copy-region'),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      GoalBannerAnimatedText(
-                        text: brief.headline,
-                        animation: brief.animation,
-                        // Desktop has the room to show the authored headline in
-                        // full. Compact keeps the documented two-line reserve.
-                        maxLines: compact ? 2 : null,
-                        style: tokens.typography.styles.subtitle.subtitle2
-                            .copyWith(
-                              color: tokens.colors.text.highEmphasis,
-                            ),
-                      ),
-                      if (caption != null)
-                        Text(
-                          caption,
-                          maxLines: compact ? 2 : null,
-                          overflow: compact
-                              ? TextOverflow.ellipsis
-                              : TextOverflow.visible,
-                          style: tokens.typography.styles.others.caption
-                              .copyWith(
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                        ),
-                    ],
+                  child: GoalBannerAnimatedText(
+                    text: brief.headline,
+                    animation: brief.animation,
+                    maxLines: null,
+                    style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
                   ),
                 ),
                 if (!compact && brief.cta != null) ...[
@@ -661,11 +662,14 @@ class _DockTenant extends ConsumerWidget {
                         : null,
                   ),
                 SizedBox(
+                  key: const ValueKey('goal-banner-dock-dismiss'),
                   width: TapTargets.minimum,
                   height: TapTargets.minimum,
                   child: IconButton(
                     onPressed: onDismiss,
                     tooltip: context.messages.goalBannerDismissTooltip,
+                    padding: EdgeInsets.zero,
+                    alignment: Alignment.centerRight,
                     icon: Icon(
                       Icons.close_rounded,
                       size: tokens.spacing.step5,

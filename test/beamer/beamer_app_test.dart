@@ -11,8 +11,10 @@ import 'package:lotti/beamer/beamer_app.dart';
 import 'package:lotti/beamer/locations/projects_location.dart';
 import 'package:lotti/beamer/locations/settings_location.dart';
 import 'package:lotti/beamer/locations/tasks_location.dart';
+import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/journal_entities.dart';
 import 'package:lotti/database/sync_db.dart';
+import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_pending_wake_providers.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/ui/sidebar_wake_queue.dart';
@@ -28,6 +30,8 @@ import 'package:lotti/features/design_system/components/navigation/desktop_navig
 import 'package:lotti/features/design_system/components/navigation/resizable_divider.dart';
 import 'package:lotti/features/design_system/state/pane_width_controller.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
 import 'package:lotti/features/keyboard/domain/app_command.dart';
 import 'package:lotti/features/keyboard/ui/app_command_controller.dart';
 import 'package:lotti/features/onboarding/state/onboarding_trigger_service.dart';
@@ -1334,6 +1338,72 @@ void main() {
         expect(
           DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
           DesignSystemFiveSlotNavBar.barHeight(pageContext),
+        );
+      },
+    );
+
+    testWidgets(
+      'occupiedHeight reserves exactly the visible goal banner lane',
+      (tester) async {
+        final mockNavService = MockNavService();
+        await _stubNavService(
+          mockNavService,
+          indexStream: Stream.value(0),
+          isProjectsEnabled: () => true,
+          isDailyOsEnabled: () => true,
+          isHabitsEnabled: () => true,
+          isDashboardsEnabled: () => true,
+        );
+        await _registerAppScreenGetIt(mockNavService);
+        addTearDown(tearDownTestGetIt);
+        final nudge =
+            AgentDomainEntity.goalNudge(
+                  id: 'goal-banner',
+                  agentId: 'goal-walk',
+                  status: GoalNudgeStatus.active,
+                  brief: const GoalNudgeBrief(
+                    headline: 'One more walk keeps the week moving.',
+                    tone: GoalNudgeTone.nudge,
+                    animation: GoalBannerAnimation.steady,
+                  ),
+                  briefDigest: 'goal-banner',
+                  createdAt: DateTime.utc(2026, 8, 11),
+                  updatedAt: DateTime.utc(2026, 8, 11),
+                  vectorClock: null,
+                )
+                as GoalNudgeEntity;
+        final entry = (nudge: nudge, goalTitle: 'Walk');
+
+        await _pumpAppScreen(
+          tester,
+          navService: mockNavService,
+          extraOverrides: [
+            activeGoalNudgesProvider.overrideWith((ref) async => [entry]),
+            goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          ],
+        );
+
+        expect(find.text(nudge.brief.headline), findsOneWidget);
+        final pageContext = tester.element(find.byType(IndexedStack));
+        expect(
+          DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
+          DesignSystemFiveSlotNavBar.barHeight(pageContext) +
+              goalBannerDockReservedHeight(
+                pageContext,
+                briefs: [nudge.brief],
+              ),
+        );
+
+        final container = ProviderScope.containerOf(pageContext, listen: false);
+        container.read(locallyDismissedNudgeIdsProvider.notifier).add(nudge.id);
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 400));
+
+        expect(find.text(nudge.brief.headline), findsNothing);
+        expect(
+          DesignSystemBottomNavigationBar.occupiedHeight(pageContext),
+          DesignSystemFiveSlotNavBar.barHeight(pageContext),
+          reason: 'a locally hidden banner must not leave a blank lane',
         );
       },
     );

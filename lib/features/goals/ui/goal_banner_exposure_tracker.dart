@@ -62,7 +62,10 @@ class _ExposureTrackerState extends ConsumerState<GoalBannerExposureTracker>
       _position?.removeListener(_recheck);
       _position = position?..addListener(_recheck);
     }
-    _recheck();
+    // Dependency changes are delivered during build. A sliver viewport may
+    // still be resolving directional padding at that point, so querying its
+    // reveal offset synchronously can trip Flutter's resolvedPadding assert.
+    // The post-frame check below is the first layout-safe visibility sample.
     _recheckAfterFrame();
   }
 

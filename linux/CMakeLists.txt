@@ -74,7 +74,23 @@ set_target_properties(${BINARY_NAME}
 
 # Generated plugin build rules, which manage building the plugins and adding
 # them to the application.
+# flutter_lame bundles LAME with an upstream CMake 3.0 declaration. Preserve
+# the caller's deprecation setting for Lotti itself, but suppress that external
+# compatibility warning while configuring generated plugin subdirectories.
+get_property(_LOTTI_CMAKE_WARN_DEPRECATED_WAS_SET
+  CACHE CMAKE_WARN_DEPRECATED PROPERTY TYPE SET)
+if(_LOTTI_CMAKE_WARN_DEPRECATED_WAS_SET)
+  get_property(_LOTTI_CMAKE_WARN_DEPRECATED
+    CACHE CMAKE_WARN_DEPRECATED PROPERTY VALUE)
+endif()
+set(CMAKE_WARN_DEPRECATED OFF CACHE BOOL "" FORCE)
 include(flutter/generated_plugins.cmake)
+if(_LOTTI_CMAKE_WARN_DEPRECATED_WAS_SET)
+  set(CMAKE_WARN_DEPRECATED "${_LOTTI_CMAKE_WARN_DEPRECATED}"
+    CACHE BOOL "" FORCE)
+else()
+  unset(CMAKE_WARN_DEPRECATED CACHE)
+endif()
 
 
 # === Installation ===

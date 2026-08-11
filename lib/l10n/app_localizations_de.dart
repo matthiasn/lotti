@@ -6212,9 +6212,6 @@ class AppLocalizationsDe extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Beobachtet';
 
   @override
-  String get goalDockJustNow => 'gerade eben';
-
-  @override
   String get goalHealthTrendDown => 'Fällt ab';
 
   @override
@@ -6265,6 +6262,9 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get goalProgressCaption =>
       'letzte 7 Tage · verschiebt sich um Mitternacht';
+
+  @override
+  String get goalProgressCompactCaption => 'verschiebt sich um Mitternacht';
 
   @override
   String goalProgressCompactSemantics(int count) {

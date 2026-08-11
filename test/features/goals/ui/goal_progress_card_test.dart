@@ -6,7 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
-import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -558,6 +558,8 @@ void main() {
 
       expect(find.text('Wed'), findsOneWidget);
       expect(find.text('W'), findsNothing);
+      final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+      final expectedPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
       double? previousCenter;
       for (var offset = 6; offset >= 0; offset--) {
         final date = today
@@ -568,6 +570,17 @@ void main() {
           ValueKey('goal-habit-weekday-walk-$date'),
         );
         final cell = find.byKey(ValueKey('goal-habit-day-walk-$date'));
+        final visualCell = find.byKey(
+          ValueKey('goal-habit-day-visual-walk-$date'),
+        );
+        expect(
+          tester.getSize(visualCell),
+          const Size.square(ControlSizes.iconChipCompact),
+        );
+        expect(
+          tester.getSize(cell),
+          const Size.square(ControlSizes.iconChipCompact),
+        );
         expect(
           tester.getCenter(marker).dx,
           closeTo(tester.getCenter(cell).dx, 0.01),
@@ -577,8 +590,8 @@ void main() {
         if (previousCenter != null) {
           expect(
             center - previousCenter,
-            lessThan(TapTargets.minimum),
-            reason: 'neighboring tap targets overlap to keep the grid tight',
+            closeTo(expectedPitch, 0.01),
+            reason: 'desktop cells follow the compact handoff rhythm',
           );
         }
         previousCenter = center;
@@ -587,45 +600,247 @@ void main() {
   );
 
   testWidgets(
-    'habit day has a full tap target and ignores its current outcome',
+    'weekday labels expand their pitch as soon as scaled text needs it without '
+    'losing '
+    'cell alignment',
+    (tester) async {
+      tester.view.physicalSize = const Size(1200, 900);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(textScaler: const TextScaler.linear(1.01)),
+              child: GoalProgressCard(
+                progress: GoalProgressView(
+                  today: today,
+                  habits: [
+                    GoalHabitProgressView(
+                      habitId: 'walk',
+                      name: 'Walk',
+                      targetCount: 3,
+                      days: [
+                        for (var offset = 6; offset >= 0; offset--)
+                          day(offset, 0),
+                      ],
+                      successfulWeeks: 2,
+                    ),
+                  ],
+                ),
+                onHabitOutcomeSelected:
+                    ({
+                      required day,
+                      required habitId,
+                      required outcome,
+                    }) async => true,
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+      final defaultPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
+      Rect? previousLabelRect;
+      double? previousCellCenter;
+      for (var offset = 6; offset >= 0; offset--) {
+        final date = today
+            .subtract(Duration(days: offset))
+            .toIso8601String()
+            .substring(0, 10);
+        final marker = find.byKey(
+          ValueKey('goal-habit-weekday-walk-$date'),
+        );
+        final label = find.descendant(of: marker, matching: find.byType(Text));
+        final cell = find.byKey(ValueKey('goal-habit-day-walk-$date'));
+        final labelRect = tester.getRect(label);
+        final cellCenter = tester.getCenter(cell).dx;
+        expect(tester.getCenter(marker).dx, closeTo(cellCenter, 0.01));
+        if (previousLabelRect != null) {
+          expect(
+            previousLabelRect.right,
+            lessThanOrEqualTo(labelRect.left),
+            reason: 'scaled weekday labels must not overlap',
+          );
+        }
+        if (previousCellCenter != null) {
+          expect(
+            cellCenter - previousCellCenter,
+            greaterThan(defaultPitch),
+            reason: 'only accessibility scaling should loosen the handoff grid',
+          );
+        }
+        previousLabelRect = labelRect;
+        previousCellCenter = cellCenter;
+      }
+    },
+  );
+
+  testWidgets('phone handoff keeps compact habit metadata and cells tight', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 358,
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                habits: [
+                  GoalHabitProgressView(
+                    habitId: 'gym',
+                    name: 'Gym',
+                    targetCount: 4,
+                    days: [
+                      for (var offset = 6; offset >= 0; offset--)
+                        day(offset, offset < 4 ? 1 : 0),
+                    ],
+                    successfulWeeks: 2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final context = tester.element(find.byType(GoalProgressCard));
+    final spacing = context.designTokens.spacing;
+    final title = find.text('This rolling week');
+    final caption = find.text('slides at midnight');
+    final name = find.text('Gym');
+    final cadence = find.text('4× per 7 days');
+    final firstCell = find.byKey(
+      const ValueKey('goal-habit-day-visual-gym-2026-08-05'),
+    );
+
+    expect(
+      tester.getCenter(title).dy,
+      closeTo(tester.getCenter(caption).dy, 0.01),
+      reason: 'the compact handoff keeps its card heading on one line',
+    );
+    expect(
+      tester.getTopLeft(cadence).dx - tester.getTopRight(name).dx,
+      closeTo(spacing.step2, 0.01),
+      reason: 'cadence belongs to the habit name, not the status column',
+    );
+    expect(
+      tester.getTopLeft(firstCell).dy - tester.getBottomLeft(name).dy,
+      closeTo(spacing.step1, 0.01),
+      reason: 'the mobile grid follows the handoff compact vertical rhythm',
+    );
+  });
+
+  testWidgets('a narrow authored cadence moves intact below the habit name', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Center(
+          child: SizedBox(
+            width: 260,
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                habits: [
+                  GoalHabitProgressView(
+                    habitId: 'walk',
+                    name: 'A deliberately long habit name',
+                    targetCount: 4,
+                    window: const GoalWindow.rollingDays(count: 10),
+                    days: [
+                      for (var offset = 9; offset >= 0; offset--)
+                        day(offset, offset < 4 ? 1 : 0),
+                    ],
+                    successfulWeeks: 2,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+
+    final cadenceFinder = find.text('4× · rolling 10 days');
+    final cadence = tester.widget<Text>(cadenceFinder);
+    expect(cadence.maxLines, isNull);
+    expect(cadence.overflow, isNot(TextOverflow.ellipsis));
+    expect(
+      tester.getTopLeft(cadenceFinder).dy,
+      greaterThan(
+        tester.getBottomLeft(find.text('A deliberately long habit name')).dy,
+      ),
+      reason: 'the full authored cadence gets its own row when space is tight',
+    );
+  });
+
+  testWidgets(
+    'compact habit day follows the mobile handoff and ignores its current outcome',
     (
       tester,
     ) async {
       final outcomes = <HabitCompletionType>[];
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
-          GoalProgressCard(
-            progress: GoalProgressView(
-              today: today,
-              habits: [
-                GoalHabitProgressView(
-                  habitId: 'walk',
-                  name: 'Walk',
-                  targetCount: 1,
-                  days: [
-                    for (var offset = 6; offset > 0; offset--) day(offset, 0),
-                    GoalProgressDay(
-                      day: today,
-                      value: 1,
-                      habitCompletionType: HabitCompletionType.success,
+          Center(
+            child: SizedBox(
+              width: 260,
+              child: GoalProgressCard(
+                progress: GoalProgressView(
+                  today: today,
+                  habits: [
+                    GoalHabitProgressView(
+                      habitId: 'walk',
+                      name: 'Walk',
+                      targetCount: 1,
+                      days: [
+                        for (var offset = 6; offset > 0; offset--)
+                          day(offset, 0),
+                        GoalProgressDay(
+                          day: today,
+                          value: 1,
+                          habitCompletionType: HabitCompletionType.success,
+                        ),
+                      ],
+                      successfulWeeks: 1,
                     ),
                   ],
-                  successfulWeeks: 1,
                 ),
-              ],
+                onHabitOutcomeSelected:
+                    ({
+                      required day,
+                      required habitId,
+                      required outcome,
+                    }) async {
+                      outcomes.add(outcome);
+                      return true;
+                    },
+              ),
             ),
-            onHabitOutcomeSelected:
-                ({required day, required habitId, required outcome}) async {
-                  outcomes.add(outcome);
-                  return true;
-                },
           ),
         ),
       );
 
       const dayKey = ValueKey('goal-habit-day-walk-2026-08-11');
-      expect(tester.getSize(find.byKey(dayKey)).width, TapTargets.minimum);
-      expect(tester.getSize(find.byKey(dayKey)).height, TapTargets.minimum);
+      expect(
+        tester.getSize(find.byKey(dayKey)),
+        const Size.square(ControlSizes.iconChipCompact),
+      );
+      expect(
+        tester.getCenter(find.text('Walk')).dy,
+        lessThan(tester.getCenter(find.text('1× per 7 days')).dy),
+        reason: 'the complete cadence moves below when the row cannot fit it',
+      );
+      final cadence = tester.widget<Text>(find.text('1× per 7 days'));
+      expect(cadence.maxLines, isNull);
+      expect(cadence.overflow, isNot(TextOverflow.ellipsis));
 
       await tester.tap(find.byKey(dayKey));
       await tester.pumpAndSettle();

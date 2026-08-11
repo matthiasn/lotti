@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
 import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
+import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -41,6 +42,7 @@ void main() {
     int activationCount = 1,
     GoalNudgeTone tone = GoalNudgeTone.nudge,
     GoalBannerAnimation animation = GoalBannerAnimation.steady,
+    DateTime? staleAt,
   }) => (
     nudge:
         AgentDomainEntity.goalNudge(
@@ -56,6 +58,7 @@ void main() {
               ),
               briefDigest: id,
               activationCount: activationCount,
+              staleAt: staleAt,
               createdAt: DateTime(2026, 8, 9),
               updatedAt: DateTime(2026, 8, 9),
               vectorClock: null,
@@ -125,6 +128,29 @@ void main() {
     }
   }
 
+  test('visibility filtering is shared by the dock and its reserved lane', () {
+    final now = DateTime.utc(2026, 8, 11, 12);
+    final visible = visibleGoalBannerEntries(
+      entries: [
+        entry(id: 'visible', headline: 'Visible voice'),
+        entry(
+          id: 'stale',
+          headline: 'Stale voice',
+          staleAt: now.subtract(const Duration(minutes: 1)),
+        ),
+        entry(id: 'dismissed', headline: 'Dismissed voice'),
+        entry(id: 'snoozed', headline: 'Snoozed voice'),
+      ],
+      locallyDismissedIds: const {'dismissed'},
+      locallySnoozedDeadlines: {
+        'snoozed': now.add(const Duration(hours: 1)),
+      },
+      now: now,
+    );
+
+    expect(visible.map((entry) => entry.nudge.id), ['visible']);
+  });
+
   testWidgets('a single tenant just sits: no dots, no auto-advance after '
       'a full tenure', (tester) async {
     await pumpDock(tester, [entry(id: 'a', headline: 'Only voice')]);
@@ -171,7 +197,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('desktop shows full copy while compact preserves its line cap', (
+  testWidgets('desktop and compact docks show the full animated headline', (
     tester,
   ) async {
     final animated = entry(
@@ -197,13 +223,15 @@ void main() {
             find.byType(GoalBannerAnimatedText),
           )
           .maxLines,
-      2,
+      isNull,
     );
+    expect(find.byType(GoalBannerPersonaChip), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('the dock spans its host and renders the authored tagline '
-      'instead of substituting the goal name', (tester) async {
+  testWidgets('the dock spans its host and omits secondary identity copy', (
+    tester,
+  ) async {
     await pumpDock(tester, [
       entry(
         id: 'tagline',
@@ -213,8 +241,9 @@ void main() {
       ),
     ]);
 
-    expect(find.text('One walk puts the rumors to bed.'), findsOneWidget);
+    expect(find.text('One walk puts the rumors to bed.'), findsNothing);
     expect(find.text('Walk'), findsNothing);
+    expect(find.byType(GoalBannerPersonaChip), findsNothing);
     expect(
       tester.getSize(find.byType(GoalBannerDock)).width,
       tester.getSize(find.byType(Scaffold)).width,
@@ -242,7 +271,15 @@ void main() {
     expect(tenantRect.center.dx, frameRect.center.dx);
     expect(tenantRect.width, closeTo(frameRect.width, 2));
     final dismissRect = tester.getRect(find.byTooltip('Dismiss'));
-    expect(frameRect.right - dismissRect.right, lessThan(24));
+    expect(frameRect.right - dismissRect.right, lessThan(12));
+    final dismissButton = tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byTooltip('Dismiss'),
+        matching: find.byType(IconButton),
+      ),
+    );
+    expect(dismissButton.padding, EdgeInsets.zero);
+    expect(dismissButton.alignment, Alignment.centerRight);
     expect(
       tester
           .getSize(find.byKey(const ValueKey('goal-banner-copy-region')))
@@ -252,31 +289,35 @@ void main() {
     );
   });
 
-  testWidgets('the reserved lane covers the rendered compact dock at every '
-      'text scale — two-line headline AND the multi-tenant dot row', (
+  testWidgets('the reserved lane covers the full compact headline at every '
+      'text scale and includes the multi-tenant dot row', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(390, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final longHeadline = List.filled(
+      2,
+      'A complete authored headline keeps every useful word visible even when the copy runs long.',
+    ).join(' ');
     // Two active goals (so the dot-row footer renders), each with a headline
-    // long enough to wrap to the compact dock's full two lines: the tallest
-    // dock the reserve must clear.
+    // longer than five visual lines at both text scales.
     List<GoalBannerEntry> tallEntries() => [
       entry(
         id: 'a',
-        headline:
-            'A deliberately long standing headline that wraps to two '
-            'full lines on a narrow phone dock so we size the tallest case',
+        headline: longHeadline,
       ),
       entry(
         id: 'b',
-        headline:
-            'A second equally long standing headline that also wraps '
-            'to two full lines on the same narrow phone dock',
+        headline: '$longHeadline Still complete.',
       ),
     ];
 
-    /// Renders the dock at [scaler] and returns (rendered height, the reserve
-    /// the shell would compute from the same context).
-    Future<(double rendered, double reserved)> measure(
+    /// Renders the dock at [scaler] and returns the rendered dock, its shell
+    /// reserve, the headline height and one line of the same typography.
+    Future<(double rendered, double reserved, double headline, double oneLine)>
+    measure(
       TextScaler scaler,
     ) async {
       _TestEntries.initial = tallEntries();
@@ -290,7 +331,10 @@ void main() {
                 builder: (context) {
                   // Read the reserve through the SAME scaled context the shell
                   // uses in `_MobileNavOverlayHeightScope`.
-                  reserved = goalBannerDockReservedHeight(context);
+                  reserved = goalBannerDockReservedHeight(
+                    context,
+                    briefs: tallEntries().map((entry) => entry.nudge.brief),
+                  );
                   return const Scaffold(
                     bottomNavigationBar: GoalBannerDock(compact: true),
                   );
@@ -304,12 +348,35 @@ void main() {
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      return (tester.getSize(find.byType(GoalBannerDock)).height, reserved);
+      final animatedText = find.byType(GoalBannerAnimatedText);
+      final animatedTextWidget = tester.widget<GoalBannerAnimatedText>(
+        animatedText,
+      );
+      final linePainter = TextPainter(
+        text: TextSpan(text: 'Xg', style: animatedTextWidget.style),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      return (
+        tester.getSize(find.byType(GoalBannerDock)).height,
+        reserved,
+        tester.getSize(animatedText).height,
+        linePainter.height,
+      );
     }
 
-    final (base, baseReserve) = await measure(TextScaler.noScaling);
-    final (large, largeReserve) = await measure(const TextScaler.linear(2));
+    final (base, baseReserve, baseHeadline, baseLine) = await measure(
+      TextScaler.noScaling,
+    );
+    final (large, largeReserve, largeHeadline, largeLine) = await measure(
+      const TextScaler.linear(2),
+    );
 
+    // This is genuinely long copy, not a two-line smoke test: the rendered
+    // headline exceeds the old five-line reserve at both supported scales.
+    expect(baseHeadline, greaterThan(baseLine * 5));
+    expect(largeHeadline, greaterThan(largeLine * 5));
     // Large text genuinely enlarges the tenant — a fixed reserve would
     // under-clear it.
     expect(large, greaterThan(base));
@@ -325,6 +392,122 @@ void main() {
       largeReserve,
       greaterThanOrEqualTo(large),
       reason: 'reserve must clear the 2× dock',
+    );
+  });
+
+  testWidgets(
+    'reduced-motion marquee reserves its full wrapped compact headline',
+    (tester) async {
+      tester.view.physicalSize = const Size(390, 1400);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+      final headline = List.filled(
+        2,
+        'Reduced motion keeps every authored banner word visible in place.',
+      ).join(' ');
+      final marquee = entry(
+        id: 'marquee',
+        headline: headline,
+        animation: GoalBannerAnimation.marquee,
+      );
+      _TestEntries.initial = [marquee];
+      late double reserved;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Builder(
+            builder: (context) => MediaQuery(
+              data: MediaQuery.of(
+                context,
+              ).copyWith(disableAnimations: true),
+              child: Builder(
+                builder: (context) {
+                  reserved = goalBannerDockReservedHeight(
+                    context,
+                    briefs: [marquee.nudge.brief],
+                  );
+                  return const Scaffold(
+                    bottomNavigationBar: GoalBannerDock(compact: true),
+                  );
+                },
+              ),
+            ),
+          ),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pump();
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 400));
+
+      final animated = find.byType(GoalBannerAnimatedText);
+      final animatedWidget = tester.widget<GoalBannerAnimatedText>(animated);
+      final linePainter = TextPainter(
+        text: TextSpan(text: 'Xg', style: animatedWidget.style),
+        textDirection: TextDirection.ltr,
+        maxLines: 1,
+      )..layout();
+      expect(tester.getSize(animated).height, greaterThan(linePainter.height));
+      expect(
+        reserved,
+        greaterThanOrEqualTo(
+          tester.getSize(find.byType(GoalBannerDock)).height,
+        ),
+      );
+    },
+  );
+
+  testWidgets('moving marquee reserves its rendered single-line lane', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final marquee = entry(
+      id: 'marquee',
+      headline: List.filled(
+        2,
+        'The moving headline remains one complete horizontal line.',
+      ).join(' '),
+      animation: GoalBannerAnimation.marquee,
+    );
+    _TestEntries.initial = [marquee];
+    late double reserved;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Builder(
+          builder: (context) {
+            reserved = goalBannerDockReservedHeight(
+              context,
+              briefs: [marquee.nudge.brief],
+            );
+            return const Scaffold(
+              bottomNavigationBar: GoalBannerDock(compact: true),
+            );
+          },
+        ),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pump();
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 400));
+
+    final animated = find.byType(GoalBannerAnimatedText);
+    final animatedWidget = tester.widget<GoalBannerAnimatedText>(animated);
+    final linePainter = TextPainter(
+      text: TextSpan(text: 'Xg', style: animatedWidget.style),
+      textDirection: TextDirection.ltr,
+      maxLines: 1,
+    )..layout();
+    expect(
+      tester.getSize(animated).height,
+      closeTo(linePainter.height, 0.01),
+    );
+    expect(
+      reserved,
+      greaterThanOrEqualTo(tester.getSize(find.byType(GoalBannerDock)).height),
     );
   });
 
@@ -405,8 +588,9 @@ void main() {
     expect(find.text('Second voice'), findsOneWidget);
   });
 
-  testWidgets('a fresh banner arriving mid-rotation jumps the queue and '
-      'carries the just-now marker', (tester) async {
+  testWidgets('a fresh banner arriving mid-rotation jumps the queue', (
+    tester,
+  ) async {
     await pumpDock(tester, [
       entry(id: 'a', headline: 'First voice'),
       entry(id: 'b', headline: 'Second voice'),
@@ -427,12 +611,9 @@ void main() {
     await settleTransition(tester);
 
     expect(find.text('Walk done. That’s the rhythm.'), findsOneWidget);
-    expect(
-      find.text('One more outing keeps the streak alive. · just now'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('just now'), findsNothing);
+    expect(find.text('One more outing keeps the streak alive.'), findsNothing);
 
-    // The marker is for THAT tenure only.
     await tester.pump(goalBannerDockTenure);
     await settleTransition(tester);
     expect(find.textContaining('just now'), findsNothing);

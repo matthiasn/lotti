@@ -6236,9 +6236,6 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Sleduje';
 
   @override
-  String get goalDockJustNow => 'právě teď';
-
-  @override
   String get goalHealthTrendDown => 'Klesá';
 
   @override
@@ -6288,6 +6285,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalProgressCaption => 'posledních 7 dní · posouvá se o půlnoci';
+
+  @override
+  String get goalProgressCompactCaption => 'posouvá se o půlnoci';
 
   @override
   String goalProgressCompactSemantics(int count) {

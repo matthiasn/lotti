@@ -10559,12 +10559,6 @@ abstract class AppLocalizations {
   /// **'Watching'**
   String get goalDetailWatchingTitle;
 
-  /// Freshness marker on the goal dock caption when a completion acknowledgment just took the slot
-  ///
-  /// In en, this message translates to:
-  /// **'just now'**
-  String get goalDockJustNow;
-
   /// Screen-reader label for the falling trend arrow on a goal-agent list row.
   ///
   /// In en, this message translates to:
@@ -10641,6 +10635,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'trailing 7 days · slides at midnight'**
   String get goalProgressCaption;
+
+  /// No description provided for @goalProgressCompactCaption.
+  ///
+  /// In en, this message translates to:
+  /// **'slides at midnight'**
+  String get goalProgressCompactCaption;
 
   /// Screen-reader summary of the compact seven-day progress strip.
   ///

@@ -1207,19 +1207,23 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
       audioIndicatorVisible = false;
     }
 
-    // The dock speaks only when there is at least one active nudge; a
-    // collapsed dock reserves no lane. Approximated by "any active nudge
-    // exists" — an over-reserve while a nudge is stale/dismissed is
-    // harmless (a little extra bottom clearance), an under-reserve is not.
+    // The dock speaks only when at least one renderable nudge remains; the
+    // shell uses the dock's own stale/dismissed/snoozed filter so a hidden
+    // banner never leaves a blank reserved lane behind.
     // The compact dock renders its empty child while the keyboard is up
     // (`GoalBannerDock` yields to it), so the reserve must drop to zero then —
     // otherwise it would push scroll clearance and FABs an extra lane above
     // the keyboard for the whole editing session. Mirror that collapse here.
     final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final goalDockEntries = visibleGoalBannerEntries(
+      entries: ref.watch(activeGoalNudgesProvider).value,
+      locallyDismissedIds: ref.watch(locallyDismissedNudgeIdsProvider),
+      locallySnoozedDeadlines: ref.watch(
+        locallySnoozedNudgeDeadlinesProvider,
+      ),
+    );
     final goalDockSpeaking =
-        goalDockAllowed &&
-        !keyboardUp &&
-        (ref.watch(activeGoalNudgesProvider).value?.isNotEmpty ?? false);
+        goalDockAllowed && !keyboardUp && goalDockEntries.isNotEmpty;
 
     return StreamBuilder<JournalEntity?>(
       stream: getIt<TimeService>().getStream(),
@@ -1244,7 +1248,10 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
         // is scale-aware (the tenant's copy grows with accessibility text),
         // so content and FABs clear the dock at every text scale.
         if (goalDockSpeaking) {
-          height += goalBannerDockReservedHeight(context);
+          height += goalBannerDockReservedHeight(
+            context,
+            briefs: goalDockEntries.map((entry) => entry.nudge.brief),
+          );
         }
         return DesignSystemBottomNavigationOverlayHeight(
           height: height,

@@ -6272,9 +6272,6 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Urmărește';
 
   @override
-  String get goalDockJustNow => 'chiar acum';
-
-  @override
   String get goalHealthTrendDown => 'În scădere';
 
   @override
@@ -6325,6 +6322,9 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get goalProgressCaption =>
       'ultimele 7 zile · glisează la miezul nopții';
+
+  @override
+  String get goalProgressCompactCaption => 'glisează la miezul nopții';
 
   @override
   String goalProgressCompactSemantics(int count) {

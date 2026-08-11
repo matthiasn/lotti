@@ -249,7 +249,7 @@ flowchart TD
   content region on desktop (beside the sidebar) and above the bottom nav
   on mobile, on the main working tabs only (Tasks, DailyOS, Habits). One
   shared rotation state cycles every standing banner ~15s each; a fresh
-  acknowledgment (a re-run) jumps the queue with a "just now" marker;
+  acknowledgment (a re-run) jumps the queue;
   hover/touch and app-backgrounding pause the cycle; the dock collapses to
   nothing when no goal is speaking. The goal detail page shows that goal's
   banners uncycled via `GoalBannerCard` directly. Tapping a banner opens
@@ -271,9 +271,9 @@ flowchart TD
   update to a stale read.
   The dock and the full detail card both render the selected animation through
   `GoalBannerAnimatedText`; the dock and its animated tenant span their host,
-  desktop shows the authored
-  headline and tagline without truncation, and compact docks keep a measured
-  two-line cap for each. A chat-requested snooze accepts an arbitrary future duration
+  and both desktop and compact docks show the complete authored headline with
+  no avatar, secondary tagline, or line cap; compact dismissal remains at the
+  trailing edge. A chat-requested snooze accepts an arbitrary future duration
   or date/time and automatically restores the exact banner at that deadline.
   The card keeps `cardPadding` on its lateral and bottom edges but uses
   `spacing.step2` above the fixed-height action header, preventing the rating
