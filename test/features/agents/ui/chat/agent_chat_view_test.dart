@@ -8,6 +8,42 @@ import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import '../../../../widget_test_utils.dart';
 
 void main() {
+  testWidgets('the visible message footer follows locale word order', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: AgentChatView(
+            agentId: 'goal-1',
+            agentName: 'Juno',
+            draft: '',
+            isSending: false,
+            onDraftChanged: (_) {},
+            onSend: () {},
+            onRetry: () {},
+          ),
+        ),
+        locale: const Locale('fr'),
+        overrides: [
+          agentChatProjectionProvider('goal-1').overrideWith(
+            (ref) async => [
+              AgentChatMessage(
+                id: '1',
+                role: AgentChatRole.agent,
+                text: 'On y va.',
+                createdAt: DateTime(2026, 8, 11, 9),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Juno à 09:00'), findsOneWidget);
+  });
+
   testWidgets('renders persisted roles and forwards a composed message', (
     tester,
   ) async {

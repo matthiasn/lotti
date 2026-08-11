@@ -6139,6 +6139,11 @@ class AppLocalizationsRo extends AppLocalizations {
       'Această conversație nu poate fi încărcată acum.';
 
   @override
+  String goalChatMessageFooter(Object author, Object time) {
+    return '$author · $time';
+  }
+
+  @override
   String goalChatMessageSemantics(String author, String time, String message) {
     return '$author, $time: $message';
   }
@@ -6277,6 +6282,24 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalHealthTrendUp => 'În creștere';
+
+  @override
+  String goalMetricBarSemantics(
+    String status,
+    Object date,
+    Object value,
+    Object target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      status,
+      {
+        'missing': '$date: nicio valoare; țintă $target',
+        'met': '$date: $value; țintă $target; atinsă',
+        'other': '$date: $value; țintă $target; neatinsă',
+      },
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalNudgeStatusDismissed => 'Respins';

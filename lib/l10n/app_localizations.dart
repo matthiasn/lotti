@@ -10349,6 +10349,12 @@ abstract class AppLocalizations {
   /// **'Couldn\'t load this conversation right now.'**
   String get goalChatHistoryError;
 
+  /// Visible author and localized time beneath a goal-agent chat bubble.
+  ///
+  /// In en, this message translates to:
+  /// **'{author} · {time}'**
+  String goalChatMessageFooter(Object author, Object time);
+
   /// Accessible label for one durable chat bubble.
   ///
   /// In en, this message translates to:
@@ -10576,6 +10582,17 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Trending up'**
   String get goalHealthTrendUp;
+
+  /// Accessible label for one dated metric bar. Status is missing, met, or missed.
+  ///
+  /// In en, this message translates to:
+  /// **'{status, select, missing{{date}: no value; target {target}} met{{date}: {value}; target {target}; met} other{{date}: {value}; target {target}; not met}}'**
+  String goalMetricBarSemantics(
+    String status,
+    Object date,
+    Object value,
+    Object target,
+  );
 
   /// No description provided for @goalNudgeStatusDismissed.
   ///

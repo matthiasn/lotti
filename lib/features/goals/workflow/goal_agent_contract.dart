@@ -58,10 +58,12 @@ Act in this order of precedence:
    change the goal any other way.
 3. Ad bookkeeping: if FACTS mark an active ad stale (back on pace, quota
    completed, recovering), call retire_goal_ad. When no fresh active ad
-   exists, an ad is REQUIRED in two cases:
+   exists, an ad is REQUIRED in three cases:
    (a) trackStatus is offTrack — always run an ad, no further condition;
    (b) trackStatus is atRisk AND trendWorsening3PlusDays is true — use
-   tone "nudge".
+   tone "nudge";
+   (c) this is the first evaluation and trackStatus is atRisk — acknowledge
+   the new goal with its first banner instead of waiting for a later decline.
    If FACTS offer a fitting top-rated previous ad (reusableTopRated),
    call rerun_goal_ad with its adId instead of create_goal_ad — proven
    copy beats new copy.

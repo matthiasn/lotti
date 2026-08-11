@@ -6105,6 +6105,11 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalChatHistoryError => 'Tuto konverzaci teď nelze načíst.';
 
   @override
+  String goalChatMessageFooter(Object author, Object time) {
+    return '$author · $time';
+  }
+
+  @override
   String goalChatMessageSemantics(String author, String time, String message) {
     return '$author, $time: $message';
   }
@@ -6241,6 +6246,24 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalHealthTrendUp => 'Roste';
+
+  @override
+  String goalMetricBarSemantics(
+    String status,
+    Object date,
+    Object value,
+    Object target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      status,
+      {
+        'missing': '$date: bez hodnoty; cíl $target',
+        'met': '$date: $value; cíl $target; splněno',
+        'other': '$date: $value; cíl $target; nesplněno',
+      },
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalNudgeStatusDismissed => 'Odmítnuto';

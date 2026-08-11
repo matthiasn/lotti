@@ -30,7 +30,10 @@ class GoalCompactWindowStrip extends StatelessWidget {
           children: [
             for (var index = 0; index < visible.length; index++) ...[
               if (index > 0) SizedBox(width: tokens.spacing.step1),
-              _CompactDayCell(hit: visible[index], today: index == 6),
+              _CompactDayCell(
+                hit: visible[index],
+                today: index == visible.length - 1,
+              ),
             ],
           ],
         ),
@@ -610,21 +613,39 @@ class _MetricProgressSeries extends StatelessWidget {
 
   Widget _bar(BuildContext context, GoalProgressDay day, num maxValue) {
     final tokens = context.designTokens;
-    return FractionallySizedBox(
-      key: ValueKey(
-        'goal-metric-bar-${day.day.toIso8601String().substring(0, 10)}',
+    final locale = Localizations.localeOf(context).toString();
+    final date = DateFormat.MMMd(locale).format(day.day);
+    final number = NumberFormat.decimalPattern(locale);
+    final status = !day.isObserved
+        ? 'missing'
+        : metric.meetsTarget(day)
+        ? 'met'
+        : 'missed';
+    return Semantics(
+      label: context.messages.goalMetricBarSemantics(
+        status,
+        date,
+        number.format(day.value),
+        number.format(metric.target),
       ),
-      heightFactor: maxValue == 0
-          ? 0.0
-          : (day.value / maxValue).clamp(0, 1).toDouble(),
-      alignment: Alignment.bottomCenter,
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: metric.meetsTarget(day)
-              ? tokens.colors.alert.info.defaultColor
-              : tokens.colors.background.level03,
-          borderRadius: BorderRadius.vertical(
-            top: Radius.circular(tokens.radii.s),
+      child: ExcludeSemantics(
+        child: FractionallySizedBox(
+          key: ValueKey(
+            'goal-metric-bar-${day.day.toIso8601String().substring(0, 10)}',
+          ),
+          heightFactor: maxValue == 0
+              ? 0.0
+              : (day.value / maxValue).clamp(0, 1).toDouble(),
+          alignment: Alignment.bottomCenter,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: metric.meetsTarget(day)
+                  ? tokens.colors.alert.info.defaultColor
+                  : tokens.colors.background.level03,
+              borderRadius: BorderRadius.vertical(
+                top: Radius.circular(tokens.radii.s),
+              ),
+            ),
           ),
         ),
       ),

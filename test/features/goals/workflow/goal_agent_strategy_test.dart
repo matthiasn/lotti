@@ -256,6 +256,28 @@ void main() {
     expect(request.reason, 'user asked for tomorrow morning');
   });
 
+  test('snooze rejects future timestamps without an explicit offset', () async {
+    await withClock(
+      Clock.fixed(DateTime.utc(2026, 8, 11, 12)),
+      () => strategy.processToolCalls(
+        toolCalls: [
+          _call(
+            name: GoalAgentToolNames.snoozeGoalAd,
+            args: {
+              'adId': 'ad-known',
+              'until': '2026-08-12T08:30:00',
+              'reason': 'ambiguous local time',
+            },
+          ),
+        ],
+        manager: manager,
+      ),
+    );
+
+    expect(strategy.snoozeRequests, isEmpty);
+    expect(rejection(), contains('ISO 8601'));
+  });
+
   test('snooze rejects past deadlines and unknown ads', () async {
     await withClock(
       Clock.fixed(DateTime.utc(2026, 8, 11, 12)),

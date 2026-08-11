@@ -332,7 +332,13 @@ class GoalAgentStrategy extends ConversationStrategy
   ) async {
     final adId = _trimmed(args['adId']);
     final reason = _trimmed(args['reason']);
-    final until = DateTime.tryParse(_trimmed(args['until']))?.toUtc();
+    final untilText = _trimmed(args['until']);
+    final hasExplicitOffset = RegExp(
+      r'(?:[zZ]|[+-]\d{2}:?\d{2})$',
+    ).hasMatch(untilText);
+    final until = hasExplicitOffset
+        ? DateTime.tryParse(untilText)?.toUtc()
+        : null;
     if (adId.isEmpty ||
         reason.isEmpty ||
         until == null ||

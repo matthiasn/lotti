@@ -271,6 +271,12 @@ void main() {
       );
       expect(
         isExplicitGoalAdReplacementRequest(
+          'Yes and I want a reminder banner ad of this.',
+        ),
+        isTrue,
+      );
+      expect(
+        isExplicitGoalAdReplacementRequest(
           'yes now',
           previousAssistantMessage:
               "If you'd like a fresh banner right now, just say the word.",
@@ -351,6 +357,23 @@ void main() {
     expect(result.success, isTrue);
     expect(conversationRepository.sendMessageDelegateCallCount, 0);
     expect(upserts, isEmpty);
+  });
+
+  test('an interactive turn without a spec head fails for retry', () async {
+    final result = await withClock(
+      fixedClock,
+      () => workflow.execute(
+        agentIdentity: identity,
+        runKey: 'run-1',
+        triggerTokens: const {},
+        threadId: 'thread-1',
+        pendingUserMessage: 'How am I doing?',
+      ),
+    );
+
+    expect(result.success, isFalse);
+    expect(result.error, contains('spec head'));
+    expect(conversationRepository.sendMessageDelegateCallCount, 0);
   });
 
   test('a dangling spec head fails the wake', () async {
@@ -3236,6 +3259,67 @@ void main() {
     expect(usage.inputTokens, 1000, reason: 'primary + ad-retry merged');
   });
 
+  test(
+    'a new at-risk goal gets its first banner without waiting for a trend',
+    () async {
+      stubSpec();
+      stubGlmResolution();
+      workflow = _offTrackWorkflow(
+        repository,
+        syncService,
+        conversationRepository,
+        cloudInferenceRepository,
+        aiConfigRepository,
+      );
+      conversationRepository.maxDelegateCalls = 3;
+      var calls = 0;
+      conversationRepository.sendMessageDelegate =
+          ({
+            required conversationId,
+            required message,
+            required model,
+            required provider,
+            required inferenceRepo,
+            tools,
+            toolChoice,
+            temperature = 0.7,
+            strategy,
+          }) async {
+            calls++;
+            if (calls == 1) {
+              await (strategy! as GoalAgentStrategy).processToolCalls(
+                toolCalls: [
+                  toolCall(GoalAgentToolNames.updateGoalReport, {
+                    'status': 'atRisk',
+                    'oneLiner': 'The first window starts behind.',
+                    'tldr': 'Two walks will recover the window.',
+                  }),
+                ],
+                manager: conversationManager,
+              );
+            } else {
+              await (strategy! as GoalAgentStrategy).processToolCalls(
+                toolCalls: [
+                  toolCall(GoalAgentToolNames.createGoalAd, {
+                    'headline': 'Your trainers are waiting.',
+                    'tone': 'nudge',
+                    'animation': 'pulse',
+                  }),
+                ],
+                manager: conversationManager,
+              );
+            }
+            return null;
+          };
+
+      final result = await run(triggerTokens: const {});
+
+      expect(result.success, isTrue);
+      expect(calls, 2, reason: 'primary evaluation + required first banner');
+      expect(upserts.whereType<GoalNudgeEntity>(), hasLength(1));
+    },
+  );
+
   test('a fresh active ad satisfies the P5 requirement — no forced ad '
       'retry fires', () async {
     stubSpec();
@@ -3505,7 +3589,29 @@ void main() {
     // At risk without a three-day decline is ineligible for an automatic ad,
     // but the same structured create action is honored when it comes from an
     // interactive turn: the user explicitly asked for the banner.
-    final steadyAtRisk = await _offTrackDerivation(repository, version!, now);
+    final firstAtRisk = await _offTrackDerivation(repository, version!, now);
+    final steadyAtRisk = GoalWakeDerivation(
+      version: firstAtRisk.version,
+      facts: firstAtRisk.facts,
+      periodKey: firstAtRisk.periodKey,
+      priors: [
+        AgentDomainEntity.goalProgress(
+              id: goalProgressId(agentId, '2026-08-08'),
+              agentId: agentId,
+              periodKey: '2026-08-08',
+              trackStatus: GoalTrackStatus.atRisk,
+              attainment: firstAtRisk.facts.evaluation.attainment,
+              dataCoverage: 1,
+              satisfied: false,
+              specVersionId: version.id,
+              createdAt: now.subtract(const Duration(days: 1)),
+              updatedAt: now.subtract(const Duration(days: 1)),
+              vectorClock: null,
+            )
+            as GoalProgressEntity,
+      ],
+      existingToday: firstAtRisk.existingToday,
+    );
     expect(steadyAtRisk.facts.trackStatus, GoalTrackStatus.atRisk);
     await withClock(
       fixedClock,

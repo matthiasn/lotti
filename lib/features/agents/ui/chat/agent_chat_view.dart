@@ -312,7 +312,7 @@ class _MessageBubbleState extends State<_MessageBubble> {
                   ],
                   SizedBox(height: tokens.spacing.step1),
                   Text(
-                    '$author · $time',
+                    context.messages.goalChatMessageFooter(author, time),
                     style: tokens.typography.styles.others.caption.copyWith(
                       color: tokens.colors.text.lowEmphasis,
                     ),

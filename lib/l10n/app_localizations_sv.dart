@@ -6045,6 +6045,11 @@ class AppLocalizationsSv extends AppLocalizations {
       'Det går inte att läsa in konversationen just nu.';
 
   @override
+  String goalChatMessageFooter(Object author, Object time) {
+    return '$author · $time';
+  }
+
+  @override
   String goalChatMessageSemantics(String author, String time, String message) {
     return '$author, $time: $message';
   }
@@ -6179,6 +6184,24 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalHealthTrendUp => 'Ökar';
+
+  @override
+  String goalMetricBarSemantics(
+    String status,
+    Object date,
+    Object value,
+    Object target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      status,
+      {
+        'missing': '$date: inget värde; mål $target',
+        'met': '$date: $value; mål $target; uppnått',
+        'other': '$date: $value; mål $target; inte uppnått',
+      },
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalNudgeStatusDismissed => 'Avfärdad';

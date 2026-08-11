@@ -156,24 +156,7 @@ bool _criterionMetOnDay(
   GoalCriterion criterion,
   GoalSignalWindow signals,
   DateTime day,
-) => switch (criterion) {
-  GoalCriterionHabit(:final habitId) =>
-    (signals.habitSuccessesByDay[habitId]?[day] ?? 0) > 0,
-  GoalCriterionMetric() || GoalCriterionMeasurable() =>
-    const GoalProgressEvaluator().evaluate(criterion, signals, day).satisfied,
-  GoalCriterionAllOf(criteria: final children) => children.every(
-    (child) => _criterionMetOnDay(child, signals, day),
-  ),
-  GoalCriterionAnyOf(criteria: final children) => children.any(
-    (child) => _criterionMetOnDay(child, signals, day),
-  ),
-  GoalCriterionAtLeastCount(
-    criteria: final children,
-    successes: final requiredSuccesses,
-  ) =>
-    children.where((child) => _criterionMetOnDay(child, signals, day)).length >=
-        requiredSuccesses,
-};
+) => const GoalProgressEvaluator().evaluate(criterion, signals, day).satisfied;
 
 /// Builds the presentation projection from the same daily aggregates the
 /// deterministic evaluator uses. This keeps the grid and the runtime verdict
@@ -187,6 +170,7 @@ GoalProgressView buildGoalProgressView({
   final today = GoalWindow.dayUtc(reference);
   final habitLeaves = <GoalCriterionHabit>[];
   final metricLeaves = <GoalCriterionMetric>[];
+  final measurableLeaves = <GoalCriterionMeasurable>[];
 
   void visit(GoalCriterion criterion) {
     switch (criterion) {
@@ -194,10 +178,8 @@ GoalProgressView buildGoalProgressView({
         habitLeaves.add(habit);
       case final GoalCriterionMetric metric:
         metricLeaves.add(metric);
-      case GoalCriterionMeasurable():
-        // The detail visual for measured values follows once their unit/name
-        // presentation is available; the evaluator still renders health.
-        return;
+      case final GoalCriterionMeasurable measurable:
+        measurableLeaves.add(measurable);
       case GoalCriterionAllOf(criteria: final children):
         children.forEach(visit);
       case GoalCriterionAnyOf(criteria: final children):
@@ -243,6 +225,12 @@ GoalProgressView buildGoalProgressView({
           signals: signals,
           reference: reference,
         ),
+      for (final measurable in measurableLeaves)
+        _measurableProgressView(
+          measurable: measurable,
+          signals: signals,
+          reference: reference,
+        ),
     ],
   );
 }
@@ -252,8 +240,8 @@ GoalMetricProgressView _metricProgressView({
   required GoalSignalWindow signals,
   required DateTime reference,
 }) {
-  final range = metric.window.periodRange(reference);
-  return GoalMetricProgressView(
+  return _numericProgressView(
+    criterion: metric,
     name: metric.title?.trim().isNotEmpty == true
         ? metric.title!.trim()
         : metric.dataType,
@@ -261,6 +249,48 @@ GoalMetricProgressView _metricProgressView({
     window: metric.window,
     direction: metric.direction,
     aggregation: metric.aggregation,
+    dailyValues: signals.quantitativeDailySums[metric.dataType],
+    signals: signals,
+    reference: reference,
+  );
+}
+
+GoalMetricProgressView _measurableProgressView({
+  required GoalCriterionMeasurable measurable,
+  required GoalSignalWindow signals,
+  required DateTime reference,
+}) => _numericProgressView(
+  criterion: measurable,
+  name: measurable.title?.trim().isNotEmpty == true
+      ? measurable.title!.trim()
+      : measurable.dataTypeId,
+  target: measurable.target,
+  window: measurable.window,
+  direction: measurable.direction,
+  aggregation: measurable.aggregation,
+  dailyValues: signals.measurableDailySums[measurable.dataTypeId],
+  signals: signals,
+  reference: reference,
+);
+
+GoalMetricProgressView _numericProgressView({
+  required GoalCriterion criterion,
+  required String name,
+  required num target,
+  required GoalWindow window,
+  required GoalDirection direction,
+  required GoalAggregation aggregation,
+  required Map<DateTime, num>? dailyValues,
+  required GoalSignalWindow signals,
+  required DateTime reference,
+}) {
+  final range = window.periodRange(reference);
+  return GoalMetricProgressView(
+    name: name,
+    target: target,
+    window: window,
+    direction: direction,
+    aggregation: aggregation,
     days: [
       for (
         var day = range.start;
@@ -269,14 +299,10 @@ GoalMetricProgressView _metricProgressView({
       )
         GoalProgressDay(
           day: day,
-          value: signals.quantitativeDailySums[metric.dataType]?[day] ?? 0,
-          isObserved:
-              signals.quantitativeDailySums[metric.dataType]?.containsKey(
-                day,
-              ) ??
-              false,
+          value: dailyValues?[day] ?? 0,
+          isObserved: dailyValues?.containsKey(day) ?? false,
           targetSatisfied: const GoalProgressEvaluator()
-              .evaluate(metric, signals, day)
+              .evaluate(criterion, signals, day)
               .satisfied,
         ),
     ],

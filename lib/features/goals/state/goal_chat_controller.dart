@@ -96,12 +96,15 @@ class GoalChatController extends Notifier<GoalChatComposerState> {
   Future<void> retry() async {
     final failed = state.failedMessage;
     final messageId = state.failedMessageId;
-    if (failed == null || messageId == null || state.isSending) return;
+    if (failed == null || state.isSending) return;
     state = state.copyWith(isSending: true, clearFailure: true);
     try {
-      await ref
-          .read(goalChatServiceProvider)
-          .retryMessage(agentId: _agentId, messageId: messageId);
+      final service = ref.read(goalChatServiceProvider);
+      if (messageId == null) {
+        await service.sendMessage(agentId: _agentId, text: failed);
+      } else {
+        await service.retryMessage(agentId: _agentId, messageId: messageId);
+      }
       await _suppressCommittedSnoozes();
       ref
         ..invalidate(activeGoalNudgesProvider)

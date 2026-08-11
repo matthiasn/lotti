@@ -191,7 +191,12 @@ class GoalAgentWorkflow with AgentErrorLogging {
 
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
     if (head is! GoalSpecHeadEntity) {
-      return const WakeResult(success: true);
+      return pendingUserMessage == null
+          ? const WakeResult(success: true)
+          : const WakeResult(
+              success: false,
+              error: 'goal chat cannot run without a goal spec head',
+            );
     }
     var version = await _repository.getEntity(head.versionId);
     if (version is! GoalSpecVersionEntity) {
@@ -627,15 +632,17 @@ class GoalAgentWorkflow with AgentErrorLogging {
   }
 
   /// Whether the deterministic facts permit ad activity at all: offTrack
-  /// always; atRisk only on a worsening trend (policy rows P4/P5). Every
-  /// other status forbids ads — succeeding, recovering or data-gapped
-  /// users are never chided.
+  /// always; atRisk on the first evaluation or a worsening trend (policy
+  /// rows P4/P5 plus the initial-goal acknowledgement). Every other status
+  /// forbids ads — succeeding, recovering or data-gapped users are never
+  /// chided.
   bool _adsEligible(GoalWakeFacts facts, List<GoalProgressEntity> priors) =>
       facts.trackStatus == GoalTrackStatus.offTrack ||
       (facts.trackStatus == GoalTrackStatus.atRisk &&
-          _factsRenderer.trendWorsening(facts.evaluation.attainment, [
-            for (final row in priors) row.attainment,
-          ]));
+          (priors.isEmpty ||
+              _factsRenderer.trendWorsening(facts.evaluation.attainment, [
+                for (final row in priors) row.attainment,
+              ])));
 
   bool _isCooldownRefusal(String? message) {
     if (message == null) return false;
@@ -1623,12 +1630,19 @@ bool isExplicitGoalAdReplacementRequest(
   final qualifiedRequest = RegExp(
     r'\b(?:show|want|need)\b.*\b(?:new|another|replacement)\b',
   ).hasMatch(normalized);
+  final requestsBanner = RegExp(
+    r'\b(?:want|need)\b[^.!?]{0,80}\b(?:banner|ad|advert)\b|'
+    r'\bshow\s+me\b[^.!?]{0,60}\b(?:banner|ad|advert)\b',
+  ).hasMatch(normalized);
   final reportsMissingBanner = RegExp(
     r'\b(?:see|have|got)\s+no\s+(?:banner|ad|advert)\b|'
     r'\b(?:banner|ad|advert)\s+(?:is\s+)?(?:missing|not\s+(?:showing|visible))\b|'
     r"\bwhere(?:'s|\s+is)\s+(?:my\s+|the\s+)?(?:banner|ad|advert)\b",
   ).hasMatch(normalized);
-  return directReplacementVerb || qualifiedRequest || reportsMissingBanner;
+  return directReplacementVerb ||
+      qualifiedRequest ||
+      requestsBanner ||
+      reportsMissingBanner;
 }
 
 bool _isShortGoalAdAffirmation(String message) => RegExp(

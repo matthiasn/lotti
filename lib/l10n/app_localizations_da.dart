@@ -6040,6 +6040,11 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalChatHistoryError => 'Samtalen kunne ikke indlæses lige nu.';
 
   @override
+  String goalChatMessageFooter(Object author, Object time) {
+    return '$author · $time';
+  }
+
+  @override
   String goalChatMessageSemantics(String author, String time, String message) {
     return '$author, $time: $message';
   }
@@ -6174,6 +6179,24 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalHealthTrendUp => 'Stiger';
+
+  @override
+  String goalMetricBarSemantics(
+    String status,
+    Object date,
+    Object value,
+    Object target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      status,
+      {
+        'missing': '$date: ingen værdi; mål $target',
+        'met': '$date: $value; mål $target; nået',
+        'other': '$date: $value; mål $target; ikke nået',
+      },
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalNudgeStatusDismissed => 'Afvist';

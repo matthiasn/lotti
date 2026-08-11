@@ -270,8 +270,8 @@ void main() {
     ]);
   });
 
-  test('alternative composite shapes collect their visible leaves and ignore '
-      'unsupported measurable presentation', () {
+  test('alternative composite shapes preserve habit, metric, and measurable '
+      'leaves', () {
     final view = buildGoalProgressView(
       criteria: const GoalCriterion.anyOf(
         criterionId: 'options',
@@ -311,6 +311,9 @@ void main() {
         quantitativeDailySums: {
           'steps': {day(0): 9000},
         },
+        measurableDailySums: {
+          'weight-id': {day(0): 81},
+        },
       ),
       reference: today,
     );
@@ -318,7 +321,40 @@ void main() {
     expect(view.habits.single.name, 'walk-id');
     expect(view.metric?.name, 'steps');
     expect(view.metric?.days, hasLength(7));
-    expect(view.compactWindow[5], isTrue);
+    expect(view.metrics.map((metric) => metric.name), ['steps', 'weight-id']);
+    expect(view.metrics.last.days.last.value, 81);
+    expect(view.compactWindow[5], isFalse);
+    expect(view.compactWindow.last, isTrue);
+  });
+
+  test('composite habit quotas use the evaluator window at each day', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.allOf(
+        criterionId: 'routine',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'walk',
+            habitId: 'walk',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 2,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'stretch',
+            habitId: 'stretch',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 2,
+          ),
+        ],
+      ),
+      signals: GoalSignalWindow(
+        habitSuccessesByDay: {
+          'walk': {day(2): 1, day(1): 1},
+          'stretch': {day(3): 1, day(1): 1},
+        },
+      ),
+      reference: today,
+    );
+
     expect(view.compactWindow.last, isTrue);
   });
 

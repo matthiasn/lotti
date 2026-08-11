@@ -101,6 +101,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
       );
     }
     final goalIdentity = identity! as AgentIdentityEntity;
+    final isActive = goalIdentity.lifecycle == AgentLifecycle.active;
     final health = healthAsync.value;
     final spec = health?.spec;
     final progress = spec == null
@@ -156,6 +157,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
           agentId: agentId,
           identity: goalIdentity,
           health: health,
+          healthAvailable: healthAsync.hasValue,
           spec: spec,
         ),
         if (progress != null) ...[
@@ -189,6 +191,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
           healthAsync: healthAsync,
           nudges: nudges,
           report: latestReport,
+          canRefresh: isActive,
         ),
         SizedBox(height: tokens.spacing.cardItemSpacing),
         ChangeSetSummaryCard.selfTargeted(
@@ -216,7 +219,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
       ],
     );
     final desktop = isDesktopLayout(context);
-    final chatAvailable = goalIdentity.lifecycle == AgentLifecycle.active;
+    final chatAvailable = isActive;
     return popSafe(
       Scaffold(
         appBar: AppBar(
@@ -255,12 +258,14 @@ class _GoalHeader extends StatelessWidget {
     required this.agentId,
     required this.identity,
     required this.health,
+    required this.healthAvailable,
     required this.spec,
   });
 
   final String agentId;
   final AgentIdentityEntity identity;
   final GoalAgentHealth? health;
+  final bool healthAvailable;
   final GoalSpecVersionEntity? spec;
 
   @override
@@ -288,7 +293,7 @@ class _GoalHeader extends StatelessWidget {
                 color: tokens.colors.text.highEmphasis,
               ),
             ),
-            GoalCoarseHealthChip(health: coarse),
+            if (healthAvailable) GoalCoarseHealthChip(health: coarse),
             if (health?.direction case final direction?)
               GoalHealthDirectionChip(direction: direction),
           ],
@@ -315,12 +320,14 @@ class _AgentSayingSection extends ConsumerWidget {
     required this.healthAsync,
     required this.nudges,
     required this.report,
+    required this.canRefresh,
   });
 
   final String agentId;
   final AsyncValue<GoalAgentHealth> healthAsync;
   final List<GoalBannerEntry> nudges;
   final AgentReportEntity? report;
+  final bool canRefresh;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -338,16 +345,17 @@ class _AgentSayingSection extends ConsumerWidget {
             ),
           ),
         ),
-        DesignSystemButton(
-          label: context.messages.taskAgentUpdateNow,
-          onPressed: () => ref
-              .read(goalHabitCompletionServiceProvider)
-              .requestReportRefresh(agentId),
-          variant: DesignSystemButtonVariant.tertiary,
-          size: DesignSystemButtonSize.dense,
-          leadingIcon: Icons.refresh_rounded,
-          isLoading: isRefreshing,
-        ),
+        if (canRefresh)
+          DesignSystemButton(
+            label: context.messages.taskAgentUpdateNow,
+            onPressed: () => ref
+                .read(goalHabitCompletionServiceProvider)
+                .requestReportRefresh(agentId),
+            variant: DesignSystemButtonVariant.tertiary,
+            size: DesignSystemButtonSize.dense,
+            leadingIcon: Icons.refresh_rounded,
+            isLoading: isRefreshing,
+          ),
       ],
     );
     final reportCard = _GoalReportCard(

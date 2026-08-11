@@ -6059,6 +6059,11 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalChatHistoryError => 'Dit gesprek kan nu niet worden geladen.';
 
   @override
+  String goalChatMessageFooter(Object author, Object time) {
+    return '$author · $time';
+  }
+
+  @override
   String goalChatMessageSemantics(String author, String time, String message) {
     return '$author, $time: $message';
   }
@@ -6195,6 +6200,24 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalHealthTrendUp => 'Stijgt';
+
+  @override
+  String goalMetricBarSemantics(
+    String status,
+    Object date,
+    Object value,
+    Object target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      status,
+      {
+        'missing': '$date: geen waarde; doel $target',
+        'met': '$date: $value; doel $target; behaald',
+        'other': '$date: $value; doel $target; niet behaald',
+      },
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalNudgeStatusDismissed => 'Weggeveegd';

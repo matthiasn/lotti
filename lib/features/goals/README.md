@@ -52,10 +52,11 @@ window and can record success or a miss on any day inside the habit's active
 lifetime through the normal habit-completion path; current and past edits wake the
 deterministic evaluator and queue a standing-report refresh, with an Update now
 fallback visible beside the report, while future calendar cells remain
-read-only. Metric strips preserve the evaluator's
-configured aggregation rather than treating every daily contribution as a
-standalone target, and composite details retain every metric leaf that
-contributes to health. Goal chat stays purpose-bound: unrelated
+read-only. Metric strips preserve the evaluator's configured aggregation
+rather than treating every daily contribution as a standalone target;
+composite details retain every metric and measurable leaf that contributes to
+health, and their compact cells use the authoritative evaluator for authored
+quotas. Goal chat stays purpose-bound: unrelated
 general-assistant requests are redirected to the goal rather than answered.
 Weekly reliability is shown only for authored rolling-seven-day habits rather
 than reinterpreting day, rolling-N, or calendar periods. Health and direction are separate signals, the standing report stays visible
@@ -64,10 +65,12 @@ same governance pills as Task Details; compute time is withheld when legacy
 calls carry no recorded duration. Chat can also snooze the current banner
 until any requested future time, when that exact banner returns automatically;
 the just-committed snooze is suppressed locally while its durable projection
-reloads. Dismissal cooldown applies to automatic banners only: a direct
-missing-banner request, or a short affirmative reply to the agent's banner
-offer, can create or re-run a banner immediately without the follow-up wake
-retiring it. The desktop banner tenant fills the dock's available width.
+reloads. Dismissal cooldown applies to automatic banners only: a direct request
+for a banner, a missing-banner report, or a short affirmative reply to the
+agent's banner offer can create or re-run a banner immediately without the
+follow-up wake retiring it. A new at-risk goal receives its first banner
+without waiting for a multi-day decline. The desktop banner tenant fills the
+dock's available width.
 Voice, paging beyond the newest fifty visible turns, search, and inline nudge
 cards remain later conversation increments; the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.

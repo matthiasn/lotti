@@ -138,6 +138,18 @@ void main() {
     );
   });
 
+  testWidgets('compact strip outlines the last cell as today when short', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalCompactWindowStrip(days: [false, true, false]),
+      ),
+    );
+
+    expect(find.byType(DsDashedBorder), findsOneWidget);
+  });
+
   testWidgets('metric card renders seven bars in the same rolling frame', (
     tester,
   ) async {
@@ -164,6 +176,44 @@ void main() {
     expect(find.text('done'), findsNothing);
     expect(find.text('ages out tonight'), findsNothing);
     expect(find.text('today'), findsNothing);
+  });
+
+  testWidgets('metric bars expose localized date, value, target, and state', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Daily steps',
+              target: 8000,
+              days: [
+                GoalProgressDay(
+                  day: DateTime.utc(2026, 8, 10),
+                  value: 9000,
+                ),
+                GoalProgressDay(
+                  day: DateTime.utc(2026, 8, 11),
+                  value: 0,
+                  isObserved: false,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(
+      find.bySemanticsLabel('Aug 10: 9,000; target 8,000; met'),
+      findsOneWidget,
+    );
+    expect(
+      find.bySemanticsLabel('Aug 11: no value; target 8,000'),
+      findsOneWidget,
+    );
   });
 
   testWidgets('mixed composite renders habit and every metric series', (

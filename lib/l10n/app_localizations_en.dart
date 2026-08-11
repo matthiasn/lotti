@@ -6012,6 +6012,11 @@ class AppLocalizationsEn extends AppLocalizations {
       'Couldn\'t load this conversation right now.';
 
   @override
+  String goalChatMessageFooter(Object author, Object time) {
+    return '$author · $time';
+  }
+
+  @override
   String goalChatMessageSemantics(String author, String time, String message) {
     return '$author, $time: $message';
   }
@@ -6146,6 +6151,24 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalHealthTrendUp => 'Trending up';
+
+  @override
+  String goalMetricBarSemantics(
+    String status,
+    Object date,
+    Object value,
+    Object target,
+  ) {
+    String _temp0 = intl.Intl.selectLogic(
+      status,
+      {
+        'missing': '$date: no value; target $target',
+        'met': '$date: $value; target $target; met',
+        'other': '$date: $value; target $target; not met',
+      },
+    );
+    return '$_temp0';
+  }
 
   @override
   String get goalNudgeStatusDismissed => 'Dismissed';

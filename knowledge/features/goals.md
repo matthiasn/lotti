@@ -144,7 +144,9 @@ flowchart TD
   strategy never nags for output. Two deterministic exceptions are forced
   with one pinned retry each: a transition/detail-refresh wake missing its
   report, and policy row P5 (offTrack, no fresh ad, no cooldown) or an explicit
-  new-banner request missing its ad.
+  new-banner request missing its ad. A first evaluation that lands at risk is
+  also ad-eligible, so a newly created goal does not wait for a three-day trend
+  before receiving its initial banner.
 - **The escalation carries its own baseline and period.** The wake record
   encodes the PRE-transition status as a `goal-baseline:<status>` trigger
   token (Phase A's register write hides it from any re-derivation, and a
@@ -163,10 +165,11 @@ flowchart TD
   digests. Automatic transition ads keep their period/baseline identity;
   chat-created replacements add the durable source message id so a retired
   transition ad cannot silently collide with the requested replacement.
-  An affirmative chat request for a new banner is recognized from replacement
-  language or a missing-banner report in the durable user message before
-  inference. A short affirmation also qualifies when the immediately preceding
-  visible assistant reply offered a banner. These interactive requests override
+  An affirmative chat request for a new banner is recognized from direct
+  want/need/show language, replacement language, or a missing-banner report in
+  the durable user message before inference. A short affirmation also qualifies
+  when the immediately preceding visible assistant reply offered a banner.
+  These interactive requests override
   the automatic dismissal cooldown and remain ad-eligible for the whole wake,
   so its persistence pass cannot retire the banner it just created. Negated
   requests, unrelated courtesy, and explanation prompts do not trigger that
@@ -176,9 +179,9 @@ flowchart TD
   so a replayed/invalid candidate cannot leave the goal bannerless. If the
   primary model replies with a cooldown refusal and omits the tool, the workflow
   forces `create_goal_ad` and withholds the now-contradictory refusal. A
-  temporary-hide request instead calls `snooze_goal_ad` with any future
-  instant and an id from the active-ad subset (a retired reusable ad is not a
-  snooze target): the same active nudge
+  temporary-hide request instead calls `snooze_goal_ad` with any future instant
+  carrying an explicit UTC marker or numeric offset, and an id from the
+  active-ad subset (a retired reusable ad is not a snooze target): the same active nudge
   keeps its activation and rating history, stores `snoozedUntil` in provenance,
   disappears from every banner surface, and returns when the active-banner
   provider's deadline timer invalidates the projection. Snooze extends the
@@ -294,12 +297,13 @@ flowchart TD
   relabelled as a trailing week. Metric satisfaction is folded with the same
   configured aggregation (`sum`, `count`, average, or max) as
   `GoalProgressEvaluator`, rather than comparing each raw daily contribution
-  with the period target. Composite detail keeps every metric leaf instead of
-  silently collapsing the evidence to the first one, and the habit-only legend
-  is omitted when no habit grid is rendered. The
-  compact strip evaluates `allOf`, `anyOf`, and `atLeastCount` as authored and
-  respects `atLeast` versus `atMost` metric direction; missing metric samples
-  never count as successful days.
+  with the period target. Composite detail keeps every metric and measurable
+  leaf instead of silently collapsing the evidence to the first one, and the
+  habit-only legend is omitted when no habit grid is rendered. The compact
+  strip delegates each authored `allOf`, `anyOf`, and `atLeastCount` tree to
+  `GoalProgressEvaluator`, so habit quotas retain their rolling-window meaning;
+  it also respects `atLeast` versus `atMost` numeric direction, and missing
+  samples never count as successful days.
   The provider invalidates itself at the next local midnight so Today,
   ages-out and window boundaries cannot remain stuck on yesterday. The detail
   view also carries an explicit Watching section. A reliability tail is shown
@@ -316,9 +320,10 @@ flowchart TD
   deterministic entry ids do not collide when an outcome is changed back.
   The resulting local journal signal wakes Phase A immediately. The detail edit
   additionally queues a fact-grounded report refresh, so the standing report is
-  updated even without a material status transition; the always-visible Update
-  now control uses the same refresh token and shows the shared running state
-  while the agent works. The detail page also carries active banners and the revision-approval
+  updated even without a material status transition; the Update now control
+  uses the same refresh token and shows the shared running state while the
+  active agent works, and is absent after the goal leaves the active lifecycle.
+  The detail page also carries active banners and the revision-approval
   card (`ChangeSetSummaryCard.selfTargeted`). Mobile opens durable conversation
   at `/agents/details/:agentId/chat`; desktop renders the same
   `GoalAgentChatPane` beside detail. The mobile route mounts the composer only
@@ -333,8 +338,9 @@ flowchart TD
   sanitizer before persistence, so internal ids and annotations cannot leak
   into chat. Draft state is keep-alive per agent, waiting comes from the wake
   completion, and failure keeps the source turn available for retry by
-  re-enqueueing its existing message id rather than
-  duplicating it. Payload ownership is checked before inference, chat failures
+  re-enqueueing its existing message id rather than duplicating it. A failure
+  before the durable append returns an id retries by sending the retained draft
+  as a new durable turn. Payload ownership is checked before inference, chat failures
   cannot re-arm scheduled escalations, and a user wake cannot complete without
   a visible reply. Agent turns render through `AgentMarkdownView`; replies
   over 360 characters or eight line breaks start at an eight-rendered-line

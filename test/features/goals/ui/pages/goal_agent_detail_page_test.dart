@@ -777,6 +777,41 @@ void main() {
     expect(find.text('Move more'), findsNWidgets(2));
     expect(find.byType(GoalAgentChatPane), findsNothing);
     expect(find.text('Talk to Move more'), findsNothing);
+    expect(find.text('Update now'), findsNothing);
+  });
+
+  testWidgets('a first health load failure does not claim a data-gap verdict', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider(
+            'goal-1',
+          ).overrideWith((ref) => Future.error(StateError('unavailable'))),
+          activeGoalNudgesProvider.overrideWith((ref) async => []),
+          goalNudgeHistoryProvider('goal-1').overrideWith((ref) async => []),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+          agentReportProvider('goal-1').overrideWith((ref) async => null),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text("Couldn't load this goal's health right now."),
+      findsOneWidget,
+    );
+    expect(find.text('Not enough data'), findsNothing);
   });
 
   testWidgets('a completed system-back pop persists the Agents root '

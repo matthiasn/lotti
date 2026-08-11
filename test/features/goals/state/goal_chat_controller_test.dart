@@ -55,6 +55,36 @@ void main() {
   );
 
   test(
+    'retry resends a turn that failed before a durable id existed',
+    () async {
+      final service = _MockGoalChatService();
+      var attempts = 0;
+      when(
+        () => service.sendMessage(agentId: 'goal-1', text: 'Try this.'),
+      ).thenAnswer((_) async {
+        attempts++;
+        if (attempts == 1) throw StateError('database unavailable');
+      });
+      final container = ProviderContainer(
+        overrides: [goalChatServiceProvider.overrideWithValue(service)],
+      );
+      addTearDown(container.dispose);
+      final controller = container.read(
+        goalChatControllerProvider('goal-1').notifier,
+      )..updateDraft('Try this.');
+
+      await controller.send();
+      await controller.retry();
+
+      expect(attempts, 2);
+      expect(
+        container.read(goalChatControllerProvider('goal-1')).failedMessage,
+        isNull,
+      );
+    },
+  );
+
+  test(
     'retry preserves the durable turn id across typed and unknown errors',
     () async {
       final service = _MockGoalChatService();
