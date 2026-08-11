@@ -494,6 +494,64 @@ void main() {
     expect(saved.habitId, 'gym');
   });
 
+  testWidgets(
+    'save recovers from a blank title after habit integrity checks',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Gym and Run every week',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Looks right'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-title')),
+        '',
+      );
+      await tester.tap(find.text('Create agent'));
+      await tester.pump();
+
+      expect(
+        find.text('Give the goal and its agent a name.'),
+        findsOneWidget,
+      );
+      expect(find.text('Create agent'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: find.byKey(const ValueKey('goal-form-title')),
+                matching: find.byType(TextField),
+              ),
+            )
+            .enabled,
+        isTrue,
+      );
+      verify(() => habitsRepository.getHabitByIdForIntegrity('gym')).called(1);
+      verify(() => habitsRepository.getHabitByIdForIntegrity('run')).called(1);
+      verifyNever(
+        () => agentService.createGoalAgent(
+          title: any(named: 'title'),
+          displayName: any(named: 'displayName'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      );
+    },
+  );
+
   testWidgets('a newly selected habit stays selected when it becomes private', (
     tester,
   ) async {
