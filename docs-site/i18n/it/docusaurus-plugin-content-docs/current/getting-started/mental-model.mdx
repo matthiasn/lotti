@@ -66,9 +66,12 @@ Un agente può leggere il contesto che gli dai, formarsi un'opinione, riassumere
 un'attività disordinata e proporre una modifica successiva utile. La sua
 relazione è un'opinione con provenienza, non un nuovo fatto nella tua storia. Le
 modifiche proposte ad attività, liste di controllo, stato o date aspettano che
-tu le confermi o le scarti. Le uniche eccezioni ristrette sono un titolo
-iniziale o la lingua per un'attività altrimenti vuota — dopo di che vale la
-stessa regola dell'approvazione umana.
+tu le confermi o le scarti. Le eccezioni sono il titolo e la lingua: ciascuno
+viene applicato subito quando *quel campo* è ancora vuoto e l'agente lo imposta
+per la prima volta. Il resto dell'attività può essere pieno di lavoro: un'attività
+con descrizione, liste di controllo e tempo registrato, ma senza lingua impostata,
+riceve la sua prima lingua senza che ti venga chiesto. Una volta che un campo ha
+un valore, vale la stessa regola dell'approvazione umana.
 
 Non è cortesia appiccicata sopra un prompt. Lotti tiene separati il logbook
 personale e la memoria di lavoro dell'agente, così l'agente non può trattare la

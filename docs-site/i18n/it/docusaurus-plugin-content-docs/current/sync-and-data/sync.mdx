@@ -13,7 +13,7 @@ Lotti: il servizio Matrix configurato inoltra payload crittografati end-to-end
 tra i tuoi dispositivi, mentre ogni dispositivo conserva la propria copia
 locale.
 
-Apri **Impostazioni → Sync** per vedere le pagine disponibili di
+Apri **Impostazioni → Impostazioni di sincronizzazione** per vedere le pagine disponibili di
 configurazione, salute e recupero. Il numero accanto a **Posta in uscita** è
 lavoro che non ha ancora raggiunto il servizio di sincronizzazione.
 
@@ -22,6 +22,14 @@ lavoro che non ha ancora raggiunto il servizio di sincronizzazione.
   alt="Impostazioni Sync di Lotti con dispositivi, identità del dispositivo, backfill, statistiche, posta in uscita, conflitti e manutenzione"
   caption="L'hub di Sync tiene lo stato quotidiano vicino agli strumenti di diagnostica e recupero. Project Waddle ha al momento tre elementi in uscita da ispezionare."
 />
+
+## Cosa si sincronizza e cosa resta
+
+| Si sincronizza tra i tuoi dispositivi | Resta sul singolo dispositivo |
+| --- | --- |
+| Voci del diario e attività, con i collegamenti tra loro · categorie, etichette, abitudini, pannelli e misurabili · provider, modelli e profili AI (comprese le eliminazioni) · filtri attività salvati · flag di configurazione · scelta del tema chiaro/scuro · profili dispositivo · il tuo nome in Daily OS · notifiche e stato di lettura · agenti attività e i loro collegamenti · registrazioni d'uso dell'AI (token, costo, energia) | Voce e velocità della sintesi vocale · larghezze dei riquadri · limiti di concorrenza AI · timer di limitazione degli agenti · esclusioni della pianificazione giornaliera |
+
+Due dettagli utili. Non tutto ciò che si sincronizza è un dato del diario: il profilo del dispositivo e il nome Daily OS viaggiano come preferenze del dispositivo e non rientrano nel rilevamento delle lacune. E i numeri derivati non vengono mai inviati: un filtro attività salvato si sincronizza, ma i conteggi che ne derivano vengono ricalcolati su ogni dispositivo.
 
 ## Vedi i tuoi dispositivi
 
@@ -69,8 +77,8 @@ account e nomi dei dispositivi prima di riprovare.
 
 ## Dai un nome ai dispositivi e pubblica le capacità
 
-**Profilo di Sync node** identifica il dispositivo corrente al resto del gruppo
-di sincronizzazione. Dagli un nome che distingue la macchina fisica, come
+**Questo dispositivo** (“Nome e capacità del dispositivo”) identifica il
+dispositivo corrente al resto del gruppo di sincronizzazione. Dagli un nome che distingue la macchina fisica, come
 “Controllo missione Mac” piuttosto che “Desktop”.
 
 <ManualScreenshot

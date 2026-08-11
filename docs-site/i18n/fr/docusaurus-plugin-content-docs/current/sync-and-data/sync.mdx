@@ -13,7 +13,7 @@ dans un cloud Lotti : le service Matrix configuré relaie des charges utiles
 chiffrées de bout en bout entre tes appareils, tandis que chacun conserve sa
 propre copie locale.
 
-Ouvre **Paramètres → Synchronisation** pour accéder aux pages de configuration,
+Ouvre **Paramètres → Paramètres de synchronisation** pour accéder aux pages de configuration,
 d’état et de récupération. Le nombre affiché à côté de **Boîte d’envoi**
 correspond au travail qui n’a pas encore atteint le service de synchronisation.
 
@@ -22,6 +22,14 @@ correspond au travail qui n’a pas encore atteint le service de synchronisation
   alt="Paramètres Lotti Sync avec synchronisation provisionnée, identité de l’appareil, rattrapage, statistiques, boîte d’envoi, conflits et maintenance"
   caption="Le centre de synchronisation maintient l’état courant près des outils de diagnostic et de récupération. Project Waddle contient actuellement trois éléments de boîte d’envoi à examiner."
 />
+
+## Ce qui se synchronise et ce qui reste
+
+| Se synchronise entre tes appareils | Reste sur l’appareil |
+| --- | --- |
+| Entrées du journal et tâches, et les liens entre elles · catégories, étiquettes, habitudes, tableaux de bord et éléments mesurables · fournisseurs, modèles et profils d’IA (suppressions comprises) · filtres de tâches enregistrés · flags de configuration · choix de thème clair/sombre · profils d’appareil · ton nom Daily OS · notifications et leur état de lecture · agents de tâches et leurs liens · relevés d’usage de l’IA (jetons, coût, énergie) | Voix et vitesse de synthèse vocale · largeurs de panneaux · limites de parallélisme de l’IA · minuteurs de limitation des agents · exclusions de planification quotidienne |
+
+Deux précisions utiles. Tout ce qui se synchronise n’est pas une donnée de journal : le profil d’appareil et le nom Daily OS voyagent comme préférences d’appareil et échappent à la détection de lacunes. Et les valeurs dérivées ne sont jamais envoyées — un filtre de tâches enregistré se synchronise, mais les décomptes qu’il produit sont recalculés sur chaque appareil.
 
 ## Voir tes appareils
 
@@ -68,8 +76,8 @@ et les noms d’appareils avant de recommencer.
 
 ## Nommer les appareils et annoncer leurs capacités
 
-Le **profil de nœud de synchronisation** identifie l’appareil actuel auprès du
-reste du groupe de synchronisation. Donne-lui un nom qui distingue la machine
+**Cet appareil** (« Nom et capacités de l’appareil ») identifie l’appareil
+actuel auprès du reste du groupe de synchronisation. Donne-lui un nom qui distingue la machine
 physique, comme « Mission Control Mac » plutôt que « Ordinateur ».
 
 <ManualScreenshot

@@ -12,7 +12,18 @@ system of record into a Lotti cloud: the configured Matrix service relays
 end-to-end encrypted payloads between your devices while each device retains
 its own local copy.
 
-Open **Settings → Sync** to see the available setup, health, and recovery
+## What syncs, and what stays put
+
+| Syncs between your devices | Stays on the one device |
+| --- | --- |
+| Journal entries and tasks, and the links between them · categories, labels, habits, dashboards and measurables · AI providers, models and profiles (including deletions) · saved task filters · config flags · light/dark theme choice · device profiles · your Daily OS name · notifications and their read state · task agents and their links · AI usage records (tokens, cost, energy) | Text-to-speech voice and speed · pane widths · AI concurrency limits · agent throttle timers · day-planning exclusions |
+
+Two details worth knowing. Not everything that syncs is journal data: your
+device profile and Daily OS name travel as device preferences and are exempt
+from gap detection. And derived numbers are never sent — a saved task filter
+syncs, but the task counts computed from it are recalculated on each device.
+
+Open **Settings → Sync Settings** to see the available setup, health, and recovery
 pages. The number beside **Outbox** is work that has not reached the sync
 service yet.
 
@@ -66,8 +77,8 @@ trying again.
 
 ## Name devices and advertise capabilities
 
-**Sync node profile** identifies the current device to the rest of the sync
-group. Give it a name that distinguishes the physical machine, such as
+**This device** — “Device name and capabilities” — identifies the current
+device to the rest of the sync group. Give it a name that distinguishes the physical machine, such as
 “Mission Control Mac” rather than “Desktop.”
 
 <ManualScreenshot

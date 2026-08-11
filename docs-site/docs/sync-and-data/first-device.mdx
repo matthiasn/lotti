@@ -5,6 +5,14 @@ description: Where the very first pairing code comes from when no device is conn
 
 # Your first device
 
+:::note[Prerequisite]
+
+This page needs a Matrix (Synapse) homeserver you or someone you trust
+operates, plus admin access to it. If you do not have one, this path is not
+available to you — and nothing else in Lotti depends on it.
+
+:::
+
 Every device after the first gets its pairing code from a device you already
 use — that flow is [Add a device](./add-device.mdx). The first one is
 different: there is no other device to mint a code. Lotti's sync is

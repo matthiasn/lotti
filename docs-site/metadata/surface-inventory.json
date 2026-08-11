@@ -1248,6 +1248,23 @@
       "locator": "Entry detail → Linked entries filter",
       "page": "organize-and-reflect/journal",
       "status": "verified"
+    },
+    {
+      "id": "goal-agents",
+      "title": "Goal agents tab (experimental)",
+      "kind": "route-page",
+      "source": "lib/beamer/locations/agents_location.dart",
+      "sourcePattern": "'/agents'",
+      "locator": "/agents",
+      "routes": [
+        "/agents",
+        "/agents/create",
+        "/agents/details/:agentId",
+        "/agents/details/:agentId/edit",
+        "/agents/details/:agentId/chat"
+      ],
+      "page": "ai-and-automation/goal-agents",
+      "status": "planned"
     }
   ]
 }

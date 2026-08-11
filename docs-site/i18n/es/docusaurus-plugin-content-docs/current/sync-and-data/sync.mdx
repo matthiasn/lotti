@@ -13,7 +13,7 @@ de Lotti: el servicio Matrix configurado retransmite cargas cifradas de extremo
 a extremo entre tus dispositivos, mientras cada dispositivo conserva su propia
 copia local.
 
-Abre **Ajustes → Sync** para ver las páginas disponibles de configuración,
+Abre **Ajustes → Ajustes de sincronización** para ver las páginas disponibles de configuración,
 estado y recuperación. El número junto a **Bandeja de salida** es trabajo que
 aún no ha llegado al servicio de sincronización.
 
@@ -22,6 +22,14 @@ aún no ha llegado al servicio de sincronización.
   alt="Ajustes de Lotti Sync con Provisioned Sync, identidad de dispositivo, relleno, estadísticas, bandeja de salida, conflictos y mantenimiento"
   caption="El centro de Sync mantiene el estado diario cerca de las herramientas de diagnóstico y recuperación. Project Waddle tiene actualmente tres elementos en la bandeja de salida que conviene inspeccionar."
 />
+
+## Qué se sincroniza y qué se queda
+
+| Se sincroniza entre tus dispositivos | Se queda en un solo dispositivo |
+| --- | --- |
+| Entradas del diario y tareas, y los vínculos entre ellas · categorías, etiquetas, hábitos, paneles y valores medibles · proveedores, modelos y perfiles de IA (incluidas las eliminaciones) · filtros de tareas guardados · indicadores de configuración · elección de tema claro/oscuro · perfiles de dispositivo · tu nombre en Daily OS · notificaciones y su estado de lectura · agentes de tareas y sus vínculos · registros de uso de IA (tokens, coste, energía) | Voz y velocidad de texto a voz · anchos de panel · límites de concurrencia de IA · temporizadores de agentes · exclusiones de planificación diaria |
+
+Dos detalles que conviene saber. No todo lo que se sincroniza son datos del diario: el perfil del dispositivo y el nombre de Daily OS viajan como preferencias del dispositivo y quedan fuera de la detección de huecos. Y los números derivados nunca se envían: un filtro de tareas guardado se sincroniza, pero los recuentos que produce se recalculan en cada dispositivo.
 
 ## Ver tus dispositivos
 
@@ -69,8 +77,8 @@ nombres de los dispositivos antes de volver a intentarlo.
 
 ## Nombra dispositivos y anuncia capacidades
 
-El **perfil de nodo Sync** identifica el dispositivo actual al resto del grupo
-de sincronización. Ponle un nombre que distinga la máquina física, como
+**Este dispositivo** («Nombre y capacidades del dispositivo») identifica el
+dispositivo actual al resto del grupo de sincronización. Ponle un nombre que distinga la máquina física, como
 «Mission Control Mac» en vez de «Escritorio».
 
 <ManualScreenshot

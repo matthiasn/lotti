@@ -33,13 +33,17 @@ handling, der kræver en optagelse.
 5. Arbejd videre, mens inferensen kører; resultatet knyttes til den relevante
    opgave eller post, når den er fuldført.
 
-Den tilgængelige menu ændrer sig med konteksten:
+Lotti leverer fem slags færdigheder, og menuen viser dem, posten understøtter:
 
-- opgaver kan tilbyde tekst- og opgavekonteksthandlinger;
-- lydposter kan tilbyde transskription og lydbevidste handlinger;
-- billeder kan tilbyde visuel analyse; og
-- tekstposter kan tilbyde prompt- eller genereringshandlinger, der accepterer
-  tekst.
+| Færdighed | Vises på |
+| --- | --- |
+| **Transskription** | lydposter |
+| **Billedanalyse** | billeder |
+| **Billedgenerering** | lyd- og tekstposter, der er knyttet til en opgave |
+| **Promptgenerering** | alt med tekst — noter, lyd, billeder, opgaver |
+| **Billedpromptgenerering** | alt med tekst, som ovenfor |
+
+Er en handling, du forventer, ikke på listen, understøtter posttypen ikke den færdighed — eller ingen profil tildeler den en model.
 
 Nogle færdigheder kræver en tilknyttet opgave, fordi de læser bredere
 opgavekontekst eller skriver deres resultat tilbage til den opgave. Hvis en

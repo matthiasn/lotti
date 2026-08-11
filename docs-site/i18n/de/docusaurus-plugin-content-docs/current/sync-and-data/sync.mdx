@@ -12,7 +12,7 @@ nicht in eine Lotti-Cloud: Der eingerichtete Matrix-Dienst leitet
 Ende-zu-Ende-verschlüsselte Nutzdaten zwischen deinen Geräten weiter, während
 jedes Gerät seine eigene lokale Kopie behält.
 
-Öffne **Einstellungen → Synchronisierung** für Einrichtung, Gesundheit und
+Öffne **Einstellungen → Synchronisierungseinstellungen** für Einrichtung, Gesundheit und
 Wiederherstellung. Die Zahl bei **Sync-Postausgang** zählt Änderungen, die den
 Sync-Dienst noch nicht erreicht haben.
 
@@ -21,6 +21,14 @@ Sync-Dienst noch nicht erreicht haben.
   alt="Lottis Sync-Einstellungen mit bereitgestellter Synchronisierung, Geräteidentität, Nachfüllung, Statistik, Postausgang, Konflikten und Wartung"
   caption="Alltagsstatus steht neben Diagnose und Wiederherstellung. Project Waddle hat drei Elemente im Postausgang."
 />
+
+## Was synchronisiert wird und was bleibt
+
+| Synchronisiert zwischen deinen Geräten | Bleibt auf dem einen Gerät |
+| --- | --- |
+| Einträge und Aufgaben samt ihren Verknüpfungen · Kategorien, Labels, Gewohnheiten, Dashboards und Messgrößen · KI-Anbieter, -Modelle und -Profile (auch Löschungen) · gespeicherte Aufgabenfilter · Konfigurationsflags · helle/dunkle Themenwahl · Geräteprofile · dein Daily-OS-Name · Benachrichtigungen und ihr Lesestatus · Aufgabenagenten und ihre Verknüpfungen · KI-Nutzungsdaten (Tokens, Kosten, Energie) | Sprachausgabe-Stimme und -Tempo · Bereichsbreiten · KI-Parallelität · Agenten-Drosselzeiten · Ausschlüsse der Tagesplanung |
+
+Zwei Details lohnen sich. Nicht alles, was synchronisiert, ist Journaldatum: Geräteprofil und Daily-OS-Name reisen als Geräteeinstellungen und sind von der Lückenerkennung ausgenommen. Und abgeleitete Zahlen werden nie gesendet — ein gespeicherter Aufgabenfilter synchronisiert, die daraus berechneten Aufgabenzahlen werden auf jedem Gerät neu ermittelt.
 
 ## Deine Geräte sehen
 
@@ -66,7 +74,8 @@ bei einer Abweichung ab und prüfe Konto sowie Gerätenamen.
 
 ## Geräte benennen und Fähigkeiten melden
 
-Das **Sync-Knotenprofil** identifiziert das aktuelle Gerät. Gib einen Namen wie
+**Dieses Gerät** – „Gerätename und Fähigkeiten“ – identifiziert das aktuelle
+Gerät. Gib einen Namen wie
 „Missionskontroll-Mac“ statt „Desktop“.
 
 <ManualScreenshot
