@@ -35,8 +35,11 @@ Good CLI does not yet support sharding independently generated optimized bundles
 across runners because their filesystem ordering can differ. The ten-way
 standard CI lane therefore uses `tool/ci/generate_test_optimizer.dart` to create
 the same sorted bundle in every job before `package:test` slices that one stable
-suite into shards. Tests within a shard still share an isolate, while execution
-and merged coverage remain complete.
+suite into shards. Opt-outs are detected from parsed `@Tags` annotations, not
+raw source text, so a fixture string that merely mentions
+`skip_very_good_optimization` cannot silently remove its containing test file
+from CI. Tests within a shard still share an isolate, while execution and merged
+coverage remain complete.
 
 Two consequences:
 

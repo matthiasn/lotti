@@ -445,6 +445,129 @@ void main() {
     expect(navigated, ['/agents']);
   });
 
+  testWidgets('save refreshes an untouched derived title after cleanup', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('run'),
+    ).thenAnswer((_) async => _habit('run', 'Run', active: false));
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym and Run every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    final call = verify(
+      () => agentService.createGoalAgent(
+        title: captureAny(named: 'title'),
+        displayName: 'Juno',
+        statement: 'Gym and Run every week',
+        criteria: captureAny(named: 'criteria'),
+      ),
+    ).captured;
+    expect(call.first, 'Gym');
+    final saved = call.last as GoalCriterionHabit;
+    expect(saved.habitId, 'gym');
+  });
+
+  testWidgets('a newly selected habit stays selected when it becomes private', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final habits = StreamController<List<HabitDefinition>>.broadcast();
+    final runLookup = Completer<HabitDefinition?>();
+    when(
+      habitsRepository.watchHabitDefinitions,
+    ).thenAnswer((_) => habits.stream);
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('gym'),
+    ).thenAnswer((_) async => _habit('gym', 'Gym'));
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('run'),
+    ).thenAnswer((_) => runLookup.future);
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    habits.add([_habit('gym', 'Gym'), _habit('run', 'Run')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-form-habit-run')));
+    await tester.pump();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    habits.add([_habit('gym', 'Gym')]);
+    await tester.pump();
+    runLookup.complete(_habit('run', 'Run', private: true));
+    await tester.pump();
+
+    final saved =
+        verify(
+              () => agentService.createGoalAgent(
+                title: 'Gym + Run',
+                displayName: 'Juno',
+                statement: 'Gym every week',
+                criteria: captureAny(named: 'criteria'),
+              ),
+            ).captured.single
+            as GoalCriterionAllOf;
+    expect(
+      saved.criteria.whereType<GoalCriterionHabit>().map(
+        (habit) => habit.habitId,
+      ),
+      containsAll(['gym', 'run']),
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await habits.close();
+  });
+
   testWidgets('confirmation requires both goal and persona names', (
     tester,
   ) async {
@@ -1694,6 +1817,9 @@ void main() {
 
     habits.add([]);
     await tester.pump();
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('gym'),
+    ).thenAnswer((_) async => null);
     await tester.tap(find.text('Create agent'));
     await tester.pump();
 

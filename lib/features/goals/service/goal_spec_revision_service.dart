@@ -30,9 +30,12 @@ class GoalSpecRevisionMinted extends GoalSpecRevisionOutcome {
 }
 
 class GoalSpecRevisionRefused extends GoalSpecRevisionOutcome {
-  const GoalSpecRevisionRefused(this.reason);
+  const GoalSpecRevisionRefused(this.reason, {this.retryable = false});
 
   final String reason;
+
+  /// Whether the refusal can become applicable after more synced state arrives.
+  final bool retryable;
 }
 
 /// Mints a new goal spec version from an APPROVED `propose_goal_revision_v2`
@@ -162,12 +165,14 @@ class GoalSpecRevisionService {
         if (head is! GoalSpecHeadEntity) {
           return const GoalSpecRevisionRefused(
             'the goal no longer exists (no spec head)',
+            retryable: true,
           );
         }
         final current = await _repository.getEntity(head.versionId);
         if (current is! GoalSpecVersionEntity) {
           return GoalSpecRevisionRefused(
             'spec head ${head.versionId} points at nothing',
+            retryable: true,
           );
         }
         if (current.id != baseVersionId) {
@@ -195,7 +200,7 @@ class GoalSpecRevisionService {
           title: normalizedTitle,
           statement: normalizedStatement,
           criteria: criteria,
-          authoredBy: 'user',
+          authoredBy: AgentAuthors.user,
           rationale: 'Owner edited the goal.',
           sourceThreadId: null,
           changeSummaries: summaries,
@@ -207,7 +212,7 @@ class GoalSpecRevisionService {
       if (head is GoalSpecHeadEntity) {
         final version = await _repository.getEntity(head.versionId);
         if (version is GoalSpecVersionEntity &&
-            version.authoredBy == 'user' &&
+            version.authoredBy == AgentAuthors.user &&
             version.createdAt == now) {
           return GoalSpecRevisionMinted(
             version: version,
@@ -237,12 +242,14 @@ class GoalSpecRevisionService {
     if (head is! GoalSpecHeadEntity) {
       return const GoalSpecRevisionRefused(
         'the goal no longer exists (no spec head)',
+        retryable: true,
       );
     }
     final current = await _repository.getEntity(head.versionId);
     if (current is! GoalSpecVersionEntity) {
       return GoalSpecRevisionRefused(
         'spec head ${head.versionId} points at nothing',
+        retryable: true,
       );
     }
     if (current.id != baseVersionId) {
@@ -296,14 +303,17 @@ class GoalSpecRevisionService {
   }) async {
     final agentId = identity.agentId;
     final nextVersion = current.version + 1;
-    // The id carries a random suffix: two DISCONNECTED replicas approving
-    // different proposals both mint a v$nextVersion, and deterministic
-    // ids would collide — generic LWW would then silently swallow one
-    // explicit user approval, provenance and all. Unique ids keep both
-    // rows; the head's own LWW picks the standing one and the other
-    // stays in history.
-    final versionId =
-        '$agentId:spec-v$nextVersion-${_uuid.v4().substring(0, 8)}';
+    // The id carries a random suffix: two DISCONNECTED replicas can both mint
+    // a v$nextVersion, and deterministic ids would collide and lose history.
+    // Owner-authored ids additionally carry a marker used by the pure head
+    // conflict resolver: at the same ordinal, direct owner intent wins over an
+    // independently approved agent proposal on every replica.
+    final versionId = goalSpecRevisionVersionId(
+      agentId: agentId,
+      version: nextVersion,
+      ownerAuthored: authoredBy == AgentAuthors.user,
+      uniqueSuffix: _uuid.v4().substring(0, 8),
+    );
     final minted =
         AgentDomainEntity.goalSpecVersion(
               id: versionId,
@@ -337,7 +347,7 @@ class GoalSpecRevisionService {
       head.copyWith(versionId: versionId, updatedAt: now),
     );
 
-    if (authoredBy == 'user') {
+    if (authoredBy == AgentAuthors.user) {
       await _retractPendingRevisionProposals(agentId: agentId, now: now);
     }
 

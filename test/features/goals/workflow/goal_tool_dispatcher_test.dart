@@ -211,4 +211,58 @@ void main() {
       expect(upserts, isEmpty);
     },
   );
+
+  test('missing synced spec dependencies remain retryable', () async {
+    when(() => repository.getEntity(agentId)).thenAnswer(
+      (_) async => AgentDomainEntity.agent(
+        id: agentId,
+        agentId: agentId,
+        kind: AgentKinds.goalAgent,
+        displayName: 'Steps',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: '$agentId:state',
+        config: const AgentConfig(),
+        createdAt: DateTime(2026, 8),
+        updatedAt: DateTime(2026, 8),
+        vectorClock: null,
+      ),
+    );
+
+    final missingHead = await dispatcher.dispatch(
+      GoalAgentToolNames.proposeGoalRevision,
+      {
+        'changes': {'targetValue': 8000},
+        'rationale': 'ease off',
+        'baseVersionId': '$agentId:spec-v1',
+      },
+      agentId,
+    );
+    expect(missingHead.success, isFalse);
+    expect(missingHead.errorMessage, contains('no spec head'));
+    expect(missingHead.nonRetryable, isFalse);
+
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026, 8),
+        vectorClock: null,
+      ),
+    );
+    final danglingHead = await dispatcher.dispatch(
+      GoalAgentToolNames.proposeGoalRevision,
+      {
+        'changes': {'targetValue': 8000},
+        'rationale': 'ease off',
+        'baseVersionId': '$agentId:spec-v1',
+      },
+      agentId,
+    );
+    expect(danglingHead.success, isFalse);
+    expect(danglingHead.errorMessage, contains('points at nothing'));
+    expect(danglingHead.nonRetryable, isFalse);
+  });
 }

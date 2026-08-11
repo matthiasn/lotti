@@ -29,6 +29,13 @@ void main() {
       ).writeAsStringSync(
         "@Tags(['skip_very_good_optimization'])\nvoid main() {}",
       );
+      File(
+        path.join(testDirectory.path, 'tag_fixture_test.dart'),
+      ).writeAsStringSync(
+        'void main() {\n'
+        '  const fixture = "@Tags([\'skip_very_good_optimization\'])";\n'
+        '}',
+      );
       File(path.join(testDirectory.path, 'helper.dart')).writeAsStringSync(
         'void helper() {}',
       );
@@ -40,10 +47,15 @@ void main() {
 
       expect(secondContents, firstContents);
       expect(firstContents, isNot(contains('skipped_test.dart')));
+      expect(firstContents, contains('tag_fixture_test.dart'));
       expect(firstContents, isNot(contains('helper.dart')));
       expect(
-        firstContents.indexOf("import 'nested/alpha_test.dart' as _test0;"),
-        lessThan(firstContents.indexOf("import 'zeta_test.dart' as _test1;")),
+        firstContents.indexOf("import 'nested/alpha_test.dart'"),
+        lessThan(firstContents.indexOf("import 'tag_fixture_test.dart'")),
+      );
+      expect(
+        firstContents.indexOf("import 'tag_fixture_test.dart'"),
+        lessThan(firstContents.indexOf("import 'zeta_test.dart'")),
       );
       expect(
         firstContents,

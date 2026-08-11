@@ -712,6 +712,7 @@ void main() {
       (outcome as GoalSpecRevisionRefused).reason,
       contains('no spec head'),
     );
+    expect(outcome.retryable, isTrue);
 
     // Dangling head.
     when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
@@ -733,6 +734,7 @@ void main() {
       (outcome as GoalSpecRevisionRefused).reason,
       contains('points at nothing'),
     );
+    expect(outcome.retryable, isTrue);
 
     // Inapplicable proposal.
     stubSpec();
@@ -746,6 +748,7 @@ void main() {
       (outcome as GoalSpecRevisionRefused).reason,
       contains('no applicable structural change'),
     );
+    expect(outcome.retryable, isFalse);
 
     expect(upserts, isEmpty, reason: 'a refusal must write nothing');
   });
@@ -871,6 +874,25 @@ void main() {
     expect(
       (outcome as GoalSpecRevisionMinted).version.id,
       startsWith('$agentId:spec-v2-'),
+    );
+  });
+
+  test('owner revisions carry an owner-priority version id marker', () async {
+    stubSpec();
+
+    final outcome = await service.reviseFromOwner(
+      agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
+      displayName: 'Steps',
+      title: 'Gentler steps',
+      statement: 'Average 8,000 steps per day.',
+      criteria: criteria,
+    );
+
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    expect(
+      (outcome as GoalSpecRevisionMinted).version.id,
+      startsWith('$agentId:spec-v2-owner-'),
     );
   });
 

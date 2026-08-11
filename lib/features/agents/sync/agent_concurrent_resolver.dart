@@ -1,4 +1,5 @@
 import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/sync/vector_clock.dart';
@@ -85,6 +86,10 @@ ConcurrentWinner resolveConcurrent({
 ///   canonical-clock tiebreak). Sequential (non-concurrent) within-window
 ///   self-rewrites are unaffected — they dominate by vector clock and never
 ///   reach this resolver.
+/// - **Goal spec heads — higher version, then owner intent wins.** Disconnected
+///   replicas can independently mint the same successor ordinal. A direct
+///   owner edit outranks an agent-proposal approval at that ordinal, preventing
+///   generic LWW from replacing explicit owner intent.
 ConcurrentWinner? resolveConcurrentAgentEntityOverride({
   required AgentDomainEntity local,
   required AgentDomainEntity incoming,
@@ -116,6 +121,27 @@ ConcurrentWinner? resolveConcurrentAgentEntityOverride({
     final byCreated = local.createdAt.compareTo(incoming.createdAt);
     if (byCreated == 0) return null;
     return byCreated < 0 ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+  }
+  if (local is GoalSpecHeadEntity && incoming is GoalSpecHeadEntity) {
+    final localVersion = _specVersionNumber(local.versionId);
+    final incomingVersion = _specVersionNumber(incoming.versionId);
+    if (localVersion != null &&
+        incomingVersion != null &&
+        localVersion != incomingVersion) {
+      return localVersion > incomingVersion
+          ? ConcurrentWinner.local
+          : ConcurrentWinner.incoming;
+    }
+    if (localVersion == incomingVersion && localVersion != null) {
+      final localOwner = isOwnerAuthoredGoalSpecVersionId(local.versionId);
+      final incomingOwner = isOwnerAuthoredGoalSpecVersionId(
+        incoming.versionId,
+      );
+      if (localOwner != incomingOwner) {
+        return localOwner ? ConcurrentWinner.local : ConcurrentWinner.incoming;
+      }
+    }
+    return null;
   }
   if (local is GoalProgressEntity && incoming is GoalProgressEntity) {
     // Registers are keyed by (agent, period) only, so an offline v1

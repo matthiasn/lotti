@@ -237,7 +237,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     });
   }
 
-  void _reconcileHabitTargets() {
+  void _reconcileHabitTargets({
+    Set<String> preservedHabitIds = const <String>{},
+  }) {
     final habitsAsync = ref.read(_habitDefinitionsProvider);
     final currentHabits = habitsAsync.value;
     if (currentHabits == null || habitsAsync.hasError) return;
@@ -248,32 +250,42 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _habitTargets.removeWhere(
       (habitId, _) =>
           !activeHabitIds.contains(habitId) &&
-          !loadedHabitIds.contains(habitId),
+          !loadedHabitIds.contains(habitId) &&
+          !preservedHabitIds.contains(habitId),
     );
   }
 
-  Future<void> _reconcileHabitTargetsForSave() async {
-    _reconcileHabitTargets();
+  Future<List<HabitDefinition>> _reconcileHabitTargetsForSave() async {
     final selectedHabitIds = _habitTargets.keys.toList(growable: false);
-    if (selectedHabitIds.isEmpty) return;
+    if (selectedHabitIds.isEmpty) return const [];
 
     final repository = ref.read(habitsRepositoryProvider);
     final resolvedHabits = await Future.wait([
       for (final habitId in selectedHabitIds)
         repository.getHabitByIdForIntegrity(habitId),
     ]);
+    final confirmedHabits = <HabitDefinition>[];
     for (var index = 0; index < selectedHabitIds.length; index++) {
       final habitId = selectedHabitIds[index];
       final habit = resolvedHabits[index];
       if (habit == null || !habit.active || habit.deletedAt != null) {
         _habitTargets.remove(habitId);
+      } else {
+        confirmedHabits.add(habit);
       }
     }
-    if (!mounted) return;
+    if (!mounted) return confirmedHabits;
 
     // The visible stream can refresh while integrity reads are in flight.
-    // Reconcile the validated selection against its latest value.
-    _reconcileHabitTargets();
+    // Preserve every selection the unfiltered integrity lookup confirmed as
+    // active; a newly-private habit may legitimately disappear from the
+    // discovery stream during this await.
+    _reconcileHabitTargets(
+      preservedHabitIds: {
+        for (final habit in confirmedHabits) habit.id,
+      },
+    );
+    return confirmedHabits;
   }
 
   void _invalidateGoalViews(ProviderContainer container, String agentId) {
@@ -310,10 +322,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
 
     final messages = context.messages;
     final container = ProviderScope.containerOf(context, listen: false);
-    final title = _title.text.trim();
     final persona = _persona.text.trim();
     final statement = _statement.text.trim();
-    if (title.isEmpty || persona.isEmpty) {
+    if (persona.isEmpty) {
       setState(() => _validation = messages.goalFormValidationIdentity);
       return;
     }
@@ -321,8 +332,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _saving = true;
       _validation = null;
     });
+    late final List<HabitDefinition> confirmedHabits;
     try {
-      await _reconcileHabitTargetsForSave();
+      confirmedHabits = await _reconcileHabitTargetsForSave();
     } on Object {
       if (mounted) {
         setState(() {
@@ -333,6 +345,28 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       return;
     }
     if (!mounted) return;
+
+    // Only refresh a title the form still owns. A manually changed (including
+    // deliberately blank) title remains untouched, while an auto-derived
+    // "Gym + Run" title follows integrity cleanup down to "Gym".
+    if (_title.text.trim() == _derivedTitle) {
+      final visibleHabits =
+          ref.read(_habitDefinitionsProvider).value ?? _knownHabits;
+      final visibleById = {
+        for (final habit in visibleHabits) habit.id: habit,
+      };
+      _deriveTitle([
+        for (final habit in confirmedHabits) visibleById[habit.id] ?? habit,
+      ]);
+    }
+    final title = _title.text.trim();
+    if (title.isEmpty) {
+      setState(() {
+        _saving = false;
+        _validation = messages.goalFormValidationIdentity;
+      });
+      return;
+    }
 
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
     final criteria = _watchesSteps && (stepsTarget == null || stepsTarget <= 0)

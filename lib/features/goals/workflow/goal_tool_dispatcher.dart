@@ -7,9 +7,10 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 /// item here. One case today — `propose_goal_revision_v2`, whose acceptance
 /// mints a new spec version and moves the head.
 ///
-/// Refusals return `success: false` and `nonRetryable: true`, allowing the
-/// confirmation service to retract a proposal whose immutable arguments can
-/// never apply instead of leaving a dead retry action.
+/// Definitive refusals return `success: false` and `nonRetryable: true`,
+/// allowing the confirmation service to retract a proposal whose immutable
+/// arguments can never apply instead of leaving a dead retry action. Missing
+/// synced dependencies remain retryable until their head/version rows arrive.
 class GoalToolDispatcher {
   GoalToolDispatcher({required this._revisionService});
 
@@ -84,12 +85,13 @@ class GoalToolDispatcher {
               '${changeSummaries.join(', ')}',
           mutatedEntityId: version.id,
         ),
-      GoalSpecRevisionRefused(:final reason) => ToolExecutionResult(
-        success: false,
-        output: 'Error: $reason',
-        errorMessage: reason,
-        nonRetryable: true,
-      ),
+      GoalSpecRevisionRefused(:final reason, :final retryable) =>
+        ToolExecutionResult(
+          success: false,
+          output: 'Error: $reason',
+          errorMessage: reason,
+          nonRetryable: !retryable,
+        ),
     };
   }
 }

@@ -230,7 +230,9 @@ flowchart TD
   mixed client versions: an older client does not recognize or apply it, while
   a current client rejects and auto-retracts legacy v1 proposals. Malformed or
   stale v2 proposals are deterministic failures and are likewise retracted,
-  rather than restored to a pending state that can never succeed. Grace history
+  rather than restored to a pending state that can never succeed. A missing
+  spec head or a head whose immutable version has not synced yet is transient,
+  so that approval stays retryable instead of being retracted. Grace history
   resets naturally: Phase A's
   prior-row streak breaks at the version change. The revision service rechecks
   that the identity is still an active goal inside the serialized path;
@@ -422,7 +424,11 @@ flowchart TD
   goal-revision proposals based on the old version and invalidates the mounted
   proposal-card projection. The persisted base-version fence independently
   prevents a proposal synced in later from overwriting the owner's newer
-  intent. A supported MULTI-habit routine is stored as an `allOf` composite;
+  intent. If disconnected replicas independently mint the same successor
+  ordinal, revision ids mark direct owner authorship and the type-specific head
+  resolver deterministically chooses owner intent over an agent-proposal
+  approval; a genuinely higher spec ordinal still wins. A supported MULTI-habit
+  routine is stored as an `allOf` composite;
   when another writer moves the spec head first, the stale editor returns to
   the refreshed goal details instead of retrying against the obsolete base;
   deletion cancels queued work, aborts an in-flight local wake, and soft-retires
