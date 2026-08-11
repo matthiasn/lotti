@@ -124,7 +124,11 @@ category, then use one of three paths:
 Lotti echoes the captured words while it structures them. The result is a real
 task in the chosen category, not onboarding-only sample data. When structuring
 produces checklist suggestions, they arrive on the task as proposals for you
-to confirm instead of changing the task silently.
+to confirm instead of changing the task silently. That proposal path needs the
+task's category to have a default agent template — onboarding assigns one to
+the categories it creates whenever you connected an AI provider, but a category
+created later in Settings has none until you assign it, and a structured
+checklist for a task in such a category is dropped rather than proposed.
 
 <ManualScreenshot
   caseId="onboarding/task-created"

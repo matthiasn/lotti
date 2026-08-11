@@ -33,13 +33,17 @@ une image ne propose pas une action qui exige un enregistrement.
 5. Continue à travailler pendant l’inférence ; le résultat est joint à la
    tâche ou à l’entrée concernée une fois terminé.
 
-Le menu disponible change selon le contexte :
+Lotti propose cinq types de compétences ; le menu affiche celles que l’entrée prend en charge :
 
-- les tâches peuvent proposer des actions de texte et de contexte de tâche ;
-- les entrées audio peuvent proposer la transcription et des actions sensibles à l’audio ;
-- les images peuvent proposer une analyse visuelle ;
-- les entrées texte peuvent proposer des prompts ou des actions de génération
-  acceptant du texte.
+| Compétence | Apparaît sur |
+| --- | --- |
+| **Transcription** | entrées audio |
+| **Analyse d’image** | images |
+| **Génération d’image** | entrées audio et texte liées à une tâche |
+| **Génération de prompt** | tout ce qui porte du texte — notes, audio, images, tâches |
+| **Génération de prompt d’image** | tout ce qui porte du texte, comme ci-dessus |
+
+Si une action attendue est absente, le type d’entrée ne prend pas en charge cette compétence — ou aucun profil ne lui attribue de modèle.
 
 Certaines compétences nécessitent une tâche liée, car elles lisent un contexte
 de tâche plus large ou écrivent leur résultat dans cette tâche. Si une action

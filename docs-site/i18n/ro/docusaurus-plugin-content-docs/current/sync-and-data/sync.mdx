@@ -7,9 +7,17 @@ description: Asociați dispozitive, verificați-le identitatea, monitorizați li
 
 Lotti Sync menține datele acceptate aliniate între dispozitivele dvs. Fiecare dispozitiv are propria bază de date locală; Sync mută modificările prin contul de sincronizare configurat și recuperează un dispozitiv după ce a fost offline. Sincronizarea nu mută sistemul de evidență într-un cloud Lotti: serviciul Matrix configurat retransmite încărcături criptate end-to-end între dispozitivele dvs., iar fiecare dispozitiv își păstrează copia locală.
 
-Deschideți **Setări → Sincronizare** pentru a vedea paginile disponibile de configurare, stare și recuperare. Numărul de lângă **Cutia de ieșire** reprezintă munca ce nu a ajuns încă la serviciul de sincronizare.
+Deschideți **Setări → Setări sincronizare** pentru a vedea paginile disponibile de configurare, stare și recuperare. Numărul de lângă **Cutia de ieșire** reprezintă munca ce nu a ajuns încă la serviciul de sincronizare.
 
 <ManualScreenshot caseId="sync/hub" alt="Setările Lotti Sync, cu Sincronizare aprovizionată, identitatea dispozitivului, recuperare, statistici, cutie de ieșire, conflicte și întreținere" caption="Centrul de sincronizare păstrează starea de zi cu zi aproape de instrumentele de diagnostic și recuperare. Project Waddle are în prezent trei elemente de inspectat în cutia de ieșire." />
+
+## Ce se sincronizează și ce rămâne
+
+| Se sincronizează între dispozitivele dvs. | Rămâne pe dispozitiv |
+| --- | --- |
+| Intrări de jurnal și sarcini, împreună cu legăturile dintre ele · categorii, etichete, obiceiuri, panouri și măsurători · furnizori, modele și profiluri AI (inclusiv ștergerile) · filtre de sarcini salvate · marcaje de configurare · alegerea temei luminoase/întunecate · profiluri de dispozitiv · numele dvs. din Daily OS · notificări și starea lor de citire · agenți de sarcini și legăturile lor · înregistrări de utilizare AI (jetoane, cost, energie) | Vocea și viteza sintezei vocale · lățimile panourilor · limitele de concurență AI · temporizatoarele agenților · excluderile din planificarea zilei |
+
+Două detalii utile. Nu tot ce se sincronizează este dată de jurnal: profilul dispozitivului și numele Daily OS călătoresc ca preferințe ale dispozitivului și sunt exceptate de la detectarea lacunelor. Iar numerele derivate nu sunt trimise niciodată — un filtru de sarcini salvat se sincronizează, dar numărătorile rezultate sunt recalculate pe fiecare dispozitiv.
 
 ## Vedeți dispozitivele dumneavoastră
 
@@ -47,7 +55,7 @@ Comparați emoji-urile în persoană sau printr-un apel de încredere. Selectaț
 
 ## Denumiți dispozitivele și anunțați capabilități
 
-**Profilul nodului de sincronizare** identifică dispozitivul curent pentru restul grupului de sincronizare. Dați-i un nume care distinge mașina fizică, de exemplu „Mission Control Mac”, nu „Desktop”.
+**Acest dispozitiv** („Numele și capacitățile dispozitivului”) identifică dispozitivul curent pentru restul grupului de sincronizare. Dați-i un nume care distinge mașina fizică, de exemplu „Mission Control Mac”, nu „Desktop”.
 
 <ManualScreenshot caseId="sync/node-profile" alt="Profilul nodului Lotti Sync pentru Mission Control Mac, cu capabilități locale de inferență și dispozitive Project Waddle cunoscute" caption="Numele clare de dispozitive fac verificarea, diagnosticul și inferența locală fixată pe dispozitiv mult mai ușor de auditat." />
 

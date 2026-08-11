@@ -33,12 +33,18 @@ requires a recording.
 5. Keep working while the inference runs; the result is attached to the
    relevant task or entry when complete.
 
-The available menu changes with context:
+Lotti ships five skill kinds, and the menu offers the ones the entry supports:
 
-- tasks can offer text and task-context actions;
-- audio entries can offer transcription and audio-aware actions;
-- images can offer visual analysis; and
-- text entries can offer prompt or generation actions that accept text.
+| Skill | Appears on |
+| --- | --- |
+| **Transcription** | audio entries |
+| **Image analysis** | images |
+| **Image generation** | audio and text entries that are linked to a task |
+| **Prompt generation** | anything carrying text — notes, audio, images, tasks |
+| **Image prompt generation** | anything carrying text, as above |
+
+If an action you expect is not in the list, the entry type does not support that
+skill — or no profile assigns a model to it.
 
 Some skills need a linked task because they read broader task context or write
 their result back to that task. If an action is absent, first check the entry

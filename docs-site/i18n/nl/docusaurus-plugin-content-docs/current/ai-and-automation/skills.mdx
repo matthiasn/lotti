@@ -33,12 +33,17 @@ die een opname vereist.
 5. Blijf werken terwijl de inferentie draait; het resultaat wordt aan de
    relevante taak of invoer gekoppeld zodra het klaar is.
 
-Het beschikbare menu verandert afhankelijk van de context:
+Lotti levert vijf soorten vaardigheden; het menu toont die welke het item ondersteunt:
 
-- taken kunnen tekst- en taakcontextacties bieden;
-- audio-invoer kan transcriptie en audiobewuste acties bieden;
-- afbeeldingen kunnen visuele analyse bieden; en
-- tekstinvoer kan prompt- of generatieacties bieden die tekst accepteren.
+| Vaardigheid | Verschijnt bij |
+| --- | --- |
+| **Transcriptie** | audio-items |
+| **Beeldanalyse** | afbeeldingen |
+| **Beeldgeneratie** | audio- en tekstitems die aan een taak zijn gekoppeld |
+| **Promptgeneratie** | alles met tekst — notities, audio, afbeeldingen, taken |
+| **Beeldpromptgeneratie** | alles met tekst, zoals hierboven |
+
+Ontbreekt een actie die je verwacht, dan ondersteunt het itemtype die vaardigheid niet — of wijst geen profiel er een model aan toe.
 
 Sommige vaardigheden hebben een gekoppelde taak nodig omdat ze bredere taakcontext
 lezen of hun resultaat naar die taak terugschrijven. Als een actie ontbreekt,

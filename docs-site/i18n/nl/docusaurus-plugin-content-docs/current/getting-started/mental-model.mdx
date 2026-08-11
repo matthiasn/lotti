@@ -65,9 +65,12 @@ description: Begrijp de paar bouwstenen die de rest van Lotti eenvoudiger maken.
 Een agent kan de context lezen die je hem geeft, een mening vormen, een rommelige
 taak samenvatten en een nuttige volgende wijziging voorstellen. Zijn verslag is een
 mening met herkomst, geen nieuw feit in je geschiedenis. Voorgestelde wijzigingen aan
-taak, checklist, status of datum wachten tot jij ze bevestigt of afwijst. De beperkte
-uitzonderingen zijn een eerste titel of taal voor een verder lege taak – daarna geldt
-dezelfde regel voor menselijke goedkeuring.
+taak, checklist, status of datum wachten tot jij ze bevestigt of afwijst. De
+uitzonderingen zijn de titel en de taal: elk wordt meteen toegepast wanneer *dat veld*
+nog leeg is en de agent het voor het eerst instelt. De rest van de taak mag vol werk
+zitten — een taak met een beschrijving, checklists en geregistreerde tijd, maar zonder
+ingestelde taal, krijgt haar eerste taal zonder vragen toegepast. Zodra een veld een
+waarde heeft, geldt dezelfde regel voor menselijke goedkeuring.
 
 Dit is geen beleefdheid die op een prompt is vastgeschroefd. Lotti houdt het
 persoonlijke logboek en het werkgeheugen van de agent gescheiden, zodat de agent je

@@ -66,9 +66,12 @@ En agent kan läsa kontexten du ger den, bilda sig en uppfattning, sammanfatta
 en rörig uppgift och föreslå en användbar nästa förändring. Dess rapport är en
 åsikt med proveniens, inte ett nytt faktum i din historia. Föreslagna
 ändringar av uppgifter, checklistor, status eller datum väntar på att du
-bekräftar eller avvisar dem. De snäva undantagen är en första titel eller ett
-språk för en i övrigt tom uppgift — därefter gäller samma regel om mänskligt
-godkännande.
+bekräftar eller avvisar dem. Undantagen är titeln och språket: vart och ett
+tillämpas direkt när *det fältet* fortfarande är tomt och agenten sätter det för
+första gången. Resten av uppgiften kan vara full av arbete — en uppgift med
+beskrivning, checklistor och registrerad tid men utan angivet språk får sitt
+första språk tillämpat utan att du tillfrågas. När ett fält väl har ett värde
+gäller samma regel om mänskligt godkännande.
 
 Detta är inte artighet fastskruvad på en prompt. Lotti håller den personliga
 loggboken och agentens arbetsminne åtskilda, så agenten kan inte behandla din

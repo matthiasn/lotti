@@ -66,8 +66,11 @@ En agent kan læse den kontekst, du giver den, danne sig en mening, opsummere
 en rodet opgave og foreslå en nyttig næste ændring. Dens rapport er en mening
 med proveniens, ikke en ny kendsgerning i din historik. Foreslåede ændringer
 af opgave, tjekliste, status eller dato venter på, at du bekræfter eller
-afviser dem. De snævre undtagelser er en indledende titel eller et sprog for
-en ellers tom opgave — derefter gælder den samme regel om
+afviser dem. Undtagelserne er titlen og sproget: hver anvendes med det samme,
+når *det felt* stadig er tomt, og agenten sætter det for første gang. Resten
+af opgaven kan være fuld af arbejde — en opgave med beskrivelse, tjeklister og
+registreret tid, men uden sprog, får sit første sprog anvendt uden at blive
+spurgt. Når et felt har en værdi, gælder den samme regel om
 menneske-godkendelse.
 
 Dette er ikke høflighed boltet på en prompt. Lotti holder den personlige

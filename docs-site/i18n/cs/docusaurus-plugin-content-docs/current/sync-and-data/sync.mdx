@@ -11,7 +11,7 @@ doplní zařízení poté, co bylo offline. Sync nepřesouvá zdroj pravdy do cl
 Lotti: nastavená služba Matrix přenáší mezi tvými zařízeními koncově šifrovaná
 data a každé zařízení si ponechává vlastní místní kopii.
 
-Otevři **Nastavení → Sync** a zobraz dostupné stránky nastavení, zdraví a
+Otevři **Nastavení → Nastavení synchronizace** a zobraz dostupné stránky nastavení, zdraví a
 obnovy. Číslo vedle **Odchozí fronty** označuje práci, která ještě nedorazila k
 synchronizační službě.
 
@@ -20,6 +20,14 @@ synchronizační službě.
   alt="Nastavení Lotti Sync s Nastavením synchronizace, identitou zařízení, doplněním, statistikami, odchozí frontou, konflikty a údržbou"
   caption="Centrum Sync drží běžný stav vedle diagnostiky a nástrojů obnovy. Project Waddle má právě tři položky odchozí fronty ke kontrole."
 />
+
+## Co se synchronizuje a co zůstává
+
+| Synchronizuje se mezi zařízeními | Zůstává na jednom zařízení |
+| --- | --- |
+| Záznamy deníku a úkoly a jejich propojení · kategorie, štítky, návyky, panely a měřitelné typy · poskytovatelé AI, modely a profily (včetně smazání) · uložené filtry úkolů · konfigurační příznaky · volba světlého/tmavého motivu · profily zařízení · tvé jméno v Daily OS · oznámení a jejich stav přečtení · agenti úkolů a jejich vazby · záznamy o využití AI (tokeny, náklady, energie) | Hlas a rychlost převodu textu na řeč · šířky panelů · limity souběžnosti AI · časovače omezení agentů · výjimky plánování dne |
+
+Dvě věci stojí za zmínku. Ne všechno, co se synchronizuje, jsou data deníku: profil zařízení a jméno v Daily OS putují jako předvolby zařízení a nepodléhají detekci mezer. A odvozená čísla se nikdy neodesílají — uložený filtr úkolů se synchronizuje, ale počty úkolů z něj se na každém zařízení počítají znovu.
 
 ## Zobraz svá zařízení
 
@@ -64,7 +72,8 @@ zruš a před dalším pokusem zkontroluj účet a názvy zařízení.
 
 ## Pojmenuj zařízení a zveřejni schopnosti
 
-**Profil synchronizačního uzlu** identifikuje aktuální zařízení zbytku skupiny.
+**Toto zařízení** — „Název a schopnosti zařízení“ — identifikuje aktuální
+zařízení zbytku skupiny.
 Použij název odlišující fyzický počítač, například „Mission Control Mac“ místo
 „Počítač“.
 

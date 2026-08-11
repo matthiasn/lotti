@@ -33,14 +33,17 @@ ofrece una acción que requiera una grabación.
 5. Sigue trabajando mientras se ejecuta la inferencia; el resultado se adjunta
    a la tarea o entrada correspondiente al completarse.
 
-El menú disponible cambia con el contexto:
+Lotti incluye cinco tipos de habilidades y el menú ofrece las que admite la entrada:
 
-- las tareas pueden ofrecer acciones de texto y de contexto de tarea;
-- las entradas de audio pueden ofrecer transcripción y acciones que entienden
-  audio;
-- las imágenes pueden ofrecer análisis visual; y
-- las entradas de texto pueden ofrecer acciones de prompt o generación que
-  aceptan texto.
+| Habilidad | Aparece en |
+| --- | --- |
+| **Transcripción** | entradas de audio |
+| **Análisis de imagen** | imágenes |
+| **Generación de imagen** | entradas de audio y texto vinculadas a una tarea |
+| **Generación de prompts** | cualquier cosa con texto: notas, audio, imágenes, tareas |
+| **Generación de prompts de imagen** | cualquier cosa con texto, como arriba |
+
+Si falta una acción que esperabas, el tipo de entrada no admite esa habilidad, o ningún perfil le asigna un modelo.
 
 Algunas habilidades necesitan una tarea vinculada porque leen un contexto de
 tarea más amplio o escriben su resultado de vuelta en ella. Si falta una acción,

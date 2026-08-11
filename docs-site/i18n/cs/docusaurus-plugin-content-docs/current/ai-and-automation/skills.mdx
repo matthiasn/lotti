@@ -32,12 +32,17 @@ přepis vyžadující zvuk a obrázek nenabídne akci vyžadující nahrávku.
 5. Během inference pokračuj v práci; po dokončení se výsledek připojí k
    příslušnému úkolu nebo záznamu.
 
-Dostupná nabídka se mění podle kontextu:
+Lotti nabízí pět druhů dovedností a v nabídce se objeví ty, které daný záznam podporuje:
 
-- úkoly mohou nabízet textové akce a akce s kontextem úkolu;
-- zvukové záznamy mohou nabízet přepis a akce pracující se zvukem;
-- obrázky mohou nabízet vizuální analýzu; a
-- textové záznamy mohou nabízet výzvy nebo generování přijímající text.
+| Dovednost | Objevuje se u |
+| --- | --- |
+| **Přepis** | zvukových záznamů |
+| **Analýza obrázku** | obrázků |
+| **Generování obrázku** | zvukových a textových záznamů propojených s úkolem |
+| **Generování promptu** | čehokoli s textem — poznámek, zvuku, obrázků, úkolů |
+| **Generování promptu k obrázku** | čehokoli s textem, jako výše |
+
+Pokud akci, kterou očekáváš, v seznamu nevidíš, typ záznamu tuto dovednost nepodporuje — nebo jí žádný profil nepřiřadil model.
 
 Některé dovednosti potřebují propojený úkol, protože čtou širší kontext nebo
 zapisují výsledek zpět k úkolu. Pokud akce chybí, nejdřív zkontroluj typ záznamu
