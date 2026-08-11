@@ -232,7 +232,8 @@ double _dayTrackPitch(BuildContext context, List<GoalProgressDay> days) {
   final defaultPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
   final labelWidth = _weekdayLabelMetrics(context, days).width;
   final expandedPitch = labelWidth + tokens.spacing.step1;
-  return expandedPitch > defaultPitch + tokens.spacing.step3
+  final textScaledUp = MediaQuery.textScalerOf(context).scale(1) > 1;
+  return textScaledUp && expandedPitch > defaultPitch
       ? expandedPitch
       : defaultPitch;
 }

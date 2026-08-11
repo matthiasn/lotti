@@ -600,7 +600,8 @@ void main() {
   );
 
   testWidgets(
-    'weekday labels expand their pitch at large text scale without losing '
+    'weekday labels expand their pitch as soon as scaled text needs it without '
+    'losing '
     'cell alignment',
     (tester) async {
       tester.view.physicalSize = const Size(1200, 900);
@@ -613,7 +614,7 @@ void main() {
             builder: (context) => MediaQuery(
               data: MediaQuery.of(
                 context,
-              ).copyWith(textScaler: const TextScaler.linear(2)),
+              ).copyWith(textScaler: const TextScaler.linear(1.01)),
               child: GoalProgressCard(
                 progress: GoalProgressView(
                   today: today,
@@ -717,7 +718,7 @@ void main() {
     expect(
       tester.getTopLeft(cadenceFinder).dy,
       greaterThan(
-        tester.getTopLeft(find.text('A deliberately long habit name')).dy,
+        tester.getBottomLeft(find.text('A deliberately long habit name')).dy,
       ),
       reason: 'the full authored cadence gets its own row when space is tight',
     );
