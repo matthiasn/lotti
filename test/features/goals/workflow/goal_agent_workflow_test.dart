@@ -1250,6 +1250,11 @@ void main() {
       changeSet.items.single.args['changes'],
       {'targetValue': 8000},
     );
+    expect(
+      changeSet.items.single.args['baseVersionId'],
+      '$agentId:spec-v1',
+      reason: 'approval must be fenced to the version that proposed it',
+    );
   });
 
   test('kitchen sink: profile override, reusable library in FACTS, '

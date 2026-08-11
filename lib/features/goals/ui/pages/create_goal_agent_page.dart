@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -251,11 +252,36 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     );
   }
 
+  Future<void> _reconcilePersistedHabitTargets() async {
+    _reconcileHabitTargets();
+    if (!_editing) return;
+
+    final habitsAsync = ref.read(_habitDefinitionsProvider);
+    final currentHabits = habitsAsync.value;
+    if (currentHabits == null || habitsAsync.hasError) return;
+
+    final visibleHabitIds = {for (final habit in currentHabits) habit.id};
+    final hiddenLoadedIds = _mapping.habitTargets.keys
+        .where(_habitTargets.containsKey)
+        .where((habitId) => !visibleHabitIds.contains(habitId))
+        .toList(growable: false);
+    if (hiddenLoadedIds.isEmpty) return;
+
+    final repository = ref.read(habitsRepositoryProvider);
+    for (final habitId in hiddenLoadedIds) {
+      final habit = await repository.getHabitByIdForIntegrity(habitId);
+      if (habit == null || !habit.active || habit.deletedAt != null) {
+        _habitTargets.remove(habitId);
+      }
+    }
+  }
+
   void _invalidateGoalViews(ProviderContainer container, String agentId) {
     container
       ..invalidate(agentIdentityProvider(agentId))
       ..invalidate(goalAgentHealthProvider(agentId))
       ..invalidate(goalAgentProgressViewProvider(agentId))
+      ..invalidate(selfTargetedPendingChangeSetsProvider(agentId))
       ..invalidate(activeGoalAgentsProvider)
       ..invalidate(activeGoalNudgesProvider)
       ..invalidate(goalNudgeHistoryProvider(agentId));
@@ -280,25 +306,34 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   }
 
   Future<void> _save() async {
+    final messages = context.messages;
+    final container = ProviderScope.containerOf(context, listen: false);
     final title = _title.text.trim();
     final persona = _persona.text.trim();
     final statement = _statement.text.trim();
     if (title.isEmpty || persona.isEmpty) {
-      setState(() => _validation = context.messages.goalFormValidationIdentity);
+      setState(() => _validation = messages.goalFormValidationIdentity);
       return;
     }
-    _reconcileHabitTargets();
+    try {
+      await _reconcilePersistedHabitTargets();
+    } on Object {
+      if (mounted) {
+        setState(() => _validation = messages.goalCreateFailed);
+      }
+      return;
+    }
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
     final criteria = _watchesSteps && (stepsTarget == null || stepsTarget <= 0)
         ? null
         : _mapping.buildCriteria(
-            stepsTitle: context.messages.goalCreateStepsTargetLabel,
+            stepsTitle: messages.goalCreateStepsTargetLabel,
             habitTargets: _habitTargets,
             watchesSteps: _watchesSteps,
             stepsTarget: stepsTarget,
           );
     if (criteria == null) {
-      setState(() => _validation = context.messages.goalFormValidationMapping);
+      setState(() => _validation = messages.goalFormValidationMapping);
       return;
     }
 
@@ -306,7 +341,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _saving = true;
       _validation = null;
     });
-    final container = ProviderScope.containerOf(context, listen: false);
     final goalAgentService = container.read(goalAgentServiceProvider);
     try {
       final agentId = widget.agentId;
@@ -355,7 +389,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _validation = context.messages.goalCreateFailed;
+          _validation = messages.goalCreateFailed;
         });
       }
     }

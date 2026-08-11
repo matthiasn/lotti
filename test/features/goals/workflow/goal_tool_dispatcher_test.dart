@@ -103,6 +103,7 @@ void main() {
           'changes': {'targetValue': 8000},
           'rationale': 'ease off',
           'sourceThreadId': 'thread-42',
+          'baseVersionId': '$agentId:spec-v1',
         },
         agentId,
       );
@@ -133,6 +134,7 @@ void main() {
       {
         'changes': {'period': 'fortnight'},
         'rationale': 'r',
+        'baseVersionId': '$agentId:spec-v1',
       },
       agentId,
     );
@@ -141,17 +143,55 @@ void main() {
     expect(upserts, isEmpty);
   });
 
-  test('missing changes and unknown tools are rejected', () async {
-    final noChanges = await dispatcher.dispatch(
-      GoalAgentToolNames.proposeGoalRevision,
-      {'rationale': 'r'},
-      agentId,
-    );
-    expect(noChanges.success, isFalse);
-    expect(noChanges.errorMessage, 'Missing changes');
+  test(
+    'missing changes, base version, and unknown tools are rejected',
+    () async {
+      final noChanges = await dispatcher.dispatch(
+        GoalAgentToolNames.proposeGoalRevision,
+        {'rationale': 'r'},
+        agentId,
+      );
+      expect(noChanges.success, isFalse);
+      expect(noChanges.errorMessage, 'Missing changes');
 
-    final unknown = await dispatcher.dispatch('made_up_tool', {}, agentId);
-    expect(unknown.success, isFalse);
-    expect(unknown.errorMessage, contains('not registered'));
-  });
+      final noBaseVersion = await dispatcher.dispatch(
+        GoalAgentToolNames.proposeGoalRevision,
+        {
+          'changes': {'targetValue': 8000},
+          'rationale': 'r',
+        },
+        agentId,
+      );
+      expect(noBaseVersion.success, isFalse);
+      expect(noBaseVersion.errorMessage, 'Missing originating goal version');
+
+      final unknown = await dispatcher.dispatch('made_up_tool', {}, agentId);
+      expect(unknown.success, isFalse);
+      expect(unknown.errorMessage, contains('not registered'));
+    },
+  );
+
+  test(
+    'a proposal created for an old spec cannot overwrite the head',
+    () async {
+      stubSpec();
+
+      final result = await dispatcher.dispatch(
+        GoalAgentToolNames.proposeGoalRevision,
+        {
+          'changes': {'targetValue': 8000},
+          'rationale': 'ease off',
+          'baseVersionId': '$agentId:spec-v0',
+        },
+        agentId,
+      );
+
+      expect(result.success, isFalse);
+      expect(
+        result.errorMessage,
+        GoalSpecRevisionService.proposalStaleVersionReason,
+      );
+      expect(upserts, isEmpty);
+    },
+  );
 }

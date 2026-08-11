@@ -58,9 +58,12 @@ class GoalSpecRevisionService {
       'the owner edit does not change the goal';
   static const String ownerStaleVersionReason =
       'the goal changed after this editor was opened';
+  static const String proposalStaleVersionReason =
+      'the goal changed after this proposal was created';
 
   Future<GoalSpecRevisionOutcome> reviseFromProposal({
     required String agentId,
+    required String baseVersionId,
     required Map<String, dynamic> changes,
     required String rationale,
     String? sourceThreadId,
@@ -75,6 +78,7 @@ class GoalSpecRevisionService {
       return await _syncService.runInTransaction(
         () => _reviseInTransaction(
           agentId: agentId,
+          baseVersionId: baseVersionId,
           changes: changes,
           rationale: rationale,
           sourceThreadId: sourceThreadId,
@@ -211,6 +215,7 @@ class GoalSpecRevisionService {
 
   Future<GoalSpecRevisionOutcome> _reviseInTransaction({
     required String agentId,
+    required String baseVersionId,
     required Map<String, dynamic> changes,
     required String rationale,
     required String? sourceThreadId,
@@ -233,6 +238,9 @@ class GoalSpecRevisionService {
       return GoalSpecRevisionRefused(
         'spec head ${head.versionId} points at nothing',
       );
+    }
+    if (current.id != baseVersionId) {
+      return const GoalSpecRevisionRefused(proposalStaleVersionReason);
     }
 
     final applied = applyGoalRevisionChanges(
@@ -386,10 +394,17 @@ class GoalSpecRevisionService {
     required String agentId,
     required DateTime now,
   }) async {
-    final pendingSets = await _repository.getPendingChangeSets(
-      agentId,
-      taskId: agentId,
-    );
+    final pendingSets =
+        (await _repository.getEntitiesByAgentIdAndSubtypes(
+          agentId,
+          type: AgentEntityTypes.changeSet,
+          subtypes: const {
+            ChangeSetStatus.pending,
+            ChangeSetStatus.partiallyResolved,
+          }.map((status) => status.name),
+        )).whereType<ChangeSetEntity>().where(
+          (changeSet) => changeSet.taskId == agentId,
+        );
     for (final changeSet in pendingSets) {
       var changed = false;
       final items = changeSet.items

@@ -23,6 +23,12 @@ abstract class HabitsRepository {
   /// Emits null if the habit doesn't exist.
   Stream<HabitDefinition?> watchHabitById(String id);
 
+  /// Reads an existing habit without the private-visibility filter.
+  ///
+  /// This must only be used to validate an already-persisted reference. Habit
+  /// discovery and display continue to use the privacy-filtered watch APIs.
+  Future<HabitDefinition?> getHabitByIdForIntegrity(String id);
+
   /// Fetches habit completions within a date range.
   ///
   /// [rangeStart] is the start of the date range (inclusive).
@@ -92,6 +98,10 @@ class HabitsRepositoryImpl implements HabitsRepository {
       fetcher: () => _journalDb.getHabitById(id),
     );
   }
+
+  @override
+  Future<HabitDefinition?> getHabitByIdForIntegrity(String id) =>
+      _journalDb.getHabitByIdForIntegrity(id);
 
   @override
   Future<List<HabitCompletionRecord>> getHabitCompletionsInRange({

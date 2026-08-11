@@ -139,6 +139,23 @@ void main() {
       });
     });
 
+    group('getHabitByIdForIntegrity', () {
+      test('delegates to the unfiltered integrity lookup', () async {
+        when(
+          () => mockJournalDb.getHabitByIdForIntegrity('habit-1'),
+        ).thenAnswer((_) async => testHabit.copyWith(private: true));
+
+        final result = await repository.getHabitByIdForIntegrity('habit-1');
+
+        expect(result, isNotNull);
+        expect(result!.id, 'habit-1');
+        expect(result.private, isTrue);
+        verify(
+          () => mockJournalDb.getHabitByIdForIntegrity('habit-1'),
+        ).called(1);
+      });
+    });
+
     group('getHabitCompletionsInRange', () {
       test('returns completions from JournalDb', () async {
         final rangeStart = DateTime(2025);

@@ -46,9 +46,21 @@ class GoalToolDispatcher {
     final rationaleValue = args['rationale'];
     final rationale = rationaleValue is String ? rationaleValue.trim() : '';
     final sourceThreadId = args['sourceThreadId'];
+    final baseVersionIdValue = args['baseVersionId'];
+    final baseVersionId = baseVersionIdValue is String
+        ? baseVersionIdValue.trim()
+        : '';
+    if (baseVersionId.isEmpty) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: the proposal carries no originating goal version',
+        errorMessage: 'Missing originating goal version',
+      );
+    }
 
     final outcome = await _revisionService.reviseFromProposal(
       agentId: agentId,
+      baseVersionId: baseVersionId,
       changes: changes,
       rationale: rationale,
       sourceThreadId: sourceThreadId is String ? sourceThreadId : null,

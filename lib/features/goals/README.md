@@ -35,7 +35,8 @@ on `AgentDomainEntity` (`goalSpecVersion`/`goalSpecHead`/`goalProgress`/
 The LLM tier (Phase B) runs too: `workflow/` holds the lease-elected
 escalation workflow, its code-owned contract, the tool dispatcher, and the
 revision flow that turns an approved `propose_goal_revision` change set
-into a new spec version. User-authored chat turns take the same fact-grounded
+into a new spec version only while its originating immutable version is still
+current. User-authored chat turns take the same fact-grounded
 workflow through a throttle-bypassing manual wake: `GoalChatService` persists
 the source turn only after rechecking that the goal identity is active, then
 enqueues it; it reconciles a committed message when a later

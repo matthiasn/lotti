@@ -68,6 +68,7 @@ abstract final class AgentEntityTypes {
   static const standingAgreement = 'standingAgreement';
   static const agentState = 'agentState';
   static const agentMessage = 'agentMessage';
+  static const changeSet = 'changeSet';
   static const agentReport = 'agentReport';
   static const agentReportHead = 'agentReportHead';
   static const scheduledWake = 'scheduledWake';

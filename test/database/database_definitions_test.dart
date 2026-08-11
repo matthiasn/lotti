@@ -326,6 +326,37 @@ void main() {
         final habit = await db!.getHabitById('no-such-habit');
         expect(habit, isNull);
       });
+
+      test(
+        'integrity lookup sees private habits but not deleted rows',
+        () async {
+          await db!.upsertConfigFlag(
+            const ConfigFlag(
+              name: privateFlag,
+              description: 'Show private entries?',
+              status: false,
+            ),
+          );
+          final privateHabit = habitFlossing.copyWith(
+            id: 'private-habit',
+            private: true,
+          );
+          final deletedHabit = habitFlossing.copyWith(
+            id: 'deleted-habit',
+            name: 'Deleted flossing',
+            deletedAt: DateTime(2026, 8, 11),
+          );
+          await db!.upsertHabitDefinition(privateHabit);
+          await db!.upsertHabitDefinition(deletedHabit);
+
+          expect(await db!.getHabitById(privateHabit.id), isNull);
+          expect(
+            await db!.getHabitByIdForIntegrity(privateHabit.id),
+            privateHabit,
+          );
+          expect(await db!.getHabitByIdForIntegrity(deletedHabit.id), isNull);
+        },
+      );
     });
 
     group('getAllDashboards / getDashboardById -', () {
