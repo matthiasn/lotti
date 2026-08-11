@@ -1337,6 +1337,78 @@ void main() {
     },
   );
 
+  testWidgets(
+    'editing validates and drops a newly selected inactive habit before save',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const criteria = GoalCriterion.habit(
+        criterionId: 'habit-gym',
+        habitId: 'gym',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 2,
+      );
+      final current = _spec(criteria: criteria);
+      when(
+        () => habitsRepository.getHabitByIdForIntegrity('run'),
+      ).thenAnswer((_) async => _habit('run', 'Run', active: false));
+      when(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: current.id,
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      ).thenAnswer(
+        (_) async => const GoalSpecRevisionRefused(
+          GoalSpecRevisionService.ownerNoChangesReason,
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(editSpec: current),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Choose an existing habit'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('goal-form-habit-run')));
+      await tester.pump();
+      await tester.tap(find.text('Looks right'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-title')),
+        'Updated movement',
+      );
+      await tester.tap(find.text('Save new version'));
+      await tester.pump();
+
+      final saved =
+          verify(
+                () => revisionService.reviseFromOwner(
+                  agentId: 'goal-1',
+                  baseVersionId: current.id,
+                  displayName: 'Juno',
+                  title: 'Updated movement',
+                  statement: current.statement,
+                  criteria: captureAny(named: 'criteria'),
+                ),
+              ).captured.single
+              as GoalCriterionHabit;
+      expect(saved.habitId, 'gym');
+      expect(saved.targetCount, 2);
+      verify(() => habitsRepository.getHabitByIdForIntegrity('gym')).called(1);
+      verify(() => habitsRepository.getHabitByIdForIntegrity('run')).called(1);
+    },
+  );
+
   testWidgets('an integrity lookup failure keeps the edit open and unsaved', (
     tester,
   ) async {

@@ -252,22 +252,18 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     );
   }
 
-  Future<void> _reconcilePersistedHabitTargets() async {
+  Future<void> _reconcileHabitTargetsForSave() async {
     _reconcileHabitTargets();
-    if (!_editing) return;
-
-    final persistedSelectedIds = _mapping.habitTargets.keys
-        .where(_habitTargets.containsKey)
-        .toList(growable: false);
-    if (persistedSelectedIds.isEmpty) return;
+    final selectedHabitIds = _habitTargets.keys.toList(growable: false);
+    if (selectedHabitIds.isEmpty) return;
 
     final repository = ref.read(habitsRepositoryProvider);
     final resolvedHabits = await Future.wait([
-      for (final habitId in persistedSelectedIds)
+      for (final habitId in selectedHabitIds)
         repository.getHabitByIdForIntegrity(habitId),
     ]);
-    for (var index = 0; index < persistedSelectedIds.length; index++) {
-      final habitId = persistedSelectedIds[index];
+    for (var index = 0; index < selectedHabitIds.length; index++) {
+      final habitId = selectedHabitIds[index];
       final habit = resolvedHabits[index];
       if (habit == null || !habit.active || habit.deletedAt != null) {
         _habitTargets.remove(habitId);
@@ -276,7 +272,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     if (!mounted) return;
 
     // The visible stream can refresh while integrity reads are in flight.
-    // Reconcile newly selected (non-persisted) habits against its latest value.
+    // Reconcile the validated selection against its latest value.
     _reconcileHabitTargets();
   }
 
@@ -326,7 +322,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _validation = null;
     });
     try {
-      await _reconcilePersistedHabitTargets();
+      await _reconcileHabitTargetsForSave();
     } on Object {
       if (mounted) {
         setState(() {

@@ -410,11 +410,11 @@ flowchart TD
   match, uses whole-word matching that excludes generic cadence terms, and
   explicitly refuses an intention for which no observable proxy exists.
   Existing criteria outside the form's representable range stay losslessly
-  read-only. An edit also checks already-authored habit criteria omitted from
-  the privacy-filtered picker through an unfiltered integrity lookup: an active
-  private habit is retained without exposing it in discovery, while a habit
-  confirmed deleted or inactive is removed before save. Confirmation names the
-  goal and its
+  read-only. Before creation or editing saves, every selected habit is checked
+  through an unfiltered integrity lookup. This retains an active private habit
+  already authored into the goal without exposing it in discovery, while any
+  selected habit confirmed deleted or inactive is removed before save.
+  Confirmation names the goal and its
   conversational persona and states the inference-cost contract. Editing opens
   only for active goal agents, preloads the current values, explains the next
   immutable version, and preserves version history. A successful owner edit

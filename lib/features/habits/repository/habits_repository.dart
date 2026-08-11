@@ -25,8 +25,9 @@ abstract class HabitsRepository {
 
   /// Reads an existing habit without the private-visibility filter.
   ///
-  /// This must only be used to validate an already-persisted reference. Habit
-  /// discovery and display continue to use the privacy-filtered watch APIs.
+  /// This must only be used to validate a habit reference that the user already
+  /// selected or persisted. Habit discovery and display continue to use the
+  /// privacy-filtered watch APIs.
   Future<HabitDefinition?> getHabitByIdForIntegrity(String id);
 
   /// Fetches habit completions within a date range.
