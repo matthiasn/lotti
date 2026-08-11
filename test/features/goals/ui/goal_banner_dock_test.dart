@@ -268,26 +268,31 @@ void main() {
       'text scale and includes the multi-tenant dot row', (
     tester,
   ) async {
+    tester.view.physicalSize = const Size(390, 1400);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+    final longHeadline = List.filled(
+      2,
+      'A complete authored headline keeps every useful word visible even when the copy runs long.',
+    ).join(' ');
     // Two active goals (so the dot-row footer renders), each with a headline
-    // long enough to exercise the uncapped compact copy at both text scales.
+    // longer than five visual lines at both text scales.
     List<GoalBannerEntry> tallEntries() => [
       entry(
         id: 'a',
-        headline:
-            'A deliberately long standing headline that wraps to two '
-            'full lines on a narrow phone dock so we size the tallest case',
+        headline: longHeadline,
       ),
       entry(
         id: 'b',
-        headline:
-            'A second equally long standing headline that also wraps '
-            'to two full lines on the same narrow phone dock',
+        headline: '$longHeadline Still complete.',
       ),
     ];
 
-    /// Renders the dock at [scaler] and returns (rendered height, the reserve
-    /// the shell would compute from the same context).
-    Future<(double rendered, double reserved)> measure(
+    /// Renders the dock at [scaler] and returns the rendered dock, its shell
+    /// reserve, the headline height and one line of the same typography.
+    Future<(double rendered, double reserved, double headline, double oneLine)>
+    measure(
       TextScaler scaler,
     ) async {
       _TestEntries.initial = tallEntries();
@@ -301,7 +306,10 @@ void main() {
                 builder: (context) {
                   // Read the reserve through the SAME scaled context the shell
                   // uses in `_MobileNavOverlayHeightScope`.
-                  reserved = goalBannerDockReservedHeight(context);
+                  reserved = goalBannerDockReservedHeight(
+                    context,
+                    briefs: tallEntries().map((entry) => entry.nudge.brief),
+                  );
                   return const Scaffold(
                     bottomNavigationBar: GoalBannerDock(compact: true),
                   );
@@ -315,12 +323,35 @@ void main() {
       await tester.pump();
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 400));
-      return (tester.getSize(find.byType(GoalBannerDock)).height, reserved);
+      final animatedText = find.byType(GoalBannerAnimatedText);
+      final animatedTextWidget = tester.widget<GoalBannerAnimatedText>(
+        animatedText,
+      );
+      final linePainter = TextPainter(
+        text: TextSpan(text: 'Xg', style: animatedTextWidget.style),
+        textDirection: TextDirection.ltr,
+        textScaler: scaler,
+        maxLines: 1,
+      )..layout();
+      return (
+        tester.getSize(find.byType(GoalBannerDock)).height,
+        reserved,
+        tester.getSize(animatedText).height,
+        linePainter.height,
+      );
     }
 
-    final (base, baseReserve) = await measure(TextScaler.noScaling);
-    final (large, largeReserve) = await measure(const TextScaler.linear(2));
+    final (base, baseReserve, baseHeadline, baseLine) = await measure(
+      TextScaler.noScaling,
+    );
+    final (large, largeReserve, largeHeadline, largeLine) = await measure(
+      const TextScaler.linear(2),
+    );
 
+    // This is genuinely long copy, not a two-line smoke test: the rendered
+    // headline exceeds the old five-line reserve at both supported scales.
+    expect(baseHeadline, greaterThan(baseLine * 5));
+    expect(largeHeadline, greaterThan(largeLine * 5));
     // Large text genuinely enlarges the tenant — a fixed reserve would
     // under-clear it.
     expect(large, greaterThan(base));

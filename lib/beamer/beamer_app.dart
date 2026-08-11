@@ -1216,10 +1216,11 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
     // otherwise it would push scroll clearance and FABs an extra lane above
     // the keyboard for the whole editing session. Mirror that collapse here.
     final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
+    final goalDockEntries = ref.watch(activeGoalNudgesProvider).value;
     final goalDockSpeaking =
         goalDockAllowed &&
         !keyboardUp &&
-        (ref.watch(activeGoalNudgesProvider).value?.isNotEmpty ?? false);
+        (goalDockEntries?.isNotEmpty ?? false);
 
     return StreamBuilder<JournalEntity?>(
       stream: getIt<TimeService>().getStream(),
@@ -1244,7 +1245,10 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
         // is scale-aware (the tenant's copy grows with accessibility text),
         // so content and FABs clear the dock at every text scale.
         if (goalDockSpeaking) {
-          height += goalBannerDockReservedHeight(context);
+          height += goalBannerDockReservedHeight(
+            context,
+            briefs: goalDockEntries!.map((entry) => entry.nudge.brief),
+          );
         }
         return DesignSystemBottomNavigationOverlayHeight(
           height: height,

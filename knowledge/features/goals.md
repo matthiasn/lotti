@@ -249,7 +249,7 @@ flowchart TD
   content region on desktop (beside the sidebar) and above the bottom nav
   on mobile, on the main working tabs only (Tasks, DailyOS, Habits). One
   shared rotation state cycles every standing banner ~15s each; a fresh
-  acknowledgment (a re-run) jumps the queue with a "just now" marker;
+  acknowledgment (a re-run) jumps the queue;
   hover/touch and app-backgrounding pause the cycle; the dock collapses to
   nothing when no goal is speaking. The goal detail page shows that goal's
   banners uncycled via `GoalBannerCard` directly. Tapping a banner opens
