@@ -6255,6 +6255,10 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormPersonaLabel => 'Agentens namn';
 
   @override
+  String get goalFormPreservedCriteriaSummary =>
+      'Befintliga signaler och schemat bevaras exakt.';
+
+  @override
   String goalFormProgress(int step) {
     return 'Steg $step av 3';
   }
@@ -6287,6 +6291,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String goalFormStepsCadence(String target) {
     return '$target steg om dagen';
   }
+
+  @override
+  String get goalFormStepsSignal => 'automatisk stegräkning';
 
   @override
   String get goalFormUnsupportedCriteria =>

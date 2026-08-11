@@ -53,6 +53,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   var _showAllHabits = false;
   var _initialized = false;
   var _saving = false;
+  String? _derivedFrom;
+  String? _derivedTitle;
   String? _validation;
 
   bool get _editing => widget.agentId != null;
@@ -119,7 +121,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       return;
     }
 
-    if (!_editing) {
+    if (!_editing && _derivedFrom != statement) {
       final matchedHabits = [
         for (final habit in habits)
           if (_matchesIntention(habit.name)) habit,
@@ -132,6 +134,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           matchedHabits.map((habit) => MapEntry(habit.id, 3)),
         );
       _deriveTitle(habits);
+      _derivedFrom = statement;
     }
 
     setState(() {
@@ -141,21 +144,23 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   }
 
   void _deriveTitle(List<HabitDefinition> habits) {
-    if (_title.text.trim().isNotEmpty) return;
+    final currentTitle = _title.text.trim();
+    if (currentTitle.isNotEmpty && currentTitle != _derivedTitle) return;
     final selectedNames = [
       for (final habit in habits)
         if (_habitTargets.containsKey(habit.id)) habit.name,
     ];
-    if (selectedNames.isNotEmpty) {
-      _title.text = selectedNames.join(' + ');
-    } else if (_watchesSteps) {
-      _title.text = context.messages.goalCreateTypeSteps;
-    } else {
-      _title.text = _statement.text.trim();
-    }
+    final derivedTitle = selectedNames.isNotEmpty
+        ? selectedNames.join(' + ')
+        : _watchesSteps
+        ? context.messages.goalCreateTypeSteps
+        : _statement.text.trim();
+    _title.text = derivedTitle;
+    _derivedTitle = derivedTitle;
   }
 
   void _continueToConfirmation(List<HabitDefinition> habits) {
+    _reconcileHabitTargets();
     final hasMapping =
         !_mapping.isEditable || _watchesSteps || _habitTargets.isNotEmpty;
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
@@ -170,6 +175,16 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _validation = null;
       _step = _GoalFormStep.confirmation;
     });
+  }
+
+  void _reconcileHabitTargets() {
+    final currentHabits = ref.read(_habitDefinitionsProvider).value;
+    final activeHabitIds = {
+      for (final habit in currentHabits ?? _knownHabits) habit.id,
+    };
+    _habitTargets.removeWhere(
+      (habitId, _) => !activeHabitIds.contains(habitId),
+    );
   }
 
   String _signalDescription(List<HabitDefinition> habits) {
@@ -198,6 +213,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       setState(() => _validation = context.messages.goalFormValidationIdentity);
       return;
     }
+    _reconcileHabitTargets();
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
     final criteria = _watchesSteps && (stepsTarget == null || stepsTarget <= 0)
         ? null
@@ -217,17 +233,17 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _validation = null;
     });
     final container = ProviderScope.containerOf(context, listen: false);
+    final goalAgentService = container.read(goalAgentServiceProvider);
+    final revisionService = container.read(goalSpecRevisionServiceProvider);
     try {
       final agentId = widget.agentId;
       if (agentId == null) {
-        await ref
-            .read(goalAgentServiceProvider)
-            .createGoalAgent(
-              title: title,
-              displayName: persona,
-              statement: statement,
-              criteria: criteria,
-            );
+        await goalAgentService.createGoalAgent(
+          title: title,
+          displayName: persona,
+          statement: statement,
+          criteria: criteria,
+        );
         container
           ..invalidate(activeGoalAgentsProvider)
           ..invalidate(activeGoalNudgesProvider);
@@ -235,22 +251,18 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         return;
       }
 
-      final outcome = await ref
-          .read(goalSpecRevisionServiceProvider)
-          .reviseFromOwner(
-            agentId: agentId,
-            displayName: persona,
-            title: title,
-            statement: statement,
-            criteria: criteria,
-          );
+      final outcome = await revisionService.reviseFromOwner(
+        agentId: agentId,
+        displayName: persona,
+        title: title,
+        statement: statement,
+        criteria: criteria,
+      );
       if (outcome case GoalSpecRevisionMinted(:final version)) {
-        ref
-            .read(goalAgentServiceProvider)
-            .refreshAfterRevision(
-              agentId: agentId,
-              criteria: version.criteria,
-            );
+        goalAgentService.refreshAfterRevision(
+          agentId: agentId,
+          criteria: version.criteria,
+        );
       } else if (outcome case GoalSpecRevisionRefused(
         :final reason,
       ) when reason != GoalSpecRevisionService.ownerNoChangesReason) {
@@ -261,7 +273,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         ..invalidate(goalAgentHealthProvider(agentId))
         ..invalidate(goalAgentProgressViewProvider(agentId))
         ..invalidate(activeGoalAgentsProvider)
-        ..invalidate(activeGoalNudgesProvider);
+        ..invalidate(activeGoalNudgesProvider)
+        ..invalidate(goalNudgeHistoryProvider(agentId));
       if (mounted) beamToNamed('/agents/details/$agentId');
     } on Object {
       if (mounted) {
@@ -288,13 +301,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   @override
   Widget build(BuildContext context) {
     final messages = context.messages;
+    final tokens = context.designTokens;
     final habitsAsync = ref.watch(_habitDefinitionsProvider);
-    if (habitsAsync.value case final loaded? when loaded.isNotEmpty) {
+    if (habitsAsync.value case final loaded?) {
       _knownHabits = loaded;
     }
-    final habits = habitsAsync.value?.isNotEmpty ?? false
-        ? habitsAsync.value!
-        : _knownHabits;
+    final habits = habitsAsync.value ?? _knownHabits;
     GoalSpecVersionEntity? editSpec;
 
     if (_editing) {
@@ -304,7 +316,23 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       editSpec = healthAsync.value?.spec;
       if (identity is AgentIdentityEntity && editSpec != null) {
         _initializeEdit(identity, editSpec);
-      } else if (!identityAsync.hasError && !healthAsync.hasError) {
+      } else if (identityAsync.hasError || healthAsync.hasError) {
+        return Scaffold(
+          appBar: AppBar(
+            leading: BackButton(onPressed: _back),
+            title: Text(messages.goalFormEditTitle),
+          ),
+          body: Center(
+            child: Padding(
+              padding: EdgeInsets.all(tokens.spacing.step5),
+              child: Text(
+                messages.goalDetailHealthUnavailable,
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        );
+      } else {
         return Scaffold(
           appBar: AppBar(
             leading: BackButton(onPressed: _back),
@@ -318,7 +346,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final pageTitle = _editing
         ? messages.goalFormEditTitle
         : messages.agentsCreateGoal;
-    final tokens = context.designTokens;
     return PopScope(
       canPop: _step == _GoalFormStep.intention,
       onPopInvokedWithResult: (didPop, _) {
@@ -401,6 +428,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                           title: _title,
                           persona: _persona,
                           signalDescription: _signalDescription(habits),
+                          preservesCriteria: !_mapping.isEditable,
                           editVersion: editSpec?.version,
                           validation: _validation,
                         ),
@@ -622,10 +650,20 @@ class _MappingStep extends StatelessWidget {
               padding: EdgeInsets.zero,
               child: Column(
                 children: [
+                  if (!watchesSteps && showAllHabits)
+                    DesignSystemSelectionRow(
+                      key: const ValueKey('goal-form-steps-row'),
+                      title: messages.goalCreateStepsTargetLabel,
+                      subtitle: messages.goalFormStepsSignal,
+                      type: DesignSystemSelectionRowType.multiSelect,
+                      showSelectedBackground: false,
+                      onTap: () => onStepsChanged(true),
+                    ),
                   if (watchesSteps) ...[
                     DesignSystemSelectionRow(
+                      key: const ValueKey('goal-form-steps-row'),
                       title: messages.goalCreateStepsTargetLabel,
-                      subtitle: messages.goalFormHabitSignal,
+                      subtitle: messages.goalFormStepsSignal,
                       type: DesignSystemSelectionRowType.multiSelect,
                       selected: true,
                       showSelectedBackground: false,
@@ -788,6 +826,7 @@ class _ConfirmationStep extends StatelessWidget {
     required this.title,
     required this.persona,
     required this.signalDescription,
+    required this.preservesCriteria,
     required this.editVersion,
     required this.validation,
   });
@@ -795,6 +834,7 @@ class _ConfirmationStep extends StatelessWidget {
   final TextEditingController title;
   final TextEditingController persona;
   final String signalDescription;
+  final bool preservesCriteria;
   final int? editVersion;
   final String? validation;
 
@@ -827,7 +867,9 @@ class _ConfirmationStep extends StatelessWidget {
         SizedBox(height: tokens.spacing.step5),
         DesignSystemSectionCard(
           child: Text(
-            messages.goalFormRestatement(signalDescription),
+            preservesCriteria
+                ? messages.goalFormPreservedCriteriaSummary
+                : messages.goalFormRestatement(signalDescription),
             style: tokens.typography.styles.body.bodyLarge,
           ),
         ),

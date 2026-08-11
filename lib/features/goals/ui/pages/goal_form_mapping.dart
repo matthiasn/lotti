@@ -6,9 +6,10 @@ import 'package:lotti/classes/goal_window.dart';
 /// mapping controls.
 ///
 /// The flow deliberately edits only the criterion shapes it can explain:
-/// rolling-seven-day habit leaves and the existing rolling daily-average steps
-/// metric, optionally grouped by one `allOf`. Anything richer remains intact
-/// and is presented read-only instead of being silently flattened.
+/// rolling-seven-day habit leaves and the existing at-least rolling
+/// daily-average steps metric, optionally grouped by one `allOf`. Anything
+/// richer remains intact and is presented read-only instead of being silently
+/// flattened.
 class GoalFormMapping {
   const GoalFormMapping._({
     required this.watchesSteps,
@@ -48,10 +49,12 @@ class GoalFormMapping {
               :final window,
               :final aggregation,
               :final target,
+              :final direction,
             )
             when dataType == 'cumulative_step_count' &&
                 window == const GoalWindow.rollingDays(count: 7) &&
                 aggregation == GoalAggregation.dailySumThenAverage &&
+                direction == GoalDirection.atLeast &&
                 !watchesSteps:
           watchesSteps = true;
           stepsTarget = target;
@@ -87,7 +90,7 @@ class GoalFormMapping {
       stepsCriterionId: stepsCriterionId,
       compositeCriterionId: switch (criteria) {
         GoalCriterionAllOf(:final criterionId) => criterionId,
-        _ => 'routine',
+        _ => _availableCompositeCriterionId(leaves),
       },
       unsupportedCriteria: null,
     );
@@ -102,6 +105,17 @@ class GoalFormMapping {
   final GoalCriterion? unsupportedCriteria;
 
   bool get isEditable => unsupportedCriteria == null;
+
+  static String _availableCompositeCriterionId(List<GoalCriterion> leaves) {
+    final usedIds = {for (final leaf in leaves) leaf.criterionId};
+    if (!usedIds.contains('routine')) return 'routine';
+    if (!usedIds.contains('routine-group')) return 'routine-group';
+    var suffix = 2;
+    while (usedIds.contains('routine-group-$suffix')) {
+      suffix++;
+    }
+    return 'routine-group-$suffix';
+  }
 
   /// Builds the exact criterion tree represented by the visible controls.
   /// Returns null when nothing is selected or a visible value is invalid.

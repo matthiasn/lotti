@@ -133,4 +133,59 @@ void main() {
       criteria,
     );
   });
+
+  test(
+    'an at-most steps criterion stays read-only and preserves direction',
+    () {
+      const criteria = GoalCriterion.metric(
+        criterionId: 'steps-cap',
+        dataType: 'cumulative_step_count',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 12000,
+        direction: GoalDirection.atMost,
+      );
+
+      final draft = GoalFormMapping.fromCriteria(criteria);
+
+      expect(draft.isEditable, isFalse);
+      expect(
+        draft.buildCriteria(
+          stepsTitle: 'Average steps per day',
+          habitTargets: const {},
+        ),
+        criteria,
+      );
+    },
+  );
+
+  test('a composite added around a routine leaf receives a distinct id', () {
+    const criteria = GoalCriterion.habit(
+      criterionId: 'routine',
+      habitId: 'gym',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 2,
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+    final rebuilt =
+        draft.buildCriteria(
+              stepsTitle: 'Average steps per day',
+              habitTargets: const {'gym': 2, 'run': 3},
+            )!
+            as GoalCriterionAllOf;
+
+    expect(rebuilt.criterionId, isNot('routine'));
+    expect(
+      rebuilt.criteria.map((criterion) => criterion.criterionId).toSet(),
+      contains('routine'),
+    );
+    expect(
+      {
+        rebuilt.criterionId,
+        ...rebuilt.criteria.map((criterion) => criterion.criterionId),
+      },
+      hasLength(rebuilt.criteria.length + 1),
+    );
+  });
 }

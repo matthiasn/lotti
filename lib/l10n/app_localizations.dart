@@ -10703,6 +10703,12 @@ abstract class AppLocalizations {
   /// **'Agent name'**
   String get goalFormPersonaLabel;
 
+  /// No description provided for @goalFormPreservedCriteriaSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'The existing signals and schedule will be preserved exactly.'**
+  String get goalFormPreservedCriteriaSummary;
+
   /// No description provided for @goalFormProgress.
   ///
   /// In en, this message translates to:
@@ -10750,6 +10756,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{target} steps a day'**
   String goalFormStepsCadence(String target);
+
+  /// No description provided for @goalFormStepsSignal.
+  ///
+  /// In en, this message translates to:
+  /// **'automatic step count'**
+  String get goalFormStepsSignal;
 
   /// No description provided for @goalFormUnsupportedCriteria.
   ///

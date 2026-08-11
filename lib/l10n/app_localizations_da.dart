@@ -6250,6 +6250,10 @@ class AppLocalizationsDa extends AppLocalizations {
   String get goalFormPersonaLabel => 'Agentens navn';
 
   @override
+  String get goalFormPreservedCriteriaSummary =>
+      'De eksisterende signaler og tidsplanen bevares uændret.';
+
+  @override
   String goalFormProgress(int step) {
     return 'Trin $step af 3';
   }
@@ -6282,6 +6286,9 @@ class AppLocalizationsDa extends AppLocalizations {
   String goalFormStepsCadence(String target) {
     return '$target skridt om dagen';
   }
+
+  @override
+  String get goalFormStepsSignal => 'automatisk skridttælling';
 
   @override
   String get goalFormUnsupportedCriteria =>

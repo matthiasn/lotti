@@ -6353,6 +6353,10 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormPersonaLabel => 'Numele agentului';
 
   @override
+  String get goalFormPreservedCriteriaSummary =>
+      'Semnalele și programul existente vor fi păstrate întocmai.';
+
+  @override
   String goalFormProgress(int step) {
     return 'Pasul $step din 3';
   }
@@ -6385,6 +6389,9 @@ class AppLocalizationsRo extends AppLocalizations {
   String goalFormStepsCadence(String target) {
     return '$target pași pe zi';
   }
+
+  @override
+  String get goalFormStepsSignal => 'numărarea automată a pașilor';
 
   @override
   String get goalFormUnsupportedCriteria =>

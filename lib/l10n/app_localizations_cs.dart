@@ -6318,6 +6318,10 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormPersonaLabel => 'Jméno agenta';
 
   @override
+  String get goalFormPreservedCriteriaSummary =>
+      'Stávající signály a plán zůstanou přesně zachované.';
+
+  @override
   String goalFormProgress(int step) {
     return 'Krok $step ze 3';
   }
@@ -6350,6 +6354,9 @@ class AppLocalizationsCs extends AppLocalizations {
   String goalFormStepsCadence(String target) {
     return '$target kroků denně';
   }
+
+  @override
+  String get goalFormStepsSignal => 'automatický počet kroků';
 
   @override
   String get goalFormUnsupportedCriteria =>

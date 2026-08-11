@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -10,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
@@ -100,25 +103,35 @@ void main() {
   late MockHabitsRepository habitsRepository;
   late _MockGoalSpecRevisionService revisionService;
 
-  List<Override> overrides({GoalSpecVersionEntity? editSpec}) => [
+  List<Override> overrides({
+    GoalSpecVersionEntity? editSpec,
+    bool identityFails = false,
+    bool healthFails = false,
+  }) => [
     goalAgentServiceProvider.overrideWithValue(agentService),
     goalSpecRevisionServiceProvider.overrideWithValue(revisionService),
     habitsRepositoryProvider.overrideWithValue(habitsRepository),
-    if (editSpec != null) ...[
+    if (editSpec != null || identityFails || healthFails) ...[
       agentIdentityProvider(
         'goal-1',
-      ).overrideWith((ref) async => _identity),
+      ).overrideWith((ref) async {
+        if (identityFails) throw StateError('identity unavailable');
+        return _identity;
+      }),
       goalAgentHealthProvider('goal-1').overrideWith(
-        (ref) async => (
-          trackStatus: GoalTrackStatus.atRisk,
-          attainment: 0.5,
-          reportOneLiner: null,
-          pendingProposals: 0,
-          spec: editSpec,
-          direction: GoalHealthDirection.flat,
-          deficit: null,
-          buffer: null,
-        ),
+        (ref) async {
+          if (healthFails) throw StateError('health unavailable');
+          return (
+            trackStatus: GoalTrackStatus.atRisk,
+            attainment: 0.5,
+            reportOneLiner: null,
+            pendingProposals: 0,
+            spec: editSpec,
+            direction: GoalHealthDirection.flat,
+            deficit: null,
+            buffer: null,
+          );
+        },
       ),
     ],
   ];
@@ -251,6 +264,43 @@ void main() {
       findsNothing,
     );
     expect(find.textContaining('I can’t see this intention'), findsOneWidget);
+  });
+
+  testWidgets('a removed steps signal can be selected again', (tester) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Average steps per day',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byKey(const ValueKey('goal-form-steps-row')));
+    await tester.pump();
+    expect(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      findsNothing,
+    );
+
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-form-steps-row')));
+    await tester.pump();
+
+    expect(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      findsOneWidget,
+    );
+    expect(find.text('automatic step count'), findsOneWidget);
   });
 
   testWidgets('a steps goal validates and restates its daily target', (
@@ -486,6 +536,91 @@ void main() {
     );
   });
 
+  testWidgets('back preserves manually selected signals and targets when the '
+      'intention is unchanged', (tester) async {
+    tester.view.physicalSize = const Size(900, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-form-habit-run')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-decrease-gym')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-increase-run')));
+    await tester.pump();
+    await tester.tap(find.byKey(const ValueKey('goal-form-increase-run')));
+    await tester.pump();
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('2× / 7 days', skipOffstage: false), findsOneWidget);
+    expect(find.text('5× / 7 days', skipOffstage: false), findsOneWidget);
+    expect(
+      tester
+          .widget<DesignSystemSelectionRow>(
+            find.byKey(const ValueKey('goal-form-habit-run')),
+          )
+          .selected,
+      isTrue,
+    );
+  });
+
+  testWidgets('changing the intention refreshes an untouched derived title', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Run every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+
+    final title = tester.widget<EditableText>(
+      find.descendant(
+        of: find.byKey(const ValueKey('goal-form-title')),
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(title.controller.text, 'Run');
+  });
+
   testWidgets('refuses an unobservable intention and offers real signals', (
     tester,
   ) async {
@@ -665,6 +800,34 @@ void main() {
     expect(navigated, contains('/agents/details/goal-1'));
   });
 
+  for (final failure in ['identity', 'health']) {
+    testWidgets('editing blocks the form when $failure fails to load', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(
+            editSpec: _spec(),
+            identityFails: failure == 'identity',
+            healthFails: failure == 'health',
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(
+        find.text("Couldn't load this goal's health right now."),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('goal-form-intention')),
+        findsNothing,
+      );
+      expect(find.text('Save new version'), findsNothing);
+    });
+  }
+
   testWidgets('editing preserves an unsupported mapping while renaming', (
     tester,
   ) async {
@@ -710,6 +873,10 @@ void main() {
     );
     await tester.tap(find.text('Looks right'));
     await tester.pumpAndSettle();
+    expect(
+      find.text('The existing signals and schedule will be preserved exactly.'),
+      findsOneWidget,
+    );
     await tester.tap(find.text('Save new version'));
     await tester.pump();
 
@@ -731,6 +898,113 @@ void main() {
     );
     expect(navigated, ['/agents/details/goal-1']);
   });
+
+  testWidgets('a habit removed while confirming is not saved as a criterion', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final habits = StreamController<List<HabitDefinition>>.broadcast();
+    when(
+      habitsRepository.watchHabitDefinitions,
+    ).thenAnswer((_) => habits.stream);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    habits.add([_habit('gym', 'Gym')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+
+    habits.add([]);
+    await tester.pump();
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    expect(
+      find.text('Choose at least one signal the agent can actually observe.'),
+      findsOneWidget,
+    );
+    verifyNever(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await habits.close();
+  });
+
+  testWidgets(
+    'a committed edit refreshes runtime after the route is disposed',
+    (
+      tester,
+    ) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      final revision = Completer<GoalSpecRevisionOutcome>();
+      final revised = _spec(version: 4);
+      when(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      ).thenAnswer((_) => revision.future);
+      when(
+        () => agentService.refreshAfterRevision(
+          agentId: 'goal-1',
+          criteria: any(named: 'criteria'),
+        ),
+      ).thenReturn(null);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(editSpec: _spec()),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Looks right'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-title')),
+        'Updated movement',
+      );
+      await tester.tap(find.text('Save new version'));
+      await tester.pump();
+      await tester.pumpWidget(const SizedBox.shrink());
+
+      revision.complete(
+        GoalSpecRevisionMinted(version: revised, changeSummaries: const []),
+      );
+      await tester.pump();
+
+      verify(
+        () => agentService.refreshAfterRevision(
+          agentId: 'goal-1',
+          criteria: revised.criteria,
+        ),
+      ).called(1);
+    },
+  );
 
   testWidgets('an edit refusal remains on the form with a saving error', (
     tester,

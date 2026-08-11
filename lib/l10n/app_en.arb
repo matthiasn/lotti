@@ -3495,6 +3495,7 @@
   "goalFormNoHabits": "No active habits are available yet.",
   "goalFormOpenHabits": "Create a habit first",
   "goalFormPersonaLabel": "Agent name",
+  "goalFormPreservedCriteriaSummary": "The existing signals and schedule will be preserved exactly.",
   "goalFormProgress": "Step {step} of 3",
   "@goalFormProgress": {
     "placeholders": {
@@ -3524,6 +3525,7 @@
       }
     }
   },
+  "goalFormStepsSignal": "automatic step count",
   "goalFormUnsupportedCriteria": "This goal uses a mapping this editor can’t safely rewrite. You can still rename the goal, its intention and its agent.",
   "goalFormValidationIdentity": "Give the goal and its agent a name.",
   "goalFormValidationIntention": "Describe what you want to work toward first.",

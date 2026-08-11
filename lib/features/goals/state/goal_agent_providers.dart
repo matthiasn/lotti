@@ -332,7 +332,12 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
           final snoozedUntil = goalBannerSnoozedUntil(nudge);
           considerDeadline(snoozedUntil);
           if (goalBannerIsSnoozed(nudge, now)) continue;
-          entries.add((nudge: nudge, goalTitle: identity.displayName));
+          entries.add((
+            nudge: nudge,
+            goalTitle: headVersion is GoalSpecVersionEntity
+                ? headVersion.title
+                : identity.displayName,
+          ));
         }
       }
       entries.sort(

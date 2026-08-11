@@ -235,8 +235,12 @@ flowchart TD
   title, intention, persona name and criteria tree. It serializes against the
   current head, refuses a no-op, supersedes the current version and mints
   `v(n+1)` with `authoredBy: user` and `diffFromVersionId`. The create/edit UI
-  only rewrites rolling-seven-day habit leaves and the supported steps metric;
-  richer trees are retained exactly and shown read-only. After a minted edit,
+  only rewrites rolling-seven-day habit leaves and the supported at-least
+  rolling-average steps metric; richer trees and opposite-direction step
+  criteria are retained exactly and shown read-only. Manual mapping choices
+  survive back-navigation while the intention is unchanged, and saving
+  reconciles selected habits against the latest active-habit stream so a paused
+  or removed habit cannot be minted into a dead criterion. After a minted edit,
   the runtime re-registers the new signal set and enqueues an immediate
   `goal revised` wake so the report and health do not describe the old spec.
 - **Nudge accumulators are CRDTs.** Dismissal is terminal in the
@@ -409,6 +413,8 @@ flowchart TD
   work, aborts an in-flight wake, and removes the goal's in-memory signal
   subscription, preventing future matching journal updates from
   repeatedly enqueueing work that the lifecycle guard would only discard.
+  Goal-list rows and banner semantics resolve the active spec title; the
+  identity display name remains the conversational persona used by chat.
 - **Conversation scope is the goal.** The contract identifies the agent as a
   dedicated coach rather than a general assistant. Coding, trivia and other
   unrelated requests receive a short purpose reminder and a redirect to the
