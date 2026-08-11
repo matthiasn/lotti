@@ -159,6 +159,257 @@ void main() {
     );
   });
 
+  testWidgets('an example fills the intention and back returns one step', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('gym twice a week'));
+    await tester.pump();
+    expect(
+      tester
+          .widget<EditableText>(find.byType(EditableText).first)
+          .controller
+          .text,
+      'gym twice a week',
+    );
+
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(find.text('Here’s what I can watch'), findsOneWidget);
+
+    await tester.tap(find.byType(BackButton));
+    await tester.pumpAndSettle();
+    expect(find.text('What do you want to work toward?'), findsOneWidget);
+    expect(find.text('gym twice a week'), findsNWidgets(2));
+  });
+
+  testWidgets(
+    'back exits from intention and system back returns from mapping',
+    (
+      tester,
+    ) async {
+      final navigated = <String>[];
+      beamToNamedOverride = navigated.add;
+      addTearDown(() => beamToNamedOverride = null);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byType(BackButton));
+      expect(navigated, ['/agents']);
+
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Gym every week',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      expect(find.text('Here’s what I can watch'), findsOneWidget);
+
+      await tester.binding.handlePopRoute();
+      await tester.pumpAndSettle();
+      expect(find.text('What do you want to work toward?'), findsOneWidget);
+    },
+  );
+
+  testWidgets('a matched steps signal can be removed before confirmation', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Average steps per day',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Average steps per day').first);
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      findsNothing,
+    );
+    expect(find.textContaining('I can’t see this intention'), findsOneWidget);
+  });
+
+  testWidgets('a steps goal validates and restates its daily target', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Average steps per day',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      findsOneWidget,
+    );
+
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      '',
+    );
+    await tester.tap(find.text('Looks right'));
+    await tester.pump();
+    expect(
+      find.text('Choose at least one signal the agent can actually observe.'),
+      findsOneWidget,
+    );
+
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      '8000',
+    );
+    final stepsController = tester
+        .widgetList<EditableText>(find.byType(EditableText))
+        .singleWhere((widget) => widget.controller.text == '8000')
+        .controller;
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    expect(find.text('Meet your agent'), findsOneWidget);
+    expect(find.textContaining('8,000 steps a day'), findsOneWidget);
+    final title = tester.widget<EditableText>(
+      find.descendant(
+        of: find.byKey(const ValueKey('goal-form-title')),
+        matching: find.byType(EditableText),
+      ),
+    );
+    expect(title.controller.text, 'Daily steps (rolling week)');
+
+    stepsController.clear();
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+    verifyNever(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
+  });
+
+  testWidgets('successful creation returns to the agents list', (tester) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    verify(
+      () => agentService.createGoalAgent(
+        title: 'Gym',
+        displayName: 'Juno',
+        statement: 'Gym every week',
+        criteria: any(named: 'criteria'),
+      ),
+    ).called(1);
+    expect(navigated, ['/agents']);
+  });
+
+  testWidgets('confirmation requires both goal and persona names', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-persona')),
+      '',
+    );
+    await tester.enterText(find.byKey(const ValueKey('goal-form-title')), '');
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    expect(
+      find.text('Give the goal and its agent a name.'),
+      findsOneWidget,
+    );
+    verifyNever(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
+  });
+
   testWidgets('maps habits and creates independent rolling-week targets', (
     tester,
   ) async {
@@ -264,6 +515,69 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Gym'), findsOneWidget);
     expect(find.text('Run'), findsOneWidget);
+
+    await tester.tap(find.byKey(const ValueKey('goal-form-habit-gym')));
+    await tester.pump();
+    expect(find.text('3× / 7 days', skipOffstage: false), findsOneWidget);
+    await tester.tap(find.byKey(const ValueKey('goal-form-habit-gym')));
+    await tester.pump();
+    expect(find.text('3× / 7 days', skipOffstage: false), findsNothing);
+  });
+
+  testWidgets('an empty habit source links to habit setup', (tester) async {
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    when(
+      habitsRepository.watchHabitDefinitions,
+    ).thenAnswer((_) => Stream.value([]));
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Be more patient',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('No active habits are available yet.'), findsOneWidget);
+    await tester.tap(find.text('Create a habit first'));
+    expect(navigated, ['/habits']);
+  });
+
+  testWidgets('a failed habit source explains that the list is unavailable', (
+    tester,
+  ) async {
+    when(habitsRepository.watchHabitDefinitions).thenAnswer(
+      (_) => Stream<List<HabitDefinition>>.error(StateError('offline')),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Be more patient',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text("Couldn't load your habits right now — try again in a moment."),
+      findsOneWidget,
+    );
   });
 
   testWidgets('editing loads distinct targets and mints the next version', (
@@ -349,5 +663,118 @@ void main() {
       ),
     ).called(1);
     expect(navigated, contains('/agents/details/goal-1'));
+  });
+
+  testWidgets('editing preserves an unsupported mapping while renaming', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const unsupported = GoalCriterion.habit(
+      criterionId: 'habit-gym',
+      habitId: 'gym',
+      window: GoalWindow.calendarWeek(),
+      targetCount: 4,
+    );
+    final current = _spec(criteria: unsupported);
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer(
+      (_) async => const GoalSpecRevisionRefused(
+        'the owner edit does not change the goal',
+      ),
+    );
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('uses a mapping this editor can’t safely rewrite'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+
+    final criteria = verify(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        displayName: 'Juno',
+        title: 'Weekly movement',
+        statement: 'Gym and run every week',
+        criteria: captureAny(named: 'criteria'),
+      ),
+    ).captured.single;
+    expect(criteria, unsupported);
+    verifyNever(
+      () => agentService.refreshAfterRevision(
+        agentId: any(named: 'agentId'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
+    expect(navigated, ['/agents/details/goal-1']);
+  });
+
+  testWidgets('an edit refusal remains on the form with a saving error', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => const GoalSpecRevisionRefused('locked'));
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: _spec()),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-title')),
+      'New name',
+    );
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+
+    expect(
+      find.text('Saving the goal failed — please try again.'),
+      findsOneWidget,
+    );
+    verifyNever(
+      () => agentService.refreshAfterRevision(
+        agentId: any(named: 'agentId'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
   });
 }

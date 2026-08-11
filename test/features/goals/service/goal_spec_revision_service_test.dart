@@ -229,6 +229,116 @@ void main() {
     expect(upserts, isEmpty);
   });
 
+  test(
+    'an owner edit refuses invalid criteria and a dangling spec head',
+    () async {
+      const invalid = GoalCriterion.allOf(
+        criterionId: 'root',
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'duplicate',
+            habitId: 'gym',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 2,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'duplicate',
+            habitId: 'run',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 3,
+          ),
+        ],
+      );
+      var outcome = await service.reviseFromOwner(
+        agentId: agentId,
+        displayName: 'Juno',
+        title: 'Movement',
+        statement: 'Move consistently.',
+        criteria: invalid,
+      );
+      expect(
+        (outcome as GoalSpecRevisionRefused).reason,
+        contains('fail validation'),
+      );
+
+      when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+        (_) async => AgentDomainEntity.goalSpecHead(
+          id: goalSpecHeadId(agentId),
+          agentId: agentId,
+          versionId: 'missing',
+          updatedAt: DateTime(2026, 8),
+          vectorClock: null,
+        ),
+      );
+      outcome = await service.reviseFromOwner(
+        agentId: agentId,
+        displayName: 'Juno',
+        title: 'Movement',
+        statement: 'Move consistently.',
+        criteria: criteria,
+      );
+      expect(
+        (outcome as GoalSpecRevisionRefused).reason,
+        contains('points at nothing'),
+      );
+      expect(upserts, isEmpty);
+    },
+  );
+
+  test(
+    'an owner edit reconciles a revision committed before sync failed',
+    () async {
+      stubSpec();
+      final failing = _CommitThenThrowSyncService();
+      when(() => failing.upsertEntity(any())).thenAnswer((invocation) async {
+        upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
+      });
+      final ownerService = GoalSpecRevisionService(
+        repository: repository,
+        syncService: failing,
+      );
+      when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+        (_) async =>
+            upserts.whereType<GoalSpecHeadEntity>().lastOrNull ??
+            AgentDomainEntity.goalSpecHead(
+              id: goalSpecHeadId(agentId),
+              agentId: agentId,
+              versionId: '$agentId:spec-v1',
+              updatedAt: DateTime(2026, 8),
+              vectorClock: null,
+            ),
+      );
+      when(
+        () => repository.getEntity(any(that: startsWith('$agentId:spec-v2'))),
+      ).thenAnswer(
+        (invocation) async => upserts
+            .whereType<GoalSpecVersionEntity>()
+            .where(
+              (version) => version.id == invocation.positionalArguments.first,
+            )
+            .lastOrNull,
+      );
+
+      final outcome = await withClock(
+        fixedClock,
+        () => ownerService.reviseFromOwner(
+          agentId: agentId,
+          displayName: 'Juno',
+          title: 'Move daily',
+          statement: 'Average 10,000 steps every day.',
+          criteria: criteria,
+        ),
+      );
+
+      expect(outcome, isA<GoalSpecRevisionMinted>());
+      expect(
+        (outcome as GoalSpecRevisionMinted).changeSummaries,
+        ['(committed before a sync error)'],
+      );
+      expect(outcome.version.authoredBy, 'user');
+    },
+  );
+
   test("a minted revision supersedes the old spec's live nudges — the "
       'revised goal never runs beside advice for the superseded one', () async {
     stubSpec();

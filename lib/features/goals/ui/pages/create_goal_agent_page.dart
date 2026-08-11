@@ -198,12 +198,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       setState(() => _validation = context.messages.goalFormValidationIdentity);
       return;
     }
-    final criteria = _mapping.buildCriteria(
-      stepsTitle: context.messages.goalCreateStepsTargetLabel,
-      habitTargets: _habitTargets,
-      watchesSteps: _watchesSteps,
-      stepsTarget: _parseLocalizedTarget(_stepsTarget.text),
-    );
+    final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
+    final criteria = _watchesSteps && (stepsTarget == null || stepsTarget <= 0)
+        ? null
+        : _mapping.buildCriteria(
+            stepsTitle: context.messages.goalCreateStepsTargetLabel,
+            habitTargets: _habitTargets,
+            watchesSteps: _watchesSteps,
+            stepsTarget: stepsTarget,
+          );
     if (criteria == null) {
       setState(() => _validation = context.messages.goalFormValidationMapping);
       return;
