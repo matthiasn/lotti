@@ -234,7 +234,6 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     });
     final container = ProviderScope.containerOf(context, listen: false);
     final goalAgentService = container.read(goalAgentServiceProvider);
-    final revisionService = container.read(goalSpecRevisionServiceProvider);
     try {
       final agentId = widget.agentId;
       if (agentId == null) {
@@ -251,6 +250,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         return;
       }
 
+      final revisionService = container.read(goalSpecRevisionServiceProvider);
       final outcome = await revisionService.reviseFromOwner(
         agentId: agentId,
         displayName: persona,
