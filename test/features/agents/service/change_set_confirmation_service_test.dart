@@ -396,8 +396,7 @@ void main() {
         ).thenAnswer(
           (_) async => const ToolExecutionResult(
             success: false,
-            output: 'Error: the goal changed after this proposal was created',
-            errorMessage: 'the goal changed after this proposal was created',
+            output: '',
             nonRetryable: true,
           ),
         );
@@ -417,7 +416,7 @@ void main() {
             retractionDecision.retractionReason,
             allOf(
               contains('propose_goal_revision_v2'),
-              contains('goal changed'),
+              contains('failed while applying'),
             ),
           );
           final retractedSet = captured[3] as ChangeSetEntity;
