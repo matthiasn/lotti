@@ -846,6 +846,118 @@ void main() {
     );
   });
 
+  test(
+    'a localized interactive ad tool call overrides dismissal cooldown',
+    () async {
+      stubSpec();
+      stubGlmResolution();
+      workflow = _offTrackWorkflow(
+        repository,
+        syncService,
+        conversationRepository,
+        cloudInferenceRepository,
+        aiConfigRepository,
+      );
+      _stubBadPrior(repository, agentId, now);
+      const retiredBrief = GoalNudgeBrief(
+        headline: 'Old banner.',
+        tone: GoalNudgeTone.nudge,
+        animation: GoalBannerAnimation.steady,
+      );
+      final dismissedBanner = AgentDomainEntity.goalNudge(
+        id: 'dismissed-banner',
+        agentId: agentId,
+        status: GoalNudgeStatus.dismissed,
+        brief: retiredBrief,
+        briefDigest: goalBriefDigest(retiredBrief),
+        createdAt: now.subtract(const Duration(hours: 2)),
+        updatedAt: now.subtract(const Duration(hours: 1)),
+        vectorClock: null,
+        dismissedAt: now.subtract(const Duration(hours: 1)),
+      );
+      when(
+        () => repository.getEntitiesByAgentId(
+          agentId,
+          type: AgentEntityTypes.goalNudge,
+        ),
+      ).thenAnswer((_) async => [dismissedBanner]);
+      final source = AgentDomainEntity.agentMessage(
+        id: 'message-de',
+        agentId: agentId,
+        threadId: 'message-de',
+        kind: AgentMessageKind.user,
+        createdAt: now,
+        vectorClock: null,
+        contentEntryId: 'payload-de',
+        metadata: const AgentMessageMetadata(),
+      );
+      when(
+        () => repository.getEntity('message-de'),
+      ).thenAnswer((_) async => source);
+      when(() => repository.getEntity('payload-de')).thenAnswer(
+        (_) async => AgentDomainEntity.agentMessagePayload(
+          id: 'payload-de',
+          agentId: agentId,
+          createdAt: now,
+          vectorClock: null,
+          content: const {'text': 'Bitte erstelle ein neues Banner'},
+        ),
+      );
+      conversationRepository
+        ..maxDelegateCalls = 1
+        ..sendMessageDelegate =
+            ({
+              required conversationId,
+              required message,
+              required model,
+              required provider,
+              required inferenceRepo,
+              tools,
+              toolChoice,
+              temperature = 0.7,
+              strategy,
+            }) async {
+              expect(message, contains('Bitte erstelle ein neues Banner'));
+              expect(message, isNot(contains('overrides dismissal cooldown')));
+              await (strategy! as GoalAgentStrategy).processToolCalls(
+                toolCalls: [
+                  toolCall(GoalAgentToolNames.replyToUser, {
+                    'message': 'Das neue Banner ist da.',
+                  }),
+                  toolCall(GoalAgentToolNames.updateGoalReport, {
+                    'status': 'offTrack',
+                    'oneLiner': 'Das Ziel liegt zurück.',
+                    'tldr': 'Die aktuelle Woche liegt unter dem Ziel.',
+                  }, id: 'call-report-de'),
+                  toolCall(GoalAgentToolNames.createGoalAd, {
+                    'headline': 'Zeit, wieder loszulegen.',
+                    'tone': 'nudge',
+                    'animation': 'pulse',
+                  }, id: 'call-ad-de'),
+                ],
+                manager: conversationManager,
+              );
+              return null;
+            };
+
+      final result = await withClock(
+        fixedClock,
+        () => workflow.executeUserMessage(
+          agentIdentity: identity,
+          runKey: 'chat-run-de',
+          triggerTokens: const {'goal-chat-message:message-de'},
+          threadId: 'chat-run-de',
+          messageId: 'message-de',
+        ),
+      );
+
+      expect(result.success, isTrue);
+      final replacement = upserts.whereType<GoalNudgeEntity>().single;
+      expect(replacement.status, GoalNudgeStatus.active);
+      expect(replacement.brief.headline, 'Zeit, wieder loszulegen.');
+    },
+  );
+
   test('a first-evaluation wake that ends without a report gets exactly one '
       'pinned update_goal_report retry', () async {
     stubSpec();

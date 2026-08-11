@@ -75,7 +75,8 @@ reloads. Dismissal cooldown applies to automatic banners only: a direct request
 for a banner, a missing-banner report, or a short affirmative reply to the
 agent's banner offer can create or re-run a banner immediately without the
 follow-up wake retiring it, including positive or recovery copy when the goal
-is not behind. A new at-risk goal receives its first banner
+is not behind. Localized requests use the model's typed banner action as the
+language-independent authorization at persistence. A new at-risk goal receives its first banner
 without waiting for a multi-day decline. The desktop banner tenant fills the
 dock's available width.
 Voice, paging beyond the newest fifty visible turns, search, and inline nudge

@@ -169,6 +169,9 @@ flowchart TD
   want/need/show language, replacement language, or a missing-banner report in
   the durable user message before inference. A short affirmation also qualifies
   when the immediately preceding visible assistant reply offered a banner.
+  For every language, a typed create/re-run tool action on an interactive turn
+  is the structured intent carrier and upgrades the same permission before
+  persistence; the English heuristic is only the early force-action path.
   These interactive requests override
   the automatic dismissal cooldown and automatic health gates, and remain
   ad-eligible for the whole wake, so a recovering or healthy goal can serve
@@ -284,7 +287,8 @@ flowchart TD
   out of it is a matter for the agent's instructions, not widget-level
   filtering. Below the one-liner a rolling-window habit goal shows a
   deterministic hint — days-to-recovery when behind (`deficit`) or the buffer
-  before the oldest success ages out when at rate (`buffer`) — lifted from the
+  before the oldest success ages out when exactly at rate (`buffer`; surplus
+  completions do not receive an aging warning) — lifted from the
   root leaf to `GoalEvaluation`, persisted on the `goalProgress` register, and
   surfaced through `goalAgentHealthProvider`. A row whose per-agent
   health has not resolved shows no chip rather than a false "Not enough data",

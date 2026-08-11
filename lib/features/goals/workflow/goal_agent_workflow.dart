@@ -199,7 +199,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     final agentId = agentIdentity.agentId;
     final now = clock.now();
     final reportRefresh = goalReportRefreshRequested(triggerTokens);
-    final userRequestedAd = isExplicitGoalAdReplacementRequest(
+    var userRequestedAd = isExplicitGoalAdReplacementRequest(
       pendingUserMessage,
       previousAssistantMessage: previousAssistantMessage,
     );
@@ -415,6 +415,17 @@ class GoalAgentWorkflow with AgentErrorLogging {
         consumptionThreadId: recordConsumption ? threadId : null,
         rethrowInferenceErrors: true,
       );
+
+      // The model's typed ad action is the language-independent intent
+      // carrier for interactive messages. The English heuristic above is a
+      // fast path that can force a forgotten action, but must not be the only
+      // way a localized explicit request bypasses automatic health/cooldown
+      // gates.
+      userRequestedAd =
+          userRequestedAd ||
+          (pendingUserMessage != null &&
+              (strategy.createdAds.isNotEmpty ||
+                  strategy.rerunRequests.isNotEmpty));
 
       // A transition or explicit detail-page refresh requires a report — one
       // pinned retry, then accept the partial wake. Ordinary automatic no-ops

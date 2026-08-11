@@ -504,6 +504,11 @@ void main() {
     );
     expect(menuButton.position, PopupMenuPosition.under);
     expect(menuButton.menuPadding, EdgeInsets.zero);
+    expect(menuButton.tooltip, isEmpty);
+    expect(
+      find.bySemanticsLabel('Aug 8, 2026: No entry'),
+      findsOneWidget,
+    );
     expect(menuButton.shape, isA<RoundedRectangleBorder>());
     expect(menuButton.constraints?.hasTightWidth, isTrue);
 

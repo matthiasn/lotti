@@ -48,7 +48,7 @@ class GoalHabitProgressView {
 
   bool get oldestSuccessAgesOutTonight =>
       window is GoalWindowRollingDays &&
-      successesInWindow >= targetCount &&
+      successesInWindow == targetCount &&
       days.isNotEmpty &&
       days.first.value > 0;
 }

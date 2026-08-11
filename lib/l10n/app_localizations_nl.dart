@@ -6270,6 +6270,14 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalProgressDone => 'gedaan';
 
   @override
+  String get goalProgressHabitDayNoEntry => 'Geen invoer';
+
+  @override
+  String goalProgressHabitDaySemantics(String date, String outcome) {
+    return '$date: $outcome';
+  }
+
+  @override
   String goalProgressHabitTarget(int count) {
     return '$count× per 7 dagen';
   }

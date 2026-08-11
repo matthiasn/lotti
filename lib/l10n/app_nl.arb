@@ -2863,6 +2863,8 @@
   "goalProgressCompactSemantics": "{count, plural, =0{Geen succesvolle dagen in het venster van zeven dagen} =1{1 succesvolle dag in het venster van zeven dagen} other{{count} succesvolle dagen in het venster van zeven dagen}}",
   "goalProgressDaysToHealthy": "{count, plural, =1{1 dag tot gezond} other{{count} dagen tot gezond}}",
   "goalProgressDone": "gedaan",
+  "goalProgressHabitDayNoEntry": "Geen invoer",
+  "goalProgressHabitDaySemantics": "{date}: {outcome}",
   "goalProgressHabitTarget": "{count}× per 7 dagen",
   "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressTitle": "Deze lopende week",

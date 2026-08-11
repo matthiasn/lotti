@@ -10660,6 +10660,18 @@ abstract class AppLocalizations {
   /// **'done'**
   String get goalProgressDone;
 
+  /// No description provided for @goalProgressHabitDayNoEntry.
+  ///
+  /// In en, this message translates to:
+  /// **'No entry'**
+  String get goalProgressHabitDayNoEntry;
+
+  /// No description provided for @goalProgressHabitDaySemantics.
+  ///
+  /// In en, this message translates to:
+  /// **'{date}: {outcome}'**
+  String goalProgressHabitDaySemantics(String date, String outcome);
+
   /// Target caption for one habit in a rolling seven-day goal.
   ///
   /// In en, this message translates to:

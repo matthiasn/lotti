@@ -3510,6 +3510,18 @@
     }
   },
   "goalProgressDone": "done",
+  "goalProgressHabitDayNoEntry": "No entry",
+  "goalProgressHabitDaySemantics": "{date}: {outcome}",
+  "@goalProgressHabitDaySemantics": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      },
+      "outcome": {
+        "type": "String"
+      }
+    }
+  },
   "goalProgressHabitTarget": "{count}× per 7 days",
   "@goalProgressHabitTarget": {
     "description": "Target caption for one habit in a rolling seven-day goal.",

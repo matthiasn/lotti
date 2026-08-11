@@ -2614,6 +2614,8 @@
   "goalProgressCompactSemantics": "{count, plural, =0{Žádný úspěšný den za posledních sedm dní} =1{1 úspěšný den za posledních sedm dní} few{{count} úspěšné dny za posledních sedm dní} other{{count} úspěšných dní za posledních sedm dní}}",
   "goalProgressDaysToHealthy": "{count, plural, =1{1 den do zdravého stavu} few{{count} dny do zdravého stavu} other{{count} dní do zdravého stavu}}",
   "goalProgressDone": "hotovo",
+  "goalProgressHabitDayNoEntry": "Bez záznamu",
+  "goalProgressHabitDaySemantics": "{date}: {outcome}",
   "goalProgressHabitTarget": "{count}× za 7 dní",
   "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressTitle": "Tento klouzavý týden",

@@ -2607,6 +2607,8 @@
   "goalProgressCompactSemantics": "{count, plural, =0{Aucun jour réussi dans la fenêtre de sept jours} =1{1 jour réussi dans la fenêtre de sept jours} other{{count} jours réussis dans la fenêtre de sept jours}}",
   "goalProgressDaysToHealthy": "{count, plural, =1{1 jour pour être en forme} other{{count} jours pour être en forme}}",
   "goalProgressDone": "fait",
+  "goalProgressHabitDayNoEntry": "Aucune entrée",
+  "goalProgressHabitDaySemantics": "{date} : {outcome}",
   "goalProgressHabitTarget": "{count}× sur 7 jours",
   "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressTitle": "Cette semaine glissante",

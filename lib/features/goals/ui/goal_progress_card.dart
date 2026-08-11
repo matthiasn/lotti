@@ -472,86 +472,106 @@ class _ProgressDayCell extends StatelessWidget {
             radius: tokens.radii.s,
             child: cell,
           );
-    final callback = onOutcomeSelected;
-    if (callback == null) return decoratedCell;
     final date = DateFormat.yMMMd(
       Localizations.localeOf(context).toLanguageTag(),
     ).format(day.day);
-    return SizedBox.square(
-      key: ValueKey(
-        'goal-habit-day-$habitId-'
-        '${day.day.toIso8601String().substring(0, 10)}',
-      ),
-      dimension: TapTargets.minimum,
-      child: PopupMenuButton<HabitCompletionType>(
-        enabled: enabled && !saving,
-        initialValue: day.habitCompletionType,
-        padding: EdgeInsets.zero,
-        menuPadding: EdgeInsets.zero,
-        position: PopupMenuPosition.under,
-        offset: Offset(0, tokens.spacing.step2),
-        color: tokens.colors.background.level01,
-        surfaceTintColor: Colors.transparent,
-        constraints: BoxConstraints.tightFor(width: tokens.spacing.step13),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(tokens.radii.s),
+    final outcome = hit
+        ? context.messages.completeHabitSuccessButton
+        : missed
+        ? context.messages.completeHabitFailButton
+        : context.messages.goalProgressHabitDayNoEntry;
+    final semanticLabel = context.messages.goalProgressHabitDaySemantics(
+      date,
+      outcome,
+    );
+    final callback = onOutcomeSelected;
+    if (callback == null) {
+      return Semantics(
+        label: semanticLabel,
+        excludeSemantics: true,
+        child: decoratedCell,
+      );
+    }
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      enabled: enabled && !saving,
+      child: SizedBox.square(
+        key: ValueKey(
+          'goal-habit-day-$habitId-'
+          '${day.day.toIso8601String().substring(0, 10)}',
         ),
-        tooltip: date,
-        onSelected: (outcome) {
-          if (outcome != day.habitCompletionType) callback(outcome);
-        },
-        itemBuilder: (context) => [
-          PopupMenuItem(
-            key: const ValueKey('goal-habit-day-success'),
-            value: HabitCompletionType.success,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.check_rounded,
-                  size: IconSizes.s,
-                  color: tokens.colors.alert.success.ink,
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                Text(
-                  context.messages.completeHabitSuccessButton,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
-                  ),
-                ),
-              ],
-            ),
+        dimension: TapTargets.minimum,
+        child: PopupMenuButton<HabitCompletionType>(
+          enabled: enabled && !saving,
+          initialValue: day.habitCompletionType,
+          padding: EdgeInsets.zero,
+          menuPadding: EdgeInsets.zero,
+          position: PopupMenuPosition.under,
+          offset: Offset(0, tokens.spacing.step2),
+          color: tokens.colors.background.level01,
+          surfaceTintColor: Colors.transparent,
+          constraints: BoxConstraints.tightFor(width: tokens.spacing.step13),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(tokens.radii.s),
           ),
-          PopupMenuItem(
-            key: const ValueKey('goal-habit-day-missed'),
-            value: HabitCompletionType.fail,
-            child: Row(
-              children: [
-                Icon(
-                  Icons.close_rounded,
-                  size: IconSizes.s,
-                  color: tokens.colors.alert.error.ink,
-                ),
-                SizedBox(width: tokens.spacing.step3),
-                Text(
-                  context.messages.completeHabitFailButton,
-                  style: tokens.typography.styles.body.bodySmall.copyWith(
-                    color: tokens.colors.text.highEmphasis,
+          tooltip: '',
+          onSelected: (outcome) {
+            if (outcome != day.habitCompletionType) callback(outcome);
+          },
+          itemBuilder: (context) => [
+            PopupMenuItem(
+              key: const ValueKey('goal-habit-day-success'),
+              value: HabitCompletionType.success,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.check_rounded,
+                    size: IconSizes.s,
+                    color: tokens.colors.alert.success.ink,
                   ),
-                ),
-              ],
+                  SizedBox(width: tokens.spacing.step3),
+                  Text(
+                    context.messages.completeHabitSuccessButton,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-        ],
-        child: Center(
-          child: saving
-              ? SizedBox.square(
-                  dimension: ControlSizes.iconChip,
-                  child: Padding(
-                    padding: EdgeInsets.all(tokens.spacing.step2),
-                    child: const CircularProgressIndicator(),
+            PopupMenuItem(
+              key: const ValueKey('goal-habit-day-missed'),
+              value: HabitCompletionType.fail,
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.close_rounded,
+                    size: IconSizes.s,
+                    color: tokens.colors.alert.error.ink,
                   ),
-                )
-              : decoratedCell,
+                  SizedBox(width: tokens.spacing.step3),
+                  Text(
+                    context.messages.completeHabitFailButton,
+                    style: tokens.typography.styles.body.bodySmall.copyWith(
+                      color: tokens.colors.text.highEmphasis,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          child: Center(
+            child: saving
+                ? SizedBox.square(
+                    dimension: ControlSizes.iconChip,
+                    child: Padding(
+                      padding: EdgeInsets.all(tokens.spacing.step2),
+                      child: const CircularProgressIndicator(),
+                    ),
+                  )
+                : decoratedCell,
+          ),
         ),
       ),
     );

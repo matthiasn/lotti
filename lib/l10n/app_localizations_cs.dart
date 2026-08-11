@@ -6318,6 +6318,14 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalProgressDone => 'hotovo';
 
   @override
+  String get goalProgressHabitDayNoEntry => 'Bez záznamu';
+
+  @override
+  String goalProgressHabitDaySemantics(String date, String outcome) {
+    return '$date: $outcome';
+  }
+
+  @override
   String goalProgressHabitTarget(int count) {
     return '$count× za 7 dní';
   }

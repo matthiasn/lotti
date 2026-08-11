@@ -81,6 +81,27 @@ void main() {
     expect(habit.oldestSuccessAgesOutTonight, isTrue);
   });
 
+  test('a surplus success does not warn when the oldest success ages out', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.habit(
+        criterionId: 'walk',
+        habitId: 'walk-id',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 2,
+      ),
+      signals: GoalSignalWindow(
+        habitSuccessesByDay: {
+          'walk-id': {day(6): 1, day(3): 1, day(0): 1},
+        },
+      ),
+      reference: today,
+    );
+
+    final habit = view.habits.single;
+    expect(habit.successesInWindow, 3);
+    expect(habit.oldestSuccessAgesOutTonight, isFalse);
+  });
+
   test('metric projection supplies seven values and target-clearing compact '
       'days', () {
     final view = buildGoalProgressView(

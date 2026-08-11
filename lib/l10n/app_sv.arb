@@ -2864,6 +2864,8 @@
   "goalProgressCompactSemantics": "{count, plural, =0{Inga lyckade dagar i sjudagarsfönstret} =1{1 lyckad dag i sjudagarsfönstret} other{{count} lyckade dagar i sjudagarsfönstret}}",
   "goalProgressDaysToHealthy": "{count, plural, =1{1 dag till hälsosam} other{{count} dagar till hälsosam}}",
   "goalProgressDone": "klart",
+  "goalProgressHabitDayNoEntry": "Ingen registrering",
+  "goalProgressHabitDaySemantics": "{date}: {outcome}",
   "goalProgressHabitTarget": "{count}× per 7 dagar",
   "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressTitle": "Den här rullande veckan",

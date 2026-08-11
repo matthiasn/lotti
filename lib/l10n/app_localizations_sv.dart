@@ -6254,6 +6254,14 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalProgressDone => 'klart';
 
   @override
+  String get goalProgressHabitDayNoEntry => 'Ingen registrering';
+
+  @override
+  String goalProgressHabitDaySemantics(String date, String outcome) {
+    return '$date: $outcome';
+  }
+
+  @override
   String goalProgressHabitTarget(int count) {
     return '$count× per 7 dagar';
   }

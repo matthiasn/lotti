@@ -2864,6 +2864,8 @@
   "goalProgressCompactSemantics": "{count, plural, =0{Ingen vellykkede dage i de seneste syv dage} =1{1 vellykket dag i de seneste syv dage} other{{count} vellykkede dage i de seneste syv dage}}",
   "goalProgressDaysToHealthy": "{count, plural, =1{1 dag til sund} other{{count} dage til sund}}",
   "goalProgressDone": "klaret",
+  "goalProgressHabitDayNoEntry": "Ingen registrering",
+  "goalProgressHabitDaySemantics": "{date}: {outcome}",
   "goalProgressHabitTarget": "{count}× pr. 7 dage",
   "goalProgressHabitTargetWindow": "{count}× · {window}",
   "goalProgressTitle": "Denne rullende uge",
