@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -159,6 +160,51 @@ void main() {
     );
     expect(exposures.single.$1, 'ad-1');
   });
+
+  testWidgets(
+    'dependency changes inside directional sliver padding wait for layout',
+    (tester) async {
+      final sameOverrides = overrides();
+
+      Widget host(TextDirection direction) => makeTestableWidgetNoScroll(
+        Directionality(
+          textDirection: direction,
+          child: ListView(
+            padding: const EdgeInsetsDirectional.only(start: 12),
+            children: [tracked()],
+          ),
+        ),
+        overrides: sameOverrides,
+      );
+
+      await tester.pumpWidget(host(TextDirection.ltr));
+      await tester.pump();
+
+      // This is the transient Flutter creates while updating a directional
+      // SliverPadding: its resolved padding is cleared until the next layout.
+      // Calling getOffsetToReveal during that interval asserts.
+      final sliverPadding = tester.renderObject<RenderSliverPadding>(
+        find.byType(SliverPadding),
+      );
+      void setSliverTextDirection(TextDirection? value) {
+        sliverPadding.textDirection = value;
+      }
+
+      setSliverTextDirection(null);
+      final state = tester.state(find.byType(GoalBannerExposureTracker));
+
+      // The test deliberately invokes the lifecycle hook at the same transient
+      // render state that triggered the production assertion.
+      // ignore: invalid_use_of_protected_member
+      expect(state.didChangeDependencies, returnsNormally);
+
+      setSliverTextDirection(TextDirection.rtl);
+      await tester.pump();
+
+      expect(tester.takeException(), isNull);
+      expect(exposures, isEmpty);
+    },
+  );
 
   testWidgets('backgrounding the app flushes the episode — pocket time '
       'never counts as exposure', (tester) async {

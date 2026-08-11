@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_animated_text.dart';
 import 'package:lotti/features/goals/ui/goal_banner_dock.dart';
+import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -171,7 +172,7 @@ void main() {
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('desktop shows full copy while compact preserves its line cap', (
+  testWidgets('desktop and compact docks show the full animated headline', (
     tester,
   ) async {
     final animated = entry(
@@ -197,13 +198,15 @@ void main() {
             find.byType(GoalBannerAnimatedText),
           )
           .maxLines,
-      2,
+      isNull,
     );
+    expect(find.byType(GoalBannerPersonaChip), findsNothing);
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
-  testWidgets('the dock spans its host and renders the authored tagline '
-      'instead of substituting the goal name', (tester) async {
+  testWidgets('the dock spans its host and omits secondary identity copy', (
+    tester,
+  ) async {
     await pumpDock(tester, [
       entry(
         id: 'tagline',
@@ -213,8 +216,9 @@ void main() {
       ),
     ]);
 
-    expect(find.text('One walk puts the rumors to bed.'), findsOneWidget);
+    expect(find.text('One walk puts the rumors to bed.'), findsNothing);
     expect(find.text('Walk'), findsNothing);
+    expect(find.byType(GoalBannerPersonaChip), findsNothing);
     expect(
       tester.getSize(find.byType(GoalBannerDock)).width,
       tester.getSize(find.byType(Scaffold)).width,
@@ -242,7 +246,15 @@ void main() {
     expect(tenantRect.center.dx, frameRect.center.dx);
     expect(tenantRect.width, closeTo(frameRect.width, 2));
     final dismissRect = tester.getRect(find.byTooltip('Dismiss'));
-    expect(frameRect.right - dismissRect.right, lessThan(24));
+    expect(frameRect.right - dismissRect.right, lessThan(12));
+    final dismissButton = tester.widget<IconButton>(
+      find.ancestor(
+        of: find.byTooltip('Dismiss'),
+        matching: find.byType(IconButton),
+      ),
+    );
+    expect(dismissButton.padding, EdgeInsets.zero);
+    expect(dismissButton.alignment, Alignment.centerRight);
     expect(
       tester
           .getSize(find.byKey(const ValueKey('goal-banner-copy-region')))
@@ -252,13 +264,12 @@ void main() {
     );
   });
 
-  testWidgets('the reserved lane covers the rendered compact dock at every '
-      'text scale — two-line headline AND the multi-tenant dot row', (
+  testWidgets('the reserved lane covers the full compact headline at every '
+      'text scale and includes the multi-tenant dot row', (
     tester,
   ) async {
     // Two active goals (so the dot-row footer renders), each with a headline
-    // long enough to wrap to the compact dock's full two lines: the tallest
-    // dock the reserve must clear.
+    // long enough to exercise the uncapped compact copy at both text scales.
     List<GoalBannerEntry> tallEntries() => [
       entry(
         id: 'a',
@@ -405,8 +416,9 @@ void main() {
     expect(find.text('Second voice'), findsOneWidget);
   });
 
-  testWidgets('a fresh banner arriving mid-rotation jumps the queue and '
-      'carries the just-now marker', (tester) async {
+  testWidgets('a fresh banner arriving mid-rotation jumps the queue', (
+    tester,
+  ) async {
     await pumpDock(tester, [
       entry(id: 'a', headline: 'First voice'),
       entry(id: 'b', headline: 'Second voice'),
@@ -427,12 +439,9 @@ void main() {
     await settleTransition(tester);
 
     expect(find.text('Walk done. That’s the rhythm.'), findsOneWidget);
-    expect(
-      find.text('One more outing keeps the streak alive. · just now'),
-      findsOneWidget,
-    );
+    expect(find.textContaining('just now'), findsNothing);
+    expect(find.text('One more outing keeps the streak alive.'), findsNothing);
 
-    // The marker is for THAT tenure only.
     await tester.pump(goalBannerDockTenure);
     await settleTransition(tester);
     expect(find.textContaining('just now'), findsNothing);

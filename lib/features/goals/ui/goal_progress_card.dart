@@ -163,7 +163,8 @@ class GoalProgressCard extends StatelessWidget {
                   index < progress.habits.length;
                   index++
                 ) ...[
-                  if (index > 0) SizedBox(height: tokens.spacing.step3),
+                  if (index > 0 && !showWeekdayHeader)
+                    SizedBox(height: tokens.spacing.step3),
                   _HabitProgressRow(
                     habit: progress.habits[index],
                     today: progress.today,
@@ -212,9 +213,11 @@ class _HabitWeekdayHeader extends StatelessWidget {
     return Row(
       children: [
         SizedBox(width: tokens.spacing.step13),
-        SizedBox(width: tokens.spacing.step4),
+        SizedBox(width: tokens.spacing.step3),
         _DayTrack(
           height: IconSizes.s,
+          itemExtent: ControlSizes.iconChipCompact,
+          pitch: ControlSizes.iconChipCompact + tokens.spacing.step2,
           children: [
             for (final day in habit.days)
               SizedBox(
@@ -222,7 +225,7 @@ class _HabitWeekdayHeader extends StatelessWidget {
                   'goal-habit-weekday-${habit.habitId}-'
                   '${day.day.toIso8601String().substring(0, 10)}',
                 ),
-                width: TapTargets.minimum,
+                width: ControlSizes.iconChipCompact,
                 child: Text(
                   DateFormat.E(locale).format(day.day),
                   textAlign: TextAlign.center,
@@ -238,20 +241,24 @@ class _HabitWeekdayHeader extends StatelessWidget {
   }
 }
 
-/// Keeps the visual day cells close to the handoff's compact grid while each
-/// interactive child retains the design-system minimum tap-target bounds.
+/// Keeps weekday labels and day cells on the compact handoff grid.
 class _DayTrack extends StatelessWidget {
-  const _DayTrack({required this.height, required this.children});
+  const _DayTrack({
+    required this.height,
+    required this.itemExtent,
+    required this.pitch,
+    required this.children,
+  });
 
   final double height;
+  final double itemExtent;
+  final double pitch;
   final List<Widget> children;
 
   @override
   Widget build(BuildContext context) {
     if (children.isEmpty) return const SizedBox.shrink();
-    final tokens = context.designTokens;
-    final pitch = TapTargets.minimum - tokens.spacing.step1;
-    final width = TapTargets.minimum + pitch * (children.length - 1);
+    final width = itemExtent + pitch * (children.length - 1);
     return SizedBox(
       width: width,
       height: height,
@@ -260,7 +267,7 @@ class _DayTrack extends StatelessWidget {
           for (var index = 0; index < children.length; index++)
             Positioned(
               left: pitch * index,
-              width: TapTargets.minimum,
+              width: itemExtent,
               height: height,
               child: Center(child: children[index]),
             ),
@@ -352,29 +359,35 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
         ),
       ],
     );
-    final cells = _DayTrack(
-      height: TapTargets.minimum,
-      children: [
-        for (var index = 0; index < activeDays.length; index++)
-          _ProgressDayCell(
-            day: activeDays[index],
-            habitId: habit.habitId,
-            today: DateUtils.isSameDay(
-              activeDays[index].day,
-              widget.today,
+    Widget cells() {
+      const itemExtent = ControlSizes.iconChipCompact;
+      return _DayTrack(
+        height: itemExtent,
+        itemExtent: itemExtent,
+        pitch: itemExtent + tokens.spacing.step2,
+        children: [
+          for (var index = 0; index < activeDays.length; index++)
+            _ProgressDayCell(
+              day: activeDays[index],
+              habitId: habit.habitId,
+              today: DateUtils.isSameDay(
+                activeDays[index].day,
+                widget.today,
+              ),
+              agingOut: index == 0 && habit.oldestSuccessAgesOutTonight,
+              saving: _savingDay == activeDays[index].day,
+              enabled: !activeDays[index].day.isAfter(widget.today),
+              onOutcomeSelected: widget.onOutcomeSelected == null
+                  ? null
+                  : (outcome) => _recordOutcome(
+                      activeDays[index].day,
+                      outcome,
+                    ),
             ),
-            agingOut: index == 0 && habit.oldestSuccessAgesOutTonight,
-            saving: _savingDay == activeDays[index].day,
-            enabled: !activeDays[index].day.isAfter(widget.today),
-            onOutcomeSelected: widget.onOutcomeSelected == null
-                ? null
-                : (outcome) => _recordOutcome(
-                    activeDays[index].day,
-                    outcome,
-                  ),
-          ),
-      ],
-    );
+        ],
+      );
+    }
+
     final successfulWeeks = habit.successfulWeeks;
     final reliability = successfulWeeks == null
         ? null
@@ -388,9 +401,9 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           return Row(
             children: [
               SizedBox(width: tokens.spacing.step13, child: identity),
-              SizedBox(width: tokens.spacing.step4),
-              cells,
-              SizedBox(width: tokens.spacing.step4),
+              SizedBox(width: tokens.spacing.step3),
+              cells(),
+              SizedBox(width: tokens.spacing.step3),
               Expanded(
                 child: Text(
                   note,
@@ -408,7 +421,40 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           children: [
             Row(
               children: [
-                Expanded(child: identity),
+                Expanded(
+                  child: Row(
+                    children: [
+                      Flexible(
+                        flex: 2,
+                        child: Text(
+                          habit.name,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: tokens.colors.text.highEmphasis,
+                              ),
+                        ),
+                      ),
+                      SizedBox(width: tokens.spacing.step2),
+                      Flexible(
+                        child: Text(
+                          goalHabitTargetLabel(
+                            context,
+                            targetCount: habit.targetCount,
+                            window: habit.window,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.lowEmphasis,
+                              ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
                 Text(
                   note,
                   style: tokens.typography.styles.others.caption.copyWith(
@@ -417,10 +463,10 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                 ),
               ],
             ),
-            SizedBox(height: tokens.spacing.step3),
+            SizedBox(height: tokens.spacing.step2),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: cells,
+              child: cells(),
             ),
           ],
         );
@@ -476,6 +522,7 @@ class _ProgressDayCell extends StatelessWidget {
     final tokens = context.designTokens;
     final hit = day.hasValue;
     final missed = day.habitCompletionType == HabitCompletionType.fail;
+    const visualDimension = ControlSizes.iconChipCompact;
     final border = agingOut
         ? Border.all(
             color: tokens.colors.alert.warning.defaultColor,
@@ -487,15 +534,13 @@ class _ProgressDayCell extends StatelessWidget {
             width: BorderWidths.emphasis,
           )
         : null;
-    final cell = Container(
-      key: missed
-          ? ValueKey(
-              'goal-day-missed-$habitId-'
-              '${day.day.toIso8601String().substring(0, 10)}',
-            )
-          : null,
-      width: ControlSizes.iconChip,
-      height: ControlSizes.iconChip,
+    Widget cell = Container(
+      key: ValueKey(
+        'goal-habit-day-visual-$habitId-'
+        '${day.day.toIso8601String().substring(0, 10)}',
+      ),
+      width: visualDimension,
+      height: visualDimension,
       decoration: BoxDecoration(
         color: hit
             ? tokens.colors.interactive.enabled
@@ -513,6 +558,15 @@ class _ProgressDayCell extends StatelessWidget {
             )
           : null,
     );
+    if (missed) {
+      cell = KeyedSubtree(
+        key: ValueKey(
+          'goal-day-missed-$habitId-'
+          '${day.day.toIso8601String().substring(0, 10)}',
+        ),
+        child: cell,
+      );
+    }
     final decoratedCell = !today || hit
         ? cell
         : DsDashedBorder(
@@ -549,7 +603,7 @@ class _ProgressDayCell extends StatelessWidget {
           'goal-habit-day-$habitId-'
           '${day.day.toIso8601String().substring(0, 10)}',
         ),
-        dimension: TapTargets.minimum,
+        dimension: ControlSizes.iconChipCompact,
         child: PopupMenuButton<HabitCompletionType>(
           enabled: enabled && !saving,
           initialValue: day.habitCompletionType,
@@ -612,7 +666,7 @@ class _ProgressDayCell extends StatelessWidget {
           child: Center(
             child: saving
                 ? SizedBox.square(
-                    dimension: ControlSizes.iconChip,
+                    dimension: visualDimension,
                     child: Padding(
                       padding: EdgeInsets.all(tokens.spacing.step2),
                       child: const CircularProgressIndicator(),

@@ -271,9 +271,9 @@ flowchart TD
   update to a stale read.
   The dock and the full detail card both render the selected animation through
   `GoalBannerAnimatedText`; the dock and its animated tenant span their host,
-  desktop shows the authored
-  headline and tagline without truncation, and compact docks keep a measured
-  two-line cap for each. A chat-requested snooze accepts an arbitrary future duration
+  and both desktop and compact docks show the complete authored headline with
+  no avatar, secondary tagline, or line cap; compact dismissal remains at the
+  trailing edge. A chat-requested snooze accepts an arbitrary future duration
   or date/time and automatically restores the exact banner at that deadline.
   The card keeps `cardPadding` on its lateral and bottom edges but uses
   `spacing.step2` above the fixed-height action header, preventing the rating

@@ -6,7 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
-import 'package:lotti/features/design_system/theme/sizing_tokens.dart';
+import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -558,6 +558,8 @@ void main() {
 
       expect(find.text('Wed'), findsOneWidget);
       expect(find.text('W'), findsNothing);
+      final tokens = tester.element(find.byType(GoalProgressCard)).designTokens;
+      final expectedPitch = ControlSizes.iconChipCompact + tokens.spacing.step2;
       double? previousCenter;
       for (var offset = 6; offset >= 0; offset--) {
         final date = today
@@ -568,6 +570,17 @@ void main() {
           ValueKey('goal-habit-weekday-walk-$date'),
         );
         final cell = find.byKey(ValueKey('goal-habit-day-walk-$date'));
+        final visualCell = find.byKey(
+          ValueKey('goal-habit-day-visual-walk-$date'),
+        );
+        expect(
+          tester.getSize(visualCell),
+          const Size.square(ControlSizes.iconChipCompact),
+        );
+        expect(
+          tester.getSize(cell),
+          const Size.square(ControlSizes.iconChipCompact),
+        );
         expect(
           tester.getCenter(marker).dx,
           closeTo(tester.getCenter(cell).dx, 0.01),
@@ -577,8 +590,8 @@ void main() {
         if (previousCenter != null) {
           expect(
             center - previousCenter,
-            lessThan(TapTargets.minimum),
-            reason: 'neighboring tap targets overlap to keep the grid tight',
+            closeTo(expectedPitch, 0.01),
+            reason: 'desktop cells follow the compact handoff rhythm',
           );
         }
         previousCenter = center;
@@ -587,45 +600,62 @@ void main() {
   );
 
   testWidgets(
-    'habit day has a full tap target and ignores its current outcome',
+    'compact habit day follows the mobile handoff and ignores its current outcome',
     (
       tester,
     ) async {
       final outcomes = <HabitCompletionType>[];
       await tester.pumpWidget(
         makeTestableWidgetNoScroll(
-          GoalProgressCard(
-            progress: GoalProgressView(
-              today: today,
-              habits: [
-                GoalHabitProgressView(
-                  habitId: 'walk',
-                  name: 'Walk',
-                  targetCount: 1,
-                  days: [
-                    for (var offset = 6; offset > 0; offset--) day(offset, 0),
-                    GoalProgressDay(
-                      day: today,
-                      value: 1,
-                      habitCompletionType: HabitCompletionType.success,
+          Center(
+            child: SizedBox(
+              width: 260,
+              child: GoalProgressCard(
+                progress: GoalProgressView(
+                  today: today,
+                  habits: [
+                    GoalHabitProgressView(
+                      habitId: 'walk',
+                      name: 'Walk',
+                      targetCount: 1,
+                      days: [
+                        for (var offset = 6; offset > 0; offset--)
+                          day(offset, 0),
+                        GoalProgressDay(
+                          day: today,
+                          value: 1,
+                          habitCompletionType: HabitCompletionType.success,
+                        ),
+                      ],
+                      successfulWeeks: 1,
                     ),
                   ],
-                  successfulWeeks: 1,
                 ),
-              ],
+                onHabitOutcomeSelected:
+                    ({
+                      required day,
+                      required habitId,
+                      required outcome,
+                    }) async {
+                      outcomes.add(outcome);
+                      return true;
+                    },
+              ),
             ),
-            onHabitOutcomeSelected:
-                ({required day, required habitId, required outcome}) async {
-                  outcomes.add(outcome);
-                  return true;
-                },
           ),
         ),
       );
 
       const dayKey = ValueKey('goal-habit-day-walk-2026-08-11');
-      expect(tester.getSize(find.byKey(dayKey)).width, TapTargets.minimum);
-      expect(tester.getSize(find.byKey(dayKey)).height, TapTargets.minimum);
+      expect(
+        tester.getSize(find.byKey(dayKey)),
+        const Size.square(ControlSizes.iconChipCompact),
+      );
+      expect(
+        tester.getCenter(find.text('Walk')).dy,
+        closeTo(tester.getCenter(find.text('1× per 7 days')).dy, 0.01),
+        reason: 'mobile identity and cadence share the handoff header row',
+      );
 
       await tester.tap(find.byKey(dayKey));
       await tester.pumpAndSettle();

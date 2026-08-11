@@ -57,7 +57,8 @@ current and past edits wake the
 deterministic evaluator and queue a standing-report refresh, with an Update now
 fallback visible beside the report, while future calendar cells remain
 read-only. On desktop the rolling-seven-day rows share one localized weekday
-header and keep compact visual spacing while retaining full-size tap targets.
+header; desktop and phone use the handoff's compact day-cell rhythm, while the
+phone layout keeps each habit name and cadence together above its strip.
 Metric strips preserve the evaluator's configured aggregation
 rather than treating every daily contribution as a standalone target;
 composite details retain every metric and measurable leaf that contributes to
