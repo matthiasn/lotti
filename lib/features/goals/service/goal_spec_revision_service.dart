@@ -103,6 +103,12 @@ class GoalSpecRevisionService {
     required String? sourceThreadId,
     required DateTime now,
   }) async {
+    final identity = await _repository.getEntity(agentId);
+    if (identity is! AgentIdentityEntity ||
+        identity.kind != AgentKinds.goalAgent ||
+        identity.lifecycle != AgentLifecycle.active) {
+      return const GoalSpecRevisionRefused('goal agent is not active');
+    }
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
     if (head is! GoalSpecHeadEntity) {
       return const GoalSpecRevisionRefused(

@@ -1,7 +1,9 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:lotti/features/agents/database/agent_repository.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/sync/agent_sync_service.dart';
@@ -26,8 +28,15 @@ String? goalChatMessageIdFromTriggerTokens(Iterable<String> tokens) {
 /// Persists one user-authored goal-agent turn, then hands inference to the
 /// shared wake runtime. The conversation UI never owns an inference loop.
 class GoalChatService {
-  GoalChatService(this._syncService, this._orchestrator);
+  GoalChatService({
+    required AgentRepository repository,
+    required AgentSyncService syncService,
+    required WakeOrchestrator orchestrator,
+  }) : this._(repository, syncService, orchestrator);
 
+  GoalChatService._(this._repository, this._syncService, this._orchestrator);
+
+  final AgentRepository _repository;
   final AgentSyncService _syncService;
   final WakeOrchestrator _orchestrator;
 
@@ -39,6 +48,13 @@ class GoalChatService {
   }) async {
     final trimmed = text.trim();
     if (trimmed.isEmpty) return;
+
+    final identity = await _repository.getEntity(agentId);
+    if (identity is! AgentIdentityEntity ||
+        identity.kind != AgentKinds.goalAgent ||
+        identity.lifecycle != AgentLifecycle.active) {
+      throw const GoalChatTurnException('goal agent is not active');
+    }
 
     final now = clock.now();
     final payloadId = _uuid.v4();
@@ -75,7 +91,7 @@ class GoalChatService {
       // while flushing the sync outbox. Reconcile the deterministic id before
       // deciding whether this turn needs to be surfaced as a failed append;
       // otherwise Send would create a duplicate durable user turn.
-      final persisted = await _syncService.repository.getEntity(messageId);
+      final persisted = await _repository.getEntity(messageId);
       if (persisted is! AgentMessageEntity ||
           persisted.agentId != agentId ||
           persisted.kind != AgentMessageKind.user ||

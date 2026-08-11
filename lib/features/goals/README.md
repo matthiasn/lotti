@@ -37,7 +37,8 @@ escalation workflow, its code-owned contract, the tool dispatcher, and the
 revision flow that turns an approved `propose_goal_revision` change set
 into a new spec version. User-authored chat turns take the same fact-grounded
 workflow through a throttle-bypassing manual wake: `GoalChatService` persists
-the source turn before enqueueing, reconciles a committed message when a later
+the source turn only after rechecking that the goal identity is active, then
+enqueues it; it reconciles a committed message when a later
 sync-outbox flush reports failure, and the workflow persists a sanitized answer as a
 `reply_to_user` action that the shared bounded chat projection can display
 without exposing thoughts or tool bookkeeping. Reply rows use stable per-wake

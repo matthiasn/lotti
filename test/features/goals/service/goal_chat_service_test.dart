@@ -1,6 +1,8 @@
 import 'dart:async';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
@@ -15,7 +17,25 @@ import '../../../mocks/mocks.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 
+  AgentIdentityEntity goalIdentity(AgentLifecycle lifecycle) =>
+      AgentDomainEntity.agent(
+            id: 'goal-1',
+            agentId: 'goal-1',
+            kind: AgentKinds.goalAgent,
+            displayName: 'Goal',
+            lifecycle: lifecycle,
+            mode: AgentInteractionMode.autonomous,
+            allowedCategoryIds: const {},
+            currentStateId: 'goal-1:state',
+            config: const AgentConfig(),
+            createdAt: DateTime(2026),
+            updatedAt: DateTime(2026),
+            vectorClock: null,
+          )
+          as AgentIdentityEntity;
+
   late MockAgentSyncService syncService;
+  late MockAgentRepository repository;
   late MockWakeOrchestrator orchestrator;
   late StreamController<WakeRunCompletion> completions;
   late List<AgentDomainEntity> upserts;
@@ -23,6 +43,7 @@ void main() {
 
   setUp(() {
     syncService = MockAgentSyncService();
+    repository = MockAgentRepository();
     orchestrator = MockWakeOrchestrator();
     completions = StreamController<WakeRunCompletion>.broadcast();
     addTearDown(completions.close);
@@ -33,7 +54,44 @@ void main() {
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
       upserts.add(invocation.positionalArguments.first as AgentDomainEntity);
     });
-    service = GoalChatService(syncService, orchestrator);
+    when(() => repository.getEntity(any())).thenAnswer((invocation) async {
+      final id = invocation.positionalArguments.first as String;
+      return id == 'goal-1' ? goalIdentity(AgentLifecycle.active) : null;
+    });
+    service = GoalChatService(
+      repository: repository,
+      syncService: syncService,
+      orchestrator: orchestrator,
+    );
+  });
+
+  test('does not persist a turn for an inactive goal agent', () async {
+    when(
+      () => repository.getEntity('goal-1'),
+    ).thenAnswer((_) async => goalIdentity(AgentLifecycle.dormant));
+
+    await expectLater(
+      service.sendMessage(agentId: 'goal-1', text: 'Can you hear me?'),
+      throwsA(
+        isA<GoalChatTurnException>()
+            .having((error) => error.messageId, 'messageId', isNull)
+            .having(
+              (error) => error.detail,
+              'detail',
+              'goal agent is not active',
+            ),
+      ),
+    );
+    expect(upserts, isEmpty);
+    verifyNever(
+      () => orchestrator.enqueueManualWake(
+        agentId: any(named: 'agentId'),
+        reason: any(named: 'reason'),
+        triggerTokens: any(named: 'triggerTokens'),
+        supersede: any(named: 'supersede'),
+        initiator: any(named: 'initiator'),
+      ),
+    );
   });
 
   test(
@@ -120,8 +178,6 @@ void main() {
   test(
     'continues a turn when the message committed before an outbox error',
     () async {
-      final repository = MockAgentRepository();
-      when(() => syncService.repository).thenReturn(repository);
       AgentMessageEntity? committedMessage;
       when(() => syncService.upsertEntity(any())).thenAnswer((
         invocation,
@@ -134,9 +190,13 @@ void main() {
           throw StateError('outbox flush failed');
         }
       });
-      when(() => repository.getEntity(any())).thenAnswer(
-        (_) async => committedMessage,
-      );
+      when(() => repository.getEntity(any())).thenAnswer((invocation) async {
+        final id = invocation.positionalArguments.first as String;
+        if (id == 'goal-1') {
+          return goalIdentity(AgentLifecycle.active);
+        }
+        return committedMessage;
+      });
       when(
         () => orchestrator.enqueueManualWake(
           agentId: 'goal-1',
@@ -187,8 +247,9 @@ void main() {
       );
       addTearDown(realOrchestrator.stop);
       final waiting = GoalChatService(
-        syncService,
-        realOrchestrator,
+        repository: repository,
+        syncService: syncService,
+        orchestrator: realOrchestrator,
       ).retryMessage(agentId: 'goal-1', messageId: 'message-1');
       await pumpEventQueue();
       expect(queue.length, 1);
@@ -224,8 +285,9 @@ void main() {
     );
     addTearDown(realOrchestrator.stop);
     final waiting = GoalChatService(
-      syncService,
-      realOrchestrator,
+      repository: repository,
+      syncService: syncService,
+      orchestrator: realOrchestrator,
     ).retryMessage(agentId: 'goal-1', messageId: 'message-1');
     await pumpEventQueue();
 

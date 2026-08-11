@@ -195,10 +195,11 @@ class GoalAgentDetailPage extends ConsumerWidget {
           canRefresh: isActive,
         ),
         SizedBox(height: tokens.spacing.cardItemSpacing),
-        ChangeSetSummaryCard.selfTargeted(
-          agentId: agentId,
-          confirmationProvider: goalChangeSetConfirmationServiceProvider,
-        ),
+        if (isActive)
+          ChangeSetSummaryCard.selfTargeted(
+            agentId: agentId,
+            confirmationProvider: goalChangeSetConfirmationServiceProvider,
+          ),
         if (progress != null && progress.habits.isNotEmpty) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
           _WatchingSection(progress: progress),

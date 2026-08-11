@@ -18,6 +18,7 @@ import 'package:lotti/features/agents/state/agent_providers.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
+import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -814,6 +815,7 @@ void main() {
     expect(find.text('Talk to Move more'), findsNothing);
     expect(find.text('Update now'), findsNothing);
     expect(find.byType(PopupMenuButton<HabitCompletionType>), findsNothing);
+    expect(find.byType(ChangeSetSummaryCard), findsNothing);
   });
 
   testWidgets('a first health load failure does not claim a data-gap verdict', (

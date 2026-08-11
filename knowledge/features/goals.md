@@ -214,7 +214,9 @@ flowchart TD
   current version, mints `v(n+1)` with full provenance (`authoredBy:
   goal_agent`, `diffFromVersionId`, the proposal's rationale) and moves
   the head in one transaction. Grace history resets naturally: Phase A's
-  prior-row streak breaks at the version change. After acceptance the
+  prior-row streak breaks at the version change. The revision service rechecks
+  that the identity is still an active goal inside the serialized path;
+  inactive details hide the approval card as well. After acceptance the
   signal subscription re-registers from the NEW criteria; on other
   devices the synced-in head triggers the same re-registration through
   the sync processor's identity re-offer.
@@ -334,8 +336,8 @@ flowchart TD
   updated even without a material status transition; the Update now control
   uses the same refresh token and shows the shared running state while the
   active agent works, and is absent after the goal leaves the active lifecycle.
-  The detail page also carries active banners and the revision-approval
-  card (`ChangeSetSummaryCard.selfTargeted`). Mobile opens durable conversation
+  The detail page also carries active banners and, only while active, the
+  revision-approval card (`ChangeSetSummaryCard.selfTargeted`). Mobile opens durable conversation
   at `/agents/details/:agentId/chat`; desktop renders the same
   `GoalAgentChatPane` beside detail. The mobile route mounts the composer only
   for an active goal identity, keeps the goal statement visible in its compact
@@ -351,7 +353,8 @@ flowchart TD
   completion, and failure keeps the source turn available for retry by
   re-enqueueing its existing message id rather than duplicating it. A failure
   before the durable append returns an id retries by sending the retained draft
-  as a new durable turn. Payload ownership is checked before inference, chat failures
+  as a new durable turn. The chat service rechecks active goal identity before
+  writing that source turn. Payload ownership is checked before inference, chat failures
   cannot re-arm scheduled escalations, and a user wake cannot complete without
   a visible reply. Agent turns render through `AgentMarkdownView`; replies
   over 360 characters or eight line breaks start at an eight-rendered-line
