@@ -40,6 +40,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.7" date="2026-08-12">
+      <description>
+        <p>Added: goal agents can reason about more than habits and steps. Goal criteria can now use any supported quantitative health signal, including sleep duration and weight, user-defined measurable data, and time recorded against a category. Category-time goals support both minimum and maximum durations and optional recurring local-time bands, so an agent can watch goals such as limiting coding after 22:00 while retaining the underlying session pattern for grounded coaching. Multi-dimensional goals keep a separate accountable result for every criterion, and agent-proposed changes still require the user's approval.</p>
+      </description>
+    </release>
     <release version="1.0.6" date="2026-08-09">
       <description>
         <p>Changed: the Melious.ai profile now runs on GLM 5.2 and Kimi K3. Connecting a Melious key installs Kimi K3 alongside the models already offered, and the profile Lotti sets up for you binds GLM 5.2 for thinking, Kimi K3 for both high-end thinking and reading images, and Whisper Large v3 for transcription. Image generation stays on Flux 2 Klein 9B. An existing Melious profile moves to the same models on the next launch — unless you renamed it, described it, pinned it to a device or chose any model yourself, in which case it is left exactly as you set it. Voice capture that has no transcription model configured — onboarding's first task included — now also lands on Whisper Large v3 instead of the Voxtral chat path.</p>

@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.7]
+### Added
+- **Goal agents can reason about more than habits and steps.** Goal criteria can
+  now use any supported quantitative health signal, including sleep duration
+  and weight, user-defined measurable data, and time recorded against a
+  category. Category-time goals support both minimum and maximum durations and
+  optional recurring local-time bands, so an agent can watch goals such as
+  limiting coding after 22:00 while retaining the underlying session pattern
+  for grounded coaching. Multi-dimensional goals keep a separate accountable
+  result for every criterion, and agent-proposed changes still require the
+  user's approval.
+
 ## [1.0.6]
 ### Added
 - **Goal agents get their first visible surface (experimental).** Behind the
