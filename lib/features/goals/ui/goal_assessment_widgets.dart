@@ -40,6 +40,7 @@ class _GoalDayAssessmentSheetState
   GoalAssessmentRating _rating = GoalAssessmentRating.met;
   final _dimensionRatings = <String, GoalAssessmentRating>{};
   var _saving = false;
+  String? _error;
 
   @override
   void dispose() {
@@ -49,17 +50,30 @@ class _GoalDayAssessmentSheetState
 
   Future<void> _save() async {
     if (_saving) return;
-    setState(() => _saving = true);
-    await ref
-        .read(goalAssessmentServiceProvider)
-        .record(
-          agentId: widget.agentId,
-          day: widget.day,
-          specVersionId: widget.specVersionId,
-          rating: _rating,
-          dimensionRatings: _dimensionRatings,
-          note: _note.text.trim().isEmpty ? null : _note.text.trim(),
-        );
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(goalAssessmentServiceProvider)
+          .record(
+            agentId: widget.agentId,
+            day: widget.day,
+            specVersionId: widget.specVersionId,
+            rating: _rating,
+            dimensionRatings: _dimensionRatings,
+            note: _note.text.trim().isEmpty ? null : _note.text.trim(),
+          );
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = context.messages.goalBannerActionFailed;
+        });
+      }
+      return;
+    }
     ref.invalidate(goalAssessmentHistoryProvider(widget.agentId));
     if (mounted) Navigator.of(context).pop();
   }
@@ -210,6 +224,15 @@ class _GoalDayAssessmentSheetState
                 ],
               ),
               SizedBox(height: tokens.spacing.step4),
+              if (_error != null) ...[
+                Text(
+                  _error!,
+                  style: tokens.typography.styles.body.bodySmall.copyWith(
+                    color: tokens.colors.alert.error.ink,
+                  ),
+                ),
+                SizedBox(height: tokens.spacing.step2),
+              ],
               DesignSystemButton(
                 label: context.messages.goalAssessmentRecordFor(
                   DateFormat.EEEE(locale).format(widget.day),

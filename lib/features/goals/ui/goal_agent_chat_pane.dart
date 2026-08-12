@@ -72,6 +72,9 @@ class GoalAgentChatPane extends ConsumerWidget {
             DateFormat.EEEE(
               locale,
             ).format(now.subtract(Duration(days: offset))),
+            if (offset == 0) attachmentContext.messages.calendarTodayLabel,
+            if (offset == 1)
+              attachmentContext.messages.knowledgeGraphAgeYesterday,
           ],
       };
       final offer = parseGoalMeasurableRecordOffer(

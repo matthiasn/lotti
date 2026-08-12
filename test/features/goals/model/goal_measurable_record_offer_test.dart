@@ -113,4 +113,72 @@ void main() {
       isNull,
     );
   });
+
+  test('declines two quantities for the same measurable', () {
+    final offer = parseGoalMeasurableRecordOffer(
+      message: AgentChatMessage(
+        id: 'message-5',
+        role: AgentChatRole.user,
+        text: 'I read 10 pages Tuesday and 20 pages Wednesday.',
+        createdAt: now,
+      ),
+      criteria: linked,
+      measurables: [pages],
+      reference: now,
+      recentDayLabels: const {},
+    );
+
+    expect(offer, isNull);
+  });
+
+  test('declines an ambiguous unit shared by linked measurables', () {
+    final journalPages = pages.copyWith(
+      id: 'journal-pages',
+      displayName: 'Journal pages',
+    );
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'reading-and-writing',
+      criteria: [
+        linked,
+        GoalCriterion.measurable(
+          criterionId: 'writing',
+          dataTypeId: 'journal-pages',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.sum,
+          target: 30,
+        ),
+      ],
+    );
+    final offer = parseGoalMeasurableRecordOffer(
+      message: AgentChatMessage(
+        id: 'message-6',
+        role: AgentChatRole.user,
+        text: 'I did 20 pages today.',
+        createdAt: now,
+      ),
+      criteria: criteria,
+      measurables: [pages, journalPages],
+      reference: now,
+      recentDayLabels: const {},
+    );
+
+    expect(offer, isNull);
+  });
+
+  test('does not treat a unit prefix as the configured unit', () {
+    final offer = parseGoalMeasurableRecordOffer(
+      message: AgentChatMessage(
+        id: 'message-7',
+        role: AgentChatRole.user,
+        text: 'I read 20 pagesworth today.',
+        createdAt: now,
+      ),
+      criteria: linked,
+      measurables: [pages],
+      reference: now,
+      recentDayLabels: const {},
+    );
+
+    expect(offer, isNull);
+  });
 }

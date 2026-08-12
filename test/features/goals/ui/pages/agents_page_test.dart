@@ -193,6 +193,79 @@ void main() {
     },
   );
 
+  testWidgets('an on-track composite does not badge an unmet leaf', (
+    tester,
+  ) async {
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-fit:spec-v1',
+              agentId: 'goal-fit',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Health trajectory',
+              statement: 'Improve either health signal.',
+              criteria: const GoalCriterion.anyOf(
+                criterionId: 'health',
+                criteria: [
+                  GoalCriterion.metric(
+                    criterionId: 'weight',
+                    dataType: 'HealthDataType.WEIGHT',
+                    window: GoalWindow.rollingDays(count: 7),
+                    aggregation: GoalAggregation.dailySumThenAverage,
+                    target: 80,
+                    direction: GoalDirection.atMost,
+                  ),
+                  GoalCriterion.metric(
+                    criterionId: 'steps',
+                    dataType: 'steps',
+                    window: GoalWindow.day(),
+                    aggregation: GoalAggregation.sum,
+                    target: 8000,
+                  ),
+                ],
+              ),
+              createdAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final today = DateTime.utc(2026, 8, 11);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const AgentsPage(),
+        overrides: [
+          activeGoalAgentsProvider.overrideWith(
+            (ref) async => [identity('goal-fit', 'Juno')],
+          ),
+          goalAgentHealthProvider('goal-fit').overrideWith(
+            (ref) async => health(
+              trackStatus: GoalTrackStatus.onTrack,
+              spec: spec,
+            ),
+          ),
+          goalAgentProgressViewProvider('goal-fit').overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              rootOnTrack: true,
+              metrics: [
+                GoalMetricProgressView(
+                  name: 'Weight',
+                  target: 80,
+                  direction: GoalDirection.atMost,
+                  days: [GoalProgressDay(day: today, value: 85)],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Healthy'), findsOneWidget);
+    expect(find.text('Weight needs attention'), findsNothing);
+  });
+
   testWidgets('a rolling-window goal shows a deterministic recovery hint when '
       'behind, and a buffer hint when at rate', (tester) async {
     await tester.pumpWidget(

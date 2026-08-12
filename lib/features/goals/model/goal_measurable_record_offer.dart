@@ -72,47 +72,69 @@ GoalMeasurableRecordOffer? parseGoalMeasurableRecordOffer({
   collect(criteria);
   if (linkedIds.isEmpty) return null;
   final text = message.text.toLowerCase();
+  final candidates = <({MeasurableDataType measurable, RegExpMatch match})>[];
   for (final measurable in measurables) {
     if (!linkedIds.contains(measurable.id)) continue;
     final unit = measurable.unitName.trim();
     if (unit.isEmpty) continue;
     final unitPattern = _unitPattern(unit);
-    final match = RegExp(
-      r'(?<![\p{L}\p{N}])([0-9]+(?:[.,][0-9]+)?)\s*' + unitPattern,
+    final matches = RegExp(
+      r'(?<![\p{L}\p{N}])([0-9]+(?:[.,][0-9]+)?)\s*' +
+          unitPattern +
+          r'(?![\p{L}\p{N}])',
       caseSensitive: false,
       unicode: true,
-    ).firstMatch(text);
-    if (match == null) continue;
-    final value = num.tryParse(match.group(1)!.replaceAll(',', '.'));
-    if (value == null || value <= 0) continue;
-    final mentionedDays = <DateTime>[];
-    for (final entry in recentDayLabels.entries) {
-      if (entry.value.any((label) => _containsWord(text, label))) {
-        mentionedDays.add(GoalWindow.dayUtc(entry.key));
-      }
+    ).allMatches(text).toList();
+    if (matches.length == 1) {
+      candidates.add((measurable: measurable, match: matches.single));
+    } else if (matches.length > 1) {
+      return null;
     }
-    mentionedDays.sort();
-    final days = mentionedDays.isEmpty
-        ? [GoalWindow.dayUtc(reference)]
-        : mentionedDays;
-    final estimated = days.length > 1;
-    final perDay = estimated ? value / days.length : value;
-    return GoalMeasurableRecordOffer(
-      sourceMessageId: message.id,
-      dataTypeId: measurable.id,
-      measurableName: measurable.displayName,
-      unitName: unit,
-      items: [
-        for (final day in days)
-          GoalMeasurableRecordItem(
-            day: day,
-            value: perDay,
-            estimated: estimated,
-          ),
-      ],
-    );
   }
-  return null;
+  if (candidates.isEmpty) return null;
+  final selected = switch (candidates) {
+    [final only] => only,
+    _ =>
+      candidates
+          .where(
+            (candidate) => _containsWord(
+              text,
+              candidate.measurable.displayName,
+            ),
+          )
+          .singleOrNull,
+  };
+  if (selected == null) return null;
+  final value = num.tryParse(
+    selected.match.group(1)!.replaceAll(',', '.'),
+  );
+  if (value == null || value <= 0) return null;
+  final mentionedDays = <DateTime>[];
+  for (final entry in recentDayLabels.entries) {
+    if (entry.value.any((label) => _containsWord(text, label))) {
+      mentionedDays.add(GoalWindow.dayUtc(entry.key));
+    }
+  }
+  mentionedDays.sort();
+  final days = mentionedDays.isEmpty
+      ? [GoalWindow.dayUtc(reference)]
+      : mentionedDays;
+  final estimated = days.length > 1;
+  final perDay = estimated ? value / days.length : value;
+  return GoalMeasurableRecordOffer(
+    sourceMessageId: message.id,
+    dataTypeId: selected.measurable.id,
+    measurableName: selected.measurable.displayName,
+    unitName: selected.measurable.unitName.trim(),
+    items: [
+      for (final day in days)
+        GoalMeasurableRecordItem(
+          day: day,
+          value: perDay,
+          estimated: estimated,
+        ),
+    ],
+  );
 }
 
 String _unitPattern(String unit) {

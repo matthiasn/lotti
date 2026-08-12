@@ -92,6 +92,7 @@ class GoalMetricProgressView {
     this.agentRecordedDays = const {},
     this.agentRecordedProvenanceByDay = const {},
     this.categoryTimeSessions = const [],
+    this.projectedOnTrack = false,
   });
 
   final String name;
@@ -104,6 +105,7 @@ class GoalMetricProgressView {
   final Map<DateTime, GoalRecordedMeasurementProvenance>
   agentRecordedProvenanceByDay;
   final List<GoalCategoryTimeSession> categoryTimeSessions;
+  final bool projectedOnTrack;
   final num target;
   final List<GoalProgressDay> days;
   final GoalAggregation aggregation;
@@ -142,6 +144,7 @@ class GoalProgressView {
     this.compositeCompactWindow,
     this.compositeRule,
     this.requiredSuccesses,
+    this.rootOnTrack = false,
   }) : metrics = metric == null ? metrics : [metric, ...metrics];
 
   final DateTime today;
@@ -150,6 +153,7 @@ class GoalProgressView {
   final List<bool>? compositeCompactWindow;
   final GoalCompositeRuleKind? compositeRule;
   final int? requiredSuccesses;
+  final bool rootOnTrack;
 
   int get dimensionCount => habits.length + metrics.length;
 
@@ -247,6 +251,11 @@ GoalProgressView buildGoalProgressView({
       const {},
 }) {
   final today = GoalWindow.dayUtc(reference);
+  final evaluation = const GoalProgressEvaluator().evaluate(
+    criteria,
+    signals,
+    reference,
+  );
   final habitLeaves = <GoalCriterionHabit>[];
   final metricLeaves = <GoalCriterionMetric>[];
   final measurableLeaves = <GoalCriterionMeasurable>[];
@@ -298,6 +307,7 @@ GoalProgressView buildGoalProgressView({
   };
   return GoalProgressView(
     today: today,
+    rootOnTrack: evaluation.satisfied || evaluation.onTrackByTrend,
     habits: habits,
     compositeCompactWindow: compositeCompactWindow,
     compositeRule: switch (criteria) {
@@ -318,6 +328,9 @@ GoalProgressView buildGoalProgressView({
           metric: metric,
           signals: signals,
           reference: reference,
+          projectedOnTrack:
+              evaluation.results[metric.criterionId]?.projectedDaysToTarget !=
+              null,
         ),
       for (final measurable in measurableLeaves)
         _measurableProgressView(
@@ -327,6 +340,11 @@ GoalProgressView buildGoalProgressView({
           definition: measurableDefinitions[measurable.dataTypeId],
           agentRecordedMeasurementIds: agentRecordedMeasurementIds,
           recordedMeasurementProvenanceById: recordedMeasurementProvenanceById,
+          projectedOnTrack:
+              evaluation
+                  .results[measurable.criterionId]
+                  ?.projectedDaysToTarget !=
+              null,
         ),
       for (final categoryTime in categoryTimeLeaves)
         _categoryTimeProgressView(
@@ -334,6 +352,11 @@ GoalProgressView buildGoalProgressView({
           signals: signals,
           reference: reference,
           categoryName: categoryNames[categoryTime.categoryId],
+          projectedOnTrack:
+              evaluation
+                  .results[categoryTime.criterionId]
+                  ?.projectedDaysToTarget !=
+              null,
         ),
     ],
   );
@@ -343,6 +366,7 @@ GoalMetricProgressView _metricProgressView({
   required GoalCriterionMetric metric,
   required GoalSignalWindow signals,
   required DateTime reference,
+  bool projectedOnTrack = false,
 }) {
   return _numericProgressView(
     criterion: metric,
@@ -359,6 +383,7 @@ GoalMetricProgressView _metricProgressView({
     dailyValues: signals.quantitativeDailySums[metric.dataType],
     signals: signals,
     reference: reference,
+    projectedOnTrack: projectedOnTrack,
   );
 }
 
@@ -371,6 +396,7 @@ GoalMetricProgressView _measurableProgressView({
   Map<String, GoalRecordedMeasurementProvenance>
       recordedMeasurementProvenanceById =
       const {},
+  bool projectedOnTrack = false,
 }) {
   final agentRecordedDays = agentRecordedMeasurementIds
       .map((entryId) => signals.measurableEntryDaysById[entryId])
@@ -397,6 +423,7 @@ GoalMetricProgressView _measurableProgressView({
     dailyValues: signals.measurableDailySums[measurable.dataTypeId],
     signals: signals,
     reference: reference,
+    projectedOnTrack: projectedOnTrack,
     agentRecordedDays: agentRecordedDays,
     agentRecordedProvenanceByDay: provenanceByDay,
   );
@@ -407,6 +434,7 @@ GoalMetricProgressView _categoryTimeProgressView({
   required GoalSignalWindow signals,
   required DateTime reference,
   String? categoryName,
+  bool projectedOnTrack = false,
 }) => _numericProgressView(
   criterion: categoryTime,
   criterionId: categoryTime.criterionId,
@@ -426,6 +454,7 @@ GoalMetricProgressView _categoryTimeProgressView({
   dailyValues: signals.categoryTimeDailyHours[categoryTime.criterionId],
   signals: signals,
   reference: reference,
+  projectedOnTrack: projectedOnTrack,
   zeroIsObserved: true,
 );
 
@@ -450,6 +479,7 @@ GoalMetricProgressView _numericProgressView({
       agentRecordedProvenanceByDay =
       const {},
   List<GoalCategoryTimeSession> categoryTimeSessions = const [],
+  bool projectedOnTrack = false,
 }) {
   final range = window.periodRange(reference);
   final today = GoalWindow.dayUtc(reference);
@@ -467,6 +497,7 @@ GoalMetricProgressView _numericProgressView({
     agentRecordedDays: agentRecordedDays,
     agentRecordedProvenanceByDay: agentRecordedProvenanceByDay,
     categoryTimeSessions: categoryTimeSessions,
+    projectedOnTrack: projectedOnTrack,
     days: [
       for (
         var day = range.start;

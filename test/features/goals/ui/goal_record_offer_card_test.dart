@@ -24,6 +24,7 @@ void main() {
     ) async {
       final db = MockJournalDb();
       final existingAt = DateTime(2026, 8, 11, 9);
+      final queriedRanges = <({DateTime start, DateTime end})>[];
       when(
         () => db.getMeasurementsByType(
           type: 'pages',
@@ -31,23 +32,29 @@ void main() {
           rangeEnd: any(named: 'rangeEnd'),
         ),
       ).thenAnswer(
-        (_) async => [
-          MeasurementEntry(
-            meta: Metadata(
-              id: 'existing',
-              createdAt: existingAt,
-              updatedAt: existingAt,
-              dateFrom: existingAt,
-              dateTo: existingAt,
+        (invocation) async {
+          queriedRanges.add((
+            start: invocation.namedArguments[#rangeStart]! as DateTime,
+            end: invocation.namedArguments[#rangeEnd]! as DateTime,
+          ));
+          return [
+            MeasurementEntry(
+              meta: Metadata(
+                id: 'existing',
+                createdAt: existingAt,
+                updatedAt: existingAt,
+                dateFrom: existingAt,
+                dateTo: existingAt,
+              ),
+              data: MeasurementData(
+                dateFrom: existingAt,
+                dateTo: existingAt,
+                value: 15,
+                dataTypeId: 'pages',
+              ),
             ),
-            data: MeasurementData(
-              dateFrom: existingAt,
-              dateTo: existingAt,
-              value: 15,
-              dataTypeId: 'pages',
-            ),
-          ),
-        ],
+          ];
+        },
       );
       final now = DateTime(2026, 8, 12);
       final measurable = MeasurableDataType(
@@ -100,6 +107,22 @@ void main() {
         find.widgetWithText(DesignSystemButton, 'Record 2 entries'),
       );
       expect(record.onPressed, isNull);
+
+      await tester.tap(find.byIcon(Icons.check_circle_rounded).first);
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('already logged'), findsNothing);
+      final remainingRecord = tester.widget<DesignSystemButton>(
+        find.widgetWithText(DesignSystemButton, 'Record 1 entry'),
+      );
+      expect(remainingRecord.onPressed, isNotNull);
+      expect(
+        queriedRanges.last,
+        (
+          start: DateTime(2026, 8, 12),
+          end: DateTime(2026, 8, 13),
+        ),
+      );
     },
   );
 

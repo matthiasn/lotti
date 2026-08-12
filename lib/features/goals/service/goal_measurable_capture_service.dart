@@ -1,5 +1,6 @@
 import 'package:clock/clock.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -14,10 +15,15 @@ abstract final class GoalMeasurableCaptureToolNames {
 }
 
 class GoalMeasurableCaptureService {
-  GoalMeasurableCaptureService(this._syncService, this._persistenceLogic);
+  GoalMeasurableCaptureService(
+    this._syncService,
+    this._persistenceLogic,
+    this._journalDb,
+  );
 
   final AgentSyncService _syncService;
   final PersistenceLogic _persistenceLogic;
+  final JournalDb _journalDb;
   static const _uuid = Uuid();
 
   Future<List<String>?> record({
@@ -29,27 +35,33 @@ class GoalMeasurableCaptureService {
     required String provenanceComment,
   }) async {
     if (items.isEmpty || items.any((item) => item.value <= 0)) return null;
-    final entryIds = <String>[];
-    for (final item in items) {
-      final observedAt = DateTime(
-        item.day.year,
-        item.day.month,
-        item.day.day,
-        12,
-      );
-      final entry = await _persistenceLogic.createMeasurementEntry(
-        data: MeasurementData(
-          dateFrom: observedAt,
-          dateTo: observedAt,
-          value: item.value,
-          dataTypeId: offer.dataTypeId,
-        ),
-        private: private,
-        comment: provenanceComment,
-      );
-      if (entry == null) return null;
-      entryIds.add(entry.meta.id);
-    }
+    final entryIds = await _journalDb
+        .transaction(() async {
+          final ids = <String>[];
+          for (final item in items) {
+            final observedAt = DateTime(
+              item.day.year,
+              item.day.month,
+              item.day.day,
+              12,
+            );
+            final entry = await _persistenceLogic.createMeasurementEntry(
+              data: MeasurementData(
+                dateFrom: observedAt,
+                dateTo: observedAt,
+                value: item.value,
+                dataTypeId: offer.dataTypeId,
+              ),
+              private: private,
+              comment: provenanceComment,
+            );
+            if (entry == null) throw const _MeasurementCaptureAborted();
+            ids.add(entry.meta.id);
+          }
+          return ids;
+        })
+        .onError<_MeasurementCaptureAborted>((_, _) => const <String>[]);
+    if (entryIds.isEmpty) return null;
     await _recordDecision(
       agentId: agentId,
       offer: offer,
@@ -117,4 +129,8 @@ class GoalMeasurableCaptureService {
       ),
     );
   }
+}
+
+class _MeasurementCaptureAborted implements Exception {
+  const _MeasurementCaptureAborted();
 }

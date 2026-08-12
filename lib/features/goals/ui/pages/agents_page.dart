@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -171,7 +172,9 @@ class _GoalAgentRow extends ConsumerWidget {
         ? tokens.colors.text.lowEmphasis
         : goalCoarseHealthColor(coarse, tokens.colors);
     final direction = health?.direction;
-    final dominantIssue = progress == null ? null : _dominantIssue(progress);
+    final dominantIssue = progress == null
+        ? null
+        : _dominantIssue(progress, health?.trackStatus);
     // A deterministic, factual hint for rolling-window habit goals: the
     // days-to-recovery when behind, or the buffer before the oldest success
     // ages out when at rate. Distinct from the agent's prose one-liner —
@@ -292,10 +295,21 @@ class _GoalAgentRow extends ConsumerWidget {
   }
 }
 
-String? _dominantIssue(GoalProgressView progress) {
+String? _dominantIssue(
+  GoalProgressView progress,
+  GoalTrackStatus? trackStatus,
+) {
+  if (progress.rootOnTrack ||
+      trackStatus == GoalTrackStatus.onTrack ||
+      trackStatus == GoalTrackStatus.achieved ||
+      trackStatus == GoalTrackStatus.insufficientData) {
+    return null;
+  }
   for (final metric in progress.metrics) {
     final observed = metric.days.where((day) => day.isObserved).toList();
-    if (observed.isNotEmpty && !metric.meetsTarget(observed.last)) {
+    if (observed.isNotEmpty &&
+        !metric.projectedOnTrack &&
+        !metric.meetsTarget(observed.last)) {
       return metric.name;
     }
   }

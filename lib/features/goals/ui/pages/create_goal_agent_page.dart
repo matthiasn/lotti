@@ -82,7 +82,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   _GoalFormStep _step = _GoalFormStep.intention;
   var _mapping = const GoalFormMapping.empty();
   final _habitTargets = <String, int>{};
-  final _measurableTargets = <String, num>{};
+  final _measurableTargets = <String, num?>{};
   final _healthTargets = <String, num?>{};
   final _healthDirections = <String, GoalDirection>{};
   List<HabitDefinition> _knownHabits = const [];
@@ -256,7 +256,13 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final invalidHealthTargets = _healthTargets.values.any(
       (target) => target == null || target <= 0,
     );
-    if (!hasMapping || invalidSteps || invalidHealthTargets) {
+    final invalidMeasurableTargets = _measurableTargets.values.any(
+      (target) => target == null || target <= 0,
+    );
+    if (!hasMapping ||
+        invalidSteps ||
+        invalidMeasurableTargets ||
+        invalidHealthTargets) {
       setState(() => _validation = context.messages.goalFormValidationMapping);
       return;
     }
@@ -348,12 +354,13 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           entry.value,
         ),
       for (final entry in _measurableTargets.entries)
-        context.messages.goalFormMeasurableCadence(
-          measurableNames[entry.key] ?? entry.key,
-          NumberFormat.decimalPattern(
-            context.messages.localeName,
-          ).format(entry.value),
-        ),
+        if (entry.value case final target?)
+          context.messages.goalFormMeasurableCadence(
+            measurableNames[entry.key] ?? entry.key,
+            NumberFormat.decimalPattern(
+              context.messages.localeName,
+            ).format(target),
+          ),
       for (final entry in _healthTargets.entries)
         if (entry.value case final target?)
           context.messages.goalFormHealthCadence(
@@ -428,7 +435,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         : _mapping.buildCriteria(
             stepsTitle: messages.goalCreateStepsTargetLabel,
             habitTargets: _habitTargets,
-            measurableTargets: _measurableTargets,
+            measurableTargets: {
+              for (final entry in _measurableTargets.entries)
+                entry.key: ?entry.value,
+            },
             measurableTitles: {
               for (final measurable in _knownMeasurables)
                 measurable.id: measurable.displayName,
@@ -921,7 +931,7 @@ class _MappingStep extends StatelessWidget {
   final bool habitsFailed;
   final GoalFormMapping mapping;
   final List<MeasurableDataType> measurables;
-  final Map<String, num> measurableTargets;
+  final Map<String, num?> measurableTargets;
   final Map<String, num?> healthTargets;
   final Map<String, GoalDirection> healthDirections;
   final GoalFormCompositeRule compositeRule;
@@ -938,7 +948,7 @@ class _MappingStep extends StatelessWidget {
   final VoidCallback onShowAll;
   final void Function({required String measurableId, required bool selected})
   onMeasurableChanged;
-  final void Function(String measurableId, num target)
+  final void Function(String measurableId, num? target)
   onMeasurableTargetChanged;
   final ValueChanged<List<String>> onHealthSelected;
   final ValueChanged<String> onHealthRemoved;
@@ -1112,7 +1122,7 @@ class _MappingStep extends StatelessWidget {
                   ),
                   _MeasurableTargetInput(
                     measurableId: measurable.id,
-                    value: measurableTargets[measurable.id]!,
+                    value: measurableTargets[measurable.id],
                     unitName: measurable.unitName,
                     onChanged: (value) =>
                         onMeasurableTargetChanged(measurable.id, value),
@@ -1307,9 +1317,9 @@ class _MeasurableTargetInput extends StatefulWidget {
   });
 
   final String measurableId;
-  final num value;
+  final num? value;
   final String unitName;
-  final ValueChanged<num> onChanged;
+  final ValueChanged<num?> onChanged;
 
   @override
   State<_MeasurableTargetInput> createState() => _MeasurableTargetInputState();
@@ -1317,7 +1327,7 @@ class _MeasurableTargetInput extends StatefulWidget {
 
 class _MeasurableTargetInputState extends State<_MeasurableTargetInput> {
   late final TextEditingController _controller = TextEditingController(
-    text: widget.value.toString(),
+    text: widget.value?.toString() ?? '',
   );
 
   @override
@@ -1338,7 +1348,7 @@ class _MeasurableTargetInputState extends State<_MeasurableTargetInput> {
         keyboardType: const TextInputType.numberWithOptions(decimal: true),
         onChanged: (raw) {
           final value = num.tryParse(raw.replaceAll(',', '.'));
-          if (value != null) widget.onChanged(value);
+          widget.onChanged(value);
         },
       ),
     );

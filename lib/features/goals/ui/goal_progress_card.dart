@@ -102,13 +102,11 @@ class GoalProgressCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final patternMetric = progress.metrics
-        .where(
-          (metric) =>
-              metric.kind == GoalDimensionKind.categoryTime &&
-              metric.categoryTimeSessions.isNotEmpty,
-        )
-        .firstOrNull;
+    final patternMetrics = progress.metrics.where(
+      (metric) =>
+          metric.kind == GoalDimensionKind.categoryTime &&
+          metric.categoryTimeSessions.isNotEmpty,
+    );
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -128,7 +126,7 @@ class GoalProgressCard extends StatelessWidget {
           _MetricDimensionCard(metric: metric),
           SizedBox(height: tokens.spacing.step3),
         ],
-        if (patternMetric != null) ...[
+        for (final patternMetric in patternMetrics) ...[
           _CategoryPatternCard(metric: patternMetric),
           SizedBox(height: tokens.spacing.step3),
         ],
@@ -338,7 +336,12 @@ class _MetricDimensionCard extends StatelessWidget {
             number.format(metric.target),
             unit,
           );
-    final met = observed.isNotEmpty && metric.meetsTarget(metric.days.last);
+    final meetsPeriodTarget = switch (metric.direction) {
+      GoalDirection.atLeast => current >= metric.target,
+      GoalDirection.atMost => current <= metric.target,
+    };
+    final met =
+        observed.isNotEmpty && (meetsPeriodTarget || metric.projectedOnTrack);
     return DesignSystemSectionCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1259,7 +1262,10 @@ class _CategoryBandSeries extends StatelessWidget {
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
     final range = metric.dailyTimeRange!;
-    final sessions = metric.categoryTimeSessions.take(24).toList();
+    final allSessions = metric.categoryTimeSessions;
+    final sessions = allSessions.length <= 24
+        ? allSessions
+        : allSessions.sublist(allSessions.length - 24);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -1376,7 +1382,7 @@ class _CategoryPatternCard extends StatelessWidget {
               ),
               SizedBox(width: tokens.spacing.step2),
               Text(
-                context.messages.goalPatternTitle,
+                '${context.messages.goalPatternTitle} · ${metric.name}',
                 style: tokens.typography.styles.subtitle.subtitle1,
               ),
             ],

@@ -15,6 +15,7 @@ void main() {
 
   late MockAgentSyncService syncService;
   late MockPersistenceLogic persistenceLogic;
+  late MockJournalDb journalDb;
   late List<AgentDomainEntity> upserts;
   late List<MeasurementData> measurements;
   late GoalMeasurableCaptureService service;
@@ -30,6 +31,7 @@ void main() {
   setUp(() {
     syncService = MockAgentSyncService();
     persistenceLogic = MockPersistenceLogic();
+    journalDb = MockJournalDb();
     upserts = [];
     measurements = [];
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
@@ -57,7 +59,11 @@ void main() {
         data: data,
       );
     });
-    service = GoalMeasurableCaptureService(syncService, persistenceLogic);
+    service = GoalMeasurableCaptureService(
+      syncService,
+      persistenceLogic,
+      journalDb,
+    );
   });
 
   test(
@@ -117,4 +123,80 @@ void main() {
     expect(payload.content['sourceMessageId'], 'source-message');
     expect(action.metadata.toolName, GoalMeasurableCaptureToolNames.dismissed);
   });
+
+  test('rolls back every row when a later measurement fails', () async {
+    var call = 0;
+    when(
+      () => persistenceLogic.createMeasurementEntry(
+        data: any(named: 'data'),
+        private: any(named: 'private'),
+        comment: any(named: 'comment'),
+      ),
+    ).thenAnswer((invocation) async {
+      call++;
+      final data = invocation.namedArguments[#data]! as MeasurementData;
+      measurements.add(data);
+      if (call == 2) return null;
+      return MeasurementEntry(
+        meta: Metadata(
+          id: 'measurement-$call',
+          createdAt: data.dateFrom,
+          updatedAt: data.dateFrom,
+          dateFrom: data.dateFrom,
+          dateTo: data.dateTo,
+        ),
+        data: data,
+      );
+    });
+    journalDb = _RollbackJournalDb(measurements);
+    service = GoalMeasurableCaptureService(
+      syncService,
+      persistenceLogic,
+      journalDb,
+    );
+
+    final result = await service.record(
+      agentId: 'goal-1',
+      agentName: 'Juno',
+      offer: offer,
+      items: [
+        GoalMeasurableRecordItem(
+          day: DateTime.utc(2026, 8, 10),
+          value: 20,
+          estimated: false,
+        ),
+        GoalMeasurableRecordItem(
+          day: DateTime.utc(2026, 8, 11),
+          value: 25,
+          estimated: false,
+        ),
+      ],
+      private: true,
+      provenanceComment: 'Recorded by Juno.',
+    );
+
+    expect(result, isNull);
+    expect(measurements, isEmpty);
+    expect(upserts, isEmpty);
+  });
+}
+
+class _RollbackJournalDb extends MockJournalDb {
+  _RollbackJournalDb(this.measurements);
+
+  final List<MeasurementData> measurements;
+
+  @override
+  Future<T> transaction<T>(
+    Future<T> Function() action, {
+    bool requireNew = false,
+  }) async {
+    final initialLength = measurements.length;
+    try {
+      return await action();
+    } catch (_) {
+      measurements.removeRange(initialLength, measurements.length);
+      rethrow;
+    }
+  }
 }

@@ -1104,6 +1104,59 @@ void main() {
     expect(navigated, ['/settings/measurables/create']);
   });
 
+  testWidgets('clearing a selected measurable target blocks confirmation', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final measurable = MeasurableDataType(
+      id: 'meds',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      displayName: 'Medication doses',
+      description: '',
+      unitName: 'doses',
+      version: 1,
+      vectorClock: null,
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: [
+          ...overrides(),
+          measurableDataTypesStreamProvider.overrideWith(
+            (ref) => Stream.value([measurable]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Build consistency',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Medication doses'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-measurable-target-meds')),
+      '',
+    );
+    await tester.tap(find.text('Looks right'));
+    await tester.pump();
+
+    expect(
+      find.text('Choose at least one signal the agent can actually observe.'),
+      findsOneWidget,
+    );
+    expect(find.text('Meet your agent'), findsNothing);
+  });
+
   testWidgets('new goals can select weight and blood pressure', (
     tester,
   ) async {

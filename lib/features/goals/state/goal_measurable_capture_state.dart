@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/database/database.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
@@ -32,6 +33,7 @@ final goalMeasurableCaptureServiceProvider =
       (ref) => GoalMeasurableCaptureService(
         ref.watch(agentSyncServiceProvider),
         getIt<PersistenceLogic>(),
+        getIt<JournalDb>(),
       ),
       name: 'goalMeasurableCaptureServiceProvider',
     );
@@ -46,13 +48,21 @@ goalMeasurableCaptureDecisionsProvider = FutureProvider.autoDispose
           agentId,
           type: AgentEntityTypes.agentMessage,
         );
-        final actions = entities.whereType<AgentMessageEntity>().where(
-          (entity) =>
-              entity.metadata.toolName ==
-                  GoalMeasurableCaptureToolNames.recorded ||
-              entity.metadata.toolName ==
-                  GoalMeasurableCaptureToolNames.dismissed,
-        );
+        final actions =
+            entities
+                .whereType<AgentMessageEntity>()
+                .where(
+                  (entity) =>
+                      entity.metadata.toolName ==
+                          GoalMeasurableCaptureToolNames.recorded ||
+                      entity.metadata.toolName ==
+                          GoalMeasurableCaptureToolNames.dismissed,
+                )
+                .toList()
+              ..sort((a, b) {
+                final byCreatedAt = b.createdAt.compareTo(a.createdAt);
+                return byCreatedAt != 0 ? byCreatedAt : b.id.compareTo(a.id);
+              });
         final decisions = <String, GoalMeasurableCaptureDecision>{};
         for (final action in actions) {
           final payloadId = action.contentEntryId;
@@ -61,6 +71,7 @@ goalMeasurableCaptureDecisionsProvider = FutureProvider.autoDispose
           if (payload is! AgentMessagePayloadEntity) continue;
           final sourceMessageId = payload.content['sourceMessageId'];
           if (sourceMessageId is! String || sourceMessageId.isEmpty) continue;
+          if (decisions.containsKey(sourceMessageId)) continue;
           final entryIds = payload.content['entryIds'];
           final recordedEntryIds = entryIds is List
               ? entryIds.whereType<String>().toList(growable: false)

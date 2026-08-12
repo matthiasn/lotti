@@ -7,6 +7,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -292,6 +293,76 @@ void main() {
     expect(find.text('Aug 1 – Aug 31'), findsOneWidget);
     expect(find.byType(FractionallySizedBox), findsNWidgets(31));
     expect(find.byType(SingleChildScrollView), findsOneWidget);
+  });
+
+  testWidgets('a calendar metric uses the observed period aggregate', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Meditation minutes',
+              target: 10,
+              aggregation: GoalAggregation.sum,
+              window: const GoalWindow.calendarMonth(),
+              days: [
+                day(1, 6),
+                day(0, 6),
+                for (var offset = 1; offset <= 20; offset++)
+                  GoalProgressDay(
+                    day: today.add(Duration(days: offset)),
+                    value: 0,
+                    isObserved: false,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('12 of 10'), findsOneWidget);
+    expect(find.text('This dimension is currently on track.'), findsOneWidget);
+  });
+
+  testWidgets('renders an observed-pattern card for every category dimension', (
+    tester,
+  ) async {
+    GoalMetricProgressView categoryMetric(String name, int hour) =>
+        GoalMetricProgressView(
+          name: name,
+          target: 1,
+          kind: GoalDimensionKind.categoryTime,
+          days: [day(0, 1)],
+          categoryTimeSessions: [
+            GoalCategoryTimeSession(
+              categoryId: name,
+              dateFrom: DateTime(2026, 8, 11, hour),
+              dateTo: DateTime(2026, 8, 11, hour + 1),
+            ),
+          ],
+        );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metrics: [
+                categoryMetric('Deep work', 9),
+                categoryMetric('Late work', 22),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Timing pattern · Deep work'), findsOneWidget);
+    expect(find.text('Timing pattern · Late work'), findsOneWidget);
   });
 
   testWidgets('a calendar-month habit shows and scrolls its authored period', (

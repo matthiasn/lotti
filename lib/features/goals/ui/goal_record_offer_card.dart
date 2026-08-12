@@ -62,10 +62,20 @@ class _GoalRecordOfferCardState extends ConsumerState<GoalRecordOfferCard> {
       ? value.toInt().toString()
       : value.toStringAsFixed(1);
 
-  Future<bool> _loadConflict() async {
-    final selectedDays = widget.offer.items.map((item) => item.day).toList()
-      ..sort();
-    final start = selectedDays.first;
+  Future<bool> _loadConflict({List<GoalMeasurableRecordItem>? items}) async {
+    final checkedItems =
+        items ??
+        [
+          for (var index = 0; index < _items.length; index++)
+            if (_selected[index]) _items[index],
+        ];
+    if (checkedItems.isEmpty) return false;
+    final selectedDays = checkedItems.map((item) => item.day).toList()..sort();
+    final start = DateTime(
+      selectedDays.first.year,
+      selectedDays.first.month,
+      selectedDays.first.day,
+    );
     final end = DateTime(
       selectedDays.last.year,
       selectedDays.last.month,
@@ -78,7 +88,7 @@ class _GoalRecordOfferCardState extends ConsumerState<GoalRecordOfferCard> {
           rangeStart: start,
           rangeEnd: end,
         );
-    final offeredDays = {for (final item in widget.offer.items) item.day};
+    final offeredDays = {for (final item in checkedItems) item.day};
     return rows.whereType<MeasurementEntry>().any((entry) {
       final date = entry.data.dateFrom;
       final day = DateTime.utc(date.year, date.month, date.day);
@@ -119,7 +129,7 @@ class _GoalRecordOfferCardState extends ConsumerState<GoalRecordOfferCard> {
     });
     // The initial read keeps the card responsive, but confirmation must fence
     // a measurement that arrived from another device while the offer sat open.
-    final conflict = await _loadConflict();
+    final conflict = await _loadConflict(items: selectedItems);
     if (!mounted) return;
     if (conflict) {
       setState(() {
@@ -207,8 +217,13 @@ class _GoalRecordOfferCardState extends ConsumerState<GoalRecordOfferCard> {
                     estimated: _items[index].estimated,
                     selected: _selected[index],
                     controller: _controllers[index],
-                    onSelectionChanged: (selected) =>
-                        setState(() => _selected[index] = selected),
+                    onSelectionChanged: (selected) {
+                      setState(() {
+                        _selected[index] = selected;
+                        _hasConflict = _loadConflict();
+                        _error = null;
+                      });
+                    },
                   ),
                   if (index < _items.length - 1)
                     SizedBox(height: tokens.spacing.step2),
