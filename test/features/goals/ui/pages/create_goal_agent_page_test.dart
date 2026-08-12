@@ -12,6 +12,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -27,7 +28,13 @@ import '../../../../widget_test_utils.dart';
 class _MockGoalSpecRevisionService extends Mock
     implements GoalSpecRevisionService {}
 
-HabitDefinition _habit(String id, String name) => HabitDefinition(
+HabitDefinition _habit(
+  String id,
+  String name, {
+  bool active = true,
+  bool private = false,
+  DateTime? deletedAt,
+}) => HabitDefinition(
   id: id,
   name: name,
   description: '',
@@ -35,8 +42,9 @@ HabitDefinition _habit(String id, String name) => HabitDefinition(
   updatedAt: DateTime(2026),
   habitSchedule: const HabitSchedule.daily(requiredCompletions: 1),
   vectorClock: null,
-  active: true,
-  private: false,
+  active: active,
+  private: private,
+  deletedAt: deletedAt,
   version: '1',
 );
 
@@ -151,6 +159,12 @@ void main() {
     when(habitsRepository.watchHabitDefinitions).thenAnswer(
       (_) => Stream.value([_habit('gym', 'Gym'), _habit('run', 'Run')]),
     );
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity(any()),
+    ).thenAnswer((invocation) async {
+      final id = invocation.positionalArguments.single as String;
+      return _habit(id, id, private: true);
+    });
   });
 
   testWidgets('requires a speakable intention before mapping', (tester) async {
@@ -429,6 +443,187 @@ void main() {
       ),
     ).called(1);
     expect(navigated, ['/agents']);
+  });
+
+  testWidgets('save refreshes an untouched derived title after cleanup', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('run'),
+    ).thenAnswer((_) async => _habit('run', 'Run', active: false));
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym and Run every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    final call = verify(
+      () => agentService.createGoalAgent(
+        title: captureAny(named: 'title'),
+        displayName: 'Juno',
+        statement: 'Gym and Run every week',
+        criteria: captureAny(named: 'criteria'),
+      ),
+    ).captured;
+    expect(call.first, 'Gym');
+    final saved = call.last as GoalCriterionHabit;
+    expect(saved.habitId, 'gym');
+  });
+
+  testWidgets(
+    'save recovers from a blank title after habit integrity checks',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(),
+          overrides: overrides(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-intention')),
+        'Gym and Run every week',
+      );
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Looks right'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-title')),
+        '',
+      );
+      await tester.tap(find.text('Create agent'));
+      await tester.pump();
+
+      expect(
+        find.text('Give the goal and its agent a name.'),
+        findsOneWidget,
+      );
+      expect(find.text('Create agent'), findsOneWidget);
+      expect(
+        tester
+            .widget<TextField>(
+              find.descendant(
+                of: find.byKey(const ValueKey('goal-form-title')),
+                matching: find.byType(TextField),
+              ),
+            )
+            .enabled,
+        isTrue,
+      );
+      verify(() => habitsRepository.getHabitByIdForIntegrity('gym')).called(1);
+      verify(() => habitsRepository.getHabitByIdForIntegrity('run')).called(1);
+      verifyNever(
+        () => agentService.createGoalAgent(
+          title: any(named: 'title'),
+          displayName: any(named: 'displayName'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      );
+    },
+  );
+
+  testWidgets('a newly selected habit stays selected when it becomes private', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final habits = StreamController<List<HabitDefinition>>.broadcast();
+    final runLookup = Completer<HabitDefinition?>();
+    when(
+      habitsRepository.watchHabitDefinitions,
+    ).thenAnswer((_) => habits.stream);
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('gym'),
+    ).thenAnswer((_) async => _habit('gym', 'Gym'));
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('run'),
+    ).thenAnswer((_) => runLookup.future);
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    habits.add([_habit('gym', 'Gym'), _habit('run', 'Run')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Gym every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-form-habit-run')));
+    await tester.pump();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    habits.add([_habit('gym', 'Gym')]);
+    await tester.pump();
+    runLookup.complete(_habit('run', 'Run', private: true));
+    await tester.pump();
+
+    final saved =
+        verify(
+              () => agentService.createGoalAgent(
+                title: 'Gym + Run',
+                displayName: 'Juno',
+                statement: 'Gym every week',
+                criteria: captureAny(named: 'criteria'),
+              ),
+            ).captured.single
+            as GoalCriterionAllOf;
+    expect(
+      saved.criteria.whereType<GoalCriterionHabit>().map(
+        (habit) => habit.habitId,
+      ),
+      containsAll(['gym', 'run']),
+    );
+    await tester.pumpWidget(const SizedBox.shrink());
+    await habits.close();
   });
 
   testWidgets('confirmation requires both goal and persona names', (
@@ -1122,6 +1317,7 @@ void main() {
           criteria: criteria,
         ),
       ).called(1);
+      verify(() => habitsRepository.getHabitByIdForIntegrity('gym')).called(1);
       await habits.close();
       await tester.pump();
     },
@@ -1184,7 +1380,398 @@ void main() {
       ),
     ).captured.single;
     expect(criteria, hiddenCriteria);
+    verify(
+      () => habitsRepository.getHabitByIdForIntegrity('private-habit'),
+    ).called(1);
   });
+
+  testWidgets('editing drops a hidden habit confirmed inactive before save', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'routine',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'habit-private',
+          habitId: 'private-habit',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 4,
+        ),
+        GoalCriterion.habit(
+          criterionId: 'habit-gym',
+          habitId: 'gym',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 2,
+        ),
+      ],
+    );
+    final current = _spec(criteria: criteria);
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('private-habit'),
+    ).thenAnswer(
+      (_) async => _habit(
+        'private-habit',
+        'Private habit',
+        active: false,
+        private: true,
+      ),
+    );
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: current.id,
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer(
+      (_) async => const GoalSpecRevisionRefused(
+        GoalSpecRevisionService.ownerNoChangesReason,
+      ),
+    );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-title')),
+      'Updated movement',
+    );
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+
+    final saved = verify(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: current.id,
+        displayName: 'Juno',
+        title: 'Updated movement',
+        statement: current.statement,
+        criteria: captureAny(named: 'criteria'),
+      ),
+    ).captured.single;
+    final savedHabits = (saved as GoalCriterionAllOf).criteria
+        .whereType<GoalCriterionHabit>()
+        .toList();
+    expect(savedHabits, hasLength(1));
+    expect(savedHabits.single.habitId, 'gym');
+  });
+
+  testWidgets(
+    'editing drops a visible habit that became inactive before save',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const criteria = GoalCriterion.habit(
+        criterionId: 'habit-gym',
+        habitId: 'gym',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 2,
+      );
+      final current = _spec(criteria: criteria);
+      when(
+        () => habitsRepository.getHabitByIdForIntegrity('gym'),
+      ).thenAnswer((_) async => _habit('gym', 'Gym', active: false));
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(editSpec: current),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Looks right'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Save new version'));
+      await tester.pump();
+
+      expect(
+        find.text('Choose at least one signal the agent can actually observe.'),
+        findsOneWidget,
+      );
+      verify(() => habitsRepository.getHabitByIdForIntegrity('gym')).called(1);
+      verifyNever(
+        () => revisionService.reviseFromOwner(
+          agentId: any(named: 'agentId'),
+          baseVersionId: any(named: 'baseVersionId'),
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      );
+    },
+  );
+
+  testWidgets(
+    'editing validates and drops a newly selected inactive habit before save',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const criteria = GoalCriterion.habit(
+        criterionId: 'habit-gym',
+        habitId: 'gym',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 2,
+      );
+      final current = _spec(criteria: criteria);
+      when(
+        () => habitsRepository.getHabitByIdForIntegrity('run'),
+      ).thenAnswer((_) async => _habit('run', 'Run', active: false));
+      when(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: current.id,
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      ).thenAnswer(
+        (_) async => const GoalSpecRevisionRefused(
+          GoalSpecRevisionService.ownerNoChangesReason,
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(editSpec: current),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Choose an existing habit'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byKey(const ValueKey('goal-form-habit-run')));
+      await tester.pump();
+      await tester.tap(find.text('Looks right'));
+      await tester.pumpAndSettle();
+      await tester.enterText(
+        find.byKey(const ValueKey('goal-form-title')),
+        'Updated movement',
+      );
+      await tester.tap(find.text('Save new version'));
+      await tester.pump();
+
+      final saved =
+          verify(
+                () => revisionService.reviseFromOwner(
+                  agentId: 'goal-1',
+                  baseVersionId: current.id,
+                  displayName: 'Juno',
+                  title: 'Updated movement',
+                  statement: current.statement,
+                  criteria: captureAny(named: 'criteria'),
+                ),
+              ).captured.single
+              as GoalCriterionHabit;
+      expect(saved.habitId, 'gym');
+      expect(saved.targetCount, 2);
+      verify(() => habitsRepository.getHabitByIdForIntegrity('gym')).called(1);
+      verify(() => habitsRepository.getHabitByIdForIntegrity('run')).called(1);
+    },
+  );
+
+  testWidgets('an integrity lookup failure keeps the edit open and unsaved', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const hiddenCriteria = GoalCriterion.habit(
+      criterionId: 'habit-private',
+      habitId: 'private-habit',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 4,
+    );
+    final current = _spec(criteria: hiddenCriteria);
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('private-habit'),
+    ).thenThrow(StateError('database unavailable'));
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+
+    expect(
+      find.text('Saving the goal failed — please try again.'),
+      findsOneWidget,
+    );
+    expect(
+      find.byKey(const ValueKey('goal-form-title')),
+      findsOneWidget,
+    );
+    verifyNever(
+      () => revisionService.reviseFromOwner(
+        agentId: any(named: 'agentId'),
+        baseVersionId: any(named: 'baseVersionId'),
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
+  });
+
+  testWidgets('a disposed edit abandons a pending integrity lookup', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const hiddenCriteria = GoalCriterion.habit(
+      criterionId: 'habit-private',
+      habitId: 'private-habit',
+      window: GoalWindow.rollingDays(count: 7),
+      targetCount: 4,
+    );
+    final integrityLookup = Completer<HabitDefinition?>();
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('private-habit'),
+    ).thenAnswer((_) => integrityLookup.future);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: _spec(criteria: hiddenCriteria)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+    await tester.pumpWidget(const SizedBox.shrink());
+
+    integrityLookup.complete(_habit('private-habit', 'Private habit'));
+    await tester.pump();
+
+    verifyNever(
+      () => revisionService.reviseFromOwner(
+        agentId: any(named: 'agentId'),
+        baseVersionId: any(named: 'baseVersionId'),
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    );
+  });
+
+  testWidgets(
+    'an integrity lookup makes the edit busy and blocks duplicate save or back',
+    (tester) async {
+      tester.view.physicalSize = const Size(900, 1800);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+      const criteria = GoalCriterion.habit(
+        criterionId: 'habit-gym',
+        habitId: 'gym',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 2,
+      );
+      final current = _spec(criteria: criteria);
+      final integrityLookup = Completer<HabitDefinition?>();
+      when(
+        () => habitsRepository.getHabitByIdForIntegrity('gym'),
+      ).thenAnswer((_) => integrityLookup.future);
+      when(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: current.id,
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: any(named: 'criteria'),
+        ),
+      ).thenAnswer(
+        (_) async => const GoalSpecRevisionRefused(
+          GoalSpecRevisionService.ownerNoChangesReason,
+        ),
+      );
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          const CreateGoalAgentPage(agentId: 'goal-1'),
+          overrides: overrides(editSpec: current),
+        ),
+      );
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Continue'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.text('Looks right'));
+      await tester.pumpAndSettle();
+
+      final saveLabel = find.text('Save new version');
+      await tester.tap(saveLabel);
+      await tester.tap(saveLabel);
+      await tester.pump();
+
+      TextField inputInside(String key) => tester.widget<TextField>(
+        find.descendant(
+          of: find.byKey(ValueKey(key)),
+          matching: find.byType(TextField),
+        ),
+      );
+      expect(inputInside('goal-form-persona').enabled, isFalse);
+      expect(inputInside('goal-form-title').enabled, isFalse);
+      expect(
+        tester.widget<BackButton>(find.byType(BackButton)).onPressed,
+        isNull,
+      );
+      verify(() => habitsRepository.getHabitByIdForIntegrity('gym')).called(1);
+
+      await tester.binding.handlePopRoute();
+      await tester.pump();
+      expect(find.byKey(const ValueKey('goal-form-title')), findsOneWidget);
+      expect(find.byKey(const ValueKey('goal-form-habit-gym')), findsNothing);
+
+      integrityLookup.complete(_habit('gym', 'Gym'));
+      await tester.pump();
+      await tester.pump();
+
+      verify(
+        () => revisionService.reviseFromOwner(
+          agentId: 'goal-1',
+          baseVersionId: current.id,
+          displayName: any(named: 'displayName'),
+          title: any(named: 'title'),
+          statement: any(named: 'statement'),
+          criteria: criteria,
+        ),
+      ).called(1);
+    },
+  );
 
   testWidgets('editing preserves an unsupported mapping while renaming', (
     tester,
@@ -1288,6 +1875,9 @@ void main() {
 
     habits.add([]);
     await tester.pump();
+    when(
+      () => habitsRepository.getHabitByIdForIntegrity('gym'),
+    ).thenAnswer((_) async => null);
     await tester.tap(find.text('Create agent'));
     await tester.pump();
 
@@ -1461,5 +2051,70 @@ void main() {
       find.text('Saving the goal failed — please try again.'),
       findsNothing,
     );
+  });
+
+  testWidgets('a successful edit refreshes mounted proposal cards', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    var pendingReads = 0;
+    final current = _spec();
+    final revised = _spec(version: 4);
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: current.id,
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer(
+      (_) async => GoalSpecRevisionMinted(
+        version: revised,
+        changeSummaries: const ['goal name updated'],
+      ),
+    );
+    when(
+      () => agentService.refreshAfterRevision(
+        agentId: 'goal-1',
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenReturn(null);
+    final harness = makeTestableWidgetWithContainer(
+      const CreateGoalAgentPage(agentId: 'goal-1'),
+      overrides: [
+        ...overrides(editSpec: current),
+        selfTargetedPendingChangeSetsProvider('goal-1').overrideWith((ref) {
+          pendingReads++;
+          return Future.value([]);
+        }),
+      ],
+    );
+    addTearDown(harness.container.dispose);
+    final subscription = harness.container.listen(
+      selfTargetedPendingChangeSetsProvider('goal-1'),
+      (_, _) {},
+      fireImmediately: true,
+    );
+    addTearDown(subscription.close);
+
+    await tester.pumpWidget(harness.widget);
+    await tester.pumpAndSettle();
+    expect(pendingReads, 1);
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-title')),
+      'Updated movement',
+    );
+    await tester.tap(find.text('Save new version'));
+    await tester.pumpAndSettle();
+
+    expect(pendingReads, 2);
   });
 }

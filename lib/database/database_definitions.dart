@@ -138,6 +138,22 @@ mixin _JournalDbDefinitions on _$JournalDb, _JournalDbConfigFlags {
     return habitDefinitionsStreamMapper(rows).firstOrNull;
   }
 
+  /// Reads a non-deleted habit definition without applying the private-entry
+  /// visibility gate.
+  ///
+  /// This is an integrity lookup for already-persisted references, not a
+  /// discovery surface: callers use it to distinguish a hidden private habit
+  /// from one that was deleted or deactivated while an editor was open.
+  Future<HabitDefinition?> getHabitByIdForIntegrity(String id) async {
+    final rows =
+        await (select(habitDefinitions)..where(
+              (definition) =>
+                  definition.id.equals(id) & definition.deleted.equals(false),
+            ))
+            .get();
+    return habitDefinitionsStreamMapper(rows).firstOrNull;
+  }
+
   Future<DashboardDefinition?> getDashboardById(String id) async {
     final rows = await dashboardById(id).get();
     return dashboardStreamMapper(rows).firstOrNull;

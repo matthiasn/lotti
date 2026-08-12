@@ -381,6 +381,48 @@ void main() {
         });
       });
 
+      test('retracts a deterministic non-retryable proposal failure', () async {
+        final changeSet = makeChangeSetWith(
+          items: const [
+            ChangeItem(
+              toolName: 'propose_goal_revision_v2',
+              args: {'baseVersionId': 'goal-1:spec-v1'},
+              humanSummary: 'Revise the goal',
+            ),
+          ],
+        );
+        when(
+          () => mockToolDispatcher.dispatch(any(), any(), any()),
+        ).thenAnswer(
+          (_) async => const ToolExecutionResult(
+            success: false,
+            output: '',
+            nonRetryable: true,
+          ),
+        );
+
+        await withClock(testClock, () async {
+          final result = await service.confirmItem(changeSet, 0);
+
+          expect(result.success, isFalse);
+          final captured = verify(
+            () => mockSyncService.upsertEntity(captureAny()),
+          ).captured;
+          expect(captured, hasLength(4));
+          final retractionDecision = captured[2] as ChangeDecisionEntity;
+          expect(retractionDecision.verdict, ChangeDecisionVerdict.retracted);
+          expect(retractionDecision.actor, DecisionActor.agent);
+          expect(
+            retractionDecision.retractionReason,
+            'Confirmed propose_goal_revision_v2 proposal failed while '
+            'applying.',
+          );
+          final retractedSet = captured[3] as ChangeSetEntity;
+          expect(retractedSet.items.single.status, ChangeItemStatus.retracted);
+          expect(retractedSet.status, ChangeSetStatus.resolved);
+        });
+      });
+
       test(
         'returns failure when reverting failed dispatch to pending cannot '
         'be persisted',

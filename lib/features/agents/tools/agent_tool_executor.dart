@@ -23,6 +23,7 @@ class ToolExecutionResult {
     this.mutatedEntityId,
     this.errorMessage,
     this.policyDenied = false,
+    this.nonRetryable = false,
   });
 
   /// Converts a task tool handler result into a [ToolExecutionResult].
@@ -64,6 +65,12 @@ class ToolExecutionResult {
 
   /// True when the call was rejected by the category-allowlist policy.
   final bool policyDenied;
+
+  /// True when retrying the same immutable proposal can never succeed.
+  ///
+  /// Confirmation surfaces use this to retract stale or obsolete actions
+  /// instead of restoring them to the pending list after a failed dispatch.
+  final bool nonRetryable;
 }
 
 /// The per-agent-kind tool-dispatch callback the executor wraps: given a

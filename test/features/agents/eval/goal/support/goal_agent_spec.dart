@@ -87,7 +87,7 @@ const goalAgentPolicyMatrix = [
     id: 'P11',
     given: 'clear goal-change request',
     expected:
-        'restate current goal, then propose_goal_revision exactly '
+        'restate current goal, then propose_goal_revision_v2 exactly '
         'once',
   ),
   GoalAgentPolicyRule(

@@ -68,6 +68,7 @@ abstract final class AgentEntityTypes {
   static const standingAgreement = 'standingAgreement';
   static const agentState = 'agentState';
   static const agentMessage = 'agentMessage';
+  static const changeSet = 'changeSet';
   static const agentReport = 'agentReport';
   static const agentReportHead = 'agentReportHead';
   static const scheduledWake = 'scheduledWake';
@@ -91,11 +92,12 @@ abstract final class AgentReportScopes {
   static const current = 'current';
 }
 
-/// `author` attribution stamped on entities a non-task agent produces.
+/// Shared `author` attribution values stamped on agent-domain entities.
 ///
-/// Distinguishes machine-authored content — the evolution agent's outputs vs.
-/// `system`-generated bookkeeping — so the UI and prompts can label provenance.
+/// Distinguishes owner-authored versions, machine-authored content, and
+/// `system`-generated bookkeeping so UI, sync, and prompts can label provenance.
 abstract final class AgentAuthors {
+  static const user = 'user';
   static const evolutionAgent = 'evolution_agent';
   static const system = 'system';
 
@@ -158,6 +160,22 @@ String scheduledWakeRecordId(String agentId, {String? workspaceKey}) =>
 /// Deterministic id for a goal agent's spec head pointer, one per agent
 /// (ADR 0053 Decision 2). One goal agent has exactly one current spec.
 String goalSpecHeadId(String agentId) => 'goal_spec_head:$agentId';
+
+/// Unique id for a post-creation goal-spec revision.
+///
+/// Owner-authored revisions carry an explicit marker so the concurrent sync
+/// resolver can preserve direct owner intent when a disconnected agent
+/// approval independently mints the same version ordinal.
+String goalSpecRevisionVersionId({
+  required String agentId,
+  required int version,
+  required bool ownerAuthored,
+  required String uniqueSuffix,
+}) => '$agentId:spec-v$version${ownerAuthored ? '-owner' : ''}-$uniqueSuffix';
+
+/// Whether [versionId] identifies a marked owner-authored goal revision.
+bool isOwnerAuthoredGoalSpecVersionId(String versionId) =>
+    RegExp(r':spec-v\d+-owner-').hasMatch(versionId);
 
 /// Deterministic id for one goal's attainment register row, one per
 /// `(agentId, periodKey)` (ADR 0053 Decision 4).

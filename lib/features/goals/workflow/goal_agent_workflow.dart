@@ -1598,6 +1598,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
                     'args': {
                       'changes': proposal.changes,
                       'rationale': proposal.rationale,
+                      // Approval is valid only while this exact immutable
+                      // version remains the goal head. An offline proposal
+                      // syncing in after an owner edit therefore cannot
+                      // overwrite the newer goal.
+                      'baseVersionId': derivation.version.id,
                       // Provenance for the minted version: the wake
                       // conversation that proposed this revision.
                       'sourceThreadId': threadId,

@@ -10,6 +10,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/model/change_set.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
+import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
@@ -67,9 +68,10 @@ void main() {
       ),
     ).thenAnswer((_) async => []);
     when(
-      () => repository.getPendingChangeSets(
+      () => repository.getEntitiesByAgentIdAndSubtypes(
         any(),
-        taskId: any(named: 'taskId'),
+        type: any(named: 'type'),
+        subtypes: any(named: 'subtypes'),
       ),
     ).thenAnswer((_) async => []);
     when(() => syncService.upsertEntity(any())).thenAnswer((invocation) async {
@@ -116,6 +118,7 @@ void main() {
 
     final outcome = await service.reviseFromProposal(
       agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
       changes: {'targetValue': 8000},
       rationale: 'change it',
     );
@@ -135,6 +138,7 @@ void main() {
       fixedClock,
       () => service.reviseFromProposal(
         agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
         changes: {'targetValue': 8000},
         rationale: 'user asked to ease off after the injury',
       ),
@@ -165,6 +169,62 @@ void main() {
     expect(head.versionId, minted.id);
     expect(head.updatedAt, now);
   });
+
+  test(
+    'an agent proposal mint leaves other pending proposals untouched',
+    () async {
+      stubSpec();
+      final pending =
+          AgentDomainEntity.changeSet(
+                id: 'pending-revision',
+                agentId: agentId,
+                taskId: agentId,
+                threadId: 'thread-1',
+                runKey: 'run-1',
+                status: ChangeSetStatus.pending,
+                items: const [
+                  ChangeItem(
+                    toolName: GoalAgentToolNames.proposeGoalRevision,
+                    args: {
+                      'baseVersionId': '$agentId:spec-v1',
+                      'changes': {'targetValue': 7000},
+                    },
+                    humanSummary: 'Lower the target again',
+                  ),
+                ],
+                createdAt: DateTime(2026, 8),
+                vectorClock: null,
+              )
+              as ChangeSetEntity;
+      when(
+        () => repository.getEntitiesByAgentIdAndSubtypes(
+          agentId,
+          type: AgentEntityTypes.changeSet,
+          subtypes: any(named: 'subtypes'),
+        ),
+      ).thenAnswer((_) async => [pending]);
+
+      final outcome = await withClock(
+        fixedClock,
+        () => service.reviseFromProposal(
+          agentId: agentId,
+          baseVersionId: '$agentId:spec-v1',
+          changes: {'targetValue': 8000},
+          rationale: 'ease off',
+        ),
+      );
+
+      expect(outcome, isA<GoalSpecRevisionMinted>());
+      expect(upserts.whereType<ChangeSetEntity>(), isEmpty);
+      verifyNever(
+        () => repository.getEntitiesByAgentIdAndSubtypes(
+          any(),
+          type: any(named: 'type'),
+          subtypes: any(named: 'subtypes'),
+        ),
+      );
+    },
+  );
 
   test('an owner edit mints a user-authored version, updates the persona, '
       'and preserves independently authored habit targets', () async {
@@ -309,7 +369,11 @@ void main() {
       items: [pending.items.first],
     );
     when(
-      () => repository.getPendingChangeSets(agentId, taskId: agentId),
+      () => repository.getEntitiesByAgentIdAndSubtypes(
+        agentId,
+        type: AgentEntityTypes.changeSet,
+        subtypes: any(named: 'subtypes'),
+      ),
     ).thenAnswer((_) async => [pending, fullyMatching, unrelated]);
 
     final outcome = await withClock(
@@ -336,6 +400,87 @@ void main() {
     expect(retired.last.resolvedAt, now);
     expect(retired.last.items.single.status, ChangeItemStatus.retracted);
   });
+
+  test('an owner edit retracts every pending revision beyond the summary '
+      'query limit', () async {
+    stubSpec();
+    final pending = List<ChangeSetEntity>.generate(
+      25,
+      (index) =>
+          AgentDomainEntity.changeSet(
+                id: 'revision-$index',
+                agentId: agentId,
+                taskId: agentId,
+                threadId: 'thread-$index',
+                runKey: 'run-$index',
+                status: ChangeSetStatus.pending,
+                items: const [
+                  ChangeItem(
+                    toolName: GoalAgentToolNames.proposeGoalRevision,
+                    args: {
+                      'changes': {'targetValue': 3},
+                    },
+                    humanSummary: 'Lower the target',
+                  ),
+                ],
+                createdAt: DateTime(2026, 8),
+                vectorClock: null,
+              )
+              as ChangeSetEntity,
+    );
+    when(
+      () => repository.getEntitiesByAgentIdAndSubtypes(
+        agentId,
+        type: AgentEntityTypes.changeSet,
+        subtypes: any(named: 'subtypes'),
+      ),
+    ).thenAnswer((_) async => pending);
+
+    final outcome = await withClock(
+      fixedClock,
+      () => service.reviseFromOwner(
+        agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
+        displayName: 'Juno',
+        title: 'Movement',
+        statement: 'Move consistently.',
+        criteria: criteria,
+      ),
+    );
+
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    final retired = upserts.whereType<ChangeSetEntity>().toList();
+    expect(retired, hasLength(25));
+    expect(
+      retired.every(
+        (changeSet) =>
+            changeSet.status == ChangeSetStatus.resolved &&
+            changeSet.items.single.status == ChangeItemStatus.retracted,
+      ),
+      isTrue,
+    );
+  });
+
+  test(
+    'a proposal is refused after the immutable base version moves',
+    () async {
+      stubSpec(version: 4);
+
+      final outcome = await service.reviseFromProposal(
+        agentId: agentId,
+        baseVersionId: '$agentId:spec-v3',
+        changes: {'targetValue': 8000},
+        rationale: 'ease off',
+      );
+
+      expect(outcome, isA<GoalSpecRevisionRefused>());
+      expect(
+        (outcome as GoalSpecRevisionRefused).reason,
+        GoalSpecRevisionService.proposalStaleVersionReason,
+      );
+      expect(upserts, isEmpty);
+    },
+  );
 
   test(
     'an owner edit refuses invalid criteria and a dangling spec head',
@@ -484,6 +629,7 @@ void main() {
       fixedClock,
       () => service.reviseFromProposal(
         agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
         changes: {'targetValue': 8000},
         rationale: 'ease off',
       ),
@@ -541,6 +687,7 @@ void main() {
       fixedClock,
       () => service.reviseFromProposal(
         agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
         changes: {'targetValue': 8000},
         rationale: 'ease off',
       ),
@@ -557,6 +704,7 @@ void main() {
     // No head at all.
     var outcome = await service.reviseFromProposal(
       agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
       changes: {'targetValue': 8000},
       rationale: 'r',
     );
@@ -564,6 +712,7 @@ void main() {
       (outcome as GoalSpecRevisionRefused).reason,
       contains('no spec head'),
     );
+    expect(outcome.retryable, isTrue);
 
     // Dangling head.
     when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
@@ -577,6 +726,7 @@ void main() {
     );
     outcome = await service.reviseFromProposal(
       agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
       changes: {'targetValue': 8000},
       rationale: 'r',
     );
@@ -584,11 +734,13 @@ void main() {
       (outcome as GoalSpecRevisionRefused).reason,
       contains('points at nothing'),
     );
+    expect(outcome.retryable, isTrue);
 
     // Inapplicable proposal.
     stubSpec();
     outcome = await service.reviseFromProposal(
       agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
       changes: {'successCriteria': 'be happier'},
       rationale: 'r',
     );
@@ -596,6 +748,7 @@ void main() {
       (outcome as GoalSpecRevisionRefused).reason,
       contains('no applicable structural change'),
     );
+    expect(outcome.retryable, isFalse);
 
     expect(upserts, isEmpty, reason: 'a refusal must write nothing');
   });
@@ -648,6 +801,7 @@ void main() {
     );
     final outcome = await service.reviseFromProposal(
       agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
       changes: {'metric': 'steps', 'targetValue': 8000},
       rationale: 'r',
     );
@@ -664,6 +818,7 @@ void main() {
       fixedClock,
       () => service.reviseFromProposal(
         agentId: agentId,
+        baseVersionId: '$agentId:spec-v4',
         changes: {'period': 'rolling 14 days'},
         rationale: 'longer horizon',
       ),
@@ -703,6 +858,7 @@ void main() {
     });
     final outcome = await txnService.reviseFromProposal(
       agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
       changes: {'targetValue': 8000},
       rationale: 'r',
     );
@@ -718,6 +874,25 @@ void main() {
     expect(
       (outcome as GoalSpecRevisionMinted).version.id,
       startsWith('$agentId:spec-v2-'),
+    );
+  });
+
+  test('owner revisions carry an owner-priority version id marker', () async {
+    stubSpec();
+
+    final outcome = await service.reviseFromOwner(
+      agentId: agentId,
+      baseVersionId: '$agentId:spec-v1',
+      displayName: 'Steps',
+      title: 'Gentler steps',
+      statement: 'Average 8,000 steps per day.',
+      criteria: criteria,
+    );
+
+    expect(outcome, isA<GoalSpecRevisionMinted>());
+    expect(
+      (outcome as GoalSpecRevisionMinted).version.id,
+      startsWith('$agentId:spec-v2-owner-'),
     );
   });
 
@@ -761,6 +936,7 @@ void main() {
       fixedClock,
       () => service.reviseFromProposal(
         agentId: agentId,
+        baseVersionId: '$agentId:spec-v1',
         changes: {'targetValue': 8000},
         rationale: 'r',
       ),

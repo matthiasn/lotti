@@ -24,6 +24,11 @@ Future<void> _pumpCopyButton(
 
 void main() {
   group('ClipboardHelper.copyTextAndNotify', () {
+    tearDown(() {
+      TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+          .setMockMethodCallHandler(SystemChannels.platform, null);
+    });
+
     testWidgets(
       'writes text to the system clipboard and shows a DesignSystemToast',
       (tester) async {

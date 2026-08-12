@@ -213,26 +213,26 @@ void main() {
     setUp(() {
       service = MockGoalAgentService();
       habitsRepository = MockHabitsRepository();
+      final gym = HabitDefinition(
+        id: 'gym',
+        name: 'Gym',
+        description: '',
+        createdAt: DateTime(2026),
+        updatedAt: DateTime(2026),
+        habitSchedule: const HabitSchedule.daily(
+          requiredCompletions: 1,
+        ),
+        vectorClock: null,
+        active: true,
+        private: false,
+        version: '1',
+      );
       when(
         habitsRepository.watchHabitDefinitions,
-      ).thenAnswer(
-        (_) => Stream.value([
-          HabitDefinition(
-            id: 'gym',
-            name: 'Gym',
-            description: '',
-            createdAt: DateTime(2026),
-            updatedAt: DateTime(2026),
-            habitSchedule: const HabitSchedule.daily(
-              requiredCompletions: 1,
-            ),
-            vectorClock: null,
-            active: true,
-            private: false,
-            version: '1',
-          ),
-        ]),
-      );
+      ).thenAnswer((_) => Stream.value([gym]));
+      when(
+        () => habitsRepository.getHabitByIdForIntegrity('gym'),
+      ).thenAnswer((_) async => gym);
     });
 
     testWidgets('card tap opens the agent detail page', (tester) async {

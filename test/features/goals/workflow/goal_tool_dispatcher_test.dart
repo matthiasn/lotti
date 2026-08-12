@@ -103,6 +103,7 @@ void main() {
           'changes': {'targetValue': 8000},
           'rationale': 'ease off',
           'sourceThreadId': 'thread-42',
+          'baseVersionId': '$agentId:spec-v1',
         },
         agentId,
       );
@@ -133,25 +134,135 @@ void main() {
       {
         'changes': {'period': 'fortnight'},
         'rationale': 'r',
+        'baseVersionId': '$agentId:spec-v1',
       },
       agentId,
     );
     expect(result.success, isFalse);
     expect(result.errorMessage, contains('unrecognized period'));
+    expect(result.nonRetryable, isTrue);
     expect(upserts, isEmpty);
   });
 
-  test('missing changes and unknown tools are rejected', () async {
-    final noChanges = await dispatcher.dispatch(
+  test(
+    'missing changes, base version, and unknown tools are rejected',
+    () async {
+      final noChanges = await dispatcher.dispatch(
+        GoalAgentToolNames.proposeGoalRevision,
+        {'rationale': 'r'},
+        agentId,
+      );
+      expect(noChanges.success, isFalse);
+      expect(noChanges.errorMessage, 'Missing changes');
+      expect(noChanges.nonRetryable, isTrue);
+
+      final noBaseVersion = await dispatcher.dispatch(
+        GoalAgentToolNames.proposeGoalRevision,
+        {
+          'changes': {'targetValue': 8000},
+          'rationale': 'r',
+        },
+        agentId,
+      );
+      expect(noBaseVersion.success, isFalse);
+      expect(noBaseVersion.errorMessage, 'Missing originating goal version');
+      expect(noBaseVersion.nonRetryable, isTrue);
+
+      final legacy = await dispatcher.dispatch(
+        GoalAgentToolNames.legacyProposeGoalRevision,
+        {
+          'changes': {'targetValue': 8000},
+          'rationale': 'r',
+        },
+        agentId,
+      );
+      expect(legacy.success, isFalse);
+      expect(legacy.errorMessage, 'Obsolete goal revision proposal');
+      expect(legacy.nonRetryable, isTrue);
+
+      final unknown = await dispatcher.dispatch('made_up_tool', {}, agentId);
+      expect(unknown.success, isFalse);
+      expect(unknown.errorMessage, contains('not registered'));
+      expect(unknown.nonRetryable, isFalse);
+    },
+  );
+
+  test(
+    'a proposal created for an old spec cannot overwrite the head',
+    () async {
+      stubSpec();
+
+      final result = await dispatcher.dispatch(
+        GoalAgentToolNames.proposeGoalRevision,
+        {
+          'changes': {'targetValue': 8000},
+          'rationale': 'ease off',
+          'baseVersionId': '$agentId:spec-v0',
+        },
+        agentId,
+      );
+
+      expect(result.success, isFalse);
+      expect(
+        result.errorMessage,
+        GoalSpecRevisionService.proposalStaleVersionReason,
+      );
+      expect(result.nonRetryable, isTrue);
+      expect(upserts, isEmpty);
+    },
+  );
+
+  test('missing synced spec dependencies remain retryable', () async {
+    when(() => repository.getEntity(agentId)).thenAnswer(
+      (_) async => AgentDomainEntity.agent(
+        id: agentId,
+        agentId: agentId,
+        kind: AgentKinds.goalAgent,
+        displayName: 'Steps',
+        lifecycle: AgentLifecycle.active,
+        mode: AgentInteractionMode.autonomous,
+        allowedCategoryIds: const {},
+        currentStateId: '$agentId:state',
+        config: const AgentConfig(),
+        createdAt: DateTime(2026, 8),
+        updatedAt: DateTime(2026, 8),
+        vectorClock: null,
+      ),
+    );
+
+    final missingHead = await dispatcher.dispatch(
       GoalAgentToolNames.proposeGoalRevision,
-      {'rationale': 'r'},
+      {
+        'changes': {'targetValue': 8000},
+        'rationale': 'ease off',
+        'baseVersionId': '$agentId:spec-v1',
+      },
       agentId,
     );
-    expect(noChanges.success, isFalse);
-    expect(noChanges.errorMessage, 'Missing changes');
+    expect(missingHead.success, isFalse);
+    expect(missingHead.errorMessage, contains('no spec head'));
+    expect(missingHead.nonRetryable, isFalse);
 
-    final unknown = await dispatcher.dispatch('made_up_tool', {}, agentId);
-    expect(unknown.success, isFalse);
-    expect(unknown.errorMessage, contains('not registered'));
+    when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
+      (_) async => AgentDomainEntity.goalSpecHead(
+        id: goalSpecHeadId(agentId),
+        agentId: agentId,
+        versionId: '$agentId:spec-v1',
+        updatedAt: DateTime(2026, 8),
+        vectorClock: null,
+      ),
+    );
+    final danglingHead = await dispatcher.dispatch(
+      GoalAgentToolNames.proposeGoalRevision,
+      {
+        'changes': {'targetValue': 8000},
+        'rationale': 'ease off',
+        'baseVersionId': '$agentId:spec-v1',
+      },
+      agentId,
+    );
+    expect(danglingHead.success, isFalse);
+    expect(danglingHead.errorMessage, contains('points at nothing'));
+    expect(danglingHead.nonRetryable, isFalse);
   });
 }

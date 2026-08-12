@@ -54,13 +54,21 @@ jobs:
           cache: true
       - name: Get dependencies
         run: flutter pub get
-      - name: Activate very_good_cli
-        run: dart pub global activate very_good_cli
+      - name: Generate deterministic test bundle
+        run: dart run tool/ci/generate_test_optimizer.dart
       - name: Run Flutter tests (standard)
         run: |
-          very_good test --coverage --exclude-tags glados -- \
+          # Very Good's generated bundle is not deterministic across runners:
+          # https://github.com/VeryGoodOpenSource/very_good_cli/issues/1538
+          # Generate the same sorted bundle in every job so package:test shards
+          # one stable suite and the coverage reports merge without gaps.
+          flutter test \
+            --coverage \
+            --exclude-tags glados \
             --total-shards=10 \
-            --shard-index=${{ matrix.shard_index }}
+            --shard-index=${{ matrix.shard_index }} \
+            --no-pub \
+            test/.test_optimizer.dart
       - uses: codecov/codecov-action@v7
         with:
           token: ${{ secrets.CODECOV_TOKEN }}

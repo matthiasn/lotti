@@ -627,7 +627,7 @@ sequenceDiagram
   Journal-->>Confirm: ToolExecutionResult
   alt success
     Confirm->>Store: finalize item status
-  else stale running timer
+  else deterministic non-retryable failure
     Confirm->>Store: persist auto-retraction decision
     Confirm->>Store: mark item retracted
   else retryable failure
@@ -639,8 +639,10 @@ sequenceDiagram
 `ChangeSetConfirmationService` applies one item at a time: re-read the persisted
 change set (avoiding stale UI snapshots), **persist the decision first**, mark
 the item confirmed, dispatch, revert retryable failures to `pending`, and
-auto-retract non-retryable `update_running_timer` failures when the active timer
-changed before acceptance.
+auto-retract deterministic failures the dispatcher marks non-retryable. This
+includes `update_running_timer` when the active timer changed before acceptance
+and version-fenced goal revisions whose base version is stale or whose legacy
+contract cannot be applied safely.
 
 It also resolves follow-up-task placeholder ids across later migration items and
 suppresses rejected label assignments so the same label is not immediately

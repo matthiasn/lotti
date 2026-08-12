@@ -105,6 +105,18 @@ void main() {
         final titleText = tester.widget<Text>(find.text(title));
         final titleHeight = tester.getSize(find.text(title)).height;
         final oneLinerHeight = tester.getSize(oneLinerText).height;
+        final textDirection = Directionality.of(context);
+        final textScaler = MediaQuery.textScalerOf(context);
+        final expectedTitle = TextPainter(
+          text: TextSpan(text: title, style: titleText.style),
+          textDirection: textDirection,
+          textScaler: textScaler,
+        )..layout(maxWidth: tester.getSize(find.text(title)).width);
+        final expectedOneLiner = TextPainter(
+          text: richText.text,
+          textDirection: textDirection,
+          textScaler: textScaler,
+        )..layout(maxWidth: tester.getSize(oneLinerText).width);
 
         expect(summarySpan.text, oneLiner);
         expect(rootSpan.toPlainText(), oneLiner);
@@ -116,8 +128,8 @@ void main() {
         expect(titleText.overflow, TextOverflow.clip);
         expect(richText.maxLines, isNull);
         expect(richText.overflow, TextOverflow.clip);
-        expect(titleHeight, inInclusiveRange(80, 120));
-        expect(oneLinerHeight, inInclusiveRange(96, 128));
+        expect(titleHeight, closeTo(expectedTitle.height, 0.01));
+        expect(oneLinerHeight, closeTo(expectedOneLiner.height, 0.01));
         expect(find.text('Done'), findsNothing);
         expect(
           find.byWidgetPredicate(

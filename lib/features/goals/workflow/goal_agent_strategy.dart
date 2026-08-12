@@ -21,7 +21,7 @@ typedef GoalAdAction = ({String adId, String reason});
 /// A request to hide one active banner until an exact future instant.
 typedef GoalAdSnooze = ({String adId, DateTime until, String reason});
 
-/// A revision proposal accumulated from `propose_goal_revision`.
+/// A revision proposal accumulated from `propose_goal_revision_v2`.
 typedef GoalRevisionProposal = ({
   Map<String, dynamic> changes,
   String rationale,
@@ -384,7 +384,7 @@ class GoalAgentStrategy extends ConversationStrategy
         call: call,
         manager: manager,
         error:
-            'Error: propose_goal_revision needs a non-empty changes '
+            'Error: propose_goal_revision_v2 needs a non-empty changes '
             'object and a rationale.',
       );
       return;

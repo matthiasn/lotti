@@ -92,6 +92,19 @@ void main() {
     loggingServiceProvider.overrideWithValue(mockLoggingService),
   ];
 
+  Future<void> tapScanInstead(WidgetTester tester) async {
+    final action = find.byKey(const Key('bundle_import_scan_instead'));
+    await tester.ensureVisible(action);
+    await tester.pump();
+
+    final inkTarget = find.descendant(
+      of: action,
+      matching: find.byType(InkWell),
+    );
+    expect(inkTarget, findsOneWidget);
+    await tester.tap(inkTarget);
+  }
+
   group('mobile scanner', () {
     testWidgets('opens the camera immediately on mobile', (tester) async {
       setUpMobileScanner();
@@ -209,9 +222,7 @@ void main() {
         expect(find.byType(MobileScanner), findsNothing);
         expect(find.byType(TextField), findsOneWidget);
 
-        final scanFinder = find.byKey(const Key('bundle_import_scan_instead'));
-        await tester.ensureVisible(scanFinder);
-        await tester.tap(scanFinder);
+        await tapScanInstead(tester);
         await tester.pump();
 
         expect(find.byType(MobileScanner), findsOneWidget);
@@ -360,7 +371,7 @@ void main() {
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
 
-      await tester.tap(find.byKey(const Key('bundle_import_scan_instead')));
+      await tapScanInstead(tester);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
       tester.widget<MobileScanner>(find.byType(MobileScanner)).onDetect!(
@@ -508,7 +519,7 @@ void main() {
       // other device's screen, so before this the very next frame re-decoded
       // it and bounced the user into the confirmation they just refused. It
       // says so rather than going quietly inert.
-      await tester.tap(find.byKey(const Key('bundle_import_scan_instead')));
+      await tapScanInstead(tester);
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 250));
       scan();

@@ -460,6 +460,45 @@ void main() {
     });
   });
 
+  group('goal spec head — owner intent wins same-version conflicts', () {
+    GoalSpecHeadEntity head(String versionId) =>
+        AgentDomainEntity.goalSpecHead(
+              id: 'goal_spec_head:goal-1',
+              agentId: 'goal-1',
+              versionId: versionId,
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalSpecHeadEntity;
+
+    test('an owner-authored v2 beats an agent-authored v2 both ways', () {
+      final owner = head('goal-1:spec-v2-owner-aa');
+      final agent = head('goal-1:spec-v2-bb');
+
+      expect(
+        resolveConcurrentAgentEntityOverride(local: owner, incoming: agent),
+        ConcurrentWinner.local,
+      );
+      expect(
+        resolveConcurrentAgentEntityOverride(local: agent, incoming: owner),
+        ConcurrentWinner.incoming,
+      );
+    });
+
+    test('a higher version still outranks an older owner revision', () {
+      final ownerV2 = head('goal-1:spec-v2-owner-aa');
+      final agentV3 = head('goal-1:spec-v3-bb');
+
+      expect(
+        resolveConcurrentAgentEntityOverride(
+          local: ownerV2,
+          incoming: agentV3,
+        ),
+        ConcurrentWinner.incoming,
+      );
+    });
+  });
+
   group('goal nudge — dismissal is terminal', () {
     test('a concurrent dismissal beats any other status, both directions', () {
       final dismissed = goalNudge(status: GoalNudgeStatus.dismissed);

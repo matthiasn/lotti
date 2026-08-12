@@ -395,7 +395,7 @@ void main() {
       for (final tool in goalAgentTools) {
         expect(
           tool.name == GoalAgentToolNames.replyToUser ||
-              RegExp(r'^[a-z]+_goal_[a-z_]+$').hasMatch(tool.name),
+              RegExp(r'^[a-z]+_goal_[a-z0-9_]+$').hasMatch(tool.name),
           isTrue,
           reason: tool.name,
         );

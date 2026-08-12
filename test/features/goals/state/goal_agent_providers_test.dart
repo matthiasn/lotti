@@ -534,6 +534,7 @@ void main() {
         ChangeItem(
           toolName: GoalAgentToolNames.proposeGoalRevision,
           args: {
+            'baseVersionId': '$agentId:spec-v1',
             'changes': {'cadence': 4},
             'rationale': 'step it up',
           },
@@ -646,6 +647,7 @@ void main() {
                 ChangeItem(
                   toolName: GoalAgentToolNames.proposeGoalRevision,
                   args: {
+                    'baseVersionId': '$agentId:spec-v1',
                     'changes': {'cadence': 4},
                     'rationale': 'step it up',
                   },

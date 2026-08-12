@@ -4,11 +4,13 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 
 /// Applies ACCEPTED goal change-set items (the `EventToolDispatcher`
 /// shape): the confirmation service persists the decision, then hands the
-/// item here. One case today — `propose_goal_revision`, whose acceptance
+/// item here. One case today — `propose_goal_revision_v2`, whose acceptance
 /// mints a new spec version and moves the head.
 ///
-/// Refusals return `success: false` so the proposal stays unresolved
-/// instead of half-applying (the accept-after-delete posture).
+/// Definitive refusals return `success: false` and `nonRetryable: true`,
+/// allowing the confirmation service to retract a proposal whose immutable
+/// arguments can never apply instead of leaving a dead retry action. Missing
+/// synced dependencies remain retryable until their head/version rows arrive.
 class GoalToolDispatcher {
   GoalToolDispatcher({required this._revisionService});
 
@@ -22,6 +24,13 @@ class GoalToolDispatcher {
     switch (toolName) {
       case GoalAgentToolNames.proposeGoalRevision:
         return _handleProposeGoalRevision(args, agentId);
+      case GoalAgentToolNames.legacyProposeGoalRevision:
+        return const ToolExecutionResult(
+          success: false,
+          output: 'Error: this goal revision proposal uses an obsolete format',
+          errorMessage: 'Obsolete goal revision proposal',
+          nonRetryable: true,
+        );
       default:
         return ToolExecutionResult(
           success: false,
@@ -41,14 +50,28 @@ class GoalToolDispatcher {
         success: false,
         output: 'Error: the proposal carries no changes object',
         errorMessage: 'Missing changes',
+        nonRetryable: true,
       );
     }
     final rationaleValue = args['rationale'];
     final rationale = rationaleValue is String ? rationaleValue.trim() : '';
     final sourceThreadId = args['sourceThreadId'];
+    final baseVersionIdValue = args['baseVersionId'];
+    final baseVersionId = baseVersionIdValue is String
+        ? baseVersionIdValue.trim()
+        : '';
+    if (baseVersionId.isEmpty) {
+      return const ToolExecutionResult(
+        success: false,
+        output: 'Error: the proposal carries no originating goal version',
+        errorMessage: 'Missing originating goal version',
+        nonRetryable: true,
+      );
+    }
 
     final outcome = await _revisionService.reviseFromProposal(
       agentId: agentId,
+      baseVersionId: baseVersionId,
       changes: changes,
       rationale: rationale,
       sourceThreadId: sourceThreadId is String ? sourceThreadId : null,
@@ -62,11 +85,13 @@ class GoalToolDispatcher {
               '${changeSummaries.join(', ')}',
           mutatedEntityId: version.id,
         ),
-      GoalSpecRevisionRefused(:final reason) => ToolExecutionResult(
-        success: false,
-        output: 'Error: $reason',
-        errorMessage: reason,
-      ),
+      GoalSpecRevisionRefused(:final reason, :final retryable) =>
+        ToolExecutionResult(
+          success: false,
+          output: 'Error: $reason',
+          errorMessage: reason,
+          nonRetryable: !retryable,
+        ),
     };
   }
 }

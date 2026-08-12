@@ -6,6 +6,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
+import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
@@ -236,7 +237,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     });
   }
 
-  void _reconcileHabitTargets() {
+  void _reconcileHabitTargets({
+    Set<String> preservedHabitIds = const <String>{},
+  }) {
     final habitsAsync = ref.read(_habitDefinitionsProvider);
     final currentHabits = habitsAsync.value;
     if (currentHabits == null || habitsAsync.hasError) return;
@@ -247,8 +250,42 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _habitTargets.removeWhere(
       (habitId, _) =>
           !activeHabitIds.contains(habitId) &&
-          !loadedHabitIds.contains(habitId),
+          !loadedHabitIds.contains(habitId) &&
+          !preservedHabitIds.contains(habitId),
     );
+  }
+
+  Future<List<HabitDefinition>> _reconcileHabitTargetsForSave() async {
+    final selectedHabitIds = _habitTargets.keys.toList(growable: false);
+    if (selectedHabitIds.isEmpty) return const [];
+
+    final repository = ref.read(habitsRepositoryProvider);
+    final resolvedHabits = await Future.wait([
+      for (final habitId in selectedHabitIds)
+        repository.getHabitByIdForIntegrity(habitId),
+    ]);
+    final confirmedHabits = <HabitDefinition>[];
+    for (var index = 0; index < selectedHabitIds.length; index++) {
+      final habitId = selectedHabitIds[index];
+      final habit = resolvedHabits[index];
+      if (habit == null || !habit.active || habit.deletedAt != null) {
+        _habitTargets.remove(habitId);
+      } else {
+        confirmedHabits.add(habit);
+      }
+    }
+    if (!mounted) return confirmedHabits;
+
+    // The visible stream can refresh while integrity reads are in flight.
+    // Preserve every selection the unfiltered integrity lookup confirmed as
+    // active; a newly-private habit may legitimately disappear from the
+    // discovery stream during this await.
+    _reconcileHabitTargets(
+      preservedHabitIds: {
+        for (final habit in confirmedHabits) habit.id,
+      },
+    );
+    return confirmedHabits;
   }
 
   void _invalidateGoalViews(ProviderContainer container, String agentId) {
@@ -256,6 +293,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       ..invalidate(agentIdentityProvider(agentId))
       ..invalidate(goalAgentHealthProvider(agentId))
       ..invalidate(goalAgentProgressViewProvider(agentId))
+      ..invalidate(selfTargetedPendingChangeSetsProvider(agentId))
       ..invalidate(activeGoalAgentsProvider)
       ..invalidate(activeGoalNudgesProvider)
       ..invalidate(goalNudgeHistoryProvider(agentId));
@@ -280,33 +318,72 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   }
 
   Future<void> _save() async {
-    final title = _title.text.trim();
+    if (_saving) return;
+
+    final messages = context.messages;
+    final container = ProviderScope.containerOf(context, listen: false);
     final persona = _persona.text.trim();
     final statement = _statement.text.trim();
-    if (title.isEmpty || persona.isEmpty) {
-      setState(() => _validation = context.messages.goalFormValidationIdentity);
+    if (persona.isEmpty) {
+      setState(() => _validation = messages.goalFormValidationIdentity);
       return;
     }
-    _reconcileHabitTargets();
+    setState(() {
+      _saving = true;
+      _validation = null;
+    });
+    late final List<HabitDefinition> confirmedHabits;
+    try {
+      confirmedHabits = await _reconcileHabitTargetsForSave();
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _validation = messages.goalCreateFailed;
+        });
+      }
+      return;
+    }
+    if (!mounted) return;
+
+    // Only refresh a title the form still owns. A manually changed (including
+    // deliberately blank) title remains untouched, while an auto-derived
+    // "Gym + Run" title follows integrity cleanup down to "Gym".
+    if (_title.text.trim() == _derivedTitle) {
+      final visibleHabits =
+          ref.read(_habitDefinitionsProvider).value ?? _knownHabits;
+      final visibleById = {
+        for (final habit in visibleHabits) habit.id: habit,
+      };
+      _deriveTitle([
+        for (final habit in confirmedHabits) visibleById[habit.id] ?? habit,
+      ]);
+    }
+    final title = _title.text.trim();
+    if (title.isEmpty) {
+      setState(() {
+        _saving = false;
+        _validation = messages.goalFormValidationIdentity;
+      });
+      return;
+    }
+
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
     final criteria = _watchesSteps && (stepsTarget == null || stepsTarget <= 0)
         ? null
         : _mapping.buildCriteria(
-            stepsTitle: context.messages.goalCreateStepsTargetLabel,
+            stepsTitle: messages.goalCreateStepsTargetLabel,
             habitTargets: _habitTargets,
             watchesSteps: _watchesSteps,
             stepsTarget: stepsTarget,
           );
     if (criteria == null) {
-      setState(() => _validation = context.messages.goalFormValidationMapping);
+      setState(() {
+        _saving = false;
+        _validation = messages.goalFormValidationMapping;
+      });
       return;
     }
-
-    setState(() {
-      _saving = true;
-      _validation = null;
-    });
-    final container = ProviderScope.containerOf(context, listen: false);
     final goalAgentService = container.read(goalAgentServiceProvider);
     try {
       final agentId = widget.agentId;
@@ -355,13 +432,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       if (mounted) {
         setState(() {
           _saving = false;
-          _validation = context.messages.goalCreateFailed;
+          _validation = messages.goalCreateFailed;
         });
       }
     }
   }
 
   void _back() {
+    if (_saving) return;
+
     if (_step.index > _GoalFormStep.intention.index) {
       setState(() {
         _step = _GoalFormStep.values[_step.index - 1];
@@ -445,7 +524,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       },
       child: Scaffold(
         appBar: AppBar(
-          leading: BackButton(onPressed: _back),
+          leading: BackButton(onPressed: _saving ? null : _back),
           title: Text(pageTitle),
         ),
         body: SafeArea(
@@ -514,6 +593,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                           preservesCriteria: !_mapping.isEditable,
                           editVersion: editSpec?.version,
                           validation: _validation,
+                          enabled: !_saving,
                         ),
                       },
                     ],
@@ -913,6 +993,7 @@ class _ConfirmationStep extends StatelessWidget {
     required this.preservesCriteria,
     required this.editVersion,
     required this.validation,
+    required this.enabled,
   });
 
   final TextEditingController title;
@@ -921,6 +1002,7 @@ class _ConfirmationStep extends StatelessWidget {
   final bool preservesCriteria;
   final int? editVersion;
   final String? validation;
+  final bool enabled;
 
   @override
   Widget build(BuildContext context) {
@@ -939,6 +1021,7 @@ class _ConfirmationStep extends StatelessWidget {
           controller: persona,
           label: messages.goalFormPersonaLabel,
           leadingIcon: Icons.auto_awesome_rounded,
+          enabled: enabled,
         ),
         SizedBox(height: tokens.spacing.step4),
         DesignSystemTextInput(
@@ -947,6 +1030,7 @@ class _ConfirmationStep extends StatelessWidget {
           label: messages.goalCreateNameLabel,
           leadingIcon: Icons.flag_outlined,
           errorText: validation,
+          enabled: enabled,
         ),
         SizedBox(height: tokens.spacing.step5),
         DesignSystemSectionCard(

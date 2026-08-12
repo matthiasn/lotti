@@ -211,8 +211,9 @@ flowchart TD
   honors the user's request while still enforcing duplicate-copy and stale-spec
   guards. Report prose passes
   `sanitizeAgentReportText`.
-- **The goal spec never mutates in a wake.** `propose_goal_revision`
-  lands as a pending ChangeSet for user approval; ad state is validated
+- **The goal spec never mutates in a wake.** `propose_goal_revision_v2`
+  lands as a pending ChangeSet for user approval and persists the originating
+  immutable spec version in its tool arguments; ad state is validated
   in-conversation against the ids the FACTS offered, and all outputs
   commit in one transaction.
 - **Revision is approval-gated and conservative.** Accepting the proposal
@@ -223,7 +224,16 @@ flowchart TD
   `successCriteria` alone) rather than guessing — then supersedes the
   current version, mints `v(n+1)` with full provenance (`authoredBy:
   goal_agent`, `diffFromVersionId`, the proposal's rationale) and moves
-  the head in one transaction. Grace history resets naturally: Phase A's
+  the head in one transaction. Approval refuses the item when that persisted
+  base version is no longer the current head, including proposals that arrive
+  late from an offline peer. The v2 tool name is also the capability fence for
+  mixed client versions: an older client does not recognize or apply it, while
+  a current client rejects and auto-retracts legacy v1 proposals. Malformed or
+  stale v2 proposals are deterministic failures and are likewise retracted,
+  rather than restored to a pending state that can never succeed. A missing
+  spec head or a head whose immutable version has not synced yet is transient,
+  so that approval stays retryable instead of being retracted. Grace history
+  resets naturally: Phase A's
   prior-row streak breaks at the version change. The revision service rechecks
   that the identity is still an active goal inside the serialized path;
   inactive details hide the approval card as well. After acceptance the
@@ -402,15 +412,23 @@ flowchart TD
   match, uses whole-word matching that excludes generic cadence terms, and
   explicitly refuses an intention for which no observable proxy exists.
   Existing criteria outside the form's representable range stay losslessly
-  read-only. An edit also retains already-authored habit criteria omitted from
-  the privacy-filtered picker, so a persona-only change cannot rewrite the
-  goal. Confirmation names the goal and its
+  read-only. Before creation or editing saves, every selected habit is checked
+  through an unfiltered integrity lookup. This retains an active private habit
+  already authored into the goal without exposing it in discovery, while any
+  selected habit confirmed deleted or inactive is removed before save.
+  Confirmation names the goal and its
   conversational persona and states the inference-cost contract. Editing opens
   only for active goal agents, preloads the current values, explains the next
   immutable version, and preserves version history. A successful owner edit
-  retracts any pending agent-authored goal-revision proposal based on the old
-  version, preventing a later approval from overwriting the owner's newer
-  intent. A supported MULTI-habit routine is stored as an `allOf` composite;
+  exhaustively retracts pending and partially-resolved agent-authored
+  goal-revision proposals based on the old version and invalidates the mounted
+  proposal-card projection. The persisted base-version fence independently
+  prevents a proposal synced in later from overwriting the owner's newer
+  intent. If disconnected replicas independently mint the same successor
+  ordinal, revision ids mark direct owner authorship and the type-specific head
+  resolver deterministically chooses owner intent over an agent-proposal
+  approval; a genuinely higher spec ordinal still wins. A supported MULTI-habit
+  routine is stored as an `allOf` composite;
   when another writer moves the spec head first, the stale editor returns to
   the refreshed goal details instead of retrying against the obsolete base;
   deletion cancels queued work, aborts an in-flight local wake, and soft-retires
