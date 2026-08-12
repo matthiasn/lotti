@@ -23,11 +23,11 @@ sources:
   - id: evaluator
     resource: ../../lib/features/goals/evaluation/goal_progress_evaluator.dart
     title: GoalProgressEvaluator — pure criteria-tree fold
-    last_modified: 2026-08-09
+    last_modified: 2026-08-12
   - id: policy
     resource: ../../lib/features/goals/evaluation/goal_track_policy.dart
     title: GoalTrackPolicy — status derivation rules
-    last_modified: 2026-08-09
+    last_modified: 2026-08-12
   - id: vocabulary
     resource: ../../lib/classes/goal_criterion.dart
     title: GoalCriterion tree (shared vocabulary in lib/classes)
@@ -47,7 +47,15 @@ sources:
   - id: create-edit
     resource: ../../lib/features/goals/ui/pages/create_goal_agent_page.dart
     title: Goal create/edit flow — intention, observable mapping and confirmation
-    last_modified: 2026-08-11
+    last_modified: 2026-08-12
+  - id: measurable-capture
+    resource: ../../lib/features/goals/service/goal_measurable_capture_service.dart
+    title: Approval-gated measurable capture from goal chat
+    last_modified: 2026-08-12
+  - id: assessments
+    resource: ../../lib/features/goals/service/goal_assessment_service.dart
+    title: Separate daily assessment ledger
+    last_modified: 2026-08-12
   - id: sync-dispatcher
     resource: ../../lib/features/goals/sync/goal_signal_sync_dispatcher.dart
     title: GoalSignalSyncDispatcher — the sync blind-spot bridge
@@ -82,9 +90,15 @@ flowchart TD
         CAD[cadence ScheduledWakeEntity\nworkspace goal-cadence,\ndaily at 06:00 local] --> MGR[ScheduledWakeManager]
         CHAT[Goal chat composer] --> STORE[persist user message + payload]
         STORE --> USERWAKE[manual userMessage wake\nmessage id trigger token]
+        STORE --> OFFER{explicit linked\nmeasurable quantity?}
+        OFFER -- yes --> REVIEW[editable record offer\naccept rows or dismiss]
+        REVIEW -- accept --> MEASURE[existing MeasurementEntry path]
+        REVIEW --> CAPTURELOG[durable capture decision\nsource message + entry ids]
+        REFLECT[detail day reflection] --> ASSESS[append assessment action\nspec id + overall/per-dimension rating]
         DAYEDIT[Goal detail day cell\nsuccess or missed] --> HABITWRITE[existing habit completion\npersistence path]
         HABITWRITE --> SIG
         REFRESH[Update now\ngoal-report-refresh] --> REFREG[persist deterministic register\nwithout duplicate escalation]
+        MEASURE --> SIG
     end
     ORCH --> PA[GoalAgentPhaseA.execute]
     DISP --> SYNCROUTE{bounded signal or\ncategory-time mutation?}
@@ -163,6 +177,17 @@ flowchart TD
   task query as Insights and replaces its persisted prefix by entry id. Day
   keys re-stamp the local calendar date as midnight UTC. The goal agent must
   never disagree with the chart the user is looking at.
+- **Health level trends can be green before the threshold is crossed.** Weight
+  and systolic/diastolic blood-pressure leaves use their latest observation per
+  day and a rolling seven-day average. An unmet leaf with at least four sampled
+  days is projected by a deterministic least-squares daily trend. When both the
+  fitted slope and the earlier-vs-later sample means move in the authored
+  direction and reach the target within 28 days, the leaf is on-track. This
+  changes only the coarse status to green: `satisfied` remains false and a
+  passed target date still resolves to off-track. Flat, wrong-way, slower,
+  under-sampled, and unsupported metric trends receive no projection. FACTS
+  includes the bounded projected days so Phase B can explain the verdict
+  without recomputing it.
 - **Pattern evidence is richer than the threshold.** Phase A reads only the
   bounded evaluation/lookback range. When Phase B actually runs, the same
   reader additionally loads every valid attributed session for a watched
@@ -177,15 +202,26 @@ flowchart TD
   model may discuss them but cannot replace the deterministic per-dimension
   result.
 - **Subjective assessment is a separate governance layer.** Deterministic
-  `goalProgress` registers are recomputed from source and must never carry a
-  mutable opinion. A future daily-assessment register should therefore keep
-  user-authored ratings separate from agent suggestions. Direct user ratings
-  become approved assessments immediately; agent suggestions reuse the shared
-  `ChangeSet` and `ChangeDecision` path and become authoritative only after the
-  user confirms them. The assessment keys each rating by stable criterion id,
-  preserves proposal/decision provenance, and may add an overall reflection
-  without erasing any dimension's measured result. No producer for that
-  assessment register exists yet.
+  `goalProgress` registers are recomputed from source and never carry a mutable
+  opinion. `GoalAssessmentService` appends a durable action and payload for a
+  user's Met/Mixed/Missed reflection, bound to the immutable spec version that
+  was visible when it was recorded. Optional ratings use stable criterion ids;
+  corrections append another record instead of rewriting measurement history.
+  The detail projection renders the measured values read-only beside assessment
+  history. The payload also preserves whether the user rated directly or
+  accepted an agent suggestion; an agent suggestion surface must still obtain
+  approval before writing the accepted assessment.
+- **Conversation capture is offer-first and linked-source-only.**
+  `parseGoalMeasurableRecordOffer` only recognizes an explicit positive
+  quantity/unit pair for a `GoalCriterionMeasurable` in the active criteria
+  tree. It does not infer from silence or from unlinked measurables. Ambiguous
+  totals over multiple named recent days become editable estimated splits.
+  `GoalRecordOfferCard` checks the journal for same-source/day conflicts before
+  enabling a write; accepted rows go through `PersistenceLogic` as ordinary
+  `MeasurementEntry` rows, while both acceptance and dismissal append a durable
+  decision keyed by source message. The decision payload retains entry ids and
+  agent name; progress maps those ids back to measured days and shows the quill
+  provenance without creating a second measurement store.
 - **Automatic Phase B is reachable only through the lease; direct chat and
   detail-page refreshes are explicit user wakes.** The orchestrator listens
   local-only. On sync, bounded habit/measured signals run Phase A directly,
@@ -308,8 +344,12 @@ flowchart TD
   current head, refuses a no-op or a save whose loaded base version is no
   longer the head, supersedes the current version and mints `v(n+1)` with
   `authoredBy: user` and `diffFromVersionId`. The create/edit UI
-  only rewrites rolling-seven-day habit leaves and the supported at-least
-  rolling-average steps metric; richer trees and opposite-direction step
+  rewrites rolling-seven-day habit and measurable leaves, the supported
+  at-least rolling-average steps metric, and rolling-average weight plus
+  systolic/diastolic blood-pressure leaves with either target direction;
+  `all`, `any`, and `atLeastCount` wrappers round-trip through an explicit
+  composite-rule picker. Other health and category-time leaves and
+  opposite-direction step
   criteria are retained exactly and shown read-only. Supported trees retain
   authored leaf titles, composite wrappers and stable collision-free node ids.
   Manual mapping choices
@@ -470,7 +510,14 @@ flowchart TD
   Creation and owner editing share a three-stage intention → mapping →
   confirmation route. The mapping stage matches observable active habits and
   the supported steps metric, gives every selected habit its own one-to-seven
-  rolling-week cadence, waits for the active-habit snapshot before caching a
+  rolling-week cadence, can add a searchable existing measurable with a
+  numeric rolling-week target, and offers Weight or one Blood pressure source
+  that expands to separate systolic and diastolic targets. Every health target
+  chooses `at least` or `no more than` and uses a rolling seven-day average.
+  The same controls load during owner editing, retain existing criterion ids,
+  and expose `all`, `any`, or `at least N` when multiple dimensions are
+  selected. An empty measurable library links to the
+  existing measurable setup flow. Mapping waits for the active-habit snapshot before caching a
   match, uses whole-word matching that excludes generic cadence terms, and
   explicitly refuses an intention for which no observable proxy exists.
   Existing criteria outside the form's representable range stay losslessly
@@ -508,12 +555,13 @@ flowchart TD
   repeatedly enqueueing work that the lifecycle guard would only discard.
   Goal-list rows and banner semantics resolve the active spec title; the
   identity display name remains the conversational persona used by chat.
-  The current form represents rolling habit quotas plus the supported steps
-  metric. A follow-up mapping surface must enumerate generic quantitative and
-  measurable types, category selection, `atLeast`/`atMost` tracked-hour
-  targets, and an optional local time band without hard-coding a health-data
-  catalog. A separate follow-up approval surface will render direct daily
-  dimension ratings and agent-proposed assessment change items.
+  The current form represents rolling habit quotas, linked measurable targets,
+  weight and blood-pressure targets, composite rules, and the supported steps
+  metric. Other quantitative health selection, category-time selection,
+  `atLeast`/`atMost` tracked-hour targets, and an optional local time band
+  remain read-only when already authored; they still render as typed dimension
+  cards. Direct daily assessment is available on detail, while an
+  agent-suggested assessment still needs its approval UI.
 - **Tracked time invalidates without churning wakes.** Category-time leaves
   observe the journal, link, task, category and privacy notifications used by
   Insights, but those mutations only advance the durable report-stale

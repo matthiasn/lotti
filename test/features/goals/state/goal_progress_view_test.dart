@@ -150,6 +150,38 @@ void main() {
     expect(view.compactWindow[5], isFalse);
   });
 
+  test('a health metric with a bounded improving trend is on track', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.metric(
+        criterionId: 'weight',
+        dataType: 'HealthDataType.WEIGHT',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 80,
+        direction: GoalDirection.atMost,
+        title: 'Weight',
+      ),
+      signals: GoalSignalWindow(
+        quantitativeDailySums: {
+          'HealthDataType.WEIGHT': {
+            day(6): 88,
+            day(5): 87.5,
+            day(4): 87,
+            day(3): 86.5,
+            day(2): 86,
+            day(1): 85.5,
+            day(0): 85,
+          },
+        },
+      ),
+      reference: today,
+    );
+
+    expect(view.rootOnTrack, isTrue);
+    expect(view.metric?.projectedOnTrack, isTrue);
+    expect(view.metric?.days.last.value, 85);
+  });
+
   test('category time projects tracked hours and treats an empty elapsed day '
       'as an observed zero', () {
     final view = buildGoalProgressView(

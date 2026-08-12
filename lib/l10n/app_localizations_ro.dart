@@ -6088,6 +6088,56 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalAssessmentHistoryTitle => 'Reflecții zilnice';
+
+  @override
+  String get goalAssessmentMeasuredReadOnly =>
+      'Măsurat de Lotti - această parte nu este editabilă.';
+
+  @override
+  String get goalAssessmentMeasuredTitle => 'Ce a măsurat Lotti';
+
+  @override
+  String get goalAssessmentMet => 'Met';
+
+  @override
+  String get goalAssessmentMissed => 'ratat';
+
+  @override
+  String get goalAssessmentMixed => 'Amestecat';
+
+  @override
+  String get goalAssessmentNote => 'Notă (opțional)';
+
+  @override
+  String get goalAssessmentPerDimension =>
+      'Evaluați dimensiunile individuale (opțional)';
+
+  @override
+  String get goalAssessmentRecorded => 'Înregistrat';
+
+  @override
+  String goalAssessmentRecordFor(String dayName) {
+    return 'Înregistrare pentru $dayName';
+  }
+
+  @override
+  String get goalAssessmentReflectToday => 'Reflectați la azi';
+
+  @override
+  String goalAssessmentSpecVersion(int version) {
+    return 'S-a aplicat obiectivul v$version';
+  }
+
+  @override
+  String goalAssessmentSuggestedProvenance(String agentName) {
+    return '$agentName a sugerat, ați acceptat';
+  }
+
+  @override
+  String get goalAssessmentUserProvenance => 'Evaluat de dvs.';
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent% din obiectiv';
   }
@@ -6182,6 +6232,18 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalCoarseHealthRestarting => 'Se repornește';
 
   @override
+  String goalCompositeProgressSummary(
+    int metCount,
+    int dimensionCount,
+    int requiredCount,
+  ) {
+    return 'Ieri au fost îndeplinite $metCount din $dimensionCount dimensiuni · sunt necesare $requiredCount.';
+  }
+
+  @override
+  String get goalCompositeProgressTitle => 'Tot scopul';
+
+  @override
   String get goalCreateFailed =>
       'Salvarea obiectivului a eșuat — vă rugăm să încercați din nou.';
 
@@ -6272,7 +6334,106 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Urmărește';
 
   @override
+  String get goalDimensionCategoryTimeSource => 'Timp de categorie urmărit';
+
+  @override
+  String goalDimensionHabitReading(int currentCount, int targetCount) {
+    return '$currentCount din $targetCount această fereastră';
+  }
+
+  @override
+  String get goalDimensionHabitSource => 'Completari de obiceiuri';
+
+  @override
+  String get goalDimensionHealthSource => 'Date de sănătate';
+
+  @override
+  String get goalDimensionMeasurableSource => 'Măsurătoarea dvs.';
+
+  @override
+  String goalDimensionMetricReading(String currentValue, String targetValue) {
+    return '$currentValue din $targetValue';
+  }
+
+  @override
+  String goalDimensionMetricReadingWithUnit(
+    String currentValue,
+    String targetValue,
+    String unitName,
+  ) {
+    return '$currentValue din $targetValue $unitName';
+  }
+
+  @override
+  String get goalDimensionNeedsAttentionNote =>
+      'Această dimensiune necesită atenție; propriile sale dovezi rămân vizibile.';
+
+  @override
+  String get goalDimensionNeedsAttentionStatus => 'Necesită atenție';
+
+  @override
+  String get goalDimensionNoDataNote =>
+      'Nu există încă suficiente date pentru a judeca această dimensiune.';
+
+  @override
+  String get goalDimensionOnTrackNote =>
+      'Această dimensiune este în prezent pe drumul cel bun.';
+
+  @override
+  String get goalDimensionOnTrackStatus => 'Pe drumul cel bun';
+
+  @override
+  String get goalDimensionRecordedByAgent =>
+      'Spus de dvs. și înregistrat după aprobarea dvs.';
+
+  @override
+  String goalDimensionRecordedByAgentDetails(
+    String agentName,
+    String recordedAt,
+  ) {
+    return 'Spus de dvs., înregistrat de $agentName, $recordedAt';
+  }
+
+  @override
+  String goalDominantIssueBadge(String dimensionName) {
+    return '$dimensionName are nevoie de atenție';
+  }
+
+  @override
+  String get goalFormAddDimension => 'Adaugă dimensiune';
+
+  @override
+  String get goalFormBloodPressureSource =>
+      'Sistolică și diastolică · mmHg · medie pe 7 zile';
+
+  @override
   String get goalFormChooseHabit => 'Alegeți un obicei existent';
+
+  @override
+  String get goalFormCompositeAll => 'Toate dimensiunile';
+
+  @override
+  String get goalFormCompositeAllHint =>
+      'Cel mai strict - fiecare dimensiune trebuie îndeplinită.';
+
+  @override
+  String get goalFormCompositeAny => 'Orice dimensiune';
+
+  @override
+  String get goalFormCompositeAnyHint =>
+      'Loosest - o dimensiune întâlnită este suficientă.';
+
+  @override
+  String goalFormCompositeAtLeast(int requiredCount, int dimensionCount) {
+    return 'Cel puțin $requiredCount de $dimensionCount';
+  }
+
+  @override
+  String get goalFormCompositeAtLeastHint =>
+      'Alegeți câte dimensiuni trebuie îndeplinite.';
+
+  @override
+  String get goalFormCompositeRule => 'Cum se îmbină acest obiectiv';
 
   @override
   String get goalFormConfirmTitle => 'Faceți cunoștință cu agentul dvs.';
@@ -6289,6 +6450,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormDirectionAtLeast => 'Cel puțin';
+
+  @override
+  String get goalFormDirectionAtMost => 'Cel mult';
 
   @override
   String get goalFormEditTitle => 'Editați obiectivul';
@@ -6320,6 +6487,40 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalFormHabitSignal => 'bifarea obiceiului';
 
   @override
+  String get goalFormHealthBloodPressureDiastolic =>
+      'Tensiune arterială diastolică';
+
+  @override
+  String get goalFormHealthBloodPressureSystolic =>
+      'Tensiune arterială sistolică';
+
+  @override
+  String goalFormHealthCadence(
+    String healthName,
+    String direction,
+    String target,
+    String unitName,
+  ) {
+    return '$healthName: medie pe 7 zile $direction $target $unitName';
+  }
+
+  @override
+  String get goalFormHealthData => 'Date de sănătate';
+
+  @override
+  String goalFormHealthSource(String unitName) {
+    return 'Date de sănătate · $unitName · medie pe 7 zile';
+  }
+
+  @override
+  String goalFormHealthTarget(String unitName) {
+    return 'Țintă ($unitName)';
+  }
+
+  @override
+  String get goalFormHealthWeight => 'Greutate';
+
+  @override
   String get goalFormIncreaseTarget => 'Creșteți ținta săptămânală';
 
   @override
@@ -6342,6 +6543,16 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalFormMappingTitle => 'Iată ce pot urmări';
+
+  @override
+  String goalFormMeasurableCadence(String measurableName, String target) {
+    return '$measurableName: $target pe săptămână continuă';
+  }
+
+  @override
+  String goalFormMeasurableSource(String unitName) {
+    return 'Măsurătoarea dvs. · $unitName';
+  }
 
   @override
   String get goalFormNoHabits => 'Nu există încă obiceiuri active disponibile.';
@@ -6415,6 +6626,9 @@ class AppLocalizationsRo extends AppLocalizations {
   }
 
   @override
+  String get goalFormYourMeasurables => 'Elementele dvs. măsurabile';
+
+  @override
   String get goalHealthTrendDown => 'În scădere';
 
   @override
@@ -6452,6 +6666,14 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Înlocuit';
+
+  @override
+  String goalPatternBusiestHour(String hour) {
+    return 'Cele mai multe sesiuni încep în jurul $hour:00. Deschideți Perspective pentru o analiză mai profundă.';
+  }
+
+  @override
+  String get goalPatternTitle => 'Model de sincronizare';
 
   @override
   String get goalPendingProposalBadge => 'Propunere în așteptarea evaluării';
@@ -6522,6 +6744,70 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalProgressToday => 'astăzi';
 
   @override
+  String get goalRecordOfferConflict =>
+      'Ați înregistrat deja acest element măsurabil într-una dintre aceste zile. Întrebați ce ar trebui păstrat înainte de a înregistra ceva.';
+
+  @override
+  String get goalRecordOfferDeselectRow => 'Deselectați rândul';
+
+  @override
+  String get goalRecordOfferDismiss => 'Respingeți';
+
+  @override
+  String get goalRecordOfferEstimatedSplit =>
+      'Diviziunea estimată — editați dacă este necesar';
+
+  @override
+  String get goalRecordOfferIntro =>
+      'Am găsit o cantitate în ceea ce ați spus. Verificați valorile înainte de a înregistra ceva.';
+
+  @override
+  String get goalRecordOfferInvalidValue =>
+      'Introduceți o valoare mai mare decât zero.';
+
+  @override
+  String get goalRecordOfferNothingSelected =>
+      'Alegeți cel puțin un rând de înregistrat.';
+
+  @override
+  String goalRecordOfferOverline(String agentName, String measurableName) {
+    return '$agentName PROPUNE · ÎNREGISTRARE ÎN $measurableName';
+  }
+
+  @override
+  String goalRecordOfferProvenance(String agentName) {
+    return 'Spus de dvs., înregistrat de $agentName';
+  }
+
+  @override
+  String goalRecordOfferReceipt(int entryCount, String agentName) {
+    String _temp0 = intl.Intl.pluralLogic(
+      entryCount,
+      locale: localeName,
+      other: '$entryCount înregistrări',
+      one: '1 înregistrare',
+    );
+    return 'Înregistrat · $_temp0 · spus de dvs., înregistrat de $agentName';
+  }
+
+  @override
+  String goalRecordOfferRecordMany(int entryCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      entryCount,
+      locale: localeName,
+      other: '$entryCount înregistrări',
+      one: '1 înregistrare',
+    );
+    return 'Înregistrați $_temp0';
+  }
+
+  @override
+  String get goalRecordOfferRecordOne => 'Înregistrare intrare';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Selectați rândul';
+
+  @override
   String get goalStatusAchieved => 'Atins';
 
   @override
@@ -6538,6 +6824,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalStatusRecovering => 'În revenire';
+
+  @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Actualizări din sursa conectată · $windowLabel';
+  }
 
   @override
   String get goalWindowCalendarMonth => 'lună calendaristică';

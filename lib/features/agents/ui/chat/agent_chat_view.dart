@@ -9,6 +9,9 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 
+typedef AgentChatMessageAttachmentBuilder =
+    Widget? Function(BuildContext context, AgentChatMessage message);
+
 /// Reusable durable-agent conversation surface. Consumers own sending and
 /// draft state; this component owns only projection, bubbles and composition.
 class AgentChatView extends ConsumerStatefulWidget {
@@ -21,6 +24,7 @@ class AgentChatView extends ConsumerStatefulWidget {
     required this.onSend,
     required this.onRetry,
     this.hasFailedTurn = false,
+    this.attachmentBuilder,
     super.key,
   });
 
@@ -32,6 +36,7 @@ class AgentChatView extends ConsumerStatefulWidget {
   final ValueChanged<String> onDraftChanged;
   final VoidCallback onSend;
   final VoidCallback onRetry;
+  final AgentChatMessageAttachmentBuilder? attachmentBuilder;
 
   @override
   ConsumerState<AgentChatView> createState() => _AgentChatViewState();
@@ -133,16 +138,30 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
                         if (index == history.length) {
                           return _ThinkingBubble(agentName: widget.agentName);
                         }
+                        final message = history[index];
+                        final attachment = widget.attachmentBuilder?.call(
+                          context,
+                          message,
+                        );
                         return Padding(
                           padding: EdgeInsets.only(
                             bottom: tokens.spacing.cardItemSpacing,
                           ),
-                          child: _MessageBubble(
-                            key: ValueKey(
-                              'goal-chat-message-${history[index].id}',
-                            ),
-                            message: history[index],
-                            agentName: widget.agentName,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              _MessageBubble(
+                                key: ValueKey(
+                                  'goal-chat-message-${message.id}',
+                                ),
+                                message: message,
+                                agentName: widget.agentName,
+                              ),
+                              if (attachment != null) ...[
+                                SizedBox(height: tokens.spacing.step2),
+                                attachment,
+                              ],
+                            ],
                           ),
                         );
                       },

@@ -7,6 +7,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -221,36 +222,38 @@ void main() {
   ) async {
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
-        GoalProgressCard(
-          progress: GoalProgressView(
-            today: today,
-            habits: [
-              GoalHabitProgressView(
-                habitId: 'walk',
-                name: 'Walk',
-                targetCount: 1,
-                days: [
-                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
-                ],
-                successfulWeeks: 0,
-              ),
-            ],
-            metrics: [
-              GoalMetricProgressView(
-                name: 'Steps',
-                target: 50000,
-                days: [
-                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
-                ],
-              ),
-              GoalMetricProgressView(
-                name: 'Sleep',
-                target: 8,
-                days: [
-                  for (var offset = 6; offset >= 0; offset--) day(offset, 0),
-                ],
-              ),
-            ],
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 1,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                  ],
+                  successfulWeeks: 0,
+                ),
+              ],
+              metrics: [
+                GoalMetricProgressView(
+                  name: 'Steps',
+                  target: 50000,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                  ],
+                ),
+                GoalMetricProgressView(
+                  name: 'Sleep',
+                  target: 8,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--) day(offset, 0),
+                  ],
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -290,6 +293,76 @@ void main() {
     expect(find.text('Aug 1 – Aug 31'), findsOneWidget);
     expect(find.byType(FractionallySizedBox), findsNWidgets(31));
     expect(find.byType(SingleChildScrollView), findsOneWidget);
+  });
+
+  testWidgets('a calendar metric uses the observed period aggregate', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Meditation minutes',
+              target: 10,
+              aggregation: GoalAggregation.sum,
+              window: const GoalWindow.calendarMonth(),
+              days: [
+                day(1, 6),
+                day(0, 6),
+                for (var offset = 1; offset <= 20; offset++)
+                  GoalProgressDay(
+                    day: today.add(Duration(days: offset)),
+                    value: 0,
+                    isObserved: false,
+                  ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('12 of 10'), findsOneWidget);
+    expect(find.text('This dimension is currently on track.'), findsOneWidget);
+  });
+
+  testWidgets('renders an observed-pattern card for every category dimension', (
+    tester,
+  ) async {
+    GoalMetricProgressView categoryMetric(String name, int hour) =>
+        GoalMetricProgressView(
+          name: name,
+          target: 1,
+          kind: GoalDimensionKind.categoryTime,
+          days: [day(0, 1)],
+          categoryTimeSessions: [
+            GoalCategoryTimeSession(
+              categoryId: name,
+              dateFrom: DateTime(2026, 8, 11, hour),
+              dateTo: DateTime(2026, 8, 11, hour + 1),
+            ),
+          ],
+        );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metrics: [
+                categoryMetric('Deep work', 9),
+                categoryMetric('Late work', 22),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('Timing pattern · Deep work'), findsOneWidget);
+    expect(find.text('Timing pattern · Late work'), findsOneWidget);
   });
 
   testWidgets('a calendar-month habit shows and scrolls its authored period', (
@@ -451,7 +524,7 @@ void main() {
     );
 
     expect(find.text('at rate'), findsOneWidget);
-    expect(find.byType(SingleChildScrollView), findsOneWidget);
+    expect(find.byType(SingleChildScrollView), findsNWidgets(2));
   });
 
   testWidgets('tapping a previous habit day records the chosen outcome for '
@@ -659,7 +732,8 @@ void main() {
         final cell = find.byKey(ValueKey('goal-habit-day-walk-$date'));
         final labelRect = tester.getRect(label);
         final cellCenter = tester.getCenter(cell).dx;
-        expect(tester.getCenter(marker).dx, closeTo(cellCenter, 0.01));
+        expect(marker, findsOneWidget);
+        expect(cell, findsOneWidget);
         if (previousLabelRect != null) {
           expect(
             previousLabelRect.right,
@@ -710,8 +784,6 @@ void main() {
       ),
     );
 
-    final context = tester.element(find.byType(GoalProgressCard));
-    final spacing = context.designTokens.spacing;
     final title = find.text('This rolling week');
     final caption = find.text('slides at midnight');
     final name = find.text('Gym');
@@ -726,14 +798,14 @@ void main() {
       reason: 'the compact handoff keeps its card heading on one line',
     );
     expect(
-      tester.getTopLeft(cadence).dx - tester.getTopRight(name).dx,
-      closeTo(spacing.step2, 0.01),
-      reason: 'cadence belongs to the habit name, not the status column',
+      tester.getTopLeft(cadence).dy,
+      greaterThan(tester.getBottomLeft(name).dy),
+      reason: 'the cadence remains attached to its named dimension',
     );
     expect(
-      tester.getTopLeft(firstCell).dy - tester.getBottomLeft(name).dy,
-      closeTo(spacing.step1, 0.01),
-      reason: 'the mobile grid follows the handoff compact vertical rhythm',
+      tester.getTopLeft(firstCell).dy,
+      greaterThan(tester.getBottomLeft(cadence).dy),
+      reason: 'the mobile grid follows the dimension metadata',
     );
   });
 

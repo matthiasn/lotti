@@ -402,4 +402,270 @@ void main() {
 
     expect(rebuilt, criteria);
   });
+
+  test('round-trips measurable dimensions and their composite rule', () {
+    const criteria = GoalCriterion.anyOf(
+      criterionId: 'reading-flex',
+      criteria: [
+        GoalCriterion.measurable(
+          criterionId: 'pages',
+          dataTypeId: 'pages-read',
+          title: 'Pages read',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.sum,
+          target: 60,
+        ),
+        GoalCriterion.habit(
+          criterionId: 'library',
+          habitId: 'visit-library',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 1,
+        ),
+      ],
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+
+    expect(draft.isEditable, isTrue);
+    expect(draft.measurableTargets, {'pages-read': 60});
+    expect(draft.compositeRule, GoalFormCompositeRule.any);
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Steps',
+        habitTargets: const {'visit-library': 1},
+        measurableTargets: const {'pages-read': 75},
+      ),
+      const GoalCriterion.anyOf(
+        criterionId: 'reading-flex',
+        criteria: [
+          GoalCriterion.measurable(
+            criterionId: 'pages',
+            dataTypeId: 'pages-read',
+            title: 'Pages read',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.sum,
+            target: 75,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'library',
+            habitId: 'visit-library',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 1,
+          ),
+        ],
+      ),
+    );
+  });
+
+  test('builds an at-least-N rule for newly selected dimensions', () {
+    const draft = GoalFormMapping.empty();
+
+    final rebuilt = draft.buildCriteria(
+      stepsTitle: 'Steps',
+      habitTargets: const {'walk': 4},
+      measurableTargets: const {'pages': 60},
+      measurableTitles: const {'pages': 'Pages read'},
+      compositeRule: GoalFormCompositeRule.atLeast,
+      requiredSuccesses: 1,
+    );
+
+    expect(
+      rebuilt,
+      const GoalCriterion.atLeastCount(
+        criterionId: 'routine',
+        successes: 1,
+        criteria: [
+          GoalCriterion.habit(
+            criterionId: 'habit-walk',
+            habitId: 'walk',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 4,
+          ),
+          GoalCriterion.measurable(
+            criterionId: 'measurable-pages',
+            dataTypeId: 'pages',
+            title: 'Pages read',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.sum,
+            target: 60,
+          ),
+        ],
+      ),
+    );
+  });
+
+  test('round-trips editable weight and blood-pressure dimensions', () {
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'health-baseline',
+      criteria: [
+        GoalCriterion.metric(
+          criterionId: 'weight-v2',
+          dataType: GoalHealthDataTypes.weight,
+          title: 'Weekly weight trend',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 82,
+          direction: GoalDirection.atMost,
+        ),
+        GoalCriterion.metric(
+          criterionId: 'systolic-v2',
+          dataType: GoalHealthDataTypes.bloodPressureSystolic,
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 125,
+          direction: GoalDirection.atMost,
+        ),
+        GoalCriterion.metric(
+          criterionId: 'diastolic-v2',
+          dataType: GoalHealthDataTypes.bloodPressureDiastolic,
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 85,
+          direction: GoalDirection.atMost,
+        ),
+      ],
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+
+    expect(draft.isEditable, isTrue);
+    expect(draft.healthTargets, {
+      GoalHealthDataTypes.weight: 82,
+      GoalHealthDataTypes.bloodPressureSystolic: 125,
+      GoalHealthDataTypes.bloodPressureDiastolic: 85,
+    });
+    expect(draft.healthDirections.values, everyElement(GoalDirection.atMost));
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Steps',
+        habitTargets: const {},
+        healthTargets: const {
+          GoalHealthDataTypes.weight: 80,
+          GoalHealthDataTypes.bloodPressureSystolic: 120,
+          GoalHealthDataTypes.bloodPressureDiastolic: 80,
+        },
+        healthDirections: const {
+          GoalHealthDataTypes.weight: GoalDirection.atLeast,
+          GoalHealthDataTypes.bloodPressureSystolic: GoalDirection.atMost,
+          GoalHealthDataTypes.bloodPressureDiastolic: GoalDirection.atMost,
+        },
+      ),
+      const GoalCriterion.allOf(
+        criterionId: 'health-baseline',
+        criteria: [
+          GoalCriterion.metric(
+            criterionId: 'weight-v2',
+            dataType: GoalHealthDataTypes.weight,
+            title: 'Weekly weight trend',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 80,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'systolic-v2',
+            dataType: GoalHealthDataTypes.bloodPressureSystolic,
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 120,
+            direction: GoalDirection.atMost,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'diastolic-v2',
+            dataType: GoalHealthDataTypes.bloodPressureDiastolic,
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 80,
+            direction: GoalDirection.atMost,
+          ),
+        ],
+      ),
+    );
+  });
+
+  test('builds new health leaves with stable canonical identifiers', () {
+    const draft = GoalFormMapping.empty();
+
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Steps',
+        habitTargets: const {},
+        healthTargets: const {
+          GoalHealthDataTypes.weight: 75,
+          GoalHealthDataTypes.bloodPressureSystolic: 120,
+        },
+        healthDirections: const {
+          GoalHealthDataTypes.weight: GoalDirection.atMost,
+          GoalHealthDataTypes.bloodPressureSystolic: GoalDirection.atMost,
+        },
+        healthTitles: const {
+          GoalHealthDataTypes.weight: 'Weight',
+          GoalHealthDataTypes.bloodPressureSystolic: 'Systolic blood pressure',
+        },
+      ),
+      const GoalCriterion.allOf(
+        criterionId: 'routine',
+        criteria: [
+          GoalCriterion.metric(
+            criterionId: 'health-weight',
+            dataType: GoalHealthDataTypes.weight,
+            title: 'Weight',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 75,
+            direction: GoalDirection.atMost,
+          ),
+          GoalCriterion.metric(
+            criterionId: 'health-blood-pressure-systolic',
+            dataType: GoalHealthDataTypes.bloodPressureSystolic,
+            title: 'Systolic blood pressure',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.dailySumThenAverage,
+            target: 120,
+            direction: GoalDirection.atMost,
+          ),
+        ],
+      ),
+    );
+  });
+
+  test('loaded untitled dimensions remain untitled when rebuilt', () {
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'untitled-dimensions',
+      criteria: [
+        GoalCriterion.measurable(
+          criterionId: 'pages-v1',
+          dataTypeId: 'pages',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.sum,
+          target: 50,
+        ),
+        GoalCriterion.metric(
+          criterionId: 'weight-v1',
+          dataType: GoalHealthDataTypes.weight,
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 80,
+          direction: GoalDirection.atMost,
+        ),
+      ],
+    );
+
+    final rebuilt =
+        GoalFormMapping.fromCriteria(criteria).buildCriteria(
+              stepsTitle: 'Steps',
+              habitTargets: const {},
+              measurableTargets: const {'pages': 55},
+              measurableTitles: const {'pages': 'Localized pages'},
+              healthTargets: const {GoalHealthDataTypes.weight: 79},
+              healthTitles: const {
+                GoalHealthDataTypes.weight: 'Localized weight',
+              },
+            )!
+            as GoalCriterionAllOf;
+
+    expect(
+      rebuilt.criteria.map((criterion) => criterion.title),
+      [null, null],
+    );
+  });
 }

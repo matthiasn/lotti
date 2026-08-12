@@ -95,11 +95,14 @@ class GoalFactsRenderer {
               // these but never recomputes them.
               if (result.deficit != null) 'daysToRecover': result.deficit,
               if (result.buffer != null) 'bufferDays': result.buffer,
+              if (result.projectedDaysToTarget != null)
+                'projectedDaysToTarget': result.projectedDaysToTarget,
             },
         ],
         'attainment': facts.evaluation.attainment,
         'trackStatus': facts.trackStatus.name,
         'dataCoverage': facts.evaluation.dataCoverage,
+        'onTrackByTrend': facts.evaluation.onTrackByTrend,
         if (facts.evaluation.deficit != null)
           'daysToRecover': facts.evaluation.deficit,
         if (facts.evaluation.buffer != null)

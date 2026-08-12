@@ -113,6 +113,7 @@ class GoalSignalReader {
     }
 
     final measurables = <String, Map<DateTime, num>>{};
+    final measurableEntryDaysById = <String, DateTime>{};
     for (final dataTypeId in needs.measurableTypeIds) {
       final entities = await _journalDb.getMeasurementsByType(
         type: dataTypeId,
@@ -125,6 +126,7 @@ class GoalSignalReader {
           measurement: (measurement) {
             final day = GoalWindow.dayUtc(measurement.data.dateFrom);
             byDay[day] = (byDay[day] ?? 0) + measurement.data.value;
+            measurableEntryDaysById[measurement.meta.id] = day;
           },
           orElse: () {},
         );
@@ -218,6 +220,7 @@ class GoalSignalReader {
       habitSuccessesByDay: habits,
       habitCompletionsByDay: habitCompletions,
       measurableDailySums: measurables,
+      measurableEntryDaysById: measurableEntryDaysById,
       categoryTimeDailyHours: categoryTime,
       categoryTimeSessionsByCategory: categoryTimeSessions,
       categoryTimeEvidenceStart: categoryTimeEvidenceStart,

@@ -138,20 +138,9 @@ void main() {
     expect(find.byIcon(Icons.trending_down_rounded), findsOneWidget);
     expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
 
-    // The arrows carry screen-reader labels — otherwise the only trend
-    // signal in the row is inaccessible. (The row's InkWell merges child
-    // semantics, so assert the Icon's own label rather than a standalone
-    // semantics node.)
-    expect(
-      tester
-          .widget<Icon>(find.byIcon(Icons.trending_down_rounded))
-          .semanticLabel,
-      'Trending down',
-    );
-    expect(
-      tester.widget<Icon>(find.byIcon(Icons.trending_up_rounded)).semanticLabel,
-      'Trending up',
-    );
+    // Trend is a separate visible field beside status, not an icon-only hint.
+    expect(find.text('Trending down'), findsOneWidget);
+    expect(find.text('Trending up'), findsOneWidget);
   });
 
   testWidgets(
@@ -203,6 +192,79 @@ void main() {
       expect(find.text('Juno'), findsNothing);
     },
   );
+
+  testWidgets('an on-track composite does not badge an unmet leaf', (
+    tester,
+  ) async {
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-fit:spec-v1',
+              agentId: 'goal-fit',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Health trajectory',
+              statement: 'Improve either health signal.',
+              criteria: const GoalCriterion.anyOf(
+                criterionId: 'health',
+                criteria: [
+                  GoalCriterion.metric(
+                    criterionId: 'weight',
+                    dataType: 'HealthDataType.WEIGHT',
+                    window: GoalWindow.rollingDays(count: 7),
+                    aggregation: GoalAggregation.dailySumThenAverage,
+                    target: 80,
+                    direction: GoalDirection.atMost,
+                  ),
+                  GoalCriterion.metric(
+                    criterionId: 'steps',
+                    dataType: 'steps',
+                    window: GoalWindow.day(),
+                    aggregation: GoalAggregation.sum,
+                    target: 8000,
+                  ),
+                ],
+              ),
+              createdAt: DateTime(2026),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final today = DateTime.utc(2026, 8, 11);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const AgentsPage(),
+        overrides: [
+          activeGoalAgentsProvider.overrideWith(
+            (ref) async => [identity('goal-fit', 'Juno')],
+          ),
+          goalAgentHealthProvider('goal-fit').overrideWith(
+            (ref) async => health(
+              trackStatus: GoalTrackStatus.onTrack,
+              spec: spec,
+            ),
+          ),
+          goalAgentProgressViewProvider('goal-fit').overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              rootOnTrack: true,
+              metrics: [
+                GoalMetricProgressView(
+                  name: 'Weight',
+                  target: 80,
+                  direction: GoalDirection.atMost,
+                  days: [GoalProgressDay(day: today, value: 85)],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.text('Healthy'), findsOneWidget);
+    expect(find.text('Weight needs attention'), findsNothing);
+  });
 
   testWidgets('a rolling-window goal shows a deterministic recovery hint when '
       'behind, and a buffer hint when at rate', (tester) async {

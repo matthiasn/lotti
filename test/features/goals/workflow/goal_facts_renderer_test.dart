@@ -43,6 +43,8 @@ void main() {
     GoalTrackStatus? previous = GoalTrackStatus.atRisk,
     int? deficit,
     int? buffer,
+    int? projectedDaysToTarget,
+    bool onTrackByTrend = false,
     Map<String, List<GoalCategoryTimeSession>> categoryTimeSessions = const {},
     DateTime? categoryTimeEvidenceStart,
     DateTime? categoryTimeEvidenceEnd,
@@ -55,6 +57,7 @@ void main() {
       dataCoverage: 1,
       deficit: deficit,
       buffer: buffer,
+      onTrackByTrend: onTrackByTrend,
       results: {
         'steps': GoalCriterionResult(
           criterionId: 'steps',
@@ -65,6 +68,7 @@ void main() {
           sampleCount: 7,
           deficit: deficit,
           buffer: buffer,
+          projectedDaysToTarget: projectedDaysToTarget,
         ),
       },
     ),
@@ -172,6 +176,19 @@ void main() {
     final steps = (evaluation['criterionResults'] as List).single;
     expect((steps as Map<String, dynamic>)['daysToRecover'], 2);
     expect(steps['bufferDays'], 1);
+  });
+
+  test('health trend projections reach the authoritative facts block', () {
+    final json = renderedJson(
+      wakeFacts: facts(projectedDaysToTarget: 12, onTrackByTrend: true),
+    );
+    final evaluation = json['evaluation'] as Map<String, dynamic>;
+    expect(evaluation['onTrackByTrend'], isTrue);
+    final result = (evaluation['criterionResults'] as List).single;
+    expect(
+      (result as Map<String, dynamic>)['projectedDaysToTarget'],
+      12,
+    );
   });
 
   test('active ads carry freshness; a stale-marked ad is exposed as such', () {

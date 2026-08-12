@@ -3254,6 +3254,41 @@
       }
     }
   },
+  "goalAssessmentHistoryTitle": "Daily reflections",
+  "goalAssessmentMeasuredReadOnly": "Measured by Lotti — this part isn’t editable.",
+  "goalAssessmentMeasuredTitle": "What Lotti measured",
+  "goalAssessmentMet": "Met",
+  "goalAssessmentMissed": "Missed",
+  "goalAssessmentMixed": "Mixed",
+  "goalAssessmentNote": "Note (optional)",
+  "goalAssessmentPerDimension": "Rate individual dimensions (optional)",
+  "goalAssessmentRecorded": "Recorded",
+  "goalAssessmentRecordFor": "Record for {dayName}",
+  "@goalAssessmentRecordFor": {
+    "placeholders": {
+      "dayName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalAssessmentReflectToday": "Reflect on today",
+  "goalAssessmentSpecVersion": "Goal v{version} applied",
+  "@goalAssessmentSpecVersion": {
+    "placeholders": {
+      "version": {
+        "type": "int"
+      }
+    }
+  },
+  "goalAssessmentSuggestedProvenance": "{agentName} suggested, you accepted",
+  "@goalAssessmentSuggestedProvenance": {
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalAssessmentUserProvenance": "Rated by you",
   "goalAttainmentLabel": "{percent}% of target",
   "@goalAttainmentLabel": {
     "description": "Attainment summary on an agent card; percent is 0-100.",
@@ -3374,6 +3409,21 @@
   "@goalCoarseHealthRestarting": {
     "description": "Coarse goal-health chip label: a fresh start after a quiet stretch (never framed as failure)"
   },
+  "goalCompositeProgressSummary": "{metCount} of {dimensionCount} dimensions met yesterday · {requiredCount} required.",
+  "@goalCompositeProgressSummary": {
+    "placeholders": {
+      "metCount": {
+        "type": "int"
+      },
+      "dimensionCount": {
+        "type": "int"
+      },
+      "requiredCount": {
+        "type": "int"
+      }
+    }
+  },
+  "goalCompositeProgressTitle": "The whole goal",
   "goalCreateFailed": "Saving the goal failed — please try again.",
   "@goalCreateFailed": {
     "description": "Shown when persisting a new goal agent throws (validation already passed)."
@@ -3454,12 +3504,98 @@
   },
   "goalDetailWatchingSignals": "Signals listed above update within seconds. Your agent only sees the signals listed here.",
   "goalDetailWatchingTitle": "Watching",
+  "goalDimensionCategoryTimeSource": "Tracked category time",
+  "goalDimensionHabitReading": "{currentCount} of {targetCount} this window",
+  "@goalDimensionHabitReading": {
+    "placeholders": {
+      "currentCount": {
+        "type": "int"
+      },
+      "targetCount": {
+        "type": "int"
+      }
+    }
+  },
+  "goalDimensionHabitSource": "Habit completions",
+  "goalDimensionHealthSource": "Health data",
+  "goalDimensionMeasurableSource": "Your measurable",
+  "goalDimensionMetricReading": "{currentValue} of {targetValue}",
+  "@goalDimensionMetricReading": {
+    "placeholders": {
+      "currentValue": {
+        "type": "String"
+      },
+      "targetValue": {
+        "type": "String"
+      }
+    }
+  },
+  "goalDimensionMetricReadingWithUnit": "{currentValue} of {targetValue} {unitName}",
+  "@goalDimensionMetricReadingWithUnit": {
+    "placeholders": {
+      "currentValue": {
+        "type": "String"
+      },
+      "targetValue": {
+        "type": "String"
+      },
+      "unitName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalDimensionNeedsAttentionNote": "This dimension needs attention; its own evidence stays visible.",
+  "goalDimensionNeedsAttentionStatus": "Needs attention",
+  "goalDimensionNoDataNote": "There is not enough data to judge this dimension yet.",
+  "goalDimensionOnTrackNote": "This dimension is currently on track.",
+  "goalDimensionOnTrackStatus": "On track",
+  "goalDimensionRecordedByAgent": "Said by you and recorded after your approval.",
+  "goalDimensionRecordedByAgentDetails": "Said by you, recorded by {agentName}, {recordedAt}",
+  "@goalDimensionRecordedByAgentDetails": {
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      },
+      "recordedAt": {
+        "type": "String"
+      }
+    }
+  },
+  "goalDominantIssueBadge": "{dimensionName} needs attention",
+  "@goalDominantIssueBadge": {
+    "placeholders": {
+      "dimensionName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalFormAddDimension": "Add dimension",
+  "goalFormBloodPressureSource": "Systolic and diastolic · mmHg · 7-day average",
   "goalFormChooseHabit": "Choose an existing habit",
+  "goalFormCompositeAll": "All dimensions",
+  "goalFormCompositeAllHint": "Strictest — every dimension must be met.",
+  "goalFormCompositeAny": "Any dimension",
+  "goalFormCompositeAnyHint": "Loosest — one met dimension is enough.",
+  "goalFormCompositeAtLeast": "At least {requiredCount} of {dimensionCount}",
+  "@goalFormCompositeAtLeast": {
+    "placeholders": {
+      "requiredCount": {
+        "type": "int"
+      },
+      "dimensionCount": {
+        "type": "int"
+      }
+    }
+  },
+  "goalFormCompositeAtLeastHint": "Choose how many dimensions must be met.",
+  "goalFormCompositeRule": "How this goal comes together",
   "goalFormConfirmTitle": "Meet your agent",
   "goalFormContinue": "Continue",
   "goalFormCostHonesty": "Uses your configured AI provider. Actual usage appears in this goal’s lifetime consumption pills.",
   "goalFormDecreaseTarget": "Decrease weekly target",
   "goalFormDefaultPersonaName": "Juno",
+  "goalFormDirectionAtLeast": "At least",
+  "goalFormDirectionAtMost": "No more than",
   "goalFormEditTitle": "Edit goal",
   "goalFormEditVersion": "This starts version {version}. Your history is kept.",
   "@goalFormEditVersion": {
@@ -3485,6 +3621,43 @@
     }
   },
   "goalFormHabitSignal": "habit check-off",
+  "goalFormHealthBloodPressureDiastolic": "Diastolic blood pressure",
+  "goalFormHealthBloodPressureSystolic": "Systolic blood pressure",
+  "goalFormHealthCadence": "{healthName}: 7-day average {direction} {target} {unitName}",
+  "@goalFormHealthCadence": {
+    "placeholders": {
+      "healthName": {
+        "type": "String"
+      },
+      "direction": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      },
+      "unitName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalFormHealthData": "Health data",
+  "goalFormHealthSource": "Health data · {unitName} · 7-day average",
+  "@goalFormHealthSource": {
+    "placeholders": {
+      "unitName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalFormHealthTarget": "Target ({unitName})",
+  "@goalFormHealthTarget": {
+    "placeholders": {
+      "unitName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalFormHealthWeight": "Weight",
   "goalFormIncreaseTarget": "Increase weekly target",
   "goalFormIntentionHelper": "Say it your way — this is how your agent will talk about it.",
   "goalFormIntentionHint": "Get to the gym twice a week, and keep up my morning exercises.",
@@ -3492,6 +3665,25 @@
   "goalFormLooksRight": "Looks right",
   "goalFormMappingIntro": "I can only coach what I can see. These check-offs are my eyes:",
   "goalFormMappingTitle": "Here’s what I can watch",
+  "goalFormMeasurableCadence": "{measurableName}: {target} per rolling week",
+  "@goalFormMeasurableCadence": {
+    "placeholders": {
+      "measurableName": {
+        "type": "String"
+      },
+      "target": {
+        "type": "String"
+      }
+    }
+  },
+  "goalFormMeasurableSource": "Your measurable · {unitName}",
+  "@goalFormMeasurableSource": {
+    "placeholders": {
+      "unitName": {
+        "type": "String"
+      }
+    }
+  },
   "goalFormNoHabits": "No active habits are available yet.",
   "goalFormOpenHabits": "Create a habit first",
   "goalFormPersonaLabel": "Agent name",
@@ -3538,6 +3730,7 @@
       }
     }
   },
+  "goalFormYourMeasurables": "Your measurables",
   "goalHealthTrendDown": "Trending down",
   "@goalHealthTrendDown": {
     "description": "Screen-reader label for the falling trend arrow on a goal-agent list row."
@@ -3564,6 +3757,15 @@
   "goalNudgeStatusExpired": "Expired",
   "goalNudgeStatusRetired": "Retired",
   "goalNudgeStatusSuperseded": "Superseded",
+  "goalPatternBusiestHour": "Most sessions start around {hour}:00. Open Insights for deeper analysis.",
+  "@goalPatternBusiestHour": {
+    "placeholders": {
+      "hour": {
+        "type": "String"
+      }
+    }
+  },
+  "goalPatternTitle": "Timing pattern",
   "goalPendingProposalBadge": "Proposal awaiting review",
   "@goalPendingProposalBadge": {
     "description": "Badge on an agent card when a revision proposal is pending."
@@ -3626,6 +3828,53 @@
   },
   "goalProgressTitle": "This rolling week",
   "goalProgressToday": "today",
+  "goalRecordOfferConflict": "You already logged this measurable on one of these days. Ask what should be kept before recording anything.",
+  "goalRecordOfferDeselectRow": "Deselect row",
+  "goalRecordOfferDismiss": "Dismiss",
+  "goalRecordOfferEstimatedSplit": "Estimated split — edit if needed",
+  "goalRecordOfferIntro": "I found a quantity in what you said. Check the values before anything is recorded.",
+  "goalRecordOfferInvalidValue": "Enter a value greater than zero.",
+  "goalRecordOfferNothingSelected": "Choose at least one row to record.",
+  "goalRecordOfferOverline": "{agentName} OFFERS · RECORD TO {measurableName}",
+  "@goalRecordOfferOverline": {
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      },
+      "measurableName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalRecordOfferProvenance": "Said by you, recorded by {agentName}",
+  "@goalRecordOfferProvenance": {
+    "placeholders": {
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalRecordOfferReceipt": "Recorded · {entryCount, plural, =1{1 entry} other{{entryCount} entries}} · said by you, recorded by {agentName}",
+  "@goalRecordOfferReceipt": {
+    "placeholders": {
+      "entryCount": {
+        "type": "int"
+      },
+      "agentName": {
+        "type": "String"
+      }
+    }
+  },
+  "goalRecordOfferRecordMany": "Record {entryCount, plural, =1{1 entry} other{{entryCount} entries}}",
+  "@goalRecordOfferRecordMany": {
+    "placeholders": {
+      "entryCount": {
+        "type": "int"
+      }
+    }
+  },
+  "goalRecordOfferRecordOne": "Record entry",
+  "goalRecordOfferSelectRow": "Select row",
   "goalStatusAchieved": "Achieved",
   "@goalStatusAchieved": {
     "description": "Goal track status chip: target date passed with criteria met."
@@ -3649,6 +3898,14 @@
   "goalStatusRecovering": "Recovering",
   "@goalStatusRecovering": {
     "description": "Goal track status chip: climbing back after being behind."
+  },
+  "goalWatchingMetric": "Updates from its linked source · {windowLabel}",
+  "@goalWatchingMetric": {
+    "placeholders": {
+      "windowLabel": {
+        "type": "String"
+      }
+    }
   },
   "goalWindowCalendarMonth": "calendar month",
   "goalWindowCalendarWeek": "calendar week",

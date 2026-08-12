@@ -15,9 +15,11 @@ import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/service/goal_habit_completion_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_assessment_state.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_agent_lifetime_pills.dart';
+import 'package:lotti/features/goals/ui/goal_assessment_widgets.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
 import 'package:lotti/features/goals/ui/goal_banner_widgets.dart';
@@ -109,6 +111,8 @@ class GoalAgentDetailPage extends ConsumerWidget {
     final progress = spec == null
         ? null
         : ref.watch(goalAgentProgressViewProvider(agentId)).value;
+    final assessments =
+        ref.watch(goalAssessmentHistoryProvider(agentId)).value ?? const [];
     // Same render-time staleness contract as the strip: retained data
     // from a failed deadline reload keeps fresh banners (no-flash) but
     // never expired copy — whose tracker would keep counting exposure.
@@ -166,6 +170,19 @@ class GoalAgentDetailPage extends ConsumerWidget {
           SizedBox(height: tokens.spacing.cardItemSpacing),
           GoalProgressCard(
             progress: progress,
+            onReflectDay: !isActive || spec == null
+                ? null
+                : (day) => showModalBottomSheet<void>(
+                    context: context,
+                    isScrollControlled: true,
+                    builder: (context) => GoalDayAssessmentSheet(
+                      agentId: agentId,
+                      specVersionId: spec.id,
+                      specVersion: spec.version,
+                      day: day,
+                      progress: progress,
+                    ),
+                  ),
             onHabitOutcomeSelected: !isActive
                 ? null
                 : ({
@@ -204,9 +221,16 @@ class GoalAgentDetailPage extends ConsumerWidget {
             agentId: agentId,
             confirmationProvider: goalChangeSetConfirmationServiceProvider,
           ),
-        if (progress != null && progress.habits.isNotEmpty) ...[
+        if (progress != null && progress.dimensionCount > 0) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
           _WatchingSection(progress: progress),
+        ],
+        if (progress != null && assessments.isNotEmpty) ...[
+          SizedBox(height: tokens.spacing.cardItemSpacing),
+          GoalAssessmentHistoryCard(
+            records: assessments,
+            progress: progress,
+          ),
         ],
         if (showChatAction) ...[
           SizedBox(height: tokens.spacing.cardItemSpacing),
@@ -530,6 +554,41 @@ class _WatchingSection extends StatelessWidget {
                       '${goalHabitTargetLabel(context, targetCount: habit.targetCount, window: habit.window)}'
                       '${habit.successfulWeeks == null ? '' : ' · ${habit.successfulWeeks} / 6'}',
                       key: ValueKey('goal-watching-meta-${habit.habitId}'),
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ],
+          for (var index = 0; index < progress.metrics.length; index++) ...[
+            if (progress.habits.isNotEmpty || index > 0)
+              SizedBox(height: tokens.spacing.step3),
+            Builder(
+              builder: (context) {
+                final metric = progress.metrics[index];
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      metric.name,
+                      key: ValueKey(
+                        'goal-watching-name-${metric.criterionId}',
+                      ),
+                      style: tokens.typography.styles.body.bodySmall.copyWith(
+                        color: tokens.colors.text.highEmphasis,
+                      ),
+                    ),
+                    SizedBox(height: tokens.spacing.step1),
+                    Text(
+                      context.messages.goalWatchingMetric(
+                        goalWindowLabel(context, metric.window),
+                      ),
+                      key: ValueKey(
+                        'goal-watching-meta-${metric.criterionId}',
+                      ),
                       style: tokens.typography.styles.others.caption.copyWith(
                         color: tokens.colors.text.mediumEmphasis,
                       ),

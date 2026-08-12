@@ -6055,6 +6055,56 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalAssessmentHistoryTitle => 'Denní úvahy';
+
+  @override
+  String get goalAssessmentMeasuredReadOnly =>
+      'Měřeno Lotti – tuto část nelze upravovat.';
+
+  @override
+  String get goalAssessmentMeasuredTitle => 'Co Lotti změřila';
+
+  @override
+  String get goalAssessmentMet => 'Setkal';
+
+  @override
+  String get goalAssessmentMissed => 'Zmeškaný';
+
+  @override
+  String get goalAssessmentMixed => 'Smíšený';
+
+  @override
+  String get goalAssessmentNote => 'Poznámka (volitelné)';
+
+  @override
+  String get goalAssessmentPerDimension =>
+      'Ohodnoťte jednotlivé dimenze (volitelné)';
+
+  @override
+  String get goalAssessmentRecorded => 'Zaznamenáno';
+
+  @override
+  String goalAssessmentRecordFor(String dayName) {
+    return 'Záznam pro $dayName';
+  }
+
+  @override
+  String get goalAssessmentReflectToday => 'Zamysli se nad dneškem';
+
+  @override
+  String goalAssessmentSpecVersion(int version) {
+    return 'Cíl v$version byl použit';
+  }
+
+  @override
+  String goalAssessmentSuggestedProvenance(String agentName) {
+    return '$agentName navrhl, ty jsi přijal(a)';
+  }
+
+  @override
+  String get goalAssessmentUserProvenance => 'Hodnoceno tebou';
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent % cíle';
   }
@@ -6148,6 +6198,18 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalCoarseHealthRestarting => 'Začíná znovu';
 
   @override
+  String goalCompositeProgressSummary(
+    int metCount,
+    int dimensionCount,
+    int requiredCount,
+  ) {
+    return 'Včera splněno $metCount z $dimensionCount rozměrů · vyžadováno $requiredCount.';
+  }
+
+  @override
+  String get goalCompositeProgressTitle => 'Celý cíl';
+
+  @override
   String get goalCreateFailed => 'Cíl se nepodařilo uložit — zkus to znovu.';
 
   @override
@@ -6236,7 +6298,106 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Sleduje';
 
   @override
+  String get goalDimensionCategoryTimeSource => 'Čas sledované kategorie';
+
+  @override
+  String goalDimensionHabitReading(int currentCount, int targetCount) {
+    return '$currentCount z $targetCount tohoto okna';
+  }
+
+  @override
+  String get goalDimensionHabitSource => 'Dokončení návyků';
+
+  @override
+  String get goalDimensionHealthSource => 'Zdravotní údaje';
+
+  @override
+  String get goalDimensionMeasurableSource => 'Tvoje měřitelná veličina';
+
+  @override
+  String goalDimensionMetricReading(String currentValue, String targetValue) {
+    return '$currentValue z $targetValue';
+  }
+
+  @override
+  String goalDimensionMetricReadingWithUnit(
+    String currentValue,
+    String targetValue,
+    String unitName,
+  ) {
+    return '$currentValue z $targetValue $unitName';
+  }
+
+  @override
+  String get goalDimensionNeedsAttentionNote =>
+      'Tato dimenze vyžaduje pozornost; jeho vlastní důkazy zůstávají viditelné.';
+
+  @override
+  String get goalDimensionNeedsAttentionStatus => 'Vyžaduje pozornost';
+
+  @override
+  String get goalDimensionNoDataNote =>
+      'K posouzení této dimenze zatím není dostatek údajů.';
+
+  @override
+  String get goalDimensionOnTrackNote =>
+      'Tato dimenze je momentálně na dobré cestě.';
+
+  @override
+  String get goalDimensionOnTrackStatus => 'Na cestě';
+
+  @override
+  String get goalDimensionRecordedByAgent =>
+      'Řekl(a) jsi to ty a po tvém schválení to bylo zaznamenáno.';
+
+  @override
+  String goalDimensionRecordedByAgentDetails(
+    String agentName,
+    String recordedAt,
+  ) {
+    return 'Řekl(a) jsi to ty, zaznamenal(a) $agentName, $recordedAt';
+  }
+
+  @override
+  String goalDominantIssueBadge(String dimensionName) {
+    return '$dimensionName vyžaduje pozornost';
+  }
+
+  @override
+  String get goalFormAddDimension => 'Přidat rozměr';
+
+  @override
+  String get goalFormBloodPressureSource =>
+      'Systolický a diastolický · mmHg · 7denní průměr';
+
+  @override
   String get goalFormChooseHabit => 'Vyber existující návyk';
+
+  @override
+  String get goalFormCompositeAll => 'Všechny rozměry';
+
+  @override
+  String get goalFormCompositeAllHint =>
+      'Nejpřísnější – musí být splněna každá dimenze.';
+
+  @override
+  String get goalFormCompositeAny => 'Jakýkoli rozměr';
+
+  @override
+  String get goalFormCompositeAnyHint =>
+      'Nejvolnější — stačí jedna splněná dimenze.';
+
+  @override
+  String goalFormCompositeAtLeast(int requiredCount, int dimensionCount) {
+    return 'Alespoň $requiredCount z $dimensionCount';
+  }
+
+  @override
+  String get goalFormCompositeAtLeastHint =>
+      'Vyber, kolik rozměrů musí být splněno.';
+
+  @override
+  String get goalFormCompositeRule => 'Jak se tento cíl spojuje';
 
   @override
   String get goalFormConfirmTitle => 'Seznam se se svým agentem';
@@ -6253,6 +6414,12 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormDirectionAtLeast => 'Alespoň';
+
+  @override
+  String get goalFormDirectionAtMost => 'Nejvýše';
 
   @override
   String get goalFormEditTitle => 'Upravit cíl';
@@ -6284,6 +6451,38 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalFormHabitSignal => 'odškrtnutí návyku';
 
   @override
+  String get goalFormHealthBloodPressureDiastolic => 'Diastolický krevní tlak';
+
+  @override
+  String get goalFormHealthBloodPressureSystolic => 'Systolický krevní tlak';
+
+  @override
+  String goalFormHealthCadence(
+    String healthName,
+    String direction,
+    String target,
+    String unitName,
+  ) {
+    return '$healthName: 7denní průměr $direction $target $unitName';
+  }
+
+  @override
+  String get goalFormHealthData => 'Zdravotní data';
+
+  @override
+  String goalFormHealthSource(String unitName) {
+    return 'Zdravotní data · $unitName · 7denní průměr';
+  }
+
+  @override
+  String goalFormHealthTarget(String unitName) {
+    return 'Cíl ($unitName)';
+  }
+
+  @override
+  String get goalFormHealthWeight => 'Hmotnost';
+
+  @override
   String get goalFormIncreaseTarget => 'Zvýšit týdenní cíl';
 
   @override
@@ -6306,6 +6505,16 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalFormMappingTitle => 'Tohle můžu sledovat';
+
+  @override
+  String goalFormMeasurableCadence(String measurableName, String target) {
+    return '$measurableName: $target za válcovaný týden';
+  }
+
+  @override
+  String goalFormMeasurableSource(String unitName) {
+    return 'Tvoje měřitelná veličina · $unitName';
+  }
 
   @override
   String get goalFormNoHabits =>
@@ -6379,6 +6588,9 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalFormYourMeasurables => 'Tvoje měřitelné veličiny';
+
+  @override
   String get goalHealthTrendDown => 'Klesá';
 
   @override
@@ -6416,6 +6628,14 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Nahrazeno';
+
+  @override
+  String goalPatternBusiestHour(String hour) {
+    return 'Většina relací začíná kolem $hour:00. Pro podrobnější analýzu otevři Přehledy.';
+  }
+
+  @override
+  String get goalPatternTitle => 'Vzorek časování';
 
   @override
   String get goalPendingProposalBadge => 'Návrh čeká na posouzení';
@@ -6485,6 +6705,69 @@ class AppLocalizationsCs extends AppLocalizations {
   String get goalProgressToday => 'dnes';
 
   @override
+  String get goalRecordOfferConflict =>
+      'V jeden z těchto dnů už máš tuto veličinu zaznamenanou. Než něco uložíš, ujasni si, který záznam se má zachovat.';
+
+  @override
+  String get goalRecordOfferDeselectRow => 'Zrušit výběr řádku';
+
+  @override
+  String get goalRecordOfferDismiss => 'Zahodit';
+
+  @override
+  String get goalRecordOfferEstimatedSplit =>
+      'Odhadované rozdělení — v případě potřeby upravte';
+
+  @override
+  String get goalRecordOfferIntro =>
+      'V tom, co jsi řekl(a), jsem našel množství. Než se cokoli zaznamená, zkontroluj hodnoty.';
+
+  @override
+  String get goalRecordOfferInvalidValue => 'Zadej hodnotu větší než nula.';
+
+  @override
+  String get goalRecordOfferNothingSelected =>
+      'Vyber alespoň jeden řádek k zaznamenání.';
+
+  @override
+  String goalRecordOfferOverline(String agentName, String measurableName) {
+    return '$agentName NABÍZÍ · ZAZNAMENAT DO $measurableName';
+  }
+
+  @override
+  String goalRecordOfferProvenance(String agentName) {
+    return 'Řekl(a) jsi to ty, zaznamenal(a) $agentName';
+  }
+
+  @override
+  String goalRecordOfferReceipt(int entryCount, String agentName) {
+    String _temp0 = intl.Intl.pluralLogic(
+      entryCount,
+      locale: localeName,
+      other: '$entryCount záznamů',
+      one: '1 záznam',
+    );
+    return 'Zaznamenáno · $_temp0 · řekl(a) jsi to ty, zaznamenal(a) $agentName';
+  }
+
+  @override
+  String goalRecordOfferRecordMany(int entryCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      entryCount,
+      locale: localeName,
+      other: '$entryCount záznamů',
+      one: '1 záznam',
+    );
+    return 'Záznam $_temp0';
+  }
+
+  @override
+  String get goalRecordOfferRecordOne => 'Záznam záznamu';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Vybrat řádek';
+
+  @override
   String get goalStatusAchieved => 'Splněno';
 
   @override
@@ -6501,6 +6784,11 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalStatusRecovering => 'Zotavuje se';
+
+  @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Aktualizace z propojeného zdroje · $windowLabel';
+  }
 
   @override
   String get goalWindowCalendarMonth => 'kalendářní měsíc';

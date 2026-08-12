@@ -10283,6 +10283,90 @@ abstract class AppLocalizations {
   /// **'Lifetime agent compute time across {calls} model calls.'**
   String goalAgentLifetimeTimeTooltip(String calls);
 
+  /// No description provided for @goalAssessmentHistoryTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Daily reflections'**
+  String get goalAssessmentHistoryTitle;
+
+  /// No description provided for @goalAssessmentMeasuredReadOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Measured by Lotti — this part isn’t editable.'**
+  String get goalAssessmentMeasuredReadOnly;
+
+  /// No description provided for @goalAssessmentMeasuredTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'What Lotti measured'**
+  String get goalAssessmentMeasuredTitle;
+
+  /// No description provided for @goalAssessmentMet.
+  ///
+  /// In en, this message translates to:
+  /// **'Met'**
+  String get goalAssessmentMet;
+
+  /// No description provided for @goalAssessmentMissed.
+  ///
+  /// In en, this message translates to:
+  /// **'Missed'**
+  String get goalAssessmentMissed;
+
+  /// No description provided for @goalAssessmentMixed.
+  ///
+  /// In en, this message translates to:
+  /// **'Mixed'**
+  String get goalAssessmentMixed;
+
+  /// No description provided for @goalAssessmentNote.
+  ///
+  /// In en, this message translates to:
+  /// **'Note (optional)'**
+  String get goalAssessmentNote;
+
+  /// No description provided for @goalAssessmentPerDimension.
+  ///
+  /// In en, this message translates to:
+  /// **'Rate individual dimensions (optional)'**
+  String get goalAssessmentPerDimension;
+
+  /// No description provided for @goalAssessmentRecorded.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded'**
+  String get goalAssessmentRecorded;
+
+  /// No description provided for @goalAssessmentRecordFor.
+  ///
+  /// In en, this message translates to:
+  /// **'Record for {dayName}'**
+  String goalAssessmentRecordFor(String dayName);
+
+  /// No description provided for @goalAssessmentReflectToday.
+  ///
+  /// In en, this message translates to:
+  /// **'Reflect on today'**
+  String get goalAssessmentReflectToday;
+
+  /// No description provided for @goalAssessmentSpecVersion.
+  ///
+  /// In en, this message translates to:
+  /// **'Goal v{version} applied'**
+  String goalAssessmentSpecVersion(int version);
+
+  /// No description provided for @goalAssessmentSuggestedProvenance.
+  ///
+  /// In en, this message translates to:
+  /// **'{agentName} suggested, you accepted'**
+  String goalAssessmentSuggestedProvenance(String agentName);
+
+  /// No description provided for @goalAssessmentUserProvenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Rated by you'**
+  String get goalAssessmentUserProvenance;
+
   /// Attainment summary on an agent card; percent is 0-100.
   ///
   /// In en, this message translates to:
@@ -10414,6 +10498,22 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Restarting'**
   String get goalCoarseHealthRestarting;
+
+  /// No description provided for @goalCompositeProgressSummary.
+  ///
+  /// In en, this message translates to:
+  /// **'{metCount} of {dimensionCount} dimensions met yesterday · {requiredCount} required.'**
+  String goalCompositeProgressSummary(
+    int metCount,
+    int dimensionCount,
+    int requiredCount,
+  );
+
+  /// No description provided for @goalCompositeProgressTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'The whole goal'**
+  String get goalCompositeProgressTitle;
 
   /// Shown when persisting a new goal agent throws (validation already passed).
   ///
@@ -10559,11 +10659,162 @@ abstract class AppLocalizations {
   /// **'Watching'**
   String get goalDetailWatchingTitle;
 
+  /// No description provided for @goalDimensionCategoryTimeSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Tracked category time'**
+  String get goalDimensionCategoryTimeSource;
+
+  /// No description provided for @goalDimensionHabitReading.
+  ///
+  /// In en, this message translates to:
+  /// **'{currentCount} of {targetCount} this window'**
+  String goalDimensionHabitReading(int currentCount, int targetCount);
+
+  /// No description provided for @goalDimensionHabitSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Habit completions'**
+  String get goalDimensionHabitSource;
+
+  /// No description provided for @goalDimensionHealthSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Health data'**
+  String get goalDimensionHealthSource;
+
+  /// No description provided for @goalDimensionMeasurableSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Your measurable'**
+  String get goalDimensionMeasurableSource;
+
+  /// No description provided for @goalDimensionMetricReading.
+  ///
+  /// In en, this message translates to:
+  /// **'{currentValue} of {targetValue}'**
+  String goalDimensionMetricReading(String currentValue, String targetValue);
+
+  /// No description provided for @goalDimensionMetricReadingWithUnit.
+  ///
+  /// In en, this message translates to:
+  /// **'{currentValue} of {targetValue} {unitName}'**
+  String goalDimensionMetricReadingWithUnit(
+    String currentValue,
+    String targetValue,
+    String unitName,
+  );
+
+  /// No description provided for @goalDimensionNeedsAttentionNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This dimension needs attention; its own evidence stays visible.'**
+  String get goalDimensionNeedsAttentionNote;
+
+  /// No description provided for @goalDimensionNeedsAttentionStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'Needs attention'**
+  String get goalDimensionNeedsAttentionStatus;
+
+  /// No description provided for @goalDimensionNoDataNote.
+  ///
+  /// In en, this message translates to:
+  /// **'There is not enough data to judge this dimension yet.'**
+  String get goalDimensionNoDataNote;
+
+  /// No description provided for @goalDimensionOnTrackNote.
+  ///
+  /// In en, this message translates to:
+  /// **'This dimension is currently on track.'**
+  String get goalDimensionOnTrackNote;
+
+  /// No description provided for @goalDimensionOnTrackStatus.
+  ///
+  /// In en, this message translates to:
+  /// **'On track'**
+  String get goalDimensionOnTrackStatus;
+
+  /// No description provided for @goalDimensionRecordedByAgent.
+  ///
+  /// In en, this message translates to:
+  /// **'Said by you and recorded after your approval.'**
+  String get goalDimensionRecordedByAgent;
+
+  /// No description provided for @goalDimensionRecordedByAgentDetails.
+  ///
+  /// In en, this message translates to:
+  /// **'Said by you, recorded by {agentName}, {recordedAt}'**
+  String goalDimensionRecordedByAgentDetails(
+    String agentName,
+    String recordedAt,
+  );
+
+  /// No description provided for @goalDominantIssueBadge.
+  ///
+  /// In en, this message translates to:
+  /// **'{dimensionName} needs attention'**
+  String goalDominantIssueBadge(String dimensionName);
+
+  /// No description provided for @goalFormAddDimension.
+  ///
+  /// In en, this message translates to:
+  /// **'Add dimension'**
+  String get goalFormAddDimension;
+
+  /// No description provided for @goalFormBloodPressureSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Systolic and diastolic · mmHg · 7-day average'**
+  String get goalFormBloodPressureSource;
+
   /// No description provided for @goalFormChooseHabit.
   ///
   /// In en, this message translates to:
   /// **'Choose an existing habit'**
   String get goalFormChooseHabit;
+
+  /// No description provided for @goalFormCompositeAll.
+  ///
+  /// In en, this message translates to:
+  /// **'All dimensions'**
+  String get goalFormCompositeAll;
+
+  /// No description provided for @goalFormCompositeAllHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Strictest — every dimension must be met.'**
+  String get goalFormCompositeAllHint;
+
+  /// No description provided for @goalFormCompositeAny.
+  ///
+  /// In en, this message translates to:
+  /// **'Any dimension'**
+  String get goalFormCompositeAny;
+
+  /// No description provided for @goalFormCompositeAnyHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Loosest — one met dimension is enough.'**
+  String get goalFormCompositeAnyHint;
+
+  /// No description provided for @goalFormCompositeAtLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'At least {requiredCount} of {dimensionCount}'**
+  String goalFormCompositeAtLeast(int requiredCount, int dimensionCount);
+
+  /// No description provided for @goalFormCompositeAtLeastHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose how many dimensions must be met.'**
+  String get goalFormCompositeAtLeastHint;
+
+  /// No description provided for @goalFormCompositeRule.
+  ///
+  /// In en, this message translates to:
+  /// **'How this goal comes together'**
+  String get goalFormCompositeRule;
 
   /// No description provided for @goalFormConfirmTitle.
   ///
@@ -10594,6 +10845,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Juno'**
   String get goalFormDefaultPersonaName;
+
+  /// No description provided for @goalFormDirectionAtLeast.
+  ///
+  /// In en, this message translates to:
+  /// **'At least'**
+  String get goalFormDirectionAtLeast;
+
+  /// No description provided for @goalFormDirectionAtMost.
+  ///
+  /// In en, this message translates to:
+  /// **'No more than'**
+  String get goalFormDirectionAtMost;
 
   /// No description provided for @goalFormEditTitle.
   ///
@@ -10643,6 +10906,53 @@ abstract class AppLocalizations {
   /// **'habit check-off'**
   String get goalFormHabitSignal;
 
+  /// No description provided for @goalFormHealthBloodPressureDiastolic.
+  ///
+  /// In en, this message translates to:
+  /// **'Diastolic blood pressure'**
+  String get goalFormHealthBloodPressureDiastolic;
+
+  /// No description provided for @goalFormHealthBloodPressureSystolic.
+  ///
+  /// In en, this message translates to:
+  /// **'Systolic blood pressure'**
+  String get goalFormHealthBloodPressureSystolic;
+
+  /// No description provided for @goalFormHealthCadence.
+  ///
+  /// In en, this message translates to:
+  /// **'{healthName}: 7-day average {direction} {target} {unitName}'**
+  String goalFormHealthCadence(
+    String healthName,
+    String direction,
+    String target,
+    String unitName,
+  );
+
+  /// No description provided for @goalFormHealthData.
+  ///
+  /// In en, this message translates to:
+  /// **'Health data'**
+  String get goalFormHealthData;
+
+  /// No description provided for @goalFormHealthSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Health data · {unitName} · 7-day average'**
+  String goalFormHealthSource(String unitName);
+
+  /// No description provided for @goalFormHealthTarget.
+  ///
+  /// In en, this message translates to:
+  /// **'Target ({unitName})'**
+  String goalFormHealthTarget(String unitName);
+
+  /// No description provided for @goalFormHealthWeight.
+  ///
+  /// In en, this message translates to:
+  /// **'Weight'**
+  String get goalFormHealthWeight;
+
   /// No description provided for @goalFormIncreaseTarget.
   ///
   /// In en, this message translates to:
@@ -10684,6 +10994,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Here’s what I can watch'**
   String get goalFormMappingTitle;
+
+  /// No description provided for @goalFormMeasurableCadence.
+  ///
+  /// In en, this message translates to:
+  /// **'{measurableName}: {target} per rolling week'**
+  String goalFormMeasurableCadence(String measurableName, String target);
+
+  /// No description provided for @goalFormMeasurableSource.
+  ///
+  /// In en, this message translates to:
+  /// **'Your measurable · {unitName}'**
+  String goalFormMeasurableSource(String unitName);
 
   /// No description provided for @goalFormNoHabits.
   ///
@@ -10793,6 +11115,12 @@ abstract class AppLocalizations {
   /// **'{count}× / 7 days'**
   String goalFormWeeklyTarget(int count);
 
+  /// No description provided for @goalFormYourMeasurables.
+  ///
+  /// In en, this message translates to:
+  /// **'Your measurables'**
+  String get goalFormYourMeasurables;
+
   /// Screen-reader label for the falling trend arrow on a goal-agent list row.
   ///
   /// In en, this message translates to:
@@ -10845,6 +11173,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Superseded'**
   String get goalNudgeStatusSuperseded;
+
+  /// No description provided for @goalPatternBusiestHour.
+  ///
+  /// In en, this message translates to:
+  /// **'Most sessions start around {hour}:00. Open Insights for deeper analysis.'**
+  String goalPatternBusiestHour(String hour);
+
+  /// No description provided for @goalPatternTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Timing pattern'**
+  String get goalPatternTitle;
 
   /// Badge on an agent card when a revision proposal is pending.
   ///
@@ -10930,6 +11270,84 @@ abstract class AppLocalizations {
   /// **'today'**
   String get goalProgressToday;
 
+  /// No description provided for @goalRecordOfferConflict.
+  ///
+  /// In en, this message translates to:
+  /// **'You already logged this measurable on one of these days. Ask what should be kept before recording anything.'**
+  String get goalRecordOfferConflict;
+
+  /// No description provided for @goalRecordOfferDeselectRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect row'**
+  String get goalRecordOfferDeselectRow;
+
+  /// No description provided for @goalRecordOfferDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get goalRecordOfferDismiss;
+
+  /// No description provided for @goalRecordOfferEstimatedSplit.
+  ///
+  /// In en, this message translates to:
+  /// **'Estimated split — edit if needed'**
+  String get goalRecordOfferEstimatedSplit;
+
+  /// No description provided for @goalRecordOfferIntro.
+  ///
+  /// In en, this message translates to:
+  /// **'I found a quantity in what you said. Check the values before anything is recorded.'**
+  String get goalRecordOfferIntro;
+
+  /// No description provided for @goalRecordOfferInvalidValue.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a value greater than zero.'**
+  String get goalRecordOfferInvalidValue;
+
+  /// No description provided for @goalRecordOfferNothingSelected.
+  ///
+  /// In en, this message translates to:
+  /// **'Choose at least one row to record.'**
+  String get goalRecordOfferNothingSelected;
+
+  /// No description provided for @goalRecordOfferOverline.
+  ///
+  /// In en, this message translates to:
+  /// **'{agentName} OFFERS · RECORD TO {measurableName}'**
+  String goalRecordOfferOverline(String agentName, String measurableName);
+
+  /// No description provided for @goalRecordOfferProvenance.
+  ///
+  /// In en, this message translates to:
+  /// **'Said by you, recorded by {agentName}'**
+  String goalRecordOfferProvenance(String agentName);
+
+  /// No description provided for @goalRecordOfferReceipt.
+  ///
+  /// In en, this message translates to:
+  /// **'Recorded · {entryCount, plural, =1{1 entry} other{{entryCount} entries}} · said by you, recorded by {agentName}'**
+  String goalRecordOfferReceipt(int entryCount, String agentName);
+
+  /// No description provided for @goalRecordOfferRecordMany.
+  ///
+  /// In en, this message translates to:
+  /// **'Record {entryCount, plural, =1{1 entry} other{{entryCount} entries}}'**
+  String goalRecordOfferRecordMany(int entryCount);
+
+  /// No description provided for @goalRecordOfferRecordOne.
+  ///
+  /// In en, this message translates to:
+  /// **'Record entry'**
+  String get goalRecordOfferRecordOne;
+
+  /// No description provided for @goalRecordOfferSelectRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Select row'**
+  String get goalRecordOfferSelectRow;
+
   /// Goal track status chip: target date passed with criteria met.
   ///
   /// In en, this message translates to:
@@ -10965,6 +11383,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Recovering'**
   String get goalStatusRecovering;
+
+  /// No description provided for @goalWatchingMetric.
+  ///
+  /// In en, this message translates to:
+  /// **'Updates from its linked source · {windowLabel}'**
+  String goalWatchingMetric(String windowLabel);
 
   /// No description provided for @goalWindowCalendarMonth.
   ///

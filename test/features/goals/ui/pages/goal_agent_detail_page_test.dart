@@ -55,6 +55,9 @@ void main() {
           as AgentIdentityEntity;
   testWidgets('renders the health header and no-report hint without an empty '
       'timeline section', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final completionService = _MockGoalHabitCompletionService();
     when(
       () => completionService.requestReportRefresh('goal-1'),
@@ -142,8 +145,8 @@ void main() {
     expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
     expect(find.text('At risk'), findsNothing);
     expect(find.textContaining('% of target'), findsNothing);
-    expect(find.text('This rolling week'), findsOneWidget);
-    expect(find.text('Daily steps'), findsOneWidget);
+    expect(find.text('Daily steps'), findsNWidgets(2));
+    expect(find.text('Health data'), findsOneWidget);
     expect(
       find.textContaining(
         'Average 10,000 steps per day over a rolling week.',
@@ -175,9 +178,14 @@ void main() {
     expect(navigated, ['/agents/details/goal-1/edit']);
     navigated.clear();
 
-    await tester.ensureVisible(find.text('Talk to Move more'));
-    await tester.drag(find.byType(ListView).first, const Offset(0, -100));
-    await tester.pumpAndSettle();
+    final scrollable = tester.state<ScrollableState>(
+      find.descendant(
+        of: find.byType(ListView).first,
+        matching: find.byType(Scrollable),
+      ),
+    );
+    scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
+    await tester.pump();
     await tester.tap(find.text('Talk to Move more'));
     await tester.pump();
     expect(navigated, ['/agents/details/goal-1/chat']);
