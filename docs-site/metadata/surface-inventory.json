@@ -1260,6 +1260,7 @@
         "/agents",
         "/agents/create",
         "/agents/details/:agentId",
+        "/agents/details/:agentId/edit",
         "/agents/details/:agentId/chat"
       ],
       "page": "ai-and-automation/goal-agents",
