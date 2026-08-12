@@ -63,10 +63,13 @@ void main() {
       expect(lineChart.data.lineBarsData, hasLength(1));
     });
 
-    testWidgets('dot data is hidden (show: false)', (tester) async {
+    testWidgets('dot data is hidden for a multi-point line', (tester) async {
       await hPumpChart(
         tester,
-        data: [Observation(DateTime(2024, 3, 10), 5)],
+        data: [
+          Observation(DateTime(2024, 3, 10), 5),
+          Observation(DateTime(2024, 3, 11), 6),
+        ],
         rangeStart: rangeStart,
         rangeEnd: rangeEnd,
       );
