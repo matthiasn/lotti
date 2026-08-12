@@ -85,7 +85,7 @@ sequenceDiagram
   participant Listener as SyncedAudioInferenceListener
   participant Disp as SyncedAudioInferenceDispatcher
   participant Runner as SkillInferenceRunner.runTranscription
-  participant Wake as WakeOrchestrator.enqueueManualWake
+  participant Wake as WakeOrchestrator.requestContentWake
 
   Mobile->>Matrix: JournalAudio (no transcript)
   Matrix-->>Apply: SyncJournalEntity event
@@ -98,7 +98,14 @@ sequenceDiagram
   Runner-->>Disp: transcript appended to entity (or runner returns silently)
   Disp->>Disp: reload entity, verify transcripts grew
   alt transcripts grew
-    Disp->>Wake: enqueueManualWake(reason: transcriptionComplete)
+    Disp->>Wake: requestContentWake(agentId, reason: transcriptionComplete)
+    Wake->>Wake: automatic updates enabled?
+    alt enabled
+      Wake-->>Disp: true (wake enqueued)
+    else disabled
+      Wake->>Wake: mark report stale, return false
+      Wake-->>Disp: false (marked stale, no wake)
+    end
   else no growth
     Disp->>Disp: skip wake (log only)
   end
@@ -141,8 +148,19 @@ contract:
     runner reaches step 15 with no transcript growth.
 15. Reload the entity. Skip the wake (log only) if `postCount <= priorCount` —
     a silent runner failure must not produce a misleading wake.
-16. Resolve the task agent and call `wakeOrchestrator.enqueueManualWake(reason:
-    WakeReason.transcriptionComplete.name)`.
+16. Resolve the task agent via `TaskAgentService.getTaskAgentForTask(linkedTaskId)`.
+    Skip the wake (log only) if no agent exists — the recording is still
+    transcribed, there is simply nothing to nudge.
+17. Call `wakeOrchestrator.requestContentWake(agentId, reason:
+    WakeReason.transcriptionComplete.name, triggerTokens: {linkedTaskId, id})`.
+    This is **not** an unconditional enqueue: `requestContentWake` honors the
+    per-agent automatic-updates opt-in. When the agent is in the orchestrator's
+    `_automaticUpdatesDisabledAgents` set, it only persists a report-stale
+    watermark (surfacing the manual "Wake agent" CTA) and returns `false`
+    **without enqueuing a wake** — so a synced-audio transcription never spends
+    tokens on an inference cycle the user has switched off. When automatic
+    updates are enabled, it delegates to `enqueueManualWake` with
+    `WakeInitiator.automation` and returns `true`.
 
 **`AutomaticPromptTrigger` is deliberately not on this path.** Its
 `ProfileAutomationService.tryTranscribe` re-enters the rank-ordered fallback that

@@ -120,7 +120,8 @@ full journal, agent or attachment payloads.
 Pairing moves a **handover bundle** — homeserver, MXID, live password, room id,
 Base64url-encoded — from a device that already syncs to one that does not.
 `SyncBundleKind` decides what consuming it does: a `provisioned` bundle (minted
-by the CLI) rotates the account password and persists the new one; a `handover`
+by the provisioning service / admin UI, or by the CLI) rotates the account
+password and persists the new one; a `handover`
 bundle (minted by a peer) joins without rotating, so every peer shares one live
 credential. The controller's state transitions expose that distinction directly:
 a rotating bundle enters `rotatingPassword`, while a handover bundle proceeds
@@ -188,7 +189,7 @@ Five properties are deliberate:
   attaches itself, and everything written on it, to that stranger's account.
   Its copy names that consequence rather than stopping at "only use your own
   code".
-- **A first device skips the peer-only confirmation.** A CLI-minted
+- **A first device skips the peer-only confirmation.** A
   `provisioned` bundle normally establishes the account's only device. Once it
   decodes, `BundleImportWidget` starts configuration immediately because no
   peer exists to display a comparison code. A peer-minted `handover` bundle
@@ -250,7 +251,7 @@ Five properties are deliberate:
   handover produces a byte-identical one and cannot resolve a mismatch.
 
 **Configuring has two endings, and they are not interchangeable.**
-`ProvisioningState.ready` follows a CLI-minted `provisioned` bundle: the
+`ProvisioningState.ready` follows a `provisioned` bundle: the
 password has just been rotated and this is normally the *only* device on the
 account, so `_FirstDeviceView` says the account is set up and stops. There is
 no peer to run a SAS ceremony against and none to push settings from, so the
@@ -332,7 +333,8 @@ buttons.
 A failed connect distinguishes its remedies honestly: closing the inviting
 sheet does not revoke a code (`regenerateHandover()` re-serializes the
 persisted credential unchanged), but a rejected login usually means the code
-predates a password rotation — the first pairing from a CLI bundle rotates
+predates a password rotation — the first pairing from a `provisioned`
+bundle rotates
 it — or was mangled in transit, and both are fixed by a fresh code, never by
 re-attempting this one. So the bar's accent is *Enter a new code* (which
 resets `ProvisioningController` — the import page listens for the return to
@@ -411,7 +413,7 @@ goes through one private setter, so no path can change it without emitting.
 
 The SDK's `KeyVerification.isDone` is `canceled || state in {error, done}` —
 true for a ceremony that was refused just as loudly as for one that verified
-(matrix 8.1.0, `encryption/utils/key_verification.dart`). Every SDK path that
+(matrix 10.0.0, `encryption/utils/key_verification.dart`). Every SDK path that
 sets `error` also sets `canceled`, so failure is not separable from
 cancellation; there are two terminal outcomes, not three.
 
