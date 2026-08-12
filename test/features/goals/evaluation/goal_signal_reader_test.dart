@@ -570,7 +570,7 @@ void main() {
     },
   );
 
-  test('category time includes the active linked-task timer', () async {
+  test('category time replaces a persisted active timer prefix', () async {
     const criterion = GoalCriterion.categoryTime(
       criterionId: 'coding-cap',
       categoryId: 'vibe-coding',
@@ -578,16 +578,24 @@ void main() {
       aggregation: GoalAggregation.sum,
       targetHours: 2,
     );
+    final startedAt = DateTime(2026, 8, 8, 22);
     when(
       () => journalDb.insightsTimeRows(
         start: any(named: 'start'),
         end: any(named: 'end'),
       ),
-    ).thenAnswer((_) async => []);
+    ).thenAnswer(
+      (_) async => [
+        (
+          dateFrom: startedAt,
+          dateTo: DateTime(2026, 8, 8, 22, 15),
+          categoryId: 'vibe-coding',
+        ),
+      ],
+    );
     when(
       () => journalDb.getConfigFlag('private'),
     ).thenAnswer((_) async => false);
-    final startedAt = DateTime(2026, 8, 8, 22);
     final running = JournalEntity.journalEntry(
       meta: Metadata(
         id: 'running',
@@ -630,6 +638,11 @@ void main() {
     expect(
       window.categoryTimeDailyHours['coding-cap'],
       {DateTime.utc(2026, 8, 8): 1.5},
+    );
+    expect(
+      window.categoryTimeSessionsByCategory['vibe-coding'],
+      hasLength(1),
+      reason: 'the persisted timer prefix must not duplicate raw evidence',
     );
     expect(
       window.categoryTimeSessionsByCategory['vibe-coding']?.single.dateTo,
