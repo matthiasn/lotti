@@ -2559,6 +2559,7 @@
   "goalAssessmentReflectToday": "Über den heutigen Tag nachdenken",
   "goalAssessmentSpecVersion": "Ziel v{version} angewendet",
   "goalAssessmentSuggestedProvenance": "{agentName} hat vorgeschlagen, du hast angenommen",
+  "goalAssessmentSuggestedProvenanceGeneric": "Dein Zielagent hat vorgeschlagen, du hast angenommen",
   "goalAssessmentUserProvenance": "Von dir bewertet",
   "goalAttainmentLabel": "{percent} % des Ziels",
   "goalBannerActionFailed": "Das wurde nicht gespeichert — bitte versuch es noch einmal.",

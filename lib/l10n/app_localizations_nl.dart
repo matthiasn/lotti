@@ -6060,6 +6060,10 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalAssessmentSuggestedProvenanceGeneric =>
+      'Je doelagent stelde het voor, jij accepteerde';
+
+  @override
   String get goalAssessmentUserProvenance => 'Beoordeeld door jou';
 
   @override

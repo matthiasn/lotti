@@ -2815,6 +2815,7 @@
   "goalAssessmentReflectToday": "Denk na over vandaag",
   "goalAssessmentSpecVersion": "Doel v{version} toegepast",
   "goalAssessmentSuggestedProvenance": "{agentName} stelde het voor, jij accepteerde",
+  "goalAssessmentSuggestedProvenanceGeneric": "Je doelagent stelde het voor, jij accepteerde",
   "goalAssessmentUserProvenance": "Beoordeeld door jou",
   "goalAttainmentLabel": "{percent}% van het doel",
   "goalBannerActionFailed": "Dat is niet opgeslagen — probeer het opnieuw.",

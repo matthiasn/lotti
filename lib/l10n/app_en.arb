@@ -3289,6 +3289,7 @@
       }
     }
   },
+  "goalAssessmentSuggestedProvenanceGeneric": "Your goal agent suggested, you accepted",
   "goalAssessmentUserProvenance": "Rated by you",
   "goalAttainmentLabel": "{percent}% of target",
   "@goalAttainmentLabel": {

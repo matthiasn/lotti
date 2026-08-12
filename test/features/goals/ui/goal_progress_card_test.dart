@@ -6,6 +6,7 @@ import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
+import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
@@ -1119,6 +1120,11 @@ void main() {
                   direction: GoalDirection.atMost,
                   days: [day(1, 79), day(0, 81)],
                 ),
+                GoalMetricProgressView(
+                  name: 'Steps',
+                  target: 8000,
+                  days: [day(1, 7000), day(0, 9000)],
+                ),
               ],
             ),
             onReflectDay: (value) => reflectedDay = value,
@@ -1128,7 +1134,10 @@ void main() {
     );
 
     expect(find.text('The whole goal'), findsOneWidget);
-    expect(find.textContaining('2 of 2 dimensions'), findsOneWidget);
+    expect(
+      find.text('2 of 3 dimensions met yesterday · 2 required.'),
+      findsOneWidget,
+    );
     expect(find.text('Reflect on today'), findsOneWidget);
 
     await tester.ensureVisible(find.text('Reflect on today'));
@@ -1209,6 +1218,24 @@ void main() {
       expect(find.text('Your measurable'), findsOneWidget);
       expect(find.text('Tracked category time'), findsOneWidget);
       expect(find.text('1 of 2'), findsOneWidget);
+      final measurableCard = find.ancestor(
+        of: find.text('Medication doses'),
+        matching: find.byType(DesignSystemSectionCard),
+      );
+      expect(
+        find.descendant(
+          of: measurableCard,
+          matching: find.text('On track'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: measurableCard,
+          matching: find.text('This dimension is currently on track.'),
+        ),
+        findsOneWidget,
+      );
       expect(find.text('Not enough data'), findsOneWidget);
       expect(find.text('Timing pattern · Late focus'), findsOneWidget);
       expect(

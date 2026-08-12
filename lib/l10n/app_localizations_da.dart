@@ -6041,6 +6041,10 @@ class AppLocalizationsDa extends AppLocalizations {
   }
 
   @override
+  String get goalAssessmentSuggestedProvenanceGeneric =>
+      'Din målagent foreslog, du accepterede';
+
+  @override
   String get goalAssessmentUserProvenance => 'Bedømt af dig';
 
   @override

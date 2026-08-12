@@ -2559,6 +2559,7 @@
   "goalAssessmentReflectToday": "Reflectați la azi",
   "goalAssessmentSpecVersion": "S-a aplicat obiectivul v{version}",
   "goalAssessmentSuggestedProvenance": "{agentName} a sugerat, ați acceptat",
+  "goalAssessmentSuggestedProvenanceGeneric": "Agentul obiectivului dvs. a sugerat, ați acceptat",
   "goalAssessmentUserProvenance": "Evaluat de dvs.",
   "goalAttainmentLabel": "{percent}% din obiectiv",
   "goalBannerActionFailed": "Nu s-a salvat — vă rugăm să încercați din nou.",

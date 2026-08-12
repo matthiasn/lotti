@@ -2816,6 +2816,7 @@
   "goalAssessmentReflectToday": "Rifletti su oggi",
   "goalAssessmentSpecVersion": "Obiettivo v{version} applicato",
   "goalAssessmentSuggestedProvenance": "{agentName} suggerito, hai accettato",
+  "goalAssessmentSuggestedProvenanceGeneric": "Il tuo agente obiettivo ha suggerito, hai accettato",
   "goalAssessmentUserProvenance": "Valutato da te",
   "goalAttainmentLabel": "{percent}% dell’obiettivo",
   "goalBannerActionFailed": "Non è stato salvato: riprova per favore.",

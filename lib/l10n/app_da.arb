@@ -2816,6 +2816,7 @@
   "goalAssessmentReflectToday": "Reflekter over i dag",
   "goalAssessmentSpecVersion": "Mål v{version} anvendt",
   "goalAssessmentSuggestedProvenance": "{agentName} foreslog, du accepterede",
+  "goalAssessmentSuggestedProvenanceGeneric": "Din målagent foreslog, du accepterede",
   "goalAssessmentUserProvenance": "Bedømt af dig",
   "goalAttainmentLabel": "{percent} % af målet",
   "goalBannerActionFailed": "Det blev ikke gemt — prøv venligst igen.",

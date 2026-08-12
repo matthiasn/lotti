@@ -2559,6 +2559,7 @@
   "goalAssessmentReflectToday": "Reflexiona sobre hoy",
   "goalAssessmentSpecVersion": "Objetivo v{version} aplicado",
   "goalAssessmentSuggestedProvenance": "{agentName} lo sugirió, tú lo aceptaste",
+  "goalAssessmentSuggestedProvenanceGeneric": "Tu agente de objetivos lo sugirió, tú lo aceptaste",
   "goalAssessmentUserProvenance": "Calificado por ti",
   "goalAttainmentLabel": "{percent} % del objetivo",
   "goalBannerActionFailed": "Eso no se guardó; inténtalo de nuevo.",

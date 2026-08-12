@@ -10367,6 +10367,12 @@ abstract class AppLocalizations {
   /// **'{agentName} suggested, you accepted'**
   String goalAssessmentSuggestedProvenance(String agentName);
 
+  /// No description provided for @goalAssessmentSuggestedProvenanceGeneric.
+  ///
+  /// In en, this message translates to:
+  /// **'Your goal agent suggested, you accepted'**
+  String get goalAssessmentSuggestedProvenanceGeneric;
+
   /// No description provided for @goalAssessmentUserProvenance.
   ///
   /// In en, this message translates to:

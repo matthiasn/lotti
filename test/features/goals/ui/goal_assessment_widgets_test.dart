@@ -246,6 +246,10 @@ void main() {
     expect(find.text('Missed'), findsOneWidget);
     expect(find.text('Rated by you'), findsOneWidget);
     expect(find.textContaining('Juno suggested, you accepted'), findsOneWidget);
+    expect(
+      find.text('Your goal agent suggested, you accepted'),
+      findsOneWidget,
+    );
     expect(find.byType(Divider), findsNWidgets(2));
   });
 }

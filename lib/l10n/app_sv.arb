@@ -2816,6 +2816,7 @@
   "goalAssessmentReflectToday": "Reflektera över idag",
   "goalAssessmentSpecVersion": "Mål v{version} tillämpat",
   "goalAssessmentSuggestedProvenance": "{agentName} föreslog, du accepterade",
+  "goalAssessmentSuggestedProvenanceGeneric": "Din målagent föreslog, du accepterade",
   "goalAssessmentUserProvenance": "Betygsatt av dig",
   "goalAttainmentLabel": "{percent} % av målet",
   "goalBannerActionFailed": "Det sparades inte — försök igen.",
