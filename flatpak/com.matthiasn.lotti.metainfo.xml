@@ -40,11 +40,15 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.8" date="2026-08-12">
+      <description>
+        <p>Added: goal-agent chat supports voice input. The composer now has a microphone button that records, transcribes, and fills the text field.</p>
+      </description>
+    </release>
     <release version="1.0.7" date="2026-08-12">
       <description>
         <p>Goal-agent criteria are ready for refinement. Goal agents remain configurable with linked habits and rolling seven-day step targets. Their evaluation foundation now preserves a separate accountable result for every configured criterion.</p>
         <p>Added: goal agents can combine linked measurables, habits, steps, weight and blood pressure through all, any, or at-least-N rules while preserving accountable evidence for every dimension. New and existing goals can set a direction and target for weight and separate systolic/diastolic blood-pressure observations. A sustained health trend projected to reach its target within four weeks is on track without being mislabeled as achieved. Goal details support separate daily Met/Mixed/Missed reflections and identify the dimension that needs attention. An explicit quantity for a linked measurable in goal chat now produces an editable approval card; accepted values use the normal measurement history and retain visible agent provenance.</p>
-        <p>Added: goal-agent chat supports voice input. The composer now has a microphone button that records, transcribes, and fills the text field.</p>
       </description>
     </release>
     <release version="1.0.6" date="2026-08-09">
