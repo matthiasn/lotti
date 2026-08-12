@@ -287,7 +287,6 @@ class _HabitDimensionCard extends StatelessWidget {
             habit: habit,
             today: today,
             onOutcomeSelected: onHabitOutcomeSelected,
-            hideName: true,
           ),
           if (successfulWeeks != null) ...[
             SizedBox(height: tokens.spacing.step2),
@@ -592,20 +591,6 @@ double _dayTrackPitch(BuildContext context, List<GoalProgressDay> days) {
       : defaultPitch;
 }
 
-double _dayTrackWidth(BuildContext context, List<GoalProgressDay> days) {
-  if (days.isEmpty) return 0;
-  return ControlSizes.iconChipCompact +
-      _dayTrackPitch(context, days) * (days.length - 1);
-}
-
-double _habitGridWideMinimum(
-  BuildContext context,
-  List<GoalProgressDay> days,
-) {
-  final spacing = context.designTokens.spacing;
-  return spacing.step13 * 2 + spacing.step3 * 2 + _dayTrackWidth(context, days);
-}
-
 double _textWidth(BuildContext context, String text, TextStyle style) {
   final painter = TextPainter(
     text: TextSpan(text: text, style: style),
@@ -658,13 +643,11 @@ class _HabitProgressRow extends StatefulWidget {
     required this.habit,
     required this.today,
     required this.onOutcomeSelected,
-    this.hideName = false,
   });
 
   final GoalHabitProgressView habit;
   final DateTime today;
   final GoalHabitOutcomeSelected? onOutcomeSelected;
-  final bool hideName;
 
   @override
   State<_HabitProgressRow> createState() => _HabitProgressRowState();
@@ -718,9 +701,6 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
       targetCount: habit.targetCount,
       window: habit.window,
     );
-    final nameStyle = tokens.typography.styles.body.bodySmall.copyWith(
-      color: tokens.colors.text.highEmphasis,
-    );
     final cadenceStyle = tokens.typography.styles.others.caption.copyWith(
       color: tokens.colors.text.lowEmphasis,
     );
@@ -728,27 +708,12 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
       color: stateColor,
     );
 
-    final identity = Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        if (!widget.hideName)
-          Text(
-            habit.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: nameStyle,
-          ),
-        Text(cadence, style: cadenceStyle),
-      ],
-    );
-    Widget cells({required bool alignWithWeekdays}) {
+    Widget cells() {
       const itemExtent = ControlSizes.iconChipCompact;
       return _DayTrack(
         height: itemExtent,
         itemExtent: itemExtent,
-        pitch: alignWithWeekdays
-            ? _dayTrackPitch(context, activeDays)
-            : itemExtent + tokens.spacing.step2,
+        pitch: _dayTrackPitch(context, activeDays),
         children: [
           for (var index = 0; index < activeDays.length; index++)
             _ProgressDayCell(
@@ -772,35 +737,9 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
       );
     }
 
-    final successfulWeeks = habit.successfulWeeks;
-    final reliability = successfulWeeks == null
-        ? null
-        : _Reliability(successfulWeeks: successfulWeeks);
     return LayoutBuilder(
       builder: (context, constraints) {
-        final wide =
-            !widget.hideName &&
-            activeDays.length <= 7 &&
-            constraints.maxWidth >= _habitGridWideMinimum(context, activeDays);
-        if (wide) {
-          return Row(
-            children: [
-              SizedBox(width: tokens.spacing.step13, child: identity),
-              SizedBox(width: tokens.spacing.step3),
-              cells(alignWithWeekdays: true),
-              SizedBox(width: tokens.spacing.step3),
-              Expanded(
-                child: Text(
-                  note,
-                  style: noteStyle,
-                ),
-              ),
-              ?reliability,
-            ],
-          );
-        }
         final inlineHeaderWidth =
-            (widget.hideName ? 0 : _textWidth(context, habit.name, nameStyle)) +
             tokens.spacing.step2 +
             _textWidth(context, cadence, cadenceStyle) +
             tokens.spacing.step3 +
@@ -812,27 +751,9 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
             Row(
               children: [
                 if (cadenceFitsInline) ...[
-                  if (!widget.hideName) ...[
-                    Text(
-                      habit.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: nameStyle,
-                    ),
-                    SizedBox(width: tokens.spacing.step2),
-                  ],
                   Text(cadence, maxLines: 1, style: cadenceStyle),
                   const Spacer(),
-                ] else if (!widget.hideName)
-                  Expanded(
-                    child: Text(
-                      habit.name,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: nameStyle,
-                    ),
-                  )
-                else
+                ] else
                   const Spacer(),
                 SizedBox(width: tokens.spacing.step3),
                 Text(
@@ -848,7 +769,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
             SizedBox(height: tokens.spacing.step1),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: cells(alignWithWeekdays: widget.hideName),
+              child: cells(),
             ),
           ],
         );

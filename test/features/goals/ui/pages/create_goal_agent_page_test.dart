@@ -13,6 +13,8 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
@@ -1239,6 +1241,43 @@ void main() {
       '80',
     );
 
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
+    await tester.pumpAndSettle();
+    Finder selectionRow(String title) => find.byWidgetPredicate(
+      (widget) => widget is DesignSystemSelectionRow && widget.title == title,
+    );
+    expect(selectionRow('All dimensions'), findsOneWidget);
+    expect(selectionRow('Any dimension'), findsOneWidget);
+    expect(selectionRow('At least 1 of 3'), findsOneWidget);
+    expect(find.text('1 / 3'), findsOneWidget);
+    expect(
+      find.text('Strictest — every dimension must be met.'),
+      findsOneWidget,
+    );
+    expect(
+      find.text('Loosest — one met dimension is enough.'),
+      findsOneWidget,
+    );
+    await tester.tap(selectionRow('Any dimension'));
+    await tester.pumpAndSettle();
+    expect(find.text('Any dimension'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(
+        of: selectionRow('At least 1 of 3'),
+        matching: find.byIcon(Icons.add_rounded),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(find.text('At least 2 of 3'), findsOneWidget);
+
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
+    await tester.pumpAndSettle();
+    await tester.tap(selectionRow('All dimensions'));
+    await tester.pumpAndSettle();
+
     await tester.tap(find.text('Looks right'));
     await tester.pumpAndSettle();
     expect(find.text('Meet your agent'), findsOneWidget);
@@ -1272,6 +1311,126 @@ void main() {
           GoalDirection.atMost,
         ),
       },
+    );
+  });
+
+  testWidgets('dimension search finds measurable units and health aliases', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final measurable = MeasurableDataType(
+      id: 'meds',
+      createdAt: DateTime(2026),
+      updatedAt: DateTime(2026),
+      displayName: 'Medication doses',
+      description: '',
+      unitName: 'doses',
+      version: 1,
+      vectorClock: null,
+    );
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: [
+          ...overrides(),
+          measurableDataTypesStreamProvider.overrideWith(
+            (ref) => Stream.value([measurable]),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Build consistency',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    Future<void> searchFor(String query) async {
+      final search = find.descendant(
+        of: find.byType(DesignSystemTextInput).last,
+        matching: find.byType(EditableText),
+      );
+      await tester.enterText(search, query);
+      await tester.pump();
+    }
+
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await searchFor('dose');
+    Finder selectionRow(String title) => find.byWidgetPredicate(
+      (widget) => widget is DesignSystemSelectionRow && widget.title == title,
+    );
+    expect(selectionRow('Medication doses'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('goal-form-health-source-weight')),
+      findsNothing,
+    );
+    expect(
+      find.byKey(
+        const ValueKey('goal-form-health-source-blood-pressure'),
+      ),
+      findsNothing,
+    );
+    await tester.tap(selectionRow('Medication doses'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await searchFor('kg');
+    expect(
+      find.byKey(const ValueKey('goal-form-health-source-weight')),
+      findsOneWidget,
+    );
+    expect(selectionRow('Medication doses'), findsNothing);
+    await tester.tap(
+      find.byKey(const ValueKey('goal-form-health-source-weight')),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(
+        const ValueKey('goal-form-health-target-HealthDataType.WEIGHT'),
+      ),
+      '75',
+    );
+
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('Medication doses: 1 per rolling week'),
+      findsOneWidget,
+    );
+    expect(
+      find.textContaining('Weight: 7-day average No more than 75 kg'),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    final criteria =
+        verify(
+              () => agentService.createGoalAgent(
+                title: any(named: 'title'),
+                displayName: any(named: 'displayName'),
+                statement: 'Build consistency',
+                criteria: captureAny(named: 'criteria'),
+              ),
+            ).captured.single
+            as GoalCriterionAllOf;
+    expect(
+      criteria.criteria.whereType<GoalCriterionMeasurable>().single.dataTypeId,
+      'meds',
     );
   });
 

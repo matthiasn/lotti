@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
@@ -1079,5 +1080,186 @@ void main() {
     completion.complete(true);
     await tester.pumpAndSettle();
     expect(find.byType(CircularProgressIndicator), findsNothing);
+  });
+
+  testWidgets('composite summary and reflection preserve the authored rule', (
+    tester,
+  ) async {
+    DateTime? reflectedDay;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        SingleChildScrollView(
+          child: GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              compositeRule: GoalCompositeRuleKind.atLeast,
+              requiredSuccesses: 2,
+              compositeCompactWindow: const [
+                false,
+                true,
+                false,
+                true,
+                true,
+                false,
+                true,
+              ],
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 1,
+                  days: [day(1, 1), day(0, 0)],
+                  successfulWeeks: 2,
+                ),
+              ],
+              metrics: [
+                GoalMetricProgressView(
+                  name: 'Weight',
+                  target: 80,
+                  direction: GoalDirection.atMost,
+                  days: [day(1, 79), day(0, 81)],
+                ),
+              ],
+            ),
+            onReflectDay: (value) => reflectedDay = value,
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('The whole goal'), findsOneWidget);
+    expect(find.textContaining('2 of 2 dimensions'), findsOneWidget);
+    expect(find.text('Reflect on today'), findsOneWidget);
+
+    await tester.ensureVisible(find.text('Reflect on today'));
+    await tester.tap(find.text('Reflect on today'));
+    expect(reflectedDay, today);
+  });
+
+  testWidgets(
+    'dimension cards cover health, measurable, projected, and timing states',
+    (tester) async {
+      final sessions = [
+        for (var index = 0; index < 25; index++)
+          GoalCategoryTimeSession(
+            categoryId: 'focus',
+            dateFrom: DateTime(2026, 8, 10, index % 24),
+            dateTo: DateTime(2026, 8, 10, index % 24).add(
+              const Duration(minutes: 30),
+            ),
+          ),
+      ];
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          SingleChildScrollView(
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                metrics: [
+                  GoalMetricProgressView(
+                    criterionId: 'pressure',
+                    name: 'Systolic pressure',
+                    target: 120,
+                    direction: GoalDirection.atMost,
+                    aggregation: GoalAggregation.max,
+                    unitName: 'mmHg',
+                    days: [day(1, 119), day(0, 121)],
+                  ),
+                  GoalMetricProgressView(
+                    criterionId: 'meds',
+                    name: 'Medication doses',
+                    target: 2,
+                    kind: GoalDimensionKind.measurable,
+                    unitName: '',
+                    days: [day(0, 1)],
+                    projectedOnTrack: true,
+                  ),
+                  GoalMetricProgressView(
+                    criterionId: 'weight',
+                    name: 'Weight',
+                    target: 80,
+                    days: [
+                      GoalProgressDay(
+                        day: today,
+                        value: 0,
+                        isObserved: false,
+                      ),
+                    ],
+                  ),
+                  GoalMetricProgressView(
+                    criterionId: 'focus',
+                    name: 'Late focus',
+                    target: 1,
+                    kind: GoalDimensionKind.categoryTime,
+                    dailyTimeRange: const GoalDailyTimeRange(
+                      startMinute: 22 * 60,
+                      endMinute: 7 * 60,
+                    ),
+                    days: [day(0, 1)],
+                    categoryTimeSessions: sessions,
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Health data'), findsNWidgets(2));
+      expect(find.text('Your measurable'), findsOneWidget);
+      expect(find.text('Tracked category time'), findsOneWidget);
+      expect(find.text('1 of 2'), findsOneWidget);
+      expect(find.text('Not enough data'), findsOneWidget);
+      expect(find.text('Timing pattern · Late focus'), findsOneWidget);
+      expect(
+        find.textContaining('Most sessions start around 00:00'),
+        findsOneWidget,
+      );
+      expect(find.text('00'), findsOneWidget);
+      expect(find.text('24'), findsOneWidget);
+    },
+  );
+
+  testWidgets('agent-recorded bars expose provenance and fallback tooltips', (
+    tester,
+  ) async {
+    final firstDay = today.subtract(const Duration(days: 1));
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              name: 'Medication doses',
+              target: 2,
+              kind: GoalDimensionKind.measurable,
+              days: [
+                GoalProgressDay(day: firstDay, value: 1),
+                GoalProgressDay(day: today, value: 2),
+              ],
+              agentRecordedDays: {firstDay, today},
+              agentRecordedProvenanceByDay: {
+                firstDay: GoalRecordedMeasurementProvenance(
+                  agentName: 'Juno',
+                  recordedAt: DateTime(2026, 8, 11, 9, 30),
+                ),
+              },
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byIcon(Icons.edit_note_rounded), findsNWidgets(2));
+    final messages = tester
+        .widgetList<Tooltip>(find.byType(Tooltip))
+        .map((tooltip) => tooltip.message)
+        .whereType<String>()
+        .toList();
+    expect(
+      messages,
+      contains('Said by you and recorded after your approval.'),
+    );
+    expect(messages.any((message) => message.contains('Juno')), isTrue);
   });
 }
