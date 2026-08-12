@@ -40,6 +40,7 @@ class GoalWakeFacts {
     this.categoryTimeSessionsByCategory = const {},
     this.categoryTimeEvidenceStart,
     this.categoryTimeEvidenceEnd,
+    this.hasActiveCategoryTimer = false,
   });
 
   /// Policy-derived status for the evaluation day.
@@ -59,6 +60,10 @@ class GoalWakeFacts {
   categoryTimeSessionsByCategory;
   final DateTime? categoryTimeEvidenceStart;
   final DateTime? categoryTimeEvidenceEnd;
+
+  /// Whether the category-time snapshot contains a still-running timer.
+  /// Reports built from this prefix remain stale until a later settled wake.
+  final bool hasActiveCategoryTimer;
 
   /// Whether the status changed against the last persisted register row.
   /// A first-ever evaluation counts as a transition (there is a new fact

@@ -135,6 +135,7 @@ class GoalSignalReader {
     final categoryTime = <String, Map<DateTime, num>>{};
     final categoryTimeSessions = <String, List<GoalCategoryTimeSession>>{};
     DateTime? categoryTimeEvidenceStart;
+    var hasActiveCategoryTimer = false;
     if (needs.categoryTimeCriteria.isNotEmpty) {
       final requestedEvidenceStart = categorySessionEvidenceStart ?? rangeStart;
       final evidenceStart = requestedEvidenceStart.isAfter(rangeEnd)
@@ -171,6 +172,9 @@ class GoalSignalReader {
         for (final criterion in needs.categoryTimeCriteria)
           criterion.categoryId,
       };
+      hasActiveCategoryTimer =
+          activeTimerRow != null &&
+          watchedCategoryIds.contains(activeTimerRow.categoryId);
       if (includeCategoryTimeSessions) {
         for (final row in rows) {
           final categoryId = row.categoryId;
@@ -221,6 +225,7 @@ class GoalSignalReader {
           needs.categoryTimeCriteria.isEmpty || !includeCategoryTimeSessions
           ? null
           : categoryTimeEnd,
+      hasActiveCategoryTimer: hasActiveCategoryTimer,
     );
   }
 
@@ -244,7 +249,6 @@ class GoalSignalReader {
 
     final persistedEnd = current.meta.dateTo;
     final dateTo = persistedEnd.isAfter(reference) ? persistedEnd : reference;
-    if (!dateTo.isAfter(current.meta.dateFrom)) return null;
     return (
       entryId: current.meta.id,
       dateFrom: current.meta.dateFrom,

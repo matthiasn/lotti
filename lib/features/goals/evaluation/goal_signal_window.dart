@@ -39,6 +39,7 @@ class GoalSignalWindow {
     this.categoryTimeSessionsByCategory = const {},
     this.categoryTimeEvidenceStart,
     this.categoryTimeEvidenceEnd,
+    this.hasActiveCategoryTimer = false,
   });
 
   /// Journal quantitative data: data type string → day key → sum of that
@@ -75,6 +76,13 @@ class GoalSignalWindow {
   /// evidence. Null when the criteria tree watches no category time.
   final DateTime? categoryTimeEvidenceStart;
   final DateTime? categoryTimeEvidenceEnd;
+
+  /// Whether a currently running timer contributes to a watched category.
+  ///
+  /// A report rendered from the current elapsed prefix must remain stale:
+  /// in-memory timer ticks do not emit journal mutations, so the evidence can
+  /// keep changing after the report is written.
+  final bool hasActiveCategoryTimer;
 
   /// Daily sums for [dataType] restricted to [start]..[end] (inclusive).
   Map<DateTime, num> quantitativeInRange(

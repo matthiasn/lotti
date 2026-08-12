@@ -99,48 +99,65 @@ class GoalAgentPhaseA {
       includeCategoryTimeSessions: false,
     );
     final facts = derivation.facts;
-    final periodKey = derivation.periodKey;
-    final existingToday = derivation.existingToday;
-    final evaluation = facts.evaluation;
     final needsEscalation =
         facts.needsEscalation ||
         (activeAdExpired && automaticGoalAdEligible(facts, derivation.priors));
 
-    // One transaction: a register write acknowledging the transition
-    // without its escalation would be permanent — the next run reads the
-    // new status as previousStatus and never re-arms the missed wake.
+    final persisted = await persistDerivation(
+      agentId: agentId,
+      derivation: derivation,
+      now: now,
+      armEscalation: needsEscalation,
+    );
+    if (needsEscalation && persisted) {
+      _onEscalationArmed?.call();
+    }
+
+    return const WakeResult(success: true);
+  }
+
+  /// Persists one already-derived deterministic register snapshot.
+  ///
+  /// The explicit report-refresh path uses this without arming another Phase
+  /// B wake, so **Update now** advances health/register surfaces from the same
+  /// evidence snapshot that its prose report describes. Returns false when a
+  /// concurrent revision or deletion fences the write.
+  Future<bool> persistDerivation({
+    required String agentId,
+    required GoalWakeDerivation derivation,
+    required DateTime now,
+    bool armEscalation = false,
+  }) async {
     var fenced = false;
     await _syncService.runInTransaction(() async {
-      // A revision committing after this wake read the head must fence
-      // BOTH writes: a v1 register would overwrite the day's row under
-      // the new spec, and a v1 escalation would arm an old-target Phase
-      // B wake after the revision's sweep already cleaned up.
+      // A revision committing after derivation must fence BOTH writes: an old
+      // register would overwrite today's row under the new spec, and an old
+      // escalation would arm Phase B after the revision sweep already ran.
       final headNow = await _repository.getEntity(goalSpecHeadId(agentId));
-      // A MISSING head means the goal was hard-deleted mid-wake:
-      // recreating the register or an escalation would sync rows back
-      // out after the user requested permanent deletion.
-      if (headNow is! GoalSpecHeadEntity || headNow.versionId != version.id) {
+      if (headNow is! GoalSpecHeadEntity ||
+          headNow.versionId != derivation.version.id) {
         fenced = true;
         return;
       }
       await _upsertRegister(
         agentId: agentId,
-        version: version,
-        evaluation: evaluation,
-        facts: facts,
+        version: derivation.version,
+        evaluation: derivation.facts.evaluation,
+        facts: derivation.facts,
         now: now,
-        periodKey: periodKey,
-        existing: existingToday,
+        periodKey: derivation.periodKey,
+        existing: derivation.existingToday,
       );
-      if (needsEscalation) {
-        await _armEscalation(agentId, now, periodKey, facts.previousStatus);
+      if (armEscalation) {
+        await _armEscalation(
+          agentId,
+          now,
+          derivation.periodKey,
+          derivation.facts.previousStatus,
+        );
       }
     });
-    if (needsEscalation && !fenced) {
-      _onEscalationArmed?.call();
-    }
-
-    return const WakeResult(success: true);
+    return !fenced;
   }
 
   /// The render-side staleness filter hides an overdue ad immediately,
@@ -276,6 +293,7 @@ class GoalAgentPhaseA {
         categoryTimeSessionsByCategory: signals.categoryTimeSessionsByCategory,
         categoryTimeEvidenceStart: signals.categoryTimeEvidenceStart,
         categoryTimeEvidenceEnd: signals.categoryTimeEvidenceEnd,
+        hasActiveCategoryTimer: signals.hasActiveCategoryTimer,
       ),
       periodKey: periodKey,
       priors: priors,

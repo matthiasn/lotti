@@ -84,6 +84,7 @@ flowchart TD
         STORE --> USERWAKE[manual userMessage wake\nmessage id trigger token]
         DAYEDIT[Goal detail day cell\nsuccess or missed] --> HABITWRITE[existing habit completion\npersistence path]
         HABITWRITE --> SIG
+        REFRESH[Update now\ngoal-report-refresh] --> REFREG[persist deterministic register\nwithout duplicate escalation]
     end
     ORCH --> PA[GoalAgentPhaseA.execute]
     DISP --> SYNCROUTE{bounded signal or\ncategory-time mutation?}
@@ -103,9 +104,13 @@ flowchart TD
     ROUTE -- no --> PA
     ROUTE -- yes --> PB[GoalAgentWorkflow — Phase B\nsame derivation as Phase A]
     USERWAKE --> PB
+    REFREG --> PB
     PB --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone]
     FACTS --> CONV[one bounded conversation\nglm-5.2 default, profile override,\ntemperature 0, 7-tool contract]
     CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
+    OUT --> FRESH{current report head advanced\nand no watched timer active?}
+    FRESH -- yes --> REPORTDONE[clear report-stale watermark]
+    FRESH -- no --> STAY[keep report stale]
 ```
 
 ## Invariants
@@ -192,8 +197,10 @@ flowchart TD
   source exists before enqueue, the wake bypasses throttling, and no chat UI
   owns an inference loop. A successful exact-day habit edit also enqueues a
   workspace-scoped `goal-report-refresh` wake; its workspace does not supersede
-  the ordinary subscription wake, and it routes to Phase B to refresh the
-  standing report even when the coarse status did not change.
+  the ordinary subscription wake. It first persists the deterministic register
+  from the same derivation snapshot without arming a duplicate escalation, then
+  routes to Phase B to refresh the standing report even when the coarse status
+  did not change.
 - **Phase B re-derives, never trusts.** The workflow calls the same
   `deriveWakeFacts` Phase A used to arm the escalation and renders every
   number into the FACTS block; the prompt forbids the model to recompute.
@@ -204,6 +211,12 @@ flowchart TD
   new-banner request missing its ad. A first evaluation that lands at risk is
   also ad-eligible, so a newly created goal does not wait for a three-day trend
   before receiving its initial banner.
+- **Report freshness follows the durable standing head.** Producing report
+  material or writing a historical report row is insufficient: the shared
+  drain clears the stale watermark only when this wake actually advances the
+  current report head. A report that includes a watched category timer's live
+  elapsed prefix also remains stale, because in-memory timer ticks continue
+  changing evidence without journal notifications.
 - **The escalation carries its own baseline and period.** The wake record
   encodes the PRE-transition status as a `goal-baseline:<status>` trigger
   token (Phase A's register write hides it from any re-derivation, and a

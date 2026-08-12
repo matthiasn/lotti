@@ -774,6 +774,7 @@ void main() {
       contains(DateTime(2026, 8, 8, 23, 30)),
       reason: 'the in-memory timer endpoint must advance beyond persisted data',
     );
+    expect(window.hasActiveCategoryTimer, isTrue);
   });
 
   test('a hidden private active timer contributes no category time', () async {
@@ -814,6 +815,7 @@ void main() {
     );
 
     expect(window.categoryTimeDailyHours['coding-cap'], isEmpty);
+    expect(window.hasActiveCategoryTimer, isFalse);
     verify(() => journalDb.getConfigFlag('private')).called(1);
   });
 
@@ -849,6 +851,8 @@ void main() {
       criteria: criterion,
       reference: startedAt,
     );
+
+    expect(window.hasActiveCategoryTimer, isTrue);
 
     expect(window.categoryTimeDailyHours['coding-cap'], isEmpty);
     expect(window.categoryTimeSessionsByCategory, isEmpty);
