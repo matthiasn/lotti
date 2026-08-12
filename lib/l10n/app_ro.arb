@@ -1372,6 +1372,7 @@
   "chatInputHintSelectModel": "Selectați un model pentru a începe conversația",
   "chatInputListening": "Ascultă...",
   "chatInputNoAudioRecorded": "Nu s-a înregistrat niciun sunet. Încercați din nou.",
+  "chatInputRecordingFailed": "Înregistrarea a eșuat. Vă rugăm să încercați din nou.",
   "chatInputPleaseWait": "Așteaptă...",
   "chatInputProcessing": "Se procesează...",
   "chatInputRecordVoice": "Înregistrați un mesaj vocal",

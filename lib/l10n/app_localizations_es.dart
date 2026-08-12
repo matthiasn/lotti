@@ -3101,6 +3101,10 @@ class AppLocalizationsEs extends AppLocalizations {
       'No se ha grabado audio. Inténtalo de nuevo.';
 
   @override
+  String get chatInputRecordingFailed =>
+      'Error de grabación. Inténtalo de nuevo.';
+
+  @override
   String get chatInputPleaseWait => 'Espera...';
 
   @override

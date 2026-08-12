@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
+import 'package:lotti/features/design_system/components/toasts/design_system_toast.dart';
+import 'package:lotti/features/design_system/components/toasts/toast_messenger.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
@@ -45,6 +50,7 @@ class AgentChatView extends ConsumerStatefulWidget {
 class _AgentChatViewState extends ConsumerState<AgentChatView> {
   late final TextEditingController _controller;
   final _scrollController = ScrollController();
+  late final ProviderSubscription<ChatRecorderState> _recorderSubscription;
   String? _lastMessageId;
   bool _wasSending = false;
 
@@ -53,6 +59,43 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
     super.initState();
     _controller = TextEditingController(text: widget.draft);
     _wasSending = widget.isSending;
+    _recorderSubscription = ref.listenManual<ChatRecorderState>(
+      chatRecorderControllerProvider,
+      (previous, next) {
+        final error = next.error?.trim();
+        if (error != null &&
+            error.isNotEmpty &&
+            error != previous?.error &&
+            mounted) {
+          context.showToast(
+            tone: DesignSystemToastTone.error,
+            title: context.messages.commonError,
+            description: context.messages.chatInputRecordingFailed,
+            duration: const Duration(seconds: 8),
+            replaceCurrent: true,
+          );
+          Future.microtask(() {
+            if (mounted) {
+              ref.read(chatRecorderControllerProvider.notifier).clearResult();
+            }
+          });
+          return;
+        }
+        if (next.transcript != null &&
+            next.transcript != previous?.transcript) {
+          if (!mounted) return;
+          final transcript = next.transcript!.trim();
+          if (transcript.isNotEmpty) {
+            _controller.text = transcript;
+            _controller.selection = TextSelection.collapsed(
+              offset: _controller.text.length,
+            );
+            widget.onDraftChanged(transcript);
+          }
+          ref.read(chatRecorderControllerProvider.notifier).clearResult();
+        }
+      },
+    );
   }
 
   @override
@@ -73,6 +116,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
   void dispose() {
     _controller.dispose();
     _scrollController.dispose();
+    _recorderSubscription.close();
     super.dispose();
   }
 
@@ -193,36 +237,291 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
               ],
             ),
           ),
-        DecoratedBox(
-          decoration: BoxDecoration(
-            color: tokens.colors.background.level01,
-            border: Border(
-              top: BorderSide(color: tokens.colors.decorative.level01),
-            ),
+        _ChatComposer(
+          controller: _controller,
+          agentName: widget.agentName,
+          isSending: widget.isSending,
+          draft: widget.draft,
+          onDraftChanged: widget.onDraftChanged,
+          onSend: widget.onSend,
+        ),
+      ],
+    );
+  }
+}
+
+/// Voice-enabled composer for the agent chat. Reuses the shared
+/// [chatRecorderControllerProvider] — the same recorder the evolution chat
+/// uses — so transcription, error toasts, and the waveform are shared
+/// infrastructure. Idle shows a text field with a mic/send trailing icon;
+/// recording shows the waveform with cancel/stop; processing shows the
+/// streaming partial transcript.
+///
+/// Watches [chatRecorderControllerProvider] internally so the 10 Hz amplitude
+/// stream rebuilds only this subtree, not the full message list above.
+class _ChatComposer extends ConsumerWidget {
+  const _ChatComposer({
+    required this.controller,
+    required this.agentName,
+    required this.isSending,
+    required this.draft,
+    required this.onDraftChanged,
+    required this.onSend,
+  });
+
+  final TextEditingController controller;
+  final String agentName;
+  final bool isSending;
+  final String draft;
+  final ValueChanged<String> onDraftChanged;
+  final VoidCallback onSend;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final tokens = context.designTokens;
+    final recorderState = ref.watch(chatRecorderControllerProvider);
+    final status = recorderState.status;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: tokens.colors.background.level01,
+        border: Border(
+          top: BorderSide(color: tokens.colors.decorative.level01),
+        ),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step4),
+        child: switch (status) {
+          ChatRecorderStatus.recording => _RecordingControls(
+            amplitudes: ref
+                .read(chatRecorderControllerProvider.notifier)
+                .getNormalizedAmplitudeHistory(),
+            onCancel: () =>
+                ref.read(chatRecorderControllerProvider.notifier).cancel(),
+            onStop: () => ref
+                .read(chatRecorderControllerProvider.notifier)
+                .stopAndTranscribe(),
           ),
-          child: Padding(
-            padding: EdgeInsets.all(tokens.spacing.step4),
-            child: DesignSystemTextInput(
-              controller: _controller,
-              hintText: context.messages.goalChatPlaceholder(widget.agentName),
-              helperText: widget.isSending
-                  ? context.messages.goalChatResponding(widget.agentName)
-                  : null,
-              enabled: !widget.isSending,
-              textCapitalization: TextCapitalization.sentences,
-              trailingIcon: Icons.send_rounded,
-              onTrailingIconTap: widget.draft.trim().isEmpty
-                  ? null
-                  : widget.onSend,
-              trailingIconTooltip: context.messages.chatInputSendTooltip,
-              onChanged: widget.onDraftChanged,
-              onSubmitted: (_) {
-                if (widget.draft.trim().isNotEmpty) widget.onSend();
-              },
-            ),
+          ChatRecorderStatus.processing => _TranscriptionProgress(
+            partialTranscript: recorderState.partialTranscript ?? '',
+          ),
+          _ => _IdleComposer(
+            controller: controller,
+            agentName: agentName,
+            isSending: isSending,
+            draft: draft,
+            onDraftChanged: onDraftChanged,
+            onSend: onSend,
+            onStartRecording: () =>
+                ref.read(chatRecorderControllerProvider.notifier).start(),
+          ),
+        },
+      ),
+    );
+  }
+}
+
+class _IdleComposer extends StatelessWidget {
+  const _IdleComposer({
+    required this.controller,
+    required this.agentName,
+    required this.isSending,
+    required this.draft,
+    required this.onDraftChanged,
+    required this.onSend,
+    required this.onStartRecording,
+  });
+
+  final TextEditingController controller;
+  final String agentName;
+  final bool isSending;
+  final String draft;
+  final ValueChanged<String> onDraftChanged;
+  final VoidCallback onSend;
+  final VoidCallback onStartRecording;
+
+  @override
+  Widget build(BuildContext context) {
+    final hasText = draft.trim().isNotEmpty;
+    final canSend = hasText && !isSending;
+    final canRecord = !isSending && !hasText;
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Expanded(
+          child: DesignSystemTextInput(
+            controller: controller,
+            hintText: context.messages.goalChatPlaceholder(agentName),
+            helperText: isSending
+                ? context.messages.goalChatResponding(agentName)
+                : null,
+            enabled: !isSending,
+            textCapitalization: TextCapitalization.sentences,
+            trailingIcon: hasText
+                ? Icons.send_rounded
+                : (canRecord ? Icons.mic_rounded : null),
+            onTrailingIconTap: hasText
+                ? (canSend ? onSend : null)
+                : (canRecord ? onStartRecording : null),
+            trailingIconTooltip: hasText
+                ? context.messages.chatInputSendTooltip
+                : (canRecord ? context.messages.chatInputRecordVoice : null),
+            onChanged: onDraftChanged,
+            onSubmitted: (_) {
+              if (draft.trim().isNotEmpty) onSend();
+            },
           ),
         ),
       ],
+    );
+  }
+}
+
+class _RecordingControls extends StatelessWidget {
+  const _RecordingControls({
+    required this.amplitudes,
+    required this.onCancel,
+    required this.onStop,
+  });
+
+  final List<double> amplitudes;
+  final VoidCallback onCancel;
+  final VoidCallback onStop;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): onCancel,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Row(
+          children: [
+            Expanded(
+              child: WaveformBars(amplitudesNormalized: amplitudes),
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            _CircleIconButton(
+              icon: Icons.close_rounded,
+              onPressed: onCancel,
+              tooltip: context.messages.chatInputCancelRecording,
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            _CircleIconButton(
+              icon: Icons.stop_rounded,
+              onPressed: onStop,
+              tooltip: context.messages.chatInputStopTranscribe,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _TranscriptionProgress extends StatelessWidget {
+  const _TranscriptionProgress({required this.partialTranscript});
+
+  final String partialTranscript;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Row(
+      children: [
+        Expanded(
+          child: Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.step4,
+              vertical: tokens.spacing.step3,
+            ),
+            decoration: BoxDecoration(
+              color: tokens.colors.background.level02,
+              borderRadius: BorderRadius.circular(tokens.radii.l),
+            ),
+            constraints: BoxConstraints(maxHeight: tokens.spacing.step9),
+            child: SingleChildScrollView(
+              reverse: true,
+              child: Text(
+                partialTranscript,
+                style: tokens.typography.styles.body.bodyMedium.copyWith(
+                  color: tokens.colors.text.mediumEmphasis,
+                ),
+              ),
+            ),
+          ),
+        ),
+        SizedBox(width: tokens.spacing.step3),
+        SizedBox.square(
+          dimension: tokens.spacing.step8,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              SizedBox(
+                width: tokens.spacing.step6,
+                height: tokens.spacing.step6,
+                child: CircularProgressIndicator(
+                  strokeWidth: BorderWidths.emphasis,
+                  color: tokens.colors.interactive.enabled,
+                ),
+              ),
+              Icon(
+                Icons.mic_rounded,
+                size: IconSizes.s,
+                color: tokens.colors.interactive.enabled,
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _CircleIconButton extends StatelessWidget {
+  const _CircleIconButton({
+    required this.icon,
+    required this.onPressed,
+    required this.tooltip,
+  });
+
+  final IconData icon;
+  final VoidCallback onPressed;
+  final String tooltip;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Semantics(
+      button: true,
+      label: tooltip,
+      onTap: onPressed,
+      child: ExcludeSemantics(
+        child: Tooltip(
+          message: tooltip,
+          excludeFromSemantics: true,
+          child: Container(
+            width: TapTargets.minimum,
+            height: TapTargets.minimum,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: tokens.colors.interactive.enabled,
+            ),
+            child: IconButton(
+              onPressed: onPressed,
+              icon: Icon(
+                icon,
+                size: IconSizes.s,
+                color: tokens.colors.text.onInteractiveAlert,
+              ),
+              padding: EdgeInsets.zero,
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

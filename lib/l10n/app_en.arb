@@ -1883,6 +1883,7 @@
   "chatInputHintSelectModel": "Select a model to start chatting",
   "chatInputListening": "Listening...",
   "chatInputNoAudioRecorded": "No audio was recorded. Try again.",
+  "chatInputRecordingFailed": "Recording failed. Please try again.",
   "chatInputPleaseWait": "Please wait...",
   "chatInputProcessing": "Processing...",
   "chatInputRecordVoice": "Record voice message",

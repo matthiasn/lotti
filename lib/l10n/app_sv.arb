@@ -1553,6 +1553,7 @@
   "chatInputPleaseWait": "Vänta, snälla...",
   "chatInputProcessing": "Bearbetar...",
   "chatInputRecordVoice": "Spela in röstmeddelande",
+  "chatInputRecordingFailed": "Inspelningen misslyckades. Försök igen.",
   "chatInputSendTooltip": "Skicka meddelande",
   "chatInputStopRealtime": "Stoppa livetranskriptionen",
   "chatInputStopTranscribe": "Stoppa och transkribera",

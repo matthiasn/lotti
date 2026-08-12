@@ -5,7 +5,7 @@ description: Goal-driven agents — the deterministic Phase A tier evaluating cr
 resource: ../../lib/features/goals
 tags: [goals, agents, runtime, wake, evaluation]
 status: draft
-generated: { by: codex/gpt-5, at: 2026-08-11T01:43:18Z }
+generated: { by: codex/gpt-5, at: 2026-08-12T20:40:00Z }
 stale_after: 2027-02-22
 sources:
   - id: goals-src
@@ -64,6 +64,14 @@ sources:
     resource: ../../docs/adr/0054-deterministic-first-two-tier-wakes.md
     title: "ADR 0054: Deterministic-First Two-Tier Wakes"
     last_modified: 2026-08-08
+  - id: chat-composer
+    resource: ../../lib/features/agents/ui/chat/agent_chat_view.dart
+    title: AgentChatView — voice-enabled goal chat composer
+    last_modified: 2026-08-12
+  - id: recorder-controller
+    resource: ../../lib/features/ai_chat/ui/controllers/chat_recorder_controller.dart
+    title: ChatRecorderController — shared voice recorder
+    last_modified: 2026-08-12
 ---
 
 # Goal Agents — Runtime
@@ -581,6 +589,23 @@ flowchart TD
   mounted only for active goal agents. If the spec head moves while an
   interactive inference is running, output fencing fails the wake so the
   durable user turn remains retryable instead of completing without a reply.
+  The chat composer reuses the shared `chatRecorderControllerProvider` (the
+  same recorder the task-agent evolution chat uses) for voice input: a mic
+  trailing icon, waveform with cancel/stop, streaming partial transcript, and
+  auto-fill on completion. The recorder watch lives inside `_ChatComposer`
+  (a `ConsumerWidget`) so the 10 Hz amplitude stream rebuilds only the
+  composer subtree, not the full message list.
+
+  ```mermaid
+  stateDiagram-v2
+      [*] --> idle
+      idle --> recording: tap mic (no text)
+      recording --> processing: stop
+      recording --> idle: cancel
+      processing --> idle: transcript ready (auto-fills draft)
+      processing --> idle: error (localized toast)
+  ```
+
 - **Standing reports and governance remain visible.** The detail page always
   renders the report referenced by the authoritative current-scope report head;
   a delayed historical row cannot displace it merely by carrying a later local

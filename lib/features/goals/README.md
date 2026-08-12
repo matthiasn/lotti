@@ -133,8 +133,10 @@ ages out while the goal still qualifies for automatic copy, the next
 deterministic tick expires it and re-arms Phase B for a replacement; healthy
 expiry remains model-free. The desktop banner tenant fills the dock's available
 width.
-Voice, paging beyond the newest fifty visible turns, search, and inline nudge
-cards remain later conversation increments; the plan of record is
+Voice input in the goal chat composer lets the user record, transcribe,
+and fill the text field from speech. Paging beyond the newest fifty visible
+turns, search, and inline nudge cards remain later conversation increments;
+the plan of record is
 `docs/implementation_plans/2026-08-08_goal_agents_design.md`.
 
 Runtime map: [knowledge/features/goals.md](../../../knowledge/features/goals.md).

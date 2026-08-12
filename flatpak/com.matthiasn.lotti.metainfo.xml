@@ -40,6 +40,11 @@
   <launchable type="desktop-id">com.matthiasn.lotti.desktop</launchable>
   <icon type="stock">com.matthiasn.lotti</icon>
   <releases>
+    <release version="1.0.8" date="2026-08-12">
+      <description>
+        <p>Added: goal-agent chat supports voice input. The composer now has a microphone button that records, transcribes, and fills the text field.</p>
+      </description>
+    </release>
     <release version="1.0.7" date="2026-08-12">
       <description>
         <p>Goal-agent criteria are ready for refinement. Goal agents remain configurable with linked habits and rolling seven-day step targets. Their evaluation foundation now preserves a separate accountable result for every configured criterion.</p>
