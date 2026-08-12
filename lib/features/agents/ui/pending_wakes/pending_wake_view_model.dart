@@ -20,6 +20,8 @@ class PendingWakeVm {
     required this.kind,
     required this.type,
     required this.dueAt,
+    this.recordId,
+    this.workspaceKey,
   });
 
   /// Stable id, mirrors [PendingWakeRecord.id].
@@ -42,6 +44,15 @@ class PendingWakeVm {
   final String kind;
   final PendingWakeType type;
   final DateTime dueAt;
+
+  /// Backing `ScheduledWakeEntity` id for a workspace-scoped wake, or `null`
+  /// for a state-derived one. Mirrors [PendingWakeRecord.recordId] and lets the
+  /// row delete the record itself rather than only the agent state.
+  final String? recordId;
+
+  /// Workspace key of the backing record, so the delete can drop its queued
+  /// job. Mirrors [PendingWakeRecord.workspaceKey].
+  final String? workspaceKey;
 }
 
 /// All pending wake records joined with their resolved subject titles.
@@ -83,6 +94,8 @@ PendingWakeVm _toVm(PendingWakeRecord record, String? rawSubjectTitle) {
     kind: record.agent.kind,
     type: record.type,
     dueAt: record.dueAt,
+    recordId: record.recordId,
+    workspaceKey: record.workspaceKey,
   );
 }
 

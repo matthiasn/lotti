@@ -704,6 +704,90 @@ void main() {
       });
     });
 
+    group('dismissScheduledWakeRecord', () {
+      ScheduledWakeEntity pendingRecord({
+        ScheduledWakeStatus status = ScheduledWakeStatus.pending,
+      }) =>
+          AgentDomainEntity.scheduledWake(
+                id: 'wake-rec-1',
+                agentId: 'daily_os_planner',
+                scheduledAt: kAgentTestDate.add(const Duration(hours: 1)),
+                status: status,
+                reason: 'scheduled',
+                updatedAt: kAgentTestDate,
+                vectorClock: null,
+                triggerTokens: const ['planning_day:dayplan-2026-07-14'],
+                workspaceKey: 'day:dayplan-2026-07-14',
+              )
+              as ScheduledWakeEntity;
+
+      test('consumes the record and drops its queued job', () async {
+        when(
+          () => mockOrchestrator.cancelPendingWakes(
+            'daily_os_planner',
+            workspaceKey: 'day:dayplan-2026-07-14',
+          ),
+        ).thenReturn(const []);
+        when(
+          () => mockRepository.getEntity('wake-rec-1'),
+        ).thenAnswer((_) async => pendingRecord());
+
+        await service.dismissScheduledWakeRecord(
+          recordId: 'wake-rec-1',
+          agentId: 'daily_os_planner',
+          workspaceKey: 'day:dayplan-2026-07-14',
+        );
+
+        // The queued job is dropped so an in-flight burst stops now…
+        verify(
+          () => mockOrchestrator.cancelPendingWakes(
+            'daily_os_planner',
+            workspaceKey: 'day:dayplan-2026-07-14',
+          ),
+        ).called(1);
+        // …and the record is consumed so the manager cannot re-fire it.
+        final written =
+            verify(
+                  () => mockSyncService.upsertEntity(captureAny()),
+                ).captured.single
+                as ScheduledWakeEntity;
+        expect(written.id, 'wake-rec-1');
+        expect(written.status, ScheduledWakeStatus.consumed);
+        expect(written.consumedAt, isNotNull);
+        expect(notifiedAgentIds, ['daily_os_planner']);
+      });
+
+      test('drops the queued job but writes nothing when already '
+          'consumed', () async {
+        // A record that already fired must not be re-written (the pending-list
+        // refresh + queue drop are enough), or an LWW race could resurrect it.
+        when(
+          () => mockOrchestrator.cancelPendingWakes(
+            'daily_os_planner',
+            workspaceKey: 'day:dayplan-2026-07-14',
+          ),
+        ).thenReturn(const []);
+        when(() => mockRepository.getEntity('wake-rec-1')).thenAnswer(
+          (_) async => pendingRecord(status: ScheduledWakeStatus.consumed),
+        );
+
+        await service.dismissScheduledWakeRecord(
+          recordId: 'wake-rec-1',
+          agentId: 'daily_os_planner',
+          workspaceKey: 'day:dayplan-2026-07-14',
+        );
+
+        verify(
+          () => mockOrchestrator.cancelPendingWakes(
+            'daily_os_planner',
+            workspaceKey: 'day:dayplan-2026-07-14',
+          ),
+        ).called(1);
+        verifyNever(() => mockSyncService.upsertEntity(any()));
+        expect(notifiedAgentIds, ['daily_os_planner']);
+      });
+    });
+
     group('pauseAgent', () {
       glados.Glados(
         glados.any.agentLifecycleScenario,

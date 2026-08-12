@@ -95,6 +95,11 @@ final pendingWakeRecordsProvider = FutureProvider<List<PendingWakeRecord>>((
         type: PendingWakeType.scheduled,
         dueAt: record.scheduledAt,
         subjectLabel: _workspaceSubjectLabel(record.workspaceKey),
+        // Carry the record id + workspace so the row's cancel button can
+        // consume THIS record (not just the agent's state), which is what
+        // actually stops it re-firing on the next scan.
+        recordId: record.id,
+        workspaceKey: record.workspaceKey,
       ),
     );
   }

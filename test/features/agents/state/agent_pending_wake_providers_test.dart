@@ -735,6 +735,11 @@ void main() {
         expect(record.dueAt, dueAt);
         // `day:<dayId>` workspace → the day id is the subject label.
         expect(record.subjectLabel, 'dayplan-2026-06-08');
+        // The backing record id + workspace ride along so the row's cancel
+        // button can consume THIS record and drop its queued job — without
+        // them the button only clears agent state and the wake re-fires.
+        expect(record.recordId, 'sched-1');
+        expect(record.workspaceKey, 'day:dayplan-2026-06-08');
 
         // The planner's state carries no wake field of its own — its wake
         // lives on the ScheduledWakeEntity — so it only survives the SQL

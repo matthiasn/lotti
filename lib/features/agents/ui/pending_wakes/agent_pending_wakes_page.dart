@@ -250,6 +250,8 @@ AgentListRowData _vmToRow(PendingWakeVm vm, AppLocalizations messages) {
       dueAt: vm.dueAt,
       type: vm.type,
       agentId: vm.agentId,
+      recordId: vm.recordId,
+      workspaceKey: vm.workspaceKey,
     ),
     onTap: () => beamToNamed(agentInstanceRoute(vm.agentId)),
     sortAt: vm.dueAt,
@@ -281,11 +283,18 @@ class _PendingWakeTrailing extends ConsumerStatefulWidget {
     required this.dueAt,
     required this.type,
     required this.agentId,
+    this.recordId,
+    this.workspaceKey,
   });
 
   final DateTime dueAt;
   final PendingWakeType type;
   final String agentId;
+
+  /// Backing scheduled-wake record id for a workspace-scoped row; `null` for a
+  /// state-derived wake.
+  final String? recordId;
+  final String? workspaceKey;
 
   @override
   ConsumerState<_PendingWakeTrailing> createState() =>
@@ -299,11 +308,24 @@ class _PendingWakeTrailingState extends ConsumerState<_PendingWakeTrailing> {
     setState(() => _isDeleting = true);
     final service = ref.read(agentServiceProvider);
     try {
+      final recordId = widget.recordId;
       switch (widget.type) {
         case PendingWakeType.pending:
           service.cancelPendingWake(widget.agentId);
         case PendingWakeType.scheduled:
-          await service.clearScheduledWake(widget.agentId);
+          // A workspace-scoped wake is backed by a ScheduledWakeEntity, which
+          // clearScheduledWake cannot touch — consume the record itself so it
+          // stops re-firing. State-derived scheduled wakes still clear the
+          // agent's scheduledWakeAt.
+          if (recordId != null) {
+            await service.dismissScheduledWakeRecord(
+              recordId: recordId,
+              agentId: widget.agentId,
+              workspaceKey: widget.workspaceKey,
+            );
+          } else {
+            await service.clearScheduledWake(widget.agentId);
+          }
       }
     } catch (_) {
       if (!mounted) return;

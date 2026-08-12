@@ -28,6 +28,8 @@ void main() {
     required String displayName,
     required Duration eta,
     PendingWakeType type = PendingWakeType.pending,
+    String? recordId,
+    String? workspaceKey,
   }) {
     return PendingWakeRecord(
       agent: makeTestIdentity(
@@ -38,6 +40,9 @@ void main() {
       state: makeTestState(agentId: agentId),
       type: type,
       dueAt: fixedNow.add(eta),
+      subjectLabel: workspaceKey == null ? null : 'dayplan-2026-06-08',
+      recordId: recordId,
+      workspaceKey: workspaceKey,
     );
   }
 
@@ -571,6 +576,59 @@ void main() {
         () => agentService.clearScheduledWake('agent-scheduled'),
       ).called(1);
       verifyNever(() => agentService.cancelPendingWake(any()));
+    },
+  );
+
+  testWidgets(
+    'tapping the trailing × on a workspace-scoped wake dismisses the record',
+    (tester) async {
+      // A planner day pre-warm is backed by a ScheduledWakeEntity; the ×
+      // must dismiss that record (and drop its queued job), not just clear
+      // the agent state, or the wake re-fires on the next scan.
+      final agentService = MockAgentService();
+      when(
+        () => agentService.dismissScheduledWakeRecord(
+          recordId: 'sched-1',
+          agentId: 'daily_os_planner',
+          workspaceKey: 'day:dayplan-2026-06-08',
+        ),
+      ).thenAnswer((_) async {});
+
+      await withClock(Clock.fixed(fixedNow), () async {
+        await tester.pumpWidget(
+          buildSubject(
+            [
+              makeWake(
+                agentId: 'daily_os_planner',
+                displayName: 'Shepherd',
+                eta: const Duration(minutes: 30),
+                type: PendingWakeType.scheduled,
+                recordId: 'sched-1',
+                workspaceKey: 'day:dayplan-2026-06-08',
+              ),
+            ],
+            agentService: agentService,
+          ),
+        );
+        await tester.pump();
+        await tester.pump(const Duration(milliseconds: 300));
+      });
+
+      final element = tester.element(find.byType(SidebarWakeQueue));
+      await tester.tap(
+        find.byTooltip(element.messages.sidebarWakesCancelTooltip),
+      );
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 300));
+
+      verify(
+        () => agentService.dismissScheduledWakeRecord(
+          recordId: 'sched-1',
+          agentId: 'daily_os_planner',
+          workspaceKey: 'day:dayplan-2026-06-08',
+        ),
+      ).called(1);
+      verifyNever(() => agentService.clearScheduledWake(any()));
     },
   );
 
