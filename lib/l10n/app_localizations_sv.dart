@@ -6043,12 +6043,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String goalAssessmentSuggestedProvenance(String agentName) {
-    return '$agentName föreslog, du accepterade';
+    return 'Föreslaget av $agentName och accepterat av dig';
   }
 
   @override
   String get goalAssessmentSuggestedProvenanceGeneric =>
-      'Din målagent föreslog, du accepterade';
+      'Föreslaget av din målagent och accepterat av dig';
 
   @override
   String get goalAssessmentUserProvenance => 'Betygsatt av dig';

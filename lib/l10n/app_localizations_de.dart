@@ -6078,12 +6078,12 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String goalAssessmentSuggestedProvenance(String agentName) {
-    return '$agentName hat vorgeschlagen, du hast angenommen';
+    return 'Von $agentName vorgeschlagen, von dir angenommen';
   }
 
   @override
   String get goalAssessmentSuggestedProvenanceGeneric =>
-      'Dein Zielagent hat vorgeschlagen, du hast angenommen';
+      'Von deinem Ziel-Agenten vorgeschlagen, von dir angenommen';
 
   @override
   String get goalAssessmentUserProvenance => 'Von dir bewertet';

@@ -292,7 +292,7 @@ void main() {
     await tester.pumpAndSettle();
 
     final provenance = find.text(
-      'Dein Zielagent hat vorgeschlagen, du hast angenommen',
+      'Von deinem Ziel-Agenten vorgeschlagen, von dir angenommen',
     );
     expect(provenance, findsOneWidget);
     expect(tester.takeException(), isNull);
