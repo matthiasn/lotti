@@ -207,6 +207,8 @@ void main() {
             as AgentSubscription;
     expect(subscription.agentId, 'goal-a');
     expect(subscription.matchEntityIds, {'gym-habit'});
+    verify(() => orchestrator.removeSubscriptions('goal-a')).called(1);
+    clearInteractions(orchestrator);
 
     await maintenance.onIdentityReceived(
       goalIdentity('task-1', kind: AgentKinds.taskAgent),
