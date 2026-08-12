@@ -962,6 +962,44 @@ void main() {
       );
     });
   });
+
+  group('planner wake currency', () {
+    test('the handover window is one day', () {
+      expect(dayAgentHandoverDays, 1);
+    });
+
+    test(
+      'the cutoff is today minus the handover window, at local midnight',
+      () {
+        expect(
+          plannerWakeCurrencyCutoff(DateTime(2026, 8, 12, 23, 8)),
+          DateTime(2026, 8, 11),
+        );
+      },
+    );
+
+    test('today and the handover day are not stale; older days are', () {
+      final now = DateTime(2026, 8, 12, 23, 8);
+      // Today's own workspace is always current.
+      expect(isStalePlannerDay('dayplan-2026-08-12', now), isFalse);
+      // Yesterday is the handover day — still allowed one wake.
+      expect(isStalePlannerDay('dayplan-2026-08-11', now), isFalse);
+      // The day before the handover is finished — the misfire boundary.
+      expect(isStalePlannerDay('dayplan-2026-08-10', now), isTrue);
+      // Weeks-stale days (as seen in the runaway) are stale.
+      expect(isStalePlannerDay('dayplan-2026-07-14', now), isTrue);
+      // A future pre-warm is never stale.
+      expect(isStalePlannerDay('dayplan-2026-08-13', now), isFalse);
+    });
+
+    test('a non-dayplan id is never treated as a stale day', () {
+      // Staleness is a claim about a resolved calendar day; the digest lane and
+      // malformed keys are gated by their callers, not here.
+      final now = DateTime(2026, 8, 12);
+      expect(isStalePlannerDay('coordinator:digest', now), isFalse);
+      expect(isStalePlannerDay('not-a-day', now), isFalse);
+    });
+  });
 }
 
 CreateChatCompletionStreamResponse _thinkingChunk(String model) =>

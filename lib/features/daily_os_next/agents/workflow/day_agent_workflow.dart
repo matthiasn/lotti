@@ -336,6 +336,33 @@ class DayAgentWorkflow {
       triggerTokens: triggerTokens,
     );
 
+    // Stale-day gate (token-burn fix). A background `planning_day` wake for a
+    // day already past the handover cutoff has no actionable work — the day is
+    // finished. Short-circuit HERE, before assembling the ~200K-token day
+    // context or calling the model, and without re-arming: the scheduled-wake
+    // record that fired this wake was already consumed by the wake manager, so
+    // returning success simply lets it rest. This is the pattern the singleton
+    // planner accumulated one record per past day of — each firing a full
+    // inference that concluded "nothing to do" and re-scheduled itself.
+    //
+    // Excluded, deliberately: digest wakes (the coordinator's live cadence,
+    // re-anchored to today upstream), drafting and refine wakes (user-initiated
+    // on a current day), and capture-submitted wakes (`isDayTokenWake` is false
+    // — their day comes from the capture, which the user just recorded). Only a
+    // bare, day-token scheduled wake for a finished day is waste.
+    if (isDayTokenWake &&
+        !wakeContext.isDigestWake &&
+        !wakeContext.isDraftingWake &&
+        !wakeContext.isRefineWake &&
+        isStalePlannerDay(resolvedDayId, now)) {
+      _log(
+        'skipped stale planning_day wake for $resolvedDayId — day finished, '
+        'no inference',
+        subDomain: 'execute',
+      );
+      return const WakeResult(success: true);
+    }
+
     final observations = await agentRepository.getMessagesByKind(
       agentId,
       AgentMessageKind.observation,

@@ -1929,6 +1929,138 @@ void main() {
     }
   });
 
+  group('expireStalePlannerWakeRecords', () {
+    // The always-active coordinator arms one pending scheduled-wake record per
+    // day it plans; nothing retired the past-day ones (retirement only touches
+    // per-day *identities*), so they piled up and all fired together on every
+    // scan. This reaper consumes the finished-day ones at their source.
+    ScheduledWakeEntity plannerDayWake(
+      String dayId, {
+      String? owner,
+    }) =>
+        AgentDomainEntity.scheduledWake(
+              id: scheduledWakeRecordId(
+                owner ?? dailyOsPlannerAgentId,
+                workspaceKey: dayAgentWorkspaceKey(dayId),
+              ),
+              agentId: owner ?? dailyOsPlannerAgentId,
+              scheduledAt: DateTime(2026, 5, 25, 22, 30),
+              status: ScheduledWakeStatus.pending,
+              reason: WakeReason.scheduled.name,
+              updatedAt: now,
+              vectorClock: null,
+              triggerTokens: [dayAgentPlanningDayToken(dayId)],
+              workspaceKey: dayAgentWorkspaceKey(dayId),
+            )
+            as ScheduledWakeEntity;
+
+    ScheduledWakeEntity digestLaneWake() =>
+        AgentDomainEntity.scheduledWake(
+              id: scheduledWakeRecordId(
+                dailyOsPlannerAgentId,
+                workspaceKey: coordinatorDigestWorkspaceKey,
+              ),
+              agentId: dailyOsPlannerAgentId,
+              scheduledAt: DateTime(2026, 5, 20, 6),
+              status: ScheduledWakeStatus.pending,
+              reason: dayAgentDigestReason,
+              updatedAt: now,
+              vectorClock: null,
+              triggerTokens: [dayAgentDigestToken('dayplan-2026-05-20')],
+              workspaceKey: coordinatorDigestWorkspaceKey,
+            )
+            as ScheduledWakeEntity;
+
+    test(
+      'consumes only the coordinator day records for finished days',
+      () async {
+        // today = 2026-05-25, handover cutoff = 2026-05-24. Only days strictly
+        // before the cutoff are finished.
+        final stale = plannerDayWake('dayplan-2026-05-20');
+        final records = <ScheduledWakeEntity>[
+          stale,
+          // Today and the handover day are still live — never touched.
+          plannerDayWake('dayplan-2026-05-25'),
+          plannerDayWake('dayplan-2026-05-24'),
+          // The digest lane is not a `day:` workspace — never touched.
+          digestLaneWake(),
+          // A per-day agent's own stale record — retirement's job, not ours.
+          plannerDayWake(
+            'dayplan-2026-05-19',
+            owner: perDayAgentId('dayplan-2026-05-19'),
+          ),
+        ];
+        when(
+          () => repository.getPendingScheduledWakeRecords(),
+        ).thenAnswer((_) async => records);
+
+        final expired = await withClock(
+          Clock.fixed(now),
+          service.expireStalePlannerWakeRecords,
+        );
+
+        expect(expired, 1);
+        final written = verify(
+          () => syncService.upsertEntity(captureAny()),
+        ).captured.whereType<ScheduledWakeEntity>().toList();
+        // Exactly the one finished-day coordinator record, flipped consumed.
+        expect(written, hasLength(1));
+        expect(written.single.id, stale.id);
+        expect(written.single.status, ScheduledWakeStatus.consumed);
+        expect(written.single.consumedAt, now);
+        expect(changedTokens, contains(dailyOsPlannerAgentId));
+      },
+    );
+
+    test('writes nothing when no record is for a finished day', () async {
+      when(() => repository.getPendingScheduledWakeRecords()).thenAnswer(
+        (_) async => [
+          plannerDayWake('dayplan-2026-05-25'),
+          digestLaneWake(),
+        ],
+      );
+
+      expect(
+        await withClock(
+          Clock.fixed(now),
+          service.expireStalePlannerWakeRecords,
+        ),
+        0,
+      );
+      verifyNever(() => syncService.upsertEntity(any()));
+    });
+
+    test('logs and continues when consuming a record throws', () async {
+      when(() => repository.getPendingScheduledWakeRecords()).thenAnswer(
+        (_) async => [plannerDayWake('dayplan-2026-05-20')],
+      );
+      when(() => syncService.upsertEntity(any())).thenThrow(
+        StateError('wake write failed'),
+      );
+
+      // A write failure is contained, not propagated: it must not strand the
+      // wake scan that runs right after this reaper.
+      expect(
+        await withClock(
+          Clock.fixed(now),
+          service.expireStalePlannerWakeRecords,
+        ),
+        0,
+      );
+      verify(
+        () => domainLogger.error(
+          any(),
+          any(),
+          message: any(
+            named: 'message',
+            that: contains('expire stale planner wake record'),
+          ),
+          stackTrace: any(named: 'stackTrace'),
+        ),
+      ).called(1);
+    });
+  });
+
   group('retirePastDayAgents', () {
     // A day that is over must not hold a live agent: nothing retired them, so
     // the active set grew by one per day of use and every one was re-hydrated

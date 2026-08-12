@@ -196,6 +196,23 @@ extension DayAgentToolHandlers on DayAgentWorkflow {
     }
 
     final now = clock.now();
+
+    // Currency guard (token-burn fix): never re-arm a wake for a day workspace
+    // that is already finished. `dayId` here is the wake's own workspace, so a
+    // wake operating on a past day cannot resurrect its just-consumed past-day
+    // record and re-enter the burn loop. Complements the pre-inference gate in
+    // `_execute`: that stops a stale wake before it runs; this stops a running
+    // wake (e.g. one that crossed a midnight boundary mid-run) from seeding the
+    // next one.
+    if (isStalePlannerDay(dayId, now)) {
+      return DayAgentToolResult(
+        success: false,
+        output:
+            'Error: cannot schedule a wake for "$dayId" — that day is already '
+            'finished. Only the current or upcoming day may be pre-warmed.',
+      );
+    }
+
     final earliestAllowed = now.add(DayAgentWorkflow.minScheduledWakeLeadTime);
     if (scheduledAt.isBefore(earliestAllowed)) {
       return DayAgentToolResult(

@@ -26,6 +26,15 @@ const dayAgentWorkspacePrefix = 'day:';
 /// Builds the wake-queue workspace key for the [dayId] day workspace.
 String dayAgentWorkspaceKey(String dayId) => '$dayAgentWorkspacePrefix$dayId';
 
+/// The `dayplan-…` id embedded in a `day:<dayId>` workspace key, or `null` when
+/// [workspaceKey] is not a day workspace (e.g. the coordinator digest lane
+/// `coordinator:digest`, which is deliberately not a `day:` partition).
+String? dayIdFromWorkspaceKey(String workspaceKey) =>
+    workspaceKey.startsWith(dayAgentWorkspacePrefix) &&
+        workspaceKey.length > dayAgentWorkspacePrefix.length
+    ? workspaceKey.substring(dayAgentWorkspacePrefix.length)
+    : null;
+
 /// Wake trigger token prefix that scopes a wake to a day workspace.
 ///
 /// `planning_day:<dayId>` is the authoritative day-workspace claim on a

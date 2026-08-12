@@ -38,6 +38,22 @@ class DailyOsRuntimeMaintenance implements AgentRuntimeMaintenance {
         stackTrace: s,
       );
     }
+    // The coordinator is never retired (it is not a per-day identity), so its
+    // day-scoped scheduled-wake records for finished days are expired here.
+    // Without this, every past day the singleton planner ever planned holds a
+    // pending record that fires a full inference on each scan and re-arms
+    // itself — the token-burn loop. Contained like the retirement above: a
+    // failure must not stop the wakes that are genuinely due.
+    try {
+      await dayAgents.expireStalePlannerWakeRecords();
+    } catch (e, s) {
+      domainLogger?.error(
+        LogDomain.agentRuntime,
+        e,
+        message: 'failed to expire stale planner wake records before wake scan',
+        stackTrace: s,
+      );
+    }
     // The digest bootstrap can arm a record for an already-past slot when a run
     // was interrupted, which only fires promptly if it exists before the scan.
     try {

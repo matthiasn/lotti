@@ -43,6 +43,7 @@
     <release version="1.0.8" date="2026-08-12">
       <description>
         <p>Added: goal-agent chat supports voice input. The composer now has a microphone button that records, transcribes, and fills the text field.</p>
+        <p>Fixed: the Daily OS planner no longer wakes for days that are already over. Finished days kept firing full model runs that found nothing to do and re-scheduled themselves, burning inference for no result. Such wakes are now skipped before any model call, their leftover schedules are cleared automatically, and the planner can no longer schedule a new wake for a finished day.</p>
       </description>
     </release>
     <release version="1.0.7" date="2026-08-12">
