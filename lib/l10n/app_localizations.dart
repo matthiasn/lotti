@@ -5178,6 +5178,12 @@ abstract class AppLocalizations {
   /// **'No audio was recorded. Try again.'**
   String get chatInputNoAudioRecorded;
 
+  /// No description provided for @chatInputRecordingFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Recording failed. Please try again.'**
+  String get chatInputRecordingFailed;
+
   /// No description provided for @chatInputPleaseWait.
   ///
   /// In en, this message translates to:

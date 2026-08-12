@@ -693,7 +693,7 @@ void main() {
       await tester.pump();
 
       expect(
-        find.textContaining('Microphone permission denied'),
+        find.textContaining('Recording failed'),
         findsOneWidget,
       );
       expect(controller.clearResultCalls, greaterThan(0));
@@ -735,6 +735,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(draft, '');
+      expect(controller.clearResultCalls, greaterThan(0));
       expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
     });
 

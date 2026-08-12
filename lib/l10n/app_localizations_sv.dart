@@ -3069,6 +3069,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
 
   @override
+  String get chatInputRecordingFailed => 'Recording failed. Please try again.';
+
+  @override
   String get chatInputPleaseWait => 'Vänta, snälla...';
 
   @override

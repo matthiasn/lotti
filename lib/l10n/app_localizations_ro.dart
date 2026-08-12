@@ -3112,6 +3112,9 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a înregistrat niciun sunet. Încercați din nou.';
 
   @override
+  String get chatInputRecordingFailed => 'Recording failed. Please try again.';
+
+  @override
   String get chatInputPleaseWait => 'Așteaptă...';
 
   @override

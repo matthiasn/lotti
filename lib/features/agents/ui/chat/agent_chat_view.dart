@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
@@ -69,7 +70,7 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
           context.showToast(
             tone: DesignSystemToastTone.error,
             title: context.messages.commonError,
-            description: error,
+            description: context.messages.chatInputRecordingFailed,
             duration: const Duration(seconds: 8),
             replaceCurrent: true,
           );
@@ -402,24 +403,32 @@ class _RecordingControls extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    return Row(
-      children: [
-        Expanded(
-          child: WaveformBars(amplitudesNormalized: amplitudes),
+    return CallbackShortcuts(
+      bindings: {
+        const SingleActivator(LogicalKeyboardKey.escape): onCancel,
+      },
+      child: Focus(
+        autofocus: true,
+        child: Row(
+          children: [
+            Expanded(
+              child: WaveformBars(amplitudesNormalized: amplitudes),
+            ),
+            SizedBox(width: tokens.spacing.step3),
+            _CircleIconButton(
+              icon: Icons.close_rounded,
+              onPressed: onCancel,
+              tooltip: context.messages.chatInputCancelRecording,
+            ),
+            SizedBox(width: tokens.spacing.step2),
+            _CircleIconButton(
+              icon: Icons.stop_rounded,
+              onPressed: onStop,
+              tooltip: context.messages.chatInputStopTranscribe,
+            ),
+          ],
         ),
-        SizedBox(width: tokens.spacing.step3),
-        _CircleIconButton(
-          icon: Icons.close_rounded,
-          onPressed: onCancel,
-          tooltip: context.messages.chatInputCancelRecording,
-        ),
-        SizedBox(width: tokens.spacing.step2),
-        _CircleIconButton(
-          icon: Icons.stop_rounded,
-          onPressed: onStop,
-          tooltip: context.messages.chatInputStopTranscribe,
-        ),
-      ],
+      ),
     );
   }
 }
@@ -506,8 +515,8 @@ class _CircleIconButton extends StatelessWidget {
           message: tooltip,
           excludeFromSemantics: true,
           child: Container(
-            width: tokens.spacing.step8,
-            height: tokens.spacing.step8,
+            width: TapTargets.minimum,
+            height: TapTargets.minimum,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
               color: tokens.colors.interactive.enabled,

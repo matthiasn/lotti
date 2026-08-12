@@ -3102,6 +3102,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'Nebyl nahrán žádný zvuk. Zkus to znovu.';
 
   @override
+  String get chatInputRecordingFailed => 'Recording failed. Please try again.';
+
+  @override
   String get chatInputPleaseWait => 'Čekejte prosím...';
 
   @override

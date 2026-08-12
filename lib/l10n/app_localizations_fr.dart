@@ -3106,6 +3106,9 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun son n\'a été enregistré. Réessaie.';
 
   @override
+  String get chatInputRecordingFailed => 'Recording failed. Please try again.';
+
+  @override
   String get chatInputPleaseWait => 'Patiente un instant...';
 
   @override
