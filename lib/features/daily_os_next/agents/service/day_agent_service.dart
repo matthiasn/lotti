@@ -687,13 +687,6 @@ class DayAgentService {
     return captureId;
   }
 
-  /// How many calendar days a per-day agent stays active past its own day.
-  ///
-  /// One, so it can wake the morning after and hand the coordinator anything
-  /// its day left unreported. After that the day is finished and there is
-  /// nothing for it to do on a timer.
-  static const dayAgentHandoverDays = 1;
-
   /// Stands down per-day agents whose day is over.
   ///
   /// **Why this exists.** A `day_agent:<dayId>` was created active and nothing
@@ -717,10 +710,8 @@ class DayAgentService {
   Future<int> retirePastDayAgents() async {
     // Calendar arithmetic, not a 24-hour subtraction: across a DST change a
     // fixed Duration does not reliably land on the previous calendar date.
-    final today = localDay(clock.now());
-    final cutoff = dayAgentIdForDate(
-      DateTime(today.year, today.month, today.day - dayAgentHandoverDays),
-    );
+    // Shares the one currency cutoff with the wake gate and the record reaper.
+    final cutoff = dayAgentIdForDate(plannerWakeCurrencyCutoff(clock.now()));
     final active = await agentService.listAgents(
       lifecycle: AgentLifecycle.active,
     );
@@ -772,6 +763,65 @@ class DayAgentService {
     // Surfaces watching lifecycle refresh on this, as they do for every other
     // identity mutation in this service.
     onPersistedStateChanged?.call(agent.agentId);
+  }
+
+  /// Consumes the coordinator's day-scoped scheduled-wake records whose day
+  /// workspace is already finished (older than [plannerWakeCurrencyCutoff]).
+  ///
+  /// **Why this exists.** [retirePastDayAgents] retires per-day *identities*,
+  /// but the long-lived coordinator (`dailyOsPlannerAgentId`) is not one — it
+  /// stays active forever. Every `set_next_wake` it runs persists one pending
+  /// [ScheduledWakeEntity] keyed by `day:<dayId>` workspace, so the coordinator
+  /// accumulated one record per day it ever planned with nothing to expire the
+  /// past-day ones. Because the due query is purely time-based, all of them
+  /// came due together on every scan and each fired a full planner inference
+  /// that found the day finished and re-scheduled itself. Consuming the stale
+  /// records here stops that burst at its source and drains the backlog that
+  /// built up before this guard existed.
+  ///
+  /// Scoped tightly: only `pending` records owned by the coordinator whose
+  /// workspace is a `day:<dayId>` partition strictly before the cutoff. The
+  /// coordinator's single digest lane (`coordinator:digest`) is not a `day:`
+  /// workspace, so it is never touched, and per-day agents' own records are
+  /// handled by retirement. `consumed`, not deleted, so a peer's concurrent
+  /// flip converges via LWW instead of resurrecting the row.
+  Future<int> expireStalePlannerWakeRecords() async {
+    final now = clock.now();
+    final pending = await repository.getPendingScheduledWakeRecords();
+    var expired = 0;
+    for (final record in pending) {
+      if (record.agentId != dailyOsPlannerAgentId) continue;
+      final dayId = dayIdFromWorkspaceKey(record.workspaceKey ?? '');
+      if (dayId == null || !isStalePlannerDay(dayId, now)) continue;
+      try {
+        await syncService.upsertEntity(
+          record.copyWith(
+            status: ScheduledWakeStatus.consumed,
+            consumedAt: now,
+            updatedAt: now,
+          ),
+        );
+        onPersistedStateChanged?.call(record.agentId);
+        expired++;
+      } catch (e, s) {
+        domainLogger.error(
+          LogDomain.agentRuntime,
+          e,
+          message:
+              'failed to expire stale planner wake record '
+              '${DomainLogger.sanitizeId(record.id)}',
+          stackTrace: s,
+        );
+      }
+    }
+    if (expired > 0) {
+      domainLogger.log(
+        LogDomain.agentRuntime,
+        'expired $expired stale planner wake record(s)',
+        subDomain: 'lifecycle',
+      );
+    }
+    return expired;
   }
 
   /// Restore in-memory runtime state for active day agents at app startup.

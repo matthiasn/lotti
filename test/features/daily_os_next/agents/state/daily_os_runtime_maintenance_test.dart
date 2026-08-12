@@ -27,6 +27,11 @@ void main() {
         stackTrace: any<StackTrace?>(named: 'stackTrace'),
       ),
     ).thenAnswer((_) {});
+    // beforeWakeScan runs three contained repairs; default them all to succeed
+    // so each test overrides only the one it exercises.
+    when(dayAgents.retirePastDayAgents).thenAnswer((_) async => 0);
+    when(dayAgents.expireStalePlannerWakeRecords).thenAnswer((_) async => 0);
+    when(dayAgents.ensureCoordinatorDigestWake).thenAnswer((_) async {});
     maintenance = DailyOsRuntimeMaintenance(
       dayAgents: dayAgents,
       domainLogger: logger,
@@ -58,16 +63,23 @@ void main() {
       );
     });
 
-    test('runs retirement and the digest repair, in that order', () async {
+    test('runs retirement, the reaper and the digest repair, in that '
+        'order', () async {
       when(dayAgents.retirePastDayAgents).thenAnswer((_) async => 2);
+      when(
+        dayAgents.expireStalePlannerWakeRecords,
+      ).thenAnswer((_) async => 3);
       when(dayAgents.ensureCoordinatorDigestWake).thenAnswer((_) async {});
 
       await maintenance.beforeWakeScan();
 
       // Order matters: retirement decides which agents may still wake, so it
-      // must settle before the digest repair arms a record.
+      // must settle before the digest repair arms a record. The reaper runs
+      // between them — it targets the coordinator's records, which retirement
+      // never touches.
       verifyInOrder([
         dayAgents.retirePastDayAgents,
+        dayAgents.expireStalePlannerWakeRecords,
         dayAgents.ensureCoordinatorDigestWake,
       ]);
       verifyNever(
@@ -98,6 +110,28 @@ void main() {
             LogDomain.agentRuntime,
             any<Object>(),
             message: 'failed to retire past day agents before wake scan',
+            stackTrace: any<StackTrace?>(named: 'stackTrace'),
+          ),
+        ).called(1);
+      },
+    );
+
+    test(
+      'contains a reaper failure and still repairs the digest',
+      () async {
+        when(
+          dayAgents.expireStalePlannerWakeRecords,
+        ).thenThrow(StateError('reaper boom'));
+
+        await maintenance.beforeWakeScan();
+
+        verify(dayAgents.ensureCoordinatorDigestWake).called(1);
+        verify(
+          () => logger.error(
+            LogDomain.agentRuntime,
+            any<Object>(),
+            message:
+                'failed to expire stale planner wake records before wake scan',
             stackTrace: any<StackTrace?>(named: 'stackTrace'),
           ),
         ).called(1);

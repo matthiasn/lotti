@@ -9,6 +9,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Goal-agent chat supports voice input.** The composer now has a microphone
   button that records, transcribes, and fills the text field.
 
+### Fixed
+- **The Daily OS planner no longer wakes for days that are already over.** The
+  planner kept one scheduled wake per day it had ever planned, and the finished
+  ones fired in bursts on every check — each a full model run that found nothing
+  to do and quietly re-scheduled itself, burning a large amount of inference for
+  no result. Wakes for a past day are now skipped before any model call, their
+  leftover schedules are cleared automatically, and the planner can no longer
+  schedule a new wake for a finished day.
+
 ## [1.0.7]
 ### Added
 - **Goal-agent criteria are ready for refinement.** Goal agents remain

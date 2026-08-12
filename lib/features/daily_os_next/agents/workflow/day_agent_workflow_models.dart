@@ -718,6 +718,39 @@ DateTime? dateFromDayId(String dayId) {
   return DateTime.tryParse(dayId.substring(prefix.length));
 }
 
+/// How many calendar days a Daily OS day workspace stays plannable past its own
+/// date. One: the day itself, plus the morning-after handover — after that the
+/// day is finished and there is nothing for a background wake to do on a timer.
+///
+/// The single source of truth for the retirement cutoff (`retirePastDayAgents`),
+/// the stale-record reaper (`expireStalePlannerWakeRecords`), the pre-inference
+/// wake gate, and the `set_next_wake` currency guard. All four must agree, or a
+/// wake the reaper leaves alive could fire an inference the gate then wastes.
+const dayAgentHandoverDays = 1;
+
+/// The oldest local calendar date a Daily OS planner wake may still act on:
+/// today minus [dayAgentHandoverDays]. A `dayplan-…` workspace strictly before
+/// this is finished; its background wakes must neither run an inference nor be
+/// re-armed.
+DateTime plannerWakeCurrencyCutoff(DateTime now) {
+  final today = localDay(now);
+  return DateTime(today.year, today.month, today.day - dayAgentHandoverDays);
+}
+
+/// Whether [dayId] is a `dayplan-…` workspace already older than the planner's
+/// currency cutoff at [now] — a finished day whose scheduled planner wakes are
+/// pure token waste.
+///
+/// A non-day id (the coordinator digest lane, a malformed key) is never stale
+/// here: staleness is a claim about a resolved calendar day, and callers gate
+/// those cases separately. Drafting/refine/digest/capture wakes are likewise
+/// excluded at their call sites — this is the calendar test alone.
+bool isStalePlannerDay(String dayId, DateTime now) {
+  final date = dateFromDayId(dayId);
+  if (date == null) return false;
+  return date.isBefore(plannerWakeCurrencyCutoff(now));
+}
+
 /// Extracts the `text` field from a message payload, falling back to
 /// `(no content)` when the payload is absent or carries no text.
 String extractPayloadText(AgentMessagePayloadEntity? payload) {

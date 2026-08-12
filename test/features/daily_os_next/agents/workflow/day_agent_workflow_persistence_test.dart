@@ -330,6 +330,37 @@ void main() {
       expect(upsertedEntities.whereType<ScheduledWakeEntity>(), isEmpty);
     });
 
+    test('refuses to re-arm a wake for a finished day', () async {
+      // Currency guard (token-burn fix), defence-in-depth behind the
+      // pre-inference gate. A refine wake bypasses that gate (mode wakes are
+      // user-initiated), so if it ran on a stale day and the model tried to
+      // schedule the next wake, set_next_wake must still refuse — otherwise the
+      // finished-day record would resurrect itself and re-enter the burn loop.
+      const staleDay = 'dayplan-2026-05-10';
+      conversationRepository.toolCalls = [
+        toolCall(
+          name: DayAgentToolNames.setNextWake,
+          args: const {
+            'at': '2026-05-26T08:30:00',
+            'reason': 'Re-arm the finished day.',
+          },
+        ),
+      ];
+
+      final result = await execute(
+        workflow(),
+        triggerTokens: {dayAgentRefineToken(staleDay)},
+      );
+
+      expect(result.success, isTrue);
+      expect(
+        conversationRepository.toolResponses.single,
+        contains('that day is already finished'),
+      );
+      // No record was armed — the loop cannot restart.
+      expect(upsertedEntities.whereType<ScheduledWakeEntity>(), isEmpty);
+    });
+
     test(
       'returns a tool error when state disappears during scheduling',
       () async {

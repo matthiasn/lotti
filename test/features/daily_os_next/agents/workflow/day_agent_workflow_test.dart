@@ -289,4 +289,53 @@ void main() {
       );
     });
   });
+
+  // The token-burn fix. The singleton planner accumulated one scheduled-wake
+  // record per past day; each fired a full ~200K-token wake that found the day
+  // finished and re-armed itself. This gate stops that wake before any context
+  // is assembled or the model is called.
+  group('stale-day wake gate', () {
+    test(
+      'skips a background planning_day wake for a finished day with no '
+      'inference and no re-arm',
+      () async {
+        // now = 2026-05-25; handover cutoff = 2026-05-24. This day is weeks
+        // stale — exactly the dayplan-2026-07-14…08-10 records in the runaway.
+        final result = await execute(
+          workflow(),
+          triggerTokens: {dayAgentPlanningDayToken('dayplan-2026-05-10')},
+        );
+
+        // The record that fired this wake was already consumed by the wake
+        // manager, so success simply lets it rest — no failure, no retry.
+        expect(result.success, isTrue);
+        // The whole point: the model was never called…
+        expect(conversationRepository.sendMessageCalls, isEmpty);
+        expect(conversationRepository.lastUserMessage, isNull);
+        // …and nothing was written, so no next wake was armed.
+        expect(upsertedEntities, isEmpty);
+      },
+    );
+
+    test('still runs the handover (yesterday) wake', () async {
+      // Yesterday is inside the handover window, so the wake must proceed to
+      // inference rather than be gated. Stub the day-scoped reads for it.
+      const yesterday = 'dayplan-2026-05-24';
+      when(
+        () => repository.getCaptureEventMetaForDay(
+          agentId: agentId,
+          dayId: yesterday,
+        ),
+      ).thenAnswer((_) async => const []);
+
+      final result = await execute(
+        workflow(),
+        triggerTokens: {dayAgentPlanningDayToken(yesterday)},
+      );
+
+      expect(result.success, isTrue);
+      // It reached the model — the gate did not fire on the handover day.
+      expect(conversationRepository.sendMessageCalls, isNotEmpty);
+    });
+  });
 }

@@ -24,6 +24,19 @@ void main() {
       );
     });
 
+    test('dayIdFromWorkspaceKey inverts dayAgentWorkspaceKey', () {
+      const dayId = 'dayplan-2026-05-25';
+      expect(dayIdFromWorkspaceKey(dayAgentWorkspaceKey(dayId)), dayId);
+    });
+
+    test('dayIdFromWorkspaceKey returns null for a non-day workspace', () {
+      // The coordinator digest lane is deliberately not a `day:` partition, so
+      // the record reaper must not read a day out of it.
+      expect(dayIdFromWorkspaceKey(coordinatorDigestWorkspaceKey), isNull);
+      expect(dayIdFromWorkspaceKey('day:'), isNull);
+      expect(dayIdFromWorkspaceKey(''), isNull);
+    });
+
     test('dayAgentRefineToken prefixes the day id', () {
       expect(
         dayAgentRefineToken('dayplan-2026-05-25'),
