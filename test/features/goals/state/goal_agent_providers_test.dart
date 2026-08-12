@@ -234,6 +234,7 @@ void main() {
         limit: any(named: 'limit'),
       ),
     ).thenAnswer((_) async => []);
+    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
 
     final runner = container.read(
       goalAgentWakeRunnersProvider,
@@ -264,7 +265,6 @@ void main() {
 
     // The same wake without the escalation token stays on the €0 tier and
     // succeeds without any inference plumbing.
-    when(() => syncService.upsertEntity(any())).thenAnswer((_) async {});
     when(
       () => repository.getDueScheduledWakeRecords(any()),
     ).thenAnswer((_) async => []);
