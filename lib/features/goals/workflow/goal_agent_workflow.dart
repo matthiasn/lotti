@@ -256,6 +256,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       agentId: agentId,
       version: version,
       now: reference,
+      categorySessionEvidenceStart: agentIdentity.createdAt,
     );
     // Phase A persisted the transition's register row BEFORE arming this
     // wake, so re-deriving sees the new status as previousStatus and the
@@ -278,6 +279,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
               : derivation.priors.firstOrNull?.trackStatus),
       evaluation: derivation.facts.evaluation,
       shortTermAttainment: derivation.facts.shortTermAttainment,
+      categoryTimeSessionsByCategory:
+          derivation.facts.categoryTimeSessionsByCategory,
+      categoryTimeEvidenceStart: derivation.facts.categoryTimeEvidenceStart,
+      categoryTimeEvidenceEnd: derivation.facts.categoryTimeEvidenceEnd,
     );
 
     // Spec-scoped like the persistence snapshot: an old-spec fresh

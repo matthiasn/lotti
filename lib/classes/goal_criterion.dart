@@ -6,6 +6,24 @@ import 'package:lotti/classes/goal_window.dart';
 part 'goal_criterion.freezed.dart';
 part 'goal_criterion.g.dart';
 
+/// A recurring local-time slice applied independently to every calendar day.
+///
+/// Minutes are counted from local midnight. A range whose start is later than
+/// its end crosses midnight: `21:30 → 07:00` includes late evening and the
+/// following early-morning band. All-day category time uses no range rather
+/// than encoding `00:00 → 00:00`, keeping equal endpoints invalid and
+/// unambiguous.
+@freezed
+abstract class GoalDailyTimeRange with _$GoalDailyTimeRange {
+  const factory GoalDailyTimeRange({
+    required int startMinute,
+    required int endMinute,
+  }) = _GoalDailyTimeRange;
+
+  factory GoalDailyTimeRange.fromJson(Map<String, dynamic> json) =>
+      _$GoalDailyTimeRangeFromJson(json);
+}
+
 /// The criteria tree a goal's success is defined in.
 ///
 /// Leaves bind a measurable signal to a windowed target; composites combine
@@ -19,9 +37,11 @@ part 'goal_criterion.g.dart';
 /// [GoalCriterion.fromAutoCompleteRule] imports one as a seed instead.
 @freezed
 sealed class GoalCriterion with _$GoalCriterion {
-  /// A health/quantitative target: "daily step sums, averaged over a rolling
-  /// 7 days, at least 10,000". [dataType] is the journal quantitative data
-  /// type string (e.g. `cumulative_step_count`).
+  /// A health/quantitative dimension: "daily step totals, averaged over a
+  /// rolling 7 days, at least 10,000". [dataType] is the journal quantitative
+  /// data type string (for example `cumulative_step_count`, sleep duration, or
+  /// weight). The health data type's configured daily aggregation is applied
+  /// first; [aggregation] then combines those daily values across [window].
   const factory GoalCriterion.metric({
     required String criterionId,
     required String dataType,
@@ -42,8 +62,8 @@ sealed class GoalCriterion with _$GoalCriterion {
     String? title,
   }) = GoalCriterionHabit;
 
-  /// A measurable-data-type target, same shape as [GoalCriterion.metric] but
-  /// keyed by the `MeasurableDataType` id.
+  /// A user-defined measurable-data dimension, same shape as
+  /// [GoalCriterion.metric] but keyed by the `MeasurableDataType` id.
   const factory GoalCriterion.measurable({
     required String criterionId,
     required String dataTypeId,
@@ -53,6 +73,30 @@ sealed class GoalCriterion with _$GoalCriterion {
     @Default(GoalDirection.atLeast) GoalDirection direction,
     String? title,
   }) = GoalCriterionMeasurable;
+
+  /// A tracked-time dimension attributed to [categoryId], measured in hours.
+  ///
+  /// [dailyTimeRange] optionally restricts the evidence to a recurring local
+  /// time band. This makes both amount goals ("at most 8 hours of coding in a
+  /// rolling week") and timing goals ("no coding from 21:30 to 07:00") honest
+  /// first-class criteria over the same journal time entries used by Insights.
+  /// Model-facing wake facts may also include the underlying sessions for
+  /// coaching-pattern analysis, but their deterministic result remains the
+  /// authoritative measured outcome.
+  ///
+  /// [aggregation] remains hour-valued: `sum`, `dailySumThenAverage`, and `max`
+  /// are valid. `count` is rejected because it counts active days and cannot be
+  /// compared honestly with [targetHours].
+  const factory GoalCriterion.categoryTime({
+    required String criterionId,
+    required String categoryId,
+    required GoalWindow window,
+    required GoalAggregation aggregation,
+    required num targetHours,
+    @Default(GoalDirection.atMost) GoalDirection direction,
+    GoalDailyTimeRange? dailyTimeRange,
+    String? title,
+  }) = GoalCriterionCategoryTime;
 
   /// All children must be satisfied; attainment is their mean.
   const factory GoalCriterion.allOf({

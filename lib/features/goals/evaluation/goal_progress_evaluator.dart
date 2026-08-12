@@ -77,6 +77,26 @@ class GoalProgressEvaluator {
           range.end,
         );
         return _leafRatio(series, aggregation, target, direction);
+      case GoalCriterionCategoryTime(
+        :final criterionId,
+        :final aggregation,
+        :final targetHours,
+        :final direction,
+      ):
+        final range = window.periodRange(reference);
+        final series = _zeroFilledCategoryTime(
+          signals: signals,
+          criterionId: criterionId,
+          range: range,
+          reference: reference,
+        );
+        return _leafRatio(
+          series,
+          aggregation,
+          targetHours,
+          direction,
+          countPositiveValues: true,
+        );
       case GoalCriterionHabit(
         :final habitId,
         :final window,
@@ -179,6 +199,28 @@ class GoalProgressEvaluator {
           target: target,
           direction: direction,
         ),
+      GoalCriterionCategoryTime(
+        :final criterionId,
+        :final window,
+        :final aggregation,
+        :final targetHours,
+        :final direction,
+      ) =>
+        _metricLeaf(
+          criterionId: criterionId,
+          series: _zeroFilledCategoryTime(
+            signals: signals,
+            criterionId: criterionId,
+            range: window.periodRange(reference),
+            reference: reference,
+          ),
+          window: window,
+          reference: reference,
+          aggregation: aggregation,
+          target: targetHours,
+          direction: direction,
+          countPositiveValues: true,
+        ),
       GoalCriterionHabit(
         :final criterionId,
         :final habitId,
@@ -236,9 +278,14 @@ class GoalProgressEvaluator {
     required GoalAggregation aggregation,
     required num target,
     required GoalDirection direction,
+    bool countPositiveValues = false,
   }) {
     final sampleCount = series.length;
-    final actual = _aggregate(series, aggregation);
+    final actual = _aggregate(
+      series,
+      aggregation,
+      countPositiveValues: countPositiveValues,
+    );
     final double ratio;
     final bool satisfied;
     if (sampleCount == 0) {
@@ -264,6 +311,33 @@ class GoalProgressEvaluator {
       ),
       coverage: coverage,
     );
+  }
+
+  /// Time entries are the user's explicit ledger: within that ledger, no row
+  /// for a category/day means zero tracked time, not a broken sensor. Filling
+  /// elapsed days makes an at-most-zero curfew evaluable while the UI and
+  /// prompts remain honest that only tracked time counts.
+  Map<DateTime, num> _zeroFilledCategoryTime({
+    required GoalSignalWindow signals,
+    required String criterionId,
+    required ({DateTime start, DateTime end}) range,
+    required DateTime reference,
+  }) {
+    final today = GoalWindow.dayUtc(reference);
+    final end = range.end.isBefore(today) ? range.end : today;
+    final recorded = signals.categoryTimeInRange(
+      criterionId,
+      range.start,
+      end,
+    );
+    return {
+      for (
+        var day = range.start;
+        !day.isAfter(end);
+        day = day.add(const Duration(days: 1))
+      )
+        day: recorded[day] ?? 0,
+    };
   }
 
   _NodeOutcome _habitLeaf({
@@ -541,7 +615,11 @@ class GoalProgressEvaluator {
     return sawFalse ? false : null;
   }
 
-  num _aggregate(Map<DateTime, num> series, GoalAggregation aggregation) {
+  num _aggregate(
+    Map<DateTime, num> series,
+    GoalAggregation aggregation, {
+    bool countPositiveValues = false,
+  }) {
     if (series.isEmpty) return 0;
     switch (aggregation) {
       case GoalAggregation.dailySumThenAverage:
@@ -549,7 +627,9 @@ class GoalProgressEvaluator {
       case GoalAggregation.sum:
         return series.values.reduce((a, b) => a + b);
       case GoalAggregation.count:
-        return series.length;
+        return countPositiveValues
+            ? series.values.where((value) => value > 0).length
+            : series.length;
       case GoalAggregation.max:
         return series.values.reduce(math.max);
     }
@@ -588,11 +668,16 @@ double _leafRatio(
   Map<DateTime, num> series,
   GoalAggregation aggregation,
   num target,
-  GoalDirection direction,
-) {
+  GoalDirection direction, {
+  bool countPositiveValues = false,
+}) {
   if (series.isEmpty) return 0;
   const evaluator = GoalProgressEvaluator();
-  final actual = evaluator._aggregate(series, aggregation);
+  final actual = evaluator._aggregate(
+    series,
+    aggregation,
+    countPositiveValues: countPositiveValues,
+  );
   final (ratio, _) = evaluator._compare(actual, target, direction);
   return ratio;
 }

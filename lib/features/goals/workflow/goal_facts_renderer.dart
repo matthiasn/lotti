@@ -5,6 +5,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 
 // The dismissal quiet window is the REST OF THE LOCAL CALENDAR DAY (see
@@ -20,15 +21,19 @@ const goalAdFreshFor = Duration(hours: 48);
 /// re-run (policy row P13).
 const goalReusableMinMeanRating = 4.0;
 
+/// Maximum number of raw category sessions included in one model message.
+/// The complete lifetime remains represented by the bounded summaries below.
+const goalCategorySessionEvidenceLimit = 200;
+
 /// Renders the deterministic FACTS block for one Phase B wake.
 ///
 /// The output shape is EXACTLY the one the eval fixtures validated
 /// model-against-model (`goal_agent_eval_fixtures.dart`): a labelled JSON
-/// fence with `goal` / `evaluation` / `reporting` / `ads` / `personaTone`
-/// / `unansweredUserMessages` / `observations` sections. Every number is
-/// pre-computed here — the prompt instructs the model to restate, never
-/// derive, so this renderer is the single place the model's worldview is
-/// assembled.
+/// fence with `goal` / `evaluation` / optional raw `signals` / `reporting` /
+/// `ads` / `personaTone` / `unansweredUserMessages` / `observations`
+/// sections. Every verdict is pre-computed here — the prompt instructs the
+/// model to restate, never derive, so this renderer is the single place the
+/// model's worldview is assembled.
 class GoalFactsRenderer {
   const GoalFactsRenderer();
 
@@ -48,6 +53,16 @@ class GoalFactsRenderer {
     final priorAttainments = [
       for (final row in priorRegisters) row.attainment,
     ];
+    final categorySessions = [
+      for (final sessions in facts.categoryTimeSessionsByCategory.values)
+        ...sessions,
+    ]..sort((a, b) => a.dateFrom.compareTo(b.dateFrom));
+    final recentCategorySessions =
+        categorySessions.length <= goalCategorySessionEvidenceLimit
+        ? categorySessions
+        : categorySessions.sublist(
+            categorySessions.length - goalCategorySessionEvidenceLimit,
+          );
 
     return _factsBlock({
       'generatedAt': now.toUtc().toIso8601String(),
@@ -95,6 +110,32 @@ class GoalFactsRenderer {
         ),
         'priorPeriodAttainments': priorAttainments,
       },
+      if (facts.categoryTimeSessionsByCategory.isNotEmpty)
+        'signals': {
+          'categoryTimeEvidenceStart': facts.categoryTimeEvidenceStart
+              ?.toIso8601String(),
+          'categoryTimeEvidenceEnd': facts.categoryTimeEvidenceEnd
+              ?.toIso8601String(),
+          'categoryTimeSessionCount': categorySessions.length,
+          'categoryTimeSessionsOmitted':
+              categorySessions.length - recentCategorySessions.length,
+          'categoryTimeLifetimeSummary': _categoryTimeLifetimeSummary(
+            facts.categoryTimeSessionsByCategory,
+          ),
+          'categoryTimeSessions': [
+            for (final session in recentCategorySessions)
+              {
+                'categoryId': session.categoryId,
+                'startedAtLocal': session.dateFrom.toIso8601String(),
+                'endedAtLocal': session.dateTo.toIso8601String(),
+                'durationMinutes': session.duration.inMinutes,
+              },
+          ],
+          'interpretationPolicy':
+              'lifetime summaries and recent session evidence may inform '
+              'coaching patterns; they do not override deterministic '
+              'criterion results',
+        },
       'reporting': {
         'materialChangeSinceLastReport': facts.statusTransitioned,
         'lastReportStatus': facts.previousStatus?.name,
@@ -115,6 +156,54 @@ class GoalFactsRenderer {
       'unansweredUserMessages': unansweredUserMessages,
       'observations': observations,
     });
+  }
+
+  List<Map<String, Object>> _categoryTimeLifetimeSummary(
+    Map<String, List<GoalCategoryTimeSession>> sessionsByCategory,
+  ) {
+    final categoryIds = sessionsByCategory.keys.toList()..sort();
+    return [
+      for (final categoryId in categoryIds)
+        _categorySummary(
+          categoryId,
+          sessionsByCategory[categoryId] ?? const [],
+        ),
+    ];
+  }
+
+  Map<String, Object> _categorySummary(
+    String categoryId,
+    List<GoalCategoryTimeSession> sessions,
+  ) {
+    final minutesByLocalHour = List<int>.filled(24, 0);
+    final minutesByLocalWeekday = List<int>.filled(7, 0);
+    var totalMinutes = 0;
+    for (final session in sessions) {
+      totalMinutes += session.duration.inMinutes;
+      var cursor = session.dateFrom;
+      while (cursor.isBefore(session.dateTo)) {
+        final nextHour = DateTime(
+          cursor.year,
+          cursor.month,
+          cursor.day,
+          cursor.hour + 1,
+        );
+        final segmentEnd = nextHour.isBefore(session.dateTo)
+            ? nextHour
+            : session.dateTo;
+        final minutes = segmentEnd.difference(cursor).inMinutes;
+        minutesByLocalHour[cursor.hour] += minutes;
+        minutesByLocalWeekday[cursor.weekday - DateTime.monday] += minutes;
+        cursor = segmentEnd;
+      }
+    }
+    return {
+      'categoryId': categoryId,
+      'sessionCount': sessions.length,
+      'totalMinutes': totalMinutes,
+      'minutesByLocalHour': minutesByLocalHour,
+      'minutesByLocalWeekday': minutesByLocalWeekday,
+    };
   }
 
   /// Worsening means: strictly declining attainment over today plus at
@@ -203,6 +292,7 @@ Map<String, Object?> criterionJson(GoalCriterion criterion) =>
     switch (criterion) {
       GoalCriterionMetric() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'metric': criterion.dataType,
         'aggregation': criterion.aggregation.name,
         'window': _windowLabel(criterion.window),
@@ -211,28 +301,48 @@ Map<String, Object?> criterionJson(GoalCriterion criterion) =>
       },
       GoalCriterionHabit() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'habit': criterion.habitId,
         'window': _windowLabel(criterion.window),
         'targetCount': criterion.targetCount,
       },
       GoalCriterionMeasurable() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'measurable': criterion.dataTypeId,
         'aggregation': criterion.aggregation.name,
         'window': _windowLabel(criterion.window),
         'target': criterion.target,
         'direction': criterion.direction.name,
       },
+      GoalCriterionCategoryTime() => {
+        'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
+        'categoryTime': criterion.categoryId,
+        'aggregation': criterion.aggregation.name,
+        'window': _windowLabel(criterion.window),
+        'targetHours': criterion.targetHours,
+        'direction': criterion.direction.name,
+        if (criterion.dailyTimeRange case final range?)
+          'dailyTimeRange': {
+            'startMinute': range.startMinute,
+            'endMinute': range.endMinute,
+          },
+        'evidence': 'tracked Lotti time entries only',
+      },
       GoalCriterionAllOf() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'allOf': [for (final c in criterion.criteria) criterionJson(c)],
       },
       GoalCriterionAnyOf() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'anyOf': [for (final c in criterion.criteria) criterionJson(c)],
       },
       GoalCriterionAtLeastCount() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'atLeast': criterion.successes,
         'of': [for (final c in criterion.criteria) criterionJson(c)],
       },

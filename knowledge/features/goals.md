@@ -19,7 +19,7 @@ sources:
   - id: signal-reader
     resource: ../../lib/features/goals/evaluation/goal_signal_reader.dart
     title: GoalSignalReader — journal-backed daily aggregates
-    last_modified: 2026-08-09
+    last_modified: 2026-08-12
   - id: evaluator
     resource: ../../lib/features/goals/evaluation/goal_progress_evaluator.dart
     title: GoalProgressEvaluator — pure criteria-tree fold
@@ -31,7 +31,11 @@ sources:
   - id: vocabulary
     resource: ../../lib/classes/goal_criterion.dart
     title: GoalCriterion tree (shared vocabulary in lib/classes)
-    last_modified: 2026-08-09
+    last_modified: 2026-08-12
+  - id: progress-vocabulary
+    resource: ../../lib/classes/goal_progress_models.dart
+    title: Persisted per-dimension progress vocabulary
+    last_modified: 2026-08-12
   - id: workflow
     resource: ../../lib/features/goals/workflow/goal_agent_workflow.dart
     title: GoalAgentWorkflow — the Phase B LLM tier
@@ -129,13 +133,45 @@ flowchart TD
 - **Grace history is a consecutive, same-spec-version streak**: prior-row
   collection stops at the first missing day and at the first row computed
   under a superseded spec version.
+- **Every criterion leaf is an accountable dimension.** A composite goal can
+  combine any number of titled metric, measurable, habit, or category-time
+  leaves through `allOf`, `anyOf`, or `atLeastCount`. Stable `criterionId`
+  values connect each leaf to its persisted `GoalCriterionProgress` result in
+  every period register: actual, target, ratio, satisfaction, sample count,
+  pace feasibility, and coverage remain inspectable instead of disappearing
+  into one overall score. The composite result controls goal health, while its
+  children retain the evidence for which dimension carried or missed it.
 - **Borrowed data semantics.** Quantitative day totals follow the health
   charts' per-type aggregation (`cumulative_step_count` day total is the
   daily max), point-sample types keep the day's latest sample, habit days
   follow the habits UI's latest-completion-per-day collapse with
-  success-only counting, and day keys re-stamp the local calendar date as
-  midnight UTC. The goal agent must never disagree with the chart the
-  user is looking at.
+  success-only counting, measurable leaves reuse their authored data-type ids,
+  and category time reuses the same category-attributed timer rows as Insights.
+  A category-time leaf can enforce an `atLeast` or `atMost` number of hours and
+  can clip every local day to an optional time band; a crossing band such as
+  `21:30 → 07:00` spans midnight. Day keys re-stamp the local calendar date as
+  midnight UTC. The goal agent must never disagree with the chart the user is
+  looking at.
+- **Pattern evidence is richer than the threshold.** Phase A reads only the
+  bounded evaluation/lookback range. When Phase B actually runs, the same
+  reader additionally loads every valid attributed session for a watched
+  category since the goal agent was created, including sessions outside an
+  optional cutoff band. FACTS summarizes the complete lifetime into bounded
+  local-hour and weekday distributions, then adds the 200 most recent raw
+  sessions with category, local start/end and duration. The coach can therefore
+  notice late-night or clustering patterns without allowing one current model
+  message to grow forever. Those signals are evidence only: the model may
+  discuss them but cannot replace the deterministic per-dimension result.
+- **Subjective assessment is a separate governance layer.** Deterministic
+  `goalProgress` registers are recomputed from source and must never carry a
+  mutable opinion. A future daily-assessment register should therefore keep
+  user-authored ratings separate from agent suggestions. Direct user ratings
+  become approved assessments immediately; agent suggestions reuse the shared
+  `ChangeSet` and `ChangeDecision` path and become authoritative only after the
+  user confirms them. The assessment keys each rating by stable criterion id,
+  preserves proposal/decision provenance, and may add an overall reflection
+  without erasing any dimension's measured result. No producer for that
+  assessment register exists yet.
 - **Automatic Phase B is reachable only through the lease; direct chat and
   detail-page refreshes are explicit user wakes.** Sync-received signals run Phase A directly (the
   orchestrator deliberately listens local-only); automatic LLM-worthy work
@@ -446,6 +482,12 @@ flowchart TD
   repeatedly enqueueing work that the lifecycle guard would only discard.
   Goal-list rows and banner semantics resolve the active spec title; the
   identity display name remains the conversational persona used by chat.
+  The current form represents rolling habit quotas plus the supported steps
+  metric. A follow-up mapping surface must enumerate generic quantitative and
+  measurable types, category selection, `atLeast`/`atMost` tracked-hour
+  targets, and an optional local time band without hard-coding a health-data
+  catalog. A separate follow-up approval surface will render direct daily
+  dimension ratings and agent-proposed assessment change items.
 - **Conversation scope is the goal.** The contract identifies the agent as a
   dedicated coach rather than a general assistant. Coding, trivia and other
   unrelated requests receive a short purpose reminder and a redirect to the

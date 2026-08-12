@@ -1,6 +1,7 @@
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
+import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 
 /// Whether three consecutive attainment points are strictly worsening.
 /// [priorAttainments] is ordered most-recent-first.
@@ -36,6 +37,9 @@ class GoalWakeFacts {
     required this.evaluation,
     this.previousStatus,
     this.shortTermAttainment,
+    this.categoryTimeSessionsByCategory = const {},
+    this.categoryTimeEvidenceStart,
+    this.categoryTimeEvidenceEnd,
   });
 
   /// Policy-derived status for the evaluation day.
@@ -47,6 +51,14 @@ class GoalWakeFacts {
 
   final GoalEvaluation evaluation;
   final double? shortTermAttainment;
+
+  /// Session-level evidence for model pattern analysis. These observations do
+  /// not override [evaluation]; a future governed daily assessment can turn a
+  /// model suggestion into a user-approved outcome.
+  final Map<String, List<GoalCategoryTimeSession>>
+  categoryTimeSessionsByCategory;
+  final DateTime? categoryTimeEvidenceStart;
+  final DateTime? categoryTimeEvidenceEnd;
 
   /// Whether the status changed against the last persisted register row.
   /// A first-ever evaluation counts as a transition (there is a new fact

@@ -267,6 +267,76 @@ void main() {
     expect(revised.window, const GoalWindow.rollingDays(count: 3));
   });
 
+  test(
+    'category time takes target and period changes and binds by category',
+    () {
+      const categoryTime = GoalCriterion.categoryTime(
+        criterionId: 'late-coding',
+        categoryId: 'vibe-coding',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 0,
+        dailyTimeRange: GoalDailyTimeRange(
+          startMinute: 21 * 60 + 30,
+          endMinute: 7 * 60,
+        ),
+      );
+      const composite = GoalCriterion.allOf(
+        criterionId: 'detox',
+        criteria: [steps, categoryTime],
+      );
+
+      final result = applied(
+        applyGoalRevisionChanges(
+          criteria: composite,
+          changes: {
+            'metric': 'vibe-coding',
+            'targetValue': 1.5,
+            'period': 'rolling 14 days',
+          },
+        ),
+      );
+      final revised = result.criteria as GoalCriterionAllOf;
+      final time = revised.criteria.last as GoalCriterionCategoryTime;
+      expect(time.targetHours, 1.5);
+      expect(time.window, const GoalWindow.rollingDays(count: 14));
+      expect(
+        time.dailyTimeRange,
+        const GoalDailyTimeRange(
+          startMinute: 21 * 60 + 30,
+          endMinute: 7 * 60,
+        ),
+        reason: 'changing the cap must preserve the authored daily band',
+      );
+      expect((revised.criteria.first as GoalCriterionMetric).target, 10000);
+    },
+  );
+
+  test('a category-time sibling does not make habit cadence ambiguous', () {
+    const categoryTime = GoalCriterion.categoryTime(
+      criterionId: 'late-coding',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 0,
+    );
+    const composite = GoalCriterion.allOf(
+      criterionId: 'balanced-day',
+      criteria: [gym, categoryTime],
+    );
+
+    final result = applied(
+      applyGoalRevisionChanges(
+        criteria: composite,
+        changes: {'cadence': 2},
+      ),
+    );
+    final revised = result.criteria as GoalCriterionAllOf;
+
+    expect((revised.criteria.first as GoalCriterionHabit).targetCount, 2);
+    expect(revised.criteria.last, categoryTime);
+  });
+
   test('two habit leaves make a cadence change ambiguous — rejected', () {
     const twoGyms = GoalCriterion.anyOf(
       criterionId: 'either-gym',

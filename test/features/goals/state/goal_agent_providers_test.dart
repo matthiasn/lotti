@@ -29,12 +29,15 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/sync/goal_signal_sync_dispatcher.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
+import '../../../widget_test_utils.dart';
 
 void main() {
   setUpAll(registerAllFallbackValues);
@@ -47,7 +50,11 @@ void main() {
   late MockUpdateNotifications updateNotifications;
   late ProviderContainer container;
 
-  setUp(() {
+  setUp(() async {
+    await setUpTestGetIt(
+      additionalSetup: () =>
+          getIt.registerSingleton<TimeService>(MockTimeService()),
+    );
     syncStream = StreamController<Set<String>>.broadcast();
     addTearDown(syncStream.close);
     agentService = MockAgentService();
@@ -96,6 +103,7 @@ void main() {
     );
     addTearDown(container.dispose);
   });
+  tearDown(tearDownTestGetIt);
 
   AgentIdentityEntity goalIdentity(String id) =>
       AgentDomainEntity.agent(

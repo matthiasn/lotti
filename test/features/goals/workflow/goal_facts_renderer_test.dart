@@ -8,6 +8,7 @@ import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
+import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/goals/workflow/goal_facts_renderer.dart';
 
@@ -42,6 +43,9 @@ void main() {
     GoalTrackStatus? previous = GoalTrackStatus.atRisk,
     int? deficit,
     int? buffer,
+    Map<String, List<GoalCategoryTimeSession>> categoryTimeSessions = const {},
+    DateTime? categoryTimeEvidenceStart,
+    DateTime? categoryTimeEvidenceEnd,
   }) => GoalWakeFacts(
     trackStatus: status,
     previousStatus: previous,
@@ -65,6 +69,9 @@ void main() {
       },
     ),
     shortTermAttainment: 0.5,
+    categoryTimeSessionsByCategory: categoryTimeSessions,
+    categoryTimeEvidenceStart: categoryTimeEvidenceStart,
+    categoryTimeEvidenceEnd: categoryTimeEvidenceEnd,
   );
 
   GoalNudgeEntity nudge({
@@ -335,5 +342,114 @@ void main() {
           as Map<String, dynamic>)['allOf'],
       isEmpty,
     );
+  });
+
+  test(
+    'criterionJson labels tracked category time and its local daily band',
+    () {
+      final json = criterionJson(
+        const GoalCriterion.categoryTime(
+          criterionId: 'late-coding',
+          categoryId: 'vibe-coding',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.sum,
+          targetHours: 0,
+          title: 'Late-night coding',
+          dailyTimeRange: GoalDailyTimeRange(
+            startMinute: 21 * 60 + 30,
+            endMinute: 7 * 60,
+          ),
+        ),
+      );
+
+      expect(json['categoryTime'], 'vibe-coding');
+      expect(json['title'], 'Late-night coding');
+      expect(json['targetHours'], 0);
+      expect(json['direction'], 'atMost');
+      expect(json['evidence'], 'tracked Lotti time entries only');
+      expect(json['dailyTimeRange'], {
+        'startMinute': 21 * 60 + 30,
+        'endMinute': 7 * 60,
+      });
+    },
+  );
+
+  test(
+    'category session evidence exposes local timing without deciding success',
+    () {
+      final json = renderedJson(
+        wakeFacts: facts(
+          categoryTimeSessions: {
+            'vibe-coding': [
+              GoalCategoryTimeSession(
+                categoryId: 'vibe-coding',
+                dateFrom: DateTime(2026, 8, 8, 23, 15),
+                dateTo: DateTime(2026, 8, 9, 1, 45),
+              ),
+            ],
+          },
+          categoryTimeEvidenceStart: DateTime(2026, 8, 2),
+          categoryTimeEvidenceEnd: DateTime(2026, 8, 10),
+        ),
+      );
+
+      final signals = json['signals'] as Map<String, dynamic>;
+      expect(signals['categoryTimeEvidenceStart'], '2026-08-02T00:00:00.000');
+      expect(signals['categoryTimeEvidenceEnd'], '2026-08-10T00:00:00.000');
+      final session =
+          (signals['categoryTimeSessions'] as List).single
+              as Map<String, dynamic>;
+      expect(session['categoryId'], 'vibe-coding');
+      expect(session['startedAtLocal'], '2026-08-08T23:15:00.000');
+      expect(session['endedAtLocal'], '2026-08-09T01:45:00.000');
+      expect(session['durationMinutes'], 150);
+      expect(session.containsKey('satisfied'), isFalse);
+      final summary =
+          (signals['categoryTimeLifetimeSummary'] as List).single
+              as Map<String, dynamic>;
+      expect(summary['sessionCount'], 1);
+      expect(summary['totalMinutes'], 150);
+      final minutesByHour = summary['minutesByLocalHour'] as List;
+      expect(minutesByHour[23], 45);
+      expect(minutesByHour[0], 60);
+      expect(minutesByHour[1], 45);
+    },
+  );
+
+  test('lifetime category evidence keeps a bounded recent raw sample', () {
+    final sessions = [
+      for (var index = 0; index < 205; index++)
+        GoalCategoryTimeSession(
+          categoryId: 'vibe-coding',
+          dateFrom: DateTime(2026).add(Duration(hours: index)),
+          dateTo: DateTime(2026).add(
+            Duration(hours: index, minutes: 30),
+          ),
+        ),
+    ];
+
+    final json = renderedJson(
+      wakeFacts: facts(
+        categoryTimeSessions: {'vibe-coding': sessions},
+        categoryTimeEvidenceStart: DateTime(2026),
+        categoryTimeEvidenceEnd: DateTime(2026, 8, 10),
+      ),
+    );
+    final signals = json['signals'] as Map<String, dynamic>;
+
+    expect(signals['categoryTimeSessionCount'], 205);
+    expect(signals['categoryTimeSessionsOmitted'], 5);
+    expect(signals['categoryTimeSessions'], hasLength(200));
+    final recent = signals['categoryTimeSessions'] as List;
+    expect(
+      (recent.first as Map<String, dynamic>)['startedAtLocal'],
+      sessions[5].dateFrom.toIso8601String(),
+      reason: 'the bounded sample must retain the most recent raw sessions',
+    );
+    final summary =
+        (signals['categoryTimeLifetimeSummary'] as List).single
+            as Map<String, dynamic>;
+    expect(summary['sessionCount'], 205);
+    expect(summary['totalMinutes'], 205 * 30);
   });
 }

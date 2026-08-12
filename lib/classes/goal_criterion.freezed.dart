@@ -11,6 +11,272 @@ part of 'goal_criterion.dart';
 
 // dart format off
 T _$identity<T>(T value) => value;
+
+/// @nodoc
+mixin _$GoalDailyTimeRange {
+
+ int get startMinute; int get endMinute;
+/// Create a copy of GoalDailyTimeRange
+/// with the given fields replaced by the non-null parameter values.
+@JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalDailyTimeRangeCopyWith<GoalDailyTimeRange> get copyWith => _$GoalDailyTimeRangeCopyWithImpl<GoalDailyTimeRange>(this as GoalDailyTimeRange, _$identity);
+
+  /// Serializes this GoalDailyTimeRange to a JSON map.
+  Map<String, dynamic> toJson();
+
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalDailyTimeRange&&(identical(other.startMinute, startMinute) || other.startMinute == startMinute)&&(identical(other.endMinute, endMinute) || other.endMinute == endMinute));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,startMinute,endMinute);
+
+@override
+String toString() {
+  return 'GoalDailyTimeRange(startMinute: $startMinute, endMinute: $endMinute)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalDailyTimeRangeCopyWith<$Res>  {
+  factory $GoalDailyTimeRangeCopyWith(GoalDailyTimeRange value, $Res Function(GoalDailyTimeRange) _then) = _$GoalDailyTimeRangeCopyWithImpl;
+@useResult
+$Res call({
+ int startMinute, int endMinute
+});
+
+
+
+
+}
+/// @nodoc
+class _$GoalDailyTimeRangeCopyWithImpl<$Res>
+    implements $GoalDailyTimeRangeCopyWith<$Res> {
+  _$GoalDailyTimeRangeCopyWithImpl(this._self, this._then);
+
+  final GoalDailyTimeRange _self;
+  final $Res Function(GoalDailyTimeRange) _then;
+
+/// Create a copy of GoalDailyTimeRange
+/// with the given fields replaced by the non-null parameter values.
+@pragma('vm:prefer-inline') @override $Res call({Object? startMinute = null,Object? endMinute = null,}) {
+  return _then(_self.copyWith(
+startMinute: null == startMinute ? _self.startMinute : startMinute // ignore: cast_nullable_to_non_nullable
+as int,endMinute: null == endMinute ? _self.endMinute : endMinute // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+}
+
+
+/// Adds pattern-matching-related methods to [GoalDailyTimeRange].
+extension GoalDailyTimeRangePatterns on GoalDailyTimeRange {
+/// A variant of `map` that fallback to returning `orElse`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>(TResult Function( _GoalDailyTimeRange value)?  $default,{required TResult orElse(),}){
+final _that = this;
+switch (_that) {
+case _GoalDailyTimeRange() when $default != null:
+return $default(_that);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// Callbacks receives the raw object, upcasted.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case final Subclass2 value:
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult map<TResult extends Object?>(TResult Function( _GoalDailyTimeRange value)  $default,){
+final _that = this;
+switch (_that) {
+case _GoalDailyTimeRange():
+return $default(_that);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `map` that fallback to returning `null`.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case final Subclass value:
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>(TResult? Function( _GoalDailyTimeRange value)?  $default,){
+final _that = this;
+switch (_that) {
+case _GoalDailyTimeRange() when $default != null:
+return $default(_that);case _:
+  return null;
+
+}
+}
+/// A variant of `when` that fallback to an `orElse` callback.
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return orElse();
+/// }
+/// ```
+
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>(TResult Function( int startMinute,  int endMinute)?  $default,{required TResult orElse(),}) {final _that = this;
+switch (_that) {
+case _GoalDailyTimeRange() when $default != null:
+return $default(_that.startMinute,_that.endMinute);case _:
+  return orElse();
+
+}
+}
+/// A `switch`-like method, using callbacks.
+///
+/// As opposed to `map`, this offers destructuring.
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case Subclass2(:final field2):
+///     return ...;
+/// }
+/// ```
+
+@optionalTypeArgs TResult when<TResult extends Object?>(TResult Function( int startMinute,  int endMinute)  $default,) {final _that = this;
+switch (_that) {
+case _GoalDailyTimeRange():
+return $default(_that.startMinute,_that.endMinute);case _:
+  throw StateError('Unexpected subclass');
+
+}
+}
+/// A variant of `when` that fallback to returning `null`
+///
+/// It is equivalent to doing:
+/// ```dart
+/// switch (sealedClass) {
+///   case Subclass(:final field):
+///     return ...;
+///   case _:
+///     return null;
+/// }
+/// ```
+
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>(TResult? Function( int startMinute,  int endMinute)?  $default,) {final _that = this;
+switch (_that) {
+case _GoalDailyTimeRange() when $default != null:
+return $default(_that.startMinute,_that.endMinute);case _:
+  return null;
+
+}
+}
+
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class _GoalDailyTimeRange implements GoalDailyTimeRange {
+  const _GoalDailyTimeRange({required this.startMinute, required this.endMinute});
+  factory _GoalDailyTimeRange.fromJson(Map<String, dynamic> json) => _$GoalDailyTimeRangeFromJson(json);
+
+@override final  int startMinute;
+@override final  int endMinute;
+
+/// Create a copy of GoalDailyTimeRange
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+_$GoalDailyTimeRangeCopyWith<_GoalDailyTimeRange> get copyWith => __$GoalDailyTimeRangeCopyWithImpl<_GoalDailyTimeRange>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalDailyTimeRangeToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is _GoalDailyTimeRange&&(identical(other.startMinute, startMinute) || other.startMinute == startMinute)&&(identical(other.endMinute, endMinute) || other.endMinute == endMinute));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,startMinute,endMinute);
+
+@override
+String toString() {
+  return 'GoalDailyTimeRange(startMinute: $startMinute, endMinute: $endMinute)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class _$GoalDailyTimeRangeCopyWith<$Res> implements $GoalDailyTimeRangeCopyWith<$Res> {
+  factory _$GoalDailyTimeRangeCopyWith(_GoalDailyTimeRange value, $Res Function(_GoalDailyTimeRange) _then) = __$GoalDailyTimeRangeCopyWithImpl;
+@override @useResult
+$Res call({
+ int startMinute, int endMinute
+});
+
+
+
+
+}
+/// @nodoc
+class __$GoalDailyTimeRangeCopyWithImpl<$Res>
+    implements _$GoalDailyTimeRangeCopyWith<$Res> {
+  __$GoalDailyTimeRangeCopyWithImpl(this._self, this._then);
+
+  final _GoalDailyTimeRange _self;
+  final $Res Function(_GoalDailyTimeRange) _then;
+
+/// Create a copy of GoalDailyTimeRange
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? startMinute = null,Object? endMinute = null,}) {
+  return _then(_GoalDailyTimeRange(
+startMinute: null == startMinute ? _self.startMinute : startMinute // ignore: cast_nullable_to_non_nullable
+as int,endMinute: null == endMinute ? _self.endMinute : endMinute // ignore: cast_nullable_to_non_nullable
+as int,
+  ));
+}
+
+
+}
+
 GoalCriterion _$GoalCriterionFromJson(
   Map<String, dynamic> json
 ) {
@@ -25,6 +291,10 @@ GoalCriterion _$GoalCriterionFromJson(
           );
                 case 'measurable':
           return GoalCriterionMeasurable.fromJson(
+            json
+          );
+                case 'categoryTime':
+          return GoalCriterionCategoryTime.fromJson(
             json
           );
                 case 'allOf':
@@ -129,13 +399,14 @@ extension GoalCriterionPatterns on GoalCriterion {
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GoalCriterionMetric value)?  metric,TResult Function( GoalCriterionHabit value)?  habit,TResult Function( GoalCriterionMeasurable value)?  measurable,TResult Function( GoalCriterionAllOf value)?  allOf,TResult Function( GoalCriterionAnyOf value)?  anyOf,TResult Function( GoalCriterionAtLeastCount value)?  atLeastCount,required TResult orElse(),}){
+@optionalTypeArgs TResult maybeMap<TResult extends Object?>({TResult Function( GoalCriterionMetric value)?  metric,TResult Function( GoalCriterionHabit value)?  habit,TResult Function( GoalCriterionMeasurable value)?  measurable,TResult Function( GoalCriterionCategoryTime value)?  categoryTime,TResult Function( GoalCriterionAllOf value)?  allOf,TResult Function( GoalCriterionAnyOf value)?  anyOf,TResult Function( GoalCriterionAtLeastCount value)?  atLeastCount,required TResult orElse(),}){
 final _that = this;
 switch (_that) {
 case GoalCriterionMetric() when metric != null:
 return metric(_that);case GoalCriterionHabit() when habit != null:
 return habit(_that);case GoalCriterionMeasurable() when measurable != null:
-return measurable(_that);case GoalCriterionAllOf() when allOf != null:
+return measurable(_that);case GoalCriterionCategoryTime() when categoryTime != null:
+return categoryTime(_that);case GoalCriterionAllOf() when allOf != null:
 return allOf(_that);case GoalCriterionAnyOf() when anyOf != null:
 return anyOf(_that);case GoalCriterionAtLeastCount() when atLeastCount != null:
 return atLeastCount(_that);case _:
@@ -156,13 +427,14 @@ return atLeastCount(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GoalCriterionMetric value)  metric,required TResult Function( GoalCriterionHabit value)  habit,required TResult Function( GoalCriterionMeasurable value)  measurable,required TResult Function( GoalCriterionAllOf value)  allOf,required TResult Function( GoalCriterionAnyOf value)  anyOf,required TResult Function( GoalCriterionAtLeastCount value)  atLeastCount,}){
+@optionalTypeArgs TResult map<TResult extends Object?>({required TResult Function( GoalCriterionMetric value)  metric,required TResult Function( GoalCriterionHabit value)  habit,required TResult Function( GoalCriterionMeasurable value)  measurable,required TResult Function( GoalCriterionCategoryTime value)  categoryTime,required TResult Function( GoalCriterionAllOf value)  allOf,required TResult Function( GoalCriterionAnyOf value)  anyOf,required TResult Function( GoalCriterionAtLeastCount value)  atLeastCount,}){
 final _that = this;
 switch (_that) {
 case GoalCriterionMetric():
 return metric(_that);case GoalCriterionHabit():
 return habit(_that);case GoalCriterionMeasurable():
-return measurable(_that);case GoalCriterionAllOf():
+return measurable(_that);case GoalCriterionCategoryTime():
+return categoryTime(_that);case GoalCriterionAllOf():
 return allOf(_that);case GoalCriterionAnyOf():
 return anyOf(_that);case GoalCriterionAtLeastCount():
 return atLeastCount(_that);}
@@ -179,13 +451,14 @@ return atLeastCount(_that);}
 /// }
 /// ```
 
-@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GoalCriterionMetric value)?  metric,TResult? Function( GoalCriterionHabit value)?  habit,TResult? Function( GoalCriterionMeasurable value)?  measurable,TResult? Function( GoalCriterionAllOf value)?  allOf,TResult? Function( GoalCriterionAnyOf value)?  anyOf,TResult? Function( GoalCriterionAtLeastCount value)?  atLeastCount,}){
+@optionalTypeArgs TResult? mapOrNull<TResult extends Object?>({TResult? Function( GoalCriterionMetric value)?  metric,TResult? Function( GoalCriterionHabit value)?  habit,TResult? Function( GoalCriterionMeasurable value)?  measurable,TResult? Function( GoalCriterionCategoryTime value)?  categoryTime,TResult? Function( GoalCriterionAllOf value)?  allOf,TResult? Function( GoalCriterionAnyOf value)?  anyOf,TResult? Function( GoalCriterionAtLeastCount value)?  atLeastCount,}){
 final _that = this;
 switch (_that) {
 case GoalCriterionMetric() when metric != null:
 return metric(_that);case GoalCriterionHabit() when habit != null:
 return habit(_that);case GoalCriterionMeasurable() when measurable != null:
-return measurable(_that);case GoalCriterionAllOf() when allOf != null:
+return measurable(_that);case GoalCriterionCategoryTime() when categoryTime != null:
+return categoryTime(_that);case GoalCriterionAllOf() when allOf != null:
 return allOf(_that);case GoalCriterionAnyOf() when anyOf != null:
 return anyOf(_that);case GoalCriterionAtLeastCount() when atLeastCount != null:
 return atLeastCount(_that);case _:
@@ -205,12 +478,13 @@ return atLeastCount(_that);case _:
 /// }
 /// ```
 
-@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  metric,TResult Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)?  habit,TResult Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  measurable,TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  allOf,TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  anyOf,TResult Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)?  atLeastCount,required TResult orElse(),}) {final _that = this;
+@optionalTypeArgs TResult maybeWhen<TResult extends Object?>({TResult Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  metric,TResult Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)?  habit,TResult Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  measurable,TResult Function( String criterionId,  String categoryId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  GoalDailyTimeRange? dailyTimeRange,  String? title)?  categoryTime,TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  allOf,TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  anyOf,TResult Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)?  atLeastCount,required TResult orElse(),}) {final _that = this;
 switch (_that) {
 case GoalCriterionMetric() when metric != null:
 return metric(_that.criterionId,_that.dataType,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionHabit() when habit != null:
 return habit(_that.criterionId,_that.habitId,_that.window,_that.targetCount,_that.title);case GoalCriterionMeasurable() when measurable != null:
-return measurable(_that.criterionId,_that.dataTypeId,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionAllOf() when allOf != null:
+return measurable(_that.criterionId,_that.dataTypeId,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionCategoryTime() when categoryTime != null:
+return categoryTime(_that.criterionId,_that.categoryId,_that.window,_that.aggregation,_that.targetHours,_that.direction,_that.dailyTimeRange,_that.title);case GoalCriterionAllOf() when allOf != null:
 return allOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAnyOf() when anyOf != null:
 return anyOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAtLeastCount() when atLeastCount != null:
 return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title);case _:
@@ -231,12 +505,13 @@ return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title
 /// }
 /// ```
 
-@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)  metric,required TResult Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)  habit,required TResult Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)  measurable,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)  allOf,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)  anyOf,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)  atLeastCount,}) {final _that = this;
+@optionalTypeArgs TResult when<TResult extends Object?>({required TResult Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)  metric,required TResult Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)  habit,required TResult Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)  measurable,required TResult Function( String criterionId,  String categoryId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  GoalDailyTimeRange? dailyTimeRange,  String? title)  categoryTime,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)  allOf,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  String? title)  anyOf,required TResult Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)  atLeastCount,}) {final _that = this;
 switch (_that) {
 case GoalCriterionMetric():
 return metric(_that.criterionId,_that.dataType,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionHabit():
 return habit(_that.criterionId,_that.habitId,_that.window,_that.targetCount,_that.title);case GoalCriterionMeasurable():
-return measurable(_that.criterionId,_that.dataTypeId,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionAllOf():
+return measurable(_that.criterionId,_that.dataTypeId,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionCategoryTime():
+return categoryTime(_that.criterionId,_that.categoryId,_that.window,_that.aggregation,_that.targetHours,_that.direction,_that.dailyTimeRange,_that.title);case GoalCriterionAllOf():
 return allOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAnyOf():
 return anyOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAtLeastCount():
 return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title);}
@@ -253,12 +528,13 @@ return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title
 /// }
 /// ```
 
-@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  metric,TResult? Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)?  habit,TResult? Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  measurable,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  allOf,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  anyOf,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)?  atLeastCount,}) {final _that = this;
+@optionalTypeArgs TResult? whenOrNull<TResult extends Object?>({TResult? Function( String criterionId,  String dataType,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  metric,TResult? Function( String criterionId,  String habitId,  GoalWindow window,  int targetCount,  String? title)?  habit,TResult? Function( String criterionId,  String dataTypeId,  GoalWindow window,  GoalAggregation aggregation,  num target,  GoalDirection direction,  String? title)?  measurable,TResult? Function( String criterionId,  String categoryId,  GoalWindow window,  GoalAggregation aggregation,  num targetHours,  GoalDirection direction,  GoalDailyTimeRange? dailyTimeRange,  String? title)?  categoryTime,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  allOf,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  String? title)?  anyOf,TResult? Function( String criterionId,  List<GoalCriterion> criteria,  int successes,  String? title)?  atLeastCount,}) {final _that = this;
 switch (_that) {
 case GoalCriterionMetric() when metric != null:
 return metric(_that.criterionId,_that.dataType,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionHabit() when habit != null:
 return habit(_that.criterionId,_that.habitId,_that.window,_that.targetCount,_that.title);case GoalCriterionMeasurable() when measurable != null:
-return measurable(_that.criterionId,_that.dataTypeId,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionAllOf() when allOf != null:
+return measurable(_that.criterionId,_that.dataTypeId,_that.window,_that.aggregation,_that.target,_that.direction,_that.title);case GoalCriterionCategoryTime() when categoryTime != null:
+return categoryTime(_that.criterionId,_that.categoryId,_that.window,_that.aggregation,_that.targetHours,_that.direction,_that.dailyTimeRange,_that.title);case GoalCriterionAllOf() when allOf != null:
 return allOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAnyOf() when anyOf != null:
 return anyOf(_that.criterionId,_that.criteria,_that.title);case GoalCriterionAtLeastCount() when atLeastCount != null:
 return atLeastCount(_that.criterionId,_that.criteria,_that.successes,_that.title);case _:
@@ -543,6 +819,114 @@ $GoalWindowCopyWith<$Res> get window {
   
   return $GoalWindowCopyWith<$Res>(_self.window, (value) {
     return _then(_self.copyWith(window: value));
+  });
+}
+}
+
+/// @nodoc
+@JsonSerializable()
+
+class GoalCriterionCategoryTime extends GoalCriterion {
+  const GoalCriterionCategoryTime({required this.criterionId, required this.categoryId, required this.window, required this.aggregation, required this.targetHours, this.direction = GoalDirection.atMost, this.dailyTimeRange, this.title, final  String? $type}): $type = $type ?? 'categoryTime',super._();
+  factory GoalCriterionCategoryTime.fromJson(Map<String, dynamic> json) => _$GoalCriterionCategoryTimeFromJson(json);
+
+@override final  String criterionId;
+ final  String categoryId;
+ final  GoalWindow window;
+ final  GoalAggregation aggregation;
+ final  num targetHours;
+@JsonKey() final  GoalDirection direction;
+ final  GoalDailyTimeRange? dailyTimeRange;
+@override final  String? title;
+
+@JsonKey(name: 'runtimeType')
+final String $type;
+
+
+/// Create a copy of GoalCriterion
+/// with the given fields replaced by the non-null parameter values.
+@override @JsonKey(includeFromJson: false, includeToJson: false)
+@pragma('vm:prefer-inline')
+$GoalCriterionCategoryTimeCopyWith<GoalCriterionCategoryTime> get copyWith => _$GoalCriterionCategoryTimeCopyWithImpl<GoalCriterionCategoryTime>(this, _$identity);
+
+@override
+Map<String, dynamic> toJson() {
+  return _$GoalCriterionCategoryTimeToJson(this, );
+}
+
+@override
+bool operator ==(Object other) {
+  return identical(this, other) || (other.runtimeType == runtimeType&&other is GoalCriterionCategoryTime&&(identical(other.criterionId, criterionId) || other.criterionId == criterionId)&&(identical(other.categoryId, categoryId) || other.categoryId == categoryId)&&(identical(other.window, window) || other.window == window)&&(identical(other.aggregation, aggregation) || other.aggregation == aggregation)&&(identical(other.targetHours, targetHours) || other.targetHours == targetHours)&&(identical(other.direction, direction) || other.direction == direction)&&(identical(other.dailyTimeRange, dailyTimeRange) || other.dailyTimeRange == dailyTimeRange)&&(identical(other.title, title) || other.title == title));
+}
+
+@JsonKey(includeFromJson: false, includeToJson: false)
+@override
+int get hashCode => Object.hash(runtimeType,criterionId,categoryId,window,aggregation,targetHours,direction,dailyTimeRange,title);
+
+@override
+String toString() {
+  return 'GoalCriterion.categoryTime(criterionId: $criterionId, categoryId: $categoryId, window: $window, aggregation: $aggregation, targetHours: $targetHours, direction: $direction, dailyTimeRange: $dailyTimeRange, title: $title)';
+}
+
+
+}
+
+/// @nodoc
+abstract mixin class $GoalCriterionCategoryTimeCopyWith<$Res> implements $GoalCriterionCopyWith<$Res> {
+  factory $GoalCriterionCategoryTimeCopyWith(GoalCriterionCategoryTime value, $Res Function(GoalCriterionCategoryTime) _then) = _$GoalCriterionCategoryTimeCopyWithImpl;
+@override @useResult
+$Res call({
+ String criterionId, String categoryId, GoalWindow window, GoalAggregation aggregation, num targetHours, GoalDirection direction, GoalDailyTimeRange? dailyTimeRange, String? title
+});
+
+
+$GoalWindowCopyWith<$Res> get window;$GoalDailyTimeRangeCopyWith<$Res>? get dailyTimeRange;
+
+}
+/// @nodoc
+class _$GoalCriterionCategoryTimeCopyWithImpl<$Res>
+    implements $GoalCriterionCategoryTimeCopyWith<$Res> {
+  _$GoalCriterionCategoryTimeCopyWithImpl(this._self, this._then);
+
+  final GoalCriterionCategoryTime _self;
+  final $Res Function(GoalCriterionCategoryTime) _then;
+
+/// Create a copy of GoalCriterion
+/// with the given fields replaced by the non-null parameter values.
+@override @pragma('vm:prefer-inline') $Res call({Object? criterionId = null,Object? categoryId = null,Object? window = null,Object? aggregation = null,Object? targetHours = null,Object? direction = null,Object? dailyTimeRange = freezed,Object? title = freezed,}) {
+  return _then(GoalCriterionCategoryTime(
+criterionId: null == criterionId ? _self.criterionId : criterionId // ignore: cast_nullable_to_non_nullable
+as String,categoryId: null == categoryId ? _self.categoryId : categoryId // ignore: cast_nullable_to_non_nullable
+as String,window: null == window ? _self.window : window // ignore: cast_nullable_to_non_nullable
+as GoalWindow,aggregation: null == aggregation ? _self.aggregation : aggregation // ignore: cast_nullable_to_non_nullable
+as GoalAggregation,targetHours: null == targetHours ? _self.targetHours : targetHours // ignore: cast_nullable_to_non_nullable
+as num,direction: null == direction ? _self.direction : direction // ignore: cast_nullable_to_non_nullable
+as GoalDirection,dailyTimeRange: freezed == dailyTimeRange ? _self.dailyTimeRange : dailyTimeRange // ignore: cast_nullable_to_non_nullable
+as GoalDailyTimeRange?,title: freezed == title ? _self.title : title // ignore: cast_nullable_to_non_nullable
+as String?,
+  ));
+}
+
+/// Create a copy of GoalCriterion
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$GoalWindowCopyWith<$Res> get window {
+  
+  return $GoalWindowCopyWith<$Res>(_self.window, (value) {
+    return _then(_self.copyWith(window: value));
+  });
+}/// Create a copy of GoalCriterion
+/// with the given fields replaced by the non-null parameter values.
+@override
+@pragma('vm:prefer-inline')
+$GoalDailyTimeRangeCopyWith<$Res>? get dailyTimeRange {
+    if (_self.dailyTimeRange == null) {
+    return null;
+  }
+
+  return $GoalDailyTimeRangeCopyWith<$Res>(_self.dailyTimeRange!, (value) {
+    return _then(_self.copyWith(dailyTimeRange: value));
   });
 }
 }

@@ -6,6 +6,18 @@ part of 'goal_criterion.dart';
 // JsonSerializableGenerator
 // **************************************************************************
 
+_GoalDailyTimeRange _$GoalDailyTimeRangeFromJson(Map<String, dynamic> json) =>
+    _GoalDailyTimeRange(
+      startMinute: (json['startMinute'] as num).toInt(),
+      endMinute: (json['endMinute'] as num).toInt(),
+    );
+
+Map<String, dynamic> _$GoalDailyTimeRangeToJson(_GoalDailyTimeRange instance) =>
+    <String, dynamic>{
+      'startMinute': instance.startMinute,
+      'endMinute': instance.endMinute,
+    };
+
 GoalCriterionMetric _$GoalCriterionMetricFromJson(Map<String, dynamic> json) =>
     GoalCriterionMetric(
       criterionId: json['criterionId'] as String,
@@ -89,6 +101,40 @@ Map<String, dynamic> _$GoalCriterionMeasurableToJson(
   'aggregation': _$GoalAggregationEnumMap[instance.aggregation]!,
   'target': instance.target,
   'direction': _$GoalDirectionEnumMap[instance.direction]!,
+  'title': instance.title,
+  'runtimeType': instance.$type,
+};
+
+GoalCriterionCategoryTime _$GoalCriterionCategoryTimeFromJson(
+  Map<String, dynamic> json,
+) => GoalCriterionCategoryTime(
+  criterionId: json['criterionId'] as String,
+  categoryId: json['categoryId'] as String,
+  window: GoalWindow.fromJson(json['window'] as Map<String, dynamic>),
+  aggregation: $enumDecode(_$GoalAggregationEnumMap, json['aggregation']),
+  targetHours: json['targetHours'] as num,
+  direction:
+      $enumDecodeNullable(_$GoalDirectionEnumMap, json['direction']) ??
+      GoalDirection.atMost,
+  dailyTimeRange: json['dailyTimeRange'] == null
+      ? null
+      : GoalDailyTimeRange.fromJson(
+          json['dailyTimeRange'] as Map<String, dynamic>,
+        ),
+  title: json['title'] as String?,
+  $type: json['runtimeType'] as String?,
+);
+
+Map<String, dynamic> _$GoalCriterionCategoryTimeToJson(
+  GoalCriterionCategoryTime instance,
+) => <String, dynamic>{
+  'criterionId': instance.criterionId,
+  'categoryId': instance.categoryId,
+  'window': instance.window,
+  'aggregation': _$GoalAggregationEnumMap[instance.aggregation]!,
+  'targetHours': instance.targetHours,
+  'direction': _$GoalDirectionEnumMap[instance.direction]!,
+  'dailyTimeRange': instance.dailyTimeRange,
   'title': instance.title,
   'runtimeType': instance.$type,
 };

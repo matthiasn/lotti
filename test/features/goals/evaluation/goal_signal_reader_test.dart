@@ -5,13 +5,16 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
+import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
 
 import '../../../mocks/mocks.dart';
 
 void main() {
   late MockJournalDb journalDb;
+  late MockTimeService timeService;
   late GoalSignalReader reader;
 
   final reference = DateTime(2026, 8, 8, 14, 30);
@@ -59,7 +62,13 @@ void main() {
 
   setUp(() {
     journalDb = MockJournalDb();
-    reader = GoalSignalReader(journalDb: journalDb);
+    timeService = MockTimeService();
+    when(timeService.getCurrent).thenReturn(null);
+    when(() => timeService.linkedFrom).thenReturn(null);
+    reader = GoalSignalReader(
+      journalDb: journalDb,
+      timeService: timeService,
+    );
     when(
       () => journalDb.getQuantitativeByType(
         type: any(named: 'type'),
@@ -513,4 +522,479 @@ void main() {
     ).captured;
     expect(captured.single, DateTime(2026, 7, 26));
   });
+
+  test(
+    'category time reuses Insights union semantics for all-day totals',
+    () async {
+      const criterion = GoalCriterion.categoryTime(
+        criterionId: 'coding-cap',
+        categoryId: 'vibe-coding',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 8,
+      );
+      when(
+        () => journalDb.insightsTimeRows(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          (
+            dateFrom: DateTime(2026, 8, 8, 18),
+            dateTo: DateTime(2026, 8, 8, 20),
+            categoryId: 'vibe-coding',
+          ),
+          (
+            dateFrom: DateTime(2026, 8, 8, 19),
+            dateTo: DateTime(2026, 8, 8, 21),
+            categoryId: 'vibe-coding',
+          ),
+          (
+            dateFrom: DateTime(2026, 8, 8, 17),
+            dateTo: DateTime(2026, 8, 8, 22),
+            categoryId: 'other',
+          ),
+        ],
+      );
+
+      final window = await reader.read(
+        criteria: criterion,
+        reference: reference,
+      );
+
+      expect(
+        window.categoryTimeDailyHours['coding-cap'],
+        {DateTime.utc(2026, 8, 8): 3},
+      );
+    },
+  );
+
+  test('category time replaces a persisted active timer prefix', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'coding-cap',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 2,
+    );
+    final startedAt = DateTime(2026, 8, 8, 22);
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        (
+          dateFrom: startedAt,
+          dateTo: DateTime(2026, 8, 8, 22, 15),
+          categoryId: 'vibe-coding',
+        ),
+      ],
+    );
+    when(
+      () => journalDb.getConfigFlag('private'),
+    ).thenAnswer((_) async => false);
+    final running = JournalEntity.journalEntry(
+      meta: Metadata(
+        id: 'running',
+        createdAt: startedAt,
+        updatedAt: startedAt,
+        dateFrom: startedAt,
+        dateTo: startedAt,
+        categoryId: 'entry-category',
+      ),
+    );
+    final linkedTask = JournalEntity.task(
+      meta: Metadata(
+        id: 'task',
+        createdAt: startedAt,
+        updatedAt: startedAt,
+        dateFrom: startedAt,
+        dateTo: startedAt,
+        categoryId: 'vibe-coding',
+      ),
+      data: TaskData(
+        status: TaskStatus.open(
+          id: 'status',
+          createdAt: startedAt,
+          utcOffset: 0,
+        ),
+        dateFrom: startedAt,
+        dateTo: startedAt,
+        statusHistory: const [],
+        title: 'Coding',
+      ),
+    );
+    when(timeService.getCurrent).thenReturn(running);
+    when(() => timeService.linkedFrom).thenReturn(linkedTask);
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: DateTime(2026, 8, 8, 23, 30),
+    );
+
+    expect(
+      window.categoryTimeDailyHours['coding-cap'],
+      {DateTime.utc(2026, 8, 8): 1.5},
+    );
+    expect(
+      window.categoryTimeSessionsByCategory['vibe-coding'],
+      hasLength(1),
+      reason: 'the persisted timer prefix must not duplicate raw evidence',
+    );
+    expect(
+      window.categoryTimeSessionsByCategory['vibe-coding']?.single.dateTo,
+      DateTime(2026, 8, 8, 23, 30),
+      reason: 'the in-memory timer endpoint must advance beyond persisted data',
+    );
+  });
+
+  test('a hidden private active timer contributes no category time', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'coding-cap',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 2,
+    );
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => journalDb.getConfigFlag('private'),
+    ).thenAnswer((_) async => false);
+    final startedAt = DateTime(2026, 8, 8, 22);
+    when(timeService.getCurrent).thenReturn(
+      JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'private-running',
+          createdAt: startedAt,
+          updatedAt: startedAt,
+          dateFrom: startedAt,
+          dateTo: startedAt,
+          categoryId: 'vibe-coding',
+          private: true,
+        ),
+      ),
+    );
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: DateTime(2026, 8, 8, 23),
+    );
+
+    expect(window.categoryTimeDailyHours['coding-cap'], isEmpty);
+    verify(() => journalDb.getConfigFlag('private')).called(1);
+  });
+
+  test('an unadvanced active timer remains zero-duration evidence', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'coding-cap',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 2,
+    );
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => []);
+    final startedAt = DateTime(2026, 8, 8, 22);
+    when(timeService.getCurrent).thenReturn(
+      JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'just-started',
+          createdAt: startedAt,
+          updatedAt: startedAt,
+          dateFrom: startedAt,
+          dateTo: startedAt,
+          categoryId: 'vibe-coding',
+        ),
+      ),
+    );
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: startedAt,
+    );
+
+    expect(window.categoryTimeDailyHours['coding-cap'], isEmpty);
+    expect(window.categoryTimeSessionsByCategory, isEmpty);
+  });
+
+  test(
+    'category session evidence spans goal lifetime without widening evaluation',
+    () async {
+      const criterion = GoalCriterion.categoryTime(
+        criterionId: 'coding-today',
+        categoryId: 'vibe-coding',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 2,
+      );
+      when(
+        () => journalDb.insightsTimeRows(
+          start: any(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          (
+            dateFrom: DateTime(2026, 8),
+            dateTo: DateTime(2026, 8, 1, 1),
+            categoryId: 'vibe-coding',
+          ),
+          (
+            dateFrom: DateTime(2026, 8, 8, 10),
+            dateTo: DateTime(2026, 8, 8, 11, 30),
+            categoryId: 'vibe-coding',
+          ),
+        ],
+      );
+
+      final window = await reader.read(
+        criteria: criterion,
+        reference: reference,
+        categorySessionEvidenceStart: DateTime(2026, 8),
+      );
+
+      final captured = verify(
+        () => journalDb.insightsTimeRows(
+          start: captureAny(named: 'start'),
+          end: any(named: 'end'),
+        ),
+      ).captured;
+      expect(captured.single, DateTime(2026, 8));
+      expect(
+        window.categoryTimeSessionsByCategory['vibe-coding'],
+        hasLength(2),
+      );
+      expect(window.categoryTimeEvidenceStart, DateTime(2026, 8));
+      expect(
+        window.categoryTimeDailyHours['coding-today'],
+        {DateTime.utc(2026, 8, 8): 1.5},
+        reason: 'historical pattern evidence must not alter the authored day',
+      );
+    },
+  );
+
+  test(
+    'sleep duration uses the health pipeline minutes-to-hours semantics',
+    () async {
+      const sleep = GoalCriterion.metric(
+        criterionId: 'sleep',
+        dataType: 'HealthDataType.SLEEP_ASLEEP',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 7.5,
+      );
+      when(
+        () => journalDb.getQuantitativeByType(
+          type: 'HealthDataType.SLEEP_ASLEEP',
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer(
+        (_) async => [
+          JournalEntity.quantitative(
+            meta: meta(DateTime(2026, 8, 8, 7)),
+            data: QuantitativeData.discreteQuantityData(
+              dateFrom: DateTime(2026, 8, 8, 7),
+              dateTo: DateTime(2026, 8, 8, 7),
+              value: 300,
+              dataType: 'HealthDataType.SLEEP_ASLEEP',
+              unit: 'min',
+            ),
+          ),
+          JournalEntity.quantitative(
+            meta: meta(DateTime(2026, 8, 8, 8)),
+            data: QuantitativeData.discreteQuantityData(
+              dateFrom: DateTime(2026, 8, 8, 8),
+              dateTo: DateTime(2026, 8, 8, 8),
+              value: 150,
+              dataType: 'HealthDataType.SLEEP_ASLEEP',
+              unit: 'min',
+            ),
+          ),
+        ],
+      );
+
+      final window = await reader.read(criteria: sleep, reference: reference);
+
+      expect(
+        window.quantitativeDailySums['HealthDataType.SLEEP_ASLEEP'],
+        {DateTime.utc(2026, 8, 8): 7.5},
+      );
+    },
+  );
+
+  test('cross-midnight category band clips each local day precisely', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'late-coding',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.sum,
+      targetHours: 0,
+      dailyTimeRange: GoalDailyTimeRange(
+        startMinute: 21 * 60 + 30,
+        endMinute: 7 * 60,
+      ),
+    );
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        (
+          dateFrom: DateTime(2026, 8, 7, 20),
+          dateTo: DateTime(2026, 8, 8, 8),
+          categoryId: 'vibe-coding',
+        ),
+        (
+          dateFrom: DateTime(2026, 8, 8, 12),
+          dateTo: DateTime(2026, 8, 8, 13),
+          categoryId: 'vibe-coding',
+        ),
+      ],
+    );
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: reference,
+    );
+
+    expect(
+      window.categoryTimeDailyHours['late-coding'],
+      {
+        DateTime.utc(2026, 8, 7): 2.5,
+        DateTime.utc(2026, 8, 8): 7,
+      },
+    );
+    final sessions =
+        window.categoryTimeSessionsByCategory['vibe-coding'] ?? const [];
+    expect(sessions, hasLength(2));
+    expect(sessions.first.dateFrom, DateTime(2026, 8, 7, 20));
+    expect(sessions.last.dateFrom, DateTime(2026, 8, 8, 12));
+    expect(
+      window.categoryTimeDailyHours['late-coding']![DateTime.utc(2026, 8, 8)],
+      7,
+      reason:
+          'the model sees the midday session, but the curfew does not count it',
+    );
+  });
+
+  test('a cutoff is half-open: time ending at 22:00 is allowed', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'after-ten',
+      categoryId: 'screen-time',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 0,
+      dailyTimeRange: GoalDailyTimeRange(
+        startMinute: 22 * 60,
+        endMinute: 0,
+      ),
+    );
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        (
+          dateFrom: DateTime(2026, 8, 8, 21),
+          dateTo: DateTime(2026, 8, 8, 22),
+          categoryId: 'screen-time',
+        ),
+        (
+          dateFrom: DateTime(2026, 8, 8, 22),
+          dateTo: DateTime(2026, 8, 8, 22, 30),
+          categoryId: 'screen-time',
+        ),
+      ],
+    );
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: reference,
+    );
+
+    expect(
+      window.categoryTimeDailyHours['after-ten'],
+      {DateTime.utc(2026, 8, 8): 0.5},
+    );
+  });
+
+  test('a same-day UTC band clips tracked time to both endpoints', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'workday-coding',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 8,
+      dailyTimeRange: GoalDailyTimeRange(
+        startMinute: 9 * 60,
+        endMinute: 17 * 60,
+      ),
+    );
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        (
+          dateFrom: DateTime.utc(2026, 8, 8, 8),
+          dateTo: DateTime.utc(2026, 8, 8, 18),
+          categoryId: 'vibe-coding',
+        ),
+      ],
+    );
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: DateTime.utc(2026, 8, 8, 20),
+    );
+
+    expect(
+      window.categoryTimeDailyHours['workday-coding'],
+      {DateTime.utc(2026, 8, 8): 8},
+      reason: 'only the authored 09:00–17:00 UTC band should count',
+    );
+  });
+
+  test(
+    'category time subscribes to every mutation that can change attribution',
+    () {
+      const criterion = GoalCriterion.categoryTime(
+        criterionId: 'coding-cap',
+        categoryId: 'vibe-coding',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 8,
+      );
+
+      expect(
+        goalSignalTriggerTokens(criterion),
+        {
+          textEntryNotification,
+          linkNotification,
+          taskNotification,
+          categoriesNotification,
+          privateToggleNotification,
+        },
+      );
+    },
+  );
 }
