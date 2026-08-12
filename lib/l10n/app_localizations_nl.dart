@@ -6010,6 +6010,56 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalAssessmentHistoryTitle => 'Dagelijkse reflecties';
+
+  @override
+  String get goalAssessmentMeasuredReadOnly =>
+      'Gemeten door Lotti — dit deel kan niet worden bewerkt.';
+
+  @override
+  String get goalAssessmentMeasuredTitle => 'Wat Lotti heeft gemeten';
+
+  @override
+  String get goalAssessmentMet => 'Ontmoet';
+
+  @override
+  String get goalAssessmentMissed => 'Gemist';
+
+  @override
+  String get goalAssessmentMixed => 'Gemengd';
+
+  @override
+  String get goalAssessmentNote => 'Opmerking (optioneel)';
+
+  @override
+  String get goalAssessmentPerDimension =>
+      'Beoordeel individuele afmetingen (optioneel)';
+
+  @override
+  String get goalAssessmentRecorded => 'Opgenomen';
+
+  @override
+  String goalAssessmentRecordFor(String dayName) {
+    return 'Opnemen voor $dayName';
+  }
+
+  @override
+  String get goalAssessmentReflectToday => 'Denk na over vandaag';
+
+  @override
+  String goalAssessmentSpecVersion(int version) {
+    return 'Doel v$version toegepast';
+  }
+
+  @override
+  String goalAssessmentSuggestedProvenance(String agentName) {
+    return '$agentName stelde het voor, jij accepteerde';
+  }
+
+  @override
+  String get goalAssessmentUserProvenance => 'Beoordeeld door jou';
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent% van het doel';
   }
@@ -6102,6 +6152,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalCoarseHealthRestarting => 'Begint opnieuw';
 
   @override
+  String goalCompositeProgressSummary(
+    int metCount,
+    int dimensionCount,
+    int requiredCount,
+  ) {
+    return 'Gisteren voldeden $metCount van $dimensionCount dimensies · $requiredCount vereist.';
+  }
+
+  @override
+  String get goalCompositeProgressTitle => 'Het hele doel';
+
+  @override
   String get goalCreateFailed =>
       'Het doel kon niet worden opgeslagen — probeer het opnieuw.';
 
@@ -6190,7 +6252,106 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Volgt';
 
   @override
+  String get goalDimensionCategoryTimeSource => 'Bijgehouden categorietijd';
+
+  @override
+  String goalDimensionHabitReading(int currentCount, int targetCount) {
+    return '$currentCount van $targetCount in dit venster';
+  }
+
+  @override
+  String get goalDimensionHabitSource => 'Gewoontevoltooiingen';
+
+  @override
+  String get goalDimensionHealthSource => 'Gezondheidsgegevens';
+
+  @override
+  String get goalDimensionMeasurableSource => 'Jouw meetbare';
+
+  @override
+  String goalDimensionMetricReading(String currentValue, String targetValue) {
+    return '$currentValue van $targetValue';
+  }
+
+  @override
+  String goalDimensionMetricReadingWithUnit(
+    String currentValue,
+    String targetValue,
+    String unitName,
+  ) {
+    return '$currentValue van $targetValue $unitName';
+  }
+
+  @override
+  String get goalDimensionNeedsAttentionNote =>
+      'Deze dimensie heeft aandacht nodig; zijn eigen bewijsmateriaal blijft zichtbaar.';
+
+  @override
+  String get goalDimensionNeedsAttentionStatus => 'Heeft aandacht nodig';
+
+  @override
+  String get goalDimensionNoDataNote =>
+      'Er zijn nog niet voldoende gegevens om deze dimensie te beoordelen.';
+
+  @override
+  String get goalDimensionOnTrackNote =>
+      'Deze dimensie ligt momenteel op koers.';
+
+  @override
+  String get goalDimensionOnTrackStatus => 'Op koers';
+
+  @override
+  String get goalDimensionRecordedByAgent =>
+      'Door u gezegd en na uw goedkeuring opgenomen.';
+
+  @override
+  String goalDimensionRecordedByAgentDetails(
+    String agentName,
+    String recordedAt,
+  ) {
+    return 'Door jou gezegd, opgenomen door $agentName, $recordedAt';
+  }
+
+  @override
+  String goalDominantIssueBadge(String dimensionName) {
+    return '$dimensionName heeft aandacht nodig';
+  }
+
+  @override
+  String get goalFormAddDimension => 'Voeg dimensie toe';
+
+  @override
+  String get goalFormBloodPressureSource =>
+      'Systolisch en diastolisch · mmHg · 7-daags gemiddelde';
+
+  @override
   String get goalFormChooseHabit => 'Kies een bestaande gewoonte';
+
+  @override
+  String get goalFormCompositeAll => 'Alle afmetingen';
+
+  @override
+  String get goalFormCompositeAllHint =>
+      'Strikt – aan elke dimensie moet worden voldaan.';
+
+  @override
+  String get goalFormCompositeAny => 'Elke dimensie';
+
+  @override
+  String get goalFormCompositeAnyHint =>
+      'Losste - één met-dimensie is voldoende.';
+
+  @override
+  String goalFormCompositeAtLeast(int requiredCount, int dimensionCount) {
+    return 'Minstens $requiredCount van $dimensionCount';
+  }
+
+  @override
+  String get goalFormCompositeAtLeastHint =>
+      'Kies aan hoeveel dimensies moet worden voldaan.';
+
+  @override
+  String get goalFormCompositeRule => 'Hoe dit doel tot stand komt';
 
   @override
   String get goalFormConfirmTitle => 'Maak kennis met je agent';
@@ -6207,6 +6368,12 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormDirectionAtLeast => 'Minstens';
+
+  @override
+  String get goalFormDirectionAtMost => 'Maximaal';
 
   @override
   String get goalFormEditTitle => 'Doel bewerken';
@@ -6238,6 +6405,38 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormHabitSignal => 'gewoonte afvinken';
 
   @override
+  String get goalFormHealthBloodPressureDiastolic => 'Diastolische bloeddruk';
+
+  @override
+  String get goalFormHealthBloodPressureSystolic => 'Systolische bloeddruk';
+
+  @override
+  String goalFormHealthCadence(
+    String healthName,
+    String direction,
+    String target,
+    String unitName,
+  ) {
+    return '$healthName: 7-daags gemiddelde $direction $target $unitName';
+  }
+
+  @override
+  String get goalFormHealthData => 'Gezondheidsgegevens';
+
+  @override
+  String goalFormHealthSource(String unitName) {
+    return 'Gezondheidsgegevens · $unitName · 7-daags gemiddelde';
+  }
+
+  @override
+  String goalFormHealthTarget(String unitName) {
+    return 'Doel ($unitName)';
+  }
+
+  @override
+  String get goalFormHealthWeight => 'Gewicht';
+
+  @override
   String get goalFormIncreaseTarget => 'Weekdoel verhogen';
 
   @override
@@ -6260,6 +6459,16 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalFormMappingTitle => 'Dit kan ik volgen';
+
+  @override
+  String goalFormMeasurableCadence(String measurableName, String target) {
+    return '$measurableName: $target per voortschrijdende week';
+  }
+
+  @override
+  String goalFormMeasurableSource(String unitName) {
+    return 'Jouw meetbare · $unitName';
+  }
 
   @override
   String get goalFormNoHabits =>
@@ -6334,6 +6543,9 @@ class AppLocalizationsNl extends AppLocalizations {
   }
 
   @override
+  String get goalFormYourMeasurables => 'Jouw meetbare gegevens';
+
+  @override
   String get goalHealthTrendDown => 'Daalt';
 
   @override
@@ -6371,6 +6583,14 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Vervangen';
+
+  @override
+  String goalPatternBusiestHour(String hour) {
+    return 'De meeste sessies beginnen rond $hour:00. Open Insights voor diepere analyses.';
+  }
+
+  @override
+  String get goalPatternTitle => 'Timingpatroon';
 
   @override
   String get goalPendingProposalBadge => 'Voorstel wacht op beoordeling';
@@ -6438,6 +6658,61 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalProgressToday => 'vandaag';
 
   @override
+  String get goalRecordOfferConflict =>
+      'Je hebt dit op één van deze dagen al meetbaar vastgelegd. Vraag wat u moet bewaren voordat u iets opneemt.';
+
+  @override
+  String get goalRecordOfferEstimatedSplit =>
+      'Geschatte splitsing: bewerk indien nodig';
+
+  @override
+  String get goalRecordOfferIntro =>
+      'Ik heb een hoeveelheid gevonden in wat je zei. Controleer de waarden voordat er iets wordt vastgelegd.';
+
+  @override
+  String get goalRecordOfferInvalidValue =>
+      'Voer een waarde in die groter is dan nul.';
+
+  @override
+  String get goalRecordOfferNothingSelected =>
+      'Kies ten minste één rij om op te nemen.';
+
+  @override
+  String goalRecordOfferOverline(String agentName, String measurableName) {
+    return '$agentName STELT VOOR · VASTLEGGEN IN $measurableName';
+  }
+
+  @override
+  String goalRecordOfferProvenance(String agentName) {
+    return 'Door jou gezegd, opgenomen door $agentName';
+  }
+
+  @override
+  String goalRecordOfferReceipt(int entryCount, String agentName) {
+    String _temp0 = intl.Intl.pluralLogic(
+      entryCount,
+      locale: localeName,
+      other: '$entryCount invoeren',
+      one: '1 invoer',
+    );
+    return 'Opgenomen · $_temp0 · door jou gezegd, opgenomen door $agentName';
+  }
+
+  @override
+  String goalRecordOfferRecordMany(int entryCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      entryCount,
+      locale: localeName,
+      other: '$entryCount invoeren',
+      one: '1 invoer',
+    );
+    return '$_temp0 vastleggen';
+  }
+
+  @override
+  String get goalRecordOfferRecordOne => 'Invoer vastleggen';
+
+  @override
   String get goalStatusAchieved => 'Behaald';
 
   @override
@@ -6454,6 +6729,11 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalStatusRecovering => 'Herstellend';
+
+  @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Updates van de gekoppelde bron · $windowLabel';
+  }
 
   @override
   String get goalWindowCalendarMonth => 'kalendermaand';

@@ -118,6 +118,123 @@ void main() {
       expect(over.attainment, closeTo(2 / 3, 1e-9));
     });
 
+    test('a sustained downward trend projects an at-most target on track', () {
+      const weight = GoalCriterion.metric(
+        criterionId: 'weight',
+        dataType: 'HealthDataType.WEIGHT',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 80,
+        direction: GoalDirection.atMost,
+      );
+      final evaluation = evaluator.evaluate(
+        weight,
+        GoalSignalWindow(
+          quantitativeDailySums: {
+            'HealthDataType.WEIGHT': {
+              d(2): 88,
+              d(3): 87.5,
+              d(4): 87,
+              d(5): 86.5,
+              d(6): 86,
+              d(7): 85.5,
+              d(8): 85,
+            },
+          },
+        ),
+        saturday,
+      );
+
+      expect(evaluation.satisfied, isFalse);
+      expect(evaluation.onTrackByTrend, isTrue);
+      expect(evaluation.results['weight']!.projectedDaysToTarget, 10);
+    });
+
+    test('a flat or too-slow health trend is not projected on track', () {
+      const systolic = GoalCriterion.metric(
+        criterionId: 'systolic',
+        dataType: 'HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 120,
+        direction: GoalDirection.atMost,
+      );
+      final evaluation = evaluator.evaluate(
+        systolic,
+        GoalSignalWindow(
+          quantitativeDailySums: {
+            'HealthDataType.BLOOD_PRESSURE_SYSTOLIC': {
+              d(2): 140,
+              d(3): 140,
+              d(4): 139.9,
+              d(5): 139.9,
+              d(6): 139.8,
+              d(7): 139.8,
+              d(8): 139.7,
+            },
+          },
+        ),
+        saturday,
+      );
+
+      expect(evaluation.onTrackByTrend, isFalse);
+      expect(evaluation.results['systolic']!.projectedDaysToTarget, isNull);
+    });
+
+    test('trend projection needs at least four observed days', () {
+      const weight = GoalCriterion.metric(
+        criterionId: 'weight',
+        dataType: 'HealthDataType.WEIGHT',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 80,
+        direction: GoalDirection.atMost,
+      );
+      final evaluation = evaluator.evaluate(
+        weight,
+        GoalSignalWindow(
+          quantitativeDailySums: {
+            'HealthDataType.WEIGHT': {d(6): 84, d(7): 83, d(8): 82},
+          },
+        ),
+        saturday,
+      );
+
+      expect(evaluation.onTrackByTrend, isFalse);
+      expect(evaluation.results['weight']!.projectedDaysToTarget, isNull);
+    });
+
+    test('an upward health target uses the same bounded projection', () {
+      const weight = GoalCriterion.metric(
+        criterionId: 'weight',
+        dataType: 'HealthDataType.WEIGHT',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.dailySumThenAverage,
+        target: 85,
+      );
+      final evaluation = evaluator.evaluate(
+        weight,
+        GoalSignalWindow(
+          quantitativeDailySums: {
+            'HealthDataType.WEIGHT': {
+              d(2): 78,
+              d(3): 78.5,
+              d(4): 79,
+              d(5): 79.5,
+              d(6): 80,
+              d(7): 80.5,
+              d(8): 81,
+            },
+          },
+        ),
+        saturday,
+      );
+
+      expect(evaluation.satisfied, isFalse);
+      expect(evaluation.onTrackByTrend, isTrue);
+      expect(evaluation.results['weight']!.projectedDaysToTarget, 8);
+    });
+
     test('sum, count and max aggregate as named', () {
       final signals = steps({d(6): 4000, d(7): 6000, d(8): 9000});
 

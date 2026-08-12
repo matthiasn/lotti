@@ -138,20 +138,9 @@ void main() {
     expect(find.byIcon(Icons.trending_down_rounded), findsOneWidget);
     expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
 
-    // The arrows carry screen-reader labels — otherwise the only trend
-    // signal in the row is inaccessible. (The row's InkWell merges child
-    // semantics, so assert the Icon's own label rather than a standalone
-    // semantics node.)
-    expect(
-      tester
-          .widget<Icon>(find.byIcon(Icons.trending_down_rounded))
-          .semanticLabel,
-      'Trending down',
-    );
-    expect(
-      tester.widget<Icon>(find.byIcon(Icons.trending_up_rounded)).semanticLabel,
-      'Trending up',
-    );
+    // Trend is a separate visible field beside status, not an icon-only hint.
+    expect(find.text('Trending down'), findsOneWidget);
+    expect(find.text('Trending up'), findsOneWidget);
   });
 
   testWidgets(

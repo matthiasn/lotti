@@ -28,6 +28,9 @@ today:
   deterministic register from the same evidence snapshot used for prose, and a
   report rendered while a watched timer is still running remains stale until a
   settled wake. Habit and measured-data observations remain immediate.
+  Supported weight and blood-pressure levels also get a bounded 28-day trend
+  projection:
+  a favorable trajectory can be on-track while remaining explicitly unmet.
 - `GoalSpecValidator` (in `lib/classes/goal_spec_validator.dart`, beside
   the vocabulary it validates) — the decode-boundary gate, invoked from
   `AgentDomainEntity.fromJson` so every path (Matrix sync, storage reads)
@@ -45,9 +48,10 @@ on `AgentDomainEntity` (`goalSpecVersion`/`goalSpecHead`/`goalProgress`/
 Each goal-progress period retains one `GoalCriterionProgress` result per stable
 criterion id, so multi-dimensional goals remain accountable beneath the
 composite health result. Subjective daily ratings are deliberately not written
-into those recomputed rows: direct user assessments and agent-proposed
-assessments require a separate approval-aware register, with agent proposals
-reusing the existing ChangeSet/ChangeDecision flow.
+into those recomputed rows: direct Met/Mixed/Missed assessments are append-only
+agent-log actions bound to the active spec version, with optional notes and
+per-dimension ratings. The detail page presents those reflections as a separate
+history beside the measured evidence.
 
 The LLM tier (Phase B) runs too: `workflow/` holds the lease-elected
 escalation workflow, its code-owned contract, the tool dispatcher, and the
@@ -80,10 +84,12 @@ fallback visible beside the report, while future calendar cells remain
 read-only. On desktop the rolling-seven-day rows share one localized weekday
 header; desktop and phone use the handoff's compact day-cell rhythm, while the
 phone layout keeps each habit name and cadence together above its strip.
-Metric strips preserve the evaluator's configured aggregation
+Typed dimension cards preserve the evaluator's configured aggregation
 rather than treating every daily contribution as a standalone target;
 composite details retain every metric and measurable leaf that contributes to
-health. Their compact cells combine accomplishment and rolling success: a day
+health, show the authored composite rule, and keep per-dimension evidence
+visible when one source needs attention. Their compact cells combine
+accomplishment and rolling success: a day
 is green when the rolling criterion was satisfied then, or when the authored
 routine was fully completed on that day. Goal creation now follows the designed
 intention → observable mapping → confirmation flow. Each watched habit has its
@@ -95,9 +101,20 @@ unsupported or out-of-range criterion trees read-only, keep already-authored
 habit criteria when privacy hides them from the picker, and mint a new
 immutable spec version before re-registering signals and waking the agent. A
 stale editor returns to the refreshed goal instead of offering a retry that
-cannot succeed. Goal chat stays
+cannot succeed. The mapping stage can add linked measurables with their own
+rolling-week target, or add Weight and Blood pressure from the existing health
+catalog. Blood pressure expands to separate systolic and diastolic targets;
+each health leaf supports `at least` or `no more than`. Creation and owner
+editing share these controls and can author `all`, `any`, or `at least N`
+composites without flattening stable criterion ids. Goal chat stays
 purpose-bound: unrelated general-assistant requests are redirected to the goal
 rather than answered.
+When a user message explicitly names a positive quantity and unit belonging to
+a measurable linked to that goal, chat offers a review card rather than writing
+silently. The user can edit estimated per-day splits, reject individual rows,
+record the accepted rows through the normal measurement path, or dismiss the
+offer durably. Recorded entries retain their source-message decision and agent
+provenance, and the progress card marks them with a quill.
 Weekly reliability is shown only for authored rolling-seven-day habits rather
 than reinterpreting day, rolling-N, or calendar periods. Health and direction are separate signals, the standing report stays visible
 beside active banners, and lifetime AI consumption plus compute time use the

@@ -9,7 +9,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Goal-agent criteria are ready for refinement.** Goal agents remain
   configurable with linked habits and rolling seven-day step targets. Their
   evaluation foundation now preserves a separate accountable result for every
-  configured criterion.
+  configured criterion. Goal setup can now combine linked measurables with
+  habits and steps through all, any, or at-least-N rules, and both new and
+  existing goals can add weight or blood pressure with editable targets and
+  directions. Blood pressure keeps systolic and diastolic evidence separate.
+  A sustained health trend that projects reaching its target within four weeks
+  is shown as on track without falsely claiming the target has been achieved.
+  Goal details keep each
+  dimension's evidence visible, support separate daily Met/Mixed/Missed
+  reflections, and show the specific dimension that needs attention. When a
+  goal conversation contains an explicit quantity for a linked measurable, the
+  agent offers an editable record card; nothing is saved until it is approved,
+  and accepted values use the normal measurement history with visible agent
+  provenance.
 
 ## [1.0.6]
 ### Added

@@ -3,6 +3,8 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
@@ -89,159 +91,470 @@ class GoalProgressCard extends StatelessWidget {
   const GoalProgressCard({
     required this.progress,
     this.onHabitOutcomeSelected,
+    this.onReflectDay,
     super.key,
   });
 
   final GoalProgressView progress;
   final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
+  final ValueChanged<DateTime>? onReflectDay;
 
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final habitWindow = progress.habits.firstOrNull?.window;
-    final windows = [
-      for (final habit in progress.habits) habit.window,
-      for (final metric in progress.metrics) metric.window,
-    ];
-    final usesRollingWeek =
-        windows.isNotEmpty &&
-        windows.every(
-          (window) => window == const GoalWindow.rollingDays(count: 7),
-        );
-    return DesignSystemSectionCard(
-      child: LayoutBuilder(
-        builder: (context, constraints) {
-          final firstHabit = progress.habits.firstOrNull;
-          final showWeekdayHeader =
-              usesRollingWeek &&
-              firstHabit != null &&
-              firstHabit.days.length <= 7 &&
-              constraints.maxWidth >=
-                  _habitGridWideMinimum(context, firstHabit.days);
-          final compactHabitLayout =
-              usesRollingWeek && firstHabit != null && !showWeekdayHeader;
-          return Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              if (compactHabitLayout)
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        context.messages.goalProgressTitle,
-                        style: tokens.typography.styles.subtitle.subtitle2
-                            .copyWith(
-                              color: tokens.colors.text.highEmphasis,
-                            ),
-                      ),
-                    ),
-                    SizedBox(width: tokens.spacing.step3),
-                    Expanded(
-                      child: Text(
-                        context.messages.goalProgressCompactCaption,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      ),
-                    ),
-                  ],
-                )
-              else
-                Wrap(
-                  spacing: tokens.spacing.step3,
-                  runSpacing: tokens.spacing.step1,
-                  crossAxisAlignment: WrapCrossAlignment.center,
-                  children: [
-                    if (usesRollingWeek) ...[
-                      Text(
-                        context.messages.goalProgressTitle,
-                        style: tokens.typography.styles.subtitle.subtitle1
-                            .copyWith(
-                              color: tokens.colors.text.highEmphasis,
-                            ),
-                      ),
-                      Text(
-                        context.messages.goalProgressCaption,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      ),
-                    ] else if (progress.metric case final metric?)
-                      Text(
-                        _metricPeriodLabel(context, metric),
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      )
-                    else if (habitWindow != null && progress.habits.isNotEmpty)
-                      Text(
-                        _periodLabel(context, progress.habits.first.days),
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      ),
-                  ],
+    final patternMetric = progress.metrics
+        .where(
+          (metric) =>
+              metric.kind == GoalDimensionKind.categoryTime &&
+              metric.categoryTimeSessions.isNotEmpty,
+        )
+        .firstOrNull;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        if (progress.compositeRule != null) ...[
+          _CompositeProgressCard(progress: progress),
+          SizedBox(height: tokens.spacing.step3),
+        ],
+        for (final habit in progress.habits) ...[
+          _HabitDimensionCard(
+            habit: habit,
+            today: progress.today,
+            onHabitOutcomeSelected: onHabitOutcomeSelected,
+          ),
+          SizedBox(height: tokens.spacing.step3),
+        ],
+        for (final metric in progress.metrics) ...[
+          _MetricDimensionCard(metric: metric),
+          SizedBox(height: tokens.spacing.step3),
+        ],
+        if (patternMetric != null) ...[
+          _CategoryPatternCard(metric: patternMetric),
+          SizedBox(height: tokens.spacing.step3),
+        ],
+        if (onReflectDay != null)
+          DesignSystemSectionCard(
+            onTap: () => onReflectDay!(progress.today),
+            child: Row(
+              children: [
+                Icon(
+                  Icons.auto_awesome_outlined,
+                  color: tokens.colors.interactive.enabled,
                 ),
-              SizedBox(
-                height: compactHabitLayout
-                    ? tokens.spacing.step2
-                    : tokens.spacing.step3,
-              ),
-              if (showWeekdayHeader) ...[
-                _HabitWeekdayHeader(habit: progress.habits.first),
-                SizedBox(height: tokens.spacing.step2),
-              ],
-              if (progress.habits.isNotEmpty)
-                for (
-                  var index = 0;
-                  index < progress.habits.length;
-                  index++
-                ) ...[
-                  if (index > 0 && !showWeekdayHeader)
-                    SizedBox(
-                      height: compactHabitLayout
-                          ? tokens.spacing.step2
-                          : tokens.spacing.step3,
-                    ),
-                  _HabitProgressRow(
-                    habit: progress.habits[index],
-                    today: progress.today,
-                    onOutcomeSelected: onHabitOutcomeSelected,
+                SizedBox(width: tokens.spacing.step3),
+                Expanded(
+                  child: Text(
+                    context.messages.goalAssessmentReflectToday,
+                    style: tokens.typography.styles.body.bodySmall,
                   ),
-                ],
-              for (var index = 0; index < progress.metrics.length; index++) ...[
-                if (progress.habits.isNotEmpty || index > 0)
-                  SizedBox(height: tokens.spacing.step4),
-                _MetricProgressSeries(metric: progress.metrics[index]),
-              ],
-              if (progress.habits.isNotEmpty) ...[
-                SizedBox(
-                  height: compactHabitLayout
-                      ? tokens.spacing.step3
-                      : tokens.spacing.step4,
                 ),
-                const _ProgressLegend(),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: tokens.colors.text.lowEmphasis,
+                ),
               ],
-            ],
-          );
-        },
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _CompositeProgressCard extends StatelessWidget {
+  const _CompositeProgressCard({required this.progress});
+
+  final GoalProgressView progress;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final yesterday = progress.today.subtract(const Duration(days: 1));
+    final metYesterday = [
+      for (final habit in progress.habits)
+        habit.days.any(
+          (day) => DateUtils.isSameDay(day.day, yesterday) && day.hasValue,
+        ),
+      for (final metric in progress.metrics)
+        metric.days.any(
+          (day) =>
+              DateUtils.isSameDay(day.day, yesterday) &&
+              metric.meetsTarget(day),
+        ),
+    ].where((met) => met).length;
+    final required = progress.requiredSuccesses ?? progress.dimensionCount;
+    return DesignSystemSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            context.messages.goalCompositeProgressTitle,
+            style: tokens.typography.styles.subtitle.subtitle1,
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          GoalCompactWindowStrip(days: progress.compactWindow),
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            context.messages.goalCompositeProgressSummary(
+              metYesterday,
+              progress.dimensionCount,
+              required,
+            ),
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ],
       ),
     );
   }
+}
 
-  String _metricPeriodLabel(
-    BuildContext context,
-    GoalMetricProgressView metric,
-  ) {
-    return _periodLabel(context, metric.days);
-  }
+class _HabitDimensionCard extends StatelessWidget {
+  const _HabitDimensionCard({
+    required this.habit,
+    required this.today,
+    required this.onHabitOutcomeSelected,
+  });
 
-  String _periodLabel(BuildContext context, List<GoalProgressDay> days) {
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    final format = DateFormat.MMMd(locale);
-    return '${format.format(days.first.day)} – ${format.format(days.last.day)}';
+  final GoalHabitProgressView habit;
+  final DateTime today;
+  final GoalHabitOutcomeSelected? onHabitOutcomeSelected;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final successfulWeeks =
+        habit.window == const GoalWindow.rollingDays(count: 7)
+        ? habit.successfulWeeks
+        : null;
+    return DesignSystemSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _DimensionHeader(
+            kind: GoalDimensionKind.habit,
+            title: habit.name,
+            source: context.messages.goalDimensionHabitSource,
+            reading: context.messages.goalDimensionHabitReading(
+              habit.successesInWindow,
+              habit.targetCount,
+            ),
+            met: habit.deficit == 0,
+            hasData: true,
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          if (habit.window == const GoalWindow.rollingDays(count: 7)) ...[
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact =
+                    constraints.maxWidth <
+                    tokens.spacing.step13 * 2 + tokens.spacing.step5;
+                final title = Text(
+                  context.messages.goalProgressTitle,
+                  style: tokens.typography.styles.subtitle.subtitle2.copyWith(
+                    color: tokens.colors.text.highEmphasis,
+                  ),
+                );
+                final caption = Text(
+                  compact
+                      ? context.messages.goalProgressCompactCaption
+                      : context.messages.goalProgressCaption,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                );
+                return compact
+                    ? Row(
+                        children: [
+                          Flexible(child: title),
+                          SizedBox(width: tokens.spacing.step3),
+                          Expanded(child: caption),
+                        ],
+                      )
+                    : Wrap(
+                        spacing: tokens.spacing.step3,
+                        crossAxisAlignment: WrapCrossAlignment.center,
+                        children: [title, caption],
+                      );
+              },
+            ),
+            SizedBox(height: tokens.spacing.step2),
+          ],
+          _DimensionWeekdayHeader(
+            days: habit.days,
+            habitId: habit.habitId,
+          ),
+          SizedBox(height: tokens.spacing.step2),
+          _HabitProgressRow(
+            habit: habit,
+            today: today,
+            onOutcomeSelected: onHabitOutcomeSelected,
+            hideName: true,
+          ),
+          if (successfulWeeks != null) ...[
+            SizedBox(height: tokens.spacing.step2),
+            Align(
+              alignment: Alignment.centerRight,
+              child: _Reliability(successfulWeeks: successfulWeeks),
+            ),
+          ],
+          SizedBox(height: tokens.spacing.step4),
+          const _ProgressLegend(),
+        ],
+      ),
+    );
   }
 }
+
+class _MetricDimensionCard extends StatelessWidget {
+  const _MetricDimensionCard({required this.metric});
+
+  final GoalMetricProgressView metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final observed = metric.days.where((day) => day.isObserved).toList();
+    final current = switch (metric.aggregation) {
+      GoalAggregation.dailySumThenAverage when observed.isNotEmpty =>
+        observed.fold<num>(0, (sum, day) => sum + day.value) / observed.length,
+      GoalAggregation.max when observed.isNotEmpty => observed.fold<num>(
+        observed.first.value,
+        (value, day) => math.max(value, day.value),
+      ),
+      GoalAggregation.count => observed.length,
+      _ => observed.fold<num>(0, (sum, day) => sum + day.value),
+    };
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final number = NumberFormat.decimalPattern(locale);
+    final unit = metric.unitName?.trim();
+    final reading = unit == null || unit.isEmpty
+        ? context.messages.goalDimensionMetricReading(
+            number.format(current),
+            number.format(metric.target),
+          )
+        : context.messages.goalDimensionMetricReadingWithUnit(
+            number.format(current),
+            number.format(metric.target),
+            unit,
+          );
+    final met = observed.isNotEmpty && metric.meetsTarget(metric.days.last);
+    return DesignSystemSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _DimensionHeader(
+            kind: metric.kind,
+            title: metric.name,
+            source: _dimensionSource(context, metric.kind),
+            reading: reading,
+            met: met,
+            hasData: observed.isNotEmpty,
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          if (metric.kind == GoalDimensionKind.categoryTime &&
+              metric.dailyTimeRange != null)
+            _CategoryBandSeries(metric: metric)
+          else
+            _MetricProgressSeries(metric: metric),
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            observed.isEmpty
+                ? context.messages.goalDimensionNoDataNote
+                : met
+                ? context.messages.goalDimensionOnTrackNote
+                : context.messages.goalDimensionNeedsAttentionNote,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DimensionHeader extends StatelessWidget {
+  const _DimensionHeader({
+    required this.kind,
+    required this.title,
+    required this.source,
+    required this.reading,
+    required this.met,
+    required this.hasData,
+  });
+
+  final GoalDimensionKind kind;
+  final String title;
+  final String source;
+  final String reading;
+  final bool met;
+  final bool hasData;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final color = switch (kind) {
+      GoalDimensionKind.habit => tokens.colors.interactive.enabled,
+      GoalDimensionKind.health => tokens.colors.alert.info.defaultColor,
+      GoalDimensionKind.measurable => GoalAccentHues.aurora(
+        Theme.of(context).brightness,
+      ),
+      GoalDimensionKind.categoryTime =>
+        tokens.colors.alert.warning.defaultColor,
+    };
+    final icon = switch (kind) {
+      GoalDimensionKind.habit => Icons.check_circle_outline_rounded,
+      GoalDimensionKind.health => Icons.favorite_outline_rounded,
+      GoalDimensionKind.measurable => Icons.straighten_rounded,
+      GoalDimensionKind.categoryTime => Icons.schedule_rounded,
+    };
+    final glyph = DecoratedBox(
+      decoration: BoxDecoration(
+        color: color.withValues(alpha: SurfaceAlphas.washControl),
+        borderRadius: BorderRadius.circular(tokens.radii.s),
+      ),
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step2),
+        child: Icon(icon, size: IconSizes.s, color: color),
+      ),
+    );
+    final identity = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(title, style: tokens.typography.styles.subtitle.subtitle1),
+        Text(
+          source,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.lowEmphasis,
+          ),
+        ),
+      ],
+    );
+    final readingBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(reading, style: tokens.typography.styles.subtitle.subtitle2),
+        Text(
+          !hasData
+              ? context.messages.goalCoarseHealthNotEnoughData
+              : met
+              ? context.messages.goalDimensionOnTrackStatus
+              : context.messages.goalDimensionNeedsAttentionStatus,
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: !hasData
+                ? tokens.colors.text.mediumEmphasis
+                : met
+                ? tokens.colors.alert.success.ink
+                : tokens.colors.alert.warning.ink,
+          ),
+        ),
+      ],
+    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final compact =
+            constraints.maxWidth <
+            tokens.spacing.step13 * 2 + tokens.spacing.step5;
+        if (compact) {
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  glyph,
+                  SizedBox(width: tokens.spacing.step3),
+                  Expanded(child: identity),
+                ],
+              ),
+              SizedBox(height: tokens.spacing.step2),
+              Align(alignment: Alignment.centerRight, child: readingBlock),
+            ],
+          );
+        }
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            glyph,
+            SizedBox(width: tokens.spacing.step3),
+            Expanded(child: identity),
+            SizedBox(width: tokens.spacing.step3),
+            readingBlock,
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _DimensionWeekdayHeader extends StatelessWidget {
+  const _DimensionWeekdayHeader({required this.days, required this.habitId});
+
+  final List<GoalProgressDay> days;
+  final String habitId;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    if (days.length > 7) {
+      return Text(
+        _periodLabel(context, days),
+        style: tokens.typography.styles.others.caption.copyWith(
+          color: tokens.colors.text.lowEmphasis,
+        ),
+      );
+    }
+    final metrics = _weekdayLabelMetrics(context, days);
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: _DayTrack(
+        height: math.max(IconSizes.s, metrics.height),
+        itemExtent: ControlSizes.iconChipCompact,
+        pitch: _dayTrackPitch(context, days),
+        children: [
+          for (final day in days)
+            SizedBox(
+              key: ValueKey(
+                'goal-habit-weekday-$habitId-'
+                '${day.day.toIso8601String().substring(0, 10)}',
+              ),
+              width: ControlSizes.iconChipCompact,
+              child: OverflowBox(
+                maxWidth: double.infinity,
+                child: Text(
+                  DateFormat.E(locale).format(day.day),
+                  maxLines: 1,
+                  softWrap: false,
+                  textAlign: TextAlign.center,
+                  style: tokens.typography.styles.others.caption.copyWith(
+                    color: tokens.colors.text.lowEmphasis,
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+String _periodLabel(BuildContext context, List<GoalProgressDay> days) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final format = DateFormat.MMMd(locale);
+  return '${format.format(days.first.day)} – ${format.format(days.last.day)}';
+}
+
+String _dimensionSource(BuildContext context, GoalDimensionKind kind) =>
+    switch (kind) {
+      GoalDimensionKind.habit => context.messages.goalDimensionHabitSource,
+      GoalDimensionKind.health => context.messages.goalDimensionHealthSource,
+      GoalDimensionKind.measurable =>
+        context.messages.goalDimensionMeasurableSource,
+      GoalDimensionKind.categoryTime =>
+        context.messages.goalDimensionCategoryTimeSource,
+    };
 
 ({double width, double height}) _weekdayLabelMetrics(
   BuildContext context,
@@ -300,53 +613,6 @@ double _textWidth(BuildContext context, String text, TextStyle style) {
   return painter.width;
 }
 
-class _HabitWeekdayHeader extends StatelessWidget {
-  const _HabitWeekdayHeader({required this.habit});
-
-  final GoalHabitProgressView habit;
-
-  @override
-  Widget build(BuildContext context) {
-    final tokens = context.designTokens;
-    final locale = Localizations.localeOf(context).toLanguageTag();
-    final metrics = _weekdayLabelMetrics(context, habit.days);
-    final pitch = _dayTrackPitch(context, habit.days);
-    return Row(
-      children: [
-        SizedBox(width: tokens.spacing.step13),
-        SizedBox(width: tokens.spacing.step3),
-        _DayTrack(
-          height: math.max(IconSizes.s, metrics.height),
-          itemExtent: ControlSizes.iconChipCompact,
-          pitch: pitch,
-          children: [
-            for (final day in habit.days)
-              SizedBox(
-                key: ValueKey(
-                  'goal-habit-weekday-${habit.habitId}-'
-                  '${day.day.toIso8601String().substring(0, 10)}',
-                ),
-                width: ControlSizes.iconChipCompact,
-                child: OverflowBox(
-                  maxWidth: double.infinity,
-                  child: Text(
-                    DateFormat.E(locale).format(day.day),
-                    maxLines: 1,
-                    softWrap: false,
-                    textAlign: TextAlign.center,
-                    style: tokens.typography.styles.others.caption.copyWith(
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                  ),
-                ),
-              ),
-          ],
-        ),
-      ],
-    );
-  }
-}
-
 /// Keeps weekday labels and day cells on the compact handoff grid.
 class _DayTrack extends StatelessWidget {
   const _DayTrack({
@@ -389,11 +655,13 @@ class _HabitProgressRow extends StatefulWidget {
     required this.habit,
     required this.today,
     required this.onOutcomeSelected,
+    this.hideName = false,
   });
 
   final GoalHabitProgressView habit;
   final DateTime today;
   final GoalHabitOutcomeSelected? onOutcomeSelected;
+  final bool hideName;
 
   @override
   State<_HabitProgressRow> createState() => _HabitProgressRowState();
@@ -460,12 +728,13 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     final identity = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          habit.name,
-          maxLines: 1,
-          overflow: TextOverflow.ellipsis,
-          style: nameStyle,
-        ),
+        if (!widget.hideName)
+          Text(
+            habit.name,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: nameStyle,
+          ),
         Text(cadence, style: cadenceStyle),
       ],
     );
@@ -507,6 +776,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final wide =
+            !widget.hideName &&
             activeDays.length <= 7 &&
             constraints.maxWidth >= _habitGridWideMinimum(context, activeDays);
         if (wide) {
@@ -527,7 +797,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
           );
         }
         final inlineHeaderWidth =
-            _textWidth(context, habit.name, nameStyle) +
+            (widget.hideName ? 0 : _textWidth(context, habit.name, nameStyle)) +
             tokens.spacing.step2 +
             _textWidth(context, cadence, cadenceStyle) +
             tokens.spacing.step3 +
@@ -539,16 +809,18 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
             Row(
               children: [
                 if (cadenceFitsInline) ...[
-                  Text(
-                    habit.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: nameStyle,
-                  ),
-                  SizedBox(width: tokens.spacing.step2),
+                  if (!widget.hideName) ...[
+                    Text(
+                      habit.name,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: nameStyle,
+                    ),
+                    SizedBox(width: tokens.spacing.step2),
+                  ],
                   Text(cadence, maxLines: 1, style: cadenceStyle),
                   const Spacer(),
-                ] else
+                ] else if (!widget.hideName)
                   Expanded(
                     child: Text(
                       habit.name,
@@ -556,7 +828,9 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
                       overflow: TextOverflow.ellipsis,
                       style: nameStyle,
                     ),
-                  ),
+                  )
+                else
+                  const Spacer(),
                 SizedBox(width: tokens.spacing.step3),
                 Text(
                   note,
@@ -571,7 +845,7 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
             SizedBox(height: tokens.spacing.step1),
             SingleChildScrollView(
               scrollDirection: Axis.horizontal,
-              child: cells(alignWithWeekdays: false),
+              child: cells(alignWithWeekdays: widget.hideName),
             ),
           ],
         );
@@ -845,9 +1119,9 @@ class _MetricProgressSeries extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          metric.name,
-          style: tokens.typography.styles.body.bodySmall.copyWith(
-            color: tokens.colors.text.highEmphasis,
+          _periodLabel(context, metric.days),
+          style: tokens.typography.styles.others.caption.copyWith(
+            color: tokens.colors.text.lowEmphasis,
           ),
         ),
         SizedBox(height: tokens.spacing.step3),
@@ -908,6 +1182,23 @@ class _MetricProgressSeries extends StatelessWidget {
         day.isObserved && rawHeightFactor < minimumObservedHeight
         ? minimumObservedHeight
         : rawHeightFactor;
+    final barFill = DecoratedBox(
+      decoration: BoxDecoration(
+        color: metric.meetsTarget(day)
+            ? tokens.colors.alert.info.defaultColor
+            : tokens.colors.background.level03,
+        border: !day.isObserved
+            ? Border.all(
+                color: tokens.colors.text.lowEmphasis,
+                width: BorderWidths.emphasis,
+              )
+            : null,
+        borderRadius: BorderRadius.vertical(
+          top: Radius.circular(tokens.radii.s),
+        ),
+      ),
+    );
+    final provenance = metric.agentRecordedProvenanceByDay[day.day];
     return Semantics(
       label: context.messages.goalMetricBarSemantics(
         status,
@@ -922,17 +1213,215 @@ class _MetricProgressSeries extends StatelessWidget {
           ),
           heightFactor: heightFactor,
           alignment: Alignment.bottomCenter,
-          child: DecoratedBox(
-            decoration: BoxDecoration(
-              color: metric.meetsTarget(day)
-                  ? tokens.colors.alert.info.defaultColor
-                  : tokens.colors.background.level03,
-              borderRadius: BorderRadius.vertical(
-                top: Radius.circular(tokens.radii.s),
-              ),
-            ),
+          child: metric.agentRecordedDays.contains(day.day)
+              ? Stack(
+                  fit: StackFit.expand,
+                  clipBehavior: Clip.none,
+                  children: [
+                    barFill,
+                    Positioned(
+                      top: -tokens.spacing.step3,
+                      right: 0,
+                      child: Tooltip(
+                        message: provenance == null
+                            ? context.messages.goalDimensionRecordedByAgent
+                            : context.messages
+                                  .goalDimensionRecordedByAgentDetails(
+                                    provenance.agentName,
+                                    DateFormat.MMMEd(locale).add_jm().format(
+                                      provenance.recordedAt,
+                                    ),
+                                  ),
+                        child: Icon(
+                          Icons.edit_note_rounded,
+                          size: IconSizes.xs,
+                          color: GoalAccentHues.aurora(
+                            Theme.of(context).brightness,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                )
+              : barFill,
+        ),
+      ),
+    );
+  }
+}
+
+class _CategoryBandSeries extends StatelessWidget {
+  const _CategoryBandSeries({required this.metric});
+
+  final GoalMetricProgressView metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final range = metric.dailyTimeRange!;
+    final sessions = metric.categoryTimeSessions.take(24).toList();
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          height: tokens.spacing.step8,
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              final width = constraints.maxWidth;
+              final bandSegments = _bandSegments(range);
+              return Stack(
+                children: [
+                  DecoratedBox(
+                    decoration: BoxDecoration(
+                      color: tokens.colors.background.level03,
+                      borderRadius: BorderRadius.circular(tokens.radii.s),
+                    ),
+                    child: const SizedBox.expand(),
+                  ),
+                  for (final segment in bandSegments)
+                    Positioned(
+                      left: width * segment.$1,
+                      width: width * (segment.$2 - segment.$1),
+                      top: 0,
+                      bottom: 0,
+                      child: ColoredBox(
+                        color: tokens.colors.alert.warning.defaultColor
+                            .withValues(alpha: SurfaceAlphas.tint),
+                      ),
+                    ),
+                  for (final session in sessions)
+                    Positioned(
+                      left: width * _minuteFraction(session.dateFrom),
+                      width: math.max(
+                        tokens.spacing.step1,
+                        width *
+                            session.duration.inMinutes.clamp(1, 1440) /
+                            1440,
+                      ),
+                      top: tokens.spacing.step2,
+                      bottom: tokens.spacing.step2,
+                      child: DecoratedBox(
+                        decoration: BoxDecoration(
+                          color: _startsInBand(session.dateFrom, range)
+                              ? tokens.colors.alert.warning.defaultColor
+                              : tokens.colors.interactive.enabled,
+                          borderRadius: BorderRadius.circular(tokens.radii.xs),
+                        ),
+                      ),
+                    ),
+                ],
+              );
+            },
           ),
         ),
+        SizedBox(height: tokens.spacing.step1),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            for (final hour in const [0, 7, 12, 22, 24])
+              Text(
+                hour.toString().padLeft(2, '0'),
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.text.lowEmphasis,
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+List<(double, double)> _bandSegments(GoalDailyTimeRange range) {
+  final start = range.startMinute / 1440;
+  final end = range.endMinute / 1440;
+  return range.startMinute < range.endMinute
+      ? [(start, end)]
+      : [(0, end), (start, 1)];
+}
+
+double _minuteFraction(DateTime date) => (date.hour * 60 + date.minute) / 1440;
+
+bool _startsInBand(DateTime date, GoalDailyTimeRange range) {
+  final minute = date.hour * 60 + date.minute;
+  return range.startMinute < range.endMinute
+      ? minute >= range.startMinute && minute < range.endMinute
+      : minute >= range.startMinute || minute < range.endMinute;
+}
+
+class _CategoryPatternCard extends StatelessWidget {
+  const _CategoryPatternCard({required this.metric});
+
+  final GoalMetricProgressView metric;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final bins = List<int>.filled(24, 0);
+    for (final session in metric.categoryTimeSessions) {
+      bins[session.dateFrom.hour]++;
+    }
+    final maxCount = bins.fold<int>(1, math.max);
+    final busiestHour = bins.indexOf(maxCount);
+    final dailyTimeRange = metric.dailyTimeRange;
+    return DesignSystemSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.insights_rounded,
+                color: tokens.colors.alert.warning.defaultColor,
+              ),
+              SizedBox(width: tokens.spacing.step2),
+              Text(
+                context.messages.goalPatternTitle,
+                style: tokens.typography.styles.subtitle.subtitle1,
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step4),
+          SizedBox(
+            height: tokens.spacing.step8,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                for (var hour = 0; hour < bins.length; hour++)
+                  Expanded(
+                    child: FractionallySizedBox(
+                      heightFactor: bins[hour] / maxCount,
+                      alignment: Alignment.bottomCenter,
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: BorderWidths.hairline,
+                        ),
+                        child: ColoredBox(
+                          color:
+                              dailyTimeRange != null &&
+                                  _startsInBand(
+                                    DateTime(2000, 1, 1, hour),
+                                    dailyTimeRange,
+                                  )
+                              ? tokens.colors.alert.warning.defaultColor
+                              : tokens.colors.interactive.enabled,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          Text(
+            context.messages.goalPatternBusiestHour(
+              busiestHour.toString().padLeft(2, '0'),
+            ),
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ],
       ),
     );
   }

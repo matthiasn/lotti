@@ -5996,6 +5996,56 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalAssessmentHistoryTitle => 'Dagliga reflektioner';
+
+  @override
+  String get goalAssessmentMeasuredReadOnly =>
+      'Uppmätt av Lotti — den här delen är inte redigerbar.';
+
+  @override
+  String get goalAssessmentMeasuredTitle => 'Vad Lotti mätte';
+
+  @override
+  String get goalAssessmentMet => 'Träffade';
+
+  @override
+  String get goalAssessmentMissed => 'Saknad';
+
+  @override
+  String get goalAssessmentMixed => 'Blandad';
+
+  @override
+  String get goalAssessmentNote => 'Obs (valfritt)';
+
+  @override
+  String get goalAssessmentPerDimension =>
+      'Betygsätt individuella dimensioner (valfritt)';
+
+  @override
+  String get goalAssessmentRecorded => 'Inspelad';
+
+  @override
+  String goalAssessmentRecordFor(String dayName) {
+    return 'Rekord för $dayName';
+  }
+
+  @override
+  String get goalAssessmentReflectToday => 'Reflektera över idag';
+
+  @override
+  String goalAssessmentSpecVersion(int version) {
+    return 'Mål v$version tillämpat';
+  }
+
+  @override
+  String goalAssessmentSuggestedProvenance(String agentName) {
+    return '$agentName föreslog, du accepterade';
+  }
+
+  @override
+  String get goalAssessmentUserProvenance => 'Betygsatt av dig';
+
+  @override
   String goalAttainmentLabel(int percent) {
     return '$percent % av målet';
   }
@@ -6088,6 +6138,18 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalCoarseHealthRestarting => 'Börjar om';
 
   @override
+  String goalCompositeProgressSummary(
+    int metCount,
+    int dimensionCount,
+    int requiredCount,
+  ) {
+    return '$metCount av $dimensionCount dimensioner uppfylldes i går · $requiredCount krävs.';
+  }
+
+  @override
+  String get goalCompositeProgressTitle => 'Hela målet';
+
+  @override
   String get goalCreateFailed => 'Målet kunde inte sparas — försök igen.';
 
   @override
@@ -6174,7 +6236,106 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalDetailWatchingTitle => 'Följer';
 
   @override
+  String get goalDimensionCategoryTimeSource => 'Spårad kategoritid';
+
+  @override
+  String goalDimensionHabitReading(int currentCount, int targetCount) {
+    return '$currentCount av $targetCount detta fönster';
+  }
+
+  @override
+  String get goalDimensionHabitSource => 'Vana avslut';
+
+  @override
+  String get goalDimensionHealthSource => 'Hälsodata';
+
+  @override
+  String get goalDimensionMeasurableSource => 'Dina mätbara';
+
+  @override
+  String goalDimensionMetricReading(String currentValue, String targetValue) {
+    return '$currentValue av $targetValue';
+  }
+
+  @override
+  String goalDimensionMetricReadingWithUnit(
+    String currentValue,
+    String targetValue,
+    String unitName,
+  ) {
+    return '$currentValue av $targetValue $unitName';
+  }
+
+  @override
+  String get goalDimensionNeedsAttentionNote =>
+      'Denna dimension behöver uppmärksamhet; dess egna bevis förblir synliga.';
+
+  @override
+  String get goalDimensionNeedsAttentionStatus => 'Behöver uppmärksamhet';
+
+  @override
+  String get goalDimensionNoDataNote =>
+      'Det finns inte tillräckligt med data för att bedöma denna dimension ännu.';
+
+  @override
+  String get goalDimensionOnTrackNote =>
+      'Denna dimension är för närvarande på rätt spår.';
+
+  @override
+  String get goalDimensionOnTrackStatus => 'På rätt spår';
+
+  @override
+  String get goalDimensionRecordedByAgent =>
+      'Sagt av dig och inspelat efter ditt godkännande.';
+
+  @override
+  String goalDimensionRecordedByAgentDetails(
+    String agentName,
+    String recordedAt,
+  ) {
+    return 'Sagt av dig, inspelat av $agentName, $recordedAt';
+  }
+
+  @override
+  String goalDominantIssueBadge(String dimensionName) {
+    return '$dimensionName behöver uppmärksamhet';
+  }
+
+  @override
+  String get goalFormAddDimension => 'Lägg till dimension';
+
+  @override
+  String get goalFormBloodPressureSource =>
+      'Systoliskt och diastoliskt · mmHg · 7-dagarsgenomsnitt';
+
+  @override
   String get goalFormChooseHabit => 'Välj en befintlig vana';
+
+  @override
+  String get goalFormCompositeAll => 'Alla dimensioner';
+
+  @override
+  String get goalFormCompositeAllHint =>
+      'Striktast – varje dimension måste uppfyllas.';
+
+  @override
+  String get goalFormCompositeAny => 'Vilken dimension som helst';
+
+  @override
+  String get goalFormCompositeAnyHint =>
+      'Lösast — en uppfylld dimension räcker.';
+
+  @override
+  String goalFormCompositeAtLeast(int requiredCount, int dimensionCount) {
+    return 'Åtminstone $requiredCount av $dimensionCount';
+  }
+
+  @override
+  String get goalFormCompositeAtLeastHint =>
+      'Välj hur många dimensioner som ska uppfyllas.';
+
+  @override
+  String get goalFormCompositeRule => 'Hur detta mål går ihop';
 
   @override
   String get goalFormConfirmTitle => 'Möt din agent';
@@ -6191,6 +6352,12 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormDefaultPersonaName => 'Juno';
+
+  @override
+  String get goalFormDirectionAtLeast => 'Minst';
+
+  @override
+  String get goalFormDirectionAtMost => 'Högst';
 
   @override
   String get goalFormEditTitle => 'Redigera mål';
@@ -6222,6 +6389,38 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalFormHabitSignal => 'vanemarkering';
 
   @override
+  String get goalFormHealthBloodPressureDiastolic => 'Diastoliskt blodtryck';
+
+  @override
+  String get goalFormHealthBloodPressureSystolic => 'Systoliskt blodtryck';
+
+  @override
+  String goalFormHealthCadence(
+    String healthName,
+    String direction,
+    String target,
+    String unitName,
+  ) {
+    return '$healthName: 7-dagarsgenomsnitt $direction $target $unitName';
+  }
+
+  @override
+  String get goalFormHealthData => 'Hälsodata';
+
+  @override
+  String goalFormHealthSource(String unitName) {
+    return 'Hälsodata · $unitName · 7-dagarsgenomsnitt';
+  }
+
+  @override
+  String goalFormHealthTarget(String unitName) {
+    return 'Mål ($unitName)';
+  }
+
+  @override
+  String get goalFormHealthWeight => 'Vikt';
+
+  @override
   String get goalFormIncreaseTarget => 'Höj veckomålet';
 
   @override
@@ -6244,6 +6443,16 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalFormMappingTitle => 'Det här kan jag följa';
+
+  @override
+  String goalFormMeasurableCadence(String measurableName, String target) {
+    return '$measurableName: $target per rullande vecka';
+  }
+
+  @override
+  String goalFormMeasurableSource(String unitName) {
+    return 'Din mätbara · $unitName';
+  }
 
   @override
   String get goalFormNoHabits => 'Det finns inga aktiva vanor ännu.';
@@ -6316,6 +6525,9 @@ class AppLocalizationsSv extends AppLocalizations {
   }
 
   @override
+  String get goalFormYourMeasurables => 'Dina mätbara saker';
+
+  @override
   String get goalHealthTrendDown => 'Minskar';
 
   @override
@@ -6353,6 +6565,14 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalNudgeStatusSuperseded => 'Ersatt';
+
+  @override
+  String goalPatternBusiestHour(String hour) {
+    return 'De flesta sessioner börjar runt $hour:00. Öppna insikter för djupare analys.';
+  }
+
+  @override
+  String get goalPatternTitle => 'Tidsmönster';
 
   @override
   String get goalPendingProposalBadge => 'Förslag väntar';
@@ -6420,6 +6640,61 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalProgressToday => 'i dag';
 
   @override
+  String get goalRecordOfferConflict =>
+      'Du har redan loggat detta mätbara en av dessa dagar. Fråga vad som ska sparas innan du spelar in något.';
+
+  @override
+  String get goalRecordOfferEstimatedSplit =>
+      'Beräknad uppdelning — redigera vid behov';
+
+  @override
+  String get goalRecordOfferIntro =>
+      'Jag hittade en mängd i det du sa. Kontrollera värdena innan något registreras.';
+
+  @override
+  String get goalRecordOfferInvalidValue =>
+      'Ange ett värde som är större än noll.';
+
+  @override
+  String get goalRecordOfferNothingSelected =>
+      'Välj minst en rad att spela in.';
+
+  @override
+  String goalRecordOfferOverline(String agentName, String measurableName) {
+    return '$agentName FÖRESLÅR · REGISTRERA I $measurableName';
+  }
+
+  @override
+  String goalRecordOfferProvenance(String agentName) {
+    return 'Sagt av dig, inspelat av $agentName';
+  }
+
+  @override
+  String goalRecordOfferReceipt(int entryCount, String agentName) {
+    String _temp0 = intl.Intl.pluralLogic(
+      entryCount,
+      locale: localeName,
+      other: '$entryCount poster',
+      one: '1 post',
+    );
+    return 'Inspelat · $_temp0 · sagt av dig, inspelat av $agentName';
+  }
+
+  @override
+  String goalRecordOfferRecordMany(int entryCount) {
+    String _temp0 = intl.Intl.pluralLogic(
+      entryCount,
+      locale: localeName,
+      other: '$entryCount poster',
+      one: '1 post',
+    );
+    return 'Registrera $_temp0';
+  }
+
+  @override
+  String get goalRecordOfferRecordOne => 'Registrera post';
+
+  @override
   String get goalStatusAchieved => 'Uppnått';
 
   @override
@@ -6436,6 +6711,11 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalStatusRecovering => 'På väg tillbaka';
+
+  @override
+  String goalWatchingMetric(String windowLabel) {
+    return 'Uppdateringar från dess länkade källa · $windowLabel';
+  }
 
   @override
   String get goalWindowCalendarMonth => 'kalendermånad';

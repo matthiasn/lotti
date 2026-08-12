@@ -35,6 +35,7 @@ class GoalSignalWindow {
     this.habitSuccessesByDay = const {},
     this.habitCompletionsByDay = const {},
     this.measurableDailySums = const {},
+    this.measurableEntryDaysById = const {},
     this.categoryTimeDailyHours = const {},
     this.categoryTimeSessionsByCategory = const {},
     this.categoryTimeEvidenceStart,
@@ -58,6 +59,10 @@ class GoalSignalWindow {
 
   /// Measurable data: `MeasurableDataType` id → day key → daily sum.
   final Map<String, Map<DateTime, num>> measurableDailySums;
+
+  /// Measurement entry id → canonical day. This carries identity only so
+  /// presentation can attach approved provenance without changing evaluation.
+  final Map<String, DateTime> measurableEntryDaysById;
 
   /// Tracked category time: category-time criterion id → day key → hours.
   ///

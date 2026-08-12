@@ -17,7 +17,9 @@ import 'package:lotti/features/design_system/components/selection/design_system_
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/pages/create_goal_agent_page.dart';
+import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
+import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -1032,6 +1034,9 @@ void main() {
   });
 
   testWidgets('an empty habit source links to habit setup', (tester) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
     final navigated = <String>[];
     beamToNamedOverride = navigated.add;
     addTearDown(() => beamToNamedOverride = null);
@@ -1055,8 +1060,260 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('No active habits are available yet.'), findsOneWidget);
+    await tester.ensureVisible(find.text('Create a habit first'));
     await tester.tap(find.text('Create a habit first'));
     expect(navigated, ['/habits']);
+  });
+
+  testWidgets('an empty measurable source links to measurable setup', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: [
+          ...overrides(),
+          measurableDataTypesStreamProvider.overrideWith(
+            (ref) => Stream.value(const []),
+          ),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Read more often',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.ensureVisible(find.text('Add dimension'));
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    expect(find.text('Your measurables'), findsOneWidget);
+    expect(find.text('Create measurable'), findsOneWidget);
+
+    await tester.tap(find.text('Create measurable'));
+    await tester.pumpAndSettle();
+    expect(navigated, ['/settings/measurables/create']);
+  });
+
+  testWidgets('new goals can select weight and blood pressure', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Track my health baseline',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    expect(find.text('Health data'), findsOneWidget);
+    await tester.tap(
+      find.byKey(const ValueKey('goal-form-health-source-weight')),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(
+        const ValueKey(
+          'goal-form-health-target-HealthDataType.WEIGHT',
+        ),
+      ),
+      '75',
+    );
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(
+              const ValueKey(
+                'goal-form-health-direction-HealthDataType.WEIGHT',
+              ),
+            ),
+            matching: find.text('At least'),
+          )
+          .last,
+    );
+
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.byKey(
+        const ValueKey('goal-form-health-source-blood-pressure'),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(
+        const ValueKey(
+          'goal-form-health-target-HealthDataType.BLOOD_PRESSURE_SYSTOLIC',
+        ),
+      ),
+      '120',
+    );
+    await tester.enterText(
+      find.byKey(
+        const ValueKey(
+          'goal-form-health-target-HealthDataType.BLOOD_PRESSURE_DIASTOLIC',
+        ),
+      ),
+      '80',
+    );
+
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    expect(find.text('Meet your agent'), findsOneWidget);
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    final captured =
+        verify(
+              () => agentService.createGoalAgent(
+                title: any(named: 'title'),
+                displayName: any(named: 'displayName'),
+                statement: 'Track my health baseline',
+                criteria: captureAny(named: 'criteria'),
+              ),
+            ).captured.single
+            as GoalCriterionAllOf;
+    final healthLeaves = captured.criteria.whereType<GoalCriterionMetric>();
+    expect(
+      {
+        for (final leaf in healthLeaves)
+          leaf.dataType: (leaf.target, leaf.direction),
+      },
+      {
+        GoalHealthDataTypes.weight: (75, GoalDirection.atLeast),
+        GoalHealthDataTypes.bloodPressureSystolic: (
+          120,
+          GoalDirection.atMost,
+        ),
+        GoalHealthDataTypes.bloodPressureDiastolic: (
+          80,
+          GoalDirection.atMost,
+        ),
+      },
+    );
+  });
+
+  testWidgets('editing can add health dimensions without replacing old ones', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final current = _spec(
+      criteria: const GoalCriterion.habit(
+        criterionId: 'habit-gym-v3',
+        habitId: 'gym',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 2,
+      ),
+    );
+    final revised = _spec(version: 4);
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: any(named: 'baseVersionId'),
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer(
+      (_) async => GoalSpecRevisionMinted(
+        version: revised,
+        changeSummaries: const ['health signals added'],
+      ),
+    );
+    when(
+      () => agentService.refreshAfterRevision(
+        agentId: 'goal-1',
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenReturn(null);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    for (final sourceKey in ['weight', 'blood-pressure']) {
+      await tester.tap(find.text('Add dimension'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(ValueKey('goal-form-health-source-$sourceKey')),
+      );
+      await tester.pumpAndSettle();
+    }
+    for (final entry in {
+      GoalHealthDataTypes.weight: '78',
+      GoalHealthDataTypes.bloodPressureSystolic: '122',
+      GoalHealthDataTypes.bloodPressureDiastolic: '82',
+    }.entries) {
+      await tester.enterText(
+        find.byKey(ValueKey('goal-form-health-target-${entry.key}')),
+        entry.value,
+      );
+    }
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+
+    final saved =
+        verify(
+              () => revisionService.reviseFromOwner(
+                agentId: 'goal-1',
+                baseVersionId: current.id,
+                displayName: any(named: 'displayName'),
+                title: any(named: 'title'),
+                statement: any(named: 'statement'),
+                criteria: captureAny(named: 'criteria'),
+              ),
+            ).captured.single
+            as GoalCriterionAllOf;
+    expect(
+      saved.criteria.whereType<GoalCriterionHabit>().single.criterionId,
+      'habit-gym-v3',
+    );
+    expect(
+      saved.criteria.whereType<GoalCriterionMetric>().map(
+        (leaf) => leaf.dataType,
+      ),
+      containsAll(GoalHealthDataTypes.supported),
+    );
   });
 
   testWidgets('a failed habit source explains that the list is unavailable', (

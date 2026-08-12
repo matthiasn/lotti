@@ -38,12 +38,14 @@ class GoalTrackPolicy {
   /// 2. Target date passed → [GoalTrackStatus.achieved] if satisfied, else
   ///    [GoalTrackStatus.offTrack] — the period is over, grace is meaningless.
   /// 3. Satisfied (or attainment at 100%) → [GoalTrackStatus.onTrack].
-  /// 4. A calendar quota that can no longer be completed →
+  /// 4. A supported health trajectory projected to reach its target within
+  ///    the bounded horizon → [GoalTrackStatus.onTrack].
+  /// 5. A calendar quota that can no longer be completed →
   ///    [GoalTrackStatus.offTrack] regardless of attainment so far.
-  /// 5. Behind overall but the trailing [shortTermDays] days are at or above
+  /// 6. Behind overall but the trailing [shortTermDays] days are at or above
   ///    pace → [GoalTrackStatus.recovering] (retires "you're behind" nudges).
-  /// 6. Attainment at or above [offTrackThreshold] → [GoalTrackStatus.atRisk].
-  /// 7. Below threshold: [GoalTrackStatus.offTrack] once
+  /// 7. Attainment at or above [offTrackThreshold] → [GoalTrackStatus.atRisk].
+  /// 8. Below threshold: [GoalTrackStatus.offTrack] once
   ///    [priorBadPeriodsForOffTrack] consecutive prior periods were also bad
   ///    ([priorAttainments] ordered most recent first), else one period of
   ///    grace as [GoalTrackStatus.atRisk].
@@ -64,6 +66,7 @@ class GoalTrackPolicy {
     if (evaluation.satisfied || evaluation.attainment >= 1) {
       return GoalTrackStatus.onTrack;
     }
+    if (evaluation.onTrackByTrend) return GoalTrackStatus.onTrack;
     if (evaluation.paceFeasible == false) {
       return GoalTrackStatus.offTrack;
     }

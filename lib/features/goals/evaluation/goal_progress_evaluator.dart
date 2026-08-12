@@ -5,6 +5,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 
 /// Pure fold of a [GoalCriterion] tree over a [GoalSignalWindow].
 ///
@@ -14,6 +15,12 @@ import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 /// derives progress itself.
 class GoalProgressEvaluator {
   const GoalProgressEvaluator();
+
+  /// A trend may make an unmet health target on-track only when its fitted
+  /// trajectory reaches the threshold within four weeks.
+  static const trendProjectionHorizonDays = 28;
+
+  static const _minimumTrendSamples = 4;
 
   /// Evaluates [criterion] for the period containing [reference].
   GoalEvaluation evaluate(
@@ -31,6 +38,7 @@ class GoalProgressEvaluator {
       paceFeasible: root.result.paceFeasible,
       deficit: root.result.deficit,
       buffer: root.result.buffer,
+      onTrackByTrend: _onTrackByTrend(criterion, results),
     );
   }
 
@@ -174,6 +182,9 @@ class GoalProgressEvaluator {
           aggregation: aggregation,
           target: target,
           direction: direction,
+          projectsHealthTrend: GoalHealthDataTypes.supported.contains(
+            dataType,
+          ),
         ),
       GoalCriterionMeasurable(
         :final criterionId,
@@ -279,6 +290,7 @@ class GoalProgressEvaluator {
     required num target,
     required GoalDirection direction,
     bool countPositiveValues = false,
+    bool projectsHealthTrend = false,
   }) {
     final sampleCount = series.length;
     final actual = _aggregate(
@@ -296,6 +308,13 @@ class GoalProgressEvaluator {
     } else {
       (ratio, satisfied) = _compare(actual, target, direction);
     }
+    final projectedDaysToTarget =
+        !satisfied &&
+            projectsHealthTrend &&
+            aggregation == GoalAggregation.dailySumThenAverage &&
+            window is GoalWindowRollingDays
+        ? _projectedDaysToTarget(series, target, direction)
+        : null;
     final elapsed = window.elapsedDays(reference);
     final coverage = elapsed == 0
         ? 1.0
@@ -308,9 +327,91 @@ class GoalProgressEvaluator {
         ratio: ratio,
         satisfied: satisfied,
         sampleCount: sampleCount,
+        projectedDaysToTarget: projectedDaysToTarget,
       ),
       coverage: coverage,
     );
+  }
+
+  int? _projectedDaysToTarget(
+    Map<DateTime, num> series,
+    num target,
+    GoalDirection direction,
+  ) {
+    if (series.length < _minimumTrendSamples) return null;
+    final samples = series.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final firstDay = samples.first.key;
+    final xs = [
+      for (final sample in samples)
+        sample.key.difference(firstDay).inDays.toDouble(),
+    ];
+    final ys = [for (final sample in samples) sample.value.toDouble()];
+    final meanX = xs.reduce((a, b) => a + b) / xs.length;
+    final meanY = ys.reduce((a, b) => a + b) / ys.length;
+    var covariance = 0.0;
+    var variance = 0.0;
+    for (var index = 0; index < xs.length; index++) {
+      final xDelta = xs[index] - meanX;
+      covariance += xDelta * (ys[index] - meanY);
+      variance += xDelta * xDelta;
+    }
+    if (variance == 0) return null;
+    final slope = covariance / variance;
+    final midpoint = ys.length ~/ 2;
+    final earlierMean = ys.take(midpoint).reduce((a, b) => a + b) / midpoint;
+    final laterValues = ys.skip(midpoint).toList();
+    final laterMean = laterValues.reduce((a, b) => a + b) / laterValues.length;
+    final favorable = switch (direction) {
+      GoalDirection.atLeast => slope > 0 && laterMean > earlierMean,
+      GoalDirection.atMost => slope < 0 && laterMean < earlierMean,
+    };
+    if (!favorable) return null;
+
+    final intercept = meanY - slope * meanX;
+    final fittedLatest = intercept + slope * xs.last;
+    final latestMeetsTarget = switch (direction) {
+      GoalDirection.atLeast => fittedLatest >= target,
+      GoalDirection.atMost => fittedLatest <= target,
+    };
+    if (latestMeetsTarget) return 0;
+    final days = switch (direction) {
+      GoalDirection.atLeast => (target - fittedLatest) / slope,
+      GoalDirection.atMost => (fittedLatest - target) / -slope,
+    };
+    if (!days.isFinite || days < 0 || days > trendProjectionHorizonDays) {
+      return null;
+    }
+    return days.ceil();
+  }
+
+  bool _onTrackByTrend(
+    GoalCriterion criterion,
+    Map<String, GoalCriterionResult> results,
+  ) {
+    bool leafOnTrack(String criterionId) {
+      final result = results[criterionId];
+      return result != null &&
+          (result.satisfied || result.projectedDaysToTarget != null);
+    }
+
+    return switch (criterion) {
+      GoalCriterionMetric(:final criterionId) => leafOnTrack(criterionId),
+      GoalCriterionHabit(:final criterionId) ||
+      GoalCriterionMeasurable(:final criterionId) ||
+      GoalCriterionCategoryTime(
+        :final criterionId,
+      ) => results[criterionId]?.satisfied ?? false,
+      GoalCriterionAllOf(:final criteria) =>
+        criteria.isNotEmpty &&
+            criteria.every((child) => _onTrackByTrend(child, results)),
+      GoalCriterionAnyOf(:final criteria) => criteria.any(
+        (child) => _onTrackByTrend(child, results),
+      ),
+      GoalCriterionAtLeastCount(:final criteria, :final successes) =>
+        criteria.where((child) => _onTrackByTrend(child, results)).length >=
+            successes,
+    };
   }
 
   /// Time entries are the user's explicit ledger: within that ledger, no row

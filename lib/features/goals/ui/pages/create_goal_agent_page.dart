@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
@@ -9,6 +10,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
+import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/components/chips/ds_pill.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
@@ -21,6 +23,7 @@ import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/pages/goal_form_mapping.dart';
 import 'package:lotti/features/habits/repository/habits_repository.dart';
+import 'package:lotti/features/settings/ui/pages/measurables/measurables_page.dart';
 import 'package:lotti/l10n/app_localizations_context.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:lotti/widgets/nav_bar/design_system_bottom_navigation_bar.dart';
@@ -79,8 +82,14 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   _GoalFormStep _step = _GoalFormStep.intention;
   var _mapping = const GoalFormMapping.empty();
   final _habitTargets = <String, int>{};
+  final _measurableTargets = <String, num>{};
+  final _healthTargets = <String, num?>{};
+  final _healthDirections = <String, GoalDirection>{};
   List<HabitDefinition> _knownHabits = const [];
+  List<MeasurableDataType> _knownMeasurables = const [];
   var _watchesSteps = false;
+  GoalFormCompositeRule _compositeRule = GoalFormCompositeRule.all;
+  var _requiredSuccesses = 1;
   var _showAllHabits = false;
   var _initialized = false;
   var _defaultPersonaInitialized = false;
@@ -127,6 +136,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       context.messages.localeName,
     ).format(_mapping.stepsTarget);
     _habitTargets.addAll(_mapping.habitTargets);
+    _measurableTargets.addAll(_mapping.measurableTargets);
+    _healthTargets.addAll(_mapping.healthTargets);
+    _healthDirections.addAll(_mapping.healthDirections);
+    _compositeRule = _mapping.compositeRule;
+    _requiredSuccesses = _mapping.requiredSuccesses;
   }
 
   num? _parseLocalizedTarget(String raw) {
@@ -190,6 +204,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         ..addEntries(
           matchedHabits.map((habit) => MapEntry(habit.id, 3)),
         );
+      final matchedMeasurables = [
+        for (final measurable in _knownMeasurables)
+          if (_matchesIntention(measurable.displayName)) measurable,
+      ];
+      _measurableTargets
+        ..clear()
+        ..addEntries(
+          matchedMeasurables.map((measurable) => MapEntry(measurable.id, 1)),
+        );
       _deriveTitle(habits);
       _derivedFrom = statement;
       if (habitsFingerprint != null) {
@@ -222,11 +245,18 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   void _continueToConfirmation(List<HabitDefinition> habits) {
     _reconcileHabitTargets();
     final hasMapping =
-        !_mapping.isEditable || _watchesSteps || _habitTargets.isNotEmpty;
+        !_mapping.isEditable ||
+        _watchesSteps ||
+        _habitTargets.isNotEmpty ||
+        _measurableTargets.isNotEmpty ||
+        _healthTargets.isNotEmpty;
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
     final invalidSteps =
         _watchesSteps && (stepsTarget == null || stepsTarget <= 0);
-    if (!hasMapping || invalidSteps) {
+    final invalidHealthTargets = _healthTargets.values.any(
+      (target) => target == null || target <= 0,
+    );
+    if (!hasMapping || invalidSteps || invalidHealthTargets) {
       setState(() => _validation = context.messages.goalFormValidationMapping);
       return;
     }
@@ -301,6 +331,10 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
 
   String _signalDescription(List<HabitDefinition> habits) {
     final names = {for (final habit in habits) habit.id: habit.name};
+    final measurableNames = {
+      for (final measurable in _knownMeasurables)
+        measurable.id: measurable.displayName,
+    };
     final signals = <String>[
       if (_watchesSteps)
         context.messages.goalFormStepsCadence(
@@ -313,6 +347,26 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
           names[entry.key] ?? entry.key,
           entry.value,
         ),
+      for (final entry in _measurableTargets.entries)
+        context.messages.goalFormMeasurableCadence(
+          measurableNames[entry.key] ?? entry.key,
+          NumberFormat.decimalPattern(
+            context.messages.localeName,
+          ).format(entry.value),
+        ),
+      for (final entry in _healthTargets.entries)
+        if (entry.value case final target?)
+          context.messages.goalFormHealthCadence(
+            _healthDimensionName(context, entry.key),
+            _goalDirectionLabel(
+              context,
+              _healthDirections[entry.key] ?? GoalDirection.atMost,
+            ),
+            NumberFormat.decimalPattern(
+              context.messages.localeName,
+            ).format(target),
+            _healthDimensionUnit(entry.key),
+          ),
     ];
     return signals.join(' · ');
   }
@@ -374,8 +428,24 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         : _mapping.buildCriteria(
             stepsTitle: messages.goalCreateStepsTargetLabel,
             habitTargets: _habitTargets,
+            measurableTargets: _measurableTargets,
+            measurableTitles: {
+              for (final measurable in _knownMeasurables)
+                measurable.id: measurable.displayName,
+            },
+            healthTargets: {
+              for (final entry in _healthTargets.entries)
+                entry.key: ?entry.value,
+            },
+            healthDirections: _healthDirections,
+            healthTitles: {
+              for (final dataType in _healthTargets.keys)
+                dataType: _healthDimensionName(context, dataType),
+            },
             watchesSteps: _watchesSteps,
             stepsTarget: stepsTarget,
+            compositeRule: _compositeRule,
+            requiredSuccesses: _requiredSuccesses,
           );
     if (criteria == null) {
       setState(() {
@@ -457,10 +527,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final messages = context.messages;
     final tokens = context.designTokens;
     final habitsAsync = ref.watch(_habitDefinitionsProvider);
+    final measurablesAsync = ref.watch(measurableDataTypesStreamProvider);
     if (habitsAsync.value case final loaded?) {
       _knownHabits = loaded;
     }
     final habits = habitsAsync.value ?? _knownHabits;
+    if (measurablesAsync.value case final loaded?) {
+      _knownMeasurables = loaded;
+    }
+    final measurables = measurablesAsync.value ?? _knownMeasurables;
     GoalSpecVersionEntity? editSpec;
 
     if (_editing) {
@@ -557,6 +632,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                           habitsFailed:
                               habitsAsync.hasError && habitsAsync.value == null,
                           mapping: _mapping,
+                          measurables: measurables,
+                          measurableTargets: _measurableTargets,
+                          healthTargets: _healthTargets,
+                          healthDirections: _healthDirections,
+                          compositeRule: _compositeRule,
+                          requiredSuccesses: _requiredSuccesses,
                           habitTargets: _habitTargets,
                           watchesSteps: _watchesSteps,
                           stepsTarget: _stepsTarget,
@@ -585,6 +666,54 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                           }),
                           onShowAll: () =>
                               setState(() => _showAllHabits = true),
+                          onMeasurableChanged:
+                              ({required measurableId, required selected}) =>
+                                  setState(() {
+                                    if (selected) {
+                                      _measurableTargets.putIfAbsent(
+                                        measurableId,
+                                        () => 1,
+                                      );
+                                    } else {
+                                      _measurableTargets.remove(measurableId);
+                                    }
+                                    _validation = null;
+                                  }),
+                          onMeasurableTargetChanged: (id, target) =>
+                              setState(() {
+                                _measurableTargets[id] = target;
+                                _validation = null;
+                              }),
+                          onHealthSelected: (dataTypes) => setState(() {
+                            for (final dataType in dataTypes) {
+                              _healthTargets.putIfAbsent(dataType, () => null);
+                              _healthDirections.putIfAbsent(
+                                dataType,
+                                () => GoalDirection.atMost,
+                              );
+                            }
+                            _validation = null;
+                          }),
+                          onHealthRemoved: (dataType) => setState(() {
+                            _healthTargets.remove(dataType);
+                            _healthDirections.remove(dataType);
+                            _validation = null;
+                          }),
+                          onHealthTargetChanged: (dataType, target) =>
+                              setState(() {
+                                _healthTargets[dataType] = target;
+                                _validation = null;
+                              }),
+                          onHealthDirectionChanged: (dataType, direction) =>
+                              setState(() {
+                                _healthDirections[dataType] = direction;
+                                _validation = null;
+                              }),
+                          onCompositeRuleChanged: (rule, required) =>
+                              setState(() {
+                                _compositeRule = rule;
+                                _requiredSuccesses = required;
+                              }),
                         ),
                         _GoalFormStep.confirmation => _ConfirmationStep(
                           title: _title,
@@ -736,11 +865,40 @@ class _IntentionStep extends StatelessWidget {
   }
 }
 
+String _healthDimensionName(BuildContext context, String dataType) =>
+    switch (dataType) {
+      GoalHealthDataTypes.weight => context.messages.goalFormHealthWeight,
+      GoalHealthDataTypes.bloodPressureSystolic =>
+        context.messages.goalFormHealthBloodPressureSystolic,
+      GoalHealthDataTypes.bloodPressureDiastolic =>
+        context.messages.goalFormHealthBloodPressureDiastolic,
+      _ => dataType,
+    };
+
+String _healthDimensionUnit(String dataType) => switch (dataType) {
+  GoalHealthDataTypes.weight => 'kg',
+  GoalHealthDataTypes.bloodPressureSystolic ||
+  GoalHealthDataTypes.bloodPressureDiastolic => 'mmHg',
+  _ => '',
+};
+
+String _goalDirectionLabel(BuildContext context, GoalDirection direction) =>
+    switch (direction) {
+      GoalDirection.atLeast => context.messages.goalFormDirectionAtLeast,
+      GoalDirection.atMost => context.messages.goalFormDirectionAtMost,
+    };
+
 class _MappingStep extends StatelessWidget {
   const _MappingStep({
     required this.habits,
     required this.habitsFailed,
     required this.mapping,
+    required this.measurables,
+    required this.measurableTargets,
+    required this.healthTargets,
+    required this.healthDirections,
+    required this.compositeRule,
+    required this.requiredSuccesses,
     required this.habitTargets,
     required this.watchesSteps,
     required this.stepsTarget,
@@ -750,11 +908,24 @@ class _MappingStep extends StatelessWidget {
     required this.onHabitChanged,
     required this.onTargetChanged,
     required this.onShowAll,
+    required this.onMeasurableChanged,
+    required this.onMeasurableTargetChanged,
+    required this.onHealthSelected,
+    required this.onHealthRemoved,
+    required this.onHealthTargetChanged,
+    required this.onHealthDirectionChanged,
+    required this.onCompositeRuleChanged,
   });
 
   final List<HabitDefinition> habits;
   final bool habitsFailed;
   final GoalFormMapping mapping;
+  final List<MeasurableDataType> measurables;
+  final Map<String, num> measurableTargets;
+  final Map<String, num?> healthTargets;
+  final Map<String, GoalDirection> healthDirections;
+  final GoalFormCompositeRule compositeRule;
+  final int requiredSuccesses;
   final Map<String, int> habitTargets;
   final bool watchesSteps;
   final TextEditingController stepsTarget;
@@ -765,6 +936,17 @@ class _MappingStep extends StatelessWidget {
   onHabitChanged;
   final void Function(String habitId, int target) onTargetChanged;
   final VoidCallback onShowAll;
+  final void Function({required String measurableId, required bool selected})
+  onMeasurableChanged;
+  final void Function(String measurableId, num target)
+  onMeasurableTargetChanged;
+  final ValueChanged<List<String>> onHealthSelected;
+  final ValueChanged<String> onHealthRemoved;
+  final void Function(String dataType, num? target) onHealthTargetChanged;
+  final void Function(String dataType, GoalDirection direction)
+  onHealthDirectionChanged;
+  final void Function(GoalFormCompositeRule rule, int requiredSuccesses)
+  onCompositeRuleChanged;
 
   @override
   Widget build(BuildContext context) {
@@ -779,7 +961,20 @@ class _MappingStep extends StatelessWidget {
           if (!selectedIds.contains(habit.id)) (id: habit.id, name: habit.name),
     ];
     final noObservableMatch =
-        mapping.isEditable && !watchesSteps && selectedIds.isEmpty;
+        mapping.isEditable &&
+        !watchesSteps &&
+        selectedIds.isEmpty &&
+        measurableTargets.isEmpty &&
+        healthTargets.isEmpty;
+    final selectedMeasurables = [
+      for (final measurable in measurables)
+        if (measurableTargets.containsKey(measurable.id)) measurable,
+    ];
+    final dimensionCount =
+        selectedIds.length +
+        measurableTargets.length +
+        healthTargets.length +
+        (watchesSteps ? 1 : 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -883,6 +1078,148 @@ class _MappingStep extends StatelessWidget {
               fullWidth: true,
             ),
           ],
+          for (final measurable in selectedMeasurables) ...[
+            SizedBox(height: tokens.spacing.step3),
+            DesignSystemSectionCard(
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.straighten_rounded,
+                    color: GoalAccentHues.aurora(
+                      Theme.of(context).brightness,
+                    ),
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          measurable.displayName,
+                          style: tokens.typography.styles.subtitle.subtitle2,
+                        ),
+                        Text(
+                          context.messages.goalFormMeasurableSource(
+                            measurable.unitName,
+                          ),
+                          style: tokens.typography.styles.others.caption
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  _MeasurableTargetInput(
+                    measurableId: measurable.id,
+                    value: measurableTargets[measurable.id]!,
+                    unitName: measurable.unitName,
+                    onChanged: (value) =>
+                        onMeasurableTargetChanged(measurable.id, value),
+                  ),
+                  DesignSystemIconAction(
+                    icon: Icons.close_rounded,
+                    tooltip: context.messages.aiCardProposalKindRemove,
+                    onPressed: () => onMeasurableChanged(
+                      measurableId: measurable.id,
+                      selected: false,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+          for (final entry in healthTargets.entries) ...[
+            SizedBox(height: tokens.spacing.step3),
+            _HealthTargetCard(
+              dataType: entry.key,
+              value: entry.value,
+              direction: healthDirections[entry.key] ?? GoalDirection.atMost,
+              onTargetChanged: (target) =>
+                  onHealthTargetChanged(entry.key, target),
+              onDirectionChanged: (direction) =>
+                  onHealthDirectionChanged(entry.key, direction),
+              onRemove: () => onHealthRemoved(entry.key),
+            ),
+          ],
+          SizedBox(height: tokens.spacing.step3),
+          DesignSystemButton(
+            label: context.messages.goalFormAddDimension,
+            onPressed: () => showModalBottomSheet<void>(
+              context: context,
+              isScrollControlled: true,
+              builder: (context) => _DimensionSourcePicker(
+                measurables: measurables,
+                selectedMeasurableIds: measurableTargets.keys.toSet(),
+                selectedHealthDataTypes: healthTargets.keys.toSet(),
+                onMeasurableSelected: (id) {
+                  Navigator.of(context).pop();
+                  onMeasurableChanged(measurableId: id, selected: true);
+                },
+                onHealthSelected: (dataTypes) {
+                  Navigator.of(context).pop();
+                  onHealthSelected(dataTypes);
+                },
+              ),
+            ),
+            leadingIcon: Icons.add_rounded,
+            variant: DesignSystemButtonVariant.secondary,
+            fullWidth: true,
+          ),
+          if (dimensionCount > 1) ...[
+            SizedBox(height: tokens.spacing.step4),
+            DesignSystemSectionCard(
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.account_tree_outlined,
+                    color: tokens.colors.interactive.enabled,
+                  ),
+                  SizedBox(width: tokens.spacing.step3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          context.messages.goalFormCompositeRule,
+                          style: tokens.typography.styles.subtitle.subtitle2,
+                        ),
+                        Text(
+                          _compositeRuleLabel(
+                            context,
+                            compositeRule,
+                            requiredSuccesses,
+                            dimensionCount,
+                          ),
+                          style: tokens.typography.styles.body.bodySmall
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  DesignSystemButton(
+                    label: context.messages.insightsTableDelta,
+                    onPressed: () => showModalBottomSheet<void>(
+                      context: context,
+                      builder: (context) => _CompositeRulePicker(
+                        value: compositeRule,
+                        requiredSuccesses: requiredSuccesses,
+                        dimensionCount: dimensionCount,
+                        onChanged: (rule, required) {
+                          Navigator.of(context).pop();
+                          onCompositeRuleChanged(rule, required);
+                        },
+                      ),
+                    ),
+                    variant: DesignSystemButtonVariant.tertiary,
+                    size: DesignSystemButtonSize.dense,
+                  ),
+                ],
+              ),
+            ),
+          ],
           if (showAllHabits && habits.isEmpty) ...[
             SizedBox(height: tokens.spacing.step3),
             Text(
@@ -943,6 +1280,447 @@ class _MappingStep extends StatelessWidget {
           ),
         ],
       ],
+    );
+  }
+}
+
+String _compositeRuleLabel(
+  BuildContext context,
+  GoalFormCompositeRule rule,
+  int requiredSuccesses,
+  int dimensionCount,
+) => switch (rule) {
+  GoalFormCompositeRule.all => context.messages.goalFormCompositeAll,
+  GoalFormCompositeRule.any => context.messages.goalFormCompositeAny,
+  GoalFormCompositeRule.atLeast => context.messages.goalFormCompositeAtLeast(
+    requiredSuccesses,
+    dimensionCount,
+  ),
+};
+
+class _MeasurableTargetInput extends StatefulWidget {
+  const _MeasurableTargetInput({
+    required this.measurableId,
+    required this.value,
+    required this.unitName,
+    required this.onChanged,
+  });
+
+  final String measurableId;
+  final num value;
+  final String unitName;
+  final ValueChanged<num> onChanged;
+
+  @override
+  State<_MeasurableTargetInput> createState() => _MeasurableTargetInputState();
+}
+
+class _MeasurableTargetInputState extends State<_MeasurableTargetInput> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.value.toString(),
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return SizedBox(
+      width: tokens.spacing.step13 * 2,
+      child: DesignSystemTextInput(
+        key: ValueKey('goal-form-measurable-target-${widget.measurableId}'),
+        controller: _controller,
+        label: widget.unitName,
+        keyboardType: const TextInputType.numberWithOptions(decimal: true),
+        onChanged: (raw) {
+          final value = num.tryParse(raw.replaceAll(',', '.'));
+          if (value != null) widget.onChanged(value);
+        },
+      ),
+    );
+  }
+}
+
+class _HealthTargetCard extends StatelessWidget {
+  const _HealthTargetCard({
+    required this.dataType,
+    required this.value,
+    required this.direction,
+    required this.onTargetChanged,
+    required this.onDirectionChanged,
+    required this.onRemove,
+  });
+
+  final String dataType;
+  final num? value;
+  final GoalDirection direction;
+  final ValueChanged<num?> onTargetChanged;
+  final ValueChanged<GoalDirection> onDirectionChanged;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final unit = _healthDimensionUnit(dataType);
+    return DesignSystemSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.monitor_heart_outlined,
+                color: GoalAccentHues.aurora(
+                  Theme.of(context).brightness,
+                ),
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      _healthDimensionName(context, dataType),
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                    ),
+                    Text(
+                      context.messages.goalFormHealthSource(unit),
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              DesignSystemIconAction(
+                icon: Icons.close_rounded,
+                tooltip: context.messages.aiCardProposalKindRemove,
+                onPressed: onRemove,
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          DsSegmentedToggle<GoalDirection>(
+            key: ValueKey('goal-form-health-direction-$dataType'),
+            segments: [
+              DsSegment(
+                GoalDirection.atMost,
+                context.messages.goalFormDirectionAtMost,
+              ),
+              DsSegment(
+                GoalDirection.atLeast,
+                context.messages.goalFormDirectionAtLeast,
+              ),
+            ],
+            selected: direction,
+            onChanged: onDirectionChanged,
+            expand: true,
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          _HealthTargetInput(
+            dataType: dataType,
+            value: value,
+            unit: unit,
+            onChanged: onTargetChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HealthTargetInput extends StatefulWidget {
+  const _HealthTargetInput({
+    required this.dataType,
+    required this.value,
+    required this.unit,
+    required this.onChanged,
+  });
+
+  final String dataType;
+  final num? value;
+  final String unit;
+  final ValueChanged<num?> onChanged;
+
+  @override
+  State<_HealthTargetInput> createState() => _HealthTargetInputState();
+}
+
+class _HealthTargetInputState extends State<_HealthTargetInput> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.value?.toString() ?? '',
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => DesignSystemTextInput(
+    key: ValueKey('goal-form-health-target-${widget.dataType}'),
+    controller: _controller,
+    label: context.messages.goalFormHealthTarget(widget.unit),
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    onChanged: (raw) => widget.onChanged(
+      num.tryParse(raw.trim().replaceAll(',', '.')),
+    ),
+  );
+}
+
+class _DimensionSourcePicker extends StatefulWidget {
+  const _DimensionSourcePicker({
+    required this.measurables,
+    required this.selectedMeasurableIds,
+    required this.selectedHealthDataTypes,
+    required this.onMeasurableSelected,
+    required this.onHealthSelected,
+  });
+
+  final List<MeasurableDataType> measurables;
+  final Set<String> selectedMeasurableIds;
+  final Set<String> selectedHealthDataTypes;
+  final ValueChanged<String> onMeasurableSelected;
+  final ValueChanged<List<String>> onHealthSelected;
+
+  @override
+  State<_DimensionSourcePicker> createState() => _DimensionSourcePickerState();
+}
+
+class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
+  final _search = TextEditingController();
+  var _query = '';
+
+  @override
+  void dispose() {
+    _search.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final messages = context.messages;
+    final query = _query.trim().toLowerCase();
+    final visible = widget.measurables.where((measurable) {
+      return query.isEmpty ||
+          measurable.displayName.toLowerCase().contains(query) ||
+          measurable.unitName.toLowerCase().contains(query);
+    }).toList();
+    final weightMatches =
+        query.isEmpty ||
+        messages.goalFormHealthWeight.toLowerCase().contains(query) ||
+        'kg'.contains(query);
+    final bloodPressureMatches =
+        query.isEmpty ||
+        messages.dashboardHealthBloodPressure.toLowerCase().contains(query) ||
+        messages.goalFormHealthBloodPressureSystolic.toLowerCase().contains(
+          query,
+        ) ||
+        messages.goalFormHealthBloodPressureDiastolic.toLowerCase().contains(
+          query,
+        ) ||
+        'mmhg'.contains(query);
+    final showsHealth = weightMatches || bloodPressureMatches;
+    final bloodPressureTypes = [
+      GoalHealthDataTypes.bloodPressureSystolic,
+      GoalHealthDataTypes.bloodPressureDiastolic,
+    ];
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step5),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              messages.goalFormAddDimension,
+              style: tokens.typography.styles.heading.heading3,
+            ),
+            SizedBox(height: tokens.spacing.step3),
+            DesignSystemTextInput(
+              controller: _search,
+              hintText: context.messages.searchHint,
+              leadingIcon: Icons.search_rounded,
+              onChanged: (value) => setState(() => _query = value),
+            ),
+            SizedBox(height: tokens.spacing.step3),
+            Flexible(
+              child: ListView(
+                shrinkWrap: true,
+                children: [
+                  if (showsHealth) ...[
+                    Text(
+                      messages.goalFormHealthData,
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                    ),
+                    SizedBox(height: tokens.spacing.step2),
+                    if (weightMatches)
+                      DesignSystemSelectionRow(
+                        key: const ValueKey(
+                          'goal-form-health-source-weight',
+                        ),
+                        title: messages.goalFormHealthWeight,
+                        subtitle: messages.goalFormHealthSource('kg'),
+                        selected: widget.selectedHealthDataTypes.contains(
+                          GoalHealthDataTypes.weight,
+                        ),
+                        type: DesignSystemSelectionRowType.singleSelect,
+                        onTap:
+                            widget.selectedHealthDataTypes.contains(
+                              GoalHealthDataTypes.weight,
+                            )
+                            ? null
+                            : () => widget.onHealthSelected(
+                                const [GoalHealthDataTypes.weight],
+                              ),
+                      ),
+                    if (bloodPressureMatches)
+                      DesignSystemSelectionRow(
+                        key: const ValueKey(
+                          'goal-form-health-source-blood-pressure',
+                        ),
+                        title: messages.dashboardHealthBloodPressure,
+                        subtitle: messages.goalFormBloodPressureSource,
+                        selected: bloodPressureTypes.every(
+                          widget.selectedHealthDataTypes.contains,
+                        ),
+                        type: DesignSystemSelectionRowType.singleSelect,
+                        onTap:
+                            bloodPressureTypes.every(
+                              widget.selectedHealthDataTypes.contains,
+                            )
+                            ? null
+                            : () => widget.onHealthSelected(
+                                bloodPressureTypes,
+                              ),
+                      ),
+                    SizedBox(height: tokens.spacing.step4),
+                  ],
+                  Text(
+                    messages.goalFormYourMeasurables,
+                    style: tokens.typography.styles.subtitle.subtitle2,
+                  ),
+                  SizedBox(height: tokens.spacing.step2),
+                  for (final measurable in visible)
+                    DesignSystemSelectionRow(
+                      title: measurable.displayName,
+                      subtitle: context.messages.goalFormMeasurableSource(
+                        measurable.unitName,
+                      ),
+                      selected: widget.selectedMeasurableIds.contains(
+                        measurable.id,
+                      ),
+                      type: DesignSystemSelectionRowType.singleSelect,
+                      onTap:
+                          widget.selectedMeasurableIds.contains(measurable.id)
+                          ? null
+                          : () => widget.onMeasurableSelected(measurable.id),
+                    ),
+                  if (visible.isEmpty && query.isEmpty)
+                    DesignSystemButton(
+                      label: context.messages.settingsMeasurablesCreateTitle,
+                      leadingIcon: Icons.add_rounded,
+                      variant: DesignSystemButtonVariant.secondary,
+                      fullWidth: true,
+                      onPressed: () {
+                        Navigator.of(context).pop();
+                        beamToNamed('/settings/measurables/create');
+                      },
+                    ),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _CompositeRulePicker extends StatelessWidget {
+  const _CompositeRulePicker({
+    required this.value,
+    required this.requiredSuccesses,
+    required this.dimensionCount,
+    required this.onChanged,
+  });
+
+  final GoalFormCompositeRule value;
+  final int requiredSuccesses;
+  final int dimensionCount;
+  final void Function(GoalFormCompositeRule rule, int requiredSuccesses)
+  onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    final required = requiredSuccesses.clamp(1, dimensionCount);
+    return SafeArea(
+      child: Padding(
+        padding: EdgeInsets.all(tokens.spacing.step5),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              context.messages.goalFormCompositeRule,
+              style: tokens.typography.styles.heading.heading3,
+            ),
+            SizedBox(height: tokens.spacing.step3),
+            for (final rule in GoalFormCompositeRule.values)
+              DesignSystemSelectionRow(
+                title: _compositeRuleLabel(
+                  context,
+                  rule,
+                  required,
+                  dimensionCount,
+                ),
+                subtitle: switch (rule) {
+                  GoalFormCompositeRule.all =>
+                    context.messages.goalFormCompositeAllHint,
+                  GoalFormCompositeRule.any =>
+                    context.messages.goalFormCompositeAnyHint,
+                  GoalFormCompositeRule.atLeast =>
+                    context.messages.goalFormCompositeAtLeastHint,
+                },
+                selected: value == rule,
+                type: DesignSystemSelectionRowType.singleSelect,
+                trailing: rule == GoalFormCompositeRule.atLeast
+                    ? Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          DesignSystemIconAction(
+                            icon: Icons.remove_rounded,
+                            tooltip: context.messages.goalFormDecreaseTarget,
+                            onPressed: required > 1
+                                ? () => onChanged(rule, required - 1)
+                                : null,
+                          ),
+                          Text(
+                            '$required / $dimensionCount',
+                            style: tokens.typography.styles.subtitle.subtitle2,
+                          ),
+                          DesignSystemIconAction(
+                            icon: Icons.add_rounded,
+                            tooltip: context.messages.goalFormIncreaseTarget,
+                            onPressed: required < dimensionCount
+                                ? () => onChanged(rule, required + 1)
+                                : null,
+                          ),
+                        ],
+                      )
+                    : null,
+                onTap: () => onChanged(rule, required),
+              ),
+          ],
+        ),
+      ),
     );
   }
 }

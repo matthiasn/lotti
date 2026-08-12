@@ -11,12 +11,14 @@ void main() {
     bool satisfied = false,
     double coverage = 1.0,
     bool? paceFeasible,
+    bool onTrackByTrend = false,
   }) => GoalEvaluation(
     attainment: attainment,
     satisfied: satisfied,
     dataCoverage: coverage,
     results: const {},
     paceFeasible: paceFeasible,
+    onTrackByTrend: onTrackByTrend,
   );
 
   test('low coverage wins over everything — never guilt-trip a data gap', () {
@@ -56,6 +58,22 @@ void main() {
     expect(
       policy.derive(evaluation: eval(attainment: 1)),
       GoalTrackStatus.onTrack,
+    );
+  });
+
+  test('a favorable projection is onTrack without claiming achievement', () {
+    expect(
+      policy.derive(
+        evaluation: eval(attainment: 0.7, onTrackByTrend: true),
+      ),
+      GoalTrackStatus.onTrack,
+    );
+    expect(
+      policy.derive(
+        evaluation: eval(attainment: 0.7, onTrackByTrend: true),
+        targetDatePassed: true,
+      ),
+      GoalTrackStatus.offTrack,
     );
   });
 

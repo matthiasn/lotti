@@ -12,6 +12,7 @@ class GoalCriterionResult {
     this.paceFeasible,
     this.deficit,
     this.buffer,
+    this.projectedDaysToTarget,
   });
 
   /// The node this result belongs to (`GoalCriterion.criterionId`).
@@ -56,6 +57,12 @@ class GoalCriterionResult {
   /// `0` means a success expires at the next midnight. Null when below rate,
   /// or not a rolling habit leaf.
   final int? buffer;
+
+  /// Days until a favorable observed health trend reaches this leaf's target.
+  /// Null means the leaf is already satisfied, lacks enough samples, is not a
+  /// supported health level, is moving the wrong way, or would need longer
+  /// than the policy's bounded projection horizon.
+  final int? projectedDaysToTarget;
 }
 
 /// Result of evaluating a whole criteria tree for one period.
@@ -68,6 +75,7 @@ class GoalEvaluation {
     this.paceFeasible,
     this.deficit,
     this.buffer,
+    this.onTrackByTrend = false,
   });
 
   /// Overall progress 0..1 (composite fold of leaf ratios).
@@ -99,4 +107,9 @@ class GoalEvaluation {
   /// [GoalCriterionResult.buffer]). Null under the same conditions as
   /// [deficit].
   final int? buffer;
+
+  /// Whether every required unsatisfied health leaf is moving toward its
+  /// target fast enough to reach it inside the bounded projection horizon.
+  /// This can make a goal on-track, but never marks its threshold satisfied.
+  final bool onTrackByTrend;
 }

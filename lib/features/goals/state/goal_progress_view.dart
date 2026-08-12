@@ -10,7 +10,22 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
+import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
+
+enum GoalDimensionKind { habit, health, measurable, categoryTime }
+
+enum GoalCompositeRuleKind { all, any, atLeast }
+
+class GoalRecordedMeasurementProvenance {
+  const GoalRecordedMeasurementProvenance({
+    required this.agentName,
+    required this.recordedAt,
+  });
+
+  final String agentName;
+  final DateTime recordedAt;
+}
 
 /// One habit row in the period visual used by the Agents list and goal detail.
 ///
@@ -24,12 +39,16 @@ class GoalHabitProgressView {
     required this.targetCount,
     required this.days,
     required this.successfulWeeks,
+    this.criterionId = '',
+    this.sourceCaption,
     this.window = const GoalWindow.rollingDays(count: 7),
     this.slippedDay,
   });
 
   final String habitId;
+  final String criterionId;
   final String name;
+  final String? sourceCaption;
   final int targetCount;
   final List<GoalProgressDay> days;
 
@@ -65,9 +84,26 @@ class GoalMetricProgressView {
     this.aggregation = GoalAggregation.dailySumThenAverage,
     this.window = const GoalWindow.rollingDays(count: 7),
     this.direction = GoalDirection.atLeast,
+    this.criterionId = '',
+    this.sourceId = '',
+    this.kind = GoalDimensionKind.health,
+    this.unitName,
+    this.dailyTimeRange,
+    this.agentRecordedDays = const {},
+    this.agentRecordedProvenanceByDay = const {},
+    this.categoryTimeSessions = const [],
   });
 
   final String name;
+  final String criterionId;
+  final String sourceId;
+  final GoalDimensionKind kind;
+  final String? unitName;
+  final GoalDailyTimeRange? dailyTimeRange;
+  final Set<DateTime> agentRecordedDays;
+  final Map<DateTime, GoalRecordedMeasurementProvenance>
+  agentRecordedProvenanceByDay;
+  final List<GoalCategoryTimeSession> categoryTimeSessions;
   final num target;
   final List<GoalProgressDay> days;
   final GoalAggregation aggregation;
@@ -104,12 +140,18 @@ class GoalProgressView {
     GoalMetricProgressView? metric,
     List<GoalMetricProgressView> metrics = const [],
     this.compositeCompactWindow,
+    this.compositeRule,
+    this.requiredSuccesses,
   }) : metrics = metric == null ? metrics : [metric, ...metrics];
 
   final DateTime today;
   final List<GoalHabitProgressView> habits;
   final List<GoalMetricProgressView> metrics;
   final List<bool>? compositeCompactWindow;
+  final GoalCompositeRuleKind? compositeRule;
+  final int? requiredSuccesses;
+
+  int get dimensionCount => habits.length + metrics.length;
 
   GoalMetricProgressView? get metric => metrics.firstOrNull;
 
@@ -197,6 +239,12 @@ GoalProgressView buildGoalProgressView({
   required GoalSignalWindow signals,
   required DateTime reference,
   Map<String, String> habitNames = const {},
+  Map<String, MeasurableDataType> measurableDefinitions = const {},
+  Map<String, String> categoryNames = const {},
+  Set<String> agentRecordedMeasurementIds = const {},
+  Map<String, GoalRecordedMeasurementProvenance>
+      recordedMeasurementProvenanceById =
+      const {},
 }) {
   final today = GoalWindow.dayUtc(reference);
   final habitLeaves = <GoalCriterionHabit>[];
@@ -252,6 +300,18 @@ GoalProgressView buildGoalProgressView({
     today: today,
     habits: habits,
     compositeCompactWindow: compositeCompactWindow,
+    compositeRule: switch (criteria) {
+      GoalCriterionAllOf() => GoalCompositeRuleKind.all,
+      GoalCriterionAnyOf() => GoalCompositeRuleKind.any,
+      GoalCriterionAtLeastCount() => GoalCompositeRuleKind.atLeast,
+      _ => null,
+    },
+    requiredSuccesses: switch (criteria) {
+      GoalCriterionAtLeastCount(:final successes) => successes,
+      GoalCriterionAllOf(criteria: final children) => children.length,
+      GoalCriterionAnyOf() => 1,
+      _ => null,
+    },
     metrics: [
       for (final metric in metricLeaves)
         _metricProgressView(
@@ -264,12 +324,16 @@ GoalProgressView buildGoalProgressView({
           measurable: measurable,
           signals: signals,
           reference: reference,
+          definition: measurableDefinitions[measurable.dataTypeId],
+          agentRecordedMeasurementIds: agentRecordedMeasurementIds,
+          recordedMeasurementProvenanceById: recordedMeasurementProvenanceById,
         ),
       for (final categoryTime in categoryTimeLeaves)
         _categoryTimeProgressView(
           categoryTime: categoryTime,
           signals: signals,
           reference: reference,
+          categoryName: categoryNames[categoryTime.categoryId],
         ),
     ],
   );
@@ -282,6 +346,9 @@ GoalMetricProgressView _metricProgressView({
 }) {
   return _numericProgressView(
     criterion: metric,
+    criterionId: metric.criterionId,
+    sourceId: metric.dataType,
+    kind: GoalDimensionKind.health,
     name: metric.title?.trim().isNotEmpty == true
         ? metric.title!.trim()
         : metric.dataType,
@@ -299,29 +366,59 @@ GoalMetricProgressView _measurableProgressView({
   required GoalCriterionMeasurable measurable,
   required GoalSignalWindow signals,
   required DateTime reference,
-}) => _numericProgressView(
-  criterion: measurable,
-  name: measurable.title?.trim().isNotEmpty == true
-      ? measurable.title!.trim()
-      : measurable.dataTypeId,
-  target: measurable.target,
-  window: measurable.window,
-  direction: measurable.direction,
-  aggregation: measurable.aggregation,
-  dailyValues: signals.measurableDailySums[measurable.dataTypeId],
-  signals: signals,
-  reference: reference,
-);
+  MeasurableDataType? definition,
+  Set<String> agentRecordedMeasurementIds = const {},
+  Map<String, GoalRecordedMeasurementProvenance>
+      recordedMeasurementProvenanceById =
+      const {},
+}) {
+  final agentRecordedDays = agentRecordedMeasurementIds
+      .map((entryId) => signals.measurableEntryDaysById[entryId])
+      .whereType<DateTime>()
+      .toSet();
+  final provenanceByDay = <DateTime, GoalRecordedMeasurementProvenance>{};
+  for (final entry in recordedMeasurementProvenanceById.entries) {
+    final day = signals.measurableEntryDaysById[entry.key];
+    if (day != null) provenanceByDay[day] = entry.value;
+  }
+  return _numericProgressView(
+    criterion: measurable,
+    criterionId: measurable.criterionId,
+    sourceId: measurable.dataTypeId,
+    kind: GoalDimensionKind.measurable,
+    name: measurable.title?.trim().isNotEmpty == true
+        ? measurable.title!.trim()
+        : definition?.displayName ?? measurable.dataTypeId,
+    unitName: definition?.unitName,
+    target: measurable.target,
+    window: measurable.window,
+    direction: measurable.direction,
+    aggregation: measurable.aggregation,
+    dailyValues: signals.measurableDailySums[measurable.dataTypeId],
+    signals: signals,
+    reference: reference,
+    agentRecordedDays: agentRecordedDays,
+    agentRecordedProvenanceByDay: provenanceByDay,
+  );
+}
 
 GoalMetricProgressView _categoryTimeProgressView({
   required GoalCriterionCategoryTime categoryTime,
   required GoalSignalWindow signals,
   required DateTime reference,
+  String? categoryName,
 }) => _numericProgressView(
   criterion: categoryTime,
+  criterionId: categoryTime.criterionId,
+  sourceId: categoryTime.categoryId,
+  kind: GoalDimensionKind.categoryTime,
   name: categoryTime.title?.trim().isNotEmpty == true
       ? categoryTime.title!.trim()
-      : categoryTime.categoryId,
+      : categoryName ?? categoryTime.categoryId,
+  dailyTimeRange: categoryTime.dailyTimeRange,
+  categoryTimeSessions:
+      signals.categoryTimeSessionsByCategory[categoryTime.categoryId] ??
+      const [],
   target: categoryTime.targetHours,
   window: categoryTime.window,
   direction: categoryTime.direction,
@@ -334,6 +431,9 @@ GoalMetricProgressView _categoryTimeProgressView({
 
 GoalMetricProgressView _numericProgressView({
   required GoalCriterion criterion,
+  required String criterionId,
+  required String sourceId,
+  required GoalDimensionKind kind,
   required String name,
   required num target,
   required GoalWindow window,
@@ -343,15 +443,30 @@ GoalMetricProgressView _numericProgressView({
   required GoalSignalWindow signals,
   required DateTime reference,
   bool zeroIsObserved = false,
+  String? unitName,
+  GoalDailyTimeRange? dailyTimeRange,
+  Set<DateTime> agentRecordedDays = const {},
+  Map<DateTime, GoalRecordedMeasurementProvenance>
+      agentRecordedProvenanceByDay =
+      const {},
+  List<GoalCategoryTimeSession> categoryTimeSessions = const [],
 }) {
   final range = window.periodRange(reference);
   final today = GoalWindow.dayUtc(reference);
   return GoalMetricProgressView(
+    criterionId: criterionId,
+    sourceId: sourceId,
+    kind: kind,
     name: name,
     target: target,
     window: window,
     direction: direction,
     aggregation: aggregation,
+    unitName: unitName,
+    dailyTimeRange: dailyTimeRange,
+    agentRecordedDays: agentRecordedDays,
+    agentRecordedProvenanceByDay: agentRecordedProvenanceByDay,
+    categoryTimeSessions: categoryTimeSessions,
     days: [
       for (
         var day = range.start;
@@ -386,6 +501,7 @@ GoalHabitProgressView _habitProgressView({
     habitCompletionType: signals.habitCompletionsByDay[habit.habitId]?[day],
   );
   return GoalHabitProgressView(
+    criterionId: habit.criterionId,
     habitId: habit.habitId,
     name: habit.title?.trim().isNotEmpty == true
         ? habit.title!.trim()
@@ -484,14 +600,68 @@ goalAgentProgressViewProvider = FutureProvider.autoDispose
       collect(spec.criteria);
       final db = ref.watch(journalDbProvider);
       final names = <String, String>{};
+      final measurableDefinitions = <String, MeasurableDataType>{};
+      final categoryNames = <String, String>{};
       for (final habitId in habitIds) {
         final habit = await db.getHabitById(habitId);
         if (habit != null) names[habitId] = habit.name;
       }
+      final measurableIds = <String>{};
+      final categoryIds = <String>{};
+      void collectDefinitions(GoalCriterion criterion) {
+        switch (criterion) {
+          case GoalCriterionMeasurable(:final dataTypeId):
+            measurableIds.add(dataTypeId);
+          case GoalCriterionCategoryTime(:final categoryId):
+            categoryIds.add(categoryId);
+          case GoalCriterionMetric() || GoalCriterionHabit():
+            return;
+          case GoalCriterionAllOf(criteria: final children):
+            children.forEach(collectDefinitions);
+          case GoalCriterionAnyOf(criteria: final children):
+            children.forEach(collectDefinitions);
+          case GoalCriterionAtLeastCount(criteria: final children):
+            children.forEach(collectDefinitions);
+        }
+      }
+
+      collectDefinitions(spec.criteria);
+      for (final measurableId in measurableIds) {
+        final definition = await db.getMeasurableDataTypeById(measurableId);
+        if (definition != null) {
+          measurableDefinitions[measurableId] = definition;
+        }
+      }
+      for (final categoryId in categoryIds) {
+        final definition = await db.getCategoryById(categoryId);
+        if (definition != null) categoryNames[categoryId] = definition.name;
+      }
+      final captureDecisions = await ref.watch(
+        goalMeasurableCaptureDecisionsProvider(agentId).future,
+      );
+      final agentRecordedMeasurementIds = {
+        for (final decision in captureDecisions.values)
+          if (decision.recorded) ...decision.entryIds,
+      };
+      final recordedMeasurementProvenanceById = {
+        for (final decision in captureDecisions.values)
+          if (decision.recorded &&
+              decision.recordedAt != null &&
+              decision.agentName != null)
+            for (final entryId in decision.entryIds)
+              entryId: GoalRecordedMeasurementProvenance(
+                agentName: decision.agentName!,
+                recordedAt: decision.recordedAt!,
+              ),
+      };
       return buildGoalProgressView(
         criteria: spec.criteria,
         signals: signals,
         reference: reference,
         habitNames: names,
+        measurableDefinitions: measurableDefinitions,
+        categoryNames: categoryNames,
+        agentRecordedMeasurementIds: agentRecordedMeasurementIds,
+        recordedMeasurementProvenanceById: recordedMeasurementProvenanceById,
       );
     }, name: 'goalAgentProgressViewProvider');
