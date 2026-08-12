@@ -30,41 +30,43 @@ class GoalAssessmentService {
     final now = clock.now();
     final payloadId = _uuid.v4();
     final recordId = _uuid.v4();
-    await _syncService.upsertEntity(
-      AgentDomainEntity.agentMessagePayload(
-        id: payloadId,
-        agentId: agentId,
-        createdAt: now,
-        vectorClock: null,
-        content: <String, Object?>{
-          'recordId': recordId,
-          'day': day.toIso8601String(),
-          'specVersionId': specVersionId,
-          'rating': rating.name,
-          'note': note,
-          'dimensionRatings': {
-            for (final entry in dimensionRatings.entries)
-              entry.key: entry.value.name,
+    await _syncService.runInTransaction(() async {
+      await _syncService.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: payloadId,
+          agentId: agentId,
+          createdAt: now,
+          vectorClock: null,
+          content: <String, Object?>{
+            'recordId': recordId,
+            'day': day.toIso8601String(),
+            'specVersionId': specVersionId,
+            'rating': rating.name,
+            'note': note,
+            'dimensionRatings': {
+              for (final entry in dimensionRatings.entries)
+                entry.key: entry.value.name,
+            },
+            'provenance': provenance.name,
+            'suggestedBy': suggestedBy,
           },
-          'provenance': provenance.name,
-          'suggestedBy': suggestedBy,
-        },
-      ),
-    );
-    await _syncService.upsertEntity(
-      AgentDomainEntity.agentMessage(
-        id: recordId,
-        agentId: agentId,
-        threadId: recordId,
-        kind: AgentMessageKind.action,
-        createdAt: now,
-        vectorClock: null,
-        metadata: const AgentMessageMetadata(
-          toolName: GoalAssessmentToolNames.record,
         ),
-        contentEntryId: payloadId,
-      ),
-    );
+      );
+      await _syncService.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: recordId,
+          agentId: agentId,
+          threadId: recordId,
+          kind: AgentMessageKind.action,
+          createdAt: now,
+          vectorClock: null,
+          metadata: const AgentMessageMetadata(
+            toolName: GoalAssessmentToolNames.record,
+          ),
+          contentEntryId: payloadId,
+        ),
+      );
+    });
     return recordId;
   }
 }

@@ -373,9 +373,9 @@ class GoalFormMapping {
               measurableCriterionIds[entry.key] ??
               allocateId('measurable-${entry.key}'),
           dataTypeId: entry.key,
-          title:
-              measurableCriterionTitles[entry.key] ??
-              measurableTitles[entry.key],
+          title: measurableCriterionIds.containsKey(entry.key)
+              ? measurableCriterionTitles[entry.key]
+              : measurableTitles[entry.key],
           window: const GoalWindow.rollingDays(count: 7),
           aggregation: GoalAggregation.sum,
           target: entry.value,
@@ -388,7 +388,9 @@ class GoalFormMapping {
               healthCriterionIds[entry.key] ??
               allocateId(GoalHealthDataTypes.criterionId(entry.key)),
           dataType: entry.key,
-          title: healthCriterionTitles[entry.key] ?? healthTitles[entry.key],
+          title: healthCriterionIds.containsKey(entry.key)
+              ? healthCriterionTitles[entry.key]
+              : healthTitles[entry.key],
           window: const GoalWindow.rollingDays(count: 7),
           aggregation: GoalAggregation.dailySumThenAverage,
           target: entry.value,

@@ -98,10 +98,24 @@ class _GoalRecordOfferCardState extends ConsumerState<GoalRecordOfferCard> {
 
   Future<void> _dismiss() async {
     if (_saving) return;
-    setState(() => _saving = true);
-    await ref
-        .read(goalMeasurableCaptureServiceProvider)
-        .dismiss(agentId: widget.agentId, offer: widget.offer);
+    setState(() {
+      _saving = true;
+      _error = null;
+    });
+    try {
+      await ref
+          .read(goalMeasurableCaptureServiceProvider)
+          .dismiss(agentId: widget.agentId, offer: widget.offer);
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = context.messages.goalBannerActionFailed;
+        });
+      }
+      return;
+    }
+    if (!mounted) return;
     ref.invalidate(goalMeasurableCaptureDecisionsProvider(widget.agentId));
   }
 
@@ -139,18 +153,29 @@ class _GoalRecordOfferCardState extends ConsumerState<GoalRecordOfferCard> {
       });
       return;
     }
-    final saved = await ref
-        .read(goalMeasurableCaptureServiceProvider)
-        .record(
-          agentId: widget.agentId,
-          agentName: widget.agentName,
-          offer: widget.offer,
-          items: selectedItems,
-          private: widget.measurable.private ?? false,
-          provenanceComment: context.messages.goalRecordOfferProvenance(
-            widget.agentName,
-          ),
-        );
+    List<String>? saved;
+    try {
+      saved = await ref
+          .read(goalMeasurableCaptureServiceProvider)
+          .record(
+            agentId: widget.agentId,
+            agentName: widget.agentName,
+            offer: widget.offer,
+            items: selectedItems,
+            private: widget.measurable.private ?? false,
+            provenanceComment: context.messages.goalRecordOfferProvenance(
+              widget.agentName,
+            ),
+          );
+    } on Object {
+      if (mounted) {
+        setState(() {
+          _saving = false;
+          _error = context.messages.measurementSaveError;
+        });
+      }
+      return;
+    }
     if (!mounted) return;
     if (saved == null) {
       setState(() {
@@ -274,8 +299,7 @@ class _GoalRecordOfferCardState extends ConsumerState<GoalRecordOfferCard> {
                         leadingIcon: Icons.edit_note_rounded,
                       ),
                       DesignSystemButton(
-                        label:
-                            context.messages.dailyOsOnboardingSpotlightDismiss,
+                        label: context.messages.goalRecordOfferDismiss,
                         onPressed: _saving ? null : _dismiss,
                         variant: DesignSystemButtonVariant.secondary,
                       ),
@@ -316,8 +340,8 @@ class _RecordOfferRow extends StatelessWidget {
         IconButton(
           onPressed: () => onSelectionChanged(!selected),
           tooltip: selected
-              ? context.messages.changeSetSwipeReject
-              : context.messages.dailyOsNextRefineAccept,
+              ? context.messages.goalRecordOfferDeselectRow
+              : context.messages.goalRecordOfferSelectRow,
           icon: Icon(
             selected ? Icons.check_circle_rounded : Icons.cancel_outlined,
             color: selected

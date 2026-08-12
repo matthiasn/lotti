@@ -627,4 +627,45 @@ void main() {
       ),
     );
   });
+
+  test('loaded untitled dimensions remain untitled when rebuilt', () {
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'untitled-dimensions',
+      criteria: [
+        GoalCriterion.measurable(
+          criterionId: 'pages-v1',
+          dataTypeId: 'pages',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.sum,
+          target: 50,
+        ),
+        GoalCriterion.metric(
+          criterionId: 'weight-v1',
+          dataType: GoalHealthDataTypes.weight,
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 80,
+          direction: GoalDirection.atMost,
+        ),
+      ],
+    );
+
+    final rebuilt =
+        GoalFormMapping.fromCriteria(criteria).buildCriteria(
+              stepsTitle: 'Steps',
+              habitTargets: const {},
+              measurableTargets: const {'pages': 55},
+              measurableTitles: const {'pages': 'Localized pages'},
+              healthTargets: const {GoalHealthDataTypes.weight: 79},
+              healthTitles: const {
+                GoalHealthDataTypes.weight: 'Localized weight',
+              },
+            )!
+            as GoalCriterionAllOf;
+
+    expect(
+      rebuilt.criteria.map((criterion) => criterion.title),
+      [null, null],
+    );
+  });
 }

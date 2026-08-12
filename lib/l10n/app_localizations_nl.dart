@@ -6033,7 +6033,7 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalAssessmentPerDimension =>
-      'Beoordeel individuele afmetingen (optioneel)';
+      'Beoordeel individuele dimensies (optioneel)';
 
   @override
   String get goalAssessmentRecorded => 'Opgenomen';
@@ -6328,18 +6328,18 @@ class AppLocalizationsNl extends AppLocalizations {
   String get goalFormChooseHabit => 'Kies een bestaande gewoonte';
 
   @override
-  String get goalFormCompositeAll => 'Alle afmetingen';
+  String get goalFormCompositeAll => 'Alle dimensies';
 
   @override
   String get goalFormCompositeAllHint =>
       'Strikt – aan elke dimensie moet worden voldaan.';
 
   @override
-  String get goalFormCompositeAny => 'Elke dimensie';
+  String get goalFormCompositeAny => 'Een van de dimensies';
 
   @override
   String get goalFormCompositeAnyHint =>
-      'Losste - één met-dimensie is voldoende.';
+      'Losser — aan één dimensie voldoen is voldoende.';
 
   @override
   String goalFormCompositeAtLeast(int requiredCount, int dimensionCount) {
@@ -6662,6 +6662,12 @@ class AppLocalizationsNl extends AppLocalizations {
       'Je hebt dit op één van deze dagen al meetbaar vastgelegd. Vraag wat u moet bewaren voordat u iets opneemt.';
 
   @override
+  String get goalRecordOfferDeselectRow => 'Rij deselecteren';
+
+  @override
+  String get goalRecordOfferDismiss => 'Negeren';
+
+  @override
   String get goalRecordOfferEstimatedSplit =>
       'Geschatte splitsing: bewerk indien nodig';
 
@@ -6711,6 +6717,9 @@ class AppLocalizationsNl extends AppLocalizations {
 
   @override
   String get goalRecordOfferRecordOne => 'Invoer vastleggen';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Rij selecteren';
 
   @override
   String get goalStatusAchieved => 'Behaald';

@@ -11276,6 +11276,18 @@ abstract class AppLocalizations {
   /// **'You already logged this measurable on one of these days. Ask what should be kept before recording anything.'**
   String get goalRecordOfferConflict;
 
+  /// No description provided for @goalRecordOfferDeselectRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Deselect row'**
+  String get goalRecordOfferDeselectRow;
+
+  /// No description provided for @goalRecordOfferDismiss.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss'**
+  String get goalRecordOfferDismiss;
+
   /// No description provided for @goalRecordOfferEstimatedSplit.
   ///
   /// In en, this message translates to:
@@ -11329,6 +11341,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Record entry'**
   String get goalRecordOfferRecordOne;
+
+  /// No description provided for @goalRecordOfferSelectRow.
+  ///
+  /// In en, this message translates to:
+  /// **'Select row'**
+  String get goalRecordOfferSelectRow;
 
   /// Goal track status chip: target date passed with criteria met.
   ///

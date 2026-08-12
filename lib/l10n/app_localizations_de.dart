@@ -6684,6 +6684,12 @@ class AppLocalizationsDe extends AppLocalizations {
       'Du hast diese Messgröße an einem dieser Tage bereits protokolliert. Kläre vor dem Aufzeichnen, welcher Eintrag erhalten bleiben soll.';
 
   @override
+  String get goalRecordOfferDeselectRow => 'Zeilenauswahl aufheben';
+
+  @override
+  String get goalRecordOfferDismiss => 'Verwerfen';
+
+  @override
   String get goalRecordOfferEstimatedSplit =>
       'Geschätzte Aufteilung – bei Bedarf bearbeiten';
 
@@ -6733,6 +6739,9 @@ class AppLocalizationsDe extends AppLocalizations {
 
   @override
   String get goalRecordOfferRecordOne => 'Eintrag aufzeichnen';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Zeile auswählen';
 
   @override
   String get goalStatusAchieved => 'Erreicht';

@@ -6644,6 +6644,12 @@ class AppLocalizationsSv extends AppLocalizations {
       'Du har redan loggat detta mätbara en av dessa dagar. Fråga vad som ska sparas innan du spelar in något.';
 
   @override
+  String get goalRecordOfferDeselectRow => 'Avmarkera rad';
+
+  @override
+  String get goalRecordOfferDismiss => 'Avfärda';
+
+  @override
   String get goalRecordOfferEstimatedSplit =>
       'Beräknad uppdelning — redigera vid behov';
 
@@ -6693,6 +6699,9 @@ class AppLocalizationsSv extends AppLocalizations {
 
   @override
   String get goalRecordOfferRecordOne => 'Registrera post';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Markera rad';
 
   @override
   String get goalStatusAchieved => 'Uppnått';

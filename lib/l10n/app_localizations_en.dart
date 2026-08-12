@@ -6612,6 +6612,12 @@ class AppLocalizationsEn extends AppLocalizations {
       'You already logged this measurable on one of these days. Ask what should be kept before recording anything.';
 
   @override
+  String get goalRecordOfferDeselectRow => 'Deselect row';
+
+  @override
+  String get goalRecordOfferDismiss => 'Dismiss';
+
+  @override
   String get goalRecordOfferEstimatedSplit =>
       'Estimated split — edit if needed';
 
@@ -6660,6 +6666,9 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get goalRecordOfferRecordOne => 'Record entry';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Select row';
 
   @override
   String get goalStatusAchieved => 'Achieved';

@@ -3829,6 +3829,8 @@
   "goalProgressTitle": "This rolling week",
   "goalProgressToday": "today",
   "goalRecordOfferConflict": "You already logged this measurable on one of these days. Ask what should be kept before recording anything.",
+  "goalRecordOfferDeselectRow": "Deselect row",
+  "goalRecordOfferDismiss": "Dismiss",
   "goalRecordOfferEstimatedSplit": "Estimated split — edit if needed",
   "goalRecordOfferIntro": "I found a quantity in what you said. Check the values before anything is recorded.",
   "goalRecordOfferInvalidValue": "Enter a value greater than zero.",
@@ -3872,6 +3874,7 @@
     }
   },
   "goalRecordOfferRecordOne": "Record entry",
+  "goalRecordOfferSelectRow": "Select row",
   "goalStatusAchieved": "Achieved",
   "@goalStatusAchieved": {
     "description": "Goal track status chip: target date passed with criteria met."

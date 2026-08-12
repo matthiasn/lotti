@@ -6748,6 +6748,12 @@ class AppLocalizationsRo extends AppLocalizations {
       'Ați înregistrat deja acest element măsurabil într-una dintre aceste zile. Întrebați ce ar trebui păstrat înainte de a înregistra ceva.';
 
   @override
+  String get goalRecordOfferDeselectRow => 'Deselectați rândul';
+
+  @override
+  String get goalRecordOfferDismiss => 'Respingeți';
+
+  @override
   String get goalRecordOfferEstimatedSplit =>
       'Diviziunea estimată — editați dacă este necesar';
 
@@ -6797,6 +6803,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalRecordOfferRecordOne => 'Înregistrare intrare';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Selectați rândul';
 
   @override
   String get goalStatusAchieved => 'Atins';

@@ -230,7 +230,7 @@ class _GoalAgentRow extends ConsumerWidget {
                             children: [
                               Icon(
                                 goalHealthDirectionIcon(direction),
-                                size: tokens.spacing.step4,
+                                size: IconSizes.s,
                                 color: tokens.colors.text.mediumEmphasis,
                               ),
                               SizedBox(width: tokens.spacing.step1),
@@ -327,20 +327,22 @@ class _AttentionBadge extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    final info = tokens.colors.alert.info;
+    final warning = tokens.colors.alert.warning;
     return Container(
       padding: EdgeInsets.symmetric(
         horizontal: tokens.spacing.step3,
         vertical: tokens.spacing.step1,
       ),
       decoration: BoxDecoration(
-        color: info.defaultColor.withValues(alpha: SurfaceAlphas.washChip),
+        color: warning.defaultColor.withValues(
+          alpha: SurfaceAlphas.washChip,
+        ),
         borderRadius: BorderRadius.circular(tokens.radii.s),
       ),
       child: Text(
         context.messages.goalDominantIssueBadge(dimensionName),
         style: tokens.typography.styles.others.caption.copyWith(
-          color: info.ink,
+          color: warning.ink,
         ),
       ),
     );

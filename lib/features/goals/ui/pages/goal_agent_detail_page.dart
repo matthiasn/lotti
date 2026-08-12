@@ -177,7 +177,6 @@ class GoalAgentDetailPage extends ConsumerWidget {
                     isScrollControlled: true,
                     builder: (context) => GoalDayAssessmentSheet(
                       agentId: agentId,
-                      agentName: goalIdentity.displayName,
                       specVersionId: spec.id,
                       specVersion: spec.version,
                       day: day,

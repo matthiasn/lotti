@@ -40,9 +40,22 @@ class GoalAgentChatPane extends ConsumerWidget {
         : context.messages.agentsPageTitle;
     final statement = health?.spec?.statement;
     final tokens = context.designTokens;
+    final locale = Localizations.localeOf(context).toLanguageTag();
+    final now = clock.now();
+    final shortDay = DateFormat.E(locale);
+    final longDay = DateFormat.EEEE(locale);
+    final recentDayLabels = <DateTime, List<String>>{
+      for (var offset = 0; offset < 7; offset++)
+        now.subtract(Duration(days: offset)): [
+          shortDay.format(now.subtract(Duration(days: offset))),
+          longDay.format(now.subtract(Duration(days: offset))),
+          if (offset == 0) context.messages.calendarTodayLabel,
+          if (offset == 1) context.messages.knowledgeGraphAgeYesterday,
+        ],
+    };
 
     Widget? attachmentBuilder(
-      BuildContext attachmentContext,
+      BuildContext _,
       AgentChatMessage message,
     ) {
       final spec = health?.spec;
@@ -61,22 +74,6 @@ class GoalAgentChatPane extends ConsumerWidget {
               )
             : null;
       }
-      final locale = Localizations.localeOf(
-        attachmentContext,
-      ).toLanguageTag();
-      final now = clock.now();
-      final recentDayLabels = <DateTime, List<String>>{
-        for (var offset = 0; offset < 7; offset++)
-          now.subtract(Duration(days: offset)): [
-            DateFormat.E(locale).format(now.subtract(Duration(days: offset))),
-            DateFormat.EEEE(
-              locale,
-            ).format(now.subtract(Duration(days: offset))),
-            if (offset == 0) attachmentContext.messages.calendarTodayLabel,
-            if (offset == 1)
-              attachmentContext.messages.knowledgeGraphAgeYesterday,
-          ],
-      };
       final offer = parseGoalMeasurableRecordOffer(
         message: message,
         criteria: spec.criteria,

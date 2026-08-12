@@ -9,9 +9,12 @@ import 'package:lotti/features/goals/service/goal_measurable_capture_service.dar
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   test('the newest decision for a source message wins', () async {
     final repository = MockAgentRepository();
     final older = DateTime(2026, 8, 11, 9);
@@ -51,19 +54,21 @@ void main() {
         type: AgentEntityTypes.agentMessage,
       ),
     ).thenAnswer((_) async => [dismissed, recorded]);
-    when(() => repository.getEntity(any())).thenAnswer((invocation) async {
-      final id = invocation.positionalArguments.single as String;
-      return AgentDomainEntity.agentMessagePayload(
-        id: id,
-        agentId: 'goal-1',
-        createdAt: id == 'payload-dismissed' ? newer : older,
-        vectorClock: null,
-        content: {
-          'sourceMessageId': 'source-1',
-          if (id == 'payload-recorded') 'entryIds': ['measurement-1'],
-        },
-      );
-    });
+    when(() => repository.getEntitiesByIds(any())).thenAnswer(
+      (_) async => {
+        for (final id in ['payload-dismissed', 'payload-recorded'])
+          id: AgentDomainEntity.agentMessagePayload(
+            id: id,
+            agentId: 'goal-1',
+            createdAt: id == 'payload-dismissed' ? newer : older,
+            vectorClock: null,
+            content: {
+              'sourceMessageId': 'source-1',
+              if (id == 'payload-recorded') 'entryIds': ['measurement-1'],
+            },
+          ),
+      },
+    );
     final container = ProviderContainer(
       overrides: [
         agentRepositoryProvider.overrideWithValue(repository),

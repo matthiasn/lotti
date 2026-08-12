@@ -13,7 +13,7 @@ import '../../../mocks/mocks.dart';
 void main() {
   setUpAll(registerAllFallbackValues);
 
-  late MockAgentSyncService syncService;
+  late _TransactionalSyncService syncService;
   late MockPersistenceLogic persistenceLogic;
   late MockJournalDb journalDb;
   late List<AgentDomainEntity> upserts;
@@ -29,7 +29,7 @@ void main() {
   );
 
   setUp(() {
-    syncService = MockAgentSyncService();
+    syncService = _TransactionalSyncService();
     persistenceLogic = MockPersistenceLogic();
     journalDb = MockJournalDb();
     upserts = [];
@@ -105,6 +105,7 @@ void main() {
       expect(action.metadata.toolName, GoalMeasurableCaptureToolNames.recorded);
       expect(action.contentEntryId, payload.id);
       expect(action.createdAt, now);
+      expect(syncService.transactionCalls, 1);
     },
   );
 
@@ -122,6 +123,7 @@ void main() {
     final action = upserts.last as AgentMessageEntity;
     expect(payload.content['sourceMessageId'], 'source-message');
     expect(action.metadata.toolName, GoalMeasurableCaptureToolNames.dismissed);
+    expect(syncService.transactionCalls, 1);
   });
 
   test('rolls back every row when a later measurement fails', () async {
@@ -179,6 +181,37 @@ void main() {
     expect(measurements, isEmpty);
     expect(upserts, isEmpty);
   });
+
+  test('rejects non-positive values before writing anything', () async {
+    final result = await service.record(
+      agentId: 'goal-1',
+      agentName: 'Juno',
+      offer: offer,
+      items: [
+        GoalMeasurableRecordItem(
+          day: DateTime.utc(2026, 8, 12),
+          value: 0,
+          estimated: false,
+        ),
+      ],
+      private: true,
+      provenanceComment: 'Recorded by Juno.',
+    );
+
+    expect(result, isNull);
+    expect(measurements, isEmpty);
+    expect(upserts, isEmpty);
+  });
+}
+
+class _TransactionalSyncService extends MockAgentSyncService {
+  int transactionCalls = 0;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    transactionCalls++;
+    return action();
+  }
 }
 
 class _RollbackJournalDb extends MockJournalDb {

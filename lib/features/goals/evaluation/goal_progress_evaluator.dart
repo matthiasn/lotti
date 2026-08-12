@@ -313,7 +313,7 @@ class GoalProgressEvaluator {
             projectsHealthTrend &&
             aggregation == GoalAggregation.dailySumThenAverage &&
             window is GoalWindowRollingDays
-        ? _projectedDaysToTarget(series, target, direction)
+        ? _projectedDaysToTarget(series, actual, target, direction)
         : null;
     final elapsed = window.elapsedDays(reference);
     final coverage = elapsed == 0
@@ -335,6 +335,7 @@ class GoalProgressEvaluator {
 
   int? _projectedDaysToTarget(
     Map<DateTime, num> series,
+    num actual,
     num target,
     GoalDirection direction,
   ) {
@@ -368,16 +369,14 @@ class GoalProgressEvaluator {
     };
     if (!favorable) return null;
 
-    final intercept = meanY - slope * meanX;
-    final fittedLatest = intercept + slope * xs.last;
-    final latestMeetsTarget = switch (direction) {
-      GoalDirection.atLeast => fittedLatest >= target,
-      GoalDirection.atMost => fittedLatest <= target,
+    final aggregateMeetsTarget = switch (direction) {
+      GoalDirection.atLeast => actual >= target,
+      GoalDirection.atMost => actual <= target,
     };
-    if (latestMeetsTarget) return 0;
+    if (aggregateMeetsTarget) return 0;
     final days = switch (direction) {
-      GoalDirection.atLeast => (target - fittedLatest) / slope,
-      GoalDirection.atMost => (fittedLatest - target) / -slope,
+      GoalDirection.atLeast => (target - actual) / slope,
+      GoalDirection.atMost => (actual - target) / -slope,
     };
     if (!days.isFinite || days < 0 || days > trendProjectionHorizonDays) {
       return null;

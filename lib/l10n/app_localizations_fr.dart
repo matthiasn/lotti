@@ -6739,6 +6739,12 @@ class AppLocalizationsFr extends AppLocalizations {
       'Tu as déjà enregistré cette mesure pour l’un de ces jours. Vérifie quel enregistrement garder avant d’en ajouter un autre.';
 
   @override
+  String get goalRecordOfferDeselectRow => 'Désélectionner la ligne';
+
+  @override
+  String get goalRecordOfferDismiss => 'Ignorer';
+
+  @override
   String get goalRecordOfferEstimatedSplit =>
       'Répartition estimée – modifier si nécessaire';
 
@@ -6788,6 +6794,9 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get goalRecordOfferRecordOne => 'Enregistrer l’entrée';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Sélectionner la ligne';
 
   @override
   String get goalStatusAchieved => 'Atteint';

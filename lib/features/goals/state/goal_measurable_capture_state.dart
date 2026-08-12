@@ -63,11 +63,18 @@ goalMeasurableCaptureDecisionsProvider = FutureProvider.autoDispose
                 final byCreatedAt = b.createdAt.compareTo(a.createdAt);
                 return byCreatedAt != 0 ? byCreatedAt : b.id.compareTo(a.id);
               });
+        final payloadIds = actions
+            .map((action) => action.contentEntryId)
+            .whereType<String>()
+            .toSet();
+        final payloads = payloadIds.isEmpty
+            ? const <String, AgentDomainEntity>{}
+            : await repository.getEntitiesByIds(payloadIds);
         final decisions = <String, GoalMeasurableCaptureDecision>{};
         for (final action in actions) {
           final payloadId = action.contentEntryId;
           if (payloadId == null) continue;
-          final payload = await repository.getEntity(payloadId);
+          final payload = payloads[payloadId];
           if (payload is! AgentMessagePayloadEntity) continue;
           final sourceMessageId = payload.content['sourceMessageId'];
           if (sourceMessageId is! String || sourceMessageId.isEmpty) continue;

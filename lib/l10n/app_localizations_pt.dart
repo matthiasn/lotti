@@ -6699,6 +6699,12 @@ class AppLocalizationsPt extends AppLocalizations {
       'Você já registrou esse mensurável em um dia desses. Pergunte o que deve ser guardado antes de gravar qualquer coisa.';
 
   @override
+  String get goalRecordOfferDeselectRow => 'Desmarcar linha';
+
+  @override
+  String get goalRecordOfferDismiss => 'Ignorar';
+
+  @override
   String get goalRecordOfferEstimatedSplit =>
       'Divisão estimada – edite se necessário';
 
@@ -6747,6 +6753,9 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get goalRecordOfferRecordOne => 'Registar entrada';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Selecionar linha';
 
   @override
   String get goalStatusAchieved => 'Alcançado';

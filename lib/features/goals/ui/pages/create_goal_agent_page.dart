@@ -1091,6 +1091,7 @@ class _MappingStep extends StatelessWidget {
           for (final measurable in selectedMeasurables) ...[
             SizedBox(height: tokens.spacing.step3),
             DesignSystemSectionCard(
+              key: ValueKey('goal-form-measurable-card-${measurable.id}'),
               child: Row(
                 children: [
                   Icon(
@@ -1142,6 +1143,7 @@ class _MappingStep extends StatelessWidget {
           for (final entry in healthTargets.entries) ...[
             SizedBox(height: tokens.spacing.step3),
             _HealthTargetCard(
+              key: ValueKey('goal-form-health-card-${entry.key}'),
               dataType: entry.key,
               value: entry.value,
               direction: healthDirections[entry.key] ?? GoalDirection.atMost,
@@ -1363,6 +1365,7 @@ class _HealthTargetCard extends StatelessWidget {
     required this.onTargetChanged,
     required this.onDirectionChanged,
     required this.onRemove,
+    super.key,
   });
 
   final String dataType;

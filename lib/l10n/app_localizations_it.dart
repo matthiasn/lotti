@@ -6718,6 +6718,12 @@ class AppLocalizationsIt extends AppLocalizations {
       'Hai già registrato questo misurabile in uno di questi giorni. Chiedi cosa dovrebbe essere conservato prima di registrare qualsiasi cosa.';
 
   @override
+  String get goalRecordOfferDeselectRow => 'Deseleziona riga';
+
+  @override
+  String get goalRecordOfferDismiss => 'Ignora';
+
+  @override
   String get goalRecordOfferEstimatedSplit =>
       'Ripartizione stimata: modifica se necessario';
 
@@ -6767,6 +6773,9 @@ class AppLocalizationsIt extends AppLocalizations {
 
   @override
   String get goalRecordOfferRecordOne => 'Registrare la voce';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Seleziona riga';
 
   @override
   String get goalStatusAchieved => 'Raggiunto';

@@ -14,7 +14,6 @@ import 'package:lotti/l10n/app_localizations_context.dart';
 class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
   const GoalDayAssessmentSheet({
     required this.agentId,
-    required this.agentName,
     required this.specVersionId,
     required this.specVersion,
     required this.day,
@@ -23,7 +22,6 @@ class GoalDayAssessmentSheet extends ConsumerStatefulWidget {
   });
 
   final String agentId;
-  final String agentName;
   final String specVersionId;
   final int specVersion;
   final DateTime day;
@@ -74,8 +72,9 @@ class _GoalDayAssessmentSheetState
       }
       return;
     }
+    if (!mounted) return;
     ref.invalidate(goalAssessmentHistoryProvider(widget.agentId));
-    if (mounted) Navigator.of(context).pop();
+    Navigator.of(context).pop();
   }
 
   @override

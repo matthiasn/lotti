@@ -14,7 +14,7 @@ void main() {
   test(
     'stores a spec-bound assessment as an append-only action payload',
     () async {
-      final syncService = MockAgentSyncService();
+      final syncService = _TransactionalSyncService();
       final upserts = <AgentDomainEntity>[];
       when(() => syncService.upsertEntity(any())).thenAnswer((
         invocation,
@@ -61,6 +61,17 @@ void main() {
       expect(action.contentEntryId, payload.id);
       expect(action.metadata.toolName, GoalAssessmentToolNames.record);
       expect(action.createdAt, now);
+      expect(syncService.transactionCalls, 1);
     },
   );
+}
+
+class _TransactionalSyncService extends MockAgentSyncService {
+  int transactionCalls = 0;
+
+  @override
+  Future<T> runInTransaction<T>(Future<T> Function() action) {
+    transactionCalls++;
+    return action();
+  }
 }

@@ -6638,6 +6638,12 @@ class AppLocalizationsDa extends AppLocalizations {
       'Du har allerede logget dette målbare på en af ​​disse dage. Spørg, hvad der skal opbevares, før du optager noget.';
 
   @override
+  String get goalRecordOfferDeselectRow => 'Fravælg række';
+
+  @override
+  String get goalRecordOfferDismiss => 'Afvis';
+
+  @override
   String get goalRecordOfferEstimatedSplit =>
       'Estimeret opdeling - rediger om nødvendigt';
 
@@ -6686,6 +6692,9 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String get goalRecordOfferRecordOne => 'Registrer post';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Vælg række';
 
   @override
   String get goalStatusAchieved => 'Opnået';

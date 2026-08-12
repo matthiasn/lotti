@@ -6721,6 +6721,12 @@ class AppLocalizationsEs extends AppLocalizations {
       'Ya registró este valor medible uno de estos días. Pregunte qué se debe conservar antes de grabar cualquier cosa.';
 
   @override
+  String get goalRecordOfferDeselectRow => 'Deseleccionar fila';
+
+  @override
+  String get goalRecordOfferDismiss => 'Descartar';
+
+  @override
   String get goalRecordOfferEstimatedSplit =>
       'División estimada: editar si es necesario';
 
@@ -6770,6 +6776,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalRecordOfferRecordOne => 'Registrar entrada';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Seleccionar fila';
 
   @override
   String get goalStatusAchieved => 'Conseguido';

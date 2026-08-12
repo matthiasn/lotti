@@ -58,27 +58,27 @@ class GoalMeasurableCaptureService {
             if (entry == null) throw const _MeasurementCaptureAborted();
             ids.add(entry.meta.id);
           }
+          await _recordDecision(
+            agentId: agentId,
+            offer: offer,
+            toolName: GoalMeasurableCaptureToolNames.recorded,
+            extra: <String, Object?>{
+              'agentName': agentName,
+              'entryIds': ids,
+              'items': [
+                for (final item in items)
+                  <String, Object?>{
+                    'day': item.day.toIso8601String(),
+                    'value': item.value,
+                    'estimated': item.estimated,
+                  },
+              ],
+            },
+          );
           return ids;
         })
         .onError<_MeasurementCaptureAborted>((_, _) => const <String>[]);
     if (entryIds.isEmpty) return null;
-    await _recordDecision(
-      agentId: agentId,
-      offer: offer,
-      toolName: GoalMeasurableCaptureToolNames.recorded,
-      extra: <String, Object?>{
-        'agentName': agentName,
-        'entryIds': entryIds,
-        'items': [
-          for (final item in items)
-            <String, Object?>{
-              'day': item.day.toIso8601String(),
-              'value': item.value,
-              'estimated': item.estimated,
-            },
-        ],
-      },
-    );
     return entryIds;
   }
 
@@ -100,34 +100,36 @@ class GoalMeasurableCaptureService {
     final now = clock.now();
     final payloadId = _uuid.v4();
     final messageId = _uuid.v4();
-    await _syncService.upsertEntity(
-      AgentDomainEntity.agentMessagePayload(
-        id: payloadId,
-        agentId: agentId,
-        createdAt: now,
-        vectorClock: null,
-        content: <String, Object?>{
-          'sourceMessageId': offer.sourceMessageId,
-          'dataTypeId': offer.dataTypeId,
-          'measurableName': offer.measurableName,
-          'unitName': offer.unitName,
-          ...extra,
-        },
-      ),
-    );
-    await _syncService.upsertEntity(
-      AgentDomainEntity.agentMessage(
-        id: messageId,
-        agentId: agentId,
-        threadId: offer.sourceMessageId,
-        kind: AgentMessageKind.action,
-        createdAt: now,
-        vectorClock: null,
-        metadata: AgentMessageMetadata(toolName: toolName),
-        contentEntryId: payloadId,
-        triggerSourceId: offer.sourceMessageId,
-      ),
-    );
+    await _syncService.runInTransaction(() async {
+      await _syncService.upsertEntity(
+        AgentDomainEntity.agentMessagePayload(
+          id: payloadId,
+          agentId: agentId,
+          createdAt: now,
+          vectorClock: null,
+          content: <String, Object?>{
+            'sourceMessageId': offer.sourceMessageId,
+            'dataTypeId': offer.dataTypeId,
+            'measurableName': offer.measurableName,
+            'unitName': offer.unitName,
+            ...extra,
+          },
+        ),
+      );
+      await _syncService.upsertEntity(
+        AgentDomainEntity.agentMessage(
+          id: messageId,
+          agentId: agentId,
+          threadId: offer.sourceMessageId,
+          kind: AgentMessageKind.action,
+          createdAt: now,
+          vectorClock: null,
+          metadata: AgentMessageMetadata(toolName: toolName),
+          contentEntryId: payloadId,
+          triggerSourceId: offer.sourceMessageId,
+        ),
+      );
+    });
   }
 }
 

@@ -34,7 +34,6 @@ void main() {
         Scaffold(
           body: GoalDayAssessmentSheet(
             agentId: 'goal-1',
-            agentName: 'Juno',
             specVersionId: 'goal-1:spec-v1',
             specVersion: 1,
             day: day,

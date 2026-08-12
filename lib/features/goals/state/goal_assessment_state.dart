@@ -21,14 +21,20 @@ goalAssessmentHistoryProvider = FutureProvider.autoDispose
           agentId,
           type: AgentEntityTypes.agentMessage,
         );
+        final actions = entities.whereType<AgentMessageEntity>().where(
+          (action) =>
+              action.metadata.toolName == GoalAssessmentToolNames.record &&
+              action.contentEntryId != null,
+        );
+        final payloadIds = actions
+            .map((action) => action.contentEntryId!)
+            .toSet();
+        final payloads = payloadIds.isEmpty
+            ? const <String, AgentDomainEntity>{}
+            : await repository.getEntitiesByIds(payloadIds);
         final records = <GoalAssessmentRecord>[];
-        for (final action in entities.whereType<AgentMessageEntity>()) {
-          if (action.metadata.toolName != GoalAssessmentToolNames.record) {
-            continue;
-          }
-          final payloadId = action.contentEntryId;
-          if (payloadId == null) continue;
-          final payload = await repository.getEntity(payloadId);
+        for (final action in actions) {
+          final payload = payloads[action.contentEntryId];
           if (payload is! AgentMessagePayloadEntity) continue;
           final content = payload.content;
           final day = DateTime.tryParse(content['day'] as String? ?? '');

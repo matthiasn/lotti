@@ -213,4 +213,69 @@ void main() {
     expect(find.textContaining('already logged'), findsNWidgets(2));
     verifyZeroInteractions(service);
   });
+
+  testWidgets('a failed dismissal remains retryable', (tester) async {
+    final db = MockJournalDb();
+    final service = _MockGoalMeasurableCaptureService();
+    when(
+      () => db.getMeasurementsByType(
+        type: 'pages',
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+    final now = DateTime(2026, 8, 12);
+    final offer = GoalMeasurableRecordOffer(
+      sourceMessageId: 'message-1',
+      dataTypeId: 'pages',
+      measurableName: 'Pages read',
+      unitName: 'pages',
+      items: [
+        GoalMeasurableRecordItem(
+          day: DateTime.utc(2026, 8, 12),
+          value: 20,
+          estimated: false,
+        ),
+      ],
+    );
+    when(
+      () => service.dismiss(agentId: 'goal-1', offer: offer),
+    ).thenThrow(StateError('offline'));
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalRecordOfferCard(
+            agentId: 'goal-1',
+            agentName: 'Juno',
+            measurable: MeasurableDataType(
+              id: 'pages',
+              createdAt: now,
+              updatedAt: now,
+              displayName: 'Pages read',
+              description: '',
+              unitName: 'pages',
+              version: 1,
+              vectorClock: null,
+            ),
+            offer: offer,
+          ),
+        ),
+        overrides: [
+          journalDbProvider.overrideWithValue(db),
+          goalMeasurableCaptureServiceProvider.overrideWithValue(service),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Dismiss'));
+    await tester.pump();
+
+    expect(find.text("That didn't save — please try again."), findsOneWidget);
+    final retry = tester.widget<DesignSystemButton>(
+      find.widgetWithText(DesignSystemButton, 'Dismiss'),
+    );
+    expect(retry.isLoading, isFalse);
+    expect(retry.onPressed, isNotNull);
+  });
 }

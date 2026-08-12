@@ -1369,6 +1369,84 @@ void main() {
     );
   });
 
+  testWidgets('removing one health dimension preserves the other targets', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2600);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final current = _spec(
+      criteria: const GoalCriterion.habit(
+        criterionId: 'habit-gym-v3',
+        habitId: 'gym',
+        window: GoalWindow.rollingDays(count: 7),
+        targetCount: 2,
+      ),
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: current),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    for (final sourceKey in ['weight', 'blood-pressure']) {
+      await tester.tap(find.text('Add dimension'));
+      await tester.pumpAndSettle();
+      await tester.tap(
+        find.byKey(ValueKey('goal-form-health-source-$sourceKey')),
+      );
+      await tester.pumpAndSettle();
+    }
+    for (final entry in {
+      GoalHealthDataTypes.weight: '78',
+      GoalHealthDataTypes.bloodPressureSystolic: '122',
+      GoalHealthDataTypes.bloodPressureDiastolic: '82',
+    }.entries) {
+      await tester.enterText(
+        find.byKey(ValueKey('goal-form-health-target-${entry.key}')),
+        entry.value,
+      );
+    }
+
+    await tester.tap(
+      find.descendant(
+        of: find.byKey(
+          const ValueKey('goal-form-health-card-HealthDataType.WEIGHT'),
+        ),
+        matching: find.byIcon(Icons.close_rounded),
+      ),
+    );
+    await tester.pump();
+
+    String targetText(String dataType) => tester
+        .widget<EditableText>(
+          find.descendant(
+            of: find.byKey(ValueKey('goal-form-health-target-$dataType')),
+            matching: find.byType(EditableText),
+          ),
+        )
+        .controller
+        .text;
+    expect(
+      targetText(GoalHealthDataTypes.bloodPressureSystolic),
+      '122',
+    );
+    expect(
+      targetText(GoalHealthDataTypes.bloodPressureDiastolic),
+      '82',
+    );
+    expect(
+      find.byKey(
+        const ValueKey('goal-form-health-target-HealthDataType.WEIGHT'),
+      ),
+      findsNothing,
+    );
+  });
+
   testWidgets('a failed habit source explains that the list is unavailable', (
     tester,
   ) async {

@@ -147,7 +147,7 @@ void main() {
 
       expect(evaluation.satisfied, isFalse);
       expect(evaluation.onTrackByTrend, isTrue);
-      expect(evaluation.results['weight']!.projectedDaysToTarget, 10);
+      expect(evaluation.results['weight']!.projectedDaysToTarget, 13);
     });
 
     test('a flat or too-slow health trend is not projected on track', () {
@@ -232,7 +232,7 @@ void main() {
 
       expect(evaluation.satisfied, isFalse);
       expect(evaluation.onTrackByTrend, isTrue);
-      expect(evaluation.results['weight']!.projectedDaysToTarget, 8);
+      expect(evaluation.results['weight']!.projectedDaysToTarget, 11);
     });
 
     test('sum, count and max aggregate as named', () {

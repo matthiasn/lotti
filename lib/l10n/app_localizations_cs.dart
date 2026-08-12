@@ -6709,6 +6709,12 @@ class AppLocalizationsCs extends AppLocalizations {
       'V jeden z těchto dnů už máš tuto veličinu zaznamenanou. Než něco uložíš, ujasni si, který záznam se má zachovat.';
 
   @override
+  String get goalRecordOfferDeselectRow => 'Zrušit výběr řádku';
+
+  @override
+  String get goalRecordOfferDismiss => 'Zahodit';
+
+  @override
   String get goalRecordOfferEstimatedSplit =>
       'Odhadované rozdělení — v případě potřeby upravte';
 
@@ -6757,6 +6763,9 @@ class AppLocalizationsCs extends AppLocalizations {
 
   @override
   String get goalRecordOfferRecordOne => 'Záznam záznamu';
+
+  @override
+  String get goalRecordOfferSelectRow => 'Vybrat řádek';
 
   @override
   String get goalStatusAchieved => 'Splněno';
