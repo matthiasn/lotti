@@ -4,8 +4,10 @@ import 'package:gpt_markdown/gpt_markdown.dart';
 import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
 
 import '../../../../widget_test_utils.dart';
+import '../evolution/widgets/evolution_recorder_test_utils.dart';
 
 void main() {
   testWidgets('the visible message footer follows locale word order', (
@@ -327,5 +329,299 @@ void main() {
 
     expect(find.textContaining('Message 0'), findsOneWidget);
     expect(find.textContaining('Message 29'), findsNothing);
+  });
+
+  group('voice input', () {
+    testWidgets('shows a mic button when idle with no text', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              ChatRecorderController.new,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.send_rounded), findsNothing);
+    });
+
+    testWidgets('shows send when text is present and mic when cleared', (
+      tester,
+    ) async {
+      var draft = '';
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          StatefulBuilder(
+            builder: (context, setState) => Scaffold(
+              body: AgentChatView(
+                agentId: 'goal-1',
+                agentName: 'Juno',
+                draft: draft,
+                isSending: false,
+                onDraftChanged: (v) => setState(() => draft = v),
+                onSend: () {},
+                onRetry: () {},
+              ),
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              ChatRecorderController.new,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.send_rounded), findsNothing);
+
+      await tester.enterText(find.byType(TextField), 'Hello');
+      await tester.pump();
+
+      expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.mic_rounded), findsNothing);
+
+      await tester.enterText(find.byType(TextField), '');
+      await tester.pump();
+
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.send_rounded), findsNothing);
+    });
+
+    testWidgets('tapping the mic starts recording', (tester) async {
+      var startCalled = false;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              () => IdleCallbackController(
+                onStartCalled: () => startCalled = true,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.mic_rounded));
+      await tester.pump();
+
+      expect(startCalled, isTrue);
+    });
+
+    testWidgets('shows waveform and cancel/stop while recording', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              RecordingTestController.new,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.close_rounded), findsOneWidget);
+      expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('cancel button calls the recorder', (tester) async {
+      var cancelCalled = false;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              () => RecordingCallbackController(
+                onCancelCalled: () => cancelCalled = true,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.close_rounded));
+      await tester.pump();
+      expect(cancelCalled, isTrue);
+
+      // The controller transitions to idle, so the mic reappears.
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+    });
+
+    testWidgets('stop button calls the recorder', (tester) async {
+      var stopCalled = false;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              () => RecordingCallbackController(
+                onStopCalled: () => stopCalled = true,
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      await tester.tap(find.byIcon(Icons.stop_rounded));
+      await tester.pump();
+      expect(stopCalled, isTrue);
+    });
+
+    testWidgets('a finished transcript fills the text field', (tester) async {
+      var draft = '';
+      late TranscriptEmittingController controller;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          StatefulBuilder(
+            builder: (context, setState) => Scaffold(
+              body: AgentChatView(
+                agentId: 'goal-1',
+                agentName: 'Juno',
+                draft: draft,
+                isSending: false,
+                onDraftChanged: (v) => setState(() => draft = v),
+                onSend: () {},
+                onRetry: () {},
+              ),
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              () => controller = TranscriptEmittingController(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      controller.emitTranscript('I walked this morning.');
+      await tester.pumpAndSettle();
+
+      expect(
+        tester.widget<TextField>(find.byType(TextField)).controller?.text,
+        'I walked this morning.',
+      );
+      expect(draft, 'I walked this morning.');
+      expect(find.byIcon(Icons.send_rounded), findsOneWidget);
+    });
+
+    testWidgets('shows partial transcript while processing', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              () => ProcessingTestController(
+                partialTranscript: 'Transcribing audio…',
+              ),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.text('Transcribing audio…'), findsOneWidget);
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+    });
   });
 }
