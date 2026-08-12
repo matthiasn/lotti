@@ -3113,7 +3113,7 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get chatInputRecordingFailed =>
-      'Înregistrarea a eșuat. Te rog să încerci din nou.';
+      'Înregistrarea a eșuat. Vă rugăm să încercați din nou.';
 
   @override
   String get chatInputPleaseWait => 'Așteaptă...';

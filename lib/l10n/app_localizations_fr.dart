@@ -3107,7 +3107,7 @@ class AppLocalizationsFr extends AppLocalizations {
 
   @override
   String get chatInputRecordingFailed =>
-      'Échec de l\'enregistrement. Veuillez réessayer.';
+      'Échec de l\'enregistrement. Réessaie.';
 
   @override
   String get chatInputPleaseWait => 'Patiente un instant...';

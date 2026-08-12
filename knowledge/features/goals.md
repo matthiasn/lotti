@@ -581,6 +581,12 @@ flowchart TD
   mounted only for active goal agents. If the spec head moves while an
   interactive inference is running, output fencing fails the wake so the
   durable user turn remains retryable instead of completing without a reply.
+  The chat composer reuses the shared `chatRecorderControllerProvider` (the
+  same recorder the task-agent evolution chat uses) for voice input: a mic
+  trailing icon, waveform with cancel/stop, streaming partial transcript, and
+  auto-fill on completion. The recorder watch lives inside `_ChatComposer`
+  (a `ConsumerWidget`) so the 10 Hz amplitude stream rebuilds only the
+  composer subtree, not the full message list.
 - **Standing reports and governance remain visible.** The detail page always
   renders the report referenced by the authoritative current-scope report head;
   a delayed historical row cannot displace it merely by carrying a later local
