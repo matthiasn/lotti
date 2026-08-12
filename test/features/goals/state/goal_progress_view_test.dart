@@ -6,6 +6,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
@@ -181,6 +182,33 @@ void main() {
     expect(view.metric?.projectedOnTrack, isTrue);
     expect(view.metric?.days.last.value, 85);
     expect(view.metric?.unitName, 'kg');
+  });
+
+  test('blood-pressure health metrics keep mmHg in projection', () {
+    for (final dataType in [
+      GoalHealthDataTypes.bloodPressureSystolic,
+      GoalHealthDataTypes.bloodPressureDiastolic,
+    ]) {
+      final view = buildGoalProgressView(
+        criteria: GoalCriterion.metric(
+          criterionId: dataType,
+          dataType: dataType,
+          window: const GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.dailySumThenAverage,
+          target: 120,
+          direction: GoalDirection.atMost,
+        ),
+        signals: GoalSignalWindow(
+          quantitativeDailySums: {
+            dataType: {day(0): 120},
+          },
+        ),
+        reference: today,
+      );
+
+      expect(view.metric?.sourceId, dataType);
+      expect(view.metric?.unitName, 'mmHg', reason: dataType);
+    }
   });
 
   test('category time projects tracked hours and treats an empty elapsed day '
