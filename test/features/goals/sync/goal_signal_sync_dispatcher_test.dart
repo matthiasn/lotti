@@ -248,6 +248,43 @@ void main() {
     expect(evaluated, ['goal-a'], reason: 'one batch emits one UI refresh');
   });
 
+  test('a stale-watermark failure does not suppress same-batch bounded '
+      'evaluation', () async {
+    const composite = GoalCriterion.allOf(
+      criterionId: 'mixed',
+      criteria: [
+        criteria,
+        GoalCriterion.categoryTime(
+          criterionId: 'coding-time',
+          categoryId: 'coding',
+          window: GoalWindow.day(),
+          aggregation: GoalAggregation.sum,
+          targetHours: 2,
+        ),
+      ],
+    );
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [identity('goal-a', AgentKinds.goalAgent)]);
+    stubSpec('goal-a', goalCriteria: composite);
+    when(
+      () => agentService.markReportStale('goal-a'),
+    ).thenThrow(StateError('stale write failed'));
+
+    await dispatcher.dispatchBatch({
+      'cumulative_step_count',
+      goalStaleSignalTriggerTokens(composite).first,
+    });
+
+    verify(() => agentService.markReportStale('goal-a')).called(1);
+    expect(phaseA.calls.single.$2, {'cumulative_step_count'});
+    expect(
+      evaluated,
+      ['goal-a'],
+      reason: 'bounded evidence remains independently actionable',
+    );
+  });
+
   test('the listener pumps synced batches, starts once, and stops on '
       'dispose', () async {
     when(

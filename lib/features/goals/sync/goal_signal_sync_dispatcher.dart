@@ -67,7 +67,15 @@ class GoalSignalSyncDispatcher {
         final matched = await _matchedTokens(identity.agentId, tokens);
         if (matched.immediate.isEmpty && matched.stale.isEmpty) continue;
         if (matched.stale.isNotEmpty) {
-          await _agentService.markReportStale(identity.agentId);
+          try {
+            await _agentService.markReportStale(identity.agentId);
+          } catch (error, stackTrace) {
+            _log(
+              'marking goal report stale failed for one agent',
+              error,
+              stackTrace,
+            );
+          }
         }
         if (matched.immediate.isNotEmpty) {
           final runKey =
