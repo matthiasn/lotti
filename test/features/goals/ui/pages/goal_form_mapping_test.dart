@@ -642,6 +642,37 @@ void main() {
     );
   });
 
+  test('preserves a category-time direction when no override is supplied', () {
+    const criteria = GoalCriterion.categoryTime(
+      criterionId: 'deep-work-hours',
+      categoryId: 'deep-work',
+      title: 'Deep work',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.sum,
+      targetHours: 12,
+      direction: GoalDirection.atLeast,
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Steps',
+        habitTargets: const {},
+        categoryTimeTargets: const {'deep-work': 15},
+      ),
+      const GoalCriterion.categoryTime(
+        criterionId: 'deep-work-hours',
+        categoryId: 'deep-work',
+        title: 'Deep work',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 15,
+        direction: GoalDirection.atLeast,
+      ),
+    );
+  });
+
   test('builds new category-time leaves with stable identifiers', () {
     const draft = GoalFormMapping.empty();
 

@@ -238,6 +238,98 @@ void main() {
     },
   );
 
+  testWidgets('paired blood pressure reports when there is no observed data', (
+    tester,
+  ) async {
+    GoalMetricProgressView metric(String sourceId, String name, num target) =>
+        GoalMetricProgressView(
+          sourceId: sourceId,
+          name: name,
+          target: target,
+          direction: GoalDirection.atMost,
+          aggregation: GoalAggregation.max,
+          unitName: 'mmHg',
+          days: [
+            GoalProgressDay(day: today, value: 0, isObserved: false),
+          ],
+        );
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metrics: [
+              metric(
+                GoalHealthDataTypes.bloodPressureSystolic,
+                'Systolic blood pressure',
+                125,
+              ),
+              metric(
+                GoalHealthDataTypes.bloodPressureDiastolic,
+                'Diastolic blood pressure',
+                85,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('—'), findsOneWidget);
+    expect(
+      find.text('There is not enough data to judge this dimension yet.'),
+      findsOneWidget,
+    );
+    final chart = tester.widget<LineChart>(find.byType(LineChart));
+    expect(chart.data.lineBarsData, hasLength(2));
+    expect(
+      chart.data.lineBarsData.map((line) => line.spots),
+      everyElement(isEmpty),
+    );
+  });
+
+  testWidgets('paired blood pressure reports when both readings are on track', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metrics: [
+              GoalMetricProgressView(
+                sourceId: GoalHealthDataTypes.bloodPressureSystolic,
+                name: 'Systolic blood pressure',
+                target: 125,
+                direction: GoalDirection.atMost,
+                aggregation: GoalAggregation.max,
+                unitName: 'mmHg',
+                days: [day(1, 121), day(0, 122)],
+              ),
+              GoalMetricProgressView(
+                sourceId: GoalHealthDataTypes.bloodPressureDiastolic,
+                name: 'Diastolic blood pressure',
+                target: 85,
+                direction: GoalDirection.atMost,
+                aggregation: GoalAggregation.max,
+                unitName: 'mmHg',
+                days: [day(1, 79), day(0, 81)],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    expect(find.text('122 / 81 mmHg'), findsOneWidget);
+    expect(find.text('On track'), findsOneWidget);
+    expect(
+      find.text('This dimension is currently on track.'),
+      findsOneWidget,
+    );
+  });
+
   testWidgets('weight uses a line chart and omits missing samples', (
     tester,
   ) async {

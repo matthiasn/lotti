@@ -514,12 +514,22 @@ void main() {
     );
     expect(target, findsOneWidget);
     await tester.enterText(target, '12');
+    await tester.tap(
+      find
+          .descendant(
+            of: find.byKey(
+              const ValueKey('goal-form-category-time-direction-deep-work'),
+            ),
+            matching: find.text('At least'),
+          )
+          .last,
+    );
     await tester.tap(find.text('Looks right'));
     await tester.pumpAndSettle();
 
     expect(
       find.textContaining(
-        'Deep work: No more than 12 hours per rolling 7 days',
+        'Deep work: At least 12 hours per rolling 7 days',
       ),
       findsOneWidget,
     );
@@ -543,7 +553,131 @@ void main() {
         window: GoalWindow.rollingDays(count: 7),
         aggregation: GoalAggregation.sum,
         targetHours: 12,
+        direction: GoalDirection.atLeast,
       ),
+    );
+  });
+
+  testWidgets('matches category time from the intention with safe defaults', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(
+          categories: [_category('deep-work', 'Deep work')],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Deep work every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    final target = find.byKey(
+      const ValueKey('goal-form-category-time-target-deep-work'),
+    );
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(
+              of: target,
+              matching: find.byType(EditableText),
+            ),
+          )
+          .controller
+          .text,
+      '1',
+    );
+
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('Deep work: No more than 1'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('removed category time can be selected again', (tester) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(
+          categories: [_category('deep-work', 'Deep work')],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Track my week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deep work'));
+    await tester.pumpAndSettle();
+
+    final card = find.byKey(
+      const ValueKey('goal-form-category-time-card-deep-work'),
+    );
+    await tester.tap(
+      find.descendant(of: card, matching: find.byIcon(Icons.close_rounded)),
+    );
+    await tester.pumpAndSettle();
+    expect(card, findsNothing);
+
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    expect(find.text('Deep work'), findsOneWidget);
+  });
+
+  testWidgets('retains an unavailable category by its stored identifier', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    const criteria = GoalCriterion.categoryTime(
+      criterionId: 'archived-hours',
+      categoryId: 'archived',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.sum,
+      targetHours: 5,
+    );
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(agentId: 'goal-1'),
+        overrides: overrides(editSpec: _spec(criteria: criteria)),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    final card = find.byKey(
+      const ValueKey('goal-form-category-time-card-archived'),
+    );
+    expect(
+      find.descendant(of: card, matching: find.text('archived')),
+      findsOneWidget,
+    );
+
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+    expect(
+      find.textContaining('archived: No more than 5 hours per rolling 7 days'),
+      findsOneWidget,
     );
   });
 
