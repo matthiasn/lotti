@@ -31,6 +31,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
         return context.messages.aiProviderNebiusAiStudioName;
       case InferenceProviderType.openRouter:
         return context.messages.aiProviderOpenRouterName;
+      case InferenceProviderType.orcarouter:
+        return context.messages.aiProviderOrcarouterName;
       case InferenceProviderType.ollama:
         return context.messages.aiProviderOllamaName;
       case InferenceProviderType.whisper:
@@ -61,6 +63,8 @@ extension InferenceProviderTypeExtension on InferenceProviderType {
       case InferenceProviderType.omlx:
         return Icons.developer_board_rounded;
       case InferenceProviderType.openRouter:
+        return Icons.hub;
+      case InferenceProviderType.orcarouter:
         return Icons.hub;
       case InferenceProviderType.ollama:
         return Icons.computer;

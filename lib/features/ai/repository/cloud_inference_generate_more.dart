@@ -556,6 +556,7 @@ class CloudInferenceGenerateMore {
       case InferenceProviderType.omlx:
       case InferenceProviderType.openAi:
       case InferenceProviderType.openRouter:
+      case InferenceProviderType.orcarouter:
       case InferenceProviderType.ollama:
       case InferenceProviderType.voxtral:
       case InferenceProviderType.whisper:

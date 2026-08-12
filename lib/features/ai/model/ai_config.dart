@@ -24,6 +24,7 @@ enum InferenceProviderType {
   openAi,
   openRouter,
   ollama,
+  orcarouter,
   voxtral,
   whisper,
 }

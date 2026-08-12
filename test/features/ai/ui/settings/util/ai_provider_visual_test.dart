@@ -223,6 +223,7 @@ void main() {
           InferenceProviderType.melious,
           InferenceProviderType.alibaba,
           InferenceProviderType.mlxAudio,
+          InferenceProviderType.orcarouter,
         };
         for (final type in InferenceProviderType.values) {
           final tagline = aiProviderTagline(type: type, messages: messages);

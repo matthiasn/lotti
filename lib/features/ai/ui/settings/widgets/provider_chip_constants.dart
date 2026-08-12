@@ -43,6 +43,10 @@ class ProviderChipConstants {
       dark: Color(0xFF4ECDC4),
       light: Color(0xFF00BCD4), // Teal
     ),
+    InferenceProviderType.orcarouter: (
+      dark: Color(0xFF4ECDC4),
+      light: Color(0xFF00BCD4), // Teal
+    ),
     InferenceProviderType.genericOpenAi: (
       dark: Color(0xFFA78BFA),
       light: Color(0xFF9C27B0), // Purple

@@ -4320,6 +4320,7 @@ void main() {
       InferenceProviderType.mistral,
       InferenceProviderType.nebiusAiStudio,
       InferenceProviderType.openRouter,
+      InferenceProviderType.orcarouter,
     ]) {
       test('throws UnsupportedError for ${type.name} provider', () {
         final provider = AiConfigInferenceProvider(

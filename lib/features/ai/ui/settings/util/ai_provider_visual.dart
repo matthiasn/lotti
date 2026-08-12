@@ -157,6 +157,7 @@ String? aiProviderKeyConsoleUrl(InferenceProviderType? type) {
     InferenceProviderType.mistral => 'console.mistral.ai',
     InferenceProviderType.alibaba => 'dashscope.console.aliyun.com',
     InferenceProviderType.openRouter => 'openrouter.ai',
+    InferenceProviderType.orcarouter => 'orcarouter.ai',
     InferenceProviderType.nebiusAiStudio => 'studio.nebius.ai',
     _ => null,
   };
@@ -175,6 +176,7 @@ IconData aiProviderIcon(InferenceProviderType? type) {
     InferenceProviderType.mistral => Icons.air_rounded,
     InferenceProviderType.mlxAudio => Icons.memory_rounded,
     InferenceProviderType.alibaba => Icons.cloud_rounded,
+    InferenceProviderType.orcarouter => Icons.hub_rounded,
     _ => Icons.smart_toy_rounded,
   };
 }
@@ -199,6 +201,7 @@ String aiProviderDisplayName({
     InferenceProviderType.melious => messages.aiProviderMeliousName,
     InferenceProviderType.alibaba => messages.aiProviderAlibabaName,
     InferenceProviderType.openRouter => messages.aiProviderOpenRouterName,
+    InferenceProviderType.orcarouter => messages.aiProviderOrcarouterName,
     InferenceProviderType.nebiusAiStudio =>
       messages.aiProviderNebiusAiStudioName,
     InferenceProviderType.genericOpenAi => messages.aiProviderGenericOpenAiName,
@@ -225,6 +228,7 @@ String aiProviderTagline({
     InferenceProviderType.omlx => messages.aiProviderTaglineOmlx,
     InferenceProviderType.melious => messages.aiProviderTaglineMelious,
     InferenceProviderType.alibaba => messages.aiProviderTaglineAlibaba,
+    InferenceProviderType.orcarouter => messages.aiProviderTaglineOrcarouter,
     _ => '',
   };
 }
