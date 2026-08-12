@@ -31,16 +31,23 @@ import 'package:lotti/features/goals/workflow/goal_agent_contract.dart';
 import 'package:lotti/features/goals/workflow/goal_agent_workflow.dart';
 import 'package:lotti/features/goals/workflow/goal_tool_dispatcher.dart';
 import 'package:lotti/features/labels/repository/labels_repository.dart';
+import 'package:lotti/get_it.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/services/db_notification.dart' show agentNotification;
 import 'package:lotti/services/domain_logging.dart';
+import 'package:lotti/services/time_service.dart';
 import 'package:lotti/utils/consts.dart';
 
 /// Goal-agent runtime wiring (the Daily OS plug-in pattern: providers live
 /// in the owning feature; `features/agents` never imports goals).
 
 final goalSignalReaderProvider = Provider<GoalSignalReader>(
-  (ref) => GoalSignalReader(journalDb: ref.watch(journalDbProvider)),
+  (ref) => GoalSignalReader(
+    journalDb: ref.watch(journalDbProvider),
+    timeService: getIt.isRegistered<TimeService>()
+        ? getIt<TimeService>()
+        : null,
+  ),
   name: 'goalSignalReaderProvider',
 );
 

@@ -217,6 +217,20 @@ void main() {
       expect(issues.single, contains('endpoints must differ'));
     });
 
+    test('category time rejects day-count aggregation for hour targets', () {
+      const criterion = GoalCriterion.categoryTime(
+        criterionId: 'coding-days',
+        categoryId: 'vibe-coding',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.count,
+        targetHours: 2,
+      );
+
+      final issues = GoalSpecValidator.criterionIssues(criterion);
+
+      expect(issues.single, contains('count aggregation uses day units'));
+    });
+
     test('an empty atLeastCount reports childlessness, not a quota', () {
       const empty = GoalCriterion.atLeastCount(
         criterionId: 'root',

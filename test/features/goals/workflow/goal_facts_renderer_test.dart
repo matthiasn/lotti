@@ -404,6 +404,52 @@ void main() {
       expect(session['endedAtLocal'], '2026-08-09T01:45:00.000');
       expect(session['durationMinutes'], 150);
       expect(session.containsKey('satisfied'), isFalse);
+      final summary =
+          (signals['categoryTimeLifetimeSummary'] as List).single
+              as Map<String, dynamic>;
+      expect(summary['sessionCount'], 1);
+      expect(summary['totalMinutes'], 150);
+      final minutesByHour = summary['minutesByLocalHour'] as List;
+      expect(minutesByHour[23], 45);
+      expect(minutesByHour[0], 60);
+      expect(minutesByHour[1], 45);
     },
   );
+
+  test('lifetime category evidence keeps a bounded recent raw sample', () {
+    final sessions = [
+      for (var index = 0; index < 205; index++)
+        GoalCategoryTimeSession(
+          categoryId: 'vibe-coding',
+          dateFrom: DateTime(2026).add(Duration(hours: index)),
+          dateTo: DateTime(2026).add(
+            Duration(hours: index, minutes: 30),
+          ),
+        ),
+    ];
+
+    final json = renderedJson(
+      wakeFacts: facts(
+        categoryTimeSessions: {'vibe-coding': sessions},
+        categoryTimeEvidenceStart: DateTime(2026),
+        categoryTimeEvidenceEnd: DateTime(2026, 8, 10),
+      ),
+    );
+    final signals = json['signals'] as Map<String, dynamic>;
+
+    expect(signals['categoryTimeSessionCount'], 205);
+    expect(signals['categoryTimeSessionsOmitted'], 5);
+    expect(signals['categoryTimeSessions'], hasLength(200));
+    final recent = signals['categoryTimeSessions'] as List;
+    expect(
+      (recent.first as Map<String, dynamic>)['startedAtLocal'],
+      sessions[5].dateFrom.toIso8601String(),
+      reason: 'the bounded sample must retain the most recent raw sessions',
+    );
+    final summary =
+        (signals['categoryTimeLifetimeSummary'] as List).single
+            as Map<String, dynamic>;
+    expect(summary['sessionCount'], 205);
+    expect(summary['totalMinutes'], 205 * 30);
+  });
 }

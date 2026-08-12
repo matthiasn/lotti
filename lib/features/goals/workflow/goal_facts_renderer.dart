@@ -5,6 +5,7 @@ import 'package:lotti/classes/goal_criterion.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 
 // The dismissal quiet window is the REST OF THE LOCAL CALENDAR DAY (see
@@ -19,6 +20,10 @@ const goalAdFreshFor = Duration(hours: 48);
 /// Minimum mean rating for a retired ad to be offered for zero-cost
 /// re-run (policy row P13).
 const goalReusableMinMeanRating = 4.0;
+
+/// Maximum number of raw category sessions included in one model message.
+/// The complete lifetime remains represented by the bounded summaries below.
+const goalCategorySessionEvidenceLimit = 200;
 
 /// Renders the deterministic FACTS block for one Phase B wake.
 ///
@@ -48,6 +53,16 @@ class GoalFactsRenderer {
     final priorAttainments = [
       for (final row in priorRegisters) row.attainment,
     ];
+    final categorySessions = [
+      for (final sessions in facts.categoryTimeSessionsByCategory.values)
+        ...sessions,
+    ]..sort((a, b) => a.dateFrom.compareTo(b.dateFrom));
+    final recentCategorySessions =
+        categorySessions.length <= goalCategorySessionEvidenceLimit
+        ? categorySessions
+        : categorySessions.sublist(
+            categorySessions.length - goalCategorySessionEvidenceLimit,
+          );
 
     return _factsBlock({
       'generatedAt': now.toUtc().toIso8601String(),
@@ -101,19 +116,25 @@ class GoalFactsRenderer {
               ?.toIso8601String(),
           'categoryTimeEvidenceEnd': facts.categoryTimeEvidenceEnd
               ?.toIso8601String(),
+          'categoryTimeSessionCount': categorySessions.length,
+          'categoryTimeSessionsOmitted':
+              categorySessions.length - recentCategorySessions.length,
+          'categoryTimeLifetimeSummary': _categoryTimeLifetimeSummary(
+            facts.categoryTimeSessionsByCategory,
+          ),
           'categoryTimeSessions': [
-            for (final sessions in facts.categoryTimeSessionsByCategory.values)
-              for (final session in sessions)
-                {
-                  'categoryId': session.categoryId,
-                  'startedAtLocal': session.dateFrom.toIso8601String(),
-                  'endedAtLocal': session.dateTo.toIso8601String(),
-                  'durationMinutes': session.duration.inMinutes,
-                },
+            for (final session in recentCategorySessions)
+              {
+                'categoryId': session.categoryId,
+                'startedAtLocal': session.dateFrom.toIso8601String(),
+                'endedAtLocal': session.dateTo.toIso8601String(),
+                'durationMinutes': session.duration.inMinutes,
+              },
           ],
           'interpretationPolicy':
-              'session evidence may inform coaching patterns; it does not '
-              'override deterministic criterion results',
+              'lifetime summaries and recent session evidence may inform '
+              'coaching patterns; they do not override deterministic '
+              'criterion results',
         },
       'reporting': {
         'materialChangeSinceLastReport': facts.statusTransitioned,
@@ -135,6 +156,54 @@ class GoalFactsRenderer {
       'unansweredUserMessages': unansweredUserMessages,
       'observations': observations,
     });
+  }
+
+  List<Map<String, Object>> _categoryTimeLifetimeSummary(
+    Map<String, List<GoalCategoryTimeSession>> sessionsByCategory,
+  ) {
+    final categoryIds = sessionsByCategory.keys.toList()..sort();
+    return [
+      for (final categoryId in categoryIds)
+        _categorySummary(
+          categoryId,
+          sessionsByCategory[categoryId] ?? const [],
+        ),
+    ];
+  }
+
+  Map<String, Object> _categorySummary(
+    String categoryId,
+    List<GoalCategoryTimeSession> sessions,
+  ) {
+    final minutesByLocalHour = List<int>.filled(24, 0);
+    final minutesByLocalWeekday = List<int>.filled(7, 0);
+    var totalMinutes = 0;
+    for (final session in sessions) {
+      totalMinutes += session.duration.inMinutes;
+      var cursor = session.dateFrom;
+      while (cursor.isBefore(session.dateTo)) {
+        final nextHour = DateTime(
+          cursor.year,
+          cursor.month,
+          cursor.day,
+          cursor.hour + 1,
+        );
+        final segmentEnd = nextHour.isBefore(session.dateTo)
+            ? nextHour
+            : session.dateTo;
+        final minutes = segmentEnd.difference(cursor).inMinutes;
+        minutesByLocalHour[cursor.hour] += minutes;
+        minutesByLocalWeekday[cursor.weekday - DateTime.monday] += minutes;
+        cursor = segmentEnd;
+      }
+    }
+    return {
+      'categoryId': categoryId,
+      'sessionCount': sessions.length,
+      'totalMinutes': totalMinutes,
+      'minutesByLocalHour': minutesByLocalHour,
+      'minutesByLocalWeekday': minutesByLocalWeekday,
+    };
   }
 
   /// Worsening means: strictly declining attainment over today plus at

@@ -154,13 +154,14 @@ flowchart TD
   looking at.
 - **Pattern evidence is richer than the threshold.** Phase A reads only the
   bounded evaluation/lookback range. When Phase B actually runs, the same
-  reader additionally passes every valid attributed session for a watched
+  reader additionally loads every valid attributed session for a watched
   category since the goal agent was created, including sessions outside an
-  optional cutoff band. The FACTS block exposes category, local start/end and
-  duration, so the coach can notice late-night or clustering patterns without
-  making every cheap signal tick scan the goal's lifetime. Those sessions are
-  evidence only: the model may discuss them but cannot replace the
-  deterministic per-dimension result.
+  optional cutoff band. FACTS summarizes the complete lifetime into bounded
+  local-hour and weekday distributions, then adds the 200 most recent raw
+  sessions with category, local start/end and duration. The coach can therefore
+  notice late-night or clustering patterns without allowing one current model
+  message to grow forever. Those signals are evidence only: the model may
+  discuss them but cannot replace the deterministic per-dimension result.
 - **Subjective assessment is a separate governance layer.** Deterministic
   `goalProgress` registers are recomputed from source and must never carry a
   mutable opinion. A future daily-assessment register should therefore keep

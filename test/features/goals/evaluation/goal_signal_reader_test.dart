@@ -5,6 +5,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/classes/health.dart';
 import 'package:lotti/classes/journal_entities.dart';
+import 'package:lotti/classes/task.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/services/db_notification.dart';
 import 'package:mocktail/mocktail.dart';
@@ -13,6 +14,7 @@ import '../../../mocks/mocks.dart';
 
 void main() {
   late MockJournalDb journalDb;
+  late MockTimeService timeService;
   late GoalSignalReader reader;
 
   final reference = DateTime(2026, 8, 8, 14, 30);
@@ -60,7 +62,13 @@ void main() {
 
   setUp(() {
     journalDb = MockJournalDb();
-    reader = GoalSignalReader(journalDb: journalDb);
+    timeService = MockTimeService();
+    when(timeService.getCurrent).thenReturn(null);
+    when(() => timeService.linkedFrom).thenReturn(null);
+    reader = GoalSignalReader(
+      journalDb: journalDb,
+      timeService: timeService,
+    );
     when(
       () => journalDb.getQuantitativeByType(
         type: any(named: 'type'),
@@ -562,6 +570,152 @@ void main() {
     },
   );
 
+  test('category time includes the active linked-task timer', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'coding-cap',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 2,
+    );
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => journalDb.getConfigFlag('private'),
+    ).thenAnswer((_) async => false);
+    final startedAt = DateTime(2026, 8, 8, 22);
+    final running = JournalEntity.journalEntry(
+      meta: Metadata(
+        id: 'running',
+        createdAt: startedAt,
+        updatedAt: startedAt,
+        dateFrom: startedAt,
+        dateTo: startedAt,
+        categoryId: 'entry-category',
+      ),
+    );
+    final linkedTask = JournalEntity.task(
+      meta: Metadata(
+        id: 'task',
+        createdAt: startedAt,
+        updatedAt: startedAt,
+        dateFrom: startedAt,
+        dateTo: startedAt,
+        categoryId: 'vibe-coding',
+      ),
+      data: TaskData(
+        status: TaskStatus.open(
+          id: 'status',
+          createdAt: startedAt,
+          utcOffset: 0,
+        ),
+        dateFrom: startedAt,
+        dateTo: startedAt,
+        statusHistory: const [],
+        title: 'Coding',
+      ),
+    );
+    when(timeService.getCurrent).thenReturn(running);
+    when(() => timeService.linkedFrom).thenReturn(linkedTask);
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: DateTime(2026, 8, 8, 23, 30),
+    );
+
+    expect(
+      window.categoryTimeDailyHours['coding-cap'],
+      {DateTime.utc(2026, 8, 8): 1.5},
+    );
+    expect(
+      window.categoryTimeSessionsByCategory['vibe-coding']?.single.dateTo,
+      DateTime(2026, 8, 8, 23, 30),
+      reason: 'the in-memory timer endpoint must advance beyond persisted data',
+    );
+  });
+
+  test('a hidden private active timer contributes no category time', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'coding-cap',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 2,
+    );
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => []);
+    when(
+      () => journalDb.getConfigFlag('private'),
+    ).thenAnswer((_) async => false);
+    final startedAt = DateTime(2026, 8, 8, 22);
+    when(timeService.getCurrent).thenReturn(
+      JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'private-running',
+          createdAt: startedAt,
+          updatedAt: startedAt,
+          dateFrom: startedAt,
+          dateTo: startedAt,
+          categoryId: 'vibe-coding',
+          private: true,
+        ),
+      ),
+    );
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: DateTime(2026, 8, 8, 23),
+    );
+
+    expect(window.categoryTimeDailyHours['coding-cap'], isEmpty);
+    verify(() => journalDb.getConfigFlag('private')).called(1);
+  });
+
+  test('an unadvanced active timer remains zero-duration evidence', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'coding-cap',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 2,
+    );
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer((_) async => []);
+    final startedAt = DateTime(2026, 8, 8, 22);
+    when(timeService.getCurrent).thenReturn(
+      JournalEntity.journalEntry(
+        meta: Metadata(
+          id: 'just-started',
+          createdAt: startedAt,
+          updatedAt: startedAt,
+          dateFrom: startedAt,
+          dateTo: startedAt,
+          categoryId: 'vibe-coding',
+        ),
+      ),
+    );
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: startedAt,
+    );
+
+    expect(window.categoryTimeDailyHours['coding-cap'], isEmpty);
+    expect(window.categoryTimeSessionsByCategory, isEmpty);
+  });
+
   test(
     'category session evidence spans goal lifetime without widening evaluation',
     () async {
@@ -825,6 +979,7 @@ void main() {
           linkNotification,
           taskNotification,
           categoriesNotification,
+          privateToggleNotification,
         },
       );
     },

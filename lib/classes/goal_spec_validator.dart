@@ -1,4 +1,5 @@
 import 'package:lotti/classes/goal_criterion.dart';
+import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 
 /// Validates goal criteria before persistence and before evaluation
@@ -143,6 +144,7 @@ abstract final class GoalSpecValidator {
         :final categoryId,
         :final targetHours,
         :final window,
+        :final aggregation,
         :final dailyTimeRange,
       ):
         _requireIdentifier(id, 'categoryId', categoryId, issues);
@@ -150,6 +152,12 @@ abstract final class GoalSpecValidator {
         if (targetHours < 0) {
           issues.add(
             '$id: targetHours must not be negative, was $targetHours',
+          );
+        }
+        if (aggregation == GoalAggregation.count) {
+          issues.add(
+            '$id: count aggregation uses day units and is invalid for an '
+            'hour target',
           );
         }
         _requirePositiveRollingCount(id, window, issues);

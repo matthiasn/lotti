@@ -83,6 +83,10 @@ sealed class GoalCriterion with _$GoalCriterion {
   /// Model-facing wake facts may also include the underlying sessions for
   /// coaching-pattern analysis, but their deterministic result remains the
   /// authoritative measured outcome.
+  ///
+  /// [aggregation] remains hour-valued: `sum`, `dailySumThenAverage`, and `max`
+  /// are valid. `count` is rejected because it counts active days and cannot be
+  /// compared honestly with [targetHours].
   const factory GoalCriterion.categoryTime({
     required String criterionId,
     required String categoryId,

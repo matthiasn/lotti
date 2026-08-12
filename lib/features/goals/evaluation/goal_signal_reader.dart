@@ -9,6 +9,7 @@ import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
 import 'package:lotti/features/insights/model/insights_models.dart';
 import 'package:lotti/services/db_notification.dart';
+import 'package:lotti/services/time_service.dart';
 
 /// Reads the journal into a [GoalSignalWindow] for one criteria tree —
 /// the seam between the pure evaluator and the database (Phase A of
@@ -32,9 +33,13 @@ import 'package:lotti/services/db_notification.dart';
 ///   union rules. Overlapping timers in one category count once, while an
 ///   optional daily time range clips the absolute spans in local time.
 class GoalSignalReader {
-  const GoalSignalReader({required this._journalDb});
+  const GoalSignalReader({
+    required this._journalDb,
+    this._timeService,
+  });
 
   final JournalDb _journalDb;
+  final TimeService? _timeService;
 
   /// Loads every signal series the [criteria] tree needs to be evaluated
   /// at [reference], covering the widest leaf window plus the short-term
@@ -139,6 +144,24 @@ class GoalSignalReader {
         start: queryStart,
         end: rangeEnd,
       );
+      final activeTimerRow = await _activeTimerRow(reference);
+      if (activeTimerRow != null &&
+          activeTimerRow.dateTo.isAfter(queryStart) &&
+          activeTimerRow.dateFrom.isBefore(rangeEnd)) {
+        // The persisted row for a running timer has a stale zero-length end
+        // and is normally absent from Insights. If it was saved while still
+        // running, replace that stale prefix rather than duplicating the raw
+        // evidence; interval union keeps deterministic totals honest either
+        // way, but the model-facing session list must remain one session.
+        rows
+          ..removeWhere(
+            (row) =>
+                row.categoryId == activeTimerRow.categoryId &&
+                row.dateFrom == activeTimerRow.dateFrom,
+          )
+          ..add(activeTimerRow)
+          ..sort((a, b) => a.dateFrom.compareTo(b.dateFrom));
+      }
       final watchedCategoryIds = {
         for (final criterion in needs.categoryTimeCriteria)
           criterion.categoryId,
@@ -191,6 +214,36 @@ class GoalSignalReader {
           needs.categoryTimeCriteria.isEmpty || !includeCategoryTimeSessions
           ? null
           : rangeEnd,
+    );
+  }
+
+  Future<InsightsTimeRowRecord?> _activeTimerRow(DateTime reference) async {
+    final timeService = _timeService;
+    final current = timeService?.getCurrent();
+    if (current is! JournalEntry) return null;
+
+    final linked = timeService?.linkedFrom;
+    final needsPrivateFlag =
+        current.meta.private == true || linked?.meta.private == true;
+    final showPrivate =
+        !needsPrivateFlag || await _journalDb.getConfigFlag('private');
+    if (current.meta.private == true && !showPrivate) return null;
+
+    final linkedCategory = linked?.meta.private == true && !showPrivate
+        ? null
+        : linked?.meta.categoryId;
+    final categoryId = linkedCategory?.trim().isNotEmpty == true
+        ? linkedCategory
+        : current.meta.categoryId;
+    if (categoryId == null || categoryId.trim().isEmpty) return null;
+
+    final persistedEnd = current.meta.dateTo;
+    final dateTo = persistedEnd.isAfter(reference) ? persistedEnd : reference;
+    if (!dateTo.isAfter(current.meta.dateFrom)) return null;
+    return (
+      dateFrom: current.meta.dateFrom,
+      dateTo: dateTo,
+      categoryId: categoryId,
     );
   }
 
@@ -399,6 +452,7 @@ Set<String> goalSignalTriggerTokens(GoalCriterion criteria) {
       linkNotification,
       taskNotification,
       categoriesNotification,
+      privateToggleNotification,
     },
   };
 }
