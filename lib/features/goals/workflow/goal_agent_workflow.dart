@@ -227,6 +227,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     final escalationPeriod = goalEscalationPeriodFromTriggerTokens(
       triggerTokens,
     );
+    final overdueEscalation = _isPastPeriod(escalationPeriod, now);
     final reference = _escalationReference(escalationPeriod, now);
     // A delayed escalation may outlive a spec revision: the period's
     // register row records the version that actually armed the wake, and
@@ -257,6 +258,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
       version: version,
       now: reference,
       categorySessionEvidenceStart: agentIdentity.createdAt,
+      categoryTimeEndExclusive: overdueEscalation
+          ? _periodEndExclusive(escalationPeriod!)
+          : null,
     );
     // Phase A persisted the transition's register row BEFORE arming this
     // wake, so re-deriving sees the new status as previousStatus and the
@@ -597,7 +601,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
         }
       }
 
-      return const WakeResult(success: true);
+      return WakeResult(
+        success: true,
+        reportUpdated: strategy.hasReport,
+      );
     } catch (error, stackTrace) {
       _domainLogger?.error(
         LogDomain.agentWorkflow,
@@ -839,6 +846,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
     return DateTime(parts.$1, parts.$2, parts.$3, 23, 59, 59);
   }
 
+  /// Exclusive local end of an encoded day, preserving the final second.
+  DateTime? _periodEndExclusive(String periodKey) {
+    final parts = _periodParts(periodKey);
+    if (parts == null) return null;
+    return DateTime(parts.$1, parts.$2, parts.$3 + 1);
+  }
+
   (int, int, int)? _periodParts(String periodKey) {
     final parts = periodKey.split('-');
     if (parts.length != 3) return null;
@@ -855,10 +869,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// lexically ordered, so a plain string compare detects a past period.
   DateTime _escalationReference(String? periodKey, DateTime now) {
     if (periodKey == null) return now;
-    final today = const GoalWindow.day().periodKey(now);
-    if (periodKey.compareTo(today) >= 0) return now;
+    if (!_isPastPeriod(periodKey, now)) return now;
     return _periodEnd(periodKey) ?? now;
   }
+
+  bool _isPastPeriod(String? periodKey, DateTime now) =>
+      periodKey != null &&
+      periodKey.compareTo(const GoalWindow.day().periodKey(now)) < 0;
 
   /// glm-5.2 on Melious is the validated default (the model the eval
   /// matrix proved the contract against); an AI profile on the agent's

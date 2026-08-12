@@ -16,6 +16,7 @@ void main() {
       expect(result.mutatedEntries, {
         'entity-1': const VectorClock({'host-a': 1}),
       });
+      expect(result.reportUpdated, isFalse);
       expect(result.error, isNull);
     });
 
@@ -28,9 +29,10 @@ void main() {
     });
 
     test('defaults mutatedEntries to empty map', () {
-      const result = WakeResult(success: true);
+      const result = WakeResult(success: true, reportUpdated: true);
 
       expect(result.mutatedEntries, isEmpty);
+      expect(result.reportUpdated, isTrue);
       expect(result.error, isNull);
     });
   });

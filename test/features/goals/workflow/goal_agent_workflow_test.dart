@@ -46,6 +46,7 @@ class _FakeReader extends GoalSignalReader {
     int shortTermDays = 3,
     bool includeCategoryTimeSessions = true,
     DateTime? categorySessionEvidenceStart,
+    DateTime? categoryTimeEndExclusive,
   }) async => window;
 }
 
@@ -954,6 +955,7 @@ void main() {
       );
 
       expect(result.success, isTrue);
+      expect(result.reportUpdated, isTrue);
       final replacement = upserts.whereType<GoalNudgeEntity>().single;
       expect(replacement.status, GoalNudgeStatus.active);
       expect(replacement.brief.headline, 'Zeit, wieder loszulegen.');
@@ -1562,6 +1564,11 @@ void main() {
 
     final result = await run();
     expect(result.success, isTrue);
+    expect(
+      result.reportUpdated,
+      isFalse,
+      reason: 'a successful inference turn did not replace the report',
+    );
     verify(
       () => attribution.prepareCompletion(
         attributionId: any(named: 'attributionId'),

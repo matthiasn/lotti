@@ -22,8 +22,10 @@ today:
   minimum/maximum hours and optional local time bands, and give Phase B the
   bounded raw session evidence needed to discuss timing patterns. Tracked-time
   mutations mark the standing report out of date without waking the agent for
-  every timer edit; the daily cadence or Update now consumes the accumulated
-  evidence. Habit and measured-data observations remain immediate.
+  every timer edit; the daily cadence consumes accumulated evidence into the
+  deterministic progress register, while only a report-producing transition
+  or Update now clears the stale report. Habit and measured-data observations
+  remain immediate.
 - `GoalSpecValidator` (in `lib/classes/goal_spec_validator.dart`, beside
   the vocabulary it validates) — the decode-boundary gate, invoked from
   `AgentDomainEntity.fromJson` so every path (Matrix sync, storage reads)

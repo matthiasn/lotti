@@ -77,6 +77,7 @@ the rollout flag.
 flowchart TD
     subgraph triggers [Triggers — every device]
         SIG[localUpdateStream signals\nleaf dataTypes, habitIds,\nmeasurable ids] --> ORCH[WakeOrchestrator\nsubscription match]
+        LOCALTIME[local category-time mutation] --> STALE[advance report-stale watermark\nno wake]
         SYNC[syncUpdateStream] --> DISP[GoalSignalSyncDispatcher]
         CAD[cadence ScheduledWakeEntity\nworkspace goal-cadence,\ndaily at 06:00 local] --> MGR[ScheduledWakeManager]
         CHAT[Goal chat composer] --> STORE[persist user message + payload]
@@ -85,7 +86,9 @@ flowchart TD
         HABITWRITE --> SIG
     end
     ORCH --> PA[GoalAgentPhaseA.execute]
-    DISP --> PA
+    DISP --> SYNCROUTE{bounded signal or\ncategory-time mutation?}
+    SYNCROUTE -- bounded --> PA
+    SYNCROUTE -- category time --> STALE
     MGR --> PA
     PA --> HEAD[spec head → active version\nno head = clean no-op]
     HEAD --> REARM[re-arm cadence\nrecurrence by re-arm]
@@ -179,10 +182,12 @@ flowchart TD
   without erasing any dimension's measured result. No producer for that
   assessment register exists yet.
 - **Automatic Phase B is reachable only through the lease; direct chat and
-  detail-page refreshes are explicit user wakes.** Sync-received signals run Phase A directly (the
-  orchestrator deliberately listens local-only); automatic LLM-worthy work
-  becomes a `goal-escalation:<periodKey>` scheduled wake whose lease election
-  picks exactly one device. A durable source chat turn instead carries a
+  detail-page refreshes are explicit user wakes.** The orchestrator listens
+  local-only. On sync, bounded habit/measured signals run Phase A directly,
+  while category-time mutations only advance the receiving agent's durable
+  report-stale watermark. Automatic LLM-worthy work becomes a
+  `goal-escalation:<periodKey>` scheduled wake whose lease election picks
+  exactly one device. A durable source chat turn instead carries a
   `goal-chat-message:<messageId>` trigger on a manual `userMessage` wake. The
   source exists before enqueue, the wake bypasses throttling, and no chat UI
   owns an inference loop. A successful exact-day habit edit also enqueues a
@@ -208,7 +213,9 @@ flowchart TD
   period never advances the current report head. A failed Phase B wake
   re-arms its escalation with a later deadline (the resolver's supported
   reschedule-beats-consume path), so a transient failure cannot orphan
-  the period.
+  the period. Completed historical periods read category time through the next
+  local midnight as an exclusive bound, so their final second is not lost;
+  live periods remain clipped at the evaluation instant.
 - **Ad contracts are enforced at persistence, not just in the prompt.**
   `persistOutputs` re-reads the nudge rows (a dismissal during inference
   must count), and suppresses creates/re-runs during the same-day dismissal
@@ -499,8 +506,13 @@ flowchart TD
   Insights, but those mutations only advance the durable report-stale
   watermark. They do not queue Phase A or inference for every timer edit. The
   existing 06:00 cadence evaluates accumulated changes automatically, while
-  Update now remains the explicit immediate path. Habit and measured-data
-  signals stay immediate because each write is a bounded observation.
+  Update now remains the explicit immediate report path. A deterministic
+  cadence pass may refresh progress registers but does not clear the stale
+  badge unless a report-producing wake durably replaces the standing report.
+  Synced category-time journal facts re-advance the watermark on their receiving
+  device, including when they arrive after an earlier Update now. Habit and
+  measured-data signals stay immediate because each write is a bounded
+  observation.
 - **Conversation scope is the goal.** The contract identifies the agent as a
   dedicated coach rather than a general assistant. Coding, trivia and other
   unrelated requests receive a short purpose reminder and a redirect to the

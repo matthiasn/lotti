@@ -502,7 +502,11 @@ extension WakeDrainEngine on WakeOrchestrator {
         );
         _emitRunCompletion(job, WakeRunStatus.completed);
 
-        await _markReportFresh(job.agentId, refreshStartedAt: startTime);
+        final reportUpdated =
+            mutated is! WakeExecutorResult || mutated.reportUpdated;
+        if (reportUpdated) {
+          await _markReportFresh(job.agentId, refreshStartedAt: startTime);
+        }
 
         // Only arm a follow-up throttle deadline when work remains queued;
         // otherwise the persisted `nextWakeAt` surfaces in the Wake Cycles

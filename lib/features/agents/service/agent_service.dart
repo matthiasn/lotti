@@ -164,6 +164,10 @@ class AgentService {
   bool abortRunningWake(String agentId) =>
       orchestrator.abortRunningWake(agentId);
 
+  /// Marks the standing report stale without scheduling inference.
+  Future<void> markReportStale(String agentId) =>
+      orchestrator.markReportStale(agentId);
+
   /// Remove a persisted scheduled wake from the agent state.
   Future<void> clearScheduledWake(String agentId) async {
     final state = await repository.getAgentState(agentId);

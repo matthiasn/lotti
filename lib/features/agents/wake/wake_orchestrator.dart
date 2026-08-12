@@ -1,4 +1,5 @@
 import 'dart:async';
+import 'dart:collection';
 
 import 'package:clock/clock.dart';
 import 'package:lotti/features/agents/database/agent_database.dart';
@@ -114,6 +115,21 @@ typedef WakeExecutor =
       Set<String> triggers,
       String threadId,
     );
+
+/// Backward-compatible executor payload with report-refresh metadata.
+///
+/// The suppression contract historically returned only mutated entity clocks.
+/// Keeping this as a map preserves that contract while allowing owning agent
+/// features to say that a successful maintenance wake did not replace their
+/// standing report.
+class WakeExecutorResult extends UnmodifiableMapView<String, VectorClock> {
+  WakeExecutorResult(
+    super.map, {
+    required this.reportUpdated,
+  });
+
+  final bool reportUpdated;
+}
 
 /// Returns the current global limit for simultaneously executing wake cycles.
 typedef MaxConcurrentWakes = int Function();
@@ -798,6 +814,19 @@ class WakeOrchestrator with AgentErrorLogging {
     );
     return true;
   }
+
+  /// Persists a report-stale watermark without queueing a wake.
+  ///
+  /// Sync-side signal dispatchers use this when high-frequency evidence
+  /// arrives after a prior refresh. The write shares the same per-agent
+  /// serialization as notification-driven stale/fresh updates.
+  Future<void> markReportStale(
+    String agentId, {
+    DateTime? occurredAt,
+  }) => _serializeFreshnessWrite(
+    agentId,
+    () => _persistReportStale(agentId, occurredAt ?? clock.now()),
+  );
 
   // ── Internal notification handling ─────────────────────────────────────────
 

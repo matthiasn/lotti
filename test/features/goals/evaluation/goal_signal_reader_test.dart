@@ -456,7 +456,10 @@ void main() {
       ],
     );
     expect(
-      goalSignalTriggerTokens(composite),
+      {
+        ...goalImmediateSignalTriggerTokens(composite),
+        ...goalStaleSignalTriggerTokens(composite),
+      },
       {'cumulative_step_count', 'gym-habit', 'water-id'},
     );
   });
@@ -628,6 +631,54 @@ void main() {
       reference,
     );
     expect(window.categoryTimeEvidenceEnd, reference);
+  });
+
+  test('a completed historical day uses the next midnight as its exclusive '
+      'category-time endpoint', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'coding-cap',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 2,
+    );
+    final reference = DateTime(2026, 8, 8, 23, 59, 59);
+    final endExclusive = DateTime(2026, 8, 9);
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        (
+          entryId: 'final-second',
+          dateFrom: reference,
+          dateTo: endExclusive,
+          categoryId: 'vibe-coding',
+        ),
+      ],
+    );
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: reference,
+      categoryTimeEndExclusive: endExclusive,
+    );
+
+    final queryEnd = verify(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: captureAny(named: 'end'),
+      ),
+    ).captured.single;
+    expect(queryEnd, endExclusive);
+    expect(
+      window.categoryTimeSessionsByCategory['vibe-coding']?.single.dateTo,
+      endExclusive,
+      reason: 'the final second belongs to the completed period',
+    );
+    expect(window.categoryTimeEvidenceEnd, endExclusive);
   });
 
   test('category time replaces a persisted active timer prefix', () async {
@@ -1066,21 +1117,15 @@ void main() {
         targetHours: 8,
       );
 
-      expect(
-        goalSignalTriggerTokens(criterion),
-        {
-          textEntryNotification,
-          linkNotification,
-          taskNotification,
-          categoriesNotification,
-          privateToggleNotification,
-        },
-      );
+      const expected = {
+        textEntryNotification,
+        linkNotification,
+        taskNotification,
+        categoriesNotification,
+        privateToggleNotification,
+      };
       expect(goalImmediateSignalTriggerTokens(criterion), isEmpty);
-      expect(
-        goalStaleSignalTriggerTokens(criterion),
-        goalSignalTriggerTokens(criterion),
-      );
+      expect(goalStaleSignalTriggerTokens(criterion), expected);
     },
   );
 

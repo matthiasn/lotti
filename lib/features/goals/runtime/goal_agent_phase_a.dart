@@ -225,6 +225,7 @@ class GoalAgentPhaseA {
     required DateTime now,
     bool includeCategoryTimeSessions = true,
     DateTime? categorySessionEvidenceStart,
+    DateTime? categoryTimeEndExclusive,
   }) async {
     final signals = await _signalReader.read(
       criteria: version.criteria,
@@ -232,6 +233,7 @@ class GoalAgentPhaseA {
       shortTermDays: _policy.shortTermDays,
       includeCategoryTimeSessions: includeCategoryTimeSessions,
       categorySessionEvidenceStart: categorySessionEvidenceStart,
+      categoryTimeEndExclusive: categoryTimeEndExclusive,
     );
     final evaluation = _evaluator.evaluate(version.criteria, signals, now);
     final shortTerm = _evaluator.shortTermAttainment(

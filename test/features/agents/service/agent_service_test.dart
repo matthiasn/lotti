@@ -659,6 +659,18 @@ void main() {
       );
     });
 
+    group('markReportStale', () {
+      test('delegates to the no-wake watermark path', () async {
+        when(
+          () => mockOrchestrator.markReportStale('agent-1'),
+        ).thenAnswer((_) async {});
+
+        await service.markReportStale('agent-1');
+
+        verify(() => mockOrchestrator.markReportStale('agent-1')).called(1);
+      });
+    });
+
     group('clearScheduledWake', () {
       test('persists state with scheduledWakeAt cleared', () async {
         final state = makeTestState(

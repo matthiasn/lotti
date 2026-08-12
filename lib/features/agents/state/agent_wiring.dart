@@ -114,7 +114,12 @@ void wireWakeExecutor(
         extraTokens: triggers,
       );
 
-      return result.mutatedEntries;
+      return identity.kind == AgentKinds.goalAgent
+          ? WakeExecutorResult(
+              result.mutatedEntries,
+              reportUpdated: result.reportUpdated,
+            )
+          : result.mutatedEntries;
     }
 
     // Default: task agent workflow.

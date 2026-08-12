@@ -45,13 +45,16 @@ class GoalSignalReader {
   /// at [reference], covering the widest leaf window plus the short-term
   /// trend lookback. When [categorySessionEvidenceStart] is supplied, raw
   /// watched-category sessions extend back to that instant without widening
-  /// the deterministic criterion's authored evaluation window.
+  /// the deterministic criterion's authored evaluation window. A completed
+  /// historical period may supply [categoryTimeEndExclusive] as the following
+  /// local midnight; live periods default to clipping at [reference].
   Future<GoalSignalWindow> read({
     required GoalCriterion criteria,
     required DateTime reference,
     int shortTermDays = 3,
     bool includeCategoryTimeSessions = true,
     DateTime? categorySessionEvidenceStart,
+    DateTime? categoryTimeEndExclusive,
   }) async {
     final needs = _SignalNeeds()..collect(criteria);
     final rangeStart = _rangeStart(criteria, reference, shortTermDays);
@@ -63,7 +66,10 @@ class GoalSignalReader {
       reference.month,
       reference.day + 1,
     );
-    final categoryTimeEnd = reference.isBefore(rangeEnd) ? reference : rangeEnd;
+    final requestedCategoryTimeEnd = categoryTimeEndExclusive ?? reference;
+    final categoryTimeEnd = requestedCategoryTimeEnd.isBefore(rangeEnd)
+        ? requestedCategoryTimeEnd
+        : rangeEnd;
 
     final quantitative = <String, Map<DateTime, num>>{};
     for (final dataType in needs.quantitativeTypes) {
@@ -433,28 +439,6 @@ class GoalSignalReader {
     // Back to local wall-clock for the DB range query.
     return DateTime(earliest.year, earliest.month, earliest.day);
   }
-}
-
-/// The notification tokens a goal's criteria tree subscribes to: leaf
-/// `dataType` strings (quantitative entries notify with their dataType),
-/// `habitId`s (habit completions notify with their habitId) and
-/// measurable `dataTypeId`s (measurements notify with theirs). Category-time
-/// leaves subscribe to the broad journal/link/task/category tokens because
-/// any of those mutations can alter tracked duration or category attribution.
-Set<String> goalSignalTriggerTokens(GoalCriterion criteria) {
-  final needs = _SignalNeeds()..collect(criteria);
-  return {
-    ...needs.quantitativeTypes,
-    ...needs.habitIds,
-    ...needs.measurableTypeIds,
-    if (needs.categoryTimeCriteria.isNotEmpty) ...{
-      textEntryNotification,
-      linkNotification,
-      taskNotification,
-      categoriesNotification,
-      privateToggleNotification,
-    },
-  };
 }
 
 /// Goal signals that should immediately run the deterministic evaluator.

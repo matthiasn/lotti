@@ -28,6 +28,7 @@ class _FakeReader extends GoalSignalReader {
     int shortTermDays = 3,
     bool includeCategoryTimeSessions = true,
     DateTime? categorySessionEvidenceStart,
+    DateTime? categoryTimeEndExclusive,
   }) async => const GoalSignalWindow();
 }
 
@@ -156,6 +157,9 @@ void main() {
       onAgentEvaluated: evaluated.add,
     );
     when(() => repository.getEntity(any())).thenAnswer((_) async => null);
+    when(
+      () => agentService.markReportStale(any()),
+    ).thenAnswer((_) async {});
   });
 
   test('a synced batch touching a goal signal runs Phase A with the '
@@ -210,7 +214,38 @@ void main() {
     await dispatcher.dispatchBatch(goalStaleSignalTriggerTokens(categoryTime));
 
     expect(phaseA.calls, isEmpty);
-    expect(evaluated, isEmpty);
+    verify(() => agentService.markReportStale('goal-a')).called(1);
+    expect(evaluated, isEmpty, reason: 'no Phase A projection was written');
+  });
+
+  test('a mixed synced batch marks category evidence stale and evaluates '
+      'bounded evidence once', () async {
+    const composite = GoalCriterion.allOf(
+      criterionId: 'mixed',
+      criteria: [
+        criteria,
+        GoalCriterion.categoryTime(
+          criterionId: 'coding-time',
+          categoryId: 'coding',
+          window: GoalWindow.day(),
+          aggregation: GoalAggregation.sum,
+          targetHours: 2,
+        ),
+      ],
+    );
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [identity('goal-a', AgentKinds.goalAgent)]);
+    stubSpec('goal-a', goalCriteria: composite);
+
+    await dispatcher.dispatchBatch({
+      'cumulative_step_count',
+      goalStaleSignalTriggerTokens(composite).first,
+    });
+
+    verify(() => agentService.markReportStale('goal-a')).called(1);
+    expect(phaseA.calls.single.$2, {'cumulative_step_count'});
+    expect(evaluated, ['goal-a'], reason: 'one batch emits one UI refresh');
   });
 
   test('the listener pumps synced batches, starts once, and stops on '

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/state/agent_providers.dart';
+import 'package:lotti/features/agents/state/agent_runtime_registry.dart';
 import 'package:lotti/features/agents/state/agent_wiring.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
 import 'package:lotti/features/agents/workflow/wake_result.dart';
@@ -24,6 +25,7 @@ void main() {
     late MockWakeOrchestrator orchestrator;
     late MockUpdateNotifications notifications;
     late ProviderContainer container;
+    late Map<String, AgentWakeRunner> contributedRunners;
 
     setUp(() {
       agentService = MockAgentService();
@@ -32,6 +34,7 @@ void main() {
       templateService = MockAgentTemplateService();
       orchestrator = MockWakeOrchestrator();
       notifications = MockUpdateNotifications();
+      contributedRunners = {};
 
       // The orchestrator stores whatever executor is wired into a real field.
       WakeExecutor? wired;
@@ -53,6 +56,7 @@ void main() {
           agentServiceProvider.overrideWithValue(agentService),
           eventAgentWorkflowProvider.overrideWithValue(eventWorkflow),
           agentTemplateServiceProvider.overrideWithValue(templateService),
+          agentWakeRunnersProvider.overrideWithValue(contributedRunners),
         ],
       );
       addTearDown(container.dispose);
@@ -226,5 +230,43 @@ void main() {
         ),
       );
     });
+
+    test(
+      'goal runner preserves whether the standing report was updated',
+      () async {
+        when(() => agentService.getAgent('goal-1')).thenAnswer(
+          (_) async => makeTestIdentity(
+            id: 'goal-1',
+            agentId: 'goal-1',
+            kind: AgentKinds.goalAgent,
+          ),
+        );
+        contributedRunners[AgentKinds.goalAgent] =
+            ({
+              required agentIdentity,
+              required runKey,
+              required triggerTokens,
+              required threadId,
+            }) async => const WakeResult(
+              success: true,
+              mutatedEntries: {
+                'progress-1': VectorClock({'host-a': 1}),
+              },
+            );
+
+        final result = await wire()(
+          'goal-1',
+          'run-key',
+          const {},
+          'thread',
+        );
+
+        expect(result, {
+          'progress-1': const VectorClock({'host-a': 1}),
+        });
+        expect(result, isA<WakeExecutorResult>());
+        expect((result! as WakeExecutorResult).reportUpdated, isFalse);
+      },
+    );
   });
 }
