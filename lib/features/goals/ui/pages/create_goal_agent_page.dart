@@ -88,6 +88,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   final _healthDirections = <String, GoalDirection>{};
   final _categoryTimeTargets = <String, num?>{};
   final _categoryTimeDirections = <String, GoalDirection>{};
+  final _suppressedCategoryTimeIds = <String>{};
   List<HabitDefinition> _knownHabits = const [];
   List<MeasurableDataType> _knownMeasurables = const [];
   List<CategoryDefinition> _knownCategories = const [];
@@ -212,8 +213,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final categoriesChanged =
         categoriesFingerprint != null &&
         categoriesFingerprint != _derivedCategoriesFingerprint;
-    if (!_editing &&
-        (_derivedFrom != statement || habitsChanged || categoriesChanged)) {
+    final requiresFullRemap = _derivedFrom != statement || habitsChanged;
+    if (!_editing && requiresFullRemap) {
+      _suppressedCategoryTimeIds.clear();
       final matchedHabits = [
         for (final habit in habits)
           if (_matchesIntention(habit.name)) habit,
@@ -258,6 +260,21 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       if (categoriesFingerprint != null) {
         _derivedCategoriesFingerprint = categoriesFingerprint;
       }
+    } else if (!_editing && categoriesChanged) {
+      final matchedCategories = [
+        for (final category in _knownCategories)
+          if (_matchesIntention(category.name) &&
+              !_suppressedCategoryTimeIds.contains(category.id))
+            category,
+      ];
+      for (final category in matchedCategories) {
+        _categoryTimeTargets.putIfAbsent(category.id, () => 1);
+        _categoryTimeDirections.putIfAbsent(
+          category.id,
+          () => GoalDirection.atMost,
+        );
+      }
+      _derivedCategoriesFingerprint = categoriesFingerprint;
     }
 
     setState(() {
@@ -821,6 +838,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                                 _validation = null;
                               }),
                           onCategoryTimeSelected: (categoryId) => setState(() {
+                            _suppressedCategoryTimeIds.remove(categoryId);
                             _categoryTimeTargets.putIfAbsent(
                               categoryId,
                               () => null,
@@ -832,6 +850,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                             _validation = null;
                           }),
                           onCategoryTimeRemoved: (categoryId) => setState(() {
+                            _suppressedCategoryTimeIds.add(categoryId);
                             _categoryTimeTargets.remove(categoryId);
                             _categoryTimeDirections.remove(categoryId);
                             _validation = null;

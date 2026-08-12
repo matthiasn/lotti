@@ -1,5 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
@@ -16,9 +17,54 @@ taskAgentResolvedSetupProvider = FutureProvider.autoDispose
       name: 'taskAgentResolvedSetupProvider',
     );
 
-/// Agent-kind-neutral alias used by Daily OS and other agent surfaces.
+/// Template-backed alias used by task and Daily OS agent surfaces.
+///
+/// Goal agents use [goalAgentResolvedSetupProvider] because their persisted
+/// profile selection does not depend on an agent template.
 final FutureProviderFamily<ResolvedAgentSetup?, String>
 agentResolvedSetupProvider = taskAgentResolvedSetupProvider;
+
+/// Resolves a goal agent's persisted profile without requiring a template.
+final FutureProviderFamily<ResolvedAgentSetup?, String>
+goalAgentResolvedSetupProvider = FutureProvider.autoDispose
+    .family<ResolvedAgentSetup?, String>(
+      goalAgentResolvedSetup,
+      name: 'goalAgentResolvedSetupProvider',
+    );
+
+Future<ResolvedAgentSetup?> goalAgentResolvedSetup(
+  Ref ref,
+  String agentId,
+) async {
+  final identityEntity = await ref.watch(agentIdentityProvider(agentId).future);
+  final identity = identityEntity?.mapOrNull(agent: (value) => value);
+  if (identity == null || identity.kind != AgentKinds.goalAgent) return null;
+
+  final profileId = identity.config.profileId;
+  if (profileId == null) {
+    return ResolvedAgentSetup(
+      status: AgentSetupResolutionStatus.disabled,
+      setupOrigin: identity.config.inferenceSetup?.origin,
+    );
+  }
+  final profile = await ref
+      .watch(profileResolverProvider)
+      .resolveByProfileId(profileId);
+  if (profile == null) {
+    return ResolvedAgentSetup(
+      status: AgentSetupResolutionStatus.broken,
+      setupOrigin: identity.config.inferenceSetup?.origin,
+    );
+  }
+  return ResolvedAgentSetup(
+    status: AgentSetupResolutionStatus.resolved,
+    profile: profile,
+    source: identity.config.inferenceSetup == null
+        ? AgentSetupResolutionSource.legacyAgentProfile
+        : AgentSetupResolutionSource.baseProfile,
+    setupOrigin: identity.config.inferenceSetup?.origin,
+  );
+}
 
 Future<ResolvedAgentSetup?> taskAgentResolvedSetup(
   Ref ref,

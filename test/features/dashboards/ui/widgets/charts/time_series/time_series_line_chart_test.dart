@@ -136,6 +136,24 @@ void main() {
       expect(lineChart.data.minY, axis.min);
       expect(lineChart.data.maxY, axis.max);
       expect(lineChart.data.maxY, greaterThan(lineChart.data.minY));
+      expect(lineChart.data.lineBarsData.single.dotData.show, isTrue);
+    });
+
+    testWidgets('multiple observations keep point markers hidden', (
+      tester,
+    ) async {
+      await hPumpChart(
+        tester,
+        data: [
+          Observation(DateTime(2024, 3, 10), 50),
+          Observation(DateTime(2024, 3, 11), 51),
+        ],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+      );
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(lineChart.data.lineBarsData.single.dotData.show, isFalse);
     });
 
     testWidgets('reference lines render and participate in axis bounds', (

@@ -15,6 +15,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
 import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
 import 'package:lotti/features/goals/service/goal_spec_revision_service.dart';
@@ -756,6 +757,112 @@ void main() {
           .controller
           .text,
       '1',
+    );
+  });
+
+  testWidgets('category refresh preserves manually configured mappings', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 2200);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final categories = StreamController<List<CategoryDefinition>>.broadcast();
+    addTearDown(categories.close);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(categoriesStream: categories.stream),
+      ),
+    );
+    categories.add([_category('deep-work', 'Deep work')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Build a consistent routine',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Choose an existing habit'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.byKey(const ValueKey('goal-form-steps-row')));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deep work'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(
+        const ValueKey('goal-form-category-time-target-deep-work'),
+      ),
+      '5',
+    );
+
+    await tester.tap(find.byType(BackButton));
+    categories.add([
+      _category('deep-work', 'Deep work'),
+      _category('admin', 'Admin'),
+    ]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('goal-form-steps-target')),
+      findsOneWidget,
+    );
+    final target = find.byKey(
+      const ValueKey('goal-form-category-time-target-deep-work'),
+    );
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(of: target, matching: find.byType(EditableText)),
+          )
+          .controller
+          .text,
+      '5',
+    );
+  });
+
+  testWidgets('category refresh does not restore a manually removed match', (
+    tester,
+  ) async {
+    final categories = StreamController<List<CategoryDefinition>>.broadcast();
+    addTearDown(categories.close);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(categoriesStream: categories.stream),
+      ),
+    );
+    categories.add([_category('deep-work', 'Deep work')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Deep work every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    final card = find.byKey(
+      const ValueKey('goal-form-category-time-card-deep-work'),
+    );
+    await tester.tap(
+      find.descendant(of: card, matching: find.byType(DesignSystemIconAction)),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(BackButton));
+    categories.add([
+      _category('deep-work', 'Deep work'),
+      _category('admin', 'Admin'),
+    ]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.byKey(const ValueKey('goal-form-category-time-card-deep-work')),
+      findsNothing,
     );
   });
 

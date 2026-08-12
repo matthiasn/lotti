@@ -426,7 +426,11 @@ current `AgentStateEntity`. There is no panel-specific logic; both consumers see
 the same tabs and behaviour. The Stats setup row opens the shared inference
 setup sheet for agent kinds that can persist instance profiles even when they do
 not own a task, such as goal agents. Task-only category defaults and direct
-thinking-model overrides remain hidden on that profile-only path.
+thinking-model overrides remain hidden on that profile-only path. Because goal
+agents have no template assignment, their Stats row resolves the persisted
+identity profile directly through `goalAgentResolvedSetupProvider`; saving a
+profile invalidates that resolver together with the identity so the effective
+route is shown immediately.
 
 # Settings surfaces
 

@@ -178,7 +178,8 @@ class _AgentSetupFlowController {
       await action();
       container
         ..invalidate(agentIdentityProvider(agentId))
-        ..invalidate(taskAgentResolvedSetupProvider(agentId));
+        ..invalidate(taskAgentResolvedSetupProvider(agentId))
+        ..invalidate(goalAgentResolvedSetupProvider(agentId));
       return true;
     } catch (error, stackTrace) {
       developer.log(

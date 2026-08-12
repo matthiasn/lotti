@@ -301,6 +301,63 @@ void main() {
     ).called(1);
   });
 
+  testWidgets('goal agent displays its profile without a template', (
+    tester,
+  ) async {
+    final model = testAiModel();
+    final provider = testInferenceProvider();
+    final resolved = ResolvedAgentSetup(
+      status: AgentSetupResolutionStatus.resolved,
+      profile: ResolvedProfile(
+        thinkingModelId: model.providerModelId,
+        thinkingProvider: provider,
+        thinkingModel: model,
+      ),
+      source: AgentSetupResolutionSource.baseProfile,
+      setupOrigin: AgentInferenceSetupOrigin.user,
+    );
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, agentId) async => makeTestIdentity(
+              kind: AgentKinds.goalAgent,
+              config: const AgentConfig(profileId: 'profile-1'),
+            ),
+          ),
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+          templateForAgentProvider.overrideWith((ref, agentId) async => null),
+          taskAgentResolvedSetupProvider.overrideWith(
+            (ref, agentId) async => const ResolvedAgentSetup(
+              status: AgentSetupResolutionStatus.disabled,
+            ),
+          ),
+          goalAgentResolvedSetupProvider.overrideWith(
+            (ref, agentId) async => resolved,
+          ),
+        ],
+        child: const SingleChildScrollView(
+          child: AgentInternalsBody(
+            agentId: 'agent-001',
+            lifecycle: AgentLifecycle.active,
+            stateAsync: AsyncValue.data(null),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('Test Model · via Gemini'),
+      200,
+      scrollable: find.byType(Scrollable).at(1),
+    );
+    expect(find.text('Test Model · via Gemini'), findsOneWidget);
+    expect(find.text('Current setup'), findsOneWidget);
+    expect(find.text('No AI setup'), findsNothing);
+  });
+
   testWidgets('task agent setup waits for an active task', (tester) async {
     final profile = testInferenceProfile(
       id: 'profile-1',

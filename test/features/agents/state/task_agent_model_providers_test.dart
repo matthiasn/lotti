@@ -1,5 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:lotti/features/agents/model/agent_config.dart';
+import 'package:lotti/features/agents/model/agent_constants.dart';
+import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/task_agent_model_providers.dart';
 import 'package:lotti/features/agents/state/template_query_providers.dart';
@@ -181,4 +184,152 @@ void main() {
       ),
     ).called(1);
   });
+
+  test('goal-agent profile resolves without a template assignment', () async {
+    final identity = makeTestIdentity(
+      kind: AgentKinds.goalAgent,
+      config: const AgentConfig(
+        profileId: 'goal-profile',
+        inferenceSetup: AgentInferenceSetup(
+          mode: AgentInferenceSetupMode.configured,
+          origin: AgentInferenceSetupOrigin.user,
+          baseProfileId: 'goal-profile',
+        ),
+      ),
+    );
+    final resolver = MockProfileResolver();
+    final resolved = ResolvedProfile(
+      thinkingModelId: 'wire-model',
+      thinkingProvider: AiConfigInferenceProvider(
+        id: 'provider',
+        baseUrl: 'https://example.com',
+        apiKey: 'key',
+        name: 'Provider',
+        createdAt: DateTime(2024),
+        inferenceProviderType: InferenceProviderType.openAi,
+      ),
+      thinkingModel: model(),
+    );
+    when(
+      () => resolver.resolveByProfileId('goal-profile'),
+    ).thenAnswer((_) async => resolved);
+    final container = ProviderContainer(
+      overrides: [
+        agentIdentityProvider.overrideWith((ref, id) async => identity),
+        templateForAgentProvider.overrideWith((ref, id) async => null),
+        profileResolverProvider.overrideWithValue(resolver),
+      ],
+    );
+    addTearDown(container.dispose);
+
+    final setup = await container.read(
+      goalAgentResolvedSetupProvider('agent').future,
+    );
+
+    expect(setup?.status, AgentSetupResolutionStatus.resolved);
+    expect(setup?.profile, resolved);
+    expect(setup?.source, AgentSetupResolutionSource.baseProfile);
+    expect(setup?.setupOrigin, AgentInferenceSetupOrigin.user);
+    verify(() => resolver.resolveByProfileId('goal-profile')).called(1);
+  });
+
+  test(
+    'goal-agent profile resolver supports legacy profile selection',
+    () async {
+      final identity = makeTestIdentity(
+        kind: AgentKinds.goalAgent,
+        config: const AgentConfig(profileId: 'goal-profile'),
+      );
+      final resolver = MockProfileResolver();
+      final resolved = ResolvedProfile(
+        thinkingModelId: 'wire-model',
+        thinkingProvider: AiConfigInferenceProvider(
+          id: 'provider',
+          baseUrl: 'https://example.com',
+          apiKey: 'key',
+          name: 'Provider',
+          createdAt: DateTime(2024),
+          inferenceProviderType: InferenceProviderType.openAi,
+        ),
+        thinkingModel: model(),
+      );
+      when(
+        () => resolver.resolveByProfileId('goal-profile'),
+      ).thenAnswer((_) async => resolved);
+      final container = ProviderContainer(
+        overrides: [
+          agentIdentityProvider.overrideWith((ref, id) async => identity),
+          profileResolverProvider.overrideWithValue(resolver),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final setup = await container.read(
+        goalAgentResolvedSetupProvider('agent').future,
+      );
+
+      expect(setup?.status, AgentSetupResolutionStatus.resolved);
+      expect(setup?.profile, resolved);
+      expect(setup?.source, AgentSetupResolutionSource.legacyAgentProfile);
+      expect(setup?.setupOrigin, isNull);
+    },
+  );
+
+  test(
+    'goal-agent profile resolver reports disabled and broken setups',
+    () async {
+      final disabledContainer = ProviderContainer(
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, id) async => makeTestIdentity(kind: AgentKinds.goalAgent),
+          ),
+        ],
+      );
+      addTearDown(disabledContainer.dispose);
+      expect(
+        (await disabledContainer.read(
+          goalAgentResolvedSetupProvider('agent').future,
+        ))?.status,
+        AgentSetupResolutionStatus.disabled,
+      );
+
+      final resolver = MockProfileResolver();
+      when(
+        () => resolver.resolveByProfileId('missing-profile'),
+      ).thenAnswer((_) async => null);
+      final brokenContainer = ProviderContainer(
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, id) async => makeTestIdentity(
+              kind: AgentKinds.goalAgent,
+              config: const AgentConfig(profileId: 'missing-profile'),
+            ),
+          ),
+          profileResolverProvider.overrideWithValue(resolver),
+        ],
+      );
+      addTearDown(brokenContainer.dispose);
+      expect(
+        (await brokenContainer.read(
+          goalAgentResolvedSetupProvider('agent').future,
+        ))?.status,
+        AgentSetupResolutionStatus.broken,
+      );
+
+      final taskContainer = ProviderContainer(
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, id) async => makeTestIdentity(),
+          ),
+        ],
+      );
+      addTearDown(taskContainer.dispose);
+      expect(
+        await taskContainer.read(
+          goalAgentResolvedSetupProvider('agent').future,
+        ),
+        isNull,
+      );
+    },
+  );
 }

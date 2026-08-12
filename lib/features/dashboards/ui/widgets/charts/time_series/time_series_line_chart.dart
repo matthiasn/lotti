@@ -14,7 +14,8 @@ import 'package:lotti/widgets/charts/utils.dart';
 /// line in epoch-millis x against a "nice" value axis derived from the data's
 /// min/max. The x range is fixed to `[rangeStart, rangeEnd]` so adjacent cards
 /// align; tooltips show the formatted value, [unit], and date. Unlike the bar
-/// chart it does not backfill missing days — gaps are simply not drawn.
+/// chart it does not backfill missing days — gaps are simply not drawn. A
+/// singleton renders its point because no line segment exists yet.
 class TimeSeriesLineChart extends StatelessWidget {
   const TimeSeriesLineChart({
     required this.data,
@@ -132,7 +133,7 @@ class TimeSeriesLineChart extends StatelessWidget {
               spots: spots,
               color: tokens.colors.interactive.enabled,
               isStrokeCapRound: true,
-              dotData: const FlDotData(show: false),
+              dotData: FlDotData(show: spots.length == 1),
               belowBarData: BarAreaData(
                 show: true,
                 color: tokens.colors.interactive.enabled.withValues(

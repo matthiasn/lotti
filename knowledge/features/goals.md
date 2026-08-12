@@ -386,8 +386,10 @@ flowchart TD
   health leaves, and opposite-direction step
   criteria are retained exactly and shown read-only. Supported trees retain
   authored leaf titles, composite wrappers and stable collision-free node ids.
-  Manual mapping choices
-  survive back-navigation while the intention is unchanged, and saving
+  Manual mapping choices survive back-navigation while the intention is
+  unchanged. A category-stream refresh adds newly available intention matches
+  without resetting other manual signals or targets, and a manually removed
+  category match stays suppressed until the user reselects it. Saving
   reconciles selected habits against the latest active-habit stream so a paused
   or removed habit cannot be minted into a dead criterion. After a minted edit,
   the runtime re-registers the new signal set and enqueues an immediate
@@ -474,7 +476,10 @@ flowchart TD
   actual day/rolling/week/month range. Canonical weight data uses the shared
   time-series line treatment, while paired systolic and diastolic dimensions
   render as one dual-line blood-pressure chart with both authored targets;
-  other numeric dimensions retain the progress-bar series. Rolling habit projections keep the
+  a partial blood-pressure import remains two separate cards so the available
+  component is not hidden. Singleton health series render a visible point until
+  a second observation can form a line. Other numeric dimensions retain the
+  progress-bar series. Rolling habit projections keep the
   immediately preceding slipped day separate from active-period arithmetic,
   and periods longer than seven days scroll horizontally instead of being
   relabelled as a trailing week. Metric satisfaction is folded with the same

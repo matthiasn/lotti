@@ -342,7 +342,10 @@ _BloodPressureMetrics? _bloodPressureMetrics(
     systolic.days.map((day) => day.day).toList(),
     diastolic.days.map((day) => day.day).toList(),
   );
-  if (systolic.window != diastolic.window ||
+  final systolicHasData = systolic.days.any((day) => day.isObserved);
+  final diastolicHasData = diastolic.days.any((day) => day.isObserved);
+  if (systolicHasData != diastolicHasData ||
+      systolic.window != diastolic.window ||
       systolic.aggregation != diastolic.aggregation ||
       systolicUnit != diastolicUnit ||
       !compatibleDays) {
@@ -491,19 +494,22 @@ class _BloodPressureDimensionCard extends StatelessWidget {
 LineChartBarData _bloodPressureLine(
   GoalMetricProgressView metric,
   Color color,
-) => LineChartBarData(
-  spots: _metricObservations(metric)
-      .map(
-        (item) => FlSpot(
-          item.dateTime.millisecondsSinceEpoch.toDouble(),
-          item.value.toDouble(),
-        ),
-      )
-      .toList(),
-  color: color,
-  isStrokeCapRound: true,
-  dotData: const FlDotData(show: false),
-);
+) {
+  final observations = _metricObservations(metric);
+  return LineChartBarData(
+    spots: observations
+        .map(
+          (item) => FlSpot(
+            item.dateTime.millisecondsSinceEpoch.toDouble(),
+            item.value.toDouble(),
+          ),
+        )
+        .toList(),
+    color: color,
+    isStrokeCapRound: true,
+    dotData: FlDotData(show: observations.length == 1),
+  );
+}
 
 HorizontalLine _targetLine(num target, Color color) {
   final style = chartEmphasisLine(
