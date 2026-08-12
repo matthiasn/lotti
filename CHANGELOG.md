@@ -22,6 +22,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   agent offers an editable record card; nothing is saved until it is approved,
   and accepted values use the normal measurement history with visible agent
   provenance.
+- **Goal-agent chat supports voice input.** The composer now has a microphone
+  button that records, transcribes, and fills the text field.
 
 ## [1.0.6]
 ### Added

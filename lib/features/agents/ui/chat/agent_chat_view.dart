@@ -313,11 +313,9 @@ class _ChatComposer extends StatelessWidget {
             onCancel: onCancelRecording,
             onStop: onStopRecording,
           ),
-          ChatRecorderStatus.processing
-              when recorderState.partialTranscript != null =>
-            _TranscriptionProgress(
-              partialTranscript: recorderState.partialTranscript!,
-            ),
+          ChatRecorderStatus.processing => _TranscriptionProgress(
+            partialTranscript: recorderState.partialTranscript ?? '',
+          ),
           _ => _IdleComposer(
             controller: controller,
             agentName: agentName,
@@ -325,7 +323,6 @@ class _ChatComposer extends StatelessWidget {
             draft: draft,
             onDraftChanged: onDraftChanged,
             onSend: onSend,
-            isProcessing: status == ChatRecorderStatus.processing,
             onStartRecording: onStartRecording,
           ),
         },
@@ -342,7 +339,6 @@ class _IdleComposer extends StatelessWidget {
     required this.draft,
     required this.onDraftChanged,
     required this.onSend,
-    required this.isProcessing,
     required this.onStartRecording,
   });
 
@@ -352,14 +348,13 @@ class _IdleComposer extends StatelessWidget {
   final String draft;
   final ValueChanged<String> onDraftChanged;
   final VoidCallback onSend;
-  final bool isProcessing;
   final VoidCallback onStartRecording;
 
   @override
   Widget build(BuildContext context) {
     final hasText = draft.trim().isNotEmpty;
     final canSend = hasText && !isSending;
-    final canRecord = !isSending && !isProcessing && !hasText;
+    final canRecord = !isSending && !hasText;
 
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
@@ -371,7 +366,7 @@ class _IdleComposer extends StatelessWidget {
             helperText: isSending
                 ? context.messages.goalChatResponding(agentName)
                 : null,
-            enabled: !isSending && !isProcessing,
+            enabled: !isSending,
             textCapitalization: TextCapitalization.sentences,
             trailingIcon: hasText
                 ? Icons.send_rounded
@@ -449,7 +444,7 @@ class _TranscriptionProgress extends StatelessWidget {
               color: tokens.colors.background.level02,
               borderRadius: BorderRadius.circular(tokens.radii.l),
             ),
-            constraints: const BoxConstraints(maxHeight: 48),
+            constraints: BoxConstraints(maxHeight: tokens.spacing.step9),
             child: SingleChildScrollView(
               reverse: true,
               child: Text(
@@ -505,6 +500,7 @@ class _CircleIconButton extends StatelessWidget {
     return Semantics(
       button: true,
       label: tooltip,
+      onTap: onPressed,
       child: ExcludeSemantics(
         child: Tooltip(
           message: tooltip,

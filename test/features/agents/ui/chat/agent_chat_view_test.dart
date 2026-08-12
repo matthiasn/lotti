@@ -5,6 +5,7 @@ import 'package:lotti/features/agents/state/agent_chat_projection.dart';
 import 'package:lotti/features/agents/ui/chat/agent_chat_view.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
 import 'package:lotti/features/ai_chat/ui/controllers/chat_recorder_controller.dart';
+import 'package:lotti/features/ai_chat/ui/widgets/waveform_bars.dart';
 
 import '../../../../widget_test_utils.dart';
 import '../evolution/widgets/evolution_recorder_test_utils.dart';
@@ -472,6 +473,7 @@ void main() {
       );
       await tester.pumpAndSettle();
 
+      expect(find.byType(WaveformBars), findsOneWidget);
       expect(find.byIcon(Icons.close_rounded), findsOneWidget);
       expect(find.byIcon(Icons.stop_rounded), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
@@ -622,6 +624,148 @@ void main() {
       expect(find.byType(CircularProgressIndicator), findsOneWidget);
       expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
       expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('shows progress indicator when processing with no partial', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              () => ProcessingTestController(partialTranscript: null),
+            ),
+          ],
+        ),
+      );
+      await tester.pump();
+
+      expect(find.byType(CircularProgressIndicator), findsOneWidget);
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+      expect(find.byType(TextField), findsNothing);
+    });
+
+    testWidgets('a transcription error shows a toast and clears the error', (
+      tester,
+    ) async {
+      late TranscriptEmittingController controller;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              () => controller = TranscriptEmittingController(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      controller.emitError('Microphone permission denied');
+      await tester.pump();
+      await tester.pump();
+
+      expect(
+        find.textContaining('Microphone permission denied'),
+        findsOneWidget,
+      );
+      expect(controller.clearResultCalls, greaterThan(0));
+    });
+
+    testWidgets('an empty transcript is not written to the draft', (
+      tester,
+    ) async {
+      var draft = '';
+      late TranscriptEmittingController controller;
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          StatefulBuilder(
+            builder: (context, setState) => Scaffold(
+              body: AgentChatView(
+                agentId: 'goal-1',
+                agentName: 'Juno',
+                draft: draft,
+                isSending: false,
+                onDraftChanged: (v) => setState(() => draft = v),
+                onSend: () {},
+                onRetry: () {},
+              ),
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              () => controller = TranscriptEmittingController(),
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      controller.emitTranscript('   ');
+      await tester.pumpAndSettle();
+
+      expect(draft, '');
+      expect(find.byIcon(Icons.mic_rounded), findsOneWidget);
+    });
+
+    testWidgets('mic button is hidden while sending', (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: true,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => const []),
+            chatRecorderControllerProvider.overrideWith(
+              ChatRecorderController.new,
+            ),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.byIcon(Icons.mic_rounded), findsNothing);
+      expect(find.byIcon(Icons.send_rounded), findsNothing);
     });
   });
 }
