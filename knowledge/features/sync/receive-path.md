@@ -156,10 +156,10 @@ window, so anchoring there would skip it.
 
 **The zero cache limit was required by Matrix SDK 7.0.0**, and has not been
 re-verified since; `pubspec.yaml` now pins
-`matrix: ^8.1.0`, and four in-code comments still name 7.0.0
+`matrix: ^10.0.0`, and four in-code comments still name 7.0.0
 (`bootstrap_forward_strategy.dart`, `bootstrap_backward_strategy.dart`, and twice
 in `queue_pipeline_coordinator.dart`). Treat the workaround as load-bearing until
-someone re-checks it on 8.x — not as a fact about the pinned version. Without it,
+someone re-checks it — not as a fact about the pinned version. Without it,
 an
 anchor already present in the SDK database suppresses the context request,
 leaves the timeline without a forward token, and can make a reconnect

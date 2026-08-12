@@ -28,6 +28,10 @@ sources:
     resource: ../../../lib/features/sync/matrix/sync_event_processor_notification_handlers.dart
     title: Notification receive and sequence mapping
     last_modified: 2026-08-06
+  - id: consumption-receive
+    resource: ../../../lib/features/sync/matrix/sync_event_processor_consumption_handlers.dart
+    title: Consumption-event receive and sequence mapping
+    last_modified: 2026-07-05
   - id: backfill-response
     resource: ../../../lib/features/sync/backfill/backfill_response_handler.dart
     title: Backfill payload proof and response handling

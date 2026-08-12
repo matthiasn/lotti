@@ -24,6 +24,10 @@ sources:
     resource: ../../../lib/features/sync/ui/widgets/conflicts/entry_field_diff.dart
     title: computeEntryDiff
     last_modified: 2026-06-20
+  - id: agent-resolver
+    resource: ../../../lib/features/agents/sync/agent_concurrent_resolver.dart
+    title: AgentConcurrentResolver — resolveConcurrent and mergeAgentStateCounters
+    last_modified: 2026-08-12
 ---
 
 # What a vector clock is here
