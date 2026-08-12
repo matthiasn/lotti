@@ -298,6 +298,45 @@ void main() {
       );
 
       test(
+        'markReportStale persists the supplied evidence-arrival timestamp '
+        'without queueing work',
+        () async {
+          final signalAt = DateTime(2026, 8, 12, 18, 30);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: DateTime(2026, 8, 12, 18),
+                    vectorClock: null,
+                    reportFreshAt: DateTime(2026, 8, 12, 18, 15),
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            syncEntityWriter: (entity) async {
+              state = entity as AgentStateEntity;
+            },
+          );
+
+          await orchestrator.markReportStale(
+            'agent-1',
+            occurredAt: signalAt,
+          );
+
+          expect(queue.isEmpty, isTrue);
+          expect(state.reportStaleAt, signalAt);
+          expect(state.reportFreshAt, DateTime(2026, 8, 12, 18, 15));
+          expect(state.isReportStale, isTrue);
+        },
+      );
+
+      test(
         'a failed stale-watermark write is contained and reported',
         () async {
           // The watermark is a hint that the report has drifted, not the report
