@@ -375,11 +375,23 @@ class _WakeRowState extends ConsumerState<_WakeRow> {
     setState(() => _cancelling = true);
     final service = ref.read(agentServiceProvider);
     try {
+      final recordId = widget.record.recordId;
       switch (widget.record.type) {
         case PendingWakeType.pending:
           service.cancelPendingWake(widget.record.agent.agentId);
         case PendingWakeType.scheduled:
-          await service.clearScheduledWake(widget.record.agent.agentId);
+          // A workspace-scoped wake (planner day pre-warm) is backed by a
+          // ScheduledWakeEntity; consume it so it stops re-firing, since
+          // clearScheduledWake only clears the agent's scheduledWakeAt.
+          if (recordId != null) {
+            await service.dismissScheduledWakeRecord(
+              recordId: recordId,
+              agentId: widget.record.agent.agentId,
+              workspaceKey: widget.record.workspaceKey,
+            );
+          } else {
+            await service.clearScheduledWake(widget.record.agent.agentId);
+          }
       }
     } catch (_) {
       // Service swallows; the provider refresh reflects whatever the

@@ -21,12 +21,26 @@ class PendingWakeRecord {
     required this.type,
     required this.dueAt,
     this.subjectLabel,
+    this.recordId,
+    this.workspaceKey,
   });
 
   final AgentIdentityEntity agent;
   final AgentStateEntity state;
   final PendingWakeType type;
   final DateTime dueAt;
+
+  /// Id of the backing [ScheduledWakeEntity] for a workspace-scoped wake, or
+  /// `null` for a state-derived wake (`nextWakeAt` / `scheduledWakeAt`).
+  ///
+  /// Dismissing a workspace-scoped row must consume this record, not just clear
+  /// the agent state — see `AgentService.dismissScheduledWakeRecord`.
+  final String? recordId;
+
+  /// Wake-queue workspace key of the backing record (`day:<dayId>` for a
+  /// planner day pre-warm), so a dismiss can drop the matching queued job.
+  /// `null` for state-derived wakes.
+  final String? workspaceKey;
 
   /// Pre-resolved subject line for wakes whose subject is a workspace rather
   /// than a linked task/project — e.g. a planner day pre-warm sourced from a

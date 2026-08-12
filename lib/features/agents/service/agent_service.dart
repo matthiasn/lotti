@@ -184,6 +184,44 @@ class AgentService {
     onPersistedStateChanged?.call(agentId);
   }
 
+  /// Dismiss a workspace-scoped scheduled-wake record so it neither fires nor
+  /// re-surfaces in the pending list.
+  ///
+  /// [clearScheduledWake] cannot remove these: a planner day pre-warm lives as
+  /// its own [ScheduledWakeEntity], not on `AgentState.scheduledWakeAt`. So the
+  /// cancel button on such a row must both (a) drop any job already queued for
+  /// the record's workspace and (b) consume the record — otherwise the
+  /// scheduled-wake manager re-fires it from the still-pending row on the next
+  /// scan, which is exactly why the button appeared to do nothing.
+  ///
+  /// The record is flipped to [ScheduledWakeStatus.consumed] rather than
+  /// hard-deleted so a peer's concurrent write converges via LWW instead of
+  /// resurrecting the row. A record already consumed (or raced away) needs only
+  /// the queue drop.
+  Future<void> dismissScheduledWakeRecord({
+    required String recordId,
+    required String agentId,
+    String? workspaceKey,
+  }) async {
+    // Drop the job already dequeued for this workspace so an in-flight burst
+    // stops now, not only on future scans.
+    orchestrator.cancelPendingWakes(agentId, workspaceKey: workspaceKey);
+
+    final entity = await repository.getEntity(recordId);
+    if (entity is ScheduledWakeEntity &&
+        entity.status == ScheduledWakeStatus.pending) {
+      final now = clock.now();
+      await syncService.upsertEntity(
+        entity.copyWith(
+          status: ScheduledWakeStatus.consumed,
+          consumedAt: now,
+          updatedAt: now,
+        ),
+      );
+    }
+    onPersistedStateChanged?.call(agentId);
+  }
+
   /// Transition agent to [AgentLifecycle.dormant] and unregister
   /// wake subscriptions.
   ///

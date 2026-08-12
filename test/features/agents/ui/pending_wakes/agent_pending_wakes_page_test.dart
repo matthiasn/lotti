@@ -26,12 +26,17 @@ PendingWakeRecord _record({
   required DateTime dueAt,
   String kind = AgentKinds.taskAgent,
   AgentSlots slots = const AgentSlots(),
+  String? recordId,
+  String? workspaceKey,
 }) {
   final state = makeTestState(
     agentId: agentId,
     slots: slots,
     nextWakeAt: type == PendingWakeType.pending ? dueAt : null,
-    scheduledWakeAt: type == PendingWakeType.scheduled ? dueAt : null,
+    // A record-backed wake carries its due time on the record, not on state.
+    scheduledWakeAt: type == PendingWakeType.scheduled && recordId == null
+        ? dueAt
+        : null,
   );
   return PendingWakeRecord(
     agent: makeTestIdentity(
@@ -42,6 +47,9 @@ PendingWakeRecord _record({
     state: state,
     type: type,
     dueAt: dueAt,
+    subjectLabel: workspaceKey == null ? null : 'dayplan-2026-06-08',
+    recordId: recordId,
+    workspaceKey: workspaceKey,
   );
 }
 
@@ -365,6 +373,55 @@ void main() {
         await tester.pump();
 
         verify(() => mockService.clearScheduledWake('agent-2')).called(1);
+      });
+    },
+  );
+
+  testWidgets(
+    'delete button dismisses the record for a workspace-scoped wake',
+    (tester) async {
+      // A planner day pre-warm is backed by a ScheduledWakeEntity;
+      // clearScheduledWake cannot remove it, so the row must dismiss the
+      // record itself (and drop its queued job) or the wake re-fires.
+      final mockService = MockAgentService();
+      when(
+        () => mockService.dismissScheduledWakeRecord(
+          recordId: 'sched-1',
+          agentId: 'daily_os_planner',
+          workspaceKey: 'day:dayplan-2026-06-08',
+        ),
+      ).thenAnswer((_) async {});
+
+      final now = DateTime(2026, 3, 31, 9);
+      await withClock(Clock(() => now), () async {
+        await pumpPage(
+          tester,
+          records: [
+            _record(
+              agentId: 'daily_os_planner',
+              displayName: 'Shepherd',
+              kind: AgentKinds.dayAgent,
+              type: PendingWakeType.scheduled,
+              dueAt: now.add(const Duration(minutes: 5)),
+              recordId: 'sched-1',
+              workspaceKey: 'day:dayplan-2026-06-08',
+            ),
+          ],
+          agentService: mockService,
+        );
+
+        await tester.tap(find.byIcon(Icons.delete_outline_rounded));
+        await tester.pump();
+        await tester.pump();
+
+        verify(
+          () => mockService.dismissScheduledWakeRecord(
+            recordId: 'sched-1',
+            agentId: 'daily_os_planner',
+            workspaceKey: 'day:dayplan-2026-06-08',
+          ),
+        ).called(1);
+        verifyNever(() => mockService.clearScheduledWake(any()));
       });
     },
   );

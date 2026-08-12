@@ -44,6 +44,7 @@
       <description>
         <p>Added: goal-agent chat supports voice input. The composer now has a microphone button that records, transcribes, and fills the text field.</p>
         <p>Fixed: the Daily OS planner no longer wakes for days that are already over. Finished days kept firing full model runs that found nothing to do and re-scheduled themselves, burning inference for no result. Such wakes are now skipped before any model call, their leftover schedules are cleared automatically, and the planner can no longer schedule a new wake for a finished day.</p>
+        <p>Fixed: the wake-queue cancel button now actually cancels. Dismissing a scheduled planner wake from the sidebar queue or the Wake Cycles page previously only cleared agent state, so the wake returned on the next check; it now removes the underlying scheduled wake so cancelling one makes it stay gone.</p>
       </description>
     </release>
     <release version="1.0.7" date="2026-08-12">

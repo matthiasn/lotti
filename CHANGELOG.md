@@ -17,6 +17,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   no result. Wakes for a past day are now skipped before any model call, their
   leftover schedules are cleared automatically, and the planner can no longer
   schedule a new wake for a finished day.
+- **The wake-queue cancel button now actually cancels.** Dismissing a scheduled
+  planner wake from the sidebar queue or the Wake Cycles page only cleared agent
+  state before, so the wake came back on the next check. It now removes the
+  underlying scheduled wake, so cancelling one makes it stay gone.
 
 ## [1.0.7]
 ### Added
