@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_icon_action.dart';
 import 'package:lotti/features/design_system/components/buttons/ds_segmented_toggle.dart';
@@ -85,8 +86,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   final _measurableTargets = <String, num?>{};
   final _healthTargets = <String, num?>{};
   final _healthDirections = <String, GoalDirection>{};
+  final _categoryTimeTargets = <String, num?>{};
+  final _categoryTimeDirections = <String, GoalDirection>{};
   List<HabitDefinition> _knownHabits = const [];
   List<MeasurableDataType> _knownMeasurables = const [];
+  List<CategoryDefinition> _knownCategories = const [];
   var _watchesSteps = false;
   GoalFormCompositeRule _compositeRule = GoalFormCompositeRule.all;
   var _requiredSuccesses = 1;
@@ -139,6 +143,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     _measurableTargets.addAll(_mapping.measurableTargets);
     _healthTargets.addAll(_mapping.healthTargets);
     _healthDirections.addAll(_mapping.healthDirections);
+    _categoryTimeTargets.addAll(_mapping.categoryTimeTargets);
+    _categoryTimeDirections.addAll(_mapping.categoryTimeDirections);
     _compositeRule = _mapping.compositeRule;
     _requiredSuccesses = _mapping.requiredSuccesses;
   }
@@ -213,6 +219,22 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         ..addEntries(
           matchedMeasurables.map((measurable) => MapEntry(measurable.id, 1)),
         );
+      final matchedCategories = [
+        for (final category in _knownCategories)
+          if (_matchesIntention(category.name)) category,
+      ];
+      _categoryTimeTargets
+        ..clear()
+        ..addEntries(
+          matchedCategories.map((category) => MapEntry(category.id, 1)),
+        );
+      _categoryTimeDirections
+        ..clear()
+        ..addEntries(
+          matchedCategories.map(
+            (category) => MapEntry(category.id, GoalDirection.atMost),
+          ),
+        );
       _deriveTitle(habits);
       _derivedFrom = statement;
       if (habitsFingerprint != null) {
@@ -249,7 +271,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         _watchesSteps ||
         _habitTargets.isNotEmpty ||
         _measurableTargets.isNotEmpty ||
-        _healthTargets.isNotEmpty;
+        _healthTargets.isNotEmpty ||
+        _categoryTimeTargets.isNotEmpty;
     final stepsTarget = _parseLocalizedTarget(_stepsTarget.text);
     final invalidSteps =
         _watchesSteps && (stepsTarget == null || stepsTarget <= 0);
@@ -259,9 +282,13 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final invalidMeasurableTargets = _measurableTargets.values.any(
       (target) => target == null || target <= 0,
     );
+    final invalidCategoryTimeTargets = _categoryTimeTargets.values.any(
+      (target) => target == null || target <= 0,
+    );
     if (!hasMapping ||
         invalidSteps ||
         invalidMeasurableTargets ||
+        invalidCategoryTimeTargets ||
         invalidHealthTargets) {
       setState(() => _validation = context.messages.goalFormValidationMapping);
       return;
@@ -341,6 +368,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       for (final measurable in _knownMeasurables)
         measurable.id: measurable.displayName,
     };
+    final categoryNames = {
+      for (final category in _knownCategories) category.id: category.name,
+    };
     final signals = <String>[
       if (_watchesSteps)
         context.messages.goalFormStepsCadence(
@@ -373,6 +403,20 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
               context.messages.localeName,
             ).format(target),
             _healthDimensionUnit(entry.key),
+          ),
+      for (final entry in _categoryTimeTargets.entries)
+        if (entry.value case final target?)
+          context.messages.goalFormCategoryTimeCadence(
+            categoryNames[entry.key] ??
+                _mapping.categoryTimeCriterionTitles[entry.key] ??
+                entry.key,
+            _goalDirectionLabel(
+              context,
+              _categoryTimeDirections[entry.key] ?? GoalDirection.atMost,
+            ),
+            NumberFormat.decimalPattern(
+              context.messages.localeName,
+            ).format(target),
           ),
     ];
     return signals.join(' · ');
@@ -451,6 +495,15 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
             healthTitles: {
               for (final dataType in _healthTargets.keys)
                 dataType: _healthDimensionName(context, dataType),
+            },
+            categoryTimeTargets: {
+              for (final entry in _categoryTimeTargets.entries)
+                entry.key: ?entry.value,
+            },
+            categoryTimeDirections: _categoryTimeDirections,
+            categoryTimeTitles: {
+              for (final category in _knownCategories)
+                category.id: category.name,
             },
             watchesSteps: _watchesSteps,
             stepsTarget: stepsTarget,
@@ -538,6 +591,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final tokens = context.designTokens;
     final habitsAsync = ref.watch(_habitDefinitionsProvider);
     final measurablesAsync = ref.watch(measurableDataTypesStreamProvider);
+    final categoriesAsync = ref.watch(categoriesStreamProvider);
     if (habitsAsync.value case final loaded?) {
       _knownHabits = loaded;
     }
@@ -546,6 +600,13 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _knownMeasurables = loaded;
     }
     final measurables = measurablesAsync.value ?? _knownMeasurables;
+    if (categoriesAsync.value case final loaded?) {
+      _knownCategories = [
+        for (final category in loaded)
+          if (category.active && category.deletedAt == null) category,
+      ];
+    }
+    final categories = _knownCategories;
     GoalSpecVersionEntity? editSpec;
 
     if (_editing) {
@@ -643,9 +704,12 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                               habitsAsync.hasError && habitsAsync.value == null,
                           mapping: _mapping,
                           measurables: measurables,
+                          categories: categories,
                           measurableTargets: _measurableTargets,
                           healthTargets: _healthTargets,
                           healthDirections: _healthDirections,
+                          categoryTimeTargets: _categoryTimeTargets,
+                          categoryTimeDirections: _categoryTimeDirections,
                           compositeRule: _compositeRule,
                           requiredSuccesses: _requiredSuccesses,
                           habitTargets: _habitTargets,
@@ -717,6 +781,32 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
                           onHealthDirectionChanged: (dataType, direction) =>
                               setState(() {
                                 _healthDirections[dataType] = direction;
+                                _validation = null;
+                              }),
+                          onCategoryTimeSelected: (categoryId) => setState(() {
+                            _categoryTimeTargets.putIfAbsent(
+                              categoryId,
+                              () => null,
+                            );
+                            _categoryTimeDirections.putIfAbsent(
+                              categoryId,
+                              () => GoalDirection.atMost,
+                            );
+                            _validation = null;
+                          }),
+                          onCategoryTimeRemoved: (categoryId) => setState(() {
+                            _categoryTimeTargets.remove(categoryId);
+                            _categoryTimeDirections.remove(categoryId);
+                            _validation = null;
+                          }),
+                          onCategoryTimeTargetChanged: (categoryId, target) =>
+                              setState(() {
+                                _categoryTimeTargets[categoryId] = target;
+                                _validation = null;
+                              }),
+                          onCategoryTimeDirectionChanged:
+                              (categoryId, direction) => setState(() {
+                                _categoryTimeDirections[categoryId] = direction;
                                 _validation = null;
                               }),
                           onCompositeRuleChanged: (rule, required) =>
@@ -904,9 +994,12 @@ class _MappingStep extends StatelessWidget {
     required this.habitsFailed,
     required this.mapping,
     required this.measurables,
+    required this.categories,
     required this.measurableTargets,
     required this.healthTargets,
     required this.healthDirections,
+    required this.categoryTimeTargets,
+    required this.categoryTimeDirections,
     required this.compositeRule,
     required this.requiredSuccesses,
     required this.habitTargets,
@@ -924,6 +1017,10 @@ class _MappingStep extends StatelessWidget {
     required this.onHealthRemoved,
     required this.onHealthTargetChanged,
     required this.onHealthDirectionChanged,
+    required this.onCategoryTimeSelected,
+    required this.onCategoryTimeRemoved,
+    required this.onCategoryTimeTargetChanged,
+    required this.onCategoryTimeDirectionChanged,
     required this.onCompositeRuleChanged,
   });
 
@@ -931,9 +1028,12 @@ class _MappingStep extends StatelessWidget {
   final bool habitsFailed;
   final GoalFormMapping mapping;
   final List<MeasurableDataType> measurables;
+  final List<CategoryDefinition> categories;
   final Map<String, num?> measurableTargets;
   final Map<String, num?> healthTargets;
   final Map<String, GoalDirection> healthDirections;
+  final Map<String, num?> categoryTimeTargets;
+  final Map<String, GoalDirection> categoryTimeDirections;
   final GoalFormCompositeRule compositeRule;
   final int requiredSuccesses;
   final Map<String, int> habitTargets;
@@ -955,6 +1055,12 @@ class _MappingStep extends StatelessWidget {
   final void Function(String dataType, num? target) onHealthTargetChanged;
   final void Function(String dataType, GoalDirection direction)
   onHealthDirectionChanged;
+  final ValueChanged<String> onCategoryTimeSelected;
+  final ValueChanged<String> onCategoryTimeRemoved;
+  final void Function(String categoryId, num? target)
+  onCategoryTimeTargetChanged;
+  final void Function(String categoryId, GoalDirection direction)
+  onCategoryTimeDirectionChanged;
   final void Function(GoalFormCompositeRule rule, int requiredSuccesses)
   onCompositeRuleChanged;
 
@@ -975,15 +1081,30 @@ class _MappingStep extends StatelessWidget {
         !watchesSteps &&
         selectedIds.isEmpty &&
         measurableTargets.isEmpty &&
-        healthTargets.isEmpty;
+        healthTargets.isEmpty &&
+        categoryTimeTargets.isEmpty;
     final selectedMeasurables = [
       for (final measurable in measurables)
         if (measurableTargets.containsKey(measurable.id)) measurable,
+    ];
+    final categoriesById = {
+      for (final category in categories) category.id: category,
+    };
+    final selectedCategories = [
+      for (final categoryId in categoryTimeTargets.keys)
+        (
+          id: categoryId,
+          name:
+              categoriesById[categoryId]?.name ??
+              mapping.categoryTimeCriterionTitles[categoryId] ??
+              categoryId,
+        ),
     ];
     final dimensionCount =
         selectedIds.length +
         measurableTargets.length +
         healthTargets.length +
+        categoryTimeTargets.length +
         (watchesSteps ? 1 : 0);
 
     return Column(
@@ -1154,6 +1275,22 @@ class _MappingStep extends StatelessWidget {
               onRemove: () => onHealthRemoved(entry.key),
             ),
           ],
+          for (final category in selectedCategories) ...[
+            SizedBox(height: tokens.spacing.step3),
+            _CategoryTimeTargetCard(
+              key: ValueKey('goal-form-category-time-card-${category.id}'),
+              categoryId: category.id,
+              categoryName: category.name,
+              value: categoryTimeTargets[category.id],
+              direction:
+                  categoryTimeDirections[category.id] ?? GoalDirection.atMost,
+              onTargetChanged: (target) =>
+                  onCategoryTimeTargetChanged(category.id, target),
+              onDirectionChanged: (direction) =>
+                  onCategoryTimeDirectionChanged(category.id, direction),
+              onRemove: () => onCategoryTimeRemoved(category.id),
+            ),
+          ],
           SizedBox(height: tokens.spacing.step3),
           DesignSystemButton(
             label: context.messages.goalFormAddDimension,
@@ -1162,8 +1299,10 @@ class _MappingStep extends StatelessWidget {
               isScrollControlled: true,
               builder: (context) => _DimensionSourcePicker(
                 measurables: measurables,
+                categories: categories,
                 selectedMeasurableIds: measurableTargets.keys.toSet(),
                 selectedHealthDataTypes: healthTargets.keys.toSet(),
+                selectedCategoryIds: categoryTimeTargets.keys.toSet(),
                 onMeasurableSelected: (id) {
                   Navigator.of(context).pop();
                   onMeasurableChanged(measurableId: id, selected: true);
@@ -1171,6 +1310,10 @@ class _MappingStep extends StatelessWidget {
                 onHealthSelected: (dataTypes) {
                   Navigator.of(context).pop();
                   onHealthSelected(dataTypes);
+                },
+                onCategorySelected: (categoryId) {
+                  Navigator.of(context).pop();
+                  onCategoryTimeSelected(categoryId);
                 },
               ),
             ),
@@ -1486,20 +1629,152 @@ class _HealthTargetInputState extends State<_HealthTargetInput> {
   );
 }
 
+class _CategoryTimeTargetCard extends StatelessWidget {
+  const _CategoryTimeTargetCard({
+    required this.categoryId,
+    required this.categoryName,
+    required this.value,
+    required this.direction,
+    required this.onTargetChanged,
+    required this.onDirectionChanged,
+    required this.onRemove,
+    super.key,
+  });
+
+  final String categoryId;
+  final String categoryName;
+  final num? value;
+  final GoalDirection direction;
+  final ValueChanged<num?> onTargetChanged;
+  final ValueChanged<GoalDirection> onDirectionChanged;
+  final VoidCallback onRemove;
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return DesignSystemSectionCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                Icons.schedule_rounded,
+                color: tokens.colors.alert.warning.defaultColor,
+              ),
+              SizedBox(width: tokens.spacing.step3),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      categoryName,
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                    ),
+                    Text(
+                      context.messages.goalFormCategoryTimeSource,
+                      style: tokens.typography.styles.others.caption.copyWith(
+                        color: tokens.colors.text.mediumEmphasis,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              DesignSystemIconAction(
+                icon: Icons.close_rounded,
+                tooltip: context.messages.aiCardProposalKindRemove,
+                onPressed: onRemove,
+              ),
+            ],
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          DsSegmentedToggle<GoalDirection>(
+            key: ValueKey('goal-form-category-time-direction-$categoryId'),
+            segments: [
+              DsSegment(
+                GoalDirection.atMost,
+                context.messages.goalFormDirectionAtMost,
+              ),
+              DsSegment(
+                GoalDirection.atLeast,
+                context.messages.goalFormDirectionAtLeast,
+              ),
+            ],
+            selected: direction,
+            onChanged: onDirectionChanged,
+            expand: true,
+          ),
+          SizedBox(height: tokens.spacing.step3),
+          _CategoryTimeTargetInput(
+            categoryId: categoryId,
+            value: value,
+            onChanged: onTargetChanged,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _CategoryTimeTargetInput extends StatefulWidget {
+  const _CategoryTimeTargetInput({
+    required this.categoryId,
+    required this.value,
+    required this.onChanged,
+  });
+
+  final String categoryId;
+  final num? value;
+  final ValueChanged<num?> onChanged;
+
+  @override
+  State<_CategoryTimeTargetInput> createState() =>
+      _CategoryTimeTargetInputState();
+}
+
+class _CategoryTimeTargetInputState extends State<_CategoryTimeTargetInput> {
+  late final TextEditingController _controller = TextEditingController(
+    text: widget.value?.toString() ?? '',
+  );
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) => DesignSystemTextInput(
+    key: ValueKey('goal-form-category-time-target-${widget.categoryId}'),
+    controller: _controller,
+    label: context.messages.goalFormCategoryTimeTarget,
+    keyboardType: const TextInputType.numberWithOptions(decimal: true),
+    onChanged: (raw) => widget.onChanged(
+      num.tryParse(raw.trim().replaceAll(',', '.')),
+    ),
+  );
+}
+
 class _DimensionSourcePicker extends StatefulWidget {
   const _DimensionSourcePicker({
     required this.measurables,
+    required this.categories,
     required this.selectedMeasurableIds,
     required this.selectedHealthDataTypes,
+    required this.selectedCategoryIds,
     required this.onMeasurableSelected,
     required this.onHealthSelected,
+    required this.onCategorySelected,
   });
 
   final List<MeasurableDataType> measurables;
+  final List<CategoryDefinition> categories;
   final Set<String> selectedMeasurableIds;
   final Set<String> selectedHealthDataTypes;
+  final Set<String> selectedCategoryIds;
   final ValueChanged<String> onMeasurableSelected;
   final ValueChanged<List<String>> onHealthSelected;
+  final ValueChanged<String> onCategorySelected;
 
   @override
   State<_DimensionSourcePicker> createState() => _DimensionSourcePickerState();
@@ -1524,6 +1799,9 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
       return query.isEmpty ||
           measurable.displayName.toLowerCase().contains(query) ||
           measurable.unitName.toLowerCase().contains(query);
+    }).toList();
+    final visibleCategories = widget.categories.where((category) {
+      return query.isEmpty || category.name.toLowerCase().contains(query);
     }).toList();
     final weightMatches =
         query.isEmpty ||
@@ -1612,6 +1890,29 @@ class _DimensionSourcePickerState extends State<_DimensionSourcePicker> {
                             : () => widget.onHealthSelected(
                                 bloodPressureTypes,
                               ),
+                      ),
+                    SizedBox(height: tokens.spacing.step4),
+                  ],
+                  if (visibleCategories.isNotEmpty) ...[
+                    Text(
+                      messages.goalDimensionCategoryTimeSource,
+                      style: tokens.typography.styles.subtitle.subtitle2,
+                    ),
+                    SizedBox(height: tokens.spacing.step2),
+                    for (final category in visibleCategories)
+                      DesignSystemSelectionRow(
+                        key: ValueKey(
+                          'goal-form-category-time-source-${category.id}',
+                        ),
+                        title: category.name,
+                        subtitle: messages.goalFormCategoryTimeSource,
+                        selected: widget.selectedCategoryIds.contains(
+                          category.id,
+                        ),
+                        type: DesignSystemSelectionRowType.singleSelect,
+                        onTap: widget.selectedCategoryIds.contains(category.id)
+                            ? null
+                            : () => widget.onCategorySelected(category.id),
                       ),
                     SizedBox(height: tokens.spacing.step4),
                   ],

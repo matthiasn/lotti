@@ -13,6 +13,7 @@ import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/state/change_set_providers.dart';
+import 'package:lotti/features/categories/state/categories_list_controller.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/inputs/design_system_text_input.dart';
 import 'package:lotti/features/design_system/components/selection/design_system_selection_row.dart';
@@ -50,6 +51,20 @@ HabitDefinition _habit(
   private: private,
   deletedAt: deletedAt,
   version: '1',
+);
+
+CategoryDefinition _category(
+  String id,
+  String name, {
+  bool active = true,
+}) => CategoryDefinition(
+  id: id,
+  createdAt: DateTime(2026),
+  updatedAt: DateTime(2026),
+  name: name,
+  vectorClock: null,
+  private: false,
+  active: active,
 );
 
 GoalSpecVersionEntity _spec({
@@ -122,10 +137,14 @@ void main() {
     bool identityMissing = false,
     bool healthMissing = false,
     AgentLifecycle identityLifecycle = AgentLifecycle.active,
+    List<CategoryDefinition> categories = const [],
   }) => [
     goalAgentServiceProvider.overrideWithValue(agentService),
     goalSpecRevisionServiceProvider.overrideWithValue(revisionService),
     habitsRepositoryProvider.overrideWithValue(habitsRepository),
+    categoriesStreamProvider.overrideWith(
+      (ref) => Stream.value(categories),
+    ),
     if (editSpec != null ||
         identityFails ||
         healthFails ||
@@ -447,6 +466,85 @@ void main() {
       ),
     ).called(1);
     expect(navigated, ['/agents']);
+  });
+
+  testWidgets('selects category time and saves its rolling weekly hour cap', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    when(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer((_) async => _identity);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(
+          categories: [
+            _category('deep-work', 'Deep work'),
+            _category('archived', 'Archived category', active: false),
+          ],
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Spend less time working',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Tracked category time'), findsOneWidget);
+    expect(find.text('Deep work'), findsOneWidget);
+    expect(find.text('Archived category'), findsNothing);
+    await tester.tap(find.text('Deep work'));
+    await tester.pumpAndSettle();
+
+    final target = find.byKey(
+      const ValueKey('goal-form-category-time-target-deep-work'),
+    );
+    expect(target, findsOneWidget);
+    await tester.enterText(target, '12');
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.textContaining(
+        'Deep work: No more than 12 hours per rolling 7 days',
+      ),
+      findsOneWidget,
+    );
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    final saved = verify(
+      () => agentService.createGoalAgent(
+        title: 'Spend less time working',
+        displayName: 'Juno',
+        statement: 'Spend less time working',
+        criteria: captureAny(named: 'criteria'),
+      ),
+    ).captured.single;
+    expect(
+      saved,
+      const GoalCriterion.categoryTime(
+        criterionId: 'category-time-deep-work',
+        categoryId: 'deep-work',
+        title: 'Deep work',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 12,
+      ),
+    );
   });
 
   testWidgets('save refreshes an untouched derived title after cleanup', (

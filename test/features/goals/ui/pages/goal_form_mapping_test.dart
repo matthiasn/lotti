@@ -582,6 +582,90 @@ void main() {
     );
   });
 
+  test('round-trips editable category-time dimensions', () {
+    const criteria = GoalCriterion.allOf(
+      criterionId: 'balanced-week',
+      criteria: [
+        GoalCriterion.categoryTime(
+          criterionId: 'deep-work-hours',
+          categoryId: 'deep-work',
+          title: 'Deep work',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.sum,
+          targetHours: 12,
+        ),
+        GoalCriterion.habit(
+          criterionId: 'habit-walk',
+          habitId: 'walk',
+          window: GoalWindow.rollingDays(count: 7),
+          targetCount: 4,
+        ),
+      ],
+    );
+
+    final draft = GoalFormMapping.fromCriteria(criteria);
+
+    expect(draft.isEditable, isTrue);
+    expect(draft.categoryTimeTargets, {'deep-work': 12});
+    expect(draft.categoryTimeDirections, {
+      'deep-work': GoalDirection.atMost,
+    });
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Steps',
+        habitTargets: const {'walk': 4},
+        categoryTimeTargets: const {'deep-work': 15},
+        categoryTimeDirections: const {
+          'deep-work': GoalDirection.atLeast,
+        },
+      ),
+      const GoalCriterion.allOf(
+        criterionId: 'balanced-week',
+        criteria: [
+          GoalCriterion.categoryTime(
+            criterionId: 'deep-work-hours',
+            categoryId: 'deep-work',
+            title: 'Deep work',
+            window: GoalWindow.rollingDays(count: 7),
+            aggregation: GoalAggregation.sum,
+            targetHours: 15,
+            direction: GoalDirection.atLeast,
+          ),
+          GoalCriterion.habit(
+            criterionId: 'habit-walk',
+            habitId: 'walk',
+            window: GoalWindow.rollingDays(count: 7),
+            targetCount: 4,
+          ),
+        ],
+      ),
+    );
+  });
+
+  test('builds new category-time leaves with stable identifiers', () {
+    const draft = GoalFormMapping.empty();
+
+    expect(
+      draft.buildCriteria(
+        stepsTitle: 'Steps',
+        habitTargets: const {},
+        categoryTimeTargets: const {'deep-work': 10},
+        categoryTimeDirections: const {
+          'deep-work': GoalDirection.atMost,
+        },
+        categoryTimeTitles: const {'deep-work': 'Deep work'},
+      ),
+      const GoalCriterion.categoryTime(
+        criterionId: 'category-time-deep-work',
+        categoryId: 'deep-work',
+        title: 'Deep work',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 10,
+      ),
+    );
+  });
+
   test('builds new health leaves with stable canonical identifiers', () {
     const draft = GoalFormMapping.empty();
 

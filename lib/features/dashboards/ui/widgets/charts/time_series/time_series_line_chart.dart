@@ -21,6 +21,7 @@ class TimeSeriesLineChart extends StatelessWidget {
     required this.rangeStart,
     required this.rangeEnd,
     this.unit = '',
+    this.horizontalLines = const [],
     super.key,
   });
 
@@ -28,6 +29,7 @@ class TimeSeriesLineChart extends StatelessWidget {
   final DateTime rangeStart;
   final DateTime rangeEnd;
   final String unit;
+  final List<HorizontalLine> horizontalLines;
 
   @override
   Widget build(BuildContext context) {
@@ -42,9 +44,12 @@ class TimeSeriesLineChart extends StatelessWidget {
         )
         .toList();
 
-    final spotValues = spots.map((spot) => spot.y).toList();
-    final minY = spotValues.isNotEmpty ? spotValues.reduce(min).floor() : 0;
-    final maxY = spotValues.isNotEmpty ? spotValues.reduce(max).ceil() : 1;
+    final axisValues = [
+      ...spots.map((spot) => spot.y),
+      ...horizontalLines.map((line) => line.y),
+    ];
+    final minY = axisValues.isNotEmpty ? axisValues.reduce(min).floor() : 0;
+    final maxY = axisValues.isNotEmpty ? axisValues.reduce(max).ceil() : 1;
     final axis = niceAxis(minY, maxY);
 
     return Padding(
@@ -117,6 +122,7 @@ class TimeSeriesLineChart extends StatelessWidget {
             show: true,
             border: Border.all(color: tokens.colors.decorative.level01),
           ),
+          extraLinesData: ExtraLinesData(horizontalLines: horizontalLines),
           minX: rangeStart.millisecondsSinceEpoch.toDouble(),
           maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
           minY: axis.min,

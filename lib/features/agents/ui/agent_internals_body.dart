@@ -364,12 +364,12 @@ class _ProfileSection extends ConsumerWidget {
                 ? (dailyOsSetupLauncher == null
                       ? null
                       : () => dailyOsSetupLauncher(context))
-                : taskId == null
+                : identity == null
                 ? null
                 : () => AgentModelSheet.show(
                     context: context,
-                    taskId: taskId,
                     agentId: agentId,
+                    taskId: taskId,
                   ),
           ),
         ],

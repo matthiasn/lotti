@@ -3071,13 +3071,13 @@ class AppLocalizationsNl extends AppLocalizations {
   String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
 
   @override
-  String get chatInputRecordingFailed => 'Opname mislukt. Probeer het opnieuw.';
-
-  @override
   String get chatInputPleaseWait => 'Wacht even...';
 
   @override
   String get chatInputProcessing => 'Bezig met verwerken...';
+
+  @override
+  String get chatInputRecordingFailed => 'Opname mislukt. Probeer het opnieuw.';
 
   @override
   String get chatInputRecordVoice => 'Voicemail opnemen';
@@ -6330,6 +6330,22 @@ class AppLocalizationsNl extends AppLocalizations {
   @override
   String get goalFormBloodPressureSource =>
       'Systolisch en diastolisch · mmHg · 7-daags gemiddelde';
+
+  @override
+  String goalFormCategoryTimeCadence(
+    String categoryName,
+    String direction,
+    String target,
+  ) {
+    return '$categoryName: $direction $target uur per voortschrijdende 7 dagen';
+  }
+
+  @override
+  String get goalFormCategoryTimeSource =>
+      'Bijgehouden tijd · uren per voortschrijdende 7 dagen';
+
+  @override
+  String get goalFormCategoryTimeTarget => 'Uren per voortschrijdende 7 dagen';
 
   @override
   String get goalFormChooseHabit => 'Kies een bestaande gewoonte';

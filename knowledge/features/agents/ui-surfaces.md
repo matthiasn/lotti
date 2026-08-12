@@ -11,7 +11,7 @@ sources:
   - id: ui
     resource: ../../../lib/features/agents/ui
     title: Agent UI widgets
-    last_modified: 2026-07-26
+    last_modified: 2026-08-13
   - id: card
     resource: ../../../lib/features/agents/ui/ai_summary_card.dart
     title: AiSummaryCard
@@ -423,7 +423,10 @@ Conversations / Observations / Activity** — used both inside the panel and as 
 body of the standalone `AgentDetailPage`. Each tab is owned by an existing
 component plus a Stats card wrapping the agent's template, profile, controls and
 current `AgentStateEntity`. There is no panel-specific logic; both consumers see
-the same tabs and behaviour.
+the same tabs and behaviour. The Stats setup row opens the shared inference
+setup sheet for agent kinds that can persist instance profiles even when they do
+not own a task, such as goal agents. Task-only category defaults and direct
+thinking-model overrides remain hidden on that profile-only path.
 
 # Settings surfaces
 

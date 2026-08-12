@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -10,6 +11,7 @@ import 'package:lotti/features/design_system/components/cards/design_system_sect
 import 'package:lotti/features/design_system/components/ds_dashed_border.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/l10n/app_localizations.dart';
@@ -179,6 +181,101 @@ void main() {
     expect(find.text('done'), findsNothing);
     expect(find.text('ages out tonight'), findsNothing);
     expect(find.text('today'), findsNothing);
+  });
+
+  testWidgets(
+    'paired blood-pressure dimensions share one dual-line chart and targets',
+    (tester) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          GoalProgressCard(
+            progress: GoalProgressView(
+              today: today,
+              metrics: [
+                GoalMetricProgressView(
+                  criterionId: 'systolic',
+                  sourceId: GoalHealthDataTypes.bloodPressureSystolic,
+                  name: 'Systolic blood pressure',
+                  target: 125,
+                  direction: GoalDirection.atMost,
+                  aggregation: GoalAggregation.max,
+                  unitName: 'mmHg',
+                  days: [day(1, 122), day(0, 129)],
+                ),
+                GoalMetricProgressView(
+                  criterionId: 'diastolic',
+                  sourceId: GoalHealthDataTypes.bloodPressureDiastolic,
+                  name: 'Diastolic blood pressure',
+                  target: 85,
+                  direction: GoalDirection.atMost,
+                  aggregation: GoalAggregation.max,
+                  unitName: 'mmHg',
+                  days: [day(1, 81), day(0, 94)],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+
+      expect(find.byType(DesignSystemSectionCard), findsOneWidget);
+      expect(find.text('Blood Pressure'), findsOneWidget);
+      expect(find.text('129 / 94 mmHg'), findsOneWidget);
+      expect(find.byType(LineChart), findsOneWidget);
+      final chart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(chart.data.lineBarsData, hasLength(2));
+      expect(chart.data.lineBarsData[0].spots.map((spot) => spot.y), [
+        122,
+        129,
+      ]);
+      expect(chart.data.lineBarsData[1].spots.map((spot) => spot.y), [81, 94]);
+      expect(
+        chart.data.extraLinesData.horizontalLines.map((line) => line.y),
+        [125, 85],
+      );
+      expect(find.text('Systolic ≤ 125'), findsOneWidget);
+      expect(find.text('Diastolic ≤ 85'), findsOneWidget);
+    },
+  );
+
+  testWidgets('weight uses a line chart and omits missing samples', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        GoalProgressCard(
+          progress: GoalProgressView(
+            today: today,
+            metric: GoalMetricProgressView(
+              criterionId: 'weight',
+              sourceId: GoalHealthDataTypes.weight,
+              name: 'Weight',
+              target: 88,
+              direction: GoalDirection.atMost,
+              unitName: 'kg',
+              days: [
+                day(2, 94.2),
+                GoalProgressDay(
+                  day: today.subtract(const Duration(days: 1)),
+                  value: 0,
+                  isObserved: false,
+                ),
+                day(0, 95),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+
+    expect(find.byType(LineChart), findsOneWidget);
+    expect(find.byType(FractionallySizedBox), findsNothing);
+    final chart = tester.widget<LineChart>(find.byType(LineChart));
+    expect(chart.data.lineBarsData, hasLength(1));
+    expect(chart.data.lineBarsData.single.spots.map((spot) => spot.y), [
+      94.2,
+      95,
+    ]);
   });
 
   testWidgets('metric bars expose localized date, value, target, and state', (

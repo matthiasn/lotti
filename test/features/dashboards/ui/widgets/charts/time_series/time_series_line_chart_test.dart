@@ -137,6 +137,24 @@ void main() {
       expect(lineChart.data.maxY, axis.max);
       expect(lineChart.data.maxY, greaterThan(lineChart.data.minY));
     });
+
+    testWidgets('reference lines render and participate in axis bounds', (
+      tester,
+    ) async {
+      final reference = HorizontalLine(y: 5);
+      await hPumpChart(
+        tester,
+        data: [Observation(DateTime(2024, 3, 10), 10)],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        horizontalLines: [reference],
+      );
+
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(lineChart.data.extraLinesData.horizontalLines, [reference]);
+      expect(lineChart.data.minY, lessThanOrEqualTo(reference.y));
+      expect(lineChart.data.maxY, greaterThanOrEqualTo(10));
+    });
   });
 
   group('TimeSeriesLineChart — x-axis range', () {

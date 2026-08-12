@@ -33,8 +33,8 @@ class AgentModelSheet {
 
   static Future<void> show({
     required BuildContext context,
-    required String taskId,
     required String agentId,
+    String? taskId,
   }) {
     final pageIndex = ValueNotifier<int>(0);
     final selectedProviderId = ValueNotifier<String?>(null);
@@ -151,7 +151,7 @@ class _AgentSetupFlowController {
   });
 
   final ProviderContainer container;
-  final String taskId;
+  final String? taskId;
   final String agentId;
   final NavigatorState navigator;
   final ScaffoldMessengerState taskMessenger;
@@ -219,6 +219,8 @@ class _AgentSetupFlowController {
     BuildContext context,
     TaskAgentSetupOptions options,
   ) async {
+    final taskId = this.taskId;
+    if (taskId == null) return;
     final messages = context.messages;
     final journalDb = container.read(journalDbProvider);
     final entity = await journalDb.journalEntityById(taskId);
@@ -409,7 +411,9 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
             children: [
               _AgentSetupSection(
                 label: context.messages.taskAgentCurrentSetupLabel,
-                description: context.messages.taskAgentSetupChoiceHelp,
+                description: controller.taskId == null
+                    ? null
+                    : context.messages.taskAgentSetupChoiceHelp,
                 child: DesignSystemGroupedList(
                   padding: EdgeInsets.zero,
                   filled: false,
@@ -428,26 +432,28 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                       ),
                       onTap: options == null ? null : onChooseProfile,
                     ),
-                    DesignSystemSelectionRow(
-                      key: const ValueKey('agent-choose-model'),
-                      title: context.messages.taskAgentThinkingModelLabel,
-                      subtitle: options != null && options.models.isEmpty
-                          ? context.messages.taskAgentNoModelsAvailable
-                          : modelDescription,
-                      type: DesignSystemSelectionRowType.navigation,
-                      leading: Icon(
-                        Icons.psychology_outlined,
-                        color: tokens.colors.text.mediumEmphasis,
-                        size: tokens.spacing.step6,
+                    if (controller.taskId != null)
+                      DesignSystemSelectionRow(
+                        key: const ValueKey('agent-choose-model'),
+                        title: context.messages.taskAgentThinkingModelLabel,
+                        subtitle: options != null && options.models.isEmpty
+                            ? context.messages.taskAgentNoModelsAvailable
+                            : modelDescription,
+                        type: DesignSystemSelectionRowType.navigation,
+                        leading: Icon(
+                          Icons.psychology_outlined,
+                          color: tokens.colors.text.mediumEmphasis,
+                          size: tokens.spacing.step6,
+                        ),
+                        onTap:
+                            config == null ||
+                                options == null ||
+                                options.models.isEmpty
+                            ? null
+                            : () => onChooseModel(options),
                       ),
-                      onTap:
-                          config == null ||
-                              options == null ||
-                              options.models.isEmpty
-                          ? null
-                          : () => onChooseModel(options),
-                    ),
-                    if (config?.inferenceSetup?.thinkingModelOverrideId != null)
+                    if (controller.taskId != null &&
+                        config?.inferenceSetup?.thinkingModelOverrideId != null)
                       DesignSystemSelectionRow(
                         key: const ValueKey('agent-clear-override'),
                         title: context.messages.taskAgentUseProfileDefault,
@@ -645,20 +651,22 @@ class _AgentProfilePage extends ConsumerWidget {
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            DesignSystemSelectionRow(
-              title: context.messages.taskAgentUseCategoryDefault,
-              subtitle: context.messages.taskAgentUseCategoryDefaultDescription,
-              subtitleMaxLines: null,
-              type: DesignSystemSelectionRowType.action,
-              leading: Icon(
-                Icons.category_outlined,
-                color: tokens.colors.text.mediumEmphasis,
-                size: tokens.spacing.step6,
+            if (controller.taskId != null)
+              DesignSystemSelectionRow(
+                title: context.messages.taskAgentUseCategoryDefault,
+                subtitle:
+                    context.messages.taskAgentUseCategoryDefaultDescription,
+                subtitleMaxLines: null,
+                type: DesignSystemSelectionRowType.action,
+                leading: Icon(
+                  Icons.category_outlined,
+                  color: tokens.colors.text.mediumEmphasis,
+                  size: tokens.spacing.step6,
+                ),
+                onTap: options == null
+                    ? null
+                    : () => controller.useCategoryDefault(context, options),
               ),
-              onTap: options == null
-                  ? null
-                  : () => controller.useCategoryDefault(context, options),
-            ),
             if (profiles.isEmpty)
               DesignSystemSelectionRow(
                 title: context.messages.taskAgentNoProfilesAvailable,

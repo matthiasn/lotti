@@ -3106,14 +3106,14 @@ class AppLocalizationsFr extends AppLocalizations {
       'Aucun son n\'a été enregistré. Réessaie.';
 
   @override
-  String get chatInputRecordingFailed =>
-      'Échec de l\'enregistrement. Réessaie.';
-
-  @override
   String get chatInputPleaseWait => 'Patiente un instant...';
 
   @override
   String get chatInputProcessing => 'Traitement...';
+
+  @override
+  String get chatInputRecordingFailed =>
+      'Échec de l\'enregistrement. Réessaie.';
 
   @override
   String get chatInputRecordVoice => 'Enregistrer un message vocal';
@@ -6406,6 +6406,22 @@ class AppLocalizationsFr extends AppLocalizations {
   @override
   String get goalFormBloodPressureSource =>
       'Systolique et diastolique · mmHg · moyenne sur 7 jours';
+
+  @override
+  String goalFormCategoryTimeCadence(
+    String categoryName,
+    String direction,
+    String target,
+  ) {
+    return '$categoryName : $direction $target heures sur 7 jours glissants';
+  }
+
+  @override
+  String get goalFormCategoryTimeSource =>
+      'Temps suivi · heures sur 7 jours glissants';
+
+  @override
+  String get goalFormCategoryTimeTarget => 'Heures sur 7 jours glissants';
 
   @override
   String get goalFormChooseHabit => 'Choisir une habitude existante';

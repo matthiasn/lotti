@@ -3112,14 +3112,14 @@ class AppLocalizationsRo extends AppLocalizations {
       'Nu s-a înregistrat niciun sunet. Încercați din nou.';
 
   @override
-  String get chatInputRecordingFailed =>
-      'Înregistrarea a eșuat. Vă rugăm să încercați din nou.';
-
-  @override
   String get chatInputPleaseWait => 'Așteaptă...';
 
   @override
   String get chatInputProcessing => 'Se procesează...';
+
+  @override
+  String get chatInputRecordingFailed =>
+      'Înregistrarea a eșuat. Vă rugăm să încercați din nou.';
 
   @override
   String get chatInputRecordVoice => 'Înregistrați un mesaj vocal';
@@ -6413,6 +6413,22 @@ class AppLocalizationsRo extends AppLocalizations {
   @override
   String get goalFormBloodPressureSource =>
       'Sistolică și diastolică · mmHg · medie pe 7 zile';
+
+  @override
+  String goalFormCategoryTimeCadence(
+    String categoryName,
+    String direction,
+    String target,
+  ) {
+    return '$categoryName: $direction $target ore în ultimele 7 zile';
+  }
+
+  @override
+  String get goalFormCategoryTimeSource =>
+      'Timp urmărit · ore în ultimele 7 zile';
+
+  @override
+  String get goalFormCategoryTimeTarget => 'Ore în ultimele 7 zile';
 
   @override
   String get goalFormChooseHabit => 'Alegeți un obicei existent';

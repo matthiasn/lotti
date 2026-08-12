@@ -21,6 +21,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
     required this.minVal,
     required this.maxVal,
     this.unit = '',
+    this.horizontalLines = const [],
     super.key,
   });
 
@@ -30,6 +31,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
   final num minVal;
   final num maxVal;
   final String unit;
+  final List<HorizontalLine> horizontalLines;
 
   @override
   Widget build(BuildContext context) {
@@ -102,6 +104,7 @@ class TimeSeriesMultiLineChart extends StatelessWidget {
             show: true,
             border: Border.all(color: tokens.colors.decorative.level01),
           ),
+          extraLinesData: ExtraLinesData(horizontalLines: horizontalLines),
           minX: rangeStart.millisecondsSinceEpoch.toDouble(),
           maxX: rangeEnd.millisecondsSinceEpoch.toDouble(),
           minY: axis.min,

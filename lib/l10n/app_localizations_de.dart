@@ -3086,14 +3086,14 @@ class AppLocalizationsDe extends AppLocalizations {
       'Es wurde kein Audio aufgenommen. Versuch es noch einmal.';
 
   @override
-  String get chatInputRecordingFailed =>
-      'Aufnahme fehlgeschlagen. Bitte erneut versuchen.';
-
-  @override
   String get chatInputPleaseWait => 'Bitte warten...';
 
   @override
   String get chatInputProcessing => 'Verarbeitung...';
+
+  @override
+  String get chatInputRecordingFailed =>
+      'Aufnahme fehlgeschlagen. Bitte erneut versuchen.';
 
   @override
   String get chatInputRecordVoice => 'Sprachnachricht aufnehmen';
@@ -6353,6 +6353,22 @@ class AppLocalizationsDe extends AppLocalizations {
   @override
   String get goalFormBloodPressureSource =>
       'Systolisch und diastolisch · mmHg · 7-Tage-Durchschnitt';
+
+  @override
+  String goalFormCategoryTimeCadence(
+    String categoryName,
+    String direction,
+    String target,
+  ) {
+    return '$categoryName: $direction $target Stunden pro rollierende 7 Tage';
+  }
+
+  @override
+  String get goalFormCategoryTimeSource =>
+      'Erfasste Zeit · Stunden pro rollierende 7 Tage';
+
+  @override
+  String get goalFormCategoryTimeTarget => 'Stunden pro rollierende 7 Tage';
 
   @override
   String get goalFormChooseHabit => 'Vorhandene Gewohnheit wählen';
