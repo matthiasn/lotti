@@ -6094,8 +6094,12 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String goalAssessmentSuggestedProvenance(String agentName) {
-    return '$agentName sugerido, você aceitou';
+    return 'Sugerido por $agentName, aceito por você';
   }
+
+  @override
+  String get goalAssessmentSuggestedProvenanceGeneric =>
+      'Sugerido pelo seu agente de meta, aceito por você';
 
   @override
   String get goalAssessmentUserProvenance => 'Avaliado por você';

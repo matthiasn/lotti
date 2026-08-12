@@ -2566,6 +2566,7 @@
   "goalAssessmentReflectToday": "Zamysli se nad dneškem",
   "goalAssessmentSpecVersion": "Cíl v{version} byl použit",
   "goalAssessmentSuggestedProvenance": "{agentName} navrhl, ty jsi přijal(a)",
+  "goalAssessmentSuggestedProvenanceGeneric": "Agent cíle navrhl, ty jsi přijal(a)",
   "goalAssessmentUserProvenance": "Hodnoceno tebou",
   "goalAttainmentLabel": "{percent} % cíle",
   "goalBannerActionFailed": "To se neuložilo — zkus to prosím znovu.",

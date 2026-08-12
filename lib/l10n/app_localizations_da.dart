@@ -6037,8 +6037,12 @@ class AppLocalizationsDa extends AppLocalizations {
 
   @override
   String goalAssessmentSuggestedProvenance(String agentName) {
-    return '$agentName foreslog, du accepterede';
+    return 'Foreslået af $agentName, accepteret af dig';
   }
+
+  @override
+  String get goalAssessmentSuggestedProvenanceGeneric =>
+      'Foreslået af din målagent, accepteret af dig';
 
   @override
   String get goalAssessmentUserProvenance => 'Bedømt af dig';

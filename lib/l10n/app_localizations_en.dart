@@ -6013,6 +6013,10 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get goalAssessmentSuggestedProvenanceGeneric =>
+      'Your goal agent suggested, you accepted';
+
+  @override
   String get goalAssessmentUserProvenance => 'Rated by you';
 
   @override

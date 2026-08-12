@@ -6105,6 +6105,10 @@ class AppLocalizationsCs extends AppLocalizations {
   }
 
   @override
+  String get goalAssessmentSuggestedProvenanceGeneric =>
+      'Agent cíle navrhl, ty jsi přijal(a)';
+
+  @override
   String get goalAssessmentUserProvenance => 'Hodnoceno tebou';
 
   @override

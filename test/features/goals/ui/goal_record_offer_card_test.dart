@@ -16,6 +16,27 @@ import '../../../widget_test_utils.dart';
 class _MockGoalMeasurableCaptureService extends Mock
     implements GoalMeasurableCaptureService {}
 
+MeasurableDataType _measurable({bool? private}) => MeasurableDataType(
+  id: 'pages',
+  createdAt: DateTime(2026, 8, 12),
+  updatedAt: DateTime(2026, 8, 12),
+  displayName: 'Pages read',
+  description: '',
+  unitName: 'pages',
+  version: 1,
+  vectorClock: null,
+  private: private,
+);
+
+GoalMeasurableRecordOffer _offer(List<GoalMeasurableRecordItem> items) =>
+    GoalMeasurableRecordOffer(
+      sourceMessageId: 'message-1',
+      dataTypeId: 'pages',
+      measurableName: 'Pages read',
+      unitName: 'pages',
+      items: items,
+    );
+
 void main() {
   testWidgets(
     'a same-day measurement surfaces the conflict and blocks record',
@@ -277,5 +298,221 @@ void main() {
     );
     expect(retry.isLoading, isFalse);
     expect(retry.onPressed, isNotNull);
+  });
+
+  testWidgets(
+    'selection and value validation fence recording before persistence',
+    (tester) async {
+      final db = MockJournalDb();
+      final service = _MockGoalMeasurableCaptureService();
+      when(
+        () => db.getMeasurementsByType(
+          type: 'pages',
+          rangeStart: any(named: 'rangeStart'),
+          rangeEnd: any(named: 'rangeEnd'),
+        ),
+      ).thenAnswer((_) async => []);
+      final offer = _offer([
+        GoalMeasurableRecordItem(
+          day: DateTime.utc(2026, 8, 11),
+          value: 20.5,
+          estimated: true,
+        ),
+        GoalMeasurableRecordItem(
+          day: DateTime.utc(2026, 8, 12),
+          value: 10,
+          estimated: false,
+        ),
+      ]);
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: GoalRecordOfferCard(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              measurable: _measurable(),
+              offer: offer,
+            ),
+          ),
+          overrides: [
+            journalDbProvider.overrideWithValue(db),
+            goalMeasurableCaptureServiceProvider.overrideWithValue(service),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final fields = tester
+          .widgetList<EditableText>(
+            find.byType(EditableText),
+          )
+          .toList();
+      expect(fields.map((field) => field.controller.text), ['20.5', '10']);
+      expect(find.text('Estimated split — edit if needed'), findsOneWidget);
+
+      await tester.tap(find.byIcon(Icons.check_circle_rounded).first);
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.check_circle_rounded).first);
+      await tester.pumpAndSettle();
+      expect(find.byIcon(Icons.cancel_outlined), findsNWidgets(2));
+
+      await tester.tap(
+        find.widgetWithText(DesignSystemButton, 'Record 0 entries'),
+      );
+      await tester.pump();
+      expect(find.text('Choose at least one row to record.'), findsOneWidget);
+      verifyZeroInteractions(service);
+
+      await tester.tap(find.byIcon(Icons.cancel_outlined).first);
+      await tester.pumpAndSettle();
+      await tester.enterText(find.byType(EditableText).first, '0');
+      await tester.tap(
+        find.widgetWithText(DesignSystemButton, 'Record 1 entry'),
+      );
+      await tester.pump();
+      expect(find.text('Enter a value greater than zero.'), findsOneWidget);
+      verifyZeroInteractions(service);
+    },
+  );
+
+  testWidgets('record retries with edited decimal values and provenance', (
+    tester,
+  ) async {
+    final db = MockJournalDb();
+    final service = _MockGoalMeasurableCaptureService();
+    when(
+      () => db.getMeasurementsByType(
+        type: 'pages',
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+    final item = GoalMeasurableRecordItem(
+      day: DateTime.utc(2026, 8, 12),
+      value: 20,
+      estimated: false,
+    );
+    final offer = _offer([item]);
+    var recordAttempts = 0;
+    when(
+      () => service.record(
+        agentId: 'goal-1',
+        agentName: 'Juno',
+        offer: offer,
+        items: any(named: 'items'),
+        private: true,
+        provenanceComment: 'Said by you, recorded by Juno',
+      ),
+    ).thenAnswer((_) async {
+      recordAttempts++;
+      if (recordAttempts == 1) throw StateError('disk full');
+      return ['measurement-1'];
+    });
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalRecordOfferCard(
+            agentId: 'goal-1',
+            agentName: 'Juno',
+            measurable: _measurable(private: true),
+            offer: offer,
+          ),
+        ),
+        overrides: [
+          journalDbProvider.overrideWithValue(db),
+          goalMeasurableCaptureServiceProvider.overrideWithValue(service),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(EditableText), '19,5');
+    await tester.tap(
+      find.widgetWithText(DesignSystemButton, 'Record entry'),
+    );
+    await tester.pump();
+    expect(
+      find.text('Couldn’t save this measurement. Try again.'),
+      findsOneWidget,
+    );
+
+    await tester.tap(
+      find.widgetWithText(DesignSystemButton, 'Record entry'),
+    );
+    await tester.pump();
+    final capturedItems =
+        verify(
+              () => service.record(
+                agentId: 'goal-1',
+                agentName: 'Juno',
+                offer: offer,
+                items: captureAny(named: 'items'),
+                private: true,
+                provenanceComment: 'Said by you, recorded by Juno',
+              ),
+            ).captured.last
+            as List<GoalMeasurableRecordItem>;
+    expect(recordAttempts, 2);
+    expect(capturedItems.single.value, 19.5);
+  });
+
+  testWidgets('a successful dismissal records the decision once', (
+    tester,
+  ) async {
+    final db = MockJournalDb();
+    final service = _MockGoalMeasurableCaptureService();
+    when(
+      () => db.getMeasurementsByType(
+        type: 'pages',
+        rangeStart: any(named: 'rangeStart'),
+        rangeEnd: any(named: 'rangeEnd'),
+      ),
+    ).thenAnswer((_) async => []);
+    final offer = _offer([
+      GoalMeasurableRecordItem(
+        day: DateTime.utc(2026, 8, 12),
+        value: 20,
+        estimated: false,
+      ),
+    ]);
+    when(
+      () => service.dismiss(agentId: 'goal-1', offer: offer),
+    ).thenAnswer((_) async {});
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: GoalRecordOfferCard(
+            agentId: 'goal-1',
+            agentName: 'Juno',
+            measurable: _measurable(),
+            offer: offer,
+          ),
+        ),
+        overrides: [
+          journalDbProvider.overrideWithValue(db),
+          goalMeasurableCaptureServiceProvider.overrideWithValue(service),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Dismiss'));
+    await tester.pump();
+    verify(() => service.dismiss(agentId: 'goal-1', offer: offer)).called(1);
+  });
+
+  testWidgets('receipt reports the recorded count and responsible agent', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalRecordReceipt(entryCount: 2, agentName: 'Juno'),
+      ),
+    );
+
+    expect(
+      find.text('Recorded · 2 entries · said by you, recorded by Juno'),
+      findsOneWidget,
+    );
   });
 }

@@ -6135,8 +6135,12 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String goalAssessmentSuggestedProvenance(String agentName) {
-    return '$agentName a sugerat, ați acceptat';
+    return 'Sugerat de $agentName, acceptat de dvs.';
   }
+
+  @override
+  String get goalAssessmentSuggestedProvenanceGeneric =>
+      'Sugerat de agentul dvs. de obiectiv, acceptat de dvs.';
 
   @override
   String get goalAssessmentUserProvenance => 'Evaluat de dvs.';

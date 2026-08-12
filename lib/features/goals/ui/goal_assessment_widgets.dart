@@ -328,28 +328,43 @@ class GoalAssessmentHistoryCard extends StatelessWidget {
                 height: tokens.spacing.step4,
                 color: tokens.colors.decorative.level01,
               ),
-            Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    DateFormat.MMMEd(locale).format(records[index].day),
-                    style: tokens.typography.styles.body.bodySmall,
-                  ),
-                ),
-                _AssessmentRatingPill(rating: records[index].rating),
-                SizedBox(width: tokens.spacing.step3),
-                Text(
-                  records[index].provenance ==
-                          GoalAssessmentProvenance.suggestedAndAccepted
-                      ? context.messages.goalAssessmentSuggestedProvenance(
-                          records[index].suggestedBy ?? '',
-                        )
-                      : context.messages.goalAssessmentUserProvenance,
-                  style: tokens.typography.styles.others.caption.copyWith(
-                    color: tokens.colors.text.lowEmphasis,
-                  ),
-                ),
-              ],
+            Builder(
+              builder: (context) {
+                final record = records[index];
+                final suggestedBy = record.suggestedBy?.trim();
+                final provenance = switch (record.provenance) {
+                  GoalAssessmentProvenance.suggestedAndAccepted
+                      when suggestedBy != null && suggestedBy.isNotEmpty =>
+                    context.messages.goalAssessmentSuggestedProvenance(
+                      suggestedBy,
+                    ),
+                  GoalAssessmentProvenance.suggestedAndAccepted =>
+                    context.messages.goalAssessmentSuggestedProvenanceGeneric,
+                  GoalAssessmentProvenance.ratedByUser =>
+                    context.messages.goalAssessmentUserProvenance,
+                };
+                return Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        DateFormat.MMMEd(locale).format(record.day),
+                        style: tokens.typography.styles.body.bodySmall,
+                      ),
+                    ),
+                    _AssessmentRatingPill(rating: record.rating),
+                    SizedBox(width: tokens.spacing.step3),
+                    Flexible(
+                      child: Text(
+                        provenance,
+                        textAlign: TextAlign.end,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             ),
           ],
         ],
