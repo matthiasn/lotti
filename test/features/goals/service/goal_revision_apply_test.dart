@@ -312,6 +312,31 @@ void main() {
     },
   );
 
+  test('a category-time sibling does not make habit cadence ambiguous', () {
+    const categoryTime = GoalCriterion.categoryTime(
+      criterionId: 'late-coding',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 0,
+    );
+    const composite = GoalCriterion.allOf(
+      criterionId: 'balanced-day',
+      criteria: [gym, categoryTime],
+    );
+
+    final result = applied(
+      applyGoalRevisionChanges(
+        criteria: composite,
+        changes: {'cadence': 2},
+      ),
+    );
+    final revised = result.criteria as GoalCriterionAllOf;
+
+    expect((revised.criteria.first as GoalCriterionHabit).targetCount, 2);
+    expect(revised.criteria.last, categoryTime);
+  });
+
   test('two habit leaves make a cadence change ambiguous — rejected', () {
     const twoGyms = GoalCriterion.anyOf(
       criterionId: 'either-gym',

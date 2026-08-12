@@ -768,6 +768,45 @@ void main() {
     );
   });
 
+  test('a same-day UTC band clips tracked time to both endpoints', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'workday-coding',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 8,
+      dailyTimeRange: GoalDailyTimeRange(
+        startMinute: 9 * 60,
+        endMinute: 17 * 60,
+      ),
+    );
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        (
+          dateFrom: DateTime.utc(2026, 8, 8, 8),
+          dateTo: DateTime.utc(2026, 8, 8, 18),
+          categoryId: 'vibe-coding',
+        ),
+      ],
+    );
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: DateTime.utc(2026, 8, 8, 20),
+    );
+
+    expect(
+      window.categoryTimeDailyHours['workday-coding'],
+      {DateTime.utc(2026, 8, 8): 8},
+      reason: 'only the authored 09:00–17:00 UTC band should count',
+    );
+  });
+
   test(
     'category time subscribes to every mutation that can change attribution',
     () {

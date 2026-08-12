@@ -184,6 +184,22 @@ void main() {
     );
   });
 
+  test('category time falls back to its category identifier when untitled', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.categoryTime(
+        criterionId: 'coding-cap',
+        categoryId: 'vibe-coding',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 2,
+      ),
+      signals: const GoalSignalWindow(),
+      reference: today,
+    );
+
+    expect(view.metric?.name, 'vibe-coding');
+  });
+
   test('sum and count metrics compare the aggregated rolling period', () {
     GoalProgressView build(GoalAggregation aggregation) =>
         buildGoalProgressView(

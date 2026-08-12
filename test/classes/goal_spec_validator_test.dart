@@ -199,6 +199,24 @@ void main() {
       );
     });
 
+    test('category time rejects an empty daily time band', () {
+      const criterion = GoalCriterion.categoryTime(
+        criterionId: 'late-coding',
+        categoryId: 'vibe-coding',
+        window: GoalWindow.day(),
+        aggregation: GoalAggregation.sum,
+        targetHours: 0,
+        dailyTimeRange: GoalDailyTimeRange(
+          startMinute: 22 * 60,
+          endMinute: 22 * 60,
+        ),
+      );
+
+      final issues = GoalSpecValidator.criterionIssues(criterion);
+
+      expect(issues.single, contains('endpoints must differ'));
+    });
+
     test('an empty atLeastCount reports childlessness, not a quota', () {
       const empty = GoalCriterion.atLeastCount(
         criterionId: 'root',
