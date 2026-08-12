@@ -14,12 +14,13 @@ import 'package:lotti/services/domain_logging.dart';
 /// Bridges the sync blind spot for goal signals (ADR 0054 Decision 4).
 ///
 /// `WakeOrchestrator` deliberately listens to `localUpdateStream` only —
-/// synced writes must not wake LLM tiers. But goal *Phase A* is
-/// deterministic and idempotent (keyed registers), so a desktop receiving
-/// phone-imported steps runs the €0 tier directly and converges instead of
-/// showing stale registers. Phase B is never triggered from here: if
-/// Phase A finds an LLM-worthy transition it arms the escalation wake, and
-/// the scheduled-wake manager's lease election picks exactly one device.
+/// synced writes must not wake LLM tiers. Bounded observations run goal
+/// *Phase A* directly because it is deterministic and idempotent (keyed
+/// registers). High-frequency category-time mutations only advance the
+/// receiving agent's report-stale watermark; cadence or Update now consumes
+/// them later. Phase B is never triggered from here: if Phase A finds an
+/// LLM-worthy transition it arms the escalation wake, and the scheduled-wake
+/// manager's lease election picks exactly one device.
 class GoalSignalSyncDispatcher {
   GoalSignalSyncDispatcher({
     required this._agentService,
@@ -43,9 +44,11 @@ class GoalSignalSyncDispatcher {
   /// concurrent evaluations of the same goal.
   final _inFlight = <String>{};
 
-  /// Runs Phase A for every goal agent whose signal tokens intersect the
-  /// synced batch. Never throws; each agent is contained individually so
-  /// one corrupt goal cannot suppress updates for unrelated goals.
+  /// Applies every goal agent's matching synced-signal policy.
+  ///
+  /// Bounded signals run Phase A; category-time signals mark the report stale
+  /// without a wake. Never throws: each agent is contained individually so one
+  /// corrupt goal cannot suppress updates for unrelated goals.
   Future<void> dispatchBatch(Set<String> tokens) async {
     final List<AgentIdentityEntity> agents;
     try {
@@ -62,17 +65,22 @@ class GoalSignalSyncDispatcher {
       _inFlight.add(identity.agentId);
       try {
         final matched = await _matchedTokens(identity.agentId, tokens);
-        if (matched.isEmpty) continue;
-        final runKey =
-            'goal-sync:${identity.agentId}:'
-            '${clock.now().millisecondsSinceEpoch}';
-        await _phaseA.execute(
-          agentIdentity: identity,
-          runKey: runKey,
-          triggerTokens: matched,
-          threadId: runKey,
-        );
-        _onAgentEvaluated?.call(identity.agentId);
+        if (matched.immediate.isEmpty && matched.stale.isEmpty) continue;
+        if (matched.stale.isNotEmpty) {
+          await _agentService.markReportStale(identity.agentId);
+        }
+        if (matched.immediate.isNotEmpty) {
+          final runKey =
+              'goal-sync:${identity.agentId}:'
+              '${clock.now().millisecondsSinceEpoch}';
+          await _phaseA.execute(
+            agentIdentity: identity,
+            runKey: runKey,
+            triggerTokens: matched.immediate,
+            threadId: runKey,
+          );
+          _onAgentEvaluated?.call(identity.agentId);
+        }
       } catch (error, stackTrace) {
         _log(
           'goal signal sync dispatch failed for one agent',
@@ -94,15 +102,17 @@ class GoalSignalSyncDispatcher {
     );
   }
 
-  Future<Set<String>> _matchedTokens(
+  Future<_GoalSignalMatches> _matchedTokens(
     String agentId,
     Set<String> tokens,
   ) async {
     final head = await _repository.getEntity(goalSpecHeadId(agentId));
-    if (head is! GoalSpecHeadEntity) return const {};
+    if (head is! GoalSpecHeadEntity) return const _GoalSignalMatches();
     final version = await _repository.getEntity(head.versionId);
-    if (version is! GoalSpecVersionEntity) return const {};
-    return {
+    if (version is! GoalSpecVersionEntity) {
+      return const _GoalSignalMatches();
+    }
+    final immediate = {
       // A synced HEAD is itself a signal: after disconnected approvals
       // settle, the register may have resolved to the other version —
       // one immediate €0 recompute realigns health with the standing
@@ -115,8 +125,19 @@ class GoalSignalSyncDispatcher {
       if (tokens.contains(agentId) &&
           await _registerMisaligned(agentId, version.id))
         goalSpecHeadId(agentId),
-      ...goalSignalTriggerTokens(version.criteria).intersection(tokens),
+      // Category-time mutations are high-frequency observations. They never
+      // run Phase A here; the separate stale intersection below advances the
+      // receiving device's watermark so late journal delivery cannot leave a
+      // newly refreshed report looking current. Bounded signals remain
+      // immediate on every device.
+      ...goalImmediateSignalTriggerTokens(
+        version.criteria,
+      ).intersection(tokens),
     };
+    final stale = goalStaleSignalTriggerTokens(
+      version.criteria,
+    ).intersection(tokens);
+    return _GoalSignalMatches(immediate: immediate, stale: stale);
   }
 
   /// Whether the newest progress register was computed under a version
@@ -135,6 +156,16 @@ class GoalSignalSyncDispatcher {
     final latest = registers.firstOrNull;
     return latest != null && latest.specVersionId != versionId;
   }
+}
+
+class _GoalSignalMatches {
+  const _GoalSignalMatches({
+    this.immediate = const {},
+    this.stale = const {},
+  });
+
+  final Set<String> immediate;
+  final Set<String> stale;
 }
 
 /// App-lifetime subscription pumping synced batches into the dispatcher

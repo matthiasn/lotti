@@ -46,6 +46,7 @@ class _FakeReader extends GoalSignalReader {
     int shortTermDays = 3,
     bool includeCategoryTimeSessions = true,
     DateTime? categorySessionEvidenceStart,
+    DateTime? categoryTimeEndExclusive,
   }) async => window;
 }
 
@@ -954,6 +955,7 @@ void main() {
       );
 
       expect(result.success, isTrue);
+      expect(result.reportUpdated, isTrue);
       final replacement = upserts.whereType<GoalNudgeEntity>().single;
       expect(replacement.status, GoalNudgeStatus.active);
       expect(replacement.brief.headline, 'Zeit, wieder loszulegen.');
@@ -1071,9 +1073,66 @@ void main() {
     );
 
     expect(result.success, isTrue);
+    expect(result.reportUpdated, isTrue);
     expect(calls, 2, reason: 'primary turn plus one forced report tool turn');
+    final progress = upserts.whereType<GoalProgressEntity>().single;
+    expect(progress.periodKey, '2026-08-09');
+    expect(progress.specVersionId, '$agentId:spec-v1');
     final report = upserts.whereType<AgentReportEntity>().single;
     expect(report.oneLiner, 'The edited day is accounted for.');
+  });
+
+  test('a report rendered while a watched category timer is active remains '
+      'stale even after its standing head advances', () async {
+    stubSpec();
+    stubGlmResolution();
+    workflow = GoalAgentWorkflow(
+      repository: repository,
+      syncService: syncService,
+      phaseA: GoalAgentPhaseA(
+        repository: repository,
+        syncService: syncService,
+        signalReader: _FakeReader(
+          const GoalSignalWindow(hasActiveCategoryTimer: true),
+        ),
+      ),
+      conversationRepository: conversationRepository,
+      cloudInferenceRepository: cloudInferenceRepository,
+      aiConfigRepository: aiConfigRepository,
+    );
+    conversationRepository.sendMessageDelegate =
+        ({
+          required conversationId,
+          required message,
+          required model,
+          required provider,
+          required inferenceRepo,
+          tools,
+          toolChoice,
+          temperature = 0.7,
+          strategy,
+        }) async {
+          await (strategy! as GoalAgentStrategy).processToolCalls(
+            toolCalls: [
+              toolCall(GoalAgentToolNames.updateGoalReport, {
+                'status': 'insufficientData',
+                'oneLiner': 'Coding is still in progress.',
+                'tldr': 'The running timer can still change this result.',
+              }),
+            ],
+            manager: conversationManager,
+          );
+          return null;
+        };
+
+    final result = await run(
+      triggerTokens: const {goalReportRefreshTriggerToken},
+    );
+
+    expect(result.success, isTrue);
+    expect(result.reportUpdated, isFalse);
+    expect(upserts.whereType<GoalProgressEntity>(), hasLength(1));
+    expect(upserts.whereType<AgentReportHeadEntity>(), hasLength(1));
   });
 
   test('persistOutputs: retire is dismissal-terminal-safe, rerun requires a '
@@ -1562,6 +1621,11 @@ void main() {
 
     final result = await run();
     expect(result.success, isTrue);
+    expect(
+      result.reportUpdated,
+      isFalse,
+      reason: 'a successful inference turn did not replace the report',
+    );
     verify(
       () => attribution.prepareCompletion(
         attributionId: any(named: 'attributionId'),
@@ -1937,7 +2001,8 @@ void main() {
       ),
     );
 
-    expect(finalized, isFalse);
+    expect(finalized.attributionFinalized, isFalse);
+    expect(finalized.reportHeadAdvanced, isFalse);
     // The conversation's own message trail (thought/action/toolResult)
     // already landed while the model ran — the fence stops the OUTPUTS:
     // no report, no head move, no banner.
@@ -2089,7 +2154,7 @@ void main() {
       manager: conversationManager,
     );
 
-    await withClock(
+    final persistence = await withClock(
       fixedClock,
       () => workflow.persistOutputs(
         agentId: agentId,
@@ -2101,6 +2166,7 @@ void main() {
       ),
     );
 
+    expect(persistence.reportHeadAdvanced, isFalse);
     expect(
       upserts.whereType<AgentReportEntity>(),
       hasLength(1),
@@ -3200,7 +3266,7 @@ void main() {
           version: version!,
           now: DateTime(2026, 8, 6, 23),
         );
-    await withClock(
+    final persistence = await withClock(
       fixedClock,
       () => workflow.persistOutputs(
         agentId: agentId,
@@ -3212,6 +3278,7 @@ void main() {
       ),
     );
     // The report row itself lands (history), but the head stays put.
+    expect(persistence.reportHeadAdvanced, isFalse);
     expect(upserts.whereType<AgentReportEntity>(), hasLength(1));
     expect(upserts.whereType<AgentReportHeadEntity>(), isEmpty);
   });

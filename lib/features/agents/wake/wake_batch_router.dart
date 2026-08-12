@@ -76,6 +76,16 @@ extension WakeBatchRouter on WakeOrchestrator {
       final predicate = sub.predicate;
       if (predicate != null && !predicate(allMatched)) continue;
 
+      if (sub.reportStaleOnly) {
+        _scheduleReportStale(sub.agentId, clock.now());
+        _log(
+          'marked report stale without scheduling a wake for '
+          '${DomainLogger.sanitizeId(sub.agentId)}',
+          subDomain: 'stale',
+        );
+        continue;
+      }
+
       // Automatic inference is opt-in, but observation is not. Disabled task
       // agents keep their subscriptions and persist a stale watermark instead
       // of queueing a wake. While a manual wake is running, retain the existing

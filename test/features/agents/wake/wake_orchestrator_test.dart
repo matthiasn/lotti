@@ -257,6 +257,86 @@ void main() {
       );
 
       test(
+        'a stale-only subscription persists freshness without queueing work',
+        () async {
+          final signalAt = DateTime(2026, 8, 12, 18, 30);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: DateTime(2026, 8, 12, 18),
+                    vectorClock: null,
+                    reportFreshAt: DateTime(2026, 8, 12, 18, 15),
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            syncEntityWriter: (entity) async {
+              state = entity as AgentStateEntity;
+            },
+          )..addSubscription(makeSub(reportStaleOnly: true));
+          final controller = StreamController<Set<String>>.broadcast();
+
+          await withClock(Clock.fixed(signalAt), () async {
+            await orchestrator.start(controller.stream);
+            controller.add({'entity-1'});
+            await pumpEventQueue();
+          });
+
+          expect(queue.isEmpty, isTrue);
+          expect(state.reportStaleAt, signalAt);
+          expect(state.reportFreshAt, DateTime(2026, 8, 12, 18, 15));
+          expect(state.isReportStale, isTrue);
+          await controller.close();
+        },
+      );
+
+      test(
+        'markReportStale persists the supplied evidence-arrival timestamp '
+        'without queueing work',
+        () async {
+          final signalAt = DateTime(2026, 8, 12, 18, 30);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: DateTime(2026, 8, 12, 18),
+                    vectorClock: null,
+                    reportFreshAt: DateTime(2026, 8, 12, 18, 15),
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            syncEntityWriter: (entity) async {
+              state = entity as AgentStateEntity;
+            },
+          );
+
+          await orchestrator.markReportStale(
+            'agent-1',
+            occurredAt: signalAt,
+          );
+
+          expect(queue.isEmpty, isTrue);
+          expect(state.reportStaleAt, signalAt);
+          expect(state.reportFreshAt, DateTime(2026, 8, 12, 18, 15));
+          expect(state.isReportStale, isTrue);
+        },
+      );
+
+      test(
         'a failed stale-watermark write is contained and reported',
         () async {
           // The watermark is a hint that the report has drifted, not the report
@@ -445,6 +525,55 @@ void main() {
 
           expect(state.reportFreshAt, refreshStartedAt);
           expect(state.isReportStale, isFalse);
+        },
+      );
+
+      test(
+        'successful maintenance wake keeps a standing report stale when no '
+        'report was produced',
+        () async {
+          final staleAt = DateTime(2026, 7, 16, 8, 59);
+          final wakeAt = DateTime(2026, 7, 16, 9);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: staleAt,
+                    vectorClock: null,
+                    reportStaleAt: staleAt,
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            syncEntityWriter: (entity) async {
+              state = entity as AgentStateEntity;
+            },
+            wakeExecutor: (_, _, _, _) async => WakeExecutorResult(
+              const {},
+              reportUpdated: false,
+            ),
+          );
+          queue.enqueue(
+            WakeJob(
+              runKey: 'maintenance-only',
+              agentId: 'agent-1',
+              reason: WakeReason.scheduled.name,
+              triggerTokens: const {},
+              createdAt: wakeAt,
+            ),
+          );
+
+          await withClock(Clock.fixed(wakeAt), orchestrator.processNext);
+
+          expect(state.reportFreshAt, isNull);
+          expect(state.reportStaleAt, staleAt);
+          expect(state.isReportStale, isTrue);
         },
       );
 

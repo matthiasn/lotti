@@ -3,10 +3,30 @@ part of 'database.dart';
 /// One slim time row for the Insights time-analysis dashboard: the absolute
 /// time span plus the resolved category id (`null` = uncategorized).
 typedef InsightsTimeRowRecord = ({
+  String entryId,
   DateTime dateFrom,
   DateTime dateTo,
   String? categoryId,
 });
+
+const _insightsResolvedCategorySql = '''
+  COALESCE(
+    (
+      SELECT t.category
+      FROM linked_entries le
+      INNER JOIN journal t ON t.id = le.from_id
+      WHERE le.to_id = j.id
+        AND COALESCE(le.hidden, FALSE) = FALSE
+        AND t.type = 'Task'
+        AND t.deleted = FALSE
+        AND t.category != ''
+        AND COALESCE(t.private, FALSE) IN (FALSE, pf.visible)
+      ORDER BY t.date_from DESC, t.id
+      LIMIT 1
+    ),
+    NULLIF(j.category, '')
+  )
+''';
 
 /// Insights query surface for [JournalDb]: lean duration aggregation rows.
 mixin _JournalDbInsightsQueries on _$JournalDb {
@@ -55,24 +75,10 @@ mixin _JournalDbInsightsQueries on _$JournalDb {
           ) AS visible
         )
         SELECT
+          j.id AS entry_id,
           j.date_from AS date_from,
           j.date_to AS date_to,
-          COALESCE(
-            (
-              SELECT t.category
-              FROM linked_entries le
-              INNER JOIN journal t ON t.id = le.from_id
-              WHERE le.to_id = j.id
-                AND COALESCE(le.hidden, FALSE) = FALSE
-                AND t.type = 'Task'
-                AND t.deleted = FALSE
-                AND t.category != ''
-                AND COALESCE(t.private, FALSE) IN (FALSE, pf.visible)
-              ORDER BY t.date_from DESC, t.id
-              LIMIT 1
-            ),
-            NULLIF(j.category, '')
-          ) AS category_id
+          $_insightsResolvedCategorySql AS category_id
         FROM journal j INDEXED BY idx_journal_insights_time
         CROSS JOIN private_flag pf
         WHERE j.type = 'JournalEntry'
@@ -90,10 +96,39 @@ mixin _JournalDbInsightsQueries on _$JournalDb {
     return [
       for (final row in rows)
         (
+          entryId: row.read<String>('entry_id'),
           dateFrom: row.read<DateTime>('date_from'),
           dateTo: row.read<DateTime>('date_to'),
           categoryId: row.read<String?>('category_id'),
         ),
     ];
+  }
+
+  /// Resolves one time entry's category with the exact task-link precedence
+  /// and privacy rules used by [insightsTimeRows]. Unlike the range query,
+  /// this deliberately accepts a zero-duration entry so a live timer can be
+  /// attributed before it has a persisted end time.
+  Future<String?> insightsTimeCategoryForEntry(String entryId) async {
+    final rows = await customSelect(
+      '''
+        WITH private_flag AS (
+          SELECT COALESCE(
+            (SELECT status FROM config_flags WHERE name = 'private'),
+            FALSE
+          ) AS visible
+        )
+        SELECT $_insightsResolvedCategorySql AS category_id
+        FROM journal j
+        CROSS JOIN private_flag pf
+        WHERE j.id = ?
+          AND j.type = 'JournalEntry'
+          AND j.deleted = FALSE
+          AND COALESCE(j.private, FALSE) IN (FALSE, pf.visible)
+        LIMIT 1
+      ''',
+      variables: [Variable<String>(entryId)],
+      readsFrom: {journal, linkedEntries, configFlags},
+    ).get();
+    return rows.isEmpty ? null : rows.single.read<String?>('category_id');
   }
 }

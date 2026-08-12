@@ -64,6 +64,20 @@ String _goalAgentReplyPayloadId(String agentId, String runKey) =>
 /// How many recent observations feed the FACTS block.
 const goalObservationLookback = 12;
 
+/// Durable outcomes from a goal wake's transactional output batch.
+class GoalOutputPersistenceResult {
+  const GoalOutputPersistenceResult({
+    required this.attributionFinalized,
+    required this.reportHeadAdvanced,
+  });
+
+  /// Whether report-backed AI attribution has a durable carrier.
+  final bool attributionFinalized;
+
+  /// Whether this wake replaced the report selected by the current head.
+  final bool reportHeadAdvanced;
+}
+
 /// Phase B of the goal-agent wake (ADR 0054): the lease-elected LLM tier.
 ///
 /// Runs only when an escalation wake fires (the router keys on the
@@ -227,6 +241,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
     final escalationPeriod = goalEscalationPeriodFromTriggerTokens(
       triggerTokens,
     );
+    final overdueEscalation = _isPastPeriod(escalationPeriod, now);
     final reference = _escalationReference(escalationPeriod, now);
     // A delayed escalation may outlive a spec revision: the period's
     // register row records the version that actually armed the wake, and
@@ -257,7 +272,18 @@ class GoalAgentWorkflow with AgentErrorLogging {
       version: version,
       now: reference,
       categorySessionEvidenceStart: agentIdentity.createdAt,
+      categoryTimeEndExclusive: overdueEscalation
+          ? _periodEndExclusive(escalationPeriod!)
+          : null,
     );
+    if (reportRefresh) {
+      final persisted = await _phaseA.persistDerivation(
+        agentId: agentId,
+        derivation: derivation,
+        now: now,
+      );
+      if (!persisted) return const WakeResult(success: true);
+    }
     // Phase A persisted the transition's register row BEFORE arming this
     // wake, so re-deriving sees the new status as previousStatus and the
     // transition vanishes. The wake record carries the PRE-transition
@@ -283,6 +309,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
           derivation.facts.categoryTimeSessionsByCategory,
       categoryTimeEvidenceStart: derivation.facts.categoryTimeEvidenceStart,
       categoryTimeEvidenceEnd: derivation.facts.categoryTimeEvidenceEnd,
+      hasActiveCategoryTimer: derivation.facts.hasActiveCategoryTimer,
     );
 
     // Spec-scoped like the persistence snapshot: an old-spec fresh
@@ -315,8 +342,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
         : '$renderedFacts\n\nPENDING USER MESSAGE:\n$pendingUserMessage';
     if (reportRefresh) {
       factsBlock =
-          '$factsBlock\n\nUSER REQUESTED REPORT REFRESH AFTER A HABIT EDIT. '
-          'Update the standing report from the authoritative FACTS.';
+          '$factsBlock\n\nUSER REQUESTED REPORT REFRESH AFTER WATCHED '
+          'EVIDENCE CHANGED. Update the standing report from the '
+          'authoritative FACTS.';
     }
     if (userRequestedAd) {
       factsBlock =
@@ -523,8 +551,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
       }
 
       var attributionFinalized = false;
+      var reportHeadAdvanced = false;
       try {
-        attributionFinalized = await persistOutputs(
+        final persistence = await persistOutputs(
           agentId: agentId,
           runKey: runKey,
           threadId: threadId,
@@ -540,6 +569,8 @@ class GoalAgentWorkflow with AgentErrorLogging {
               ? null
               : 'chat:$chatMessageId',
         );
+        attributionFinalized = persistence.attributionFinalized;
+        reportHeadAdvanced = persistence.reportHeadAdvanced;
         outputsCommitted = true;
       } catch (error, stackTrace) {
         final replyCommitted =
@@ -597,7 +628,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
         }
       }
 
-      return const WakeResult(success: true);
+      return WakeResult(
+        success: true,
+        reportUpdated: reportHeadAdvanced && !facts.hasActiveCategoryTimer,
+      );
     } catch (error, stackTrace) {
       _domainLogger?.error(
         LogDomain.agentWorkflow,
@@ -839,6 +873,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
     return DateTime(parts.$1, parts.$2, parts.$3, 23, 59, 59);
   }
 
+  /// Exclusive local end of an encoded day, preserving the final second.
+  DateTime? _periodEndExclusive(String periodKey) {
+    final parts = _periodParts(periodKey);
+    if (parts == null) return null;
+    return DateTime(parts.$1, parts.$2, parts.$3 + 1);
+  }
+
   (int, int, int)? _periodParts(String periodKey) {
     final parts = periodKey.split('-');
     if (parts.length != 3) return null;
@@ -855,10 +896,13 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// lexically ordered, so a plain string compare detects a past period.
   DateTime _escalationReference(String? periodKey, DateTime now) {
     if (periodKey == null) return now;
-    final today = const GoalWindow.day().periodKey(now);
-    if (periodKey.compareTo(today) >= 0) return now;
+    if (!_isPastPeriod(periodKey, now)) return now;
     return _periodEnd(periodKey) ?? now;
   }
+
+  bool _isPastPeriod(String? periodKey, DateTime now) =>
+      periodKey != null &&
+      periodKey.compareTo(const GoalWindow.day().periodKey(now)) < 0;
 
   /// glm-5.2 on Melious is the validated default (the model the eval
   /// matrix proved the contract against); an AI profile on the agent's
@@ -1068,11 +1112,11 @@ class GoalAgentWorkflow with AgentErrorLogging {
   /// directly to pin the ad-state guards (dismissal-terminal defense,
   /// rerun-requires-retired) that the in-conversation validation makes
   /// hard to reach through the loop.
-  /// Returns whether the wake's attribution envelope was finalized (a
-  /// report existed and the projection landed) — the caller terminalizes
-  /// the session as carrierless otherwise.
+  /// Returns the durable report-carrier and standing-head outcomes. The caller
+  /// terminalizes attribution without a carrier and only clears report
+  /// staleness when the current head actually advanced.
   @visibleForTesting
-  Future<bool> persistOutputs({
+  Future<GoalOutputPersistenceResult> persistOutputs({
     required String agentId,
     required String runKey,
     required String threadId,
@@ -1090,6 +1134,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
       reportId: reportId,
     );
     var attributionFinalized = false;
+    var reportHeadAdvanced = false;
     var fenced = false;
 
     await _syncService.runInTransaction(() async {
@@ -1282,6 +1327,7 @@ class GoalAgentWorkflow with AgentErrorLogging {
               vectorClock: null,
             ),
           );
+          reportHeadAdvanced = true;
         }
       }
 
@@ -1634,7 +1680,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
           'interactive goal turn was fenced by a concurrent spec revision',
         );
       }
-      return false;
+      return const GoalOutputPersistenceResult(
+        attributionFinalized: false,
+        reportHeadAdvanced: false,
+      );
     }
 
     // Finalize AFTER the transaction: the projection must never describe
@@ -1654,7 +1703,10 @@ class GoalAgentWorkflow with AgentErrorLogging {
         attributionFinalized = true;
       }
     }
-    return attributionFinalized;
+    return GoalOutputPersistenceResult(
+      attributionFinalized: attributionFinalized,
+      reportHeadAdvanced: reportHeadAdvanced,
+    );
   }
 }
 

@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
 import 'package:lotti/features/agents/wake/wake_orchestrator.dart';
+import 'package:lotti/features/goals/evaluation/goal_signal_reader.dart';
 import 'package:lotti/features/goals/service/goal_agent_service.dart';
 import 'package:mocktail/mocktail.dart';
 
@@ -165,6 +166,41 @@ void main() {
   test('removeSignalSubscriptions drops the agent from the orchestrator', () {
     when(() => orchestrator.removeSubscriptions(any())).thenReturn(null);
     service.removeSignalSubscriptions(agentId);
+    verify(() => orchestrator.removeSubscriptions(agentId)).called(1);
+  });
+
+  test('category time marks the report stale while bounded signals wake', () {
+    const categoryTime = GoalCriterion.categoryTime(
+      criterionId: 'coding-time',
+      categoryId: 'coding',
+      window: GoalWindow.rollingDays(count: 7),
+      targetHours: 10,
+      aggregation: GoalAggregation.sum,
+    );
+    const mixed = GoalCriterion.allOf(
+      criterionId: 'balanced',
+      criteria: [criteria, categoryTime],
+    );
+
+    service.registerSignalSubscription(agentId, mixed);
+
+    final subscriptions = verify(
+      () => orchestrator.addSubscription(captureAny()),
+    ).captured.cast<AgentSubscription>();
+    final immediate = subscriptions.singleWhere(
+      (subscription) => subscription.id == goalSignalSubscriptionId(agentId),
+    );
+    expect(immediate.matchEntityIds, {'gym-habit'});
+    expect(immediate.drainImmediately, isTrue);
+    expect(immediate.reportStaleOnly, isFalse);
+
+    final stale = subscriptions.singleWhere(
+      (subscription) =>
+          subscription.id == goalStaleSignalSubscriptionId(agentId),
+    );
+    expect(stale.matchEntityIds, goalStaleSignalTriggerTokens(categoryTime));
+    expect(stale.drainImmediately, isFalse);
+    expect(stale.reportStaleOnly, isTrue);
     verify(() => orchestrator.removeSubscriptions(agentId)).called(1);
   });
 

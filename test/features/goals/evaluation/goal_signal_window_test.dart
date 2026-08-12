@@ -28,6 +28,7 @@ void main() {
     },
     categoryTimeEvidenceStart: DateTime(2026, 8),
     categoryTimeEvidenceEnd: DateTime(2026, 8, 6),
+    hasActiveCategoryTimer: true,
   );
 
   test('range queries are inclusive of both endpoints', () {
@@ -77,5 +78,6 @@ void main() {
     expect(session.duration, const Duration(minutes: 90));
     expect(window.categoryTimeEvidenceStart, DateTime(2026, 8));
     expect(window.categoryTimeEvidenceEnd, DateTime(2026, 8, 6));
+    expect(window.hasActiveCategoryTimer, isTrue);
   });
 }

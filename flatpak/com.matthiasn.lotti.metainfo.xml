@@ -42,7 +42,7 @@
   <releases>
     <release version="1.0.7" date="2026-08-12">
       <description>
-        <p>Added: goal agents remain configurable with linked habits and rolling seven-day step targets. Their evaluation foundation now preserves a separate accountable result for every configured criterion.</p>
+        <p>Goal-agent criteria are ready for refinement. Goal agents remain configurable with linked habits and rolling seven-day step targets. Their evaluation foundation now preserves a separate accountable result for every configured criterion.</p>
       </description>
     </release>
     <release version="1.0.6" date="2026-08-09">

@@ -211,11 +211,25 @@ void main() {
             'goal-1',
           ).overrideWith((ref) async => {}),
           agentReportProvider('goal-1').overrideWith((ref) async => null),
+          agentStateProvider('goal-1').overrideWith(
+            (ref) async =>
+                AgentDomainEntity.agentState(
+                      id: 'goal-1:state',
+                      agentId: 'goal-1',
+                      slots: const AgentSlots(),
+                      updatedAt: DateTime(2026, 8, 12, 18, 30),
+                      vectorClock: null,
+                      reportFreshAt: DateTime(2026, 8, 12, 18),
+                      reportStaleAt: DateTime(2026, 8, 12, 18, 30),
+                    )
+                    as AgentStateEntity,
+          ),
         ],
       ),
     );
     await tester.pumpAndSettle();
     expect(find.text('Seven for seven. Keep coasting.'), findsOneWidget);
+    expect(find.text('Out of date'), findsOneWidget);
     expect(find.textContaining('No report yet'), findsNothing);
   });
 

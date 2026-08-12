@@ -7,6 +7,8 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
+import 'package:lotti/features/insights/logic/time_bucketing.dart';
+import 'package:lotti/features/insights/model/insights_models.dart';
 
 // The dismissal quiet window is the REST OF THE LOCAL CALENDAR DAY (see
 // `GoalFactsRenderer.dismissalCooldownActive`): a rolling duration would
@@ -128,7 +130,7 @@ class GoalFactsRenderer {
                 'categoryId': session.categoryId,
                 'startedAtLocal': session.dateFrom.toIso8601String(),
                 'endedAtLocal': session.dateTo.toIso8601String(),
-                'durationMinutes': session.duration.inMinutes,
+                'durationMinutes': _minutes(session.duration.inSeconds),
               },
           ],
           'interpretationPolicy':
@@ -175,36 +177,46 @@ class GoalFactsRenderer {
     String categoryId,
     List<GoalCategoryTimeSession> sessions,
   ) {
-    final minutesByLocalHour = List<int>.filled(24, 0);
-    final minutesByLocalWeekday = List<int>.filled(7, 0);
-    var totalMinutes = 0;
-    for (final session in sessions) {
-      totalMinutes += session.duration.inMinutes;
-      var cursor = session.dateFrom;
-      while (cursor.isBefore(session.dateTo)) {
+    final secondsByLocalHour = List<int>.filled(24, 0);
+    final secondsByLocalWeekday = List<int>.filled(7, 0);
+    final merged = mergeIntervals([
+      for (final session in sessions)
+        TimeInterval(session.dateFrom, session.dateTo),
+    ]);
+    var totalSeconds = 0;
+    for (final interval in merged) {
+      totalSeconds += interval.duration.inSeconds;
+      var cursor = interval.start;
+      while (cursor.isBefore(interval.end)) {
         final nextHour = DateTime(
           cursor.year,
           cursor.month,
           cursor.day,
           cursor.hour + 1,
         );
-        final segmentEnd = nextHour.isBefore(session.dateTo)
+        final segmentEnd = nextHour.isBefore(interval.end)
             ? nextHour
-            : session.dateTo;
-        final minutes = segmentEnd.difference(cursor).inMinutes;
-        minutesByLocalHour[cursor.hour] += minutes;
-        minutesByLocalWeekday[cursor.weekday - DateTime.monday] += minutes;
+            : interval.end;
+        final seconds = segmentEnd.difference(cursor).inSeconds;
+        secondsByLocalHour[cursor.hour] += seconds;
+        secondsByLocalWeekday[cursor.weekday - DateTime.monday] += seconds;
         cursor = segmentEnd;
       }
     }
     return {
       'categoryId': categoryId,
       'sessionCount': sessions.length,
-      'totalMinutes': totalMinutes,
-      'minutesByLocalHour': minutesByLocalHour,
-      'minutesByLocalWeekday': minutesByLocalWeekday,
+      'totalMinutes': _minutes(totalSeconds),
+      'minutesByLocalHour': [
+        for (final seconds in secondsByLocalHour) _minutes(seconds),
+      ],
+      'minutesByLocalWeekday': [
+        for (final seconds in secondsByLocalWeekday) _minutes(seconds),
+      ],
     };
   }
+
+  double _minutes(int seconds) => seconds / Duration.secondsPerMinute;
 
   /// Worsening means: strictly declining attainment over today plus at
   /// least two prior periods (three data points, each below the one

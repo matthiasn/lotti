@@ -77,15 +77,19 @@ the rollout flag.
 flowchart TD
     subgraph triggers [Triggers — every device]
         SIG[localUpdateStream signals\nleaf dataTypes, habitIds,\nmeasurable ids] --> ORCH[WakeOrchestrator\nsubscription match]
+        LOCALTIME[local category-time mutation] --> STALE[advance report-stale watermark\nno wake]
         SYNC[syncUpdateStream] --> DISP[GoalSignalSyncDispatcher]
         CAD[cadence ScheduledWakeEntity\nworkspace goal-cadence,\ndaily at 06:00 local] --> MGR[ScheduledWakeManager]
         CHAT[Goal chat composer] --> STORE[persist user message + payload]
         STORE --> USERWAKE[manual userMessage wake\nmessage id trigger token]
         DAYEDIT[Goal detail day cell\nsuccess or missed] --> HABITWRITE[existing habit completion\npersistence path]
         HABITWRITE --> SIG
+        REFRESH[Update now\ngoal-report-refresh] --> REFREG[persist deterministic register\nwithout duplicate escalation]
     end
     ORCH --> PA[GoalAgentPhaseA.execute]
-    DISP --> PA
+    DISP --> SYNCROUTE{bounded signal or\ncategory-time mutation?}
+    SYNCROUTE -- bounded --> PA
+    SYNCROUTE -- category time --> STALE
     MGR --> PA
     PA --> HEAD[spec head → active version\nno head = clean no-op]
     HEAD --> REARM[re-arm cadence\nrecurrence by re-arm]
@@ -100,9 +104,13 @@ flowchart TD
     ROUTE -- no --> PA
     ROUTE -- yes --> PB[GoalAgentWorkflow — Phase B\nsame derivation as Phase A]
     USERWAKE --> PB
+    REFREG --> PB
     PB --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone]
     FACTS --> CONV[one bounded conversation\nglm-5.2 default, profile override,\ntemperature 0, 7-tool contract]
     CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
+    OUT --> FRESH{current report head advanced\nand no watched timer active?}
+    FRESH -- yes --> REPORTDONE[clear report-stale watermark]
+    FRESH -- no --> STAY[keep report stale]
 ```
 
 ## Invariants
@@ -149,19 +157,25 @@ flowchart TD
   and category time reuses the same category-attributed timer rows as Insights.
   A category-time leaf can enforce an `atLeast` or `atMost` number of hours and
   can clip every local day to an optional time band; a crossing band such as
-  `21:30 → 07:00` spans midnight. Day keys re-stamp the local calendar date as
-  midnight UTC. The goal agent must never disagree with the chart the user is
-  looking at.
+  `21:30 → 07:00` spans midnight. Evaluation clips the current day at the
+  evaluation instant, so future-dated entries never count as time already
+  tracked. A live timer resolves category attribution through the same linked-
+  task query as Insights and replaces its persisted prefix by entry id. Day
+  keys re-stamp the local calendar date as midnight UTC. The goal agent must
+  never disagree with the chart the user is looking at.
 - **Pattern evidence is richer than the threshold.** Phase A reads only the
   bounded evaluation/lookback range. When Phase B actually runs, the same
   reader additionally loads every valid attributed session for a watched
   category since the goal agent was created, including sessions outside an
-  optional cutoff band. FACTS summarizes the complete lifetime into bounded
+  optional cutoff band. FACTS unions overlaps per category and preserves
+  sub-minute precision while summarizing the complete lifetime into bounded
   local-hour and weekday distributions, then adds the 200 most recent raw
-  sessions with category, local start/end and duration. The coach can therefore
-  notice late-night or clustering patterns without allowing one current model
-  message to grow forever. Those signals are evidence only: the model may
-  discuss them but cannot replace the deterministic per-dimension result.
+  sessions with category, local start/end and duration. The raw session count
+  remains available separately from the unioned duration. The coach can
+  therefore notice late-night or clustering patterns without allowing one
+  current model message to grow forever. Those signals are evidence only: the
+  model may discuss them but cannot replace the deterministic per-dimension
+  result.
 - **Subjective assessment is a separate governance layer.** Deterministic
   `goalProgress` registers are recomputed from source and must never carry a
   mutable opinion. A future daily-assessment register should therefore keep
@@ -173,16 +187,20 @@ flowchart TD
   without erasing any dimension's measured result. No producer for that
   assessment register exists yet.
 - **Automatic Phase B is reachable only through the lease; direct chat and
-  detail-page refreshes are explicit user wakes.** Sync-received signals run Phase A directly (the
-  orchestrator deliberately listens local-only); automatic LLM-worthy work
-  becomes a `goal-escalation:<periodKey>` scheduled wake whose lease election
-  picks exactly one device. A durable source chat turn instead carries a
+  detail-page refreshes are explicit user wakes.** The orchestrator listens
+  local-only. On sync, bounded habit/measured signals run Phase A directly,
+  while category-time mutations only advance the receiving agent's durable
+  report-stale watermark. Automatic LLM-worthy work becomes a
+  `goal-escalation:<periodKey>` scheduled wake whose lease election picks
+  exactly one device. A durable source chat turn instead carries a
   `goal-chat-message:<messageId>` trigger on a manual `userMessage` wake. The
   source exists before enqueue, the wake bypasses throttling, and no chat UI
   owns an inference loop. A successful exact-day habit edit also enqueues a
   workspace-scoped `goal-report-refresh` wake; its workspace does not supersede
-  the ordinary subscription wake, and it routes to Phase B to refresh the
-  standing report even when the coarse status did not change.
+  the ordinary subscription wake. It first persists the deterministic register
+  from the same derivation snapshot without arming a duplicate escalation, then
+  routes to Phase B to refresh the standing report even when the coarse status
+  did not change.
 - **Phase B re-derives, never trusts.** The workflow calls the same
   `deriveWakeFacts` Phase A used to arm the escalation and renders every
   number into the FACTS block; the prompt forbids the model to recompute.
@@ -193,6 +211,12 @@ flowchart TD
   new-banner request missing its ad. A first evaluation that lands at risk is
   also ad-eligible, so a newly created goal does not wait for a three-day trend
   before receiving its initial banner.
+- **Report freshness follows the durable standing head.** Producing report
+  material or writing a historical report row is insufficient: the shared
+  drain clears the stale watermark only when this wake actually advances the
+  current report head. A report that includes a watched category timer's live
+  elapsed prefix also remains stale, because in-memory timer ticks continue
+  changing evidence without journal notifications.
 - **The escalation carries its own baseline and period.** The wake record
   encodes the PRE-transition status as a `goal-baseline:<status>` trigger
   token (Phase A's register write hides it from any re-derivation, and a
@@ -202,7 +226,9 @@ flowchart TD
   period never advances the current report head. A failed Phase B wake
   re-arms its escalation with a later deadline (the resolver's supported
   reschedule-beats-consume path), so a transient failure cannot orphan
-  the period.
+  the period. Completed historical periods read category time through the next
+  local midnight as an exclusive bound, so their final second is not lost;
+  live periods remain clipped at the evaluation instant.
 - **Ad contracts are enforced at persistence, not just in the prompt.**
   `persistOutputs` re-reads the nudge rows (a dismissal during inference
   must count), and suppresses creates/re-runs during the same-day dismissal
@@ -488,6 +514,18 @@ flowchart TD
   targets, and an optional local time band without hard-coding a health-data
   catalog. A separate follow-up approval surface will render direct daily
   dimension ratings and agent-proposed assessment change items.
+- **Tracked time invalidates without churning wakes.** Category-time leaves
+  observe the journal, link, task, category and privacy notifications used by
+  Insights, but those mutations only advance the durable report-stale
+  watermark. They do not queue Phase A or inference for every timer edit. The
+  existing 06:00 cadence evaluates accumulated changes automatically, while
+  Update now remains the explicit immediate report path. A deterministic
+  cadence pass may refresh progress registers but does not clear the stale
+  badge unless a report-producing wake durably replaces the standing report.
+  Synced category-time journal facts re-advance the watermark on their receiving
+  device, including when they arrive after an earlier Update now. Habit and
+  measured-data signals stay immediate because each write is a bounded
+  observation.
 - **Conversation scope is the goal.** The contract identifies the agent as a
   dedicated coach rather than a general assistant. Coding, trivia and other
   unrelated requests receive a short purpose reminder and a redirect to the
