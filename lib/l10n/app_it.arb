@@ -2883,7 +2883,7 @@
   "goalDominantIssueBadge": "{dimensionName} ha bisogno di attenzione",
   "goalFormAddDimension": "Aggiungi dimensione",
   "goalFormBloodPressureSource": "Sistolica e diastolica · mmHg · media su 7 giorni",
-  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} ore ogni 7 giorni mobili",
+  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{ora} other{ore}} ogni 7 giorni mobili",
   "goalFormCategoryTimeSource": "Tempo registrato · ore ogni 7 giorni mobili",
   "goalFormCategoryTimeTarget": "Ore ogni 7 giorni mobili",
   "goalFormChooseHabit": "Scegli un’abitudine esistente",

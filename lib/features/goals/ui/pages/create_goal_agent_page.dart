@@ -101,6 +101,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   String? _derivedFrom;
   String? _derivedTitle;
   String? _derivedHabitsFingerprint;
+  String? _derivedCategoriesFingerprint;
   late String _baseVersionId;
   String? _validation;
 
@@ -182,6 +183,11 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   String _habitsFingerprint(List<HabitDefinition> habits) =>
       habits.map((habit) => '${habit.id}\u0000${habit.name}').join('\u0001');
 
+  String _categoriesFingerprint(List<CategoryDefinition> categories) =>
+      categories
+          .map((category) => '${category.id}\u0000${category.name}')
+          .join('\u0001');
+
   void _mapIntention(List<HabitDefinition> habits) {
     final statement = _statement.text.trim();
     if (statement.isEmpty) {
@@ -198,7 +204,16 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     final habitsChanged =
         habitsFingerprint != null &&
         habitsFingerprint != _derivedHabitsFingerprint;
-    if (!_editing && (_derivedFrom != statement || habitsChanged)) {
+    final categoriesAsync = ref.read(categoriesStreamProvider);
+    final categoriesFingerprint =
+        categoriesAsync.hasError || categoriesAsync.value == null
+        ? null
+        : _categoriesFingerprint(_knownCategories);
+    final categoriesChanged =
+        categoriesFingerprint != null &&
+        categoriesFingerprint != _derivedCategoriesFingerprint;
+    if (!_editing &&
+        (_derivedFrom != statement || habitsChanged || categoriesChanged)) {
       final matchedHabits = [
         for (final habit in habits)
           if (_matchesIntention(habit.name)) habit,
@@ -239,6 +254,9 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
       _derivedFrom = statement;
       if (habitsFingerprint != null) {
         _derivedHabitsFingerprint = habitsFingerprint;
+      }
+      if (categoriesFingerprint != null) {
+        _derivedCategoriesFingerprint = categoriesFingerprint;
       }
     }
 
@@ -451,6 +469,8 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
     }
     if (!mounted) return;
 
+    _reconcileCategoryTimeTargetsForSave();
+
     // Only refresh a title the form still owns. A manually changed (including
     // deliberately blank) title remains untouched, while an auto-derived
     // "Gym + Run" title follows integrity cleanup down to "Gym".
@@ -569,6 +589,23 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
         });
       }
     }
+  }
+
+  void _reconcileCategoryTimeTargetsForSave() {
+    final activeCategoryIds = _knownCategories
+        .map((category) => category.id)
+        .toSet();
+    final preservedCategoryIds = _editing
+        ? _mapping.categoryTimeTargets.keys.toSet()
+        : const <String>{};
+    _categoryTimeTargets.removeWhere(
+      (categoryId, _) =>
+          !activeCategoryIds.contains(categoryId) &&
+          !preservedCategoryIds.contains(categoryId),
+    );
+    _categoryTimeDirections.removeWhere(
+      (categoryId, _) => !_categoryTimeTargets.containsKey(categoryId),
+    );
   }
 
   void _back() {

@@ -6316,7 +6316,14 @@ class AppLocalizationsDa extends AppLocalizations {
     String direction,
     String target,
   ) {
-    return '$categoryName: $direction $target timer pr. rullende 7 dage';
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'time',
+        'other': 'timer',
+      },
+    );
+    return '$categoryName: $direction $target $_temp0 pr. rullende 7 dage';
   }
 
   @override

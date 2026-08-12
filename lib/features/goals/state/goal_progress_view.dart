@@ -9,6 +9,7 @@ import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/goals/evaluation/goal_progress_evaluator.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_measurable_capture_state.dart';
 import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
@@ -380,6 +381,12 @@ GoalMetricProgressView _metricProgressView({
     window: metric.window,
     direction: metric.direction,
     aggregation: metric.aggregation,
+    unitName: switch (metric.dataType) {
+      GoalHealthDataTypes.weight => 'kg',
+      GoalHealthDataTypes.bloodPressureSystolic ||
+      GoalHealthDataTypes.bloodPressureDiastolic => 'mmHg',
+      _ => null,
+    },
     dailyValues: signals.quantitativeDailySums[metric.dataType],
     signals: signals,
     reference: reference,

@@ -3573,7 +3573,7 @@
   },
   "goalFormAddDimension": "Add dimension",
   "goalFormBloodPressureSource": "Systolic and diastolic · mmHg · 7-day average",
-  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} hours per rolling 7 days",
+  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{hour} other{hours}} per rolling 7 days",
   "@goalFormCategoryTimeCadence": {
     "placeholders": {
       "categoryName": {

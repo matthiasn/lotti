@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:fl_chart/fl_chart.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:lotti/classes/entity_definitions.dart';
@@ -335,6 +336,18 @@ _BloodPressureMetrics? _bloodPressureMetrics(
     }
   }
   if (systolic == null || diastolic == null) return null;
+  final systolicUnit = systolic.unitName?.trim() ?? '';
+  final diastolicUnit = diastolic.unitName?.trim() ?? '';
+  final compatibleDays = listEquals(
+    systolic.days.map((day) => day.day).toList(),
+    diastolic.days.map((day) => day.day).toList(),
+  );
+  if (systolic.window != diastolic.window ||
+      systolic.aggregation != diastolic.aggregation ||
+      systolicUnit != diastolicUnit ||
+      !compatibleDays) {
+    return null;
+  }
   return (systolic: systolic, diastolic: diastolic);
 }
 
@@ -378,6 +391,8 @@ class _BloodPressureDimensionCard extends StatelessWidget {
     final systolicColor = tokens.colors.alert.error.defaultColor;
     final diastolicColor = tokens.colors.alert.info.defaultColor;
     final range = _metricDateRange([metrics.systolic, metrics.diastolic]);
+    final unit = metrics.systolic.unitName?.trim() ?? '';
+    final unitSuffix = unit.isEmpty ? '' : ' $unit';
     final yValues = <num>[
       metrics.systolic.target,
       metrics.diastolic.target,
@@ -390,7 +405,7 @@ class _BloodPressureDimensionCard extends StatelessWidget {
     ];
     final reading = hasData
         ? '${number.format(systolic.current)} / '
-              '${number.format(diastolic.current)} mmHg'
+              '${number.format(diastolic.current)}$unitSuffix'
         : '—';
     return DesignSystemSectionCard(
       child: Column(
@@ -423,7 +438,7 @@ class _BloodPressureDimensionCard extends StatelessWidget {
                 rangeEnd: range.end,
                 minVal: yValues.reduce(math.min),
                 maxVal: yValues.reduce(math.max),
-                unit: 'mmHg',
+                unit: unit,
                 horizontalLines: [
                   _targetLine(metrics.systolic.target, systolicColor),
                   _targetLine(metrics.diastolic.target, diastolicColor),

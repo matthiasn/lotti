@@ -138,12 +138,13 @@ void main() {
     bool healthMissing = false,
     AgentLifecycle identityLifecycle = AgentLifecycle.active,
     List<CategoryDefinition> categories = const [],
+    Stream<List<CategoryDefinition>>? categoriesStream,
   }) => [
     goalAgentServiceProvider.overrideWithValue(agentService),
     goalSpecRevisionServiceProvider.overrideWithValue(revisionService),
     habitsRepositoryProvider.overrideWithValue(habitsRepository),
     categoriesStreamProvider.overrideWith(
-      (ref) => Stream.value(categories),
+      (ref) => categoriesStream ?? Stream.value(categories),
     ),
     if (editSpec != null ||
         identityFails ||
@@ -599,7 +600,9 @@ void main() {
     await tester.tap(find.text('Looks right'));
     await tester.pumpAndSettle();
     expect(
-      find.textContaining('Deep work: No more than 1'),
+      find.textContaining(
+        'Deep work: No more than 1 hour per rolling 7 days',
+      ),
       findsOneWidget,
     );
   });
@@ -655,10 +658,25 @@ void main() {
       aggregation: GoalAggregation.sum,
       targetHours: 5,
     );
+    final current = _spec(criteria: criteria);
+    when(
+      () => revisionService.reviseFromOwner(
+        agentId: any(named: 'agentId'),
+        baseVersionId: any(named: 'baseVersionId'),
+        displayName: any(named: 'displayName'),
+        title: any(named: 'title'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
+    ).thenAnswer(
+      (_) async => const GoalSpecRevisionRefused(
+        GoalSpecRevisionService.ownerNoChangesReason,
+      ),
+    );
     await tester.pumpWidget(
       makeTestableWidgetNoScroll(
         const CreateGoalAgentPage(agentId: 'goal-1'),
-        overrides: overrides(editSpec: _spec(criteria: criteria)),
+        overrides: overrides(editSpec: current),
       ),
     );
     await tester.pumpAndSettle();
@@ -678,6 +696,120 @@ void main() {
     expect(
       find.textContaining('archived: No more than 5 hours per rolling 7 days'),
       findsOneWidget,
+    );
+    await tester.tap(find.text('Save new version'));
+    await tester.pump();
+
+    final saved = verify(
+      () => revisionService.reviseFromOwner(
+        agentId: 'goal-1',
+        baseVersionId: current.id,
+        displayName: 'Juno',
+        title: 'Weekly movement',
+        statement: 'Gym and run every week',
+        criteria: captureAny(named: 'criteria'),
+      ),
+    ).captured.single;
+    expect(saved, criteria);
+  });
+
+  testWidgets('rematches categories that load after the first mapping', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final categories = StreamController<List<CategoryDefinition>>();
+    addTearDown(categories.close);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(categoriesStream: categories.stream),
+      ),
+    );
+    await tester.pump();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Deep work every week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    expect(
+      find.byKey(const ValueKey('goal-form-category-time-card-deep-work')),
+      findsNothing,
+    );
+
+    await tester.tap(find.byType(BackButton));
+    categories.add([_category('deep-work', 'Deep work')]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+
+    final target = find.byKey(
+      const ValueKey('goal-form-category-time-target-deep-work'),
+    );
+    expect(
+      tester
+          .widget<EditableText>(
+            find.descendant(of: target, matching: find.byType(EditableText)),
+          )
+          .controller
+          .text,
+      '1',
+    );
+  });
+
+  testWidgets('drops a newly selected category that becomes inactive', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(900, 1800);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final categories = StreamController<List<CategoryDefinition>>.broadcast();
+    addTearDown(categories.close);
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const CreateGoalAgentPage(),
+        overrides: overrides(categoriesStream: categories.stream),
+      ),
+    );
+    categories.add([_category('deep-work', 'Deep work')]);
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(const ValueKey('goal-form-intention')),
+      'Track my week',
+    );
+    await tester.tap(find.text('Continue'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Add dimension'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Deep work'));
+    await tester.pumpAndSettle();
+    await tester.enterText(
+      find.byKey(
+        const ValueKey('goal-form-category-time-target-deep-work'),
+      ),
+      '5',
+    );
+    await tester.tap(find.text('Looks right'));
+    await tester.pumpAndSettle();
+
+    categories.add([]);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Create agent'));
+    await tester.pump();
+
+    expect(
+      find.text('Choose at least one signal the agent can actually observe.'),
+      findsOneWidget,
+    );
+    verifyNever(
+      () => agentService.createGoalAgent(
+        title: any(named: 'title'),
+        displayName: any(named: 'displayName'),
+        statement: any(named: 'statement'),
+        criteria: any(named: 'criteria'),
+      ),
     );
   });
 

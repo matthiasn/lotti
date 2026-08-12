@@ -10783,7 +10783,7 @@ abstract class AppLocalizations {
   /// No description provided for @goalFormCategoryTimeCadence.
   ///
   /// In en, this message translates to:
-  /// **'{categoryName}: {direction} {target} hours per rolling 7 days'**
+  /// **'{categoryName}: {direction} {target} {target, select, 1{hour} other{hours}} per rolling 7 days'**
   String goalFormCategoryTimeCadence(
     String categoryName,
     String direction,

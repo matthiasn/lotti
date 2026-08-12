@@ -180,6 +180,7 @@ void main() {
     expect(view.rootOnTrack, isTrue);
     expect(view.metric?.projectedOnTrack, isTrue);
     expect(view.metric?.days.last.value, 85);
+    expect(view.metric?.unitName, 'kg');
   });
 
   test('category time projects tracked hours and treats an empty elapsed day '

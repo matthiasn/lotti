@@ -6396,15 +6396,22 @@ class AppLocalizationsEs extends AppLocalizations {
     String direction,
     String target,
   ) {
-    return '$categoryName: $direction $target horas por 7 días móviles';
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'hora',
+        'other': 'horas',
+      },
+    );
+    return '$categoryName: $direction $target $_temp0 por semana móvil';
   }
 
   @override
   String get goalFormCategoryTimeSource =>
-      'Tiempo registrado · horas por 7 días móviles';
+      'Tiempo registrado · horas por semana móvil';
 
   @override
-  String get goalFormCategoryTimeTarget => 'Horas por 7 días móviles';
+  String get goalFormCategoryTimeTarget => 'Horas por semana móvil';
 
   @override
   String get goalFormChooseHabit => 'Elegir un hábito existente';

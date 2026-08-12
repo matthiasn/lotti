@@ -6288,7 +6288,14 @@ class AppLocalizationsEn extends AppLocalizations {
     String direction,
     String target,
   ) {
-    return '$categoryName: $direction $target hours per rolling 7 days';
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'hour',
+        'other': 'hours',
+      },
+    );
+    return '$categoryName: $direction $target $_temp0 per rolling 7 days';
   }
 
   @override

@@ -6413,7 +6413,14 @@ class AppLocalizationsFr extends AppLocalizations {
     String direction,
     String target,
   ) {
-    return '$categoryName : $direction $target heures sur 7 jours glissants';
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'heure',
+        'other': 'heures',
+      },
+    );
+    return '$categoryName : $direction $target $_temp0 sur 7 jours glissants';
   }
 
   @override

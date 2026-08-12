@@ -6420,7 +6420,14 @@ class AppLocalizationsRo extends AppLocalizations {
     String direction,
     String target,
   ) {
-    return '$categoryName: $direction $target ore în ultimele 7 zile';
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'oră',
+        'other': 'ore',
+      },
+    );
+    return '$categoryName: $direction $target $_temp0 în ultimele 7 zile';
   }
 
   @override

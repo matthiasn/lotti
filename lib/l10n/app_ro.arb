@@ -2626,7 +2626,7 @@
   "goalDominantIssueBadge": "{dimensionName} are nevoie de atenție",
   "goalFormAddDimension": "Adaugă dimensiune",
   "goalFormBloodPressureSource": "Sistolică și diastolică · mmHg · medie pe 7 zile",
-  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} ore în ultimele 7 zile",
+  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{oră} other{ore}} în ultimele 7 zile",
   "goalFormCategoryTimeSource": "Timp urmărit · ore în ultimele 7 zile",
   "goalFormCategoryTimeTarget": "Ore în ultimele 7 zile",
   "goalFormChooseHabit": "Alegeți un obicei existent",

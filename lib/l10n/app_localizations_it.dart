@@ -6392,7 +6392,14 @@ class AppLocalizationsIt extends AppLocalizations {
     String direction,
     String target,
   ) {
-    return '$categoryName: $direction $target ore ogni 7 giorni mobili';
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'ora',
+        'other': 'ore',
+      },
+    );
+    return '$categoryName: $direction $target $_temp0 ogni 7 giorni mobili';
   }
 
   @override

@@ -27,7 +27,7 @@ import 'package:lotti/providers/service_providers.dart' show journalDbProvider;
 import 'package:lotti/utils/platform.dart';
 import 'package:lotti/widgets/modal/modal_utils.dart';
 
-/// Adaptive task-agent setup flow presented as one multi-page Wolt route.
+/// Adaptive agent setup flow for task agents and goal-agent profiles.
 class AgentModelSheet {
   const AgentModelSheet._();
 
@@ -468,108 +468,113 @@ class _AgentSetupOverviewPage extends ConsumerWidget {
                   ],
                 ),
               ),
-              SizedBox(height: tokens.spacing.step5),
-              ValueListenableBuilder<bool>(
-                valueListenable: controller.confirmDisable,
-                builder: (context, visible, _) => visible
-                    ? const SizedBox.shrink()
-                    : Align(
-                        alignment: AlignmentDirectional.centerStart,
-                        child: DesignSystemButton(
-                          key: const ValueKey('agent-disable'),
-                          label: context.messages.taskAgentTurnOffSetup,
-                          variant: DesignSystemButtonVariant.dangerTertiary,
-                          size: DesignSystemButtonSize.medium,
-                          leadingIcon: Icons.pause_circle_outline_rounded,
-                          onPressed: () =>
-                              controller.confirmDisable.value = true,
+              if (controller.taskId != null) ...[
+                SizedBox(height: tokens.spacing.step5),
+                ValueListenableBuilder<bool>(
+                  valueListenable: controller.confirmDisable,
+                  builder: (context, visible, _) => visible
+                      ? const SizedBox.shrink()
+                      : Align(
+                          alignment: AlignmentDirectional.centerStart,
+                          child: DesignSystemButton(
+                            key: const ValueKey('agent-disable'),
+                            label: context.messages.taskAgentTurnOffSetup,
+                            variant: DesignSystemButtonVariant.dangerTertiary,
+                            size: DesignSystemButtonSize.medium,
+                            leadingIcon: Icons.pause_circle_outline_rounded,
+                            onPressed: () =>
+                                controller.confirmDisable.value = true,
+                          ),
                         ),
-                      ),
-              ),
-              ValueListenableBuilder<bool>(
-                valueListenable: controller.confirmDisable,
-                builder: (context, visible, _) {
-                  if (!visible) return const SizedBox.shrink();
-                  final title = context.messages.taskAgentDisableConfirmTitle;
-                  final body = context.messages.taskAgentDisableConfirmBody;
-                  return Padding(
-                    padding: EdgeInsets.only(top: tokens.spacing.step4),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        Focus(
-                          autofocus: true,
-                          child: Semantics(
-                            key: const ValueKey(
-                              'agent-disable-confirmation',
-                            ),
-                            container: true,
-                            liveRegion: true,
-                            label: '$title $body',
-                            child: ExcludeSemantics(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  Text(
-                                    title,
-                                    style: tokens
-                                        .typography
-                                        .styles
-                                        .subtitle
-                                        .subtitle2,
-                                  ),
-                                  SizedBox(height: tokens.spacing.step2),
-                                  Text(
-                                    body,
-                                    style: tokens
-                                        .typography
-                                        .styles
-                                        .body
-                                        .bodyMedium
-                                        .copyWith(
-                                          color:
-                                              tokens.colors.text.mediumEmphasis,
-                                        ),
-                                  ),
-                                ],
+                ),
+                ValueListenableBuilder<bool>(
+                  valueListenable: controller.confirmDisable,
+                  builder: (context, visible, _) {
+                    if (!visible) return const SizedBox.shrink();
+                    final title = context.messages.taskAgentDisableConfirmTitle;
+                    final body = context.messages.taskAgentDisableConfirmBody;
+                    return Padding(
+                      padding: EdgeInsets.only(top: tokens.spacing.step4),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          Focus(
+                            autofocus: true,
+                            child: Semantics(
+                              key: const ValueKey(
+                                'agent-disable-confirmation',
+                              ),
+                              container: true,
+                              liveRegion: true,
+                              label: '$title $body',
+                              child: ExcludeSemantics(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    Text(
+                                      title,
+                                      style: tokens
+                                          .typography
+                                          .styles
+                                          .subtitle
+                                          .subtitle2,
+                                    ),
+                                    SizedBox(height: tokens.spacing.step2),
+                                    Text(
+                                      body,
+                                      style: tokens
+                                          .typography
+                                          .styles
+                                          .body
+                                          .bodyMedium
+                                          .copyWith(
+                                            color: tokens
+                                                .colors
+                                                .text
+                                                .mediumEmphasis,
+                                          ),
+                                    ),
+                                  ],
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        SizedBox(height: tokens.spacing.step4),
-                        Row(
-                          children: [
-                            Expanded(
-                              child: DesignSystemButton(
-                                label: MaterialLocalizations.of(
-                                  context,
-                                ).cancelButtonLabel,
-                                variant: DesignSystemButtonVariant.secondary,
-                                size: DesignSystemButtonSize.medium,
-                                fullWidth: true,
-                                onPressed: () =>
-                                    controller.confirmDisable.value = false,
+                          SizedBox(height: tokens.spacing.step4),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: DesignSystemButton(
+                                  label: MaterialLocalizations.of(
+                                    context,
+                                  ).cancelButtonLabel,
+                                  variant: DesignSystemButtonVariant.secondary,
+                                  size: DesignSystemButtonSize.medium,
+                                  fullWidth: true,
+                                  onPressed: () =>
+                                      controller.confirmDisable.value = false,
+                                ),
                               ),
-                            ),
-                            SizedBox(width: tokens.spacing.step3),
-                            Expanded(
-                              child: DesignSystemButton(
-                                label: context
-                                    .messages
-                                    .taskAgentDisableConfirmAction,
-                                variant: DesignSystemButtonVariant.danger,
-                                size: DesignSystemButtonSize.medium,
-                                fullWidth: true,
-                                onPressed: controller.disable,
+                              SizedBox(width: tokens.spacing.step3),
+                              Expanded(
+                                child: DesignSystemButton(
+                                  label: context
+                                      .messages
+                                      .taskAgentDisableConfirmAction,
+                                  variant: DesignSystemButtonVariant.danger,
+                                  size: DesignSystemButtonSize.medium,
+                                  fullWidth: true,
+                                  onPressed: controller.disable,
+                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  );
-                },
-              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ],
             ],
           ),
         ),

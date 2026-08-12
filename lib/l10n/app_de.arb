@@ -2626,7 +2626,7 @@
   "goalDominantIssueBadge": "{dimensionName} braucht Aufmerksamkeit",
   "goalFormAddDimension": "Dimension hinzufügen",
   "goalFormBloodPressureSource": "Systolisch und diastolisch · mmHg · 7-Tage-Durchschnitt",
-  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} Stunden pro rollierende 7 Tage",
+  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{Stunde} other{Stunden}} pro rollierende 7 Tage",
   "goalFormCategoryTimeSource": "Erfasste Zeit · Stunden pro rollierende 7 Tage",
   "goalFormCategoryTimeTarget": "Stunden pro rollierende 7 Tage",
   "goalFormChooseHabit": "Vorhandene Gewohnheit wählen",

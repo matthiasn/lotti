@@ -6322,7 +6322,14 @@ class AppLocalizationsSv extends AppLocalizations {
     String direction,
     String target,
   ) {
-    return '$categoryName: $direction $target timmar per rullande 7 dagar';
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'timme',
+        'other': 'timmar',
+      },
+    );
+    return '$categoryName: $direction $target $_temp0 per rullande 7 dagar';
   }
 
   @override

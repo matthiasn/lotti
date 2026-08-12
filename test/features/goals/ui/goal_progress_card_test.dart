@@ -238,6 +238,52 @@ void main() {
     },
   );
 
+  testWidgets(
+    'blood-pressure dimensions with different periods stay separate',
+    (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          SingleChildScrollView(
+            child: GoalProgressCard(
+              progress: GoalProgressView(
+                today: today,
+                metrics: [
+                  GoalMetricProgressView(
+                    sourceId: GoalHealthDataTypes.bloodPressureSystolic,
+                    name: 'Systolic blood pressure',
+                    target: 125,
+                    direction: GoalDirection.atMost,
+                    aggregation: GoalAggregation.max,
+                    unitName: 'mmHg',
+                    days: [day(1, 122), day(0, 124)],
+                  ),
+                  GoalMetricProgressView(
+                    sourceId: GoalHealthDataTypes.bloodPressureDiastolic,
+                    name: 'Diastolic blood pressure',
+                    target: 85,
+                    direction: GoalDirection.atMost,
+                    aggregation: GoalAggregation.max,
+                    window: const GoalWindow.rollingDays(count: 10),
+                    unitName: 'mmHg',
+                    days: [day(2, 82), day(1, 81), day(0, 83)],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Blood Pressure'), findsNothing);
+      expect(find.text('Systolic blood pressure'), findsOneWidget);
+      expect(find.text('Diastolic blood pressure'), findsOneWidget);
+      expect(find.byType(DesignSystemSectionCard), findsNWidgets(2));
+      expect(find.byType(LineChart), findsNWidgets(2));
+    },
+  );
+
   testWidgets('paired blood pressure reports when there is no observed data', (
     tester,
   ) async {

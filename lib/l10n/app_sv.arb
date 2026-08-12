@@ -2883,7 +2883,7 @@
   "goalDominantIssueBadge": "{dimensionName} behöver uppmärksamhet",
   "goalFormAddDimension": "Lägg till dimension",
   "goalFormBloodPressureSource": "Systoliskt och diastoliskt · mmHg · 7-dagarsgenomsnitt",
-  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} timmar per rullande 7 dagar",
+  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{timme} other{timmar}} per rullande 7 dagar",
   "goalFormCategoryTimeSource": "Registrerad tid · timmar per rullande 7 dagar",
   "goalFormCategoryTimeTarget": "Timmar per rullande 7 dagar",
   "goalFormChooseHabit": "Välj en befintlig vana",

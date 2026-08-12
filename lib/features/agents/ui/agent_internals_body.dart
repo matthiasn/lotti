@@ -330,6 +330,9 @@ class _ProfileSection extends ConsumerWidget {
         ? context.messages.taskAgentSetupBroken
         : context.messages.taskAgentNoProfileSelectedDescription;
     final taskId = state?.slots.activeTaskId;
+    final canOpenTaskSetup =
+        identity != null &&
+        (identity.kind == AgentKinds.goalAgent || taskId != null);
 
     return Padding(
       padding: EdgeInsets.symmetric(
@@ -364,7 +367,7 @@ class _ProfileSection extends ConsumerWidget {
                 ? (dailyOsSetupLauncher == null
                       ? null
                       : () => dailyOsSetupLauncher(context))
-                : identity == null
+                : !canOpenTaskSetup
                 ? null
                 : () => AgentModelSheet.show(
                     context: context,

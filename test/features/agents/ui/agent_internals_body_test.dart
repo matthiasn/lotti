@@ -285,6 +285,7 @@ void main() {
 
     await tester.tap(find.text('No AI setup').first);
     await tester.pumpAndSettle();
+    expect(find.byKey(const ValueKey('agent-disable')), findsNothing);
     await tester.tap(find.byKey(const ValueKey('agent-choose-profile')));
     await tester.pumpAndSettle();
 
@@ -298,6 +299,60 @@ void main() {
         profileId: 'profile-1',
       ),
     ).called(1);
+  });
+
+  testWidgets('task agent setup waits for an active task', (tester) async {
+    final profile = testInferenceProfile(
+      id: 'profile-1',
+      thinkingModelId: 'model-1',
+    );
+    final model = testAiModel();
+    final provider = testInferenceProvider();
+    await tester.pumpWidget(
+      RiverpodWidgetTestBench(
+        mediaQueryData: const MediaQueryData(size: Size(900, 800)),
+        overrides: [
+          agentIdentityProvider.overrideWith(
+            (ref, agentId) async => makeTestIdentity(),
+          ),
+          agentStateProvider.overrideWith((ref, agentId) async => null),
+          templateForAgentProvider.overrideWith((ref, agentId) async => null),
+          taskAgentResolvedSetupProvider.overrideWith(
+            (ref, agentId) async => const ResolvedAgentSetup(
+              status: AgentSetupResolutionStatus.disabled,
+            ),
+          ),
+          taskAgentSetupOptionsProvider.overrideWith(
+            (ref) async => TaskAgentSetupOptions(
+              profiles: [profile],
+              models: [model],
+              providers: [provider],
+            ),
+          ),
+        ],
+        child: const SingleChildScrollView(
+          child: AgentInternalsBody(
+            agentId: 'agent-001',
+            lifecycle: AgentLifecycle.active,
+            stateAsync: AsyncValue.data(null),
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    await tester.scrollUntilVisible(
+      find.text('No AI setup').first,
+      200,
+      scrollable: find.byType(Scrollable).at(1),
+    );
+    final setupRow = tester.widget<DesignSystemListItem>(
+      find.ancestor(
+        of: find.text('No AI setup').first,
+        matching: find.byType(DesignSystemListItem),
+      ),
+    );
+    expect(setupRow.onTap, isNull);
   });
 
   testWidgets('setup row distinguishes a broken setup from no selection', (

@@ -266,19 +266,21 @@ void main() {
     });
   });
 
-  testWidgets('passes configured horizontal reference lines through', (
-    tester,
-  ) async {
-    final reference = HorizontalLine(y: 75);
-    await hPumpChart(
+  group('TimeSeriesMultiLineChart — reference lines', () {
+    testWidgets('passes configured horizontal reference lines through', (
       tester,
-      lineBarsData: [],
-      rangeStart: rangeStart,
-      rangeEnd: rangeEnd,
-      horizontalLines: [reference],
-    );
+    ) async {
+      final reference = HorizontalLine(y: 75);
+      await hPumpChart(
+        tester,
+        lineBarsData: [],
+        rangeStart: rangeStart,
+        rangeEnd: rangeEnd,
+        horizontalLines: [reference],
+      );
 
-    final lineChart = tester.widget<LineChart>(find.byType(LineChart));
-    expect(lineChart.data.extraLinesData.horizontalLines, [reference]);
+      final lineChart = tester.widget<LineChart>(find.byType(LineChart));
+      expect(lineChart.data.extraLinesData.horizontalLines, [reference]);
+    });
   });
 }

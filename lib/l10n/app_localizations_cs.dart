@@ -6383,7 +6383,17 @@ class AppLocalizationsCs extends AppLocalizations {
     String direction,
     String target,
   ) {
-    return '$categoryName: $direction $target hodin za klouzavých 7 dní';
+    String _temp0 = intl.Intl.selectLogic(
+      target,
+      {
+        '1': 'hodinu',
+        '2': 'hodiny',
+        '3': 'hodiny',
+        '4': 'hodiny',
+        'other': 'hodin',
+      },
+    );
+    return '$categoryName: $direction $target $_temp0 za klouzavých 7 dní';
   }
 
   @override

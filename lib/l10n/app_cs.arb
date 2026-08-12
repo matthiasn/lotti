@@ -2633,7 +2633,7 @@
   "goalDominantIssueBadge": "{dimensionName} vyžaduje pozornost",
   "goalFormAddDimension": "Přidat rozměr",
   "goalFormBloodPressureSource": "Systolický a diastolický · mmHg · 7denní průměr",
-  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} hodin za klouzavých 7 dní",
+  "goalFormCategoryTimeCadence": "{categoryName}: {direction} {target} {target, select, 1{hodinu} 2{hodiny} 3{hodiny} 4{hodiny} other{hodin}} za klouzavých 7 dní",
   "goalFormCategoryTimeSource": "Zaznamenaný čas · hodiny za klouzavých 7 dní",
   "goalFormCategoryTimeTarget": "Hodiny za klouzavých 7 dní",
   "goalFormChooseHabit": "Vyber existující návyk",
