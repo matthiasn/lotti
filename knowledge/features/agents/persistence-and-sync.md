@@ -43,7 +43,7 @@ sources:
   - id: entity-model
     resource: ../../../lib/features/agents/model/agent_domain_entity.dart
     title: AgentDomainEntity
-    last_modified: 2026-08-10
+    last_modified: 2026-08-12
   - id: db-conversions
     resource: ../../../lib/features/agents/database/agent_db_conversions.dart
     title: AgentDbConversions
@@ -75,6 +75,10 @@ sources:
     resource: ../../../docs/adr/0007-token-usage-wake-run-log-storage.md
     title: ADR 0007 — Token usage and wake run log storage
     last_modified: 2026-02-28
+  - id: adr-0053
+    resource: ../../../docs/adr/0053-goal-driven-agents-per-goal-producers.md
+    title: ADR 0053 — Goal-driven agents, per-goal producers
+    last_modified: 2026-08-08
 ---
 
 # One database, two shapes
@@ -110,6 +114,13 @@ that model.
 - Daily OS capture-pipeline and planning variants: `CaptureEntity`,
   `ParsedItemEntity`, `DayPlanEntity`, `DaySummaryEntity`, `DayDirectiveEntity`,
   `DayStatusEventEntity`, `WeekRollupEntity`.
+- Goal-agent variants (ADRs 0053–0058): `GoalSpecVersionEntity`,
+  `GoalSpecHeadEntity`, `GoalProgressEntity`, `GoalNudgeEntity`. The spec
+  version carries the immutable criteria tree; the head points at the active
+  version; the progress row is the deterministic per-period register; the nudge
+  is the banner ad with its CRDT exposure counters and rating history. All four
+  sync as agent-domain entities and validate through `GoalSpecValidator` at
+  every decode path.
 - `AgentUnknownEntity` — the forward-compat fallback for variants an older
   client cannot decode.
 
@@ -533,13 +544,15 @@ output, raw tool arguments, or arbitrary exception strings.
 The durable agent message log remains the memory and audit surface; it is never
 copied into runtime log files.
 
-For the seven runtime and workflow classes that share `AgentErrorLogging`
+For the runtime and workflow classes that share `AgentErrorLogging`
 (`agents/util/agent_error_logging.dart`), the rule is enforced in one place: its
 no-logger fallback passes `error.runtimeType` to `developer.log`, never the error
 object. That mixin replaced a byte-identical copy of the method in each class, so
-the rule can no longer be upheld in six places and broken in the seventh.
+the rule can no longer be upheld in some places and broken in others.
 `DayAgentWorkflow` deliberately does not adopt it — its logger is non-nullable
 and it has no fallback branch at all — so it carries the rule on its own.
+`GoalAgentWorkflow` (in `features/goals`) does adopt it, so the mixin is no
+longer exclusive to `features/agents`.
 
 # AI consumption provenance
 

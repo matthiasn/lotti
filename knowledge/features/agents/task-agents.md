@@ -36,6 +36,18 @@ sources:
     resource: ../../../docs/adr/0052-agent-directive-constitution.md
     title: ADR 0052 — An agent's constitution is code, not an evolvable directive
     last_modified: 2026-08-08
+  - id: adr-0051
+    resource: ../../../docs/adr/0051-agenda-gated-tool-exposure.md
+    title: ADR 0051 — Gate tool exposure on what the wake already knows
+    last_modified: 2026-08-08
+  - id: tool-gate
+    resource: ../../../lib/features/agents/tools/task_agent_tool_gate.dart
+    title: TaskAgentWakeFacts / visibleTaskAgentToolNames — the per-wake tool gate
+    last_modified: 2026-08-08
+  - id: staged-exposure
+    resource: ../../../lib/features/agents/tools/task_agent_staged_tool_exposure.dart
+    title: TaskAgentStagedToolExposure — withhold update_report from turn one
+    last_modified: 2026-08-08
 ---
 
 # Creation
@@ -396,6 +408,72 @@ For the exact Melious `mistral-small-4-119b-instruct` executor:
   stays accurate.
 
 # Tool policy
+
+The tool list a wake advertises is **not a constant**. Two complementary
+mechanisms narrow it behind the `narrowToolSurface` flag (off by default,
+additive): a per-wake **fact gate** that drops tools the wake cannot legitimately
+use, and a **staged exposure** that withholds `update_report` from the opening
+turn. With the flag off, `TaskAgentWakeFacts.permissive` and a single fixed tool
+list reproduce today's behaviour exactly, so both can be evaluated side by side
+before either becomes default (ADR 0051).
+
+## Agenda-gated exposure (ADR 0051)
+
+`visibleTaskAgentToolNames(TaskAgentWakeFacts)` drops a tool when the fact that
+makes it usable is absent. `_resolveWakeFacts` computes each fact from state the
+wake already loads — no extra inference turn, inverting the rejected "ask the
+model what it intends" design whose arithmetic doubled input to save a fraction
+of the payload.
+
+| Tool | Withheld when |
+|-----|---------------|
+| `update_checklist_items` | the task has no checklist items |
+| `update_running_timer` | no timer is running **for this task** (a timer on another task reaches the prompt only as an opaque range, so there is no id to update — offering the tool would invite a hallucinated one) |
+| `update_time_entry` | the task has no editable time records |
+| `assign_task_labels` | no label definitions exist for the category |
+| `retract_suggestions` | the proposal ledger holds no open proposals |
+| `resolve_attention_request` | this agent holds no active attention claim on the task |
+
+Tools with no precondition — `set_task_title`, `update_task_estimate`,
+`update_task_due_date`, `update_task_priority`, `set_task_status`,
+`set_task_language`, `add_multiple_checklist_items`, `create_follow_up_task`,
+`link_task`, `record_observations`, `request_attention`,
+`migrate_checklist_items` — are always offered. `migrate_checklist_items` is
+only meaningful after `create_follow_up_task`, but that happens mid-wake and
+the tool list is fixed for the turn, so it cannot be gated on it.
+
+Every fact defaults to **permissive**: a caller that has not been taught to
+compute one gets the tool, so adding a gate can never silently remove a
+capability from a wake that was not updated. A gate has to be asked for.
+
+`hasNewerContentThanReport` is deliberately left permissive in `_resolveWakeFacts`.
+A note that arrives saying nothing new is still newer than the report, and
+whether its content matters is a judgement the timestamps cannot make, so gating
+`update_report` on it would withhold the tool from wakes that genuinely need it.
+`update_report` is narrowed by the **staged exposure** below instead — a
+structural fix that does not require the app to judge materiality.
+
+## Staged exposure
+
+`TaskAgentStagedToolExposure` withholds `update_report` from the **opening
+turn** only, so the wake does the work before it reports on it. The shipped
+directive is evidence-first — establish what changed, then report it — and a
+model that can publish on turn one can satisfy the wake protocol before looking
+at anything; weaker models do exactly that. From the second turn onward the
+full list is advertised, so nothing is permanently unreachable and a wake can
+always finish its report. `record_observations` is deliberately *not* withheld:
+observations are the agent's private notes for later wakes, and a model that
+wants to note something on its first turn should be able to.
+
+A wake with genuinely nothing to do is unaffected: finishing with a plain-text
+note and no tool call is available on the first turn and is still the correct
+ending. The one case that pays a turn is a report-only wake, where nothing needs
+changing but the report does — that model must wait for turn two to publish.
+Whether that trade is worth it is a measurement, not an assumption, which is
+why both mechanisms sit behind `narrowToolSurface` rather than shipping on by
+default.
+
+## Locally short-circuited tools
 
 Four tools are short-circuited **locally** in `TaskAgentStrategy` and never reach
 `AgentToolExecutor`: `update_report`, `record_observations`,

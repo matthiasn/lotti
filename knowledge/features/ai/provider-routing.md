@@ -20,6 +20,14 @@ sources:
     resource: ../../../pubspec.yaml
     title: Shader and native dependency registration
     last_modified: 2026-07-26
+  - id: known-models
+    resource: ../../../lib/features/ai/util/known_models.dart
+    title: Known model constants and the curated static catalog
+    last_modified: 2026-08-12
+  - id: known-models-data
+    resource: ../../../lib/features/ai/util/known_models_data.dart
+    title: The meliousModels catalog entries
+    last_modified: 2026-08-12
 ---
 
 # One facade, two collaborators
@@ -139,9 +147,9 @@ untouched rather than writing zeros.
 
 A small curated static catalog exists for immediate setup before live-catalog
 rows are installed: `deepseek-v4-pro`, `glm-5.2`, `gemma-4-26b-a4b`,
-`minimax-m2.7`, `mistral-small-4-119b-instruct`, `qwen3.5-122b-a10b`,
-`deepseek-v4-flash`, `flux-2-klein-9b`, `voxtral-small-24b-2507`,
-`whisper-large-v3`, `whisper-large-v3-turbo`.
+`kimi-k3`, `minimax-m2.7`, `mistral-small-4-119b-instruct`,
+`qwen3.5-122b-a10b`, `deepseek-v4-flash`, `flux-2-klein-9b`,
+`voxtral-small-24b-2507`, `whisper-large-v3`, `whisper-large-v3-turbo`.
 
 ## Gemini
 

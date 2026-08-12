@@ -467,7 +467,7 @@ shell on narrow layouts.
 
 ## History sections and reload behaviour
 
-Four list sections on the template and soul detail pages read a
+Five list sections on the template and soul detail pages read a
 `FutureProvider.autoDispose.family`:
 
 | Section | Provider | Reloads while open? |
@@ -476,6 +476,14 @@ Four list sections on the template and soul detail pages read a
 | Soul → Info → Soul Evolution History | `soulEvolutionSessionHistoryProvider` | yes — every soul write |
 | Template → Reports tab | `templateRecentReportsProvider` | yes, but only on some events |
 | Template → Stats → Version History | `templateVersionHistoryProvider` | no |
+| Template → Instances | `templateInstanceOverviewProvider` | yes — on the shared agent-update topic |
+
+The Template Instances section (added in #3855) renders one row per running
+agent created from the template, with its task title, status, and the latest
+report one-liner. It is wired into the template detail page through
+`agent_template_detail_sections.dart` and backed by the
+`TemplateInstanceOverview` model and `templateInstanceOverviewProvider` in
+`state/template_query_providers.dart`.
 
 `agentUpdateStreamProvider(id)` filters `UpdateNotifications.updateStream` down
 to sets *containing* `id`. Soul sections are well served: soul entities carry

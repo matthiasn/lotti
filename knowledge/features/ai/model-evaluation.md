@@ -141,16 +141,19 @@ than treated as universal model rankings.
   used all three allowed attempts.
 
 Direct review found Qwen's final reports **richer and more natural**, while the
-Mistral route stayed more compact and conservative. These results support the
-Qwen default and retain Mistral as a selectable alternative. They do **not** prove
-GLM 5.2 parity or unrestricted reliability on arbitrary user histories.
+Mistral route stayed more compact and conservative. These results supported the
+Qwen default at the time of the run. They do **not** prove GLM 5.2 parity or
+unrestricted reliability on arbitrary user histories.
 
-`qwen3.5-122b-a10b` is part of the curated Melious catalog and is the seeded
-thinking default. Existing untouched Melious profiles migrate from Mistral
-thinking to Qwen when the provider-owned Qwen row exists; the profile stores the
-applied seed generation, so the migration runs once and a later deliberate switch
-back to Mistral is preserved. Mistral remains in the image-recognition slot
-because this Qwen endpoint is text-only.
+`qwen3.5-122b-a10b` is part of the curated Melious catalog. The shipped
+thinking default has since moved to **GLM 5.2**, with **Kimi K3** for high-end
+thinking and image recognition, and Whisper Large v3 for transcription (see
+[seeding and lifecycle](seeding-and-lifecycle.md) for the current seed and the
+generation-2 migration). Existing untouched Melious profiles migrate through
+that generation boundary; the profile stores the applied seed generation, so
+each migration runs once and a later deliberate switch is preserved. The Qwen
+evaluation remains the record of why the task-agent report contract was shaped
+this way; it is no longer a statement about the shipped model.
 
 The resulting shipped routing is described in
 [task agents](../agents/task-agents.md).

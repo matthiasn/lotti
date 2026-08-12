@@ -62,10 +62,14 @@ reads the journal on demand during a wake.
 | `event_agent` | `activeEventId` | `EventAgentWorkflow` | creation (content-gated), direct event edits |
 | `template_improver` | `activeTemplateId` | `ImproverAgentWorkflow` | scheduled ritual |
 | `day_agent` | day workspace (`day:<dayId>`), no single slot | `DayAgentWorkflow` | day-scoped pre-warms and capture wakes |
+| `goal_agent` | goal spec head (no single slot) | `GoalAgentWorkflow` | deterministic cadence, signal subscriptions, escalation wakes |
 
 The day agent is the single long-lived Daily OS planner (ADR 0022). Its workflow
 and service live in [`daily_os_next`](../daily_os_next/), not here — and
-**nothing in `features/agents` imports them.**
+**nothing in `features/agents` imports them.** The goal agent is the
+deterministic-first goal coach (ADRs 0053–0054); its workflow, evaluation and
+service live in [`goals`](../goals.md), also outside this tree, and it plugs in
+through the same registry mechanism as the day agent.
 
 ## How an owning feature plugs a kind in
 
@@ -175,6 +179,7 @@ arrives, so either sync ordering closes the snapshot-to-live-update gap.
 * [Project and event agents](project-and-event-agents.md) - the digest-shaped and recap-shaped variants.
 * [Templates, souls and evolution](templates-souls-evolution.md) - what an agent does versus who it is, and how both evolve.
 * [Persistence and sync](persistence-and-sync.md) - the `agent.sqlite` entity and link model, plus what syncs and what stays local.
+* [Projection kernel](projection.md) - the pure fold under the agent log, and the permutation-invariance proof that makes replay order irrelevant.
 * [UI surfaces](ui-surfaces.md) - the AI summary card, internals panel, settings tabs and sidebar.
 
 # Code reading guide

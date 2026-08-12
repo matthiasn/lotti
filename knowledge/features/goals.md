@@ -32,6 +32,10 @@ sources:
     resource: ../../lib/classes/goal_criterion.dart
     title: GoalCriterion tree (shared vocabulary in lib/classes)
     last_modified: 2026-08-12
+  - id: trigger-tokens
+    resource: ../../lib/classes/goal_trigger_tokens.dart
+    title: Goal trigger tokens — cadence, escalation, baseline, report-refresh
+    last_modified: 2026-08-12
   - id: progress-vocabulary
     resource: ../../lib/classes/goal_progress_models.dart
     title: Persisted per-dimension progress vocabulary
@@ -43,7 +47,19 @@ sources:
   - id: contract
     resource: ../../lib/features/goals/workflow/goal_agent_contract.dart
     title: Goal-agent contract (eval-graduated prompt + tools)
-    last_modified: 2026-08-11
+    last_modified: 2026-08-12
+  - id: strategy
+    resource: ../../lib/features/goals/workflow/goal_agent_strategy.dart
+    title: GoalAgentStrategy — Phase B conversation and tool dispatch
+    last_modified: 2026-08-12
+  - id: facts-renderer
+    resource: ../../lib/features/goals/workflow/goal_facts_renderer.dart
+    title: GoalFactsRenderer — the JSON fence Phase B consumes
+    last_modified: 2026-08-12
+  - id: tool-dispatcher
+    resource: ../../lib/features/goals/workflow/goal_tool_dispatcher.dart
+    title: GoalToolDispatcher — proposal persistence and spec revision routing
+    last_modified: 2026-08-12
   - id: create-edit
     resource: ../../lib/features/goals/ui/pages/create_goal_agent_page.dart
     title: Goal create/edit flow — intention, observable mapping and confirmation
@@ -128,7 +144,7 @@ flowchart TD
     USERWAKE --> PB
     REFREG --> PB
     PB --> FACTS[GoalFactsRenderer\nJSON fence: goal, evaluation,\nreporting, ads, personaTone]
-    FACTS --> CONV[one bounded conversation\nglm-5.2 default, profile override,\ntemperature 0, 7-tool contract]
+    FACTS --> CONV[one bounded conversation\nglm-5.2 default, profile override,\ntemperature 0, 8-tool contract]
     CONV --> OUT[one transaction:\nreport+head, goalNudge writes,\nobservations, revision ChangeSet,\nvisible reply_to_user carrier]
     OUT --> FRESH{current report head advanced\nand no watched timer active?}
     FRESH -- yes --> REPORTDONE[clear report-stale watermark]
@@ -345,7 +361,15 @@ flowchart TD
   inactive details hide the approval card as well. After acceptance the
   signal subscription re-registers from the NEW criteria; on other
   devices the synced-in head triggers the same re-registration through
-  the sync processor's identity re-offer.
+  the sync processor's identity re-offer. A revision also retires the
+  superseded goal's whole ad surface and pending inference in the same
+  transaction: every non-terminal nudge (`draft`, `ready`, `active`,
+  `retired`) moves to `superseded` — `retired` rows are the reuse library
+  (`reusableTopRated`), so a top-rated ad written for the old target cannot
+  be re-activated beside the revised statement — and every pending
+  `goal-escalation` wake is consumed, so a wake armed under the old spec
+  cannot later spend inference on a transition the new goal never made.
+  The immediate post-acceptance evaluation re-arms anything genuinely due.
 - **Owner edits are versioned, never in-place.** The explicit edit route uses
   `GoalSpecRevisionService.reviseFromOwner` with the complete user-authored
   title, intention, persona name and criteria tree. It serializes against the
