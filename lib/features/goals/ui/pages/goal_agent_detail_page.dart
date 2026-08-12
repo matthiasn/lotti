@@ -8,6 +8,7 @@ import 'package:lotti/features/agents/state/agent_query_providers.dart';
 import 'package:lotti/features/agents/ui/agent_internals_panel.dart';
 import 'package:lotti/features/agents/ui/change_set_summary_card.dart';
 import 'package:lotti/features/agents/ui/widgets/agent_markdown_view.dart';
+import 'package:lotti/features/design_system/components/badges/design_system_badge.dart';
 import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/components/cards/design_system_section_card.dart';
 import 'package:lotti/features/design_system/theme/breakpoints.dart';
@@ -41,6 +42,7 @@ class GoalAgentDetailPage extends ConsumerWidget {
     final tokens = context.designTokens;
     final identityAsync = ref.watch(agentIdentityProvider(agentId));
     final healthAsync = ref.watch(goalAgentHealthProvider(agentId));
+    final agentState = ref.watch(agentStateProvider(agentId)).value;
     // Stale-while-revalidate: `.value` keeps the last render across
     // background reloads; only a load that has never produced data gets
     // the spinner. An errored load must not claim "no report yet".
@@ -192,6 +194,8 @@ class GoalAgentDetailPage extends ConsumerWidget {
           healthAsync: healthAsync,
           nudges: nudges,
           report: latestReport,
+          reportIsStale:
+              agentState is AgentStateEntity && agentState.isReportStale,
           canRefresh: isActive,
         ),
         SizedBox(height: tokens.spacing.cardItemSpacing),
@@ -323,6 +327,7 @@ class _AgentSayingSection extends ConsumerWidget {
     required this.healthAsync,
     required this.nudges,
     required this.report,
+    required this.reportIsStale,
     required this.canRefresh,
   });
 
@@ -330,6 +335,7 @@ class _AgentSayingSection extends ConsumerWidget {
   final AsyncValue<GoalAgentHealth> healthAsync;
   final List<GoalBannerEntry> nudges;
   final AgentReportEntity? report;
+  final bool reportIsStale;
   final bool canRefresh;
 
   @override
@@ -341,14 +347,28 @@ class _AgentSayingSection extends ConsumerWidget {
     final header = Row(
       children: [
         Expanded(
-          child: Text(
-            context.messages.goalDetailSayingTitle,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.alert.warning.ink,
-            ),
+          child: Wrap(
+            spacing: tokens.spacing.step3,
+            runSpacing: tokens.spacing.step1,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Text(
+                context.messages.goalDetailSayingTitle,
+                style: tokens.typography.styles.others.caption.copyWith(
+                  color: tokens.colors.alert.warning.ink,
+                ),
+              ),
+              if (reportIsStale && (report != null || oneLiner != null))
+                DesignSystemBadge.outlined(
+                  label: context.messages.taskAgentStatusOutOfDate,
+                  tone: DesignSystemBadgeTone.warning,
+                  semanticLabel: context.messages.taskAgentReportOutdatedTitle,
+                ),
+            ],
           ),
         ),
-        if (canRefresh)
+        if (canRefresh) ...[
+          SizedBox(width: tokens.spacing.step2),
           DesignSystemButton(
             label: context.messages.taskAgentUpdateNow,
             onPressed: () => ref
@@ -359,6 +379,7 @@ class _AgentSayingSection extends ConsumerWidget {
             leadingIcon: Icons.refresh_rounded,
             isLoading: isRefreshing,
           ),
+        ],
       ],
     );
     final reportCard = _GoalReportCard(

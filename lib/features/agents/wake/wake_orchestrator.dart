@@ -32,6 +32,7 @@ class AgentSubscription {
     this.predicate,
     this.deferPropagatedMatches = true,
     this.drainImmediately = false,
+    this.reportStaleOnly = false,
   });
 
   /// Unique subscription identifier (stable across restarts).
@@ -69,6 +70,13 @@ class AgentSubscription {
   /// agent and queued jobs merge tokens, so N rapid check-offs collapse into
   /// at most one follow-up run.
   final bool drainImmediately;
+
+  /// Whether matching evidence should only mark the persisted report stale.
+  ///
+  /// This keeps high-frequency observational signals visible to the user
+  /// without turning every mutation into agent work. The agent's scheduled
+  /// cadence or an explicit manual refresh consumes the accumulated changes.
+  final bool reportStaleOnly;
 }
 
 /// Checks whether a content-gated entity (by ID) has the content the agent is

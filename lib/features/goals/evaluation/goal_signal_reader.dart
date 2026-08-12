@@ -63,6 +63,7 @@ class GoalSignalReader {
       reference.month,
       reference.day + 1,
     );
+    final categoryTimeEnd = reference.isBefore(rangeEnd) ? reference : rangeEnd;
 
     final quantitative = <String, Map<DateTime, num>>{};
     for (final dataType in needs.quantitativeTypes) {
@@ -142,12 +143,12 @@ class GoalSignalReader {
           : rangeStart;
       final rows = await _journalDb.insightsTimeRows(
         start: queryStart,
-        end: rangeEnd,
+        end: categoryTimeEnd,
       );
       final activeTimerRow = await _activeTimerRow(reference);
       if (activeTimerRow != null &&
           activeTimerRow.dateTo.isAfter(queryStart) &&
-          activeTimerRow.dateFrom.isBefore(rangeEnd)) {
+          activeTimerRow.dateFrom.isBefore(categoryTimeEnd)) {
         // The persisted row for a running timer has a stale zero-length end
         // and is normally absent from Insights. If it was saved while still
         // running, replace that stale prefix rather than duplicating the raw
@@ -155,9 +156,7 @@ class GoalSignalReader {
         // way, but the model-facing session list must remain one session.
         rows
           ..removeWhere(
-            (row) =>
-                row.categoryId == activeTimerRow.categoryId &&
-                row.dateFrom == activeTimerRow.dateFrom,
+            (row) => row.entryId == activeTimerRow.entryId,
           )
           ..add(activeTimerRow)
           ..sort((a, b) => a.dateFrom.compareTo(b.dateFrom));
@@ -172,7 +171,9 @@ class GoalSignalReader {
           final dateFrom = row.dateFrom.isBefore(evidenceStart)
               ? evidenceStart
               : row.dateFrom;
-          final dateTo = row.dateTo.isAfter(rangeEnd) ? rangeEnd : row.dateTo;
+          final dateTo = row.dateTo.isAfter(categoryTimeEnd)
+              ? categoryTimeEnd
+              : row.dateTo;
           if (categoryId == null ||
               !watchedCategoryIds.contains(categoryId) ||
               !dateTo.isAfter(dateFrom)) {
@@ -197,7 +198,7 @@ class GoalSignalReader {
           rows: rows,
           criterion: criterion,
           rangeStart: rangeStart,
-          rangeEnd: rangeEnd,
+          rangeEnd: categoryTimeEnd,
         );
       }
     }
@@ -213,7 +214,7 @@ class GoalSignalReader {
       categoryTimeEvidenceEnd:
           needs.categoryTimeCriteria.isEmpty || !includeCategoryTimeSessions
           ? null
-          : rangeEnd,
+          : categoryTimeEnd,
     );
   }
 
@@ -222,18 +223,16 @@ class GoalSignalReader {
     final current = timeService?.getCurrent();
     if (current is! JournalEntry) return null;
 
-    final linked = timeService?.linkedFrom;
-    final needsPrivateFlag =
-        current.meta.private == true || linked?.meta.private == true;
+    final needsPrivateFlag = current.meta.private == true;
     final showPrivate =
         !needsPrivateFlag || await _journalDb.getConfigFlag('private');
     if (current.meta.private == true && !showPrivate) return null;
 
-    final linkedCategory = linked?.meta.private == true && !showPrivate
-        ? null
-        : linked?.meta.categoryId;
-    final categoryId = linkedCategory?.trim().isNotEmpty == true
-        ? linkedCategory
+    final resolvedCategory = await _journalDb.insightsTimeCategoryForEntry(
+      current.meta.id,
+    );
+    final categoryId = resolvedCategory?.trim().isNotEmpty == true
+        ? resolvedCategory
         : current.meta.categoryId;
     if (categoryId == null || categoryId.trim().isEmpty) return null;
 
@@ -241,6 +240,7 @@ class GoalSignalReader {
     final dateTo = persistedEnd.isAfter(reference) ? persistedEnd : reference;
     if (!dateTo.isAfter(current.meta.dateFrom)) return null;
     return (
+      entryId: current.meta.id,
       dateFrom: current.meta.dateFrom,
       dateTo: dateTo,
       categoryId: categoryId,
@@ -454,6 +454,33 @@ Set<String> goalSignalTriggerTokens(GoalCriterion criteria) {
       categoriesNotification,
       privateToggleNotification,
     },
+  };
+}
+
+/// Goal signals that should immediately run the deterministic evaluator.
+///
+/// Habit and measured-value writes are complete, bounded observations. A
+/// category-time mutation is intentionally excluded because tracked sessions
+/// can update frequently; those signals use [goalStaleSignalTriggerTokens].
+Set<String> goalImmediateSignalTriggerTokens(GoalCriterion criteria) {
+  final needs = _SignalNeeds()..collect(criteria);
+  return {
+    ...needs.quantitativeTypes,
+    ...needs.habitIds,
+    ...needs.measurableTypeIds,
+  };
+}
+
+/// High-frequency goal signals that invalidate the report without waking it.
+Set<String> goalStaleSignalTriggerTokens(GoalCriterion criteria) {
+  final needs = _SignalNeeds()..collect(criteria);
+  if (needs.categoryTimeCriteria.isEmpty) return const {};
+  return const {
+    textEntryNotification,
+    linkNotification,
+    taskNotification,
+    categoriesNotification,
+    privateToggleNotification,
   };
 }
 

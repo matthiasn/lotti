@@ -115,7 +115,13 @@ class GoalSignalSyncDispatcher {
       if (tokens.contains(agentId) &&
           await _registerMisaligned(agentId, version.id))
         goalSpecHeadId(agentId),
-      ...goalSignalTriggerTokens(version.criteria).intersection(tokens),
+      // Category-time mutations are high-frequency observations. Their
+      // source device persists the shared report-stale watermark, so a
+      // receiving device must not turn the same mutation into another Phase A
+      // run. Bounded signals remain immediate on every device.
+      ...goalImmediateSignalTriggerTokens(
+        version.criteria,
+      ).intersection(tokens),
     };
   }
 

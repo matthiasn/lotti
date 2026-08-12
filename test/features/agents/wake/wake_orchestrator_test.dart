@@ -257,6 +257,47 @@ void main() {
       );
 
       test(
+        'a stale-only subscription persists freshness without queueing work',
+        () async {
+          final signalAt = DateTime(2026, 8, 12, 18, 30);
+          var state =
+              AgentDomainEntity.agentState(
+                    id: 'state-1',
+                    agentId: 'agent-1',
+                    slots: const AgentSlots(activeTaskId: 'entity-1'),
+                    updatedAt: DateTime(2026, 8, 12, 18),
+                    vectorClock: null,
+                    reportFreshAt: DateTime(2026, 8, 12, 18, 15),
+                  )
+                  as AgentStateEntity;
+          when(
+            () => mockRepository.getAgentState('agent-1'),
+          ).thenAnswer((_) async => state);
+          orchestrator = WakeOrchestrator(
+            repository: mockRepository,
+            queue: queue,
+            runner: runner,
+            syncEntityWriter: (entity) async {
+              state = entity as AgentStateEntity;
+            },
+          )..addSubscription(makeSub(reportStaleOnly: true));
+          final controller = StreamController<Set<String>>.broadcast();
+
+          await withClock(Clock.fixed(signalAt), () async {
+            await orchestrator.start(controller.stream);
+            controller.add({'entity-1'});
+            await pumpEventQueue();
+          });
+
+          expect(queue.isEmpty, isTrue);
+          expect(state.reportStaleAt, signalAt);
+          expect(state.reportFreshAt, DateTime(2026, 8, 12, 18, 15));
+          expect(state.isReportStale, isTrue);
+          await controller.close();
+        },
+      );
+
+      test(
         'a failed stale-watermark write is contained and reported',
         () async {
           // The watermark is a hint that the report has drifted, not the report

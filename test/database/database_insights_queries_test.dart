@@ -197,6 +197,7 @@ void main() {
         );
 
         expect(rows, hasLength(1));
+        expect(rows.single.entryId, 'entry-1');
         expect(rows.single.dateFrom, DateTime(2024, 3, 1, 9));
         expect(rows.single.dateTo, DateTime(2024, 3, 1, 10, 30));
         expect(rows.single.categoryId, 'cat-own');
@@ -279,6 +280,41 @@ void main() {
       expect(rows, hasLength(1));
       expect(rows.single.categoryId, 'cat-b');
     });
+
+    test(
+      'live zero-duration attribution uses the same latest-task rule',
+      () async {
+        await db.updateJournalEntity(
+          buildTask(
+            id: 'task-a',
+            at: DateTime(2024, 3),
+            categoryId: 'cat-a',
+          ),
+        );
+        await db.updateJournalEntity(
+          buildTask(
+            id: 'task-b',
+            at: DateTime(2024, 3, 2),
+            categoryId: 'cat-b',
+          ),
+        );
+        await db.updateJournalEntity(
+          buildTimeEntry(
+            id: 'running',
+            dateFrom: DateTime(2024, 3, 3, 9),
+            dateTo: DateTime(2024, 3, 3, 9),
+            categoryId: 'entry-category',
+          ),
+        );
+        await link(fromId: 'task-a', toId: 'running');
+        await link(fromId: 'task-b', toId: 'running');
+
+        expect(
+          await db.insightsTimeCategoryForEntry('running'),
+          'cat-b',
+        );
+      },
+    );
 
     test('hidden links and deleted tasks do not steal attribution', () async {
       await db.updateJournalEntity(

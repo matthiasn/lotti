@@ -176,25 +176,43 @@ class GoalAgentService {
     );
   }
 
-  /// Evidence-triggered wakes: the goal agent listens to exactly the
-  /// signals its criteria reference — leaf dataTypes, habitIds and
-  /// measurable ids — never a global sentinel. `drainImmediately`: a habit
-  /// check-off is atomic evidence and Phase A is €0, so the wake dispatches
-  /// now — the user's tap is acknowledged in seconds, not after the
-  /// 120-second coalescing window built for costly task-agent wakes.
+  /// Observes exactly the signals referenced by the goal criteria.
+  ///
+  /// Bounded habit and measured-data writes immediately run the deterministic
+  /// evaluator. Category-time activity is high-frequency and instead marks
+  /// the report stale; the daily cadence or Update now consumes those changes.
   void registerSignalSubscription(String agentId, GoalCriterion criteria) {
-    _orchestrator.addSubscription(
-      AgentSubscription(
-        id: goalSignalSubscriptionId(agentId),
-        agentId: agentId,
-        matchEntityIds: goalSignalTriggerTokens(criteria),
-        deferPropagatedMatches: false,
-        drainImmediately: true,
-      ),
-    );
+    _orchestrator.removeSubscriptions(agentId);
+    final immediateTokens = goalImmediateSignalTriggerTokens(criteria);
+    if (immediateTokens.isNotEmpty) {
+      _orchestrator.addSubscription(
+        AgentSubscription(
+          id: goalSignalSubscriptionId(agentId),
+          agentId: agentId,
+          matchEntityIds: immediateTokens,
+          deferPropagatedMatches: false,
+          drainImmediately: true,
+        ),
+      );
+    }
+    final staleTokens = goalStaleSignalTriggerTokens(criteria);
+    if (staleTokens.isNotEmpty) {
+      _orchestrator.addSubscription(
+        AgentSubscription(
+          id: goalStaleSignalSubscriptionId(agentId),
+          agentId: agentId,
+          matchEntityIds: staleTokens,
+          reportStaleOnly: true,
+        ),
+      );
+    }
   }
 }
 
 /// Stable subscription id, so repeated `restoreSubscriptions` replace
 /// instead of accumulate.
 String goalSignalSubscriptionId(String agentId) => '${agentId}_goal_signals';
+
+/// Stable id for category-time observation that marks the report stale.
+String goalStaleSignalSubscriptionId(String agentId) =>
+    '${agentId}_goal_stale_signals';

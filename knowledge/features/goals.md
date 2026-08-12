@@ -149,19 +149,25 @@ flowchart TD
   and category time reuses the same category-attributed timer rows as Insights.
   A category-time leaf can enforce an `atLeast` or `atMost` number of hours and
   can clip every local day to an optional time band; a crossing band such as
-  `21:30 → 07:00` spans midnight. Day keys re-stamp the local calendar date as
-  midnight UTC. The goal agent must never disagree with the chart the user is
-  looking at.
+  `21:30 → 07:00` spans midnight. Evaluation clips the current day at the
+  evaluation instant, so future-dated entries never count as time already
+  tracked. A live timer resolves category attribution through the same linked-
+  task query as Insights and replaces its persisted prefix by entry id. Day
+  keys re-stamp the local calendar date as midnight UTC. The goal agent must
+  never disagree with the chart the user is looking at.
 - **Pattern evidence is richer than the threshold.** Phase A reads only the
   bounded evaluation/lookback range. When Phase B actually runs, the same
   reader additionally loads every valid attributed session for a watched
   category since the goal agent was created, including sessions outside an
-  optional cutoff band. FACTS summarizes the complete lifetime into bounded
+  optional cutoff band. FACTS unions overlaps per category and preserves
+  sub-minute precision while summarizing the complete lifetime into bounded
   local-hour and weekday distributions, then adds the 200 most recent raw
-  sessions with category, local start/end and duration. The coach can therefore
-  notice late-night or clustering patterns without allowing one current model
-  message to grow forever. Those signals are evidence only: the model may
-  discuss them but cannot replace the deterministic per-dimension result.
+  sessions with category, local start/end and duration. The raw session count
+  remains available separately from the unioned duration. The coach can
+  therefore notice late-night or clustering patterns without allowing one
+  current model message to grow forever. Those signals are evidence only: the
+  model may discuss them but cannot replace the deterministic per-dimension
+  result.
 - **Subjective assessment is a separate governance layer.** Deterministic
   `goalProgress` registers are recomputed from source and must never carry a
   mutable opinion. A future daily-assessment register should therefore keep
@@ -488,6 +494,13 @@ flowchart TD
   targets, and an optional local time band without hard-coding a health-data
   catalog. A separate follow-up approval surface will render direct daily
   dimension ratings and agent-proposed assessment change items.
+- **Tracked time invalidates without churning wakes.** Category-time leaves
+  observe the journal, link, task, category and privacy notifications used by
+  Insights, but those mutations only advance the durable report-stale
+  watermark. They do not queue Phase A or inference for every timer edit. The
+  existing 06:00 cadence evaluates accumulated changes automatically, while
+  Update now remains the explicit immediate path. Habit and measured-data
+  signals stay immediate because each write is a bounded observation.
 - **Conversation scope is the goal.** The contract identifies the agent as a
   dedicated coach rather than a general assistant. Coding, trivia and other
   unrelated requests receive a short purpose reminder and a redirect to the

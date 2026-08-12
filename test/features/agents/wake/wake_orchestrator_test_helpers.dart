@@ -18,6 +18,7 @@ AgentSubscription makeSub({
   bool Function(Set<String> tokens)? predicate,
   bool deferPropagatedMatches = true,
   bool drainImmediately = false,
+  bool reportStaleOnly = false,
 }) {
   return AgentSubscription(
     id: id,
@@ -26,6 +27,7 @@ AgentSubscription makeSub({
     predicate: predicate,
     deferPropagatedMatches: deferPropagatedMatches,
     drainImmediately: drainImmediately,
+    reportStaleOnly: reportStaleOnly,
   );
 }
 

@@ -20,7 +20,10 @@ today:
   Quantitative and user-defined measurable leaves share the existing journal
   ingestion paths; category-time leaves reuse Insights attribution, support
   minimum/maximum hours and optional local time bands, and give Phase B the
-  bounded raw session evidence needed to discuss timing patterns.
+  bounded raw session evidence needed to discuss timing patterns. Tracked-time
+  mutations mark the standing report out of date without waking the agent for
+  every timer edit; the daily cadence or Update now consumes the accumulated
+  evidence. Habit and measured-data observations remain immediate.
 - `GoalSpecValidator` (in `lib/classes/goal_spec_validator.dart`, beside
   the vocabulary it validates) — the decode-boundary gate, invoked from
   `AgentDomainEntity.fromJson` so every path (Matrix sync, storage reads)

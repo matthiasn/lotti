@@ -416,6 +416,72 @@ void main() {
     },
   );
 
+  test('lifetime category summaries union overlapping raw sessions', () {
+    final json = renderedJson(
+      wakeFacts: facts(
+        categoryTimeSessions: {
+          'vibe-coding': [
+            GoalCategoryTimeSession(
+              categoryId: 'vibe-coding',
+              dateFrom: DateTime(2026, 8, 8, 9),
+              dateTo: DateTime(2026, 8, 8, 10, 30),
+            ),
+            GoalCategoryTimeSession(
+              categoryId: 'vibe-coding',
+              dateFrom: DateTime(2026, 8, 8, 9, 30),
+              dateTo: DateTime(2026, 8, 8, 11),
+            ),
+          ],
+        },
+      ),
+    );
+
+    final signals = json['signals'] as Map<String, dynamic>;
+    expect(signals['categoryTimeSessionCount'], 2);
+    expect(signals['categoryTimeSessions'], hasLength(2));
+    final summary =
+        (signals['categoryTimeLifetimeSummary'] as List).single
+            as Map<String, dynamic>;
+    expect(summary['sessionCount'], 2, reason: 'raw evidence stays auditable');
+    expect(
+      summary['totalMinutes'],
+      120,
+      reason: 'the 09:30–10:30 overlap must count only once',
+    );
+    final minutesByHour = summary['minutesByLocalHour'] as List;
+    expect(minutesByHour[9], 60);
+    expect(minutesByHour[10], 60);
+  });
+
+  test('category summaries preserve seconds across local-hour splits', () {
+    final json = renderedJson(
+      wakeFacts: facts(
+        categoryTimeSessions: {
+          'vibe-coding': [
+            GoalCategoryTimeSession(
+              categoryId: 'vibe-coding',
+              dateFrom: DateTime(2026, 8, 8, 9, 59, 30),
+              dateTo: DateTime(2026, 8, 8, 10, 0, 30),
+            ),
+          ],
+        },
+      ),
+    );
+
+    final signals = json['signals'] as Map<String, dynamic>;
+    final raw =
+        (signals['categoryTimeSessions'] as List).single
+            as Map<String, dynamic>;
+    expect(raw['durationMinutes'], 1);
+    final summary =
+        (signals['categoryTimeLifetimeSummary'] as List).single
+            as Map<String, dynamic>;
+    expect(summary['totalMinutes'], 1);
+    final minutesByHour = summary['minutesByLocalHour'] as List;
+    expect(minutesByHour[9], 0.5);
+    expect(minutesByHour[10], 0.5);
+  });
+
   test('lifetime category evidence keeps a bounded recent raw sample', () {
     final sessions = [
       for (var index = 0; index < 205; index++)

@@ -113,7 +113,10 @@ void main() {
   late _RecordingPhaseA phaseA;
   late GoalSignalSyncDispatcher dispatcher;
 
-  void stubSpec(String agentId) {
+  void stubSpec(
+    String agentId, {
+    GoalCriterion goalCriteria = criteria,
+  }) {
     when(() => repository.getEntity(goalSpecHeadId(agentId))).thenAnswer(
       (_) async => AgentDomainEntity.goalSpecHead(
         id: goalSpecHeadId(agentId),
@@ -132,7 +135,7 @@ void main() {
         authoredBy: 'user',
         title: agentId,
         statement: 'x',
-        criteria: criteria,
+        criteria: goalCriteria,
         createdAt: DateTime(2026),
         vectorClock: null,
       ),
@@ -189,6 +192,25 @@ void main() {
 
     await dispatcher.dispatchBatch({'some-task-id', 'HABIT_COMPLETION'});
     expect(phaseA.calls, isEmpty);
+  });
+
+  test('synced category-time churn waits for the scheduled cadence', () async {
+    const categoryTime = GoalCriterion.categoryTime(
+      criterionId: 'coding-time',
+      categoryId: 'coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 2,
+    );
+    when(
+      () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+    ).thenAnswer((_) async => [identity('goal-a', AgentKinds.goalAgent)]);
+    stubSpec('goal-a', goalCriteria: categoryTime);
+
+    await dispatcher.dispatchBatch(goalStaleSignalTriggerTokens(categoryTime));
+
+    expect(phaseA.calls, isEmpty);
+    expect(evaluated, isEmpty);
   });
 
   test('the listener pumps synced batches, starts once, and stops on '

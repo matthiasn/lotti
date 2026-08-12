@@ -65,6 +65,9 @@ void main() {
     timeService = MockTimeService();
     when(timeService.getCurrent).thenReturn(null);
     when(() => timeService.linkedFrom).thenReturn(null);
+    when(
+      () => journalDb.insightsTimeCategoryForEntry(any()),
+    ).thenAnswer((_) async => null);
     reader = GoalSignalReader(
       journalDb: journalDb,
       timeService: timeService,
@@ -541,16 +544,19 @@ void main() {
       ).thenAnswer(
         (_) async => [
           (
+            entryId: 'coding-a',
             dateFrom: DateTime(2026, 8, 8, 18),
             dateTo: DateTime(2026, 8, 8, 20),
             categoryId: 'vibe-coding',
           ),
           (
+            entryId: 'coding-b',
             dateFrom: DateTime(2026, 8, 8, 19),
             dateTo: DateTime(2026, 8, 8, 21),
             categoryId: 'vibe-coding',
           ),
           (
+            entryId: 'other',
             dateFrom: DateTime(2026, 8, 8, 17),
             dateTo: DateTime(2026, 8, 8, 22),
             categoryId: 'other',
@@ -560,7 +566,7 @@ void main() {
 
       final window = await reader.read(
         criteria: criterion,
-        reference: reference,
+        reference: DateTime(2026, 8, 8, 22),
       );
 
       expect(
@@ -569,6 +575,60 @@ void main() {
       );
     },
   );
+
+  test('category time excludes entries after the evaluation instant', () async {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'coding-cap',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.day(),
+      aggregation: GoalAggregation.sum,
+      targetHours: 2,
+    );
+    final reference = DateTime(2026, 8, 8, 12);
+    when(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: any(named: 'end'),
+      ),
+    ).thenAnswer(
+      (_) async => [
+        (
+          entryId: 'spans-now',
+          dateFrom: DateTime(2026, 8, 8, 11),
+          dateTo: DateTime(2026, 8, 8, 13),
+          categoryId: 'vibe-coding',
+        ),
+        (
+          entryId: 'future',
+          dateFrom: DateTime(2026, 8, 8, 13),
+          dateTo: DateTime(2026, 8, 8, 14),
+          categoryId: 'vibe-coding',
+        ),
+      ],
+    );
+
+    final window = await reader.read(
+      criteria: criterion,
+      reference: reference,
+    );
+
+    final queryEnd = verify(
+      () => journalDb.insightsTimeRows(
+        start: any(named: 'start'),
+        end: captureAny(named: 'end'),
+      ),
+    ).captured.single;
+    expect(queryEnd, reference);
+    expect(
+      window.categoryTimeDailyHours['coding-cap'],
+      {DateTime.utc(2026, 8, 8): 1},
+    );
+    expect(
+      window.categoryTimeSessionsByCategory['vibe-coding']?.single.dateTo,
+      reference,
+    );
+    expect(window.categoryTimeEvidenceEnd, reference);
+  });
 
   test('category time replaces a persisted active timer prefix', () async {
     const criterion = GoalCriterion.categoryTime(
@@ -587,8 +647,15 @@ void main() {
     ).thenAnswer(
       (_) async => [
         (
+          entryId: 'running',
           dateFrom: startedAt,
           dateTo: DateTime(2026, 8, 8, 22, 15),
+          categoryId: 'vibe-coding',
+        ),
+        (
+          entryId: 'unrelated-same-start',
+          dateFrom: startedAt,
+          dateTo: DateTime(2026, 8, 8, 22, 30),
           categoryId: 'vibe-coding',
         ),
       ],
@@ -613,7 +680,7 @@ void main() {
         updatedAt: startedAt,
         dateFrom: startedAt,
         dateTo: startedAt,
-        categoryId: 'vibe-coding',
+        categoryId: 'wrong-linked-category',
       ),
       data: TaskData(
         status: TaskStatus.open(
@@ -629,6 +696,9 @@ void main() {
     );
     when(timeService.getCurrent).thenReturn(running);
     when(() => timeService.linkedFrom).thenReturn(linkedTask);
+    when(
+      () => journalDb.insightsTimeCategoryForEntry('running'),
+    ).thenAnswer((_) async => 'vibe-coding');
 
     final window = await reader.read(
       criteria: criterion,
@@ -641,12 +711,16 @@ void main() {
     );
     expect(
       window.categoryTimeSessionsByCategory['vibe-coding'],
-      hasLength(1),
-      reason: 'the persisted timer prefix must not duplicate raw evidence',
+      hasLength(2),
+      reason:
+          'the persisted timer prefix is replaced by id without deleting an '
+          'unrelated session that happens to share its start and category',
     );
     expect(
-      window.categoryTimeSessionsByCategory['vibe-coding']?.single.dateTo,
-      DateTime(2026, 8, 8, 23, 30),
+      window.categoryTimeSessionsByCategory['vibe-coding']?.map(
+        (session) => session.dateTo,
+      ),
+      contains(DateTime(2026, 8, 8, 23, 30)),
       reason: 'the in-memory timer endpoint must advance beyond persisted data',
     );
   });
@@ -747,11 +821,13 @@ void main() {
       ).thenAnswer(
         (_) async => [
           (
+            entryId: 'old-session',
             dateFrom: DateTime(2026, 8),
             dateTo: DateTime(2026, 8, 1, 1),
             categoryId: 'vibe-coding',
           ),
           (
+            entryId: 'current-session',
             dateFrom: DateTime(2026, 8, 8, 10),
             dateTo: DateTime(2026, 8, 8, 11, 30),
             categoryId: 'vibe-coding',
@@ -855,11 +931,13 @@ void main() {
     ).thenAnswer(
       (_) async => [
         (
+          entryId: 'overnight',
           dateFrom: DateTime(2026, 8, 7, 20),
           dateTo: DateTime(2026, 8, 8, 8),
           categoryId: 'vibe-coding',
         ),
         (
+          entryId: 'midday',
           dateFrom: DateTime(2026, 8, 8, 12),
           dateTo: DateTime(2026, 8, 8, 13),
           categoryId: 'vibe-coding',
@@ -912,11 +990,13 @@ void main() {
     ).thenAnswer(
       (_) async => [
         (
+          entryId: 'allowed',
           dateFrom: DateTime(2026, 8, 8, 21),
           dateTo: DateTime(2026, 8, 8, 22),
           categoryId: 'screen-time',
         ),
         (
+          entryId: 'prohibited',
           dateFrom: DateTime(2026, 8, 8, 22),
           dateTo: DateTime(2026, 8, 8, 22, 30),
           categoryId: 'screen-time',
@@ -926,7 +1006,7 @@ void main() {
 
     final window = await reader.read(
       criteria: criterion,
-      reference: reference,
+      reference: DateTime(2026, 8, 8, 23),
     );
 
     expect(
@@ -955,6 +1035,7 @@ void main() {
     ).thenAnswer(
       (_) async => [
         (
+          entryId: 'workday',
           dateFrom: DateTime.utc(2026, 8, 8, 8),
           dateTo: DateTime.utc(2026, 8, 8, 18),
           categoryId: 'vibe-coding',
@@ -975,7 +1056,7 @@ void main() {
   });
 
   test(
-    'category time subscribes to every mutation that can change attribution',
+    'category time uses stale-only triggers for attribution changes',
     () {
       const criterion = GoalCriterion.categoryTime(
         criterionId: 'coding-cap',
@@ -995,6 +1076,38 @@ void main() {
           privateToggleNotification,
         },
       );
+      expect(goalImmediateSignalTriggerTokens(criterion), isEmpty);
+      expect(
+        goalStaleSignalTriggerTokens(criterion),
+        goalSignalTriggerTokens(criterion),
+      );
     },
   );
+
+  test('bounded observations stay on the immediate trigger path', () {
+    const criterion = GoalCriterion.allOf(
+      criterionId: 'bounded',
+      criteria: [
+        GoalCriterion.habit(
+          criterionId: 'walk',
+          habitId: 'walk-habit',
+          window: GoalWindow.day(),
+          targetCount: 1,
+        ),
+        GoalCriterion.metric(
+          criterionId: 'steps',
+          dataType: 'HealthDataType.STEPS',
+          window: GoalWindow.day(),
+          aggregation: GoalAggregation.sum,
+          target: 10000,
+        ),
+      ],
+    );
+
+    expect(
+      goalImmediateSignalTriggerTokens(criterion),
+      {'walk-habit', 'HealthDataType.STEPS'},
+    );
+    expect(goalStaleSignalTriggerTokens(criterion), isEmpty);
+  });
 }
