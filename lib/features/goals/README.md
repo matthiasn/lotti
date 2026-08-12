@@ -17,6 +17,10 @@ today:
 - `evaluation/` — `GoalProgressEvaluator`, a pure fold over a
   `GoalSignalWindow` of daily aggregates, and `GoalTrackPolicy`, which turns
   attainment, pace, grace, and data coverage into a `GoalTrackStatus`.
+  Quantitative and user-defined measurable leaves share the existing journal
+  ingestion paths; category-time leaves reuse Insights attribution, support
+  minimum/maximum hours and optional local time bands, and give Phase B the
+  bounded raw session evidence needed to discuss timing patterns.
 - `GoalSpecValidator` (in `lib/classes/goal_spec_validator.dart`, beside
   the vocabulary it validates) — the decode-boundary gate, invoked from
   `AgentDomainEntity.fromJson` so every path (Matrix sync, storage reads)
@@ -31,6 +35,12 @@ synced-signal dispatcher, `service/` transactional goal creation, and
 agent runtime (merged in `app_bootstrap.dart`). Persistence entities live
 on `AgentDomainEntity` (`goalSpecVersion`/`goalSpecHead`/`goalProgress`/
 `goalNudge`) with `GoalSpecValidator` gating every decode path.
+Each goal-progress period retains one `GoalCriterionProgress` result per stable
+criterion id, so multi-dimensional goals remain accountable beneath the
+composite health result. Subjective daily ratings are deliberately not written
+into those recomputed rows: direct user assessments and agent-proposed
+assessments require a separate approval-aware register, with agent proposals
+reusing the existing ChangeSet/ChangeDecision flow.
 
 The LLM tier (Phase B) runs too: `workflow/` holds the lease-elected
 escalation workflow, its code-owned contract, the tool dispatcher, and the

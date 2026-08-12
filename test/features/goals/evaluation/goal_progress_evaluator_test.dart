@@ -190,6 +190,145 @@ void main() {
     });
   });
 
+  group('category time leaf', () {
+    const weeklyCap = GoalCriterion.categoryTime(
+      criterionId: 'coding-cap',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.sum,
+      targetHours: 6,
+    );
+
+    test('sums tracked hours and applies an at-most cap', () {
+      final under = evaluator.evaluate(
+        weeklyCap,
+        GoalSignalWindow(
+          categoryTimeDailyHours: {
+            'coding-cap': {d(7): 2.25, d(8): 3.5},
+          },
+        ),
+        saturday,
+      );
+      expect(under.results['coding-cap']!.actual, 5.75);
+      expect(under.satisfied, isTrue);
+      expect(under.dataCoverage, 1);
+
+      final over = evaluator.evaluate(
+        weeklyCap,
+        GoalSignalWindow(
+          categoryTimeDailyHours: {
+            'coding-cap': {d(6): 2, d(7): 2, d(8): 3},
+          },
+        ),
+        saturday,
+      );
+      expect(over.results['coding-cap']!.actual, 7);
+      expect(over.satisfied, isFalse);
+      expect(over.attainment, closeTo(6 / 7, 1e-9));
+    });
+
+    test('at-least and at-most thresholds include the exact boundary', () {
+      const minimum = GoalCriterion.categoryTime(
+        criterionId: 'creative-minimum',
+        categoryId: 'creative-work',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 4,
+        direction: GoalDirection.atLeast,
+      );
+      final exactSignals = GoalSignalWindow(
+        categoryTimeDailyHours: {
+          'creative-minimum': {d(7): 1.5, d(8): 2.5},
+          'coding-cap': {d(7): 1.5, d(8): 4.5},
+        },
+      );
+
+      expect(
+        evaluator.evaluate(minimum, exactSignals, saturday).satisfied,
+        isTrue,
+      );
+      expect(
+        evaluator.evaluate(weeklyCap, exactSignals, saturday).satisfied,
+        isTrue,
+      );
+
+      final below = evaluator.evaluate(
+        minimum,
+        GoalSignalWindow(
+          categoryTimeDailyHours: {
+            'creative-minimum': {d(8): 3.99},
+          },
+        ),
+        saturday,
+      );
+      expect(below.satisfied, isFalse);
+    });
+
+    test(
+      'count aggregation counts days with tracked time, not zero-filled days',
+      () {
+        const activeDays = GoalCriterion.categoryTime(
+          criterionId: 'coding-days',
+          categoryId: 'vibe-coding',
+          window: GoalWindow.rollingDays(count: 7),
+          aggregation: GoalAggregation.count,
+          targetHours: 2,
+          direction: GoalDirection.atLeast,
+        );
+        final evaluation = evaluator.evaluate(
+          activeDays,
+          GoalSignalWindow(
+            categoryTimeDailyHours: {
+              'coding-days': {d(6): 0.5, d(8): 2},
+            },
+          ),
+          saturday,
+        );
+
+        expect(evaluation.results['coding-days']!.actual, 2);
+        expect(evaluation.satisfied, isTrue);
+      },
+    );
+
+    test('no matching tracked time is a real zero, not missing telemetry', () {
+      const curfew = GoalCriterion.categoryTime(
+        criterionId: 'late-coding',
+        categoryId: 'vibe-coding',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 0,
+        dailyTimeRange: GoalDailyTimeRange(
+          startMinute: 1290,
+          endMinute: 420,
+        ),
+      );
+
+      final evaluation = evaluator.evaluate(
+        curfew,
+        const GoalSignalWindow(),
+        saturday,
+      );
+
+      expect(evaluation.results['late-coding']!.actual, 0);
+      expect(evaluation.results['late-coding']!.sampleCount, 7);
+      expect(evaluation.dataCoverage, 1);
+      expect(evaluation.satisfied, isTrue);
+    });
+
+    test('short-term attainment re-windows the same category series', () {
+      final signals = GoalSignalWindow(
+        categoryTimeDailyHours: {
+          'coding-cap': {d(6): 1, d(7): 1, d(8): 1},
+        },
+      );
+
+      expect(
+        evaluator.shortTermAttainment(weeklyCap, signals, saturday),
+        1,
+      );
+    });
+  });
+
   group('habit leaf', () {
     const gym = GoalCriterion.habit(
       criterionId: 'gym',

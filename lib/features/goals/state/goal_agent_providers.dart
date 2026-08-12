@@ -522,7 +522,8 @@ typedef GoalAgentHealth = ({
 bool _attainmentTrendIsSound(GoalCriterion criterion) => switch (criterion) {
   GoalCriterionMetric(:final window) ||
   GoalCriterionMeasurable(:final window) ||
-  GoalCriterionHabit(:final window) => window is GoalWindowRollingDays,
+  GoalCriterionHabit(:final window) ||
+  GoalCriterionCategoryTime(:final window) => window is GoalWindowRollingDays,
   GoalCriterionAllOf(:final criteria) ||
   GoalCriterionAnyOf(:final criteria) ||
   GoalCriterionAtLeastCount(:final criteria) => criteria.every(

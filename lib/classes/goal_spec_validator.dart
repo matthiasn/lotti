@@ -42,6 +42,20 @@ abstract final class GoalSpecValidator {
         _windowJsonIssues(json['window'], '$path.window', issues);
       case 'metric' || 'measurable':
         _windowJsonIssues(json['window'], '$path.window', issues);
+      case 'categoryTime':
+        _windowJsonIssues(json['window'], '$path.window', issues);
+        final dailyTimeRange = json['dailyTimeRange'];
+        if (dailyTimeRange is Map<String, dynamic>) {
+          for (final key in ['startMinute', 'endMinute']) {
+            final value = dailyTimeRange[key];
+            if (value is num && value % 1 != 0) {
+              issues.add(
+                '$path.dailyTimeRange.$key: $value is fractional and would '
+                'be silently truncated to ${value.toInt()}',
+              );
+            }
+          }
+        }
       case 'atLeastCount':
         requireIntegral('successes');
         _recurse(json, path, issues);
@@ -125,6 +139,32 @@ abstract final class GoalSpecValidator {
           issues.add('$id: targetCount must be at least 1, was $targetCount');
         }
         _requirePositiveRollingCount(id, window, issues);
+      case GoalCriterionCategoryTime(
+        :final categoryId,
+        :final targetHours,
+        :final window,
+        :final dailyTimeRange,
+      ):
+        _requireIdentifier(id, 'categoryId', categoryId, issues);
+        _requireFiniteTarget(id, targetHours, issues);
+        if (targetHours < 0) {
+          issues.add(
+            '$id: targetHours must not be negative, was $targetHours',
+          );
+        }
+        _requirePositiveRollingCount(id, window, issues);
+        if (dailyTimeRange case final range?) {
+          _requireMinuteOfDay(id, 'startMinute', range.startMinute, issues);
+          _requireMinuteOfDay(id, 'endMinute', range.endMinute, issues);
+          if (range.startMinute == range.endMinute &&
+              range.startMinute >= 0 &&
+              range.startMinute < Duration.minutesPerDay) {
+            issues.add(
+              '$id: daily time range endpoints must differ; omit the range '
+              'to measure the full day',
+            );
+          }
+        }
       case GoalCriterionAllOf(:final criteria) ||
           GoalCriterionAnyOf(:final criteria):
         if (criteria.isEmpty) {
@@ -172,6 +212,19 @@ abstract final class GoalSpecValidator {
   ) {
     if (target is double && !target.isFinite) {
       issues.add('$id: target must be finite, was $target');
+    }
+  }
+
+  static void _requireMinuteOfDay(
+    String id,
+    String field,
+    int minute,
+    List<String> issues,
+  ) {
+    if (minute < 0 || minute >= Duration.minutesPerDay) {
+      issues.add(
+        '$id: $field must be between 0 and 1439, was $minute',
+      );
     }
   }
 

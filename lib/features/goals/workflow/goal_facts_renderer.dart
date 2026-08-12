@@ -24,11 +24,11 @@ const goalReusableMinMeanRating = 4.0;
 ///
 /// The output shape is EXACTLY the one the eval fixtures validated
 /// model-against-model (`goal_agent_eval_fixtures.dart`): a labelled JSON
-/// fence with `goal` / `evaluation` / `reporting` / `ads` / `personaTone`
-/// / `unansweredUserMessages` / `observations` sections. Every number is
-/// pre-computed here — the prompt instructs the model to restate, never
-/// derive, so this renderer is the single place the model's worldview is
-/// assembled.
+/// fence with `goal` / `evaluation` / optional raw `signals` / `reporting` /
+/// `ads` / `personaTone` / `unansweredUserMessages` / `observations`
+/// sections. Every verdict is pre-computed here — the prompt instructs the
+/// model to restate, never derive, so this renderer is the single place the
+/// model's worldview is assembled.
 class GoalFactsRenderer {
   const GoalFactsRenderer();
 
@@ -95,6 +95,26 @@ class GoalFactsRenderer {
         ),
         'priorPeriodAttainments': priorAttainments,
       },
+      if (facts.categoryTimeSessionsByCategory.isNotEmpty)
+        'signals': {
+          'categoryTimeEvidenceStart': facts.categoryTimeEvidenceStart
+              ?.toIso8601String(),
+          'categoryTimeEvidenceEnd': facts.categoryTimeEvidenceEnd
+              ?.toIso8601String(),
+          'categoryTimeSessions': [
+            for (final sessions in facts.categoryTimeSessionsByCategory.values)
+              for (final session in sessions)
+                {
+                  'categoryId': session.categoryId,
+                  'startedAtLocal': session.dateFrom.toIso8601String(),
+                  'endedAtLocal': session.dateTo.toIso8601String(),
+                  'durationMinutes': session.duration.inMinutes,
+                },
+          ],
+          'interpretationPolicy':
+              'session evidence may inform coaching patterns; it does not '
+              'override deterministic criterion results',
+        },
       'reporting': {
         'materialChangeSinceLastReport': facts.statusTransitioned,
         'lastReportStatus': facts.previousStatus?.name,
@@ -203,6 +223,7 @@ Map<String, Object?> criterionJson(GoalCriterion criterion) =>
     switch (criterion) {
       GoalCriterionMetric() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'metric': criterion.dataType,
         'aggregation': criterion.aggregation.name,
         'window': _windowLabel(criterion.window),
@@ -211,28 +232,48 @@ Map<String, Object?> criterionJson(GoalCriterion criterion) =>
       },
       GoalCriterionHabit() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'habit': criterion.habitId,
         'window': _windowLabel(criterion.window),
         'targetCount': criterion.targetCount,
       },
       GoalCriterionMeasurable() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'measurable': criterion.dataTypeId,
         'aggregation': criterion.aggregation.name,
         'window': _windowLabel(criterion.window),
         'target': criterion.target,
         'direction': criterion.direction.name,
       },
+      GoalCriterionCategoryTime() => {
+        'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
+        'categoryTime': criterion.categoryId,
+        'aggregation': criterion.aggregation.name,
+        'window': _windowLabel(criterion.window),
+        'targetHours': criterion.targetHours,
+        'direction': criterion.direction.name,
+        if (criterion.dailyTimeRange case final range?)
+          'dailyTimeRange': {
+            'startMinute': range.startMinute,
+            'endMinute': range.endMinute,
+          },
+        'evidence': 'tracked Lotti time entries only',
+      },
       GoalCriterionAllOf() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'allOf': [for (final c in criterion.criteria) criterionJson(c)],
       },
       GoalCriterionAnyOf() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'anyOf': [for (final c in criterion.criteria) criterionJson(c)],
       },
       GoalCriterionAtLeastCount() => {
         'criterionId': criterion.criterionId,
+        if (criterion.title != null) 'title': criterion.title,
         'atLeast': criterion.successes,
         'of': [for (final c in criterion.criteria) criterionJson(c)],
       },

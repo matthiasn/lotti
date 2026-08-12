@@ -29,6 +29,8 @@ class _FakeSignalReader extends GoalSignalReader {
     required GoalCriterion criteria,
     required DateTime reference,
     int shortTermDays = 3,
+    bool includeCategoryTimeSessions = true,
+    DateTime? categorySessionEvidenceStart,
   }) async => window;
 }
 
@@ -156,6 +158,43 @@ void main() {
             staleAt: DateTime(2026, 8, 7, 9),
           )
           as GoalNudgeEntity;
+
+  test(
+    'wake facts retain category sessions for model pattern analysis',
+    () async {
+      stubSpec();
+      final session = GoalCategoryTimeSession(
+        categoryId: 'vibe-coding',
+        dateFrom: DateTime(2026, 8, 7, 23),
+        dateTo: DateTime(2026, 8, 8, 1),
+      );
+      final signals = GoalSignalWindow(
+        quantitativeDailySums: onTrackSignals().quantitativeDailySums,
+        categoryTimeSessionsByCategory: {
+          'vibe-coding': [session],
+        },
+        categoryTimeEvidenceStart: DateTime(2026, 8, 2),
+        categoryTimeEvidenceEnd: DateTime(2026, 8, 9),
+      );
+
+      final derivation = await withClock(
+        fixedClock,
+        () => phaseA(signals).deriveWakeFacts(
+          agentId: agentId,
+          version: specVersion as GoalSpecVersionEntity,
+          now: now,
+          categorySessionEvidenceStart: DateTime(2026, 8, 2),
+        ),
+      );
+
+      expect(
+        derivation.facts.categoryTimeSessionsByCategory['vibe-coding']?.single,
+        session,
+      );
+      expect(derivation.facts.categoryTimeEvidenceStart, DateTime(2026, 8, 2));
+      expect(derivation.facts.categoryTimeEvidenceEnd, DateTime(2026, 8, 9));
+    },
+  );
 
   GoalProgressEntity progressRow({
     required String periodKey,

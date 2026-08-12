@@ -96,6 +96,7 @@ class GoalAgentPhaseA {
       agentId: agentId,
       version: version,
       now: now,
+      includeCategoryTimeSessions: false,
     );
     final facts = derivation.facts;
     final periodKey = derivation.periodKey;
@@ -222,11 +223,15 @@ class GoalAgentPhaseA {
     required String agentId,
     required GoalSpecVersionEntity version,
     required DateTime now,
+    bool includeCategoryTimeSessions = true,
+    DateTime? categorySessionEvidenceStart,
   }) async {
     final signals = await _signalReader.read(
       criteria: version.criteria,
       reference: now,
       shortTermDays: _policy.shortTermDays,
+      includeCategoryTimeSessions: includeCategoryTimeSessions,
+      categorySessionEvidenceStart: categorySessionEvidenceStart,
     );
     final evaluation = _evaluator.evaluate(version.criteria, signals, now);
     final shortTerm = _evaluator.shortTermAttainment(
@@ -266,6 +271,9 @@ class GoalAgentPhaseA {
         previousStatus: previousStatus,
         evaluation: evaluation,
         shortTermAttainment: shortTerm,
+        categoryTimeSessionsByCategory: signals.categoryTimeSessionsByCategory,
+        categoryTimeEvidenceStart: signals.categoryTimeEvidenceStart,
+        categoryTimeEvidenceEnd: signals.categoryTimeEvidenceEnd,
       ),
       periodKey: periodKey,
       priors: priors,

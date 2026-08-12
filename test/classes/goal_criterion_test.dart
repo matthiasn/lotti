@@ -219,4 +219,25 @@ void main() {
     );
     expect(decoded, criterion);
   });
+
+  test('category time round trip preserves a cross-midnight band', () {
+    const criterion = GoalCriterion.categoryTime(
+      criterionId: 'late-coding',
+      categoryId: 'vibe-coding',
+      window: GoalWindow.rollingDays(count: 7),
+      aggregation: GoalAggregation.sum,
+      targetHours: 0,
+      dailyTimeRange: GoalDailyTimeRange(
+        startMinute: 21 * 60 + 30,
+        endMinute: 7 * 60,
+      ),
+      title: 'Late vibe coding',
+    );
+
+    final decoded = GoalCriterion.fromJson(
+      jsonDecode(jsonEncode(criterion)) as Map<String, dynamic>,
+    );
+
+    expect(decoded, criterion);
+  });
 }

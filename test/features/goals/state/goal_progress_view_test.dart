@@ -150,6 +150,40 @@ void main() {
     expect(view.compactWindow[5], isFalse);
   });
 
+  test('category time projects tracked hours and treats an empty elapsed day '
+      'as an observed zero', () {
+    final view = buildGoalProgressView(
+      criteria: const GoalCriterion.categoryTime(
+        criterionId: 'late-coding',
+        categoryId: 'vibe-coding',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 0,
+        title: 'Late vibe coding',
+      ),
+      signals: GoalSignalWindow(
+        categoryTimeDailyHours: {
+          'late-coding': {day(1): 0.75},
+        },
+      ),
+      reference: today,
+    );
+
+    final metric = view.metric!;
+    expect(metric.name, 'Late vibe coding');
+    expect(metric.target, 0);
+    expect(metric.direction, GoalDirection.atMost);
+    expect(metric.days[5].value, 0.75);
+    expect(metric.days[5].isObserved, isTrue);
+    expect(metric.days.last.value, 0);
+    expect(metric.days.last.isObserved, isTrue);
+    expect(
+      view.compactWindow,
+      [true, true, true, true, true, false, false],
+      reason: 'a late session keeps the rolling at-most-zero window failed',
+    );
+  });
+
   test('sum and count metrics compare the aggregated rolling period', () {
     GoalProgressView build(GoalAggregation aggregation) =>
         buildGoalProgressView(

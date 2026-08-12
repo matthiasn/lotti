@@ -1,6 +1,23 @@
 import 'package:lotti/classes/entity_definitions.dart';
 import 'package:lotti/classes/goal_window.dart';
 
+/// One category-attributed tracked-time session exposed as evidence to the
+/// goal agent. It is deliberately not a success verdict: the deterministic
+/// evaluator and, later, a user-approved daily assessment own that decision.
+class GoalCategoryTimeSession {
+  const GoalCategoryTimeSession({
+    required this.categoryId,
+    required this.dateFrom,
+    required this.dateTo,
+  });
+
+  final String categoryId;
+  final DateTime dateFrom;
+  final DateTime dateTo;
+
+  Duration get duration => dateTo.difference(dateFrom);
+}
+
 /// The pre-fetched daily aggregates a goal evaluation runs over.
 ///
 /// This value object is the seam between the pure evaluator and whatever
@@ -18,6 +35,10 @@ class GoalSignalWindow {
     this.habitSuccessesByDay = const {},
     this.habitCompletionsByDay = const {},
     this.measurableDailySums = const {},
+    this.categoryTimeDailyHours = const {},
+    this.categoryTimeSessionsByCategory = const {},
+    this.categoryTimeEvidenceStart,
+    this.categoryTimeEvidenceEnd,
   });
 
   /// Journal quantitative data: data type string → day key → sum of that
@@ -36,6 +57,24 @@ class GoalSignalWindow {
 
   /// Measurable data: `MeasurableDataType` id → day key → daily sum.
   final Map<String, Map<DateTime, num>> measurableDailySums;
+
+  /// Tracked category time: category-time criterion id → day key → hours.
+  ///
+  /// This map is criterion-scoped rather than category-scoped because two
+  /// leaves may watch the same category through different local-time bands.
+  final Map<String, Map<DateTime, num>> categoryTimeDailyHours;
+
+  /// Every valid tracked-time session attributed to a watched category in
+  /// the reader's evidence range. Sessions remain unfiltered by a criterion's
+  /// optional daily time band so the agent can discuss patterns outside the
+  /// strict threshold while never redefining the computed verdict.
+  final Map<String, List<GoalCategoryTimeSession>>
+  categoryTimeSessionsByCategory;
+
+  /// Inclusive query start and exclusive query end for category session
+  /// evidence. Null when the criteria tree watches no category time.
+  final DateTime? categoryTimeEvidenceStart;
+  final DateTime? categoryTimeEvidenceEnd;
 
   /// Daily sums for [dataType] restricted to [start]..[end] (inclusive).
   Map<DateTime, num> quantitativeInRange(
@@ -57,6 +96,13 @@ class GoalSignalWindow {
     DateTime start,
     DateTime end,
   ) => _inRange(measurableDailySums[dataTypeId], start, end);
+
+  /// Tracked hours for category-time [criterionId] in [start]..[end].
+  Map<DateTime, num> categoryTimeInRange(
+    String criterionId,
+    DateTime start,
+    DateTime end,
+  ) => _inRange(categoryTimeDailyHours[criterionId], start, end);
 
   static Map<DateTime, V> _inRange<V>(
     Map<DateTime, V>? series,

@@ -26,6 +26,8 @@ class _FakeReader extends GoalSignalReader {
     required GoalCriterion criteria,
     required DateTime reference,
     int shortTermDays = 3,
+    bool includeCategoryTimeSessions = true,
+    DateTime? categorySessionEvidenceStart,
   }) async => const GoalSignalWindow();
 }
 

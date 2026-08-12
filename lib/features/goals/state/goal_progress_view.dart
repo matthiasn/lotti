@@ -169,7 +169,9 @@ bool _criterionCompletedOnDay(
   // verdict: a rolling habit contributes when it was completed on this day.
   GoalCriterionHabit(:final habitId) =>
     (signals.habitSuccessesByDay[habitId]?[day] ?? 0) > 0,
-  GoalCriterionMetric() || GoalCriterionMeasurable() =>
+  GoalCriterionMetric() ||
+  GoalCriterionMeasurable() ||
+  GoalCriterionCategoryTime() =>
     const GoalProgressEvaluator().evaluate(criterion, signals, day).satisfied,
   GoalCriterionAllOf(criteria: final children) => children.every(
     (child) => _criterionCompletedOnDay(child, signals, day),
@@ -200,6 +202,7 @@ GoalProgressView buildGoalProgressView({
   final habitLeaves = <GoalCriterionHabit>[];
   final metricLeaves = <GoalCriterionMetric>[];
   final measurableLeaves = <GoalCriterionMeasurable>[];
+  final categoryTimeLeaves = <GoalCriterionCategoryTime>[];
 
   void visit(GoalCriterion criterion) {
     switch (criterion) {
@@ -209,6 +212,8 @@ GoalProgressView buildGoalProgressView({
         metricLeaves.add(metric);
       case final GoalCriterionMeasurable measurable:
         measurableLeaves.add(measurable);
+      case final GoalCriterionCategoryTime categoryTime:
+        categoryTimeLeaves.add(categoryTime);
       case GoalCriterionAllOf(criteria: final children):
         children.forEach(visit);
       case GoalCriterionAnyOf(criteria: final children):
@@ -260,6 +265,12 @@ GoalProgressView buildGoalProgressView({
           signals: signals,
           reference: reference,
         ),
+      for (final categoryTime in categoryTimeLeaves)
+        _categoryTimeProgressView(
+          categoryTime: categoryTime,
+          signals: signals,
+          reference: reference,
+        ),
     ],
   );
 }
@@ -302,6 +313,25 @@ GoalMetricProgressView _measurableProgressView({
   reference: reference,
 );
 
+GoalMetricProgressView _categoryTimeProgressView({
+  required GoalCriterionCategoryTime categoryTime,
+  required GoalSignalWindow signals,
+  required DateTime reference,
+}) => _numericProgressView(
+  criterion: categoryTime,
+  name: categoryTime.title?.trim().isNotEmpty == true
+      ? categoryTime.title!.trim()
+      : categoryTime.categoryId,
+  target: categoryTime.targetHours,
+  window: categoryTime.window,
+  direction: categoryTime.direction,
+  aggregation: categoryTime.aggregation,
+  dailyValues: signals.categoryTimeDailyHours[categoryTime.criterionId],
+  signals: signals,
+  reference: reference,
+  zeroIsObserved: true,
+);
+
 GoalMetricProgressView _numericProgressView({
   required GoalCriterion criterion,
   required String name,
@@ -312,8 +342,10 @@ GoalMetricProgressView _numericProgressView({
   required Map<DateTime, num>? dailyValues,
   required GoalSignalWindow signals,
   required DateTime reference,
+  bool zeroIsObserved = false,
 }) {
   final range = window.periodRange(reference);
+  final today = GoalWindow.dayUtc(reference);
   return GoalMetricProgressView(
     name: name,
     target: target,
@@ -329,7 +361,9 @@ GoalMetricProgressView _numericProgressView({
         GoalProgressDay(
           day: day,
           value: dailyValues?[day] ?? 0,
-          isObserved: dailyValues?.containsKey(day) ?? false,
+          isObserved:
+              (dailyValues?.containsKey(day) ?? false) ||
+              (zeroIsObserved && !day.isAfter(today)),
           targetSatisfied: const GoalProgressEvaluator()
               .evaluate(criterion, signals, day)
               .satisfied,
@@ -434,7 +468,9 @@ goalAgentProgressViewProvider = FutureProvider.autoDispose
         switch (criterion) {
           case GoalCriterionHabit(:final habitId):
             habitIds.add(habitId);
-          case GoalCriterionMetric() || GoalCriterionMeasurable():
+          case GoalCriterionMetric() ||
+              GoalCriterionMeasurable() ||
+              GoalCriterionCategoryTime():
             return;
           case GoalCriterionAllOf(criteria: final children):
             children.forEach(collect);

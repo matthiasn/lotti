@@ -152,6 +152,53 @@ void main() {
       expect(issues, anyElement(contains('water: rolling window')));
     });
 
+    test('category time validates category, target and daily time band', () {
+      const bad = GoalCriterion.categoryTime(
+        criterionId: 'late-coding',
+        categoryId: '  ',
+        window: GoalWindow.rollingDays(count: 0),
+        aggregation: GoalAggregation.sum,
+        targetHours: -1,
+        dailyTimeRange: GoalDailyTimeRange(
+          startMinute: 1440,
+          endMinute: 1440,
+        ),
+      );
+
+      final issues = GoalSpecValidator.criterionIssues(bad);
+
+      expect(issues, hasLength(5));
+      expect(issues, anyElement(contains('categoryId must not be blank')));
+      expect(issues, anyElement(contains('targetHours must not be negative')));
+      expect(issues, anyElement(contains('rolling window')));
+      expect(issues, anyElement(contains('startMinute')));
+      expect(issues, anyElement(contains('endMinute')));
+    });
+
+    test('category time raw JSON rejects fractional time-band minutes', () {
+      const criterion = GoalCriterion.categoryTime(
+        criterionId: 'late-coding',
+        categoryId: 'vibe-coding',
+        window: GoalWindow.rollingDays(count: 7),
+        aggregation: GoalAggregation.sum,
+        targetHours: 0,
+        dailyTimeRange: GoalDailyTimeRange(
+          startMinute: 1290,
+          endMinute: 420,
+        ),
+      );
+      final json = jsonOf(criterion);
+      (json['dailyTimeRange'] as Map<String, dynamic>)['startMinute'] = 1290.5;
+
+      final issues = GoalSpecValidator.criterionJsonIssues(json);
+
+      expect(issues.single, contains('dailyTimeRange.startMinute'));
+      expect(
+        () => GoalSpecValidator.decodeValidated(json),
+        throwsFormatException,
+      );
+    });
+
     test('an empty atLeastCount reports childlessness, not a quota', () {
       const empty = GoalCriterion.atLeastCount(
         criterionId: 'root',
