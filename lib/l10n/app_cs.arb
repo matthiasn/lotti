@@ -1379,6 +1379,7 @@
   "chatInputHintSelectModel": "Vyberte model pro zahájení chatu",
   "chatInputListening": "Naslouchám...",
   "chatInputNoAudioRecorded": "Nebyl nahrán žádný zvuk. Zkus to znovu.",
+  "chatInputRecordingFailed": "Nahrávání selhalo. Zkus to znovu.",
   "chatInputPleaseWait": "Čekejte prosím...",
   "chatInputProcessing": "Zpracování...",
   "chatInputRecordVoice": "Nahrát hlasovou zprávu",

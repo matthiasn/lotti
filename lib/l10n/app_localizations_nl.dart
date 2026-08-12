@@ -3071,7 +3071,7 @@ class AppLocalizationsNl extends AppLocalizations {
   String get chatInputNoAudioRecorded => 'No audio was recorded. Try again.';
 
   @override
-  String get chatInputRecordingFailed => 'Recording failed. Please try again.';
+  String get chatInputRecordingFailed => 'Opname mislukt. Probeer het opnieuw.';
 
   @override
   String get chatInputPleaseWait => 'Wacht even...';

@@ -1552,6 +1552,7 @@
   "chatInputPleaseWait": "Por favor, espere...",
   "chatInputProcessing": "Processando...",
   "chatInputRecordVoice": "Gravar mensagem de voz",
+  "chatInputRecordingFailed": "Falha na gravação. Tente novamente.",
   "chatInputSendTooltip": "Enviar mensagem",
   "chatInputStopRealtime": "Interromper a transcrição ao vivo",
   "chatInputStopTranscribe": "Pare e transcreva",

@@ -1372,6 +1372,7 @@
   "chatInputHintSelectModel": "Selecciona un modelo para empezar a chatear",
   "chatInputListening": "Escuchando...",
   "chatInputNoAudioRecorded": "No se ha grabado audio. Inténtalo de nuevo.",
+  "chatInputRecordingFailed": "Error de grabación. Inténtalo de nuevo.",
   "chatInputPleaseWait": "Espera...",
   "chatInputProcessing": "Procesando...",
   "chatInputRecordVoice": "Grabar mensaje de voz",

@@ -1372,6 +1372,7 @@
   "chatInputHintSelectModel": "Choisis un modèle pour commencer à discuter",
   "chatInputListening": "Écoute en cours...",
   "chatInputNoAudioRecorded": "Aucun son n'a été enregistré. Réessaie.",
+  "chatInputRecordingFailed": "Échec de l'enregistrement. Veuillez réessayer.",
   "chatInputPleaseWait": "Patiente un instant...",
   "chatInputProcessing": "Traitement...",
   "chatInputRecordVoice": "Enregistrer un message vocal",

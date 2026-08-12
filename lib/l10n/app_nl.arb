@@ -1552,6 +1552,7 @@
   "chatInputPleaseWait": "Wacht even...",
   "chatInputProcessing": "Bezig met verwerken...",
   "chatInputRecordVoice": "Voicemail opnemen",
+  "chatInputRecordingFailed": "Opname mislukt. Probeer het opnieuw.",
   "chatInputSendTooltip": "Bericht versturen",
   "chatInputStopRealtime": "Stop live transcriptie",
   "chatInputStopTranscribe": "Stoppen en transcriberen",

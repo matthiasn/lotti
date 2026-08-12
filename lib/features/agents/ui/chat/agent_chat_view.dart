@@ -244,17 +244,6 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
           draft: widget.draft,
           onDraftChanged: widget.onDraftChanged,
           onSend: widget.onSend,
-          recorderState: ref.watch(chatRecorderControllerProvider),
-          onStartRecording: () =>
-              ref.read(chatRecorderControllerProvider.notifier).start(),
-          onCancelRecording: () =>
-              ref.read(chatRecorderControllerProvider.notifier).cancel(),
-          onStopRecording: () => ref
-              .read(chatRecorderControllerProvider.notifier)
-              .stopAndTranscribe(),
-          normalizedAmplitudes: ref
-              .read(chatRecorderControllerProvider.notifier)
-              .getNormalizedAmplitudeHistory(),
         ),
       ],
     );
@@ -267,7 +256,10 @@ class _AgentChatViewState extends ConsumerState<AgentChatView> {
 /// infrastructure. Idle shows a text field with a mic/send trailing icon;
 /// recording shows the waveform with cancel/stop; processing shows the
 /// streaming partial transcript.
-class _ChatComposer extends StatelessWidget {
+///
+/// Watches [chatRecorderControllerProvider] internally so the 10 Hz amplitude
+/// stream rebuilds only this subtree, not the full message list above.
+class _ChatComposer extends ConsumerWidget {
   const _ChatComposer({
     required this.controller,
     required this.agentName,
@@ -275,11 +267,6 @@ class _ChatComposer extends StatelessWidget {
     required this.draft,
     required this.onDraftChanged,
     required this.onSend,
-    required this.recorderState,
-    required this.onStartRecording,
-    required this.onCancelRecording,
-    required this.onStopRecording,
-    required this.normalizedAmplitudes,
   });
 
   final TextEditingController controller;
@@ -288,15 +275,11 @@ class _ChatComposer extends StatelessWidget {
   final String draft;
   final ValueChanged<String> onDraftChanged;
   final VoidCallback onSend;
-  final ChatRecorderState recorderState;
-  final VoidCallback onStartRecording;
-  final VoidCallback onCancelRecording;
-  final VoidCallback onStopRecording;
-  final List<double> normalizedAmplitudes;
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final tokens = context.designTokens;
+    final recorderState = ref.watch(chatRecorderControllerProvider);
     final status = recorderState.status;
 
     return DecoratedBox(
@@ -310,9 +293,14 @@ class _ChatComposer extends StatelessWidget {
         padding: EdgeInsets.all(tokens.spacing.step4),
         child: switch (status) {
           ChatRecorderStatus.recording => _RecordingControls(
-            amplitudes: normalizedAmplitudes,
-            onCancel: onCancelRecording,
-            onStop: onStopRecording,
+            amplitudes: ref
+                .read(chatRecorderControllerProvider.notifier)
+                .getNormalizedAmplitudeHistory(),
+            onCancel: () =>
+                ref.read(chatRecorderControllerProvider.notifier).cancel(),
+            onStop: () => ref
+                .read(chatRecorderControllerProvider.notifier)
+                .stopAndTranscribe(),
           ),
           ChatRecorderStatus.processing => _TranscriptionProgress(
             partialTranscript: recorderState.partialTranscript ?? '',
@@ -324,7 +312,8 @@ class _ChatComposer extends StatelessWidget {
             draft: draft,
             onDraftChanged: onDraftChanged,
             onSend: onSend,
-            onStartRecording: onStartRecording,
+            onStartRecording: () =>
+                ref.read(chatRecorderControllerProvider.notifier).start(),
           ),
         },
       ),
@@ -475,7 +464,7 @@ class _TranscriptionProgress extends StatelessWidget {
                 width: tokens.spacing.step6,
                 height: tokens.spacing.step6,
                 child: CircularProgressIndicator(
-                  strokeWidth: 2,
+                  strokeWidth: BorderWidths.emphasis,
                   color: tokens.colors.interactive.enabled,
                 ),
               ),

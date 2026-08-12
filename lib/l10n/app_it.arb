@@ -1553,6 +1553,7 @@
   "chatInputPleaseWait": "Ti prego, aspetta...",
   "chatInputProcessing": "Elaborazione...",
   "chatInputRecordVoice": "Messaggio vocale registrato",
+  "chatInputRecordingFailed": "Registrazione fallita. Riprova.",
   "chatInputSendTooltip": "Invia messaggio",
   "chatInputStopRealtime": "Stop trascrizione live",
   "chatInputStopTranscribe": "Fermati e trascrivi",

@@ -1553,6 +1553,7 @@
   "chatInputPleaseWait": "Vent venligst...",
   "chatInputProcessing": "Behandler...",
   "chatInputRecordVoice": "Optag talebesked",
+  "chatInputRecordingFailed": "Optagelse mislykkedes. Prøv igen.",
   "chatInputSendTooltip": "Send besked",
   "chatInputStopRealtime": "Stop live-transskriptionen",
   "chatInputStopTranscribe": "Stop og transskribér",
