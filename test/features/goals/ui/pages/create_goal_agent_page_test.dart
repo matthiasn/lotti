@@ -1260,10 +1260,15 @@ void main() {
     );
     await tester.tap(selectionRow('Any dimension'));
     await tester.pumpAndSettle();
-    expect(find.text('Any dimension'), findsOneWidget);
-
     await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
     await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<DesignSystemSelectionRow>(selectionRow('Any dimension'))
+          .selected,
+      isTrue,
+    );
+
     await tester.tap(
       find.descendant(
         of: selectionRow('At least 1 of 3'),
@@ -1275,6 +1280,16 @@ void main() {
 
     await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
     await tester.pumpAndSettle();
+    await tester.tap(selectionRow('All dimensions'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.widgetWithText(DesignSystemButton, 'Change'));
+    await tester.pumpAndSettle();
+    expect(
+      tester
+          .widget<DesignSystemSelectionRow>(selectionRow('All dimensions'))
+          .selected,
+      isTrue,
+    );
     await tester.tap(selectionRow('All dimensions'));
     await tester.pumpAndSettle();
 

@@ -740,7 +740,6 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final inlineHeaderWidth =
-            tokens.spacing.step2 +
             _textWidth(context, cadence, cadenceStyle) +
             tokens.spacing.step3 +
             _textWidth(context, note, noteStyle);

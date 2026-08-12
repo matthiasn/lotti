@@ -353,10 +353,13 @@ class GoalAssessmentHistoryCard extends StatelessWidget {
                     ),
                     _AssessmentRatingPill(rating: record.rating),
                     SizedBox(width: tokens.spacing.step3),
-                    Text(
-                      provenance,
-                      style: tokens.typography.styles.others.caption.copyWith(
-                        color: tokens.colors.text.lowEmphasis,
+                    Flexible(
+                      child: Text(
+                        provenance,
+                        textAlign: TextAlign.end,
+                        style: tokens.typography.styles.others.caption.copyWith(
+                          color: tokens.colors.text.lowEmphasis,
+                        ),
                       ),
                     ),
                   ],

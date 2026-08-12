@@ -234,6 +234,7 @@ void main() {
               rating: GoalAssessmentRating.missed,
               createdAt: day,
               provenance: GoalAssessmentProvenance.suggestedAndAccepted,
+              suggestedBy: '   ',
             ),
           ],
         ),
@@ -251,5 +252,54 @@ void main() {
       findsOneWidget,
     );
     expect(find.byType(Divider), findsNWidgets(2));
+  });
+
+  testWidgets('generic provenance wraps at large text on a phone', (
+    tester,
+  ) async {
+    tester.view
+      ..physicalSize = const Size(390, 844)
+      ..devicePixelRatio = 1;
+    addTearDown(tester.view.resetPhysicalSize);
+    addTearDown(tester.view.resetDevicePixelRatio);
+
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        Scaffold(
+          body: SingleChildScrollView(
+            child: GoalAssessmentHistoryCard(
+              progress: GoalProgressView(today: day),
+              records: [
+                GoalAssessmentRecord(
+                  id: 'suggested',
+                  day: day,
+                  specVersionId: 'spec-v2',
+                  rating: GoalAssessmentRating.met,
+                  createdAt: day,
+                  provenance: GoalAssessmentProvenance.suggestedAndAccepted,
+                ),
+              ],
+            ),
+          ),
+        ),
+        locale: const Locale('de'),
+        mediaQueryData: const MediaQueryData(
+          size: Size(390, 844),
+          textScaler: TextScaler.linear(2),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final provenance = find.text(
+      'Dein Zielagent hat vorgeschlagen, du hast angenommen',
+    );
+    expect(provenance, findsOneWidget);
+    expect(tester.takeException(), isNull);
+    expect(
+      tester.getSize(provenance).height,
+      greaterThan(tester.getSize(find.text('Getroffen')).height),
+      reason: 'the long provenance copy must wrap instead of overflowing',
+    );
   });
 }
