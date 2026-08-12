@@ -636,9 +636,11 @@ goalAgentProgressViewProvider = FutureProvider.autoDispose
         final definition = await db.getCategoryById(categoryId);
         if (definition != null) categoryNames[categoryId] = definition.name;
       }
-      final captureDecisions = await ref.watch(
-        goalMeasurableCaptureDecisionsProvider(agentId).future,
-      );
+      final captureDecisions = measurableIds.isEmpty
+          ? const <String, GoalMeasurableCaptureDecision>{}
+          : await ref.watch(
+              goalMeasurableCaptureDecisionsProvider(agentId).future,
+            );
       final agentRecordedMeasurementIds = {
         for (final decision in captureDecisions.values)
           if (decision.recorded) ...decision.entryIds,
