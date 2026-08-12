@@ -28,6 +28,26 @@ sources:
     resource: ../../../assets/design_system/tokens.json
     title: aiCard and proposalKind tokens
     last_modified: 2026-07-26
+  - id: compact-app-bar
+    resource: ../../../lib/features/tasks/ui/task_compact_app_bar.dart
+    title: TaskCompactAppBar
+    last_modified: 2026-08-12
+  - id: expandable-app-bar
+    resource: ../../../lib/features/tasks/ui/task_expandable_app_bar.dart
+    title: TaskExpandableAppBar
+    last_modified: 2026-08-12
+  - id: cover-art
+    resource: ../../../lib/features/tasks/ui/cover_art_background.dart
+    title: CoverArtBackground and the full-screen viewer
+    last_modified: 2026-08-12
+  - id: one-liner
+    resource: ../../../lib/features/tasks/state/task_one_liner_provider.dart
+    title: taskOneLinerProvider and taskOneLinersProvider
+    last_modified: 2026-08-12
+  - id: scroll-stability
+    resource: ../../../lib/features/tasks/ui/widgets/viewport_stable_animated_size.dart
+    title: TaskScrollStabilityScope and ViewportStableScrollController
+    last_modified: 2026-08-12
 ---
 
 # Band order
@@ -138,7 +158,7 @@ meaning is available from the glyph tooltip on hover or long press and remains
 part of the row's accessibility label, instead of consuming inline text space.
 
 **Extended actions — share, speech modal — belong to the pinned app bar's
-`more_vert` button, not the header.** There is no ellipsis inside the header.
+`more_horiz` button, not the header.** There is no ellipsis inside the header.
 
 ## Title states
 
@@ -296,7 +316,10 @@ crumb segments. The page owns the gutter (see above).
 
 `TaskCompactAppBar` and `TaskExpandableAppBar` surface the task title in
 `subtitle2` once the scroll offset passes a threshold, so the title stays visible
-as the header scrolls away.
+as the header scrolls away. Both app bars also carry a desktop-only
+knowledge-graph entry point (`Icons.hub_outlined` → `TaskKnowledgeGraphPage`,
+gated by `knowledgeGraphEntryPointEnabledProvider`), so the graph is one tap
+from the task without competing for header space on mobile.
 
 When the expandable app bar has cover art, the whole artwork is an interactive
 image surface. A tap opens the same full-screen, zoomable viewer used by linked

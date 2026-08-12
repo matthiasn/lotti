@@ -11,7 +11,11 @@ sources:
   - id: agents
     resource: ../../../lib/features/daily_os_next/agents
     title: Directive, status and digest services
-    last_modified: 2026-08-03
+    last_modified: 2026-08-07
+  - id: runtime-maintenance
+    resource: ../../../lib/features/daily_os_next/agents/state/daily_os_runtime_maintenance.dart
+    title: DailyOsRuntimeMaintenance — the beforeWakeScan contributor
+    last_modified: 2026-08-07
   - id: adr-0032
     resource: ../../../docs/adr/0032-hierarchical-day-agent-coordination.md
     title: ADR 0032 — Hierarchical day-agent coordination
@@ -46,13 +50,20 @@ lifecycle**: a finished day still holding a deadline is otherwise due on every
 tick, forever.
 
 Retirement runs **ahead of every due-record pass**, not only at start-up. It is
-wired into `ScheduledWakeManager.beforeCheck`, which the manager awaits at the
-top of each `_checkAndEnqueue` — the immediate one in `start()` and every
-hourly tick after it. Ordering is the whole point: a finished agent is still
-`active` until the pass runs, so retiring afterwards would let it fire on the
-very tick that was about to retire it. Covering the ticks and not just start-up
-is what catches a desktop session left open across the handover boundary, where
-the boundary arrives on a tick and no relaunch ever comes.
+wired into `ScheduledWakeManager.beforeCheck` through the shared
+`AgentRuntimeMaintenance` registry (ADR of #3836):
+`DailyOsRuntimeMaintenance` (`agents/state/daily_os_runtime_maintenance.dart`)
+implements the `AgentRuntimeMaintenance` interface, is registered in
+`agentRuntimeMaintenanceProvider`, and the wake manager calls
+`beforeWakeScan()` on every contributor at the top of each `_checkAndEnqueue`
+— the immediate one in `start()` and every hourly tick after it. That
+indirection is what lets `features/agents` call the pre-check without importing
+this feature; the composition root wires the contributor in. Ordering is the
+whole point: a finished agent is still `active` until the pass runs, so
+retiring afterwards would let it fire on the very tick that was about to retire
+it. Covering the ticks and not just start-up is what catches a desktop session
+left open across the handover boundary, where the boundary arrives on a tick
+and no relaunch ever comes.
 
 The repair repeats if it crosses local midnight. Retirement's cutoff is a
 calendar date while the due query reads the clock *after* the repair, so a pass
