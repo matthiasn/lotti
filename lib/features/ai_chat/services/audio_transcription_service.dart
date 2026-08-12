@@ -350,15 +350,19 @@ AiConfigModel _selectBatchAudioModel(
     return mistralBatch;
   }
 
-  final meliousChatAudio = audioModels.firstWhereOrNull(
+  // Discovery must agree with the seeded Melious profile default, which
+  // transcribes with Whisper Large v3 through `/audio/transcriptions` since
+  // seed generation 2. Surfaces without an explicit target — onboarding's
+  // first capture, Daily OS capture before a planner profile is bound — land
+  // here, and preferring the Voxtral chat path would put them on the very
+  // model the profile moved off.
+  final meliousWhisperDefault = audioModels.firstWhereOrNull(
     (model) =>
         hasProviderType(model, InferenceProviderType.melious) &&
-        MeliousInferenceRepository.isMeliousChatAudioModel(
-          model.providerModelId,
-        ),
+        model.providerModelId == meliousWhisperLargeV3ModelId,
   );
-  if (meliousChatAudio != null) {
-    return meliousChatAudio;
+  if (meliousWhisperDefault != null) {
+    return meliousWhisperDefault;
   }
 
   final meliousTranscription = audioModels.firstWhereOrNull(
@@ -370,6 +374,17 @@ AiConfigModel _selectBatchAudioModel(
   );
   if (meliousTranscription != null) {
     return meliousTranscription;
+  }
+
+  final meliousChatAudio = audioModels.firstWhereOrNull(
+    (model) =>
+        hasProviderType(model, InferenceProviderType.melious) &&
+        MeliousInferenceRepository.isMeliousChatAudioModel(
+          model.providerModelId,
+        ),
+  );
+  if (meliousChatAudio != null) {
+    return meliousChatAudio;
   }
 
   final mlxQwen = audioModels.firstWhereOrNull(

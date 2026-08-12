@@ -203,10 +203,19 @@ getMistralFtueKnownModels() {
 // Melious FTUE (First Time User Experience) Model Constants
 // =============================================================================
 
-/// Model IDs used for Melious FTUE automation.
+/// Model IDs installed by Melious FTUE automation.
+///
+/// This is the *install set*, not the profile's slot map: it is deliberately
+/// wider than what `Melious.ai` binds, so the alternatives are one dropdown
+/// away without a trip to the remote catalog. The seeded profile binds GLM 5.2
+/// (thinking), Kimi K3 (high-end thinking and image recognition), Whisper
+/// Large v3 (transcription) and Flux 2 Klein 9B (image generation); the rest
+/// are offered alternatives. Every ID here must be distinct — `_ensureModelsExist`
+/// snapshots existing rows once, so a repeated ID would create two rows.
 const String ftueMeliousThinkingModelId = meliousQwen35122BA10BModelId;
 const String ftueMeliousVisionModelId = meliousMistralSmall4119BInstructModelId;
 const String ftueMeliousAdvancedThinkingModelId = meliousGlm52ModelId;
+const String ftueMeliousKimiK3ModelId = meliousKimiK3ModelId;
 const String ftueMeliousImageGenerationModelId = meliousFlux2Klein9BModelId;
 const String ftueMeliousVoxtralModelId = meliousVoxtralSmall24B2507ModelId;
 const String ftueMeliousWhisperModelId = meliousWhisperLargeV3ModelId;
@@ -221,16 +230,17 @@ KnownModel? findMeliousKnownModel(String providerModelId) {
 }
 
 /// Returns the KnownModel configurations needed for Melious FTUE.
-/// - Qwen thinking model for the default Melious profile
-/// - Mistral multimodal model for the profile's vision slot
-/// - GLM 5.2 advanced thinking model for the high-end slot
+/// - GLM 5.2 for the profile's thinking slot (`advancedThinking`)
+/// - Kimi K3 for the profile's high-end thinking and image-recognition slots
+/// - Whisper Large v3 for the profile's transcription slot
 /// - Flux image generation model for cover art
-/// - Voxtral for context-aware speech-to-text (profile default)
-/// - Whisper Large v3 and Turbo as alternative speech-to-text models
+/// - Qwen thinking and Mistral multimodal models as alternatives
+/// - Voxtral and Whisper Large v3 Turbo as alternative speech-to-text models
 ({
   KnownModel thinking,
   KnownModel vision,
   KnownModel advancedThinking,
+  KnownModel kimiK3,
   KnownModel imageGeneration,
   KnownModel voxtral,
   KnownModel whisper,
@@ -242,6 +252,7 @@ getMeliousFtueKnownModels() {
   final advancedThinking = findMeliousKnownModel(
     ftueMeliousAdvancedThinkingModelId,
   );
+  final kimiK3 = findMeliousKnownModel(ftueMeliousKimiK3ModelId);
   final imageGeneration = findMeliousKnownModel(
     ftueMeliousImageGenerationModelId,
   );
@@ -252,6 +263,7 @@ getMeliousFtueKnownModels() {
   if (thinking == null ||
       vision == null ||
       advancedThinking == null ||
+      kimiK3 == null ||
       imageGeneration == null ||
       voxtral == null ||
       whisper == null ||
@@ -263,6 +275,7 @@ getMeliousFtueKnownModels() {
     thinking: thinking,
     vision: vision,
     advancedThinking: advancedThinking,
+    kimiK3: kimiK3,
     imageGeneration: imageGeneration,
     voxtral: voxtral,
     whisper: whisper,
