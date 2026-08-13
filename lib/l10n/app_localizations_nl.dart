@@ -6076,6 +6076,9 @@ class AppLocalizationsNl extends AppLocalizations {
       'Dat is niet opgeslagen — probeer het opnieuw.';
 
   @override
+  String get goalBannerDismissForDay => 'Voor vandaag verbergen';
+
+  @override
   String get goalBannerDismissTooltip => 'Verbergen';
 
   @override
@@ -6091,6 +6094,27 @@ class AppLocalizationsNl extends AppLocalizations {
   String goalBannerSemanticLabel(String goalTitle) {
     return 'Doelbanner voor $goalTitle';
   }
+
+  @override
+  String get goalBannerSnoozeEightHours => '8 uur';
+
+  @override
+  String get goalBannerSnoozeLabel => 'Snoozen';
+
+  @override
+  String get goalBannerSnoozeOneHour => '1 uur';
+
+  @override
+  String get goalBannerSnoozePrompt => 'Wanneer moet deze terugkomen?';
+
+  @override
+  String get goalBannerSnoozeSixHours => '6 uur';
+
+  @override
+  String get goalBannerSnoozeThreeHours => '3 uur';
+
+  @override
+  String get goalBannerSnoozeTitle => 'Banner snoozen';
 
   @override
   String goalBufferDays(int count) {

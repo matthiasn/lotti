@@ -1900,6 +1900,21 @@ GoalNudgeEntity _$GoalNudgeEntityFromJson(Map<String, dynamic> json) =>
       supersededAt: json['supersededAt'] == null
           ? null
           : DateTime.parse(json['supersededAt'] as String),
+      snoozedUntil: json['snoozedUntil'] == null
+          ? null
+          : DateTime.parse(json['snoozedUntil'] as String),
+      lastSnoozeDuration: $enumDecodeNullable(
+        _$GoalBannerSnoozeDurationEnumMap,
+        json['lastSnoozeDuration'],
+      ),
+      snoozeHistory:
+          (json['snoozeHistory'] as List<dynamic>?)
+              ?.map((e) => GoalNudgeSnooze.fromJson(e as Map<String, dynamic>))
+              .toList() ??
+          const <GoalNudgeSnooze>[],
+      dismissedForDayAt: json['dismissedForDayAt'] == null
+          ? null
+          : DateTime.parse(json['dismissedForDayAt'] as String),
       activationCount: (json['activationCount'] as num?)?.toInt() ?? 1,
       ratings:
           (json['ratings'] as List<dynamic>?)
@@ -1953,6 +1968,11 @@ Map<String, dynamic> _$GoalNudgeEntityToJson(GoalNudgeEntity instance) =>
       'retiredAt': instance.retiredAt?.toIso8601String(),
       'expiredAt': instance.expiredAt?.toIso8601String(),
       'supersededAt': instance.supersededAt?.toIso8601String(),
+      'snoozedUntil': instance.snoozedUntil?.toIso8601String(),
+      'lastSnoozeDuration':
+          _$GoalBannerSnoozeDurationEnumMap[instance.lastSnoozeDuration],
+      'snoozeHistory': instance.snoozeHistory,
+      'dismissedForDayAt': instance.dismissedForDayAt?.toIso8601String(),
       'activationCount': instance.activationCount,
       'ratings': instance.ratings,
       'totalVisibleMsByHost': instance.totalVisibleMs,
@@ -1973,6 +1993,14 @@ const _$GoalNudgeStatusEnumMap = {
   GoalNudgeStatus.expired: 'expired',
   GoalNudgeStatus.superseded: 'superseded',
   GoalNudgeStatus.failed: 'failed',
+};
+
+const _$GoalBannerSnoozeDurationEnumMap = {
+  GoalBannerSnoozeDuration.oneHour: 'oneHour',
+  GoalBannerSnoozeDuration.threeHours: 'threeHours',
+  GoalBannerSnoozeDuration.sixHours: 'sixHours',
+  GoalBannerSnoozeDuration.eightHours: 'eightHours',
+  GoalBannerSnoozeDuration.custom: 'custom',
 };
 
 AgentUnknownEntity _$AgentUnknownEntityFromJson(Map<String, dynamic> json) =>

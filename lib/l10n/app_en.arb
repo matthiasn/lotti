@@ -3301,6 +3301,10 @@
     }
   },
   "goalBannerActionFailed": "That didn't save — please try again.",
+  "goalBannerDismissForDay": "Dismiss for today",
+  "@goalBannerDismissForDay": {
+    "description": "De-emphasized action that hides a goal-agent banner until the next local day."
+  },
   "goalBannerDismissTooltip": "Dismiss",
   "@goalBannerDismissTooltip": {
     "description": "Tooltip of the X button on a goal banner; dismissing starts a 24h quiet window."
@@ -3323,6 +3327,16 @@
       }
     }
   },
+  "goalBannerSnoozeEightHours": "8 hours",
+  "goalBannerSnoozeLabel": "Snooze",
+  "@goalBannerSnoozeLabel": {
+    "description": "Primary action for temporarily hiding a goal-agent banner."
+  },
+  "goalBannerSnoozeOneHour": "1 hour",
+  "goalBannerSnoozePrompt": "When should it come back?",
+  "goalBannerSnoozeSixHours": "6 hours",
+  "goalBannerSnoozeThreeHours": "3 hours",
+  "goalBannerSnoozeTitle": "Snooze banner",
   "goalBufferDays": "{count, plural, =0{Buffer runs out today} =1{1 day of buffer} other{{count} days of buffer}}",
   "@goalBufferDays": {
     "description": "Rolling-window goal at rate: days until the oldest success ages out.",

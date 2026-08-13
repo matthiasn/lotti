@@ -59,70 +59,89 @@ void main() {
     interactions = GoalNudgeInteractions(
       repository: repository,
       syncService: syncService,
+      newId: () => 'snooze-event-1',
     );
   });
 
-  group('dismiss', () {
-    test('an active ad becomes dismissed with the timestamp that starts '
-        'the quiet window', () async {
+  group('snooze', () {
+    test('records current state and append-only timing evidence', () async {
       when(() => repository.getEntity('ad-1')).thenAnswer((_) async => nudge());
-      await withClock(fixedClock, () => interactions.dismiss('ad-1'));
+      await withClock(
+        fixedClock,
+        () => interactions.snooze(
+          'ad-1',
+          duration: GoalBannerSnoozeDuration.threeHours,
+        ),
+      );
       final written = upserts.whereType<GoalNudgeEntity>().single;
-      expect(written.status, GoalNudgeStatus.dismissed);
-      // Persisted as UTC so peers in other zones parse the true instant.
-      expect(written.dismissedAt, now.toUtc());
-      expect(written.dismissedAt!.isUtc, isTrue);
+      expect(written.status, GoalNudgeStatus.active);
+      expect(written.snoozedUntil, now.add(const Duration(hours: 3)).toUtc());
+      expect(
+        written.lastSnoozeDuration,
+        GoalBannerSnoozeDuration.threeHours,
+      );
+      final event = written.snoozeHistory.single;
+      expect(event.id, 'snooze-event-1');
+      expect(event.activation, 1);
+      expect(event.snoozedAt, now.toUtc());
+      expect(event.durationMinutes, 180);
+      expect(event.utcOffsetMinutes, now.timeZoneOffset.inMinutes);
+      expect(
+        written.staleAt,
+        event.snoozedUntil.add(const Duration(hours: 72)),
+        reason: 'quiet time does not consume the banner lifetime',
+      );
     });
 
-    test('a dismissal for a superseded activation is discarded — the tap '
+    test('a snooze for a superseded activation is discarded — the tap '
         'targeted a banner sync has already re-run', () async {
       when(() => repository.getEntity('ad-1')).thenAnswer(
         (_) async => nudge(activationCount: 3),
       );
-      await interactions.dismiss('ad-1', forActivation: 2);
+      await interactions.snooze(
+        'ad-1',
+        duration: GoalBannerSnoozeDuration.oneHour,
+        forActivation: 2,
+      );
       expect(upserts, isEmpty);
 
       await withClock(
         fixedClock,
-        () => interactions.dismiss('ad-1', forActivation: 3),
+        () => interactions.snooze(
+          'ad-1',
+          duration: GoalBannerSnoozeDuration.oneHour,
+          forActivation: 3,
+        ),
       );
       expect(
-        upserts.whereType<GoalNudgeEntity>().single.status,
-        GoalNudgeStatus.dismissed,
+        upserts
+            .whereType<GoalNudgeEntity>()
+            .single
+            .snoozeHistory
+            .single
+            .activation,
+        3,
       );
     });
+  });
 
-    test(
-      'a dismissal whose commit was durable but whose sync enqueue '
-      'threw is reported as SUCCESS — the banner must not snap back',
-      () async {
-        var persisted = nudge();
-        final throwing = _CommitThenThrowSyncService();
-        when(() => throwing.upsertEntity(any())).thenAnswer((invocation) async {
-          persisted = invocation.positionalArguments.first as GoalNudgeEntity;
-        });
-        when(
-          () => repository.getEntity('ad-1'),
-        ).thenAnswer((_) async => persisted);
-        final reconciling = GoalNudgeInteractions(
-          repository: repository,
-          syncService: throwing,
-        );
-        await withClock(
-          fixedClock,
-          () => reconciling.dismiss('ad-1', forActivation: 1),
-        );
-        expect(persisted.status, GoalNudgeStatus.dismissed);
-      },
-    );
+  group('dismissForDay', () {
+    test('keeps the banner active and records the local-day gate', () async {
+      when(() => repository.getEntity('ad-1')).thenAnswer((_) async => nudge());
+      await withClock(fixedClock, () => interactions.dismissForDay('ad-1'));
+      final written = upserts.whereType<GoalNudgeEntity>().single;
+      expect(written.status, GoalNudgeStatus.active);
+      expect(written.dismissedForDayAt, now.toUtc());
+      expect(written.dismissedAt, isNull);
+    });
 
     test('non-active ads and unknown ids are no-ops', () async {
       when(() => repository.getEntity('ad-1')).thenAnswer(
         (_) async => nudge(status: GoalNudgeStatus.retired),
       );
-      await interactions.dismiss('ad-1');
+      await interactions.dismissForDay('ad-1');
       when(() => repository.getEntity('ad-1')).thenAnswer((_) async => null);
-      await interactions.dismiss('ad-1');
+      await interactions.dismissForDay('ad-1');
       expect(upserts, isEmpty);
     });
   });

@@ -2,7 +2,9 @@ import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/goal_nudge_models.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
+import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/service/goal_nudge_interactions.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/ui/goal_banner_actions.dart';
@@ -35,7 +37,6 @@ double _textBlockHeight(TextStyle style, int lines, TextScaler scaler) {
 /// shell lane that reserves space for it.
 List<GoalBannerEntry> visibleGoalBannerEntries({
   required Iterable<GoalBannerEntry>? entries,
-  required Set<String> locallyDismissedIds,
   required Map<String, DateTime> locallySnoozedDeadlines,
   DateTime? now,
 }) {
@@ -44,7 +45,8 @@ List<GoalBannerEntry> visibleGoalBannerEntries({
     for (final entry in entries ?? const <GoalBannerEntry>[])
       if ((entry.nudge.staleAt == null ||
               instant.isBefore(entry.nudge.staleAt!)) &&
-          !locallyDismissedIds.contains(entry.nudge.id) &&
+          !goalBannerIsSnoozed(entry.nudge, instant) &&
+          !goalBannerIsDismissedForDay(entry.nudge, instant) &&
           locallySnoozedDeadlines[entry.nudge.id]?.isAfter(instant) != true)
         entry,
   ];
@@ -56,7 +58,7 @@ List<GoalBannerEntry> visibleGoalBannerEntries({
 ///
 /// Derived entirely from the dock's own design-system dimensions and text
 /// styles, and scale-aware. The tenant row is as tall as the taller of the
-/// [TapTargets.minimum] dismiss target and the tallest active authored
+/// [TapTargets.minimum] visibility-action target and the tallest active authored
 /// headline, measured at the dock's real compact width and current
 /// [MediaQuery.textScalerOf]. The dock never caps the headline. Around it sits
 /// the chrome — outer padding (`step3` both edges), the tenure-strip slot
@@ -88,7 +90,7 @@ double goalBannerDockReservedHeight(
       spacing.step3 * 2 + // outer dock padding
       spacing.cardPadding + // tenant leading padding
       spacing.step2 + // tenant trailing padding
-      TapTargets.minimum; // dismiss target
+      TapTargets.minimum; // snooze target
   final measuredWidth = MediaQuery.sizeOf(context).width - reservedHorizontally;
   final availableWidth = measuredWidth > 0 ? measuredWidth : 0.0;
   var textBlock = 0.0;
@@ -127,11 +129,11 @@ double goalBannerDockReservedHeight(
 ///   queue — the check-off → fresh-copy loop is the feature's best moment;
 /// - the cycle pauses while hovered or touched (the WCAG pause affordance —
 ///   auto-advance continues under reduced motion, only transitions change);
-/// - dismissal removes the tenant for the day and advances immediately;
+/// - snooze removes the tenant temporarily and advances immediately;
 /// - with a single tenant there are no dots, no tenure hairline and no
 ///   auto-advance — it just sits;
 /// - with zero tenants the dock collapses entirely: the disappearance IS
-///   the dismissal feedback (no toast, no "dismissed!" snackbar);
+///   the visibility-action feedback (no toast or confirmation snackbar);
 /// - on phones the dock yields while the keyboard is up.
 ///
 /// Exposure metering rides the existing tracker: a docked tenant is visible
@@ -140,7 +142,7 @@ double goalBannerDockReservedHeight(
 class GoalBannerDock extends ConsumerStatefulWidget {
   const GoalBannerDock({required this.compact, super.key});
 
-  /// Phone layout: complete animated headline, X only, swipe to dismiss.
+  /// Phone layout: complete animated headline and compact snooze control.
   final bool compact;
 
   @override
@@ -214,10 +216,9 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
   List<GoalBannerEntry> _visible(List<GoalBannerEntry>? raw) {
     // Same render-time contract as every banner surface: retained data
     // survives a failed background refresh, but stale copy never renders,
-    // and locally dismissed ids stay suppressed.
+    // and locally hidden ids stay suppressed.
     return visibleGoalBannerEntries(
       entries: raw,
-      locallyDismissedIds: ref.read(locallyDismissedNudgeIdsProvider),
       locallySnoozedDeadlines: ref.read(
         locallySnoozedNudgeDeadlinesProvider,
       ),
@@ -334,12 +335,6 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
       ..listen(activeGoalNudgesProvider, (_, next) {
         setState(() => _reconcile(_visible(next.value)));
       })
-      // Local dismissals bypass the async provider — reconcile on those too.
-      ..listen(locallyDismissedNudgeIdsProvider, (_, _) {
-        setState(
-          () => _reconcile(_visible(ref.read(activeGoalNudgesProvider).value)),
-        );
-      })
       ..listen(locallySnoozedNudgeDeadlinesProvider, (_, _) {
         setState(
           () => _reconcile(_visible(ref.read(activeGoalNudgesProvider).value)),
@@ -377,7 +372,7 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     _lastOrder = [for (final e in entries) e.nudge.id];
 
     // Zero tenants (or the keyboard needs the space): collapse entirely.
-    // The quiet IS the dismissal feedback.
+    // The quiet IS the visibility-action feedback.
     //
     // AnimatedSwitcher, not AnimatedSize: the dock subtree holds the
     // continuously-ticking tenure controller, and an AnimatedSize wrapping
@@ -431,7 +426,7 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
     final radius = BorderRadius.circular(tokens.radii.m);
     final multi = entries.length > 1;
 
-    Widget tenant = SizedBox(
+    final tenant = SizedBox(
       key: ValueKey(
         'dock-${current.nudge.id}-${current.nudge.activationCount}',
       ),
@@ -440,18 +435,10 @@ class _GoalBannerDockState extends ConsumerState<GoalBannerDock>
         entry: current,
         style: style,
         compact: widget.compact,
-        onDismiss: () => dismissGoalBanner(context, ref, current),
+        onSnooze: () => showGoalBannerSnoozeSheet(context, ref, current),
         onRate: () => showGoalBannerRatingSheet(context, ref, current),
       ),
     );
-
-    if (widget.compact) {
-      tenant = Dismissible(
-        key: ValueKey('dock-swipe-${current.nudge.id}'),
-        confirmDismiss: (_) => dismissGoalBanner(context, ref, current),
-        child: tenant,
-      );
-    }
 
     return MouseRegion(
       onEnter: (_) => _setPaused(hovered: true),
@@ -588,14 +575,14 @@ class _DockTenant extends ConsumerWidget {
     required this.entry,
     required this.style,
     required this.compact,
-    required this.onDismiss,
+    required this.onSnooze,
     required this.onRate,
   });
 
   final GoalBannerEntry entry;
   final GoalBannerStyle style;
   final bool compact;
-  final VoidCallback onDismiss;
+  final VoidCallback onSnooze;
   final VoidCallback onRate;
 
   @override
@@ -661,21 +648,14 @@ class _DockTenant extends ConsumerWidget {
                           )
                         : null,
                   ),
-                SizedBox(
-                  key: const ValueKey('goal-banner-dock-dismiss'),
-                  width: TapTargets.minimum,
-                  height: TapTargets.minimum,
-                  child: IconButton(
-                    onPressed: onDismiss,
-                    tooltip: context.messages.goalBannerDismissTooltip,
-                    padding: EdgeInsets.zero,
-                    alignment: Alignment.centerRight,
-                    icon: Icon(
-                      Icons.close_rounded,
-                      size: tokens.spacing.step5,
-                      color: tokens.colors.text.lowEmphasis,
-                    ),
-                  ),
+                DesignSystemButton(
+                  key: const ValueKey('goal-banner-dock-snooze'),
+                  label: compact ? '' : context.messages.goalBannerSnoozeLabel,
+                  semanticsLabel: context.messages.goalBannerSnoozeLabel,
+                  leadingIcon: Icons.snooze_rounded,
+                  size: DesignSystemButtonSize.dense,
+                  tapTargetSize: MaterialTapTargetSize.padded,
+                  onPressed: onSnooze,
                 ),
               ],
             ),

@@ -10391,6 +10391,12 @@ abstract class AppLocalizations {
   /// **'That didn\'t save — please try again.'**
   String get goalBannerActionFailed;
 
+  /// De-emphasized action that hides a goal-agent banner until the next local day.
+  ///
+  /// In en, this message translates to:
+  /// **'Dismiss for today'**
+  String get goalBannerDismissForDay;
+
   /// Tooltip of the X button on a goal banner; dismissing starts a 24h quiet window.
   ///
   /// In en, this message translates to:
@@ -10420,6 +10426,48 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Goal banner for {goalTitle}'**
   String goalBannerSemanticLabel(String goalTitle);
+
+  /// No description provided for @goalBannerSnoozeEightHours.
+  ///
+  /// In en, this message translates to:
+  /// **'8 hours'**
+  String get goalBannerSnoozeEightHours;
+
+  /// Primary action for temporarily hiding a goal-agent banner.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze'**
+  String get goalBannerSnoozeLabel;
+
+  /// No description provided for @goalBannerSnoozeOneHour.
+  ///
+  /// In en, this message translates to:
+  /// **'1 hour'**
+  String get goalBannerSnoozeOneHour;
+
+  /// No description provided for @goalBannerSnoozePrompt.
+  ///
+  /// In en, this message translates to:
+  /// **'When should it come back?'**
+  String get goalBannerSnoozePrompt;
+
+  /// No description provided for @goalBannerSnoozeSixHours.
+  ///
+  /// In en, this message translates to:
+  /// **'6 hours'**
+  String get goalBannerSnoozeSixHours;
+
+  /// No description provided for @goalBannerSnoozeThreeHours.
+  ///
+  /// In en, this message translates to:
+  /// **'3 hours'**
+  String get goalBannerSnoozeThreeHours;
+
+  /// No description provided for @goalBannerSnoozeTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Snooze banner'**
+  String get goalBannerSnoozeTitle;
 
   /// Rolling-window goal at rate: days until the oldest success ages out.
   ///

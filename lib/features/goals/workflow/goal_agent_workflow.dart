@@ -41,10 +41,8 @@ import 'package:lotti/services/domain_logging.dart';
 import 'package:openai_dart/openai_dart.dart';
 import 'package:uuid/uuid.dart';
 
-/// How long a freshly created or re-run banner may claim to be current
-/// before the register data must re-justify it (ADR 0055: staleness is a
-/// contract, not a hope).
-const goalAdLifetime = Duration(hours: 72);
+/// Backward-compatible name used throughout the workflow and its tests.
+const Duration goalAdLifetime = goalBannerLifetime;
 
 /// Stable output IDs let a wake recognize that its interactive reply's
 /// transaction committed even when the deferred sync-outbox flush failed.
@@ -1203,24 +1201,15 @@ class GoalAgentWorkflow with AgentErrorLogging {
         final nudge = byId[action.adId];
         if (nudge == null || nudge.status != GoalNudgeStatus.active) continue;
         await _syncService.upsertEntity(
-          nudge.copyWith(
-            updatedAt: now,
-            // Snoozing pauses the useful lifetime of this activation. Extend
-            // staleness beyond the reveal instant so a long snooze cannot
-            // expire invisibly and therefore never reappear.
-            staleAt:
-                nudge.staleAt == null ||
-                    nudge.staleAt!.isBefore(
-                      action.until.toUtc().add(goalAdLifetime),
-                    )
-                ? action.until.toUtc().add(goalAdLifetime)
-                : nudge.staleAt,
-            provenance: {
-              ...nudge.provenance,
-              goalBannerSnoozedUntilKey: action.until.toIso8601String(),
-              'snoozeReason': action.reason,
-              'snoozedAt': now.toUtc().toIso8601String(),
-            },
+          snoozeGoalBannerEntity(
+            nudge: nudge,
+            now: now,
+            until: action.until,
+            eventId: const Uuid().v5(
+              Namespace.url.value,
+              'lotti://goal-agent/${nudge.id}/snooze/$runKey/'
+              '${action.until.toUtc().toIso8601String()}',
+            ),
           ),
         );
       }
@@ -1514,6 +1503,9 @@ class GoalAgentWorkflow with AgentErrorLogging {
             activationCount: nudge.activationCount + 1,
             activatedAt: now.toUtc(),
             staleAt: now.toUtc().add(goalAdLifetime),
+            snoozedUntil: null,
+            lastSnoozeDuration: null,
+            dismissedForDayAt: null,
             updatedAt: now,
             runKey: runKey,
             threadId: threadId,

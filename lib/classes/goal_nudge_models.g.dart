@@ -67,3 +67,36 @@ Map<String, dynamic> _$GoalNudgeRatingToJson(_GoalNudgeRating instance) =>
       'rating': instance.rating,
       'skipped': instance.skipped,
     };
+
+_GoalNudgeSnooze _$GoalNudgeSnoozeFromJson(Map<String, dynamic> json) =>
+    _GoalNudgeSnooze(
+      id: json['id'] as String,
+      activation: _decodeActivation(json['activation']),
+      snoozedAt: DateTime.parse(json['snoozedAt'] as String),
+      snoozedUntil: DateTime.parse(json['snoozedUntil'] as String),
+      duration: $enumDecode(
+        _$GoalBannerSnoozeDurationEnumMap,
+        json['duration'],
+      ),
+      durationMinutes: _decodePositiveMinutes(json['durationMinutes']),
+      utcOffsetMinutes: _decodeUtcOffsetMinutes(json['utcOffsetMinutes']),
+    );
+
+Map<String, dynamic> _$GoalNudgeSnoozeToJson(_GoalNudgeSnooze instance) =>
+    <String, dynamic>{
+      'id': instance.id,
+      'activation': instance.activation,
+      'snoozedAt': instance.snoozedAt.toIso8601String(),
+      'snoozedUntil': instance.snoozedUntil.toIso8601String(),
+      'duration': _$GoalBannerSnoozeDurationEnumMap[instance.duration]!,
+      'durationMinutes': instance.durationMinutes,
+      'utcOffsetMinutes': instance.utcOffsetMinutes,
+    };
+
+const _$GoalBannerSnoozeDurationEnumMap = {
+  GoalBannerSnoozeDuration.oneHour: 'oneHour',
+  GoalBannerSnoozeDuration.threeHours: 'threeHours',
+  GoalBannerSnoozeDuration.sixHours: 'sixHours',
+  GoalBannerSnoozeDuration.eightHours: 'eightHours',
+  GoalBannerSnoozeDuration.custom: 'custom',
+};

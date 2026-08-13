@@ -6121,6 +6121,9 @@ class AppLocalizationsCs extends AppLocalizations {
       'To se neuložilo — zkus to prosím znovu.';
 
   @override
+  String get goalBannerDismissForDay => 'Skrýt na dnešek';
+
+  @override
   String get goalBannerDismissTooltip => 'Zavřít';
 
   @override
@@ -6136,6 +6139,27 @@ class AppLocalizationsCs extends AppLocalizations {
   String goalBannerSemanticLabel(String goalTitle) {
     return 'Banner cíle $goalTitle';
   }
+
+  @override
+  String get goalBannerSnoozeEightHours => '8 hodin';
+
+  @override
+  String get goalBannerSnoozeLabel => 'Odložit';
+
+  @override
+  String get goalBannerSnoozeOneHour => '1 hodina';
+
+  @override
+  String get goalBannerSnoozePrompt => 'Kdy se má znovu zobrazit?';
+
+  @override
+  String get goalBannerSnoozeSixHours => '6 hodin';
+
+  @override
+  String get goalBannerSnoozeThreeHours => '3 hodiny';
+
+  @override
+  String get goalBannerSnoozeTitle => 'Odložit banner';
 
   @override
   String goalBufferDays(int count) {

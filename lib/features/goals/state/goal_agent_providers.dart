@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:clock/clock.dart';
+import 'package:flutter/widgets.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/misc.dart';
 import 'package:lotti/classes/goal_criterion.dart';
@@ -266,7 +267,8 @@ final goalChangeSetConfirmationServiceProvider =
       name: 'goalChangeSetConfirmationServiceProvider',
     );
 
-/// The user's side of the ad contract: dismiss, rate, account exposure.
+/// The user's side of the ad contract: snooze, dismiss for today, rate, and
+/// account for exposure.
 final goalNudgeInteractionsProvider = Provider<GoalNudgeInteractions>(
   (ref) => GoalNudgeInteractions(
     repository: ref.watch(agentRepositoryProvider),
@@ -283,7 +285,7 @@ typedef GoalBannerEntry = ({GoalNudgeEntity nudge, String goalTitle});
 /// Watches the agent-level notification token so wake writes refresh it;
 /// interaction writes go through the sync service (which deliberately
 /// does not notify), so the UI handlers invalidate this provider after
-/// dismiss/rate.
+/// visibility/rating actions.
 final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
     FutureProvider.autoDispose<List<GoalBannerEntry>>((ref) async {
       // The banner mounts are unconditional on their host pages, so the
@@ -292,7 +294,12 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
       final agentsEnabled =
           ref.watch(configFlagProvider(enableAgentsPageFlag)).value ?? false;
       if (!agentsEnabled) return const [];
-      ref.watch(agentUpdateStreamProvider(agentNotification));
+      final lifecycleListener = AppLifecycleListener(
+        onResume: ref.invalidateSelf,
+      );
+      ref
+        ..onDispose(lifecycleListener.dispose)
+        ..watch(agentUpdateStreamProvider(agentNotification));
       final agents = await ref
           .watch(agentServiceProvider)
           .listAgents(lifecycle: AgentLifecycle.active);
@@ -344,6 +351,10 @@ final FutureProvider<List<GoalBannerEntry>> activeGoalNudgesProvider =
           final snoozedUntil = goalBannerSnoozedUntil(nudge);
           considerDeadline(snoozedUntil);
           if (goalBannerIsSnoozed(nudge, now)) continue;
+          if (goalBannerIsDismissedForDay(nudge, now)) {
+            considerDeadline(goalBannerNextLocalMidnight(now));
+            continue;
+          }
           entries.add((
             nudge: nudge,
             goalTitle: headVersion is GoalSpecVersionEntity
@@ -384,25 +395,6 @@ final FutureProvider<List<AgentIdentityEntity>> activeGoalAgentsProvider =
           if (identity.kind == AgentKinds.goalAgent) identity,
       ];
     }, name: 'activeGoalAgentsProvider');
-
-/// Nudge ids dismissed THIS session whose provider refresh may still be
-/// in flight (or may have failed): both banner surfaces subtract these
-/// at render time, so the X always visibly works even when the fallible
-/// reload behind it does not. New provider loads drop the rows anyway
-/// (the durable status is already terminal).
-class LocallyDismissedNudgeIds extends Notifier<Set<String>> {
-  @override
-  Set<String> build() => const {};
-
-  void add(String id) => state = {...state, id};
-}
-
-final NotifierProvider<LocallyDismissedNudgeIds, Set<String>>
-locallyDismissedNudgeIdsProvider =
-    NotifierProvider<LocallyDismissedNudgeIds, Set<String>>(
-      LocallyDismissedNudgeIds.new,
-      name: 'locallyDismissedNudgeIdsProvider',
-    );
 
 /// Snooze deadlines learned from a just-committed chat wake before the async
 /// active-banner projection has reloaded. Banner surfaces subtract these ids

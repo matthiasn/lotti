@@ -36,6 +36,35 @@ enum GoalBannerAnimation { steady, typewriter, pulse, wave, marquee, glitch }
 /// energy behind the copy, without a single generated pixel.
 enum GoalBannerAccent { calm, ember, tide, neon, aurora }
 
+/// User-selectable banner snooze presets.
+///
+/// [custom] preserves chat-requested snoozes that do not match one of the
+/// fixed UI choices. Their exact length remains in
+/// [GoalNudgeSnooze.durationMinutes].
+enum GoalBannerSnoozeDuration {
+  oneHour,
+  threeHours,
+  sixHours,
+  eightHours,
+  custom,
+}
+
+extension GoalBannerSnoozeDurationValue on GoalBannerSnoozeDuration {
+  Duration? get duration => switch (this) {
+    GoalBannerSnoozeDuration.oneHour => const Duration(hours: 1),
+    GoalBannerSnoozeDuration.threeHours => const Duration(hours: 3),
+    GoalBannerSnoozeDuration.sixHours => const Duration(hours: 6),
+    GoalBannerSnoozeDuration.eightHours => const Duration(hours: 8),
+    GoalBannerSnoozeDuration.custom => null,
+  };
+}
+
+GoalBannerSnoozeDuration goalBannerSnoozeDurationFor(Duration duration) =>
+    GoalBannerSnoozeDuration.values.firstWhere(
+      (preset) => preset.duration == duration,
+      orElse: () => GoalBannerSnoozeDuration.custom,
+    );
+
 /// The typed banner brief — everything a goal ad IS (ADR 0058).
 ///
 /// The model authors the copy and picks presentation presets; the app
@@ -82,6 +111,41 @@ abstract class GoalNudgeRating with _$GoalNudgeRating {
       _$GoalNudgeRatingFromJson(json);
 }
 
+/// One durable snooze interaction for one banner activation.
+///
+/// The UTC instants preserve ordering and expiry semantics across devices.
+/// [utcOffsetMinutes] preserves the wall-clock context in which the user made
+/// the choice, so future timing analysis does not reinterpret an old snooze in
+/// the device's current timezone after travel or a daylight-saving change.
+@freezed
+abstract class GoalNudgeSnooze with _$GoalNudgeSnooze {
+  const factory GoalNudgeSnooze({
+    required String id,
+    @JsonKey(fromJson: _decodeActivation) required int activation,
+    required DateTime snoozedAt,
+    required DateTime snoozedUntil,
+    required GoalBannerSnoozeDuration duration,
+    @JsonKey(fromJson: _decodePositiveMinutes) required int durationMinutes,
+    @JsonKey(fromJson: _decodeUtcOffsetMinutes) required int utcOffsetMinutes,
+  }) = _GoalNudgeSnooze;
+
+  const GoalNudgeSnooze._();
+
+  factory GoalNudgeSnooze.fromJson(Map<String, dynamic> json) =>
+      _$GoalNudgeSnoozeFromJson(json);
+
+  /// The recorded local wall-clock value represented as a zone-free UTC
+  /// [DateTime], so consumers can read its components without applying the
+  /// current device timezone.
+  DateTime get snoozedAtLocal =>
+      snoozedAt.toUtc().add(Duration(minutes: utcOffsetMinutes));
+
+  /// The requested return time in the same recorded wall-clock convention as
+  /// [snoozedAtLocal].
+  DateTime get snoozedUntilLocal =>
+      snoozedUntil.toUtc().add(Duration(minutes: utcOffsetMinutes));
+}
+
 /// Range- and integrality-enforcing decoder: the generated decoder would
 /// truncate `4.9` to 4 and store a lie in the permanent rating history;
 /// out-of-contract values must fail the decode instead.
@@ -94,6 +158,18 @@ int? _decodeRating(Object? raw) {
 int _decodeActivation(Object? raw) {
   if (raw is num && raw % 1 == 0 && raw >= 1) return raw.toInt();
   throw FormatException('activation must be a 1-based integer: $raw');
+}
+
+int _decodePositiveMinutes(Object? raw) {
+  if (raw is num && raw % 1 == 0 && raw > 0) return raw.toInt();
+  throw FormatException('durationMinutes must be a positive integer: $raw');
+}
+
+int _decodeUtcOffsetMinutes(Object? raw) {
+  if (raw is num && raw % 1 == 0 && raw >= -840 && raw <= 840) {
+    return raw.toInt();
+  }
+  throw FormatException('utcOffsetMinutes outside -840..840: $raw');
 }
 
 /// Cross-field issues in a raw rating payload — what the per-field
@@ -109,6 +185,27 @@ List<String> goalNudgeRatingJsonIssues(Map<String, dynamic> json) {
   }
   if (!skipped && rating == null) {
     return const ['an unskipped outcome must carry its rating'];
+  }
+  return const [];
+}
+
+/// Cross-field issues in a raw snooze event payload.
+List<String> goalNudgeSnoozeJsonIssues(Map<String, dynamic> json) {
+  final snoozedAt = DateTime.tryParse(json['snoozedAt']?.toString() ?? '');
+  final snoozedUntil = DateTime.tryParse(
+    json['snoozedUntil']?.toString() ?? '',
+  );
+  if (snoozedAt == null || snoozedUntil == null) return const [];
+  final exact = snoozedUntil.toUtc().difference(snoozedAt.toUtc());
+  if (exact <= Duration.zero) {
+    return const ['snoozedUntil must be after snoozedAt'];
+  }
+  final durationMinutes = json['durationMinutes'];
+  if (durationMinutes is num && durationMinutes % 1 == 0) {
+    final expectedMinutes = (exact.inSeconds + 59) ~/ 60;
+    if (durationMinutes.toInt() != expectedMinutes) {
+      return const ['durationMinutes must match the snooze interval'];
+    }
   }
   return const [];
 }

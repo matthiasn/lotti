@@ -1649,6 +1649,61 @@ void main() {
     });
   });
 
+  test('a day-dismissed banner automatically returns at local midnight', () {
+    final start = DateTime(2026, 8, 10, 23, 30);
+    fakeAsync((async) {
+      withClock(Clock(() => start.add(async.elapsed)), () {
+        when(
+          () => agentService.listAgents(lifecycle: AgentLifecycle.active),
+        ).thenAnswer((_) async => [goalIdentity('goal-a')]);
+        when(
+          () => repository.getEntitiesByAgentId('goal-a', type: 'goalNudge'),
+        ).thenAnswer(
+          (_) async => [
+            AgentDomainEntity.goalNudge(
+                  id: 'ad-dismissed-today',
+                  agentId: 'goal-a',
+                  status: GoalNudgeStatus.active,
+                  brief: const GoalNudgeBrief(
+                    headline: 'h',
+                    tone: GoalNudgeTone.nudge,
+                    animation: GoalBannerAnimation.steady,
+                  ),
+                  briefDigest: 'd',
+                  createdAt: start,
+                  updatedAt: start,
+                  vectorClock: null,
+                  staleAt: start.add(const Duration(days: 1)),
+                  dismissedForDayAt: start.toUtc(),
+                )
+                as GoalNudgeEntity,
+          ],
+        );
+
+        final flagSub = container.listen(
+          configFlagProvider(enableAgentsPageFlag),
+          (_, _) {},
+        );
+        addTearDown(flagSub.close);
+        final sub = container.listen(activeGoalNudgesProvider, (_, _) {});
+        addTearDown(sub.close);
+        async
+          ..flushMicrotasks()
+          ..elapse(const Duration(milliseconds: 1))
+          ..flushMicrotasks();
+        expect(container.read(activeGoalNudgesProvider).value, isEmpty);
+
+        async
+          ..elapse(const Duration(minutes: 31))
+          ..flushMicrotasks();
+        expect(
+          container.read(activeGoalNudgesProvider).value?.single.nudge.id,
+          'ad-dismissed-today',
+        );
+      });
+    });
+  });
+
   test('a late-synced banner from a superseded spec version is fenced by '
       'its own provenance', () async {
     when(

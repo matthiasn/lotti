@@ -397,12 +397,15 @@ flowchart TD
   temporary-hide request instead calls `snooze_goal_ad` with any future instant
   carrying an explicit UTC marker or numeric offset, and an id from the
   active-ad subset (a retired reusable ad is not a snooze target): the same active nudge
-  keeps its activation and rating history, stores `snoozedUntil` in provenance,
-  disappears from every banner surface, and returns when the active-banner
-  provider's deadline timer invalidates the projection. Snooze extends the
+  keeps its activation and rating history, stores typed current snooze state,
+  appends timing evidence, disappears from every banner surface, and returns
+  when the active-banner provider reaches the deadline or reloads after it.
+  Snooze extends the
   activation's `staleAt` past that reveal instant so the hidden interval cannot
-  consume its remaining visible lifetime. A re-run clears stale snooze
-  provenance. After a chat wake commits, the controller reads the persisted
+  consume its remaining visible lifetime. A re-run clears current snooze and
+  day-dismissal state but retains the historical timing evidence. Legacy
+  provenance deadlines remain readable and are removed on the next snooze or
+  re-run. After a chat wake commits, the controller reads the persisted
   snooze deadlines into a short-lived local suppression map before invalidating
   the async projection; retained stale-while-revalidate data therefore cannot
   flash the hidden banner, and unrelated active banners remain visible.
@@ -478,8 +481,10 @@ flowchart TD
   revised` wake so the report and health do not describe the old spec.
 - **Nudge accumulators are CRDTs.** Dismissal is terminal in the
   concurrent resolver, and exposure counters (per-host G-counters),
-  rating histories and shown-at watermarks merge losslessly on concurrent
-  sync — the labeled ad library must survive whole-row LWW.
+  rating histories, append-only snooze histories and shown-at watermarks merge
+  losslessly on concurrent sync — the labeled ad library and its timing
+  evidence must survive whole-row LWW. Concurrent snoozes for the same
+  activation keep the later quiet deadline while retaining both events.
 - **Calendar arithmetic is component-based** (`DateTime(y, m, d ± n)`),
   never `Duration` math, so DST transitions cannot shift the cadence hour,
   skip a prior-day register key, or truncate a 25-hour day's query range.
@@ -505,8 +510,32 @@ flowchart TD
   banners uncycled via `GoalBannerCard` directly. Tapping a banner opens
   its goal's detail page (the banner→conversation flow); the star button
   — rendered only while an outcome is due — opens the per-activation
-  rating prompt (one outcome per activation, skips count). Dismissal (X
-  or swipe) is terminal and quiets ads for the rest of the local day.
+  rating prompt (one outcome per activation, skips count). Snooze is the
+  prominent visibility action and opens fixed 1/3/6/8-hour choices. The
+  de-emphasized final action dismisses the banner only for the current local
+  calendar day; there is no direct X or swipe-to-dismiss shortcut.
+
+  ```mermaid
+  stateDiagram-v2
+      [*] --> shown
+      shown --> snoozed: choose 1h / 3h / 6h / 8h
+      snoozed --> shown: deadline reached or app resumes after it
+      shown --> dismissedForDay: choose Dismiss for today
+      dismissedForDay --> shown: next local calendar day
+      shown --> snoozed: chat chooses another future instant
+  ```
+
+  Every visibility choice persists on the `GoalNudgeEntity`: the effective
+  `snoozedUntil`, `lastSnoozeDuration`, and `dismissedForDayAt` drive current
+  projection state. Each snooze also appends a `GoalNudgeSnooze` carrying its
+  activation, start/deadline, exact duration in minutes, and the offset at the
+  time of the choice. The provider checks persisted state on every load and app
+  resume, and also invalidates itself at the next snooze or local-midnight
+  boundary, so expiry while the app is closed is handled without trusting a
+  timer that did not run. `GoalFactsRenderer` summarizes duration, local start,
+  requested-return hour, weekday, and recent choices under
+  `ads.snoozeBehavior`; repeated requested-return hours are evidence for future
+  initial display timing, not an automatic scheduling command.
   Exposure is measured in visibility episodes by
   `GoalBannerExposureTracker` gated on THREE signals — the tracker's
   stopwatch runs only while the app lifecycle is `resumed`, `TickerMode`
@@ -517,17 +546,17 @@ flowchart TD
   visible→hidden transition — backgrounding, tab switch, scroll-out,
   unmount — flushes its own episode into the per-host G-counters, so
   returning starts a new episode. Writes per nudge are serialized in
-  `GoalNudgeInteractions` so a rapid flush/dismiss pair cannot lose an
+  `GoalNudgeInteractions` so a rapid flush/visibility-action pair cannot lose an
   update to a stale read.
   The dock and the full detail card both render the selected animation through
   `GoalBannerAnimatedText`; the dock and its animated tenant span their host,
   and both desktop and compact docks show the complete authored headline with
-  no avatar, secondary tagline, or line cap; compact dismissal remains at the
+  no avatar, secondary tagline, or line cap; compact snooze remains at the
   trailing edge. A chat-requested snooze accepts an arbitrary future duration
   or date/time and automatically restores the exact banner at that deadline.
   The card keeps `cardPadding` on its lateral and bottom edges but uses
   `spacing.step2` above the fixed-height action header, preventing the rating
-  and dismissal tap targets from creating a visually double-padded top edge.
+  and snooze tap targets from creating a visually double-padded top edge.
 - **The Goal Agents tab** (`enable_agents_page` flag; labelled "Goal Agents"
   via `agentsPageTitle` in every catalog, while the `/agents` route path is
   deliberately unchanged so deep links survive): one card per
@@ -804,7 +833,7 @@ flowchart TD
   show GLM. Live agent config is never projected backward onto a source turn.
 - **Interaction writes bypass the notifier by design** (they go through
   the sync service): the banner handlers invalidate
-  `activeGoalNudgesProvider` after dismiss/rate.
+  `activeGoalNudgesProvider` after snooze/day-dismiss/rate.
 
 ## Gotchas
 

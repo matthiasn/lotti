@@ -8,6 +8,7 @@ import 'package:lotti/classes/goal_window.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/goals/evaluation/goal_evaluation.dart';
 import 'package:lotti/features/goals/evaluation/goal_signal_window.dart';
+import 'package:lotti/features/goals/logic/goal_banner_snooze.dart';
 import 'package:lotti/features/goals/model/goal_health_data_types.dart';
 import 'package:lotti/features/goals/runtime/goal_wake_facts.dart';
 import 'package:lotti/features/insights/logic/time_bucketing.dart';
@@ -159,6 +160,7 @@ class GoalFactsRenderer {
           for (final nudge in reusableTopRated(nudges)) _reusableAdJson(nudge),
         ],
         'dismissalCooldownActive': dismissalCooldownActive(nudges, now),
+        'snoozeBehavior': _snoozeBehaviorJson(nudges),
       },
       'personaTone': {
         'default': 'gently humorous, never shaming',
@@ -474,13 +476,68 @@ class GoalFactsRenderer {
   bool dismissalCooldownActive(List<GoalNudgeEntity> nudges, DateTime now) =>
       nudges.any(
         (n) =>
-            n.dismissedAt != null &&
+            (n.dismissedForDayAt ?? n.dismissedAt) != null &&
             // toLocal: the instant persists as UTC; "not today" means the
             // READING device's calendar day (older local-stamped rows
             // pass through toLocal unchanged).
-            GoalWindow.dayUtc(n.dismissedAt!.toLocal()) ==
-                GoalWindow.dayUtc(now),
+            GoalWindow.dayUtc(
+                  (n.dismissedForDayAt ?? n.dismissedAt)!.toLocal(),
+                ) ==
+                GoalWindow.dayUtc(now.toLocal()),
       );
+
+  Map<String, Object?> _snoozeBehaviorJson(List<GoalNudgeEntity> nudges) {
+    final snoozes = [
+      for (final nudge in nudges) ...nudge.snoozeHistory,
+    ]..sort((a, b) => a.snoozedAt.compareTo(b.snoozedAt));
+    final byDuration = <int, int>{};
+    final byStartHour = List<int>.filled(24, 0);
+    final byReturnHour = List<int>.filled(24, 0);
+    final byWeekday = List<int>.filled(7, 0);
+    for (final snooze in snoozes) {
+      byDuration.update(
+        snooze.durationMinutes,
+        (count) => count + 1,
+        ifAbsent: () => 1,
+      );
+      byStartHour[snooze.snoozedAtLocal.hour]++;
+      byReturnHour[snooze.snoozedUntilLocal.hour]++;
+      byWeekday[snooze.snoozedAtLocal.weekday - DateTime.monday]++;
+    }
+    final durationEntries = byDuration.entries.toList()
+      ..sort((a, b) => a.key.compareTo(b.key));
+    final recent = snoozes.reversed.take(12).toList().reversed;
+    return {
+      'totalCount': snoozes.length,
+      'countByDurationMinutes': {
+        for (final entry in durationEntries) '${entry.key}': entry.value,
+      },
+      'countByStartLocalHour': byStartHour,
+      'countByRequestedReturnLocalHour': byReturnHour,
+      'countByStartLocalWeekday': byWeekday,
+      'recent': [
+        for (final snooze in recent)
+          {
+            'activation': snooze.activation,
+            'snoozedAtLocal': _localWallTime(snooze.snoozedAtLocal),
+            'requestedReturnLocal': _localWallTime(
+              snooze.snoozedUntilLocal,
+            ),
+            'durationMinutes': snooze.durationMinutes,
+          },
+      ],
+      'interpretationPolicy':
+          'Repeated requested-return hours are timing preferences, not '
+          'proof that every banner should start then.',
+    };
+  }
+
+  String _localWallTime(DateTime value) {
+    String two(int component) => component.toString().padLeft(2, '0');
+    return '${value.year.toString().padLeft(4, '0')}-'
+        '${two(value.month)}-${two(value.day)}T${two(value.hour)}:'
+        '${two(value.minute)}:${two(value.second)}';
+  }
 
   /// Retired ads whose mean rating clears [goalReusableMinMeanRating],
   /// best first — the zero-cost reuse library of policy row P13. Skipped
@@ -517,7 +574,7 @@ class GoalFactsRenderer {
       'outcomeRecorded': nudge.ratings.any(
         (rating) => rating.activation == nudge.activationCount,
       ),
-      'snoozedUntil': ?nudge.provenance['snoozedUntil'],
+      'snoozedUntil': ?goalBannerSnoozedUntil(nudge)?.toIso8601String(),
     };
   }
 

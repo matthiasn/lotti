@@ -988,6 +988,18 @@ abstract class AgentDomainEntity with _$AgentDomainEntity {
     DateTime? expiredAt,
     DateTime? supersededAt,
 
+    /// Temporary visibility state. Snoozes keep the activation active and
+    /// preserve their append-only interaction history so future agent wakes
+    /// can learn which local times users repeatedly defer and request.
+    DateTime? snoozedUntil,
+    GoalBannerSnoozeDuration? lastSnoozeDuration,
+    @Default(<GoalNudgeSnooze>[]) List<GoalNudgeSnooze> snoozeHistory,
+
+    /// The latest "not today" choice. The banner remains active and becomes
+    /// visible again when this instant is no longer on the reading device's
+    /// local calendar day.
+    DateTime? dismissedForDayAt,
+
     /// How many times this ad has been activated (1-based; a reuse
     /// re-entry increments it). Rating prompts key off this: one outcome
     /// per activation in the ratings history.
@@ -1089,14 +1101,27 @@ void _validateGoalSpecJson(Map<String, dynamic> json) {
 void _validateGoalNudgeJson(Map<String, dynamic> json) {
   if (json['runtimeType'] != 'goalNudge') return;
   final ratings = json['ratings'];
-  if (ratings is! List) return;
-  for (final entry in ratings) {
-    if (entry is! Map<String, dynamic>) continue;
-    final issues = goalNudgeRatingJsonIssues(entry);
-    if (issues.isNotEmpty) {
-      throw FormatException(
-        'Invalid goal nudge rating: ${issues.join('; ')}',
-      );
+  if (ratings is List) {
+    for (final entry in ratings) {
+      if (entry is! Map<String, dynamic>) continue;
+      final issues = goalNudgeRatingJsonIssues(entry);
+      if (issues.isNotEmpty) {
+        throw FormatException(
+          'Invalid goal nudge rating: ${issues.join('; ')}',
+        );
+      }
+    }
+  }
+  final snoozeHistory = json['snoozeHistory'];
+  if (snoozeHistory is List) {
+    for (final entry in snoozeHistory) {
+      if (entry is! Map<String, dynamic>) continue;
+      final issues = goalNudgeSnoozeJsonIssues(entry);
+      if (issues.isNotEmpty) {
+        throw FormatException(
+          'Invalid goal nudge snooze: ${issues.join('; ')}',
+        );
+      }
     }
   }
 }

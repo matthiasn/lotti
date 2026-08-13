@@ -1431,13 +1431,24 @@ void main() {
     expect(rerun.provenance, isNot(contains('snoozedUntil')));
     expect(rerun.provenance, isNot(contains('snoozeReason')));
     expect(rerun.provenance, isNot(contains('snoozedAt')));
+    expect(rerun.snoozedUntil, isNull);
+    expect(rerun.lastSnoozeDuration, isNull);
+    expect(rerun.dismissedForDayAt, isNull);
     final snoozed = written.singleWhere((n) => n.id == 'ad-snooze');
     expect(snoozed.status, GoalNudgeStatus.active);
     expect(
-      snoozed.provenance['snoozedUntil'],
-      '2099-08-12T08:30:00.000Z',
+      snoozed.snoozedUntil,
+      DateTime.utc(2099, 8, 12, 8, 30),
     );
-    expect(snoozed.provenance['snoozeReason'], 'user asked for later');
+    expect(
+      snoozed.lastSnoozeDuration,
+      GoalBannerSnoozeDuration.custom,
+    );
+    expect(snoozed.snoozeHistory, hasLength(1));
+    expect(
+      snoozed.snoozeHistory.single.snoozedUntil,
+      DateTime.utc(2099, 8, 12, 8, 30),
+    );
     expect(
       snoozed.staleAt,
       DateTime.utc(2099, 8, 12, 8, 30).add(goalAdLifetime),

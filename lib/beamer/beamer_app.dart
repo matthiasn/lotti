@@ -1217,7 +1217,6 @@ class _MobileNavOverlayHeightScope extends ConsumerWidget {
     final keyboardUp = MediaQuery.viewInsetsOf(context).bottom > 0;
     final goalDockEntries = visibleGoalBannerEntries(
       entries: ref.watch(activeGoalNudgesProvider).value,
-      locallyDismissedIds: ref.watch(locallyDismissedNudgeIdsProvider),
       locallySnoozedDeadlines: ref.watch(
         locallySnoozedNudgeDeadlinesProvider,
       ),

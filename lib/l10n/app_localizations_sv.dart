@@ -6062,6 +6062,9 @@ class AppLocalizationsSv extends AppLocalizations {
   String get goalBannerActionFailed => 'Det sparades inte — försök igen.';
 
   @override
+  String get goalBannerDismissForDay => 'Dölj resten av dagen';
+
+  @override
   String get goalBannerDismissTooltip => 'Avfärda';
 
   @override
@@ -6077,6 +6080,27 @@ class AppLocalizationsSv extends AppLocalizations {
   String goalBannerSemanticLabel(String goalTitle) {
     return 'Målbanner för $goalTitle';
   }
+
+  @override
+  String get goalBannerSnoozeEightHours => '8 timmar';
+
+  @override
+  String get goalBannerSnoozeLabel => 'Snooza';
+
+  @override
+  String get goalBannerSnoozeOneHour => '1 timme';
+
+  @override
+  String get goalBannerSnoozePrompt => 'När ska den visas igen?';
+
+  @override
+  String get goalBannerSnoozeSixHours => '6 timmar';
+
+  @override
+  String get goalBannerSnoozeThreeHours => '3 timmar';
+
+  @override
+  String get goalBannerSnoozeTitle => 'Snooza banderollen';
 
   @override
   String goalBufferDays(int count) {

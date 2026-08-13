@@ -9,10 +9,13 @@ import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/services/nav_service.dart';
 import 'package:mocktail/mocktail.dart';
 
+import '../../../helpers/fallbacks.dart';
 import '../../../mocks/mocks.dart';
 import '../../../widget_test_utils.dart';
 
 void main() {
+  setUpAll(registerAllFallbackValues);
+
   GoalNudgeEntity nudge({List<GoalNudgeRating> ratings = const []}) =>
       AgentDomainEntity.goalNudge(
             id: 'ad-1',
@@ -42,7 +45,14 @@ void main() {
   setUp(() {
     interactions = MockGoalNudgeInteractions();
     when(
-      () => interactions.dismiss(
+      () => interactions.snooze(
+        any(),
+        duration: any(named: 'duration'),
+        forActivation: any(named: 'forActivation'),
+      ),
+    ).thenAnswer((_) async => true);
+    when(
+      () => interactions.dismissForDay(
         any(),
         forActivation: any(named: 'forActivation'),
       ),
@@ -76,33 +86,42 @@ void main() {
     await tester.pumpAndSettle();
   }
 
-  testWidgets('the X dismisses the ad — the terminal verdict that starts '
-      'the quiet window', (tester) async {
+  testWidgets('the primary Snooze action reveals contextual durations', (
+    tester,
+  ) async {
     await pumpCard(tester);
-    await tester.tap(find.byTooltip('Dismiss'));
+    await tester.tap(find.text('Snooze'));
+    await tester.pumpAndSettle();
+    expect(find.text('When should it come back?'), findsOneWidget);
+    await tester.tap(find.text('6 hours'));
     await tester.pumpAndSettle();
     verify(
-      () => interactions.dismiss('ad-1', forActivation: 1),
+      () => interactions.snooze(
+        'ad-1',
+        duration: GoalBannerSnoozeDuration.sixHours,
+        forActivation: 1,
+      ),
     ).called(1);
   });
 
-  testWidgets('a dismiss write that throws surfaces the retry notice and '
+  testWidgets('a snooze write that throws surfaces the retry notice and '
       'leaves the card in place — the tap did not remove it', (tester) async {
     when(
-      () => interactions.dismiss(
+      () => interactions.snooze(
         any(),
+        duration: any(named: 'duration'),
         forActivation: any(named: 'forActivation'),
       ),
     ).thenAnswer((_) async => throw StateError('sync write failed'));
     await pumpCard(tester);
-    await tester.tap(find.byTooltip('Dismiss'));
+    await tester.tap(find.text('Snooze'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1 hour'));
     await tester.pumpAndSettle();
     expect(
       find.text("That didn't save — please try again."),
       findsOneWidget,
     );
-    // The failure path returns false from confirmDismiss — the
-    // Dismissible snaps back and the card is still on screen.
     expect(find.byType(GoalBannerCard), findsOneWidget);
     expect(
       find.text('Your shoes filed a missing person report.'),
@@ -110,47 +129,31 @@ void main() {
     );
   });
 
-  testWidgets('a dismiss that reports the guard declined (a sync race) '
-      'refreshes the lists instead of locally suppressing the card', (
+  testWidgets('day dismissal is de-emphasized behind the snooze sheet', (
     tester,
   ) async {
-    when(
-      () => interactions.dismiss(
-        any(),
-        forActivation: any(named: 'forActivation'),
-      ),
-    ).thenAnswer((_) async => false);
     await pumpCard(tester);
-    await tester.tap(find.byTooltip('Dismiss'));
+    expect(find.text('Dismiss for today'), findsNothing);
+    await tester.tap(find.text('Snooze'));
+    await tester.pumpAndSettle();
+    expect(
+      tester.getTopLeft(find.text('Dismiss for today')).dy,
+      greaterThan(tester.getBottomLeft(find.text('8 hours')).dy),
+    );
+    await tester.tap(find.text('Dismiss for today'));
     await tester.pumpAndSettle();
     verify(
-      () => interactions.dismiss('ad-1', forActivation: 1),
+      () => interactions.dismissForDay('ad-1', forActivation: 1),
     ).called(1);
-    // confirmDismiss returned false: no failure notice (this was not an
-    // error) and the card is NOT locally suppressed — it stays exactly
-    // where it was, unlike the true-path terminal dismissal.
-    expect(
-      find.text("That didn't save — please try again."),
-      findsNothing,
-    );
-    expect(find.byType(GoalBannerCard), findsOneWidget);
-    expect(
-      find.text('Your shoes filed a missing person report.'),
-      findsOneWidget,
-    );
   });
 
-  testWidgets('swiping the banner away dismisses it — the second gesture '
-      'ADR 0055 specifies', (tester) async {
+  testWidgets('there is no direct dismiss button or swipe-dismiss shortcut', (
+    tester,
+  ) async {
     await pumpCard(tester);
-    await tester.drag(
-      find.byType(Dismissible),
-      const Offset(600, 0),
-    );
-    await tester.pumpAndSettle();
-    verify(
-      () => interactions.dismiss('ad-1', forActivation: 1),
-    ).called(1);
+    expect(find.byType(Dismissible), findsNothing);
+    expect(find.byTooltip('Dismiss'), findsNothing);
+    expect(find.text('Snooze'), findsOneWidget);
   });
 
   testWidgets('picking a star records the rating FOR THE ACTIVATION the '
@@ -233,7 +236,7 @@ void main() {
       ],
     );
     expect(find.byTooltip('Rate this banner'), findsNothing);
-    expect(find.byTooltip('Dismiss'), findsOneWidget);
+    expect(find.text('Snooze'), findsOneWidget);
   });
 
   testWidgets('the CTA pill is a real button: tapping it navigates to the '
@@ -274,9 +277,9 @@ void main() {
   });
 
   testWidgets('consuming the rating never reflows the header — the star '
-      'sits in a fixed slot, so the X does not move', (tester) async {
+      'sits in a fixed slot, so Snooze does not move', (tester) async {
     await pumpCard(tester);
-    final xBefore = tester.getTopLeft(find.byTooltip('Dismiss'));
+    final snoozeBefore = tester.getTopLeft(find.text('Snooze'));
     expect(find.byTooltip('Rate this banner'), findsOneWidget);
 
     await tester.pumpWidget(
@@ -303,8 +306,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.byTooltip('Rate this banner'), findsNothing);
     expect(
-      tester.getTopLeft(find.byTooltip('Dismiss')),
-      xBefore,
+      tester.getTopLeft(find.text('Snooze')),
+      snoozeBefore,
       reason: 'the vacated star slot must keep its width',
     );
   });

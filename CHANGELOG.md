@@ -28,6 +28,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   desktop layout caps the form at a reading column with the continue button
   in flow; and the flow speaks one vocabulary ("signal"), with the mapping
   step's button now reading "Continue".
+- **Goal-agent banners are snooze-first.** The primary action now offers 1,
+  3, 6, and 8 hour choices, while Dismiss for today is a secondary option.
+  Banners return after the chosen deadline or on the next local day even
+  across app restarts, and durable snooze timing history gives the goal agent
+  evidence for choosing better initial display times.
 - **A design-panel polish pass across the goal-agent surfaces.** The banner's
   "Log today" opens a one-tap logging sheet on the goal page instead of
   navigating to itself; day cells wear a dedicated success green (with an
