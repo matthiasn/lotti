@@ -875,4 +875,107 @@ void main() {
       expect(find.byIcon(Icons.send_rounded), findsNothing);
     });
   });
+
+  testWidgets(
+    'a long reply scrolled out and back is collapsed on its first frame',
+    (tester) async {
+      // The user-visible bug: ListView.builder disposes an item's State once
+      // it passes the cache extent. Coming back, the reply re-measured from
+      // scratch, so for one frame it laid out at FULL height — which grows
+      // the content above the viewport and forces the scroll position to be
+      // corrected. That correction is the flashing and bouncing reported
+      // while scrolling a goal chat.
+      tester.view.physicalSize = const Size(400, 600);
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      // Comfortably more than the 8-line collapsed clamp.
+      final longReply = List.generate(
+        40,
+        (line) => 'Line $line of a long agent reply that keeps going.',
+      ).join('\n\n');
+      final history = <AgentChatMessage>[
+        AgentChatMessage(
+          id: 'long',
+          role: AgentChatRole.agent,
+          text: longReply,
+          createdAt: DateTime(2026, 8, 11, 9),
+        ),
+        // Enough trailing traffic to push the long reply well past the
+        // cache extent once the view settles at the newest message.
+        for (var i = 0; i < 40; i++)
+          AgentChatMessage(
+            id: 'filler-$i',
+            role: i.isEven ? AgentChatRole.user : AgentChatRole.agent,
+            text: 'Short follow-up $i.',
+            createdAt: DateTime(2026, 8, 11, 9, i + 1),
+          ),
+      ];
+
+      await tester.pumpWidget(
+        makeTestableWidgetNoScroll(
+          Scaffold(
+            body: AgentChatView(
+              agentId: 'goal-1',
+              agentName: 'Juno',
+              draft: '',
+              isSending: false,
+              onDraftChanged: (_) {},
+              onSend: () {},
+              onRetry: () {},
+            ),
+          ),
+          overrides: [
+            agentChatProjectionProvider(
+              'goal-1',
+            ).overrideWith((ref) async => history),
+          ],
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      final collapse = find.byKey(const ValueKey('agent-reply-collapse'));
+      final position = tester
+          .state<ScrollableState>(
+            find.descendant(
+              of: find.byType(ListView),
+              matching: find.byType(Scrollable),
+            ),
+          )
+          .position;
+
+      // The view settles at the newest message, far below the long reply,
+      // whose State has been disposed by then.
+      expect(
+        find.byKey(const ValueKey('goal-chat-message-long')),
+        findsNothing,
+        reason:
+            'the long reply must leave the cache extent for the recycle '
+            'path to be exercised',
+      );
+
+      // Bring it back and look at the VERY FIRST frame it is rebuilt in.
+      position.jumpTo(0);
+      await tester.pump();
+
+      expect(
+        collapse,
+        findsOneWidget,
+        reason:
+            'a recycled reply must lay out collapsed immediately, not '
+            'after a measure-and-rebuild round trip',
+      );
+      // The symptom itself: laying the reply out at full height grows the
+      // content above the viewport, and the scroll machinery corrects the
+      // offset away from where the user put it. A collapsed first frame
+      // leaves the requested offset alone.
+      expect(
+        position.pixels,
+        0,
+        reason:
+            'a full-height first frame forces a scroll correction, '
+            'which is what makes the list jump',
+      );
+    },
+  );
 }
