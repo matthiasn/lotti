@@ -615,6 +615,7 @@ class _CreateGoalAgentPageState extends ConsumerState<CreateGoalAgentPage> {
   Future<List<CategoryDefinition>>
   _reconcileCategoryTimeTargetsForSave() async {
     final selectedCategoryIds = _categoryTimeTargets.keys.toList();
+    if (selectedCategoryIds.isEmpty) return const [];
     final repository = ref.read(categoryRepositoryProvider);
     final resolvedCategories = await Future.wait([
       for (final categoryId in selectedCategoryIds)
