@@ -69,6 +69,35 @@ void main() {
     );
   }
 
+  Task buildTask({
+    String id = 'task-001',
+    Set<String>? aiSuppressedLabelIds,
+    List<String>? labelIds,
+  }) {
+    return Task(
+      meta: Metadata(
+        id: id,
+        dateFrom: baseTime,
+        dateTo: baseTime,
+        createdAt: baseTime,
+        updatedAt: baseTime,
+        labelIds: labelIds,
+      ),
+      data: TaskData(
+        status: TaskStatus.open(
+          id: id,
+          createdAt: baseTime,
+          utcOffset: 0,
+        ),
+        dateFrom: baseTime,
+        dateTo: baseTime,
+        statusHistory: [],
+        title: 'Test Task',
+        aiSuppressedLabelIds: aiSuppressedLabelIds,
+      ),
+    );
+  }
+
   setUp(() {
     persistenceLogic = MockPersistenceLogic();
     journalDb = MockJournalDb();
@@ -444,6 +473,43 @@ void main() {
     expect(result, isFalse);
   });
 
+  test('addLabels logs an asynchronous task write failure', () async {
+    final task = buildTask(
+      aiSuppressedLabelIds: {'new-label', 'still-suppressed'},
+    );
+    final expectedError = StateError('task write failed');
+    when(
+      () => journalDb.journalEntityById(task.meta.id),
+    ).thenAnswer((_) async => task);
+    when(() => persistenceLogic.updateMetadata(any())).thenAnswer(
+      (invocation) async => invocation.positionalArguments.first as Metadata,
+    );
+    Task? capturedTask;
+    when(
+      () => persistenceLogic.updateDbEntity(any()),
+    ).thenAnswer((invocation) {
+      capturedTask = invocation.positionalArguments.first as Task;
+      return Future<bool?>.error(expectedError);
+    });
+
+    final result = await repository.addLabels(
+      journalEntityId: task.meta.id,
+      addedLabelIds: const ['new-label'],
+    );
+
+    expect(result, isFalse);
+    expect(capturedTask?.meta.labelIds, ['new-label']);
+    expect(capturedTask?.data.aiSuppressedLabelIds, {'still-suppressed'});
+    verify(
+      () => domainLogger.error(
+        LogDomain.labels,
+        expectedError,
+        stackTrace: any<StackTrace?>(named: 'stackTrace'),
+        subDomain: 'addLabels',
+      ),
+    ).called(1);
+  });
+
   test('addLabels does not modify original labelIds list', () async {
     final original = ['existing'];
     final entry = buildEntry(labelIds: original);
@@ -813,35 +879,6 @@ void main() {
   });
 
   group('suppressLabelOnTask', () {
-    Task buildTask({
-      String id = 'task-001',
-      Set<String>? aiSuppressedLabelIds,
-      List<String>? labelIds,
-    }) {
-      return Task(
-        meta: Metadata(
-          id: id,
-          dateFrom: baseTime,
-          dateTo: baseTime,
-          createdAt: baseTime,
-          updatedAt: baseTime,
-          labelIds: labelIds,
-        ),
-        data: TaskData(
-          status: TaskStatus.open(
-            id: id,
-            createdAt: baseTime,
-            utcOffset: 0,
-          ),
-          dateFrom: baseTime,
-          dateTo: baseTime,
-          statusHistory: [],
-          title: 'Test Task',
-          aiSuppressedLabelIds: aiSuppressedLabelIds,
-        ),
-      );
-    }
-
     test('adds label ID to aiSuppressedLabelIds', () async {
       final task = buildTask();
       when(
