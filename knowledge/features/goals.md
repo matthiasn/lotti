@@ -212,12 +212,14 @@ flowchart TD
   Update now, Skip once, and the persisted automatic-updates switch. The first
   tick of a day is not "new data" (the window slid), and identical
   recomputation keeps the report fresh.
-  Toggling that switch writes the identity through the sync service, which does
-  **not** notify on its own — only the wake path pings — so
-  `GoalAgentService.updateAutomaticUpdates` pings `UpdateNotifications` itself
-  after the transaction commits. Without it `agentIdentityProvider` keeps its
-  cached value and the switch renders the old state until the page is rebuilt
-  from scratch, which reads as a switch that does not work.
+  **A direct identity write must ping `UpdateNotifications` itself.**
+  `AgentSyncService.upsertEntity` does not notify; the wake path only appears
+  to, because `WakeOutputWriter` pings separately after its own commit. So a
+  user-initiated identity write — `GoalAgentService.updateAutomaticUpdates`
+  toggling that switch — pings after its transaction commits, or
+  `agentIdentityProvider` keeps its cached value and the switch renders the old
+  state until the page is rebuilt from scratch, which reads as a switch that
+  does not work.
 - **The deferred arm and its escalation commit in one transaction.** When the
   local countdown fires, its dedicated trigger re-enters Phase A and writes the
   current register together with a forced report-refresh escalation. The
