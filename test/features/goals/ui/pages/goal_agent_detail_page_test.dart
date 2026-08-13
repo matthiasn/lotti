@@ -26,6 +26,7 @@ import 'package:lotti/features/goals/state/goal_progress_view.dart';
 import 'package:lotti/features/goals/ui/goal_agent_chat_pane.dart';
 import 'package:lotti/features/goals/ui/goal_banner_card.dart';
 import 'package:lotti/features/goals/ui/goal_banner_exposure_tracker.dart';
+import 'package:lotti/features/goals/ui/goal_log_today_sheet.dart';
 import 'package:lotti/features/goals/ui/goal_progress_card.dart';
 import 'package:lotti/features/goals/ui/pages/goal_agent_detail_page.dart';
 import 'package:lotti/services/nav_service.dart';
@@ -146,7 +147,9 @@ void main() {
     expect(find.byIcon(Icons.trending_up_rounded), findsOneWidget);
     expect(find.text('At risk'), findsNothing);
     expect(find.textContaining('% of target'), findsNothing);
-    expect(find.text('Daily steps'), findsNWidgets(2));
+    // The metric card; the Watching copy is asserted after the scroll —
+    // the labelled statement pushed it below the lazy-list build window.
+    expect(find.text('Daily steps'), findsOneWidget);
     expect(find.text('Health data'), findsOneWidget);
     expect(
       find.textContaining(
@@ -187,6 +190,7 @@ void main() {
     );
     scrollable.position.jumpTo(scrollable.position.maxScrollExtent);
     await tester.pump();
+    expect(find.text('Watching'), findsOneWidget);
     await tester.tap(find.text('Talk to Move more'));
     await tester.pump();
     expect(navigated, ['/agents/details/goal-1/chat']);
@@ -506,6 +510,145 @@ void main() {
           'the report/banner group belongs directly under the goal '
           'definition, with the habit and chart evidence below it',
     );
+  });
+
+  testWidgets('the app-bar chat action opens the conversation, the banner '
+      'CTA opens the one-tap logging sheet, and the app-bar title only '
+      'appears once the header scrolls away', (tester) async {
+    tester.view.physicalSize = const Size(390, 844);
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+    final navigated = <String>[];
+    beamToNamedOverride = navigated.add;
+    addTearDown(() => beamToNamedOverride = null);
+    final spec =
+        AgentDomainEntity.goalSpecVersion(
+              id: 'goal-1:spec-v1',
+              agentId: 'goal-1',
+              version: 1,
+              status: GoalSpecVersionStatus.active,
+              authoredBy: 'user',
+              title: 'Move more',
+              statement: 'Walk this week.',
+              criteria: const GoalCriterion.habit(
+                criterionId: 'walk',
+                habitId: 'walk',
+                window: GoalWindow.rollingDays(count: 7),
+                targetCount: 3,
+              ),
+              createdAt: DateTime(2026, 8),
+              vectorClock: null,
+            )
+            as GoalSpecVersionEntity;
+    final today = DateTime.utc(2026, 8, 11);
+    final banner =
+        AgentDomainEntity.goalNudge(
+              id: 'ad-goal-1',
+              agentId: 'goal-1',
+              status: GoalNudgeStatus.active,
+              brief: const GoalNudgeBrief(
+                headline: 'Two walks left this window.',
+                cta: 'Log today',
+                tone: GoalNudgeTone.nudge,
+                animation: GoalBannerAnimation.steady,
+              ),
+              briefDigest: 'd',
+              createdAt: DateTime(2026, 8, 10),
+              updatedAt: DateTime(2026, 8, 10),
+              vectorClock: null,
+            )
+            as GoalNudgeEntity;
+    await tester.pumpWidget(
+      makeTestableWidgetNoScroll(
+        const GoalAgentDetailPage(agentId: 'goal-1'),
+        overrides: [
+          agentIdentityProvider(
+            'goal-1',
+          ).overrideWith((ref) async => goalIdentity),
+          goalAgentHealthProvider('goal-1').overrideWith(
+            (ref) async => (
+              trackStatus: GoalTrackStatus.offTrack,
+              attainment: 0.4,
+              reportOneLiner: 'Two walks left.',
+              pendingProposals: 0,
+              spec: spec,
+              direction: null,
+              deficit: 2,
+              buffer: null,
+            ),
+          ),
+          goalAgentProgressViewProvider('goal-1').overrideWith(
+            (ref) async => GoalProgressView(
+              today: today,
+              habits: [
+                GoalHabitProgressView(
+                  habitId: 'walk',
+                  name: 'Walk',
+                  targetCount: 3,
+                  days: [
+                    for (var offset = 6; offset >= 0; offset--)
+                      GoalProgressDay(
+                        day: today.subtract(Duration(days: offset)),
+                        value: 0,
+                      ),
+                  ],
+                  successfulWeeks: 0,
+                ),
+              ],
+            ),
+          ),
+          activeGoalNudgesProvider.overrideWith(
+            (ref) async => [(nudge: banner, goalTitle: 'Move more')],
+          ),
+          goalNudgeExposureFlushProvider.overrideWithValue((_, _) {}),
+          selfTargetedPendingChangeSetsProvider(
+            'goal-1',
+          ).overrideWith((ref) async => []),
+          agentMessagesByThreadProvider(
+            'goal-1',
+          ).overrideWith((ref) async => {}),
+        ],
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // At rest the header H1 owns the name; the app bar copy is transparent.
+    AnimatedOpacity appBarTitle() => tester.widget<AnimatedOpacity>(
+      find
+          .ancestor(
+            of: find.descendant(
+              of: find.byType(AppBar),
+              matching: find.text('Move more'),
+            ),
+            matching: find.byType(AnimatedOpacity),
+          )
+          .first,
+    );
+    expect(appBarTitle().opacity, 0);
+
+    // The banner CTA performs the verb: it opens the one-tap logging
+    // sheet instead of navigating to the route the page is already on.
+    await tester.tap(find.text('Log today'));
+    await tester.pumpAndSettle();
+    expect(navigated, isEmpty);
+    expect(find.byType(GoalLogTodaySheet), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('goal-log-today-mark-walk')),
+      findsOneWidget,
+    );
+    await tester.tapAt(const Offset(5, 5));
+    await tester.pumpAndSettle();
+    expect(find.byType(GoalLogTodaySheet), findsNothing);
+
+    // Scrolled away from the header, the app bar reveals the name.
+    await tester.drag(find.byType(ListView).first, const Offset(0, -400));
+    await tester.pumpAndSettle();
+    expect(appBarTitle().opacity, 1);
+
+    // The persistent chat doorway beside the overflow menu.
+    await tester.tap(find.byKey(const ValueKey('goal-detail-chat-action')));
+    await tester.pump();
+    expect(navigated, ['/agents/details/goal-1/chat']);
   });
 
   testWidgets('a banner past its staleAt is filtered out at render time even '

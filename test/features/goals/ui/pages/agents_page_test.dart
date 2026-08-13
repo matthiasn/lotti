@@ -9,6 +9,7 @@ import 'package:lotti/features/agents/model/agent_config.dart';
 import 'package:lotti/features/agents/model/agent_constants.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
 import 'package:lotti/features/agents/model/agent_enums.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -381,6 +382,19 @@ void main() {
         GoalCompactDayState.none,
         GoalCompactDayState.full,
       ]);
+
+      // On a wide row the strip moves into the right-aligned data block, so
+      // the card's width carries information instead of dead surface.
+      expect(
+        tester.getTopRight(find.byType(GoalCompactWindowStrip)).dx,
+        greaterThan(
+          tester.getTopRight(find.text('Fitness')).dx,
+        ),
+        reason: 'strip should sit trailing, past the title block',
+      );
+      // Resolved data renders REAL cells; the dashed placeholder encoding is
+      // reserved for rows whose window has not resolved.
+      expect(strip.placeholder, isFalse);
     },
   );
 
@@ -405,7 +419,7 @@ void main() {
     );
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byType(FloatingActionButton));
+    await tester.tap(find.byType(DesignSystemFloatingActionButton));
     await tester.pump();
     expect(navigated, ['/agents/create']);
 
@@ -425,7 +439,7 @@ void main() {
       ),
     );
     await tester.pumpAndSettle();
-    expect(find.byType(FloatingActionButton), findsNothing);
+    expect(find.byType(DesignSystemFloatingActionButton), findsNothing);
     // The explainer's own CTA remains the single way in.
     expect(find.text('Set an intention'), findsOneWidget);
   });

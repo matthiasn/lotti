@@ -82,10 +82,11 @@ void main() {
           goalCoarseHealthColor(GoalCoarseHealth.behind, colors),
           colors.alert.warning.defaultColor,
         );
-        // Restarting is the interactive teal — deliberately not red.
+        // Restarting is the info hue — deliberately not red, and not a
+        // green that would read as Healthy at chip size.
         expect(
           goalCoarseHealthColor(GoalCoarseHealth.restarting, colors),
-          colors.interactive.enabled,
+          colors.alert.info.defaultColor,
         );
         expect(
           goalCoarseHealthColor(GoalCoarseHealth.notEnoughData, colors),

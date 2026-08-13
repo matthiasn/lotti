@@ -3411,7 +3411,11 @@
   "@goalCoarseHealthRestarting": {
     "description": "Coarse goal-health chip label: a fresh start after a quiet stretch (never framed as failure)"
   },
-  "goalCompositeProgressSummary": "{metCount} of {dimensionCount} dimensions met yesterday · {requiredCount} required.",
+  "goalCompositeLastSevenDays": "Last 7 days",
+  "@goalCompositeLastSevenDays": {
+    "description": "Time-frame caption above the composite seven-day strip."
+  },
+  "goalCompositeProgressSummary": "Yesterday: {metCount} of {dimensionCount} dimensions · {requiredCount} required.",
   "@goalCompositeProgressSummary": {
     "placeholders": {
       "metCount": {
@@ -3500,6 +3504,10 @@
   },
   "goalDetailNotFound": "This goal agent no longer exists.",
   "goalDetailSayingTitle": "What your agent is saying",
+  "goalDetailStatementLabel": "Your goal",
+  "@goalDetailStatementLabel": {
+    "description": "Caption above the goal statement on the detail page, marking it as the aspiration rather than current status."
+  },
   "goalDetailTimelineTitle": "Interactions",
   "@goalDetailTimelineTitle": {
     "description": "Section title of the agent detail interaction timeline."
@@ -3782,6 +3790,14 @@
   "@goalHealthTrendUp": {
     "description": "Screen-reader label for the rising trend arrow on a goal-agent list row."
   },
+  "goalLogTodayLinkedHint": "Updates from its linked source",
+  "@goalLogTodayLinkedHint": {
+    "description": "Read-only note on data dimensions in the logging sheet."
+  },
+  "goalLogTodayTitle": "Log today",
+  "@goalLogTodayTitle": {
+    "description": "Title of the one-tap logging sheet the banner CTA opens."
+  },
   "goalMetricBarSemantics": "{status, select, missing{{date}: no value; target {target}} met{{date}: {value}; target {target}; met} other{{date}: {value}; target {target}; not met}}",
   "@goalMetricBarSemantics": {
     "description": "Accessible label for one dated metric bar. Status is missing, met, or missed.",
@@ -3918,6 +3934,15 @@
   },
   "goalRecordOfferRecordOne": "Record entry",
   "goalRecordOfferSelectRow": "Select row",
+  "goalReliabilityWeeks": "{achieved} / 6 weeks",
+  "@goalReliabilityWeeks": {
+    "description": "Caption under the six-week reliability tail on a habit card.",
+    "placeholders": {
+      "achieved": {
+        "type": "int"
+      }
+    }
+  },
   "goalStatusAchieved": "Achieved",
   "@goalStatusAchieved": {
     "description": "Goal track status chip: target date passed with criteria met."

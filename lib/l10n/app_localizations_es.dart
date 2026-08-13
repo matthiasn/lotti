@@ -6220,12 +6220,15 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalCoarseHealthRestarting => 'Empezando de nuevo';
 
   @override
+  String get goalCompositeLastSevenDays => 'Últimos 7 días';
+
+  @override
   String goalCompositeProgressSummary(
     int metCount,
     int dimensionCount,
     int requiredCount,
   ) {
-    return 'Ayer se cumplieron $metCount de $dimensionCount dimensiones · se requieren $requiredCount.';
+    return 'Ayer: $metCount de $dimensionCount dimensiones · $requiredCount requeridas.';
   }
 
   @override
@@ -6307,6 +6310,9 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalDetailSayingTitle => 'Lo que dice tu agente';
+
+  @override
+  String get goalDetailStatementLabel => 'Tu objetivo';
 
   @override
   String get goalDetailTimelineTitle => 'Interacciones';
@@ -6661,6 +6667,12 @@ class AppLocalizationsEs extends AppLocalizations {
   String get goalHealthTrendUp => 'En aumento';
 
   @override
+  String get goalLogTodayLinkedHint => 'Se actualiza desde su fuente vinculada';
+
+  @override
+  String get goalLogTodayTitle => 'Registrar hoy';
+
+  @override
   String goalMetricBarSemantics(
     String status,
     Object date,
@@ -6829,6 +6841,11 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get goalRecordOfferSelectRow => 'Seleccionar fila';
+
+  @override
+  String goalReliabilityWeeks(int achieved) {
+    return '$achieved / 6 semanas';
+  }
 
   @override
   String get goalStatusAchieved => 'Conseguido';

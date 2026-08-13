@@ -6241,12 +6241,15 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalCoarseHealthRestarting => 'Se repornește';
 
   @override
+  String get goalCompositeLastSevenDays => 'Ultimele 7 zile';
+
+  @override
   String goalCompositeProgressSummary(
     int metCount,
     int dimensionCount,
     int requiredCount,
   ) {
-    return 'Ieri au fost îndeplinite $metCount din $dimensionCount dimensiuni · sunt necesare $requiredCount.';
+    return 'Ieri: $metCount din $dimensionCount dimensiuni · $requiredCount necesare.';
   }
 
   @override
@@ -6331,6 +6334,9 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalDetailSayingTitle => 'Ce spune agentul dvs.';
+
+  @override
+  String get goalDetailStatementLabel => 'Obiectivul dvs.';
 
   @override
   String get goalDetailTimelineTitle => 'Interacțiuni';
@@ -6685,6 +6691,12 @@ class AppLocalizationsRo extends AppLocalizations {
   String get goalHealthTrendUp => 'În creștere';
 
   @override
+  String get goalLogTodayLinkedHint => 'Se actualizează din sursa asociată';
+
+  @override
+  String get goalLogTodayTitle => 'Înregistrați astăzi';
+
+  @override
   String goalMetricBarSemantics(
     String status,
     Object date,
@@ -6856,6 +6868,11 @@ class AppLocalizationsRo extends AppLocalizations {
 
   @override
   String get goalRecordOfferSelectRow => 'Selectați rândul';
+
+  @override
+  String goalReliabilityWeeks(int achieved) {
+    return '$achieved / 6 săptămâni';
+  }
 
   @override
   String get goalStatusAchieved => 'Atins';

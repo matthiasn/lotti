@@ -24,9 +24,20 @@ import 'package:lotti/widgets/charts/utils.dart';
 /// The handover's seven-cell picture used on each Agents-list row. It is
 /// intentionally unlabeled visually, but exposes one concise semantic summary.
 class GoalCompactWindowStrip extends StatelessWidget {
-  const GoalCompactWindowStrip({required this.days, super.key});
+  const GoalCompactWindowStrip({
+    required this.days,
+    this.placeholder = false,
+    super.key,
+  });
 
   final List<GoalCompactDayState> days;
+
+  /// True while the strip stands in for a window that has not resolved yet.
+  /// Placeholder cells render as dashed outlines, never as the filled grey a
+  /// genuinely-empty week wears — "no data yet" and "nothing happened" must
+  /// not share an encoding, or the strip contradicts a Healthy chip beside
+  /// it.
+  final bool placeholder;
 
   @override
   Widget build(BuildContext context) {
@@ -34,22 +45,49 @@ class GoalCompactWindowStrip extends StatelessWidget {
     final visible = days.take(7).toList(growable: false);
     if (visible.isEmpty) return const SizedBox.shrink();
     return Semantics(
-      label: context.messages.goalProgressCompactSemantics(
-        visible.where((state) => state != GoalCompactDayState.none).length,
-      ),
+      label: placeholder
+          ? context.messages.goalCoarseHealthNotEnoughData
+          : context.messages.goalProgressCompactSemantics(
+              visible
+                  .where((state) => state != GoalCompactDayState.none)
+                  .length,
+            ),
       child: ExcludeSemantics(
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
             for (var index = 0; index < visible.length; index++) ...[
               if (index > 0) SizedBox(width: tokens.spacing.step1),
-              _CompactDayCell(
-                state: visible[index],
-                today: index == visible.length - 1,
-              ),
+              if (placeholder)
+                const _PlaceholderDayCell()
+              else
+                _CompactDayCell(
+                  state: visible[index],
+                  today: index == visible.length - 1,
+                ),
             ],
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// A not-yet-resolved day slot: same footprint as a real cell, dashed
+/// outline instead of a fill, so the silhouette holds without borrowing the
+/// empty-week encoding.
+class _PlaceholderDayCell extends StatelessWidget {
+  const _PlaceholderDayCell();
+
+  @override
+  Widget build(BuildContext context) {
+    final tokens = context.designTokens;
+    return Padding(
+      padding: EdgeInsets.all(tokens.spacing.step1),
+      child: DsDashedBorder(
+        color: tokens.colors.text.lowEmphasis,
+        radius: tokens.radii.xs,
+        child: const SizedBox(width: IconSizes.xs, height: IconSizes.xs),
       ),
     );
   }
@@ -71,17 +109,23 @@ class _CompactDayCell extends StatelessWidget {
         color: goalDayStateFill(tokens, state),
         borderRadius: BorderRadius.circular(tokens.radii.xs),
       ),
+      child: state == GoalCompactDayState.partial
+          ? Center(child: goalPartialDayDot(tokens, tokens.spacing.step1))
+          : null,
+    );
+    // Every cell shares one outer footprint; today only adds the dashed
+    // ring inside it, so the strip's rhythm never bulges at the last cell.
+    final padded = Padding(
+      padding: EdgeInsets.all(tokens.spacing.step1),
+      child: cell,
     );
     return today
         ? DsDashedBorder(
             color: tokens.colors.text.lowEmphasis,
             radius: tokens.radii.xs,
-            child: Padding(
-              padding: EdgeInsets.all(tokens.spacing.step1),
-              child: cell,
-            ),
+            child: padded,
           )
-        : cell;
+        : padded;
   }
 }
 
@@ -89,16 +133,30 @@ class _CompactDayCell extends StatelessWidget {
 /// requirement held as of that day, a lighter wash of the same hue for a
 /// partial success (routine kept, target still building), neutral otherwise.
 /// `SurfaceAlphas.muted` is the sanctioned "reduced-strength accent" alpha,
-/// so no new color token is introduced.
+/// so no new color token is introduced. Data-that-happened wears the
+/// `alert.success` family; the interactive teal stays strictly for things
+/// the user can tap.
 Color goalDayStateFill(DsTokens tokens, GoalCompactDayState state) =>
     switch (state) {
-      GoalCompactDayState.full => tokens.colors.interactive.enabled,
+      GoalCompactDayState.full => tokens.colors.alert.success.defaultColor,
       GoalCompactDayState.partial =>
-        tokens.colors.interactive.enabled.withValues(
+        tokens.colors.alert.success.defaultColor.withValues(
           alpha: SurfaceAlphas.muted,
         ),
       GoalCompactDayState.none => tokens.colors.background.level03,
     };
+
+/// The non-color cue for a partial day: a full-strength dot inside the
+/// lighter wash, so full/partial/none survive without a legend (the list
+/// rows carry none) and for color-blind readers.
+Widget goalPartialDayDot(DsTokens tokens, double diameter) => Container(
+  width: diameter,
+  height: diameter,
+  decoration: BoxDecoration(
+    shape: BoxShape.circle,
+    color: tokens.colors.alert.success.ink,
+  ),
+);
 
 /// Rolling-window detail visual. Habit routines render one row per watched
 /// habit; metric goals render seven bars against the target frame.
@@ -145,6 +203,17 @@ class GoalProgressCard extends StatelessWidget {
           ),
           SizedBox(height: tokens.spacing.step3),
         ],
+        // ONE legend for all habit cards, aligned with their content edge —
+        // repeating it per card taxed every screenful with boilerplate.
+        if (progress.habits.isNotEmpty) ...[
+          Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: tokens.spacing.cardPadding,
+            ),
+            child: const _ProgressLegend(),
+          ),
+          SizedBox(height: tokens.spacing.step3),
+        ],
         for (final metric in progress.metrics)
           if (bloodPressure == null || metric != bloodPressure.diastolic) ...[
             if (bloodPressure != null && metric == bloodPressure.systolic)
@@ -165,8 +234,10 @@ class GoalProgressCard extends StatelessWidget {
             onTap: () => onReflectDay!(progress.today),
             child: Row(
               children: [
+                // The sparkle stays exclusive to agent suggestions; this row
+                // is the USER writing a reflection.
                 Icon(
-                  Icons.auto_awesome_outlined,
+                  Icons.edit_note_rounded,
                   color: tokens.colors.interactive.enabled,
                 ),
                 SizedBox(width: tokens.spacing.step3),
@@ -216,9 +287,19 @@ class _CompositeProgressCard extends StatelessWidget {
         children: [
           Text(
             context.messages.goalCompositeProgressTitle,
-            style: tokens.typography.styles.subtitle.subtitle1,
+            style: tokens.typography.styles.subtitle.subtitle2,
           ),
           SizedBox(height: tokens.spacing.step3),
+          // The strip counts DAYS; the caption below counts dimensions on
+          // one day. Naming the frame keeps the two from reading as one
+          // contradictory statistic.
+          Text(
+            context.messages.goalCompositeLastSevenDays,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          ),
+          SizedBox(height: tokens.spacing.step1),
           GoalCompactWindowStrip(days: progress.compactWindow),
           SizedBox(height: tokens.spacing.step3),
           Text(
@@ -313,17 +394,13 @@ class _HabitDimensionCard extends StatelessWidget {
             today: today,
             onOutcomeSelected: onHabitOutcomeSelected,
           ),
-          SizedBox(height: tokens.spacing.step4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              const Expanded(child: _ProgressLegend()),
-              if (successfulWeeks != null) ...[
-                SizedBox(width: tokens.spacing.step3),
-                _Reliability(successfulWeeks: successfulWeeks),
-              ],
-            ],
-          ),
+          if (successfulWeeks != null) ...[
+            SizedBox(height: tokens.spacing.step3),
+            Align(
+              alignment: Alignment.centerRight,
+              child: _Reliability(successfulWeeks: successfulWeeks),
+            ),
+          ],
         ],
       ),
     );
@@ -492,12 +569,6 @@ class _BloodPressureDimensionCard extends StatelessWidget {
           ),
           if (range != null) ...[
             SizedBox(height: tokens.spacing.step4),
-            Text(
-              _periodLabel(context, metrics.systolic.days),
-              style: tokens.typography.styles.others.caption.copyWith(
-                color: tokens.colors.text.lowEmphasis,
-              ),
-            ),
             SizedBox(
               height: tokens.spacing.step13,
               child: TimeSeriesMultiLineChart(
@@ -584,9 +655,9 @@ LineChartBarData _bloodPressureLine(
 }
 
 HorizontalLine _targetLine(num target, Color color) {
-  final style = chartEmphasisLine(
-    color.withValues(alpha: SurfaceAlphas.muted),
-  );
+  // Full-strength hue: the dash already separates threshold from series,
+  // and the target the user is chasing must not be the faintest mark.
+  final style = chartEmphasisLine(color);
   return HorizontalLine(
     y: target.toDouble(),
     color: style.color,
@@ -742,7 +813,7 @@ class _DimensionHeader extends StatelessWidget {
     final identity = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: tokens.typography.styles.subtitle.subtitle1),
+        Text(title, style: tokens.typography.styles.subtitle.subtitle2),
         Text(
           source,
           style: tokens.typography.styles.others.caption.copyWith(
@@ -751,8 +822,8 @@ class _DimensionHeader extends StatelessWidget {
         ),
       ],
     );
-    final readingBlock = Column(
-      crossAxisAlignment: CrossAxisAlignment.end,
+    Column readingBlock(CrossAxisAlignment align) => Column(
+      crossAxisAlignment: align,
       children: [
         Text(reading, style: tokens.typography.styles.subtitle.subtitle2),
         Text(
@@ -791,7 +862,12 @@ class _DimensionHeader extends StatelessWidget {
                 ],
               ),
               SizedBox(height: tokens.spacing.step2),
-              Align(alignment: Alignment.centerRight, child: readingBlock),
+              // One left rag per card on narrow widths — right alignment
+              // only where the width earns it (the wide branch below).
+              Align(
+                alignment: Alignment.centerLeft,
+                child: readingBlock(CrossAxisAlignment.start),
+              ),
             ],
           );
         }
@@ -802,7 +878,7 @@ class _DimensionHeader extends StatelessWidget {
             SizedBox(width: tokens.spacing.step3),
             Expanded(child: identity),
             SizedBox(width: tokens.spacing.step3),
-            readingBlock,
+            readingBlock(CrossAxisAlignment.end),
           ],
         );
       },
@@ -1002,9 +1078,10 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
     final tokens = context.designTokens;
     final habit = widget.habit;
     final activeDays = habit.days;
-    final stateColor = habit.deficit == 0
-        ? tokens.colors.alert.success.ink
-        : tokens.colors.alert.warning.ink;
+    // Deterministic arithmetic, not a verdict — the header's status caption
+    // owns the warning ink; the countdown stays neutral so urgency isn't
+    // flattened by repetition.
+    final stateColor = tokens.colors.text.mediumEmphasis;
     final note = habit.deficit == 0
         ? context.messages.goalProgressAtRate
         : context.messages.goalProgressDaysToHealthy(habit.deficit);
@@ -1022,8 +1099,14 @@ class _HabitProgressRowState extends State<_HabitProgressRow> {
 
     Widget cells() {
       const itemExtent = ControlSizes.iconChipCompact;
+      // Interactive rows own a touch-floor-high track so each cell's hit
+      // slot meets TapTargets.minimum vertically; read-only rows keep the
+      // compact height.
+      final trackHeight = widget.onOutcomeSelected == null
+          ? itemExtent
+          : TapTargets.minimum;
       return _DayTrack(
-        height: itemExtent,
+        height: trackHeight,
         itemExtent: itemExtent,
         pitch: _dayTrackPitch(context, activeDays),
         children: [
@@ -1206,14 +1289,17 @@ class _ProgressDayCell extends StatelessWidget {
         ? GoalCompactDayState.full
         : GoalCompactDayState.partial;
     const visualDimension = ControlSizes.iconChipCompact;
+    // Ages-out is a quiet outline, not the page's alarm hue: an on-track
+    // habit must never wear warning orange. Today-and-done rings in the
+    // success family — the cell is data, not a control.
     final border = agingOut
         ? Border.all(
-            color: tokens.colors.alert.warning.defaultColor,
+            color: tokens.colors.text.lowEmphasis,
             width: BorderWidths.emphasis,
           )
         : today && hit
         ? Border.all(
-            color: tokens.colors.interactive.enabled,
+            color: tokens.colors.alert.success.defaultColor,
             width: BorderWidths.emphasis,
           )
         : null;
@@ -1237,6 +1323,8 @@ class _ProgressDayCell extends StatelessWidget {
               size: IconSizes.xs,
               color: tokens.colors.alert.error.ink,
             )
+          : dayState == GoalCompactDayState.partial
+          ? Center(child: goalPartialDayDot(tokens, tokens.spacing.step2))
           : null,
     );
     if (dayState == GoalCompactDayState.partial) {
@@ -1291,12 +1379,16 @@ class _ProgressDayCell extends StatelessWidget {
       label: semanticLabel,
       button: true,
       enabled: enabled && !saving,
-      child: SizedBox.square(
+      // The visual stays at the compact chip size; the hit slot meets the
+      // design system's touch floor vertically and fills the track pitch
+      // horizontally — invisible ergonomics, unchanged rhythm.
+      child: SizedBox(
         key: ValueKey(
           'goal-habit-day-$habitId-'
           '${day.day.toIso8601String().substring(0, 10)}',
         ),
-        dimension: ControlSizes.iconChipCompact,
+        width: ControlSizes.iconChipCompact,
+        height: TapTargets.minimum,
         child: PopupMenuButton<HabitCompletionType>(
           enabled: enabled && !saving,
           initialValue: day.habitCompletionType,
@@ -1414,7 +1506,7 @@ class _Reliability extends StatelessWidget {
                     : tokens.spacing.step3,
                 decoration: BoxDecoration(
                   color: index < successfulWeeks
-                      ? tokens.colors.interactive.enabled
+                      ? tokens.colors.alert.success.defaultColor
                       : tokens.colors.background.level03,
                   borderRadius: BorderRadius.circular(tokens.radii.xs),
                 ),
@@ -1424,9 +1516,9 @@ class _Reliability extends StatelessWidget {
         ),
         SizedBox(height: tokens.spacing.step1),
         Text(
-          '$successfulWeeks / 6',
+          context.messages.goalReliabilityWeeks(successfulWeeks),
           style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
+            color: tokens.colors.text.mediumEmphasis,
           ),
         ),
       ],
@@ -1447,12 +1539,6 @@ class _MetricTrendSeries extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          _periodLabel(context, metric.days),
-          style: tokens.typography.styles.others.caption.copyWith(
-            color: tokens.colors.text.lowEmphasis,
-          ),
-        ),
         SizedBox(
           height: tokens.spacing.step13,
           child: TimeSeriesLineChart(
@@ -1756,7 +1842,7 @@ class _CategoryPatternCard extends StatelessWidget {
               SizedBox(width: tokens.spacing.step2),
               Text(
                 '${context.messages.goalPatternTitle} · ${metric.name}',
-                style: tokens.typography.styles.subtitle.subtitle1,
+                style: tokens.typography.styles.subtitle.subtitle2,
               ),
             ],
           ),
@@ -1812,56 +1898,81 @@ class _ProgressLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final tokens = context.designTokens;
-    Widget item(Color color, String label, {bool outlined = false}) => Row(
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        Container(
-          width: IconSizes.xs,
-          height: IconSizes.xs,
-          decoration: BoxDecoration(
-            color: outlined ? Colors.transparent : color,
-            border: outlined
-                ? Border.all(color: color, width: BorderWidths.emphasis)
-                : null,
-            borderRadius: BorderRadius.circular(tokens.radii.xs),
-          ),
+    Widget item(
+      Color color,
+      String label, {
+      bool outlined = false,
+      bool dotted = false,
+      bool dashed = false,
+    }) {
+      Widget swatch = Container(
+        width: IconSizes.xs,
+        height: IconSizes.xs,
+        decoration: BoxDecoration(
+          color: outlined || dashed ? Colors.transparent : color,
+          border: outlined
+              ? Border.all(color: color, width: BorderWidths.emphasis)
+              : null,
+          borderRadius: BorderRadius.circular(tokens.radii.xs),
         ),
-        SizedBox(width: tokens.spacing.step2),
-        // Flexible so the longer done/partial labels line-break on narrow
-        // cards instead of overflowing the legend row.
-        Flexible(
-          child: Text(
-            label,
-            style: tokens.typography.styles.others.caption.copyWith(
-              color: tokens.colors.text.lowEmphasis,
+        // The legend swatch carries the same non-color cue as the cells.
+        child: dotted
+            ? Center(child: goalPartialDayDot(tokens, tokens.spacing.step1))
+            : null,
+      );
+      if (dashed) {
+        swatch = DsDashedBorder(
+          color: color,
+          radius: tokens.radii.xs,
+          child: swatch,
+        );
+      }
+      return Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          swatch,
+          SizedBox(width: tokens.spacing.step2),
+          // Flexible so the longer done/partial labels line-break on narrow
+          // cards instead of overflowing the legend row.
+          Flexible(
+            child: Text(
+              label,
+              style: tokens.typography.styles.others.caption.copyWith(
+                color: tokens.colors.text.lowEmphasis,
+              ),
             ),
           ),
-        ),
-      ],
-    );
+        ],
+      );
+    }
+
     return Wrap(
       spacing: tokens.spacing.step4,
       runSpacing: tokens.spacing.step2,
       children: [
         item(
-          tokens.colors.interactive.enabled,
+          tokens.colors.alert.success.defaultColor,
           context.messages.goalProgressDone,
         ),
         item(
-          tokens.colors.interactive.enabled.withValues(
+          tokens.colors.alert.success.defaultColor.withValues(
             alpha: SurfaceAlphas.muted,
           ),
           context.messages.goalProgressPartial,
+          dotted: true,
         ),
+        // Quiet outline, matching the ring the cells actually draw — an
+        // on-track row must not wear the alarm hue in its key either.
         item(
-          tokens.colors.alert.warning.defaultColor,
+          tokens.colors.text.lowEmphasis,
           context.messages.goalProgressAgesOut,
           outlined: true,
         ),
+        // Dashed, exactly like the today cell — the key must match the map.
         item(
           tokens.colors.text.lowEmphasis,
           context.messages.goalProgressToday,
-          outlined: true,
+          dashed: true,
         ),
       ],
     );

@@ -556,18 +556,30 @@ flowchart TD
   therefore be green while the current goal remains Behind or Restarting.
   Numeric leaves still respect `atLeast` versus `atMost` direction, and missing
   samples never count as successful days. Both the compact strip and the
-  detail day cells are tri-state (`GoalCompactDayState`): full-strength green
-  when the goal requirement held as of that day, a lighter wash of the same
-  hue (`SurfaceAlphas.muted`, no new token) for a partial success — the
-  routine was kept while the window target was still building — and neutral
-  otherwise. The detail legend carries all four entries (done · target met,
-  done · target not met yet, ages out tonight, today). Each day square shows
-  its concrete date in a hover/long-press tooltip (the same localized string
-  as its semantics), and the Success/Missed menu opens with the selected
-  day's date as a disabled header row. Weekday labels render directly above
+  detail day cells are tri-state (`GoalCompactDayState`): the
+  `alert.success` family at full strength when the goal requirement held as
+  of that day, the same hue at `SurfaceAlphas.muted` (no new token) plus a
+  full-strength inner dot — the non-color cue — for a partial success (the
+  routine was kept while the window target was still building), and neutral
+  otherwise. Day states never wear the interactive teal: data-that-happened
+  and things-you-tap are different greens, `recovering` chips read in the
+  info hue rather than a second green, the ages-out ring is a quiet
+  `text.lowEmphasis` outline (never warning orange on an on-track row), and
+  the deterministic days-to-healthy countdown is neutral prose — the
+  header's verdict caption alone carries warning ink. ONE legend renders per
+  page after the last habit card, and it is truthful: the today swatch is
+  dashed like the cell, the partial swatch carries the dot. Each day square
+  shows its concrete date in a hover/long-press tooltip (the same localized
+  string as its semantics), and the Success/Missed menu opens with the
+  selected day's date as a disabled header row; a day cell's visual stays at
+  the compact chip size while its interactive slot meets
+  `TapTargets.minimum` vertically. Weekday labels render directly above
   their squares inside ONE shared horizontal scroller, so labels and cells
-  cannot drift apart; the reliability tail shares the bottom line with the
-  legend. Point-sample health headers (weight, blood pressure — the
+  cannot drift apart; the reliability tail is captioned in weeks ("N / 6
+  weeks"). The composite "whole goal" card labels its strip's time frame
+  ("Last 7 days") and its summary counts dimensions with an explicit
+  "Yesterday:" frame, so the day-dots and the dimension arithmetic stop
+  reading as one contradictory statistic. Point-sample health headers (weight, blood pressure — the
   `GoalHealthDataTypes.supported` set) quote the LATEST observation while
   the persisted evaluator result stays on its rolling-average basis. If the
   latest observation was recorded today and meets the target, the card uses a
@@ -608,10 +620,22 @@ flowchart TD
   evidence — habit cards first, then charts — below them, and, only while
   active, the revision-approval card (`ChangeSetSummaryCard.selfTargeted`).
   The report card hides its Show more toggle when the full text is identical
-  to the TLDR. Mobile opens durable conversation
+  to the TLDR. The goal statement is explicitly labelled ("Your goal") so it
+  cannot read as a status claim against the health chip, the persona chip
+  anchors to the title's first line, the app bar reveals the goal name only
+  after the header scrolls away (no doubled title in one viewport), and
+  phones get a persistent chat action in the app bar. On the detail page a
+  banner's CTA performs its verb instead of navigating to the current route:
+  `GoalBannerCard.onCtaPressed` opens `GoalLogTodaySheet` — one-tap Mark
+  done per habit through the shared completion path, read-only rows naming
+  the update source for data dimensions — falling back to an anchor-scroll
+  to the evidence for goals without habit dimensions. The chat pane's
+  subtitle is the coarse-health label, current state rather than the
+  aspiration statement. Mobile opens durable conversation
   at `/agents/details/:agentId/chat`; desktop renders the same
   `GoalAgentChatPane` beside detail. The mobile route mounts the composer only
-  for an active goal identity, keeps the goal statement visible in its compact
+  for an active goal identity, shows the coarse-health label (current state,
+  never the aspiration statement) in its compact
   chat header, clears the overlaid navigation bar, and persists the detail
   route after system/gesture back. `agentChatProjectionProvider`
   filters and sorts the log first, retains the latest fifty durable visible

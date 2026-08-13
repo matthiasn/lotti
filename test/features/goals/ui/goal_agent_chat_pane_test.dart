@@ -82,9 +82,12 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Juno'), findsOneWidget);
+    // The subtitle is current STATE, not the aspiration statement — the
+    // statement next to a Behind chip elsewhere read as a status claim.
+    expect(find.text('Healthy'), findsOneWidget);
     expect(
       find.text('Show up for three workouts each week.'),
-      findsOneWidget,
+      findsNothing,
     );
     expect(find.text('Talk to Juno…'), findsOneWidget);
 

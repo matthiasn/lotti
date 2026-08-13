@@ -40,7 +40,7 @@ class DashboardChartDateAxis extends StatelessWidget {
     final startMs = rangeStart.millisecondsSinceEpoch;
     final endMs = rangeEnd.millisecondsSinceEpoch;
     const count = 4; // start, +1/3, +2/3, end — aligns with the linear axis.
-    final labels = [
+    final raw = [
       for (var i = 0; i < count; i++)
         if (dateOnly)
           chartDateFormatterMmDdUtc(
@@ -51,6 +51,13 @@ class DashboardChartDateAxis extends StatelessWidget {
           chartDateFormatterMmDd(
             startMs + (endMs - startMs) * i / (count - 1),
           ),
+    ];
+    // Short ranges make adjacent ticks land on the same calendar day; a
+    // repeated "Aug 11 Aug 11" reads as a rendering bug, so consecutive
+    // duplicates render as empty slots (spacing stays stable).
+    final labels = [
+      for (var i = 0; i < raw.length; i++)
+        if (i > 0 && raw[i] == raw[i - 1]) '' else raw[i],
     ];
     return Padding(
       padding: EdgeInsets.only(

@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:lotti/classes/goal_enums.dart';
 import 'package:lotti/features/agents/model/agent_domain_entity.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_button.dart';
+import 'package:lotti/features/design_system/components/buttons/design_system_floating_action_button.dart';
+import 'package:lotti/features/design_system/theme/breakpoints.dart';
 import 'package:lotti/features/design_system/theme/design_tokens.dart';
 import 'package:lotti/features/goals/state/goal_agent_providers.dart';
 import 'package:lotti/features/goals/state/goal_progress_view.dart';
@@ -39,61 +42,76 @@ class AgentsPage extends ConsumerWidget {
       floatingActionButton: settledEmpty
           ? null
           : DesignSystemBottomNavigationFabPadding(
-              child: FloatingActionButton.extended(
-                // Through NavService, not raw Beamer: keeps currentPath and
-                // the persisted last route in sync (restart restores this
-                // page).
+              // The system FAB, not a raw Material one — same affordance as
+              // Projects and the journal. Through NavService, not raw Beamer:
+              // keeps currentPath and the persisted last route in sync
+              // (restart restores this page).
+              child: DesignSystemFloatingActionButton(
+                semanticLabel: context.messages.agentsCreateGoal,
                 onPressed: () => beamToNamed('/agents/create'),
-                label: Text(context.messages.agentsCreateGoal),
-                icon: const Icon(Icons.add_rounded),
               ),
             ),
       body: SafeArea(
-        child: CustomScrollView(
-          slivers: [
-            SliverAppBar(
-              pinned: true,
-              title: Text(context.messages.agentsPageTitle),
+        // Wide windows keep the overview glanceable and centered: content
+        // caps at the shared detail reading measure instead of running
+        // full-bleed with the cards stranded on the left.
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(
+              maxWidth: kDetailContentMaxWidth,
             ),
-            SliverPadding(
-              // The last card must clear the overlaid bottom navigation
-              // plus the lifted FAB's footprint (the projects-list
-              // clearance idiom).
-              padding: EdgeInsets.fromLTRB(
-                tokens.spacing.step5,
-                tokens.spacing.step5,
-                tokens.spacing.step5,
-                tokens.spacing.step5 +
-                    DesignSystemBottomNavigationBar.occupiedHeight(context) +
-                    tokens.spacing.step12,
-              ),
-              sliver: switch (identities) {
-                null when failedFirstLoad => SliverToBoxAdapter(
-                  child: Padding(
-                    padding: EdgeInsets.only(top: tokens.spacing.sectionGap),
-                    child: Text(
-                      context.messages.agentsPageLoadFailed,
-                      textAlign: TextAlign.center,
-                      style: tokens.typography.styles.body.bodyMedium.copyWith(
-                        color: tokens.colors.text.mediumEmphasis,
+            child: CustomScrollView(
+              slivers: [
+                SliverAppBar(
+                  pinned: true,
+                  title: Text(context.messages.agentsPageTitle),
+                ),
+                SliverPadding(
+                  // The last card must clear the overlaid bottom navigation
+                  // plus the lifted FAB's footprint (the projects-list
+                  // clearance idiom).
+                  padding: EdgeInsets.fromLTRB(
+                    tokens.spacing.step5,
+                    tokens.spacing.step5,
+                    tokens.spacing.step5,
+                    tokens.spacing.step5 +
+                        DesignSystemBottomNavigationBar.occupiedHeight(
+                          context,
+                        ) +
+                        tokens.spacing.step12,
+                  ),
+                  sliver: switch (identities) {
+                    null when failedFirstLoad => SliverToBoxAdapter(
+                      child: Padding(
+                        padding: EdgeInsets.only(
+                          top: tokens.spacing.sectionGap,
+                        ),
+                        child: Text(
+                          context.messages.agentsPageLoadFailed,
+                          textAlign: TextAlign.center,
+                          style: tokens.typography.styles.body.bodyMedium
+                              .copyWith(
+                                color: tokens.colors.text.mediumEmphasis,
+                              ),
+                        ),
                       ),
                     ),
-                  ),
+                    // A load that has never produced data gets the blank sliver
+                    // a loading pass renders, not the empty explainer.
+                    null => const SliverToBoxAdapter(child: SizedBox.shrink()),
+                    [] => const SliverToBoxAdapter(child: _FirstRunExplainer()),
+                    final list => SliverList.separated(
+                      itemCount: list.length,
+                      separatorBuilder: (_, _) =>
+                          SizedBox(height: tokens.spacing.cardItemSpacing),
+                      itemBuilder: (context, index) =>
+                          _GoalAgentRow(identity: list[index]),
+                    ),
+                  },
                 ),
-                // A load that has never produced data gets the blank sliver
-                // a loading pass renders, not the empty explainer.
-                null => const SliverToBoxAdapter(child: SizedBox.shrink()),
-                [] => const SliverToBoxAdapter(child: _FirstRunExplainer()),
-                final list => SliverList.separated(
-                  itemCount: list.length,
-                  separatorBuilder: (_, _) =>
-                      SizedBox(height: tokens.spacing.cardItemSpacing),
-                  itemBuilder: (context, index) =>
-                      _GoalAgentRow(identity: list[index]),
-                ),
-              },
+              ],
             ),
-          ],
+          ),
         ),
       ),
     );
@@ -135,10 +153,10 @@ class _FirstRunExplainer extends StatelessWidget {
           paragraph(messages.agentsFirstRunControl),
           paragraph(messages.agentsFirstRunCost),
           SizedBox(height: tokens.spacing.sectionGap),
-          FilledButton.icon(
+          DesignSystemButton(
+            label: messages.agentsFirstRunCta,
             onPressed: () => beamToNamed('/agents/create'),
-            icon: const Icon(Icons.add_rounded),
-            label: Text(messages.agentsFirstRunCta),
+            leadingIcon: Icons.add_rounded,
           ),
         ],
       ),
@@ -185,6 +203,72 @@ class _GoalAgentRow extends ConsumerWidget {
       (_, final int buffer) => context.messages.goalBufferDays(buffer),
       _ => null,
     };
+    // Every row keeps the same silhouette: a goal whose strip has not
+    // resolved yet reserves the footprint with dashed placeholder cells —
+    // never the filled grey of a genuinely-empty week, which would let the
+    // strip contradict a Healthy chip beside it.
+    final resolvedDays = switch (progress?.compactWindow) {
+      final d? when d.isNotEmpty => d,
+      _ => null,
+    };
+    final stripPlaceholder = resolvedDays == null;
+    final days =
+        resolvedDays ??
+        List<GoalCompactDayState>.filled(7, GoalCompactDayState.none);
+    final identityColumn = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Name + chip + needs-you badge fold under large text
+        // scales (Wrap, not Row).
+        Wrap(
+          spacing: tokens.spacing.step3,
+          runSpacing: tokens.spacing.step1,
+          crossAxisAlignment: WrapCrossAlignment.center,
+          children: [
+            Text(
+              health?.spec?.title ?? identity.displayName,
+              style: tokens.typography.styles.subtitle.subtitle1.copyWith(
+                color: tokens.colors.text.highEmphasis,
+              ),
+            ),
+            if (coarse != null) GoalCoarseHealthChip(health: coarse),
+            // The same chip the detail header uses — one trend vocabulary
+            // across list and detail.
+            if (direction != null)
+              GoalHealthDirectionChip(direction: direction),
+            if ((health?.pendingProposals ?? 0) > 0)
+              const _NeedsYouBadge()
+            else if (dominantIssue != null)
+              _AttentionBadge(dimensionName: dominantIssue),
+          ],
+        ),
+        // Executive summary: the agent's standing one-liner — events-and-time
+        // language. Two lines, so the voice does not die mid-clause on the
+        // primary surface. Keeping percentages out is a matter for the
+        // agent's own instructions, not widget-level policing.
+        if (health?.reportOneLiner case final String oneLiner) ...[
+          SizedBox(height: tokens.spacing.step1),
+          Text(
+            oneLiner,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.body.bodySmall.copyWith(
+              color: tokens.colors.text.mediumEmphasis,
+            ),
+          ),
+        ],
+      ],
+    );
+    final hintText = recoveryHint == null
+        ? null
+        : Text(
+            recoveryHint,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: tokens.typography.styles.others.caption.copyWith(
+              color: tokens.colors.text.lowEmphasis,
+            ),
+          );
     return Material(
       color: tokens.colors.surface.enabled,
       borderRadius: BorderRadius.circular(tokens.radii.l),
@@ -193,101 +277,69 @@ class _GoalAgentRow extends ConsumerWidget {
         onTap: () => beamToNamed('/agents/details/${identity.agentId}'),
         child: Padding(
           padding: EdgeInsets.all(tokens.spacing.cardPadding),
-          child: Row(
-            children: [
-              // The row's persona chip carries the goal's HEALTH hue (not a
-              // banner accent) — the identity here belongs to the state.
-              GoalBannerPersonaChip(
+          child: LayoutBuilder(
+            builder: (context, constraints) {
+              // On wide rows the week strip and the deterministic hint form a
+              // right-aligned data block, so the card's width carries
+              // information instead of trailing dead surface.
+              final wide = constraints.maxWidth >= kActionListContentMaxWidth;
+              final leading = GoalBannerPersonaChip(
                 monogram: GoalBannerPersonaChip.monogramFor(
                   identity.displayName,
                 ),
+                // The row's persona chip carries the goal's HEALTH hue (not a
+                // banner accent) — the identity here belongs to the state.
                 fill: color.withValues(alpha: SurfaceAlphas.washChip),
-              ),
-              SizedBox(width: tokens.spacing.step4),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+              );
+              if (wide) {
+                // Center-aligned (the Row default), so short and tall
+                // identity columns share one optical midline.
+                return Row(
                   children: [
-                    // Name + chip + needs-you badge fold under large text
-                    // scales (Wrap, not Row).
-                    Wrap(
-                      spacing: tokens.spacing.step3,
-                      runSpacing: tokens.spacing.step1,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                    leading,
+                    SizedBox(width: tokens.spacing.step4),
+                    Expanded(child: identityColumn),
+                    SizedBox(width: tokens.spacing.step4),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          health?.spec?.title ?? identity.displayName,
-                          style: tokens.typography.styles.subtitle.subtitle1
-                              .copyWith(
-                                color: tokens.colors.text.highEmphasis,
-                              ),
+                        GoalCompactWindowStrip(
+                          days: days,
+                          placeholder: stripPlaceholder,
                         ),
-                        if (coarse != null)
-                          GoalCoarseHealthChip(health: coarse),
-                        if (direction != null)
-                          Row(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(
-                                goalHealthDirectionIcon(direction),
-                                size: IconSizes.s,
-                                color: tokens.colors.text.mediumEmphasis,
-                              ),
-                              SizedBox(width: tokens.spacing.step1),
-                              Text(
-                                goalHealthDirectionLabel(
-                                  context.messages,
-                                  direction,
-                                ),
-                                style: tokens.typography.styles.others.caption
-                                    .copyWith(
-                                      color: tokens.colors.text.mediumEmphasis,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        if ((health?.pendingProposals ?? 0) > 0)
-                          const _NeedsYouBadge()
-                        else if (dominantIssue != null)
-                          _AttentionBadge(dimensionName: dominantIssue),
+                        if (hintText != null) ...[
+                          SizedBox(height: tokens.spacing.step1),
+                          hintText,
+                        ],
                       ],
                     ),
-                    // Executive summary: the agent's standing one-liner —
-                    // events-and-time language, one line. Keeping percentages
-                    // out is a matter for the agent's own instructions (and a
-                    // conversation with it), not something worth policing in
-                    // the widget.
-                    if (health?.reportOneLiner case final String oneLiner) ...[
-                      SizedBox(height: tokens.spacing.step1),
-                      Text(
-                        oneLiner,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.body.bodySmall.copyWith(
-                          color: tokens.colors.text.mediumEmphasis,
-                        ),
-                      ),
-                    ],
-                    if (recoveryHint != null) ...[
-                      SizedBox(height: tokens.spacing.step1),
-                      Text(
-                        recoveryHint,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: tokens.typography.styles.others.caption.copyWith(
-                          color: tokens.colors.text.lowEmphasis,
-                        ),
-                      ),
-                    ],
-                    if (progress?.compactWindow case final days?
-                        when days.isNotEmpty) ...[
-                      SizedBox(height: tokens.spacing.step2),
-                      GoalCompactWindowStrip(days: days),
-                    ],
                   ],
-                ),
-              ),
-            ],
+                );
+              }
+              return Row(
+                children: [
+                  leading,
+                  SizedBox(width: tokens.spacing.step4),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        identityColumn,
+                        if (hintText != null) ...[
+                          SizedBox(height: tokens.spacing.step1),
+                          hintText,
+                        ],
+                        SizedBox(height: tokens.spacing.step2),
+                        GoalCompactWindowStrip(
+                          days: days,
+                          placeholder: stripPlaceholder,
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              );
+            },
           ),
         ),
       ),
